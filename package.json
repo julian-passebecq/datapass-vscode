@@ -5,43 +5,127 @@
   "version": "0.1.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
-  "engines": { "vscode": "^1.96.0" },
-  "categories": ["Data Science", "Other"],
-  "activationEvents": ["onView:datapass.galaxy","onCommand:datapass.refresh","onCommand:datapass.openGalaxy"],
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Data Science",
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:datapass.galaxy",
+    "onCommand:datapass.refresh",
+    "onCommand:datapass.openGalaxy"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {"command":"datapass.refresh","title":"DataPass: Refresh Control Plane","icon":"$(refresh)"},
-      {"command":"datapass.openGalaxy","title":"DataPass: Open Galaxy"},
-      {"command":"datapass.selectFoilControlRoot","title":"DataPass: Select FOIL Control Repository"},
-      {"command":"datapass.selectFoilDatabricksRoot","title":"DataPass: Select FOIL Databricks Repository"}
+      {
+        "command": "datapass.refresh",
+        "title": "DataPass: Refresh Control Plane",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.openGalaxy",
+        "title": "DataPass: Open Galaxy"
+      },
+      {
+        "command": "datapass.selectFoilControlRoot",
+        "title": "DataPass: Select FOIL Control Repository"
+      },
+      {
+        "command": "datapass.selectFoilDatabricksRoot",
+        "title": "DataPass: Select FOIL Databricks Repository"
+      }
     ],
-    "viewsContainers":{"activitybar":[{"id":"datapass","title":"DataPass","icon":"resources/datapass.svg"}]},
-    "views":{"datapass":[{"id":"datapass.galaxy","name":"Galaxy","type":"webview"}]},
-    "menus":{"view/title":[{"command":"datapass.refresh","when":"view == datapass.galaxy","group":"navigation@1"}]},
-    "configuration":{"title":"DataPass Control Plane","properties":{
-      "datapass.foil.controlRoot":{"type":"string","default":"","scope":"window","description":"Local path to foil-control-v1. Leave blank for workspace auto-detection."},
-      "datapass.foil.databricksRoot":{"type":"string","default":"","scope":"window","description":"Local path to foil_databrick_dab. Leave blank for workspace auto-detection."},
-      "datapass.foil.oracleSshHost":{"type":"string","default":"","scope":"window","description":"SSH config host alias for the FOIL Oracle VM. Do not put credentials here."},
-      "datapass.fabric.toolboxRoot":{"type":"string","default":"","scope":"window","description":"Optional local clone of microsoft/fabric-toolbox or fabric-toolbox_J."},
-      "datapass.grafana.generatorCommand":{"type":"string","default":"","scope":"window","description":"Dashboard generator command used by gcx dev serve, for example: npm run generate:grafana."},
-      "datapass.grafana.watchPath":{"type":"string","default":"","scope":"window","description":"Optional path passed to gcx dev serve --watch."}
-    }}
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "datapass",
+          "title": "DataPass",
+          "icon": "resources/datapass.svg"
+        }
+      ]
+    },
+    "views": {
+      "datapass": [
+        {
+          "id": "datapass.galaxy",
+          "name": "Galaxy",
+          "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "datapass.refresh",
+          "when": "view == datapass.galaxy",
+          "group": "navigation@1"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "DataPass Control Plane",
+      "properties": {
+        "datapass.foil.controlRoot": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Local path to foil-control-v1. Leave blank for workspace auto-detection."
+        },
+        "datapass.foil.databricksRoot": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Local path to foil_databrick_dab. Leave blank for workspace auto-detection."
+        },
+        "datapass.foil.oracleSshHost": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "SSH config host alias for the FOIL Oracle VM. Do not put credentials here."
+        },
+        "datapass.fabric.toolboxRoot": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Optional local clone of microsoft/fabric-toolbox or fabric-toolbox_J."
+        },
+        "datapass.grafana.generatorCommand": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Dashboard generator command used by gcx dev serve, for example: npm run generate:grafana."
+        },
+        "datapass.grafana.watchPath": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "description": "Optional path passed to gcx dev serve --watch."
+        }
+      }
+    }
   },
-  "scripts":{
-    "clean":"node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build":"npm run clean && node esbuild.mjs",
-    "check":"tsc --noEmit",
-    "test":"tsx --test tests/*.test.ts",
-    "verify":"npm run check && npm test && npm run build",
-    "package":"npm run verify && vsce package"
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && node esbuild.mjs",
+    "check": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "verify": "npm run check && npm test && npm run build",
+    "package": "npm run verify && vsce package"
   },
-  "devDependencies":{
-    "@types/node":"^22.10.0",
-    "@types/vscode":"^1.96.0",
-    "@vscode/vsce":"^3.6.0",
-    "esbuild":"^0.25.9",
-    "tsx":"^4.20.6",
-    "typescript":"^5.9.2"
-  }
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^3.6.0",
+    "esbuild": "^0.25.9",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/julian-passebecq/datapass-vscode.git"
+  },
+  "homepage": "https://github.com/julian-passebecq/datapass-vscode"
 }
