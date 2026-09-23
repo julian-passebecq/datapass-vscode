@@ -2,12 +2,14 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import {
   buildDatabricksBundleCommand,
+  buildFabricAssessmentCommand,
   buildFabricSecurityAuditCommand,
   buildGrafanaPreviewCommand,
   buildIaCCommand,
   quoteShellArg
 } from "./commands";
 import { parseToolCatalog, type ToolCatalogItem } from "./catalog";
+import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mcp";
 import { commandAvailable } from "./vscodeDetection";
 import { getFoilBinding } from "../profiles/foil";
 import {
@@ -191,6 +193,10 @@ async function executeFabricCatalogAction(actionId: string, extensionUri: vscode
         await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone");
         return;
       }
+      if (isFabricMcpItem(item.id)) {
+        await configureFabricMcp(item);
+        return;
+      }
       await openCatalogConfiguration(item);
       return;
     case "run":
@@ -198,10 +204,181 @@ async function executeFabricCatalogAction(actionId: string, extensionUri: vscode
         await runFabricSecurityAudit(extensionUri);
         return;
       }
+      if (item.id === "fabric-assessment-tool") {
+        await runFabricAssessment();
+        return;
+      }
       break;
   }
 
   void vscode.window.showInformationMessage(`DataPass: ${item.name} · ${action} is catalogued but intentionally not automated yet.`);
+}
+
+function isFabricMcpItem(itemId: string): boolean {
+  return itemId === "semantic-model-mcp"
+    || itemId === "fabric-management-mcp"
+    || itemId === "dax-performance-mcp";
+}
+
+async function configureFabricMcp(item: ToolCatalogItem): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+  if (!workspaceRoot) {
+    void vscode.window.showWarningMessage("DataPass: open a workspace folder before configuring MCP.");
+    return;
+  }
+
+  const toolboxRoot = await resolveFabricToolboxRoot();
+  if (!toolboxRoot) {
+    const choice = await vscode.window.showWarningMessage(
+      "DataPass: configure a local Microsoft Fabric Toolbox clone before adding this MCP server.",
+      "Configure Toolbox",
+      "Open upstream"
+    );
+    if (choice === "Configure Toolbox") {
+      await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone");
+    } else if (choice === "Open upstream") {
+      await openUrl(item.url);
+    }
+    return;
+  }
+
+  let definition;
+  try {
+    definition = fabricToolboxMcpDefinition(item.id, toolboxRoot);
+  } catch (error) {
+    void vscode.window.showWarningMessage(`DataPass: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(definition.executablePath));
+  } catch {
+    const choice = await vscode.window.showWarningMessage(
+      `DataPass: ${item.name} is not built/installed at the expected upstream path.`,
+      "Open setup instructions",
+      "Open local folder"
+    );
+    if (choice === "Open setup instructions") await openUrl(item.url);
+    if (choice === "Open local folder") {
+      await vscode.commands.executeCommand(
+        "vscode.openFolder",
+        vscode.Uri.file(definition.workingRoot),
+        { forceNewWindow: true }
+      );
+    }
+    return;
+  }
+
+  const vscodeDir = vscode.Uri.joinPath(workspaceRoot, ".vscode");
+  const mcpUri = vscode.Uri.joinPath(vscodeDir, "mcp.json");
+  await vscode.workspace.fs.createDirectory(vscodeDir);
+
+  let config = { servers: {} as Record<string, { command: string; args?: string[] }> };
+  try {
+    const bytes = await vscode.workspace.fs.readFile(mcpUri);
+    config = parseMcpConfig(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
+  } catch (error) {
+    if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") {
+      // new configuration
+    } else {
+      try {
+        await vscode.workspace.fs.stat(mcpUri);
+        void vscode.window.showErrorMessage(
+          `DataPass: existing .vscode/mcp.json could not be safely parsed: ${error instanceof Error ? error.message : String(error)}`
+        );
+        return;
+      } catch {
+        // file does not exist
+      }
+    }
+  }
+
+  const existing = config.servers[definition.serverName];
+  if (existing) {
+    const replace = await vscode.window.showWarningMessage(
+      `MCP server "${definition.serverName}" already exists. Replace it with the verified local Fabric Toolbox path?`,
+      { modal: true },
+      "Replace"
+    );
+    if (replace !== "Replace") return;
+  }
+
+  const merged = mergeMcpServer(config, definition.serverName, definition.server);
+  await vscode.workspace.fs.writeFile(
+    mcpUri,
+    new TextEncoder().encode(JSON.stringify(merged, null, 2) + "\n")
+  );
+  await vscode.window.showTextDocument(mcpUri);
+  void vscode.window.showInformationMessage(
+    `DataPass: configured ${item.name} in .vscode/mcp.json without storing credentials.`
+  );
+}
+
+async function runFabricAssessment(): Promise<void> {
+  const source = await vscode.window.showQuickPick(
+    [
+      { label: "Databricks", value: "databricks" as const },
+      { label: "Synapse", value: "synapse" as const }
+    ],
+    { title: "Fabric Assessment Tool", placeHolder: "Select source platform" }
+  );
+  if (!source) return;
+
+  let cloud: "azure" | "aws" | undefined = "azure";
+  if (source.value === "databricks") {
+    const cloudChoice = await vscode.window.showQuickPick(
+      [
+        { label: "Azure", value: "azure" as const },
+        { label: "AWS", value: "aws" as const }
+      ],
+      { title: "Fabric Assessment Tool", placeHolder: "Select Databricks cloud" }
+    );
+    if (!cloudChoice) return;
+    cloud = cloudChoice.value;
+  }
+
+  const workspace = await vscode.window.showInputBox({
+    title: "Fabric Assessment Tool",
+    prompt: "Optional workspace name. Leave blank to use the tool's interactive selection when supported."
+  });
+
+  const output = await vscode.window.showInputBox({
+    title: "Fabric Assessment Tool",
+    prompt: "Output directory",
+    value: "./fabric-assessment-output",
+    validateInput: value => value.trim() ? undefined : "Output directory is required."
+  });
+  if (!output) return;
+
+  let command: string;
+  try {
+    command = buildFabricAssessmentCommand({
+      source: source.value,
+      workspace: workspace || undefined,
+      output,
+      cloud
+    });
+  } catch (error) {
+    void vscode.window.showErrorMessage(`DataPass: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
+
+  const choice = await vscode.window.showInformationMessage(
+    "Run the Fabric Assessment Tool now, or copy the generated command?",
+    { modal: true },
+    "Run",
+    "Copy command"
+  );
+  if (!choice) return;
+
+  await vscode.env.clipboard.writeText(command);
+  if (choice === "Run") {
+    const terminal = vscode.window.createTerminal({ name: "Fabric Assessment Tool" });
+    terminal.show(true);
+    terminal.sendText(command, true);
+    return;
+  }
+  void vscode.window.showInformationMessage("DataPass: Fabric Assessment Tool command copied.");
 }
 
 async function openCatalogConfiguration(item: ToolCatalogItem): Promise<void> {

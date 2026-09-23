@@ -66,3 +66,48 @@ export function buildFabricSecurityAuditCommand(scriptPath: string, url: string,
   if (cleanUser) parts.push("-User", quotePowerShellArg(cleanUser));
   return parts.join(" ");
 }
+
+export interface FabricAssessmentInput {
+  source: "synapse" | "databricks";
+  workspace?: string;
+  output: string;
+  cloud?: "azure" | "aws";
+}
+
+export function buildFabricAssessmentCommand(
+  input: FabricAssessmentInput,
+  platform: NodeJS.Platform = process.platform
+): string {
+  if (input.source !== "synapse" && input.source !== "databricks") {
+    throw new Error("Assessment source must be synapse or databricks.");
+  }
+  const output = sanitizeCommandValue(input.output, "Assessment output");
+  const workspace = input.workspace?.trim();
+  if (workspace) sanitizeCommandValue(workspace, "Assessment workspace");
+
+  const parts = [
+    "fat",
+    "assess",
+    "--source",
+    input.source,
+    "--mode",
+    "full",
+    "-o",
+    quoteShellArg(output, platform)
+  ];
+
+  if (input.source === "databricks" && input.cloud) {
+    parts.push("--cloud", input.cloud);
+  }
+  if (workspace) {
+    parts.push("--ws", quoteShellArg(workspace, platform));
+  }
+  return parts.join(" ");
+}
+
+function sanitizeCommandValue(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error(`${label} is required.`);
+  if (/\r|\n|\0/.test(trimmed)) throw new Error(`${label} contains unsupported control characters.`);
+  return trimmed;
+}

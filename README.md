@@ -6,7 +6,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 - **Galaxy** — one status/control view for projects and platforms.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
-- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode and Fabric CLI; renders a curated Fabric Toolbox gallery with verified upstream provenance.
+- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery with verified upstream provenance, a guided Assessment Tool workflow, and workspace MCP configuration.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
 - **Power BI** — detects PBIP/TMDL/PBIR source projects and links specialized/agentic tooling.
 - **Observability / Grafana** — treats dashboards as code with `gcx`, Foundation SDK and OpenTofu/Terraform deployment paths.
@@ -179,3 +179,28 @@ The Galaxy generates a `gcx dev serve` preview command while keeping dashboard s
 - project manifests are schema-validated and intentionally exclude secret fields.
 
 See `handoff/` for the architecture lock and acceptance criteria, and `IMPLEMENTATION_STATUS.md` for the current build state.
+
+## Fabric Assessment Tool
+
+When the upstream `fat` CLI is installed, **Fabric Assessment Tool → Run** provides a guided command builder.
+
+DataPass asks only for non-secret execution context:
+
+- source: Synapse or Databricks;
+- Databricks cloud: Azure or AWS;
+- optional workspace name;
+- output directory.
+
+It then offers **Run** or **Copy command**. Authentication remains entirely with the upstream tool (Azure CLI, Fabric notebook context, Databricks environment configuration, etc.).
+
+## Fabric / Power BI MCP tools
+
+With a local Microsoft Fabric Toolbox clone configured, the Galaxy can add supported upstream MCP servers to the active workspace's `.vscode/mcp.json`:
+
+- Semantic Model MCP Server;
+- Microsoft Fabric Management MCP Server;
+- DAX Performance Tuner MCP Server.
+
+DataPass does **not** build these servers for you and does not collect MCP credentials. It verifies the expected upstream executable first. If setup has not been completed, it routes you to the upstream setup instructions instead.
+
+Existing workspace MCP servers are preserved. Replacing an existing server with the same name requires explicit confirmation.

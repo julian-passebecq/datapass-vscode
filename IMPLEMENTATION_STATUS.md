@@ -1,101 +1,105 @@
-# Implementation Status — Pass 2
+# Implementation Status — Pass 3
 
 Date: 2026-09-23
-Branch: `codex/pass2-toolbox-manifest`
+Branch: `codex/pass3-fabric-ops-mcp`
 
 ## Implemented
 
-### Generic project contract
+### Fabric Assessment Tool
 
-- source-controlled `.datapass/project.json`;
-- JSON Schema / editor validation;
-- generic and FOIL templates;
-- relative repository/path resolution;
-- real filesystem checks for repository bindings;
-- project runbook/documentation links;
-- live manifest watcher;
-- local VS Code settings remain explicit overrides;
-- no credential fields are introduced.
+DataPass now provides a guided, credential-free launcher for the upstream Microsoft Fabric Assessment Tool:
 
-### Adapter routing from project manifest
+- detects the `fat` CLI;
+- asks for Synapse or Databricks source;
+- supports Azure/AWS selection for Databricks;
+- accepts an optional workspace name;
+- requires an explicit output directory;
+- generates the upstream `fat assess ...` command;
+- offers **Run** or **Copy command**;
+- never asks for or stores passwords, tokens, client secrets or service-principal credentials.
 
-- Fabric workspace/toolbox context;
-- Databricks repository / Bundle root / default target context;
-- Grafana generator and watch-path context;
-- infrastructure root;
-- Oracle SSH alias through project state / actions.
+The command builder rejects control characters and keeps cloud mutation/authentication in the upstream tool.
 
-### Fabric Toolbox Galaxy
+### Fabric / Power BI MCP workspace integration
 
-Curated catalog expanded to 12 assets verified against:
+Curated MCP tools can now be configured into the active VS Code workspace when a local `microsoft/fabric-toolbox` clone is present and the upstream server has already been built/installed:
 
-`microsoft/fabric-toolbox@c38ea357b804b335d1ed3b558dda38cda778cf70`
+- Semantic Model MCP Server;
+- Microsoft Fabric Management MCP Server;
+- DAX Performance Tuner MCP Server.
 
-Categories currently include:
+DataPass:
 
-- Monitoring
-- Operations
-- Migration
-- Agentic / MCP
-- Real-time
-- CI/CD
+1. resolves the verified upstream tool layout;
+2. verifies the expected executable exists;
+3. reads the existing `.vscode/mcp.json`;
+4. preserves existing MCP servers;
+5. asks before replacing a server with the same name;
+6. writes only command/path metadata — no credentials;
+7. opens the resulting MCP config for inspection.
 
-The Galaxy renders item description, kind, source and upstream verification ref.
+If the upstream server is not ready, DataPass opens setup instructions/local source instead of inventing a configuration.
 
-Supported generic actions:
+DAX Performance Tuner remains Windows-only, matching its upstream prerequisite.
 
-- Open upstream asset;
-- copy upstream repository clone command;
-- open local/upstream configuration instructions.
+### Fabric readiness
 
-Guarded executable path:
+The Fabric Galaxy now surfaces:
 
-- Fabric Security Audit.
-
-Scaffold/deploy and unsupported run actions remain intentionally disabled pending tested workflows.
+- Fabric CLI;
+- Fabric Assessment Tool;
+- Python;
+- PowerShell 7;
+- .NET SDK;
+- workspace `.vscode/mcp.json`;
+- curated Fabric Toolbox catalog.
 
 ## Verification
 
-CI is the merge gate and runs:
+CI remains the merge gate:
 
-1. dependency installation;
+1. dependency install;
 2. strict TypeScript typecheck;
 3. unit tests;
 4. production build;
 5. VSIX packaging;
 6. artifact upload.
 
-New unit coverage includes the portable project-manifest contract and path resolution.
+New unit tests cover:
 
-## Donor / upstream discipline
+- Fabric Assessment Tool command generation and input sanitization;
+- MCP config parsing and non-destructive merging;
+- Semantic Model MCP path generation;
+- Windows-only DAX MCP enforcement.
 
-No vendor extension source was copied.
+## Upstream basis
 
-Architecture and patterns continue to draw from:
+Workflows were derived from the verified Microsoft Fabric Toolbox snapshot:
 
-- `fabricdatapasstoolbox/codex/initial-vscode-companion` for project-state, catalog and guarded-runner concepts;
-- `foil-ai-extension` for lightweight local project binding;
-- Microsoft Fabric Toolbox as an upstream tool catalog, not vendored code.
+`microsoft/fabric-toolbox@c38ea357b804b335d1ed3b558dda38cda778cf70`
 
-The old `databricks-vscode-foil` fork remains reference-only.
+Relevant upstream paths:
 
-## Not yet live-verified
+- `tools/fabric-assessment-tool/README.md`
+- `tools/SemanticModelMCPServer/.vscode/mcp.json`
+- `tools/MicrosoftFabricMgmtMCPServer/README.md`
+- `tools/DAXPerformanceTunerMCPServer/README.md`
 
-- desktop VS Code install/smoke test by the user;
-- real Microsoft Fabric tenant operations;
-- Databricks authentication/deploy/run;
-- Grafana `gcx` against a live instance;
-- Oracle VM Remote SSH;
-- executable workflows for the Fabric Assessment Tool, MCP servers, CI/CD accelerators or monitoring deployments.
+No upstream server source is vendored into DataPass.
 
-## Next action
+## Still pending live desktop verification
 
-Install the Pass 2 VSIX in the user's real VS Code and validate:
+- install the generated VSIX in the user's desktop VS Code;
+- verify detection against the user's actual installed extensions/CLIs;
+- run a real non-production Fabric Assessment Tool scan;
+- build/configure one MCP server locally and start it through VS Code;
+- verify Fabric tenant and Databricks runtime actions independently.
 
-1. Galaxy rendering;
-2. detection of installed Fabric/Databricks/OpenTofu/Remote SSH extensions and CLIs;
-3. creation/loading of `.datapass/project.json`;
-4. FOIL repository binding;
-5. Fabric Toolbox gallery and Security Audit workflow.
+## Next likely pass
 
-After that smoke test, deepen only the platform workflows that prove useful in the real desktop environment.
+After desktop smoke testing:
+
+1. add a read-only Fabric management surface (workspace/items/status) using supported vendor CLI/API tooling;
+2. add `fabric-cicd`/Fabric CLI deployment task generation with explicit dry-run/confirmation boundaries;
+3. add project-level health/export so the Galaxy can produce a compact environment handoff;
+4. deepen Power BI source engineering only where it complements, rather than replaces, specialized tools.

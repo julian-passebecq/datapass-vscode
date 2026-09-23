@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDatabricksBundleCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
+import { buildDatabricksBundleCommand, buildFabricAssessmentCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
 
 test("quoteShellArg escapes POSIX single quotes", () => {
   assert.equal(quoteShellArg("a'b", "linux"), `'a'"'"'b'`);
@@ -38,5 +38,22 @@ test("Fabric security audit requires https and quotes inputs", () => {
   assert.equal(
     buildFabricSecurityAuditCommand("/tmp/audit.ps1", "https://app.fabric.microsoft.com/item", "user@example.com"),
     "& '/tmp/audit.ps1' -Url 'https://app.fabric.microsoft.com/item' -NoPrompt -User 'user@example.com'"
+  );
+});
+
+test("Fabric assessment builds a credential-free Databricks command", () => {
+  assert.equal(
+    buildFabricAssessmentCommand(
+      { source: "databricks", cloud: "azure", workspace: "foil-lab", output: "./assessment output" },
+      "linux"
+    ),
+    "fat assess --source databricks --mode full -o './assessment output' --cloud azure --ws 'foil-lab'"
+  );
+});
+
+test("Fabric assessment rejects control characters", () => {
+  assert.throws(
+    () => buildFabricAssessmentCommand({ source: "synapse", output: "./out\nrm -rf /" }, "linux"),
+    /control characters/
   );
 });
