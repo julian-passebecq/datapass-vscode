@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "source": "data-goblin/power-bi-agentic-development",
+  "verifiedRef": "main",
+  "items": [
+    {
+      "id": "pbip",
+      "name": "PBIP",
+      "description": "PBIP/PBIR source engineering and validation workflows."
+    },
+    {
+      "id": "semantic-models",
+      "name": "Semantic models",
+      "description": "Semantic-model engineering, validation and optimization workflows."
+    },
+    {
+      "id": "reports",
+      "name": "Reports",
+      "description": "Power BI report engineering workflows."
+    },
+    {
+      "id": "pbi-desktop",
+      "name": "Power BI Desktop",
+      "description": "Power BI Desktop-focused local development workflows."
+    },
+    {
+      "id": "tabular-editor",
+      "name": "Tabular Editor",
+      "description": "Tabular Editor-focused semantic-model workflows."
+    },
+    {
+      "id": "fabric-cli",
+      "name": "Fabric CLI",
+      "description": "Agent guidance for official Microsoft Fabric CLI workflows."
+    }
+  ]
+}

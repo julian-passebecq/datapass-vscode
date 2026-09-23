@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana, infrastructure and project profiles.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
