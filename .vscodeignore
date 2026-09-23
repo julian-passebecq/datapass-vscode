@@ -1,0 +1,8 @@
+.github/**
+.vscode/**
+handoff/**
+tests/**
+src/**
+node_modules/**
+*.vsix
+*.map
