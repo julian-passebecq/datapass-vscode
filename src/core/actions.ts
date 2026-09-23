@@ -4,12 +4,19 @@ import {
   buildDatabricksBundleCommand,
   buildFabricAssessmentCommand,
   buildFabricCliCommand,
+  buildFabricDeployCommand,
+  fabricCliArgs,
   buildFabricSecurityAuditCommand,
   buildGrafanaPreviewCommand,
   buildIaCCommand,
   quoteShellArg
 } from "./commands";
 import { parseToolCatalog, type ToolCatalogItem } from "./catalog";
+import { defaultProbeRunner } from "./detection";
+import {
+  renderSafeFabricDeploymentConfig,
+  repositoryPathRelativeToConfig
+} from "./fabricDeployment";
 import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mcp";
 import { commandAvailable } from "./vscodeDetection";
 import { collectGalaxyState } from "./galaxyState";
@@ -68,6 +75,9 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "fabric.login": await runFabricCli("login"); return;
     case "fabric.listWorkspaces": await runFabricCli("list-workspaces"); return;
     case "fabric.listProjectWorkspace": await runFabricCli("list-workspace-items"); return;
+    case "fabric.captureSummary": await captureFabricEnvironmentSummary(); return;
+    case "fabric.scaffoldDeployConfig": await scaffoldFabricDeployConfig(); return;
+    case "fabric.copyDeployCommand": await copyFabricDeployCommand(); return;
     case "fabric.securityAudit": await runFabricSecurityAudit(extensionUri); return;
     case "fabric.openCostAnalysis": await openUrl(URLS["fabric.costAnalysis"]!); return;
     case "fabric.configureToolbox": await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone"); return;
@@ -156,6 +166,146 @@ async function openProjectRepository(key: string): Promise<void> {
     return;
   }
   await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(root), { forceNewWindow: true });
+}
+
+async function captureFabricEnvironmentSummary(): Promise<void> {
+  const projectConfig = await getProjectPlatformConfig();
+  const workspace = projectConfig?.fabric?.workspaceName?.trim();
+  if (!workspace) {
+    void vscode.window.showWarningMessage(
+      "DataPass: declare platforms.fabric.workspaceName before capturing a Fabric environment summary."
+    );
+    return;
+  }
+
+  const channel = vscode.window.createOutputChannel("DataPass Fabric Environment");
+  channel.clear();
+  channel.appendLine(`DataPass Fabric Environment — ${workspace}`);
+  channel.appendLine("Read-only capture using the official Fabric CLI.");
+  channel.appendLine("");
+
+  const checks: Array<{ title: string; args: string[] }> = [
+    { title: "Workspace", args: fabricCliArgs("get-workspace", workspace) },
+    { title: "Workspace items", args: fabricCliArgs("list-workspace-items", workspace) }
+  ];
+
+  for (const check of checks) {
+    channel.appendLine(`## ${check.title}`);
+    const result = await defaultProbeRunner("fab", check.args, 15000);
+    if (result.ok) {
+      channel.appendLine(result.output || "(no output)");
+    } else {
+      channel.appendLine(`ERROR: ${result.error || "Fabric CLI command failed."}`);
+    }
+    channel.appendLine("");
+  }
+
+  channel.appendLine("No Fabric mutation command was executed.");
+  channel.show(true);
+}
+
+async function scaffoldFabricDeployConfig(): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    void vscode.window.showWarningMessage("DataPass: open a workspace folder before scaffolding Fabric deployment.");
+    return;
+  }
+
+  const projectConfig = await getProjectPlatformConfig();
+  const fabric = projectConfig?.fabric;
+  if (!fabric?.workspaceName?.trim() && !fabric?.workspaceId?.trim()) {
+    void vscode.window.showWarningMessage(
+      "DataPass: verify and declare a Fabric workspace name or ID in .datapass/project.json first."
+    );
+    return;
+  }
+
+  const deployment = fabric.deployment;
+  const configRelative = deployment?.configPath?.trim() || ".deploy/fabric.yml";
+  const repositoryRelative = deployment?.repositoryDirectory?.trim() || ".";
+  const configPath = resolveManifestPath(workspaceRoot, configRelative);
+  const repositoryPath = resolveManifestPath(workspaceRoot, repositoryRelative);
+  const repositoryFromConfig = repositoryPathRelativeToConfig(configPath, repositoryPath);
+
+  let content: string;
+  try {
+    content = renderSafeFabricDeploymentConfig({
+      workspaceName: fabric.workspaceName,
+      workspaceId: fabric.workspaceId,
+      repositoryDirectory: repositoryFromConfig
+    });
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `DataPass: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return;
+  }
+
+  const configUri = vscode.Uri.file(configPath);
+  try {
+    await vscode.workspace.fs.stat(configUri);
+    const choice = await vscode.window.showWarningMessage(
+      `Fabric deployment config already exists at ${configRelative}.`,
+      { modal: true },
+      "Open existing",
+      "Replace with safe baseline"
+    );
+    if (choice === "Open existing") {
+      await vscode.window.showTextDocument(configUri);
+      return;
+    }
+    if (choice !== "Replace with safe baseline") return;
+  } catch {
+    // file does not exist
+  }
+
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(configPath)));
+  await vscode.workspace.fs.writeFile(configUri, new TextEncoder().encode(content));
+  await vscode.window.showTextDocument(configUri);
+  void vscode.window.showInformationMessage(
+    "DataPass: created Fabric deployment config with unpublish disabled. Review it before any deployment."
+  );
+}
+
+async function copyFabricDeployCommand(): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    void vscode.window.showWarningMessage("DataPass: open a workspace folder first.");
+    return;
+  }
+
+  const projectConfig = await getProjectPlatformConfig();
+  const fabric = projectConfig?.fabric;
+  const deployment = fabric?.deployment;
+  const configRelative = deployment?.configPath?.trim() || ".deploy/fabric.yml";
+  const configPath = resolveManifestPath(workspaceRoot, configRelative);
+
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(configPath));
+  } catch {
+    void vscode.window.showWarningMessage(
+      "DataPass: Fabric deployment config does not exist yet. Use Scaffold deploy config first."
+    );
+    return;
+  }
+
+  let command: string;
+  try {
+    command = buildFabricDeployCommand(
+      configRelative,
+      deployment?.targetEnvironment
+    );
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `DataPass: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return;
+  }
+
+  await vscode.env.clipboard.writeText(command);
+  void vscode.window.showWarningMessage(
+    "DataPass copied a Fabric deployment command but did not run it. The generated baseline disables unpublish; review the config before execution."
+  );
 }
 
 async function runFabricCli(
