@@ -9,7 +9,7 @@ export class ObservabilityAdapter implements PlatformAdapter {
   readonly displayName = "Observability / Grafana";
 
   async detect(): Promise<PlatformState> {
-    const [gcx, tofu, terraform] = await detectManyCli([
+    const detected = await detectManyCli([
       { id: "gcx", label: "Grafana gcx", command: "gcx", args: ["--version"] },
       { id: "tofu", label: "OpenTofu", command: "tofu", args: ["version"] },
       { id: "terraform", label: "Terraform", command: "terraform", args: ["version"] }
