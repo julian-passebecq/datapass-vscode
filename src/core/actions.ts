@@ -45,6 +45,10 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     await openProjectRepository(action.slice("project.openRepo::".length));
     return;
   }
+  if (action.startsWith("project.openLink::")) {
+    await openProjectLink(action.slice("project.openLink::".length));
+    return;
+  }
 
   switch (action) {
     case "refresh": await vscode.commands.executeCommand("datapass.refresh"); return;
@@ -107,6 +111,17 @@ async function openProjectManifest(): Promise<void> {
     return;
   }
   await vscode.window.showTextDocument(result.uri);
+}
+
+async function openProjectLink(indexText: string): Promise<void> {
+  const index = Number(indexText);
+  const manifest = (await readProjectManifest()).manifest;
+  const link = Number.isInteger(index) ? manifest?.links?.[index] : undefined;
+  if (!link) {
+    void vscode.window.showWarningMessage("DataPass: project link is no longer available.");
+    return;
+  }
+  await openUrl(link.url);
 }
 
 async function openProjectRepository(key: string): Promise<void> {
