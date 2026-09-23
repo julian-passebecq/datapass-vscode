@@ -22,6 +22,11 @@ import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mc
 import { commandAvailable } from "./vscodeDetection";
 import { collectGalaxyState } from "./galaxyState";
 import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
+import {
+  buildCopilotMarketplaceCommand,
+  buildCopilotPluginInstallCommand,
+  type PowerBiAgenticPlugin
+} from "./powerbiAgentic";
 import { getFoilBinding } from "../profiles/foil";
 import {
   getProjectPlatformConfig,
@@ -52,6 +57,10 @@ const URLS: Record<string, string> = {
 export async function executeGalaxyAction(action: string, extensionUri: vscode.Uri): Promise<void> {
   if (action.startsWith("fabric.catalog::")) {
     await executeFabricCatalogAction(action, extensionUri);
+    return;
+  }
+  if (action.startsWith("powerbi.installPlugin::")) {
+    await copyPowerBiPluginInstall(action.slice("powerbi.installPlugin::".length));
     return;
   }
   if (action.startsWith("project.openRepo::")) {
@@ -86,6 +95,7 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "databricks.open": await openDatabricks(); return;
     case "databricks.copyValidate": await copyDatabricks("validate"); return;
     case "databricks.copyDeploy": await copyDatabricks("deploy"); return;
+    case "powerbi.addMarketplace": await copyPowerBiMarketplaceAdd(); return;
     case "powerbi.openAgentic": await openUrl(URLS["powerbi.agentic"]!); return;
     case "powerbi.openMacguyver": await openUrl(URLS["powerbi.macguyver"]!); return;
     case "powerbi.openPbiBench": await openUrl(URLS["powerbi.pbibench"]!); return;
@@ -102,6 +112,34 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "foil.openOracle": await openFoilOracle(); return;
     default: void vscode.window.showWarningMessage(`DataPass: unknown action ${action}`);
   }
+}
+
+async function copyPowerBiMarketplaceAdd(): Promise<void> {
+  const command = buildCopilotMarketplaceCommand();
+  await vscode.env.clipboard.writeText(command);
+  void vscode.window.showInformationMessage(
+    "DataPass: copied Copilot CLI marketplace registration command. Nothing was installed."
+  );
+}
+
+async function copyPowerBiPluginInstall(pluginId: string): Promise<void> {
+  const allowed: PowerBiAgenticPlugin[] = [
+    "pbip",
+    "semantic-models",
+    "reports",
+    "pbi-desktop",
+    "tabular-editor",
+    "fabric-cli"
+  ];
+  if (!allowed.includes(pluginId as PowerBiAgenticPlugin)) {
+    void vscode.window.showWarningMessage(`DataPass: unsupported Power BI agentic plugin "${pluginId}".`);
+    return;
+  }
+  const command = buildCopilotPluginInstallCommand(pluginId as PowerBiAgenticPlugin);
+  await vscode.env.clipboard.writeText(command);
+  void vscode.window.showInformationMessage(
+    `DataPass: copied Copilot CLI install command for ${pluginId}. Nothing was installed.`
+  );
 }
 
 async function copyEnvironmentSnapshot(extensionUri: vscode.Uri): Promise<void> {
