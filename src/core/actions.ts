@@ -172,7 +172,11 @@ async function executeFabricCatalogAction(actionId: string, extensionUri: vscode
       await copyCatalogCloneCommand(item);
       return;
     case "configure":
-      await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone");
+      if (item.id === "fabric-security-audit") {
+        await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone");
+        return;
+      }
+      await openCatalogConfiguration(item);
       return;
     case "run":
       if (item.id === "fabric-security-audit") {
@@ -183,6 +187,22 @@ async function executeFabricCatalogAction(actionId: string, extensionUri: vscode
   }
 
   void vscode.window.showInformationMessage(`DataPass: ${item.name} · ${action} is catalogued but intentionally not automated yet.`);
+}
+
+async function openCatalogConfiguration(item: ToolCatalogItem): Promise<void> {
+  const toolboxRoot = await resolveFabricToolboxRoot();
+  if (toolboxRoot && item.relativePath) {
+    const localUri = vscode.Uri.file(path.join(toolboxRoot, item.relativePath));
+    try {
+      await vscode.workspace.fs.stat(localUri);
+      await vscode.window.showTextDocument(localUri);
+      return;
+    } catch {
+      // fall back to upstream documentation
+    }
+  }
+  await openUrl(item.url);
+  void vscode.window.showInformationMessage(`DataPass: opened upstream setup for ${item.name}.`);
 }
 
 async function copyCatalogCloneCommand(item: ToolCatalogItem): Promise<void> {
