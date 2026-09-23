@@ -27,6 +27,7 @@ export class FabricAdapter implements PlatformAdapter {
       await detectCli({ id: "dotnet", label: ".NET SDK", command: "dotnet", args: ["--version"] })
     ];
     const workspaceMcp = await anyWorkspaceFile([".vscode/mcp.json"]);
+    const fabAvailable = integrationTools.find(tool => tool.id === "fab")?.available ?? false;
     const config = vscode.workspace.getConfiguration("datapass");
     const localOverride = config.get<string>("fabric.toolboxRoot", "").trim();
     const platformConfig = await getProjectPlatformConfig();
@@ -62,6 +63,10 @@ export class FabricAdapter implements PlatformAdapter {
       actions: [
         { id: "fabric.open", label: "Open Fabric", enabled: true, kind: "open" },
         { id: "fabric.openStudio", label: "Open Fabric Studio", enabled: true, kind: "open" },
+        { id: "fabric.authStatus", label: "Auth status", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run official fab auth status." : "Install Microsoft Fabric CLI first." },
+        { id: "fabric.login", label: "Login", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run official interactive fab auth login." : "Install Microsoft Fabric CLI first." },
+        { id: "fabric.listWorkspaces", label: "List workspaces", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run read-only fab ls." : "Install Microsoft Fabric CLI first." },
+        { id: "fabric.listProjectWorkspace", label: "Project workspace", enabled: fabAvailable && Boolean(platformConfig?.fabric?.workspaceName), kind: "run", detail: platformConfig?.fabric?.workspaceName ? `Inspect ${platformConfig.fabric.workspaceName}.Workspace with fab ls -l.` : "Declare platforms.fabric.workspaceName in the project manifest." },
         { id: "fabric.openToolbox", label: "Fabric Toolbox", enabled: true, kind: "link" },
         { id: "fabric.securityAudit", label: "Security audit", enabled: Boolean(toolboxRoot), kind: "run", detail: toolboxRoot ? "Run the upstream Fabric Toolbox security audit script." : "Configure a local Fabric Toolbox clone first." },
         { id: "fabric.openCostAnalysis", label: "Cost Analysis", enabled: true, kind: "link" },
