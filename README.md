@@ -1,73 +1,73 @@
 # DataPass VS Code — Data Platform Control Plane
 
-This repository is the implementation home for a **single VS Code control-plane extension** that composes existing data-platform tools instead of forking or replacing them.
+DataPass VS Code is a **single VS Code control-plane extension** for composing existing data-platform tools around project context. It does not fork or replace Microsoft Fabric, Databricks, Grafana, OpenTofu/Terraform, Power BI tooling, Remote SSH, Docker or Kubernetes.
 
-It is **not** the Datapass learning Workbench application.
+## Pass 1 surfaces
 
-## Product role
+- **Galaxy** — one status/control view for projects and platforms.
+- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode and Fabric CLI; exposes a curated, manifest-driven Fabric Toolbox catalog and guarded upstream Security Audit action.
+- **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
+- **Power BI** — detects PBIP/TMDL/PBIR source projects and links specialized/agentic tooling.
+- **Observability / Grafana** — treats dashboards as code with `gcx`, Foundation SDK and OpenTofu/Terraform deployment paths.
+- **Infrastructure** — detects OpenTofu/Terraform, Docker, Kubernetes, SSH and peer extensions without replacing them.
+- **Projects** — generic profile boundary with **FOIL** as profile #1.
 
-One VSIX, modular internal adapters:
+## Architecture rule
 
-```mermaid
-flowchart TB
-  CP[DataPass VS Code Control Plane]
-  CP --> FAB[Fabric adapter]
-  CP --> PBI[Power BI adapter]
-  CP --> DBX[Databricks adapter]
-  CP --> OBS[Observability adapter]
-  CP --> INF[Infrastructure adapter]
-  CP --> PROJ[Project profiles]
+One VSIX first. Platform code is separated internally into adapters so a domain can be packaged independently later only if a real distribution, runtime, security or lifecycle boundary appears.
 
-  FAB --> MSF[Microsoft Fabric extension]
-  FAB --> FSO[Fabric Studio]
-  FAB --> OL[OneLake-VSCode]
-  FAB --> FCLI[Fabric CLI]
-  FAB --> FTB[Fabric Toolbox catalog]
-  FAB --> FCICD[fabric-cicd]
+## Development
 
-  DBX --> DBE[Official Databricks extension]
-  DBX --> DCLI[Databricks CLI / Bundles]
-
-  OBS --> GCX[Grafana gcx]
-  OBS --> GSDK[Grafana Foundation SDK]
-  OBS --> GTF[Grafana provider]
-
-  INF --> TOFU[OpenTofu / Terraform]
-  INF --> K8S[Kubernetes / Docker]
-  INF --> SSH[Remote SSH]
-
-  PROJ --> FOIL[FOIL profile]
-  FOIL --> FAB
-  FOIL --> DBX
-  FOIL --> OBS
-  FOIL --> INF
+```bash
+npm install
+npm run check
+npm test
+npm run build
 ```
 
-## Locked principles
+Press **F5** with the included `Run DataPass Extension` launch configuration to open an Extension Development Host.
 
-- One extension first. Do **not** create separate Fabric, Power BI or Databricks VSIX packages in Pass 1.
-- Adapters integrate existing official/community extensions, CLIs, SDKs and toolbox assets.
-- Do not fork vendor client stacks.
-- Project-specific context is supplied by project profiles. FOIL is the first pilot.
-- Specialized heavy UI may stay external and be launched from VS Code.
-- Tool availability must degrade gracefully: missing vendor extensions or CLIs must never make the extension fail to activate.
-- Never store credentials, tokens or client secrets in project manifests.
-- GitHub repositories remain implementation truth.
+## Package locally
 
-## Implementation handoff
+```bash
+npm run package
+```
 
-Read in order:
+This produces a `.vsix`. Marketplace publication is not required; install it through **Extensions → … → Install from VSIX…**.
 
-1. [handoff/PRO_MASTER_PROMPT.md](handoff/PRO_MASTER_PROMPT.md)
-2. [handoff/ARCHITECTURE_LOCK.md](handoff/ARCHITECTURE_LOCK.md)
-3. [handoff/SOURCE_MAP.md](handoff/SOURCE_MAP.md)
-4. [handoff/PASS1_ACCEPTANCE.md](handoff/PASS1_ACCEPTANCE.md)
+## FOIL pilot
 
-Global architecture registry:
+Use:
 
-- `julian-passebecq/dataprojects/registry/vscode-control-plane.json`
-- `julian-passebecq/dataprojects/registry/vscode-tool-catalog.json`
+- `datapass.foil.controlRoot`
+- `datapass.foil.databricksRoot`
+- `datapass.foil.oracleSshHost`
 
-## Current state
+The extension never treats these local bindings as engineering truth. FOIL authoritative state remains in the existing FOIL project authorities and repositories.
 
-Architecture handoff seeded 2026-09-23. Implementation has not yet been accepted into this repository.
+## Fabric Toolbox
+
+Set `datapass.fabric.toolboxRoot` to a local clone of `microsoft/fabric-toolbox` or the tracked local fork. DataPass does not vendor the Toolbox wholesale; it reads a curated catalog and launches upstream assets where appropriate.
+
+The first guarded execution path is **Fabric Security Audit**:
+
+1. configure the local Toolbox root;
+2. click **Security audit**;
+3. supply a full HTTPS Fabric/Power BI URL;
+4. choose **Run** or **Copy command**.
+
+No credentials are stored by DataPass.
+
+## Grafana as code
+
+Configure `datapass.grafana.generatorCommand` and optionally `datapass.grafana.watchPath`. The Galaxy can generate a `gcx dev serve` preview command while keeping dashboard source in Git.
+
+## Safety
+
+- no cloud credentials are persisted by DataPass;
+- vendor authentication remains vendor-owned;
+- mutating cloud/IaC commands are explicit user actions;
+- Pass 1 generally **copies** deploy/plan commands instead of silently executing them;
+- missing extensions/CLIs degrade to actionable Missing/Partial states rather than activation failure.
+
+See `handoff/` for the architecture lock and acceptance criteria, and `IMPLEMENTATION_STATUS.md` for the current build state.
