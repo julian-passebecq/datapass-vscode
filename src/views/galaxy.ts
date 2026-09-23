@@ -151,7 +151,8 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
       groups.get(category).forEach(item => {
         const row = elt('div', 'catalog-item');
         row.appendChild(elt('div', 'catalog-name', item.name));
-        row.appendChild(elt('div', 'catalog-meta', item.kind + ' · ' + item.source));
+        row.appendChild(elt('div', 'catalog-meta', item.kind + ' · ' + item.source + (item.verifiedRef ? ' · verified ' + item.verifiedRef.slice(0, 8) : '')));
+        if (item.description) row.appendChild(elt('div', 'detail', item.description));
         addActions(row, item.actions);
         group.appendChild(row);
       });
