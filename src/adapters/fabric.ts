@@ -12,7 +12,7 @@ export class FabricAdapter implements PlatformAdapter {
   constructor(private readonly extensionUri: vscode.Uri) {}
 
   async detect(): Promise<PlatformState> {
-    const tools: ToolProbe[] = [
+    const integrationTools: ToolProbe[] = [
       detectExtension("fabric.vscode-fabric", "Microsoft Fabric VS Code"),
       detectExtension("GerhardBrueckl.fabricstudio", "Fabric Studio"),
       detectExtension("GerhardBrueckl.onelake-vscode", "OneLake-VSCode"),
@@ -20,16 +20,28 @@ export class FabricAdapter implements PlatformAdapter {
     ];
     const toolboxRoot = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
     const catalog = await this.loadCatalog();
+    const tools: ToolProbe[] = [
+      ...integrationTools,
+      {
+        id: "fabric-toolbox-catalog",
+        label: "Fabric Toolbox catalog",
+        available: catalog.items.length > 0,
+        version: `${catalog.items.length} assets`,
+        detail: toolboxRoot ? `Local clone: ${toolboxRoot}` : "Catalog available; local clone not configured"
+      }
+    ];
     return {
       id: this.id,
       title: this.displayName,
-      status: deriveStatus(tools, Boolean(toolboxRoot)),
-      summary: `${tools.filter(tool => tool.available).length}/${tools.length} Fabric integration surfaces detected. ${catalog.items.length} curated Toolbox assets registered.`,
+      status: deriveStatus(integrationTools, Boolean(toolboxRoot)),
+      summary: `${integrationTools.filter(tool => tool.available).length}/${integrationTools.length} Fabric integration surfaces detected. ${catalog.items.length} curated Toolbox assets registered.`,
       tools,
       actions: [
         { id: "fabric.open", label: "Open Fabric", enabled: true, kind: "open" },
         { id: "fabric.openStudio", label: "Open Fabric Studio", enabled: true, kind: "open" },
         { id: "fabric.openToolbox", label: "Fabric Toolbox", enabled: true, kind: "link" },
+        { id: "fabric.securityAudit", label: "Security audit", enabled: Boolean(toolboxRoot), kind: "run", detail: toolboxRoot ? "Run the upstream Fabric Toolbox security audit script." : "Configure a local Fabric Toolbox clone first." },
+        { id: "fabric.openCostAnalysis", label: "Cost Analysis", enabled: true, kind: "link" },
         { id: "fabric.configureToolbox", label: toolboxRoot ? "Change local Toolbox" : "Configure local Toolbox", enabled: true, kind: "configure" }
       ],
       details: [
