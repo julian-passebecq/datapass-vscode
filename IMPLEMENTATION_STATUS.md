@@ -1,46 +1,101 @@
-# Implementation Status — Pass 1 Core
+# Implementation Status — Pass 2
 
 Date: 2026-09-23
-Branch: `codex/pass1-control-plane`
+Branch: `codex/pass2-toolbox-manifest`
 
-## Implemented in this slice
+## Implemented
 
-- single DataPass VS Code extension shell;
-- DataPass Activity Bar + Galaxy webview;
-- common platform status/action model;
-- injectable CLI detection with timeout/failure degradation;
-- Microsoft Fabric adapter with official/community extension detection, Fabric CLI detection, and manifest-driven Fabric Toolbox catalog;
-- Databricks adapter using the official extension identity + CLI + Asset Bundle project detection;
-- Power BI source adapter for PBIP/TMDL/PBIR markers;
-- Grafana observability-as-code adapter for `gcx` + OpenTofu/Terraform + generator binding;
-- infrastructure adapter for OpenTofu/Terraform/Docker/Kubernetes/Remote SSH peer tooling;
-- generic project profile contract and FOIL profile #1;
-- safe command generation/copy actions for Databricks Bundles, Grafana preview and OpenTofu;
-- CI for typecheck, tests, build and VSIX packaging.
+### Generic project contract
 
-## Donor use
+- source-controlled `.datapass/project.json`;
+- JSON Schema / editor validation;
+- generic and FOIL templates;
+- relative repository/path resolution;
+- real filesystem checks for repository bindings;
+- project runbook/documentation links;
+- live manifest watcher;
+- local VS Code settings remain explicit overrides;
+- no credential fields are introduced.
 
-No donor source file was copied verbatim in this slice.
+### Adapter routing from project manifest
 
-Patterns were reimplemented from:
+- Fabric workspace/toolbox context;
+- Databricks repository / Bundle root / default target context;
+- Grafana generator and watch-path context;
+- infrastructure root;
+- Oracle SSH alias through project state / actions.
 
-- `julian-passebecq/fabricdatapasstoolbox@82cfb48f59a59d4db89f1072a07575a2865bd3b9` — extension detection, graceful command fallback, curated toolbox/catalog and guarded tool runner concepts;
-- `julian-passebecq/foil-ai-extension@4a7c7f09d1f3dc651ba929d49d746a0a8d1246dd` — lightweight Activity Bar, status, local repo binding and workspace detection concepts.
+### Fabric Toolbox Galaxy
 
-The Databricks vendor fork was inspected only as a command/reference experiment. No Databricks vendor source is included.
+Curated catalog expanded to 12 assets verified against:
+
+`microsoft/fabric-toolbox@c38ea357b804b335d1ed3b558dda38cda778cf70`
+
+Categories currently include:
+
+- Monitoring
+- Operations
+- Migration
+- Agentic / MCP
+- Real-time
+- CI/CD
+
+The Galaxy renders item description, kind, source and upstream verification ref.
+
+Supported generic actions:
+
+- Open upstream asset;
+- copy upstream repository clone command;
+- open local/upstream configuration instructions.
+
+Guarded executable path:
+
+- Fabric Security Audit.
+
+Scaffold/deploy and unsupported run actions remain intentionally disabled pending tested workflows.
+
+## Verification
+
+CI is the merge gate and runs:
+
+1. dependency installation;
+2. strict TypeScript typecheck;
+3. unit tests;
+4. production build;
+5. VSIX packaging;
+6. artifact upload.
+
+New unit coverage includes the portable project-manifest contract and path resolution.
+
+## Donor / upstream discipline
+
+No vendor extension source was copied.
+
+Architecture and patterns continue to draw from:
+
+- `fabricdatapasstoolbox/codex/initial-vscode-companion` for project-state, catalog and guarded-runner concepts;
+- `foil-ai-extension` for lightweight local project binding;
+- Microsoft Fabric Toolbox as an upstream tool catalog, not vendored code.
+
+The old `databricks-vscode-foil` fork remains reference-only.
 
 ## Not yet live-verified
 
-- real Microsoft Fabric tenant commands;
-- real Databricks authentication/deploy/run;
+- desktop VS Code install/smoke test by the user;
+- real Microsoft Fabric tenant operations;
+- Databricks authentication/deploy/run;
 - Grafana `gcx` against a live instance;
 - Oracle VM Remote SSH;
-- packaged VSIX installation in the user's desktop VS Code.
+- executable workflows for the Fabric Assessment Tool, MCP servers, CI/CD accelerators or monitoring deployments.
 
-## Next pass
+## Next action
 
-1. Make CI green and package the VSIX.
-2. Exercise the Galaxy in Extension Development Host.
-3. Deepen Fabric Toolbox actions by migrating the proven guarded runner subset from the old Fabric prototype.
-4. Add local project manifest support so FOIL and future projects can declare tool bindings without putting secrets in source control.
-5. Live-test FOIL Databricks and Fabric paths only after the generic shell is stable.
+Install the Pass 2 VSIX in the user's real VS Code and validate:
+
+1. Galaxy rendering;
+2. detection of installed Fabric/Databricks/OpenTofu/Remote SSH extensions and CLIs;
+3. creation/loading of `.datapass/project.json`;
+4. FOIL repository binding;
+5. Fabric Toolbox gallery and Security Audit workflow.
+
+After that smoke test, deepen only the platform workflows that prove useful in the real desktop environment.

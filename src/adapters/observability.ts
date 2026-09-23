@@ -3,6 +3,7 @@ import { detectManyCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { anyWorkspaceFile } from "../core/vscodeDetection";
+import { getProjectPlatformConfig } from "../core/projectState";
 
 export class ObservabilityAdapter implements PlatformAdapter {
   readonly id = "observability";
@@ -18,7 +19,10 @@ export class ObservabilityAdapter implements PlatformAdapter {
     const tofu = detected[1]!;
     const terraform = detected[2]!;
     const sourceDetected = await anyWorkspaceFile(["**/grafana/**/*.{ts,go,json,yaml,yml}", "**/*dashboard*.{ts,go,json,yaml,yml}"]);
-    const generator = vscode.workspace.getConfiguration("datapass").get<string>("grafana.generatorCommand", "").trim();
+    const config = vscode.workspace.getConfiguration("datapass");
+    const projectConfig = await getProjectPlatformConfig();
+    const generator = config.get<string>("grafana.generatorCommand", "").trim() || projectConfig?.grafana?.generatorCommand?.trim() || "";
+    const watchPath = config.get<string>("grafana.watchPath", "").trim() || projectConfig?.grafana?.watchPath?.trim() || "";
     const tools: ToolProbe[] = [
       gcx,
       tofu,
@@ -37,7 +41,7 @@ export class ObservabilityAdapter implements PlatformAdapter {
       summary: "Grafana is treated as observability as code: source -> Foundation SDK -> gcx preview -> Git -> deployment.",
       tools,
       actions: [
-        { id: "grafana.copyPreview", label: "Copy gcx preview", enabled: Boolean(gcx.available && generator), kind: "copy" },
+        { id: "grafana.copyPreview", label: "Copy gcx preview", enabled: Boolean(gcx.available && generator), kind: "copy", detail: watchPath ? `Watch: ${watchPath}` : undefined },
         { id: "grafana.openFoundation", label: "Foundation SDK", enabled: true, kind: "link" },
         { id: "grafana.openProvider", label: "Grafana provider", enabled: true, kind: "link" }
       ]

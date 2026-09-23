@@ -53,7 +53,15 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
   .summary, .no { color: var(--vscode-descriptionForeground); }
   .summary { margin: 7px 0; font-size: 12px; }
   .tool, .binding { display:flex; justify-content:space-between; gap:6px; font-size:11px; padding:2px 0; }
+  .detail { color: var(--vscode-descriptionForeground); font-size: 10px; margin-top: 4px; }
   .actions { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .catalog { margin-top: 10px; border-top: 1px solid var(--vscode-widget-border); padding-top: 8px; }
+  .catalog > summary { cursor:pointer; font-weight:600; font-size:11px; }
+  .catalog-group { margin-top:8px; }
+  .catalog-category { color: var(--vscode-descriptionForeground); font-size:10px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px; }
+  .catalog-item { border-left:2px solid var(--vscode-widget-border); padding:5px 0 5px 7px; margin-bottom:5px; }
+  .catalog-name { font-size:11px; font-weight:600; }
+  .catalog-meta { color:var(--vscode-descriptionForeground); font-size:9px; margin-top:2px; }
   button { border: 1px solid var(--vscode-button-border, transparent); background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); border-radius: 3px; padding: 4px 7px; font: inherit; font-size: 11px; cursor:pointer; }
   button:hover { background: var(--vscode-button-secondaryHoverBackground); }
   button.primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
@@ -90,7 +98,7 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
   function renderProject(project) {
     const card = elt('section', 'card');
     const head = elt('div', 'head');
-    head.appendChild(elt('span', 'title', project.title + ' project'));
+    head.appendChild(elt('span', 'title', 'Project · ' + project.title));
     head.appendChild(elt('span', 'badge ' + (project.active ? 'ready' : 'unbound'), project.active ? 'active' : 'available'));
     card.appendChild(head);
     card.appendChild(elt('div', 'summary', project.summary));
@@ -117,8 +125,40 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
       row.appendChild(elt('span', tool.available ? 'yes' : 'no', (tool.available ? 'detected' : 'missing') + (tool.version ? ' · ' + tool.version : '')));
       card.appendChild(row);
     });
+    (platform.details || []).forEach(detail => card.appendChild(elt('div', 'detail', detail)));
     addActions(card, platform.actions);
+    if (platform.catalog && platform.catalog.items && platform.catalog.items.length) {
+      card.appendChild(renderCatalog(platform.catalog));
+    }
     return card;
+  }
+
+  function renderCatalog(catalog) {
+    const wrapper = elt('details', 'catalog');
+    const summary = elt('summary', '', catalog.title + ' · ' + catalog.items.length);
+    wrapper.appendChild(summary);
+
+    const groups = new Map();
+    catalog.items.forEach(item => {
+      const items = groups.get(item.category) || [];
+      items.push(item);
+      groups.set(item.category, items);
+    });
+
+    Array.from(groups.keys()).sort().forEach(category => {
+      const group = elt('div', 'catalog-group');
+      group.appendChild(elt('div', 'catalog-category', category));
+      groups.get(category).forEach(item => {
+        const row = elt('div', 'catalog-item');
+        row.appendChild(elt('div', 'catalog-name', item.name));
+        row.appendChild(elt('div', 'catalog-meta', item.kind + ' · ' + item.source + (item.verifiedRef ? ' · verified ' + item.verifiedRef.slice(0, 8) : '')));
+        if (item.description) row.appendChild(elt('div', 'detail', item.description));
+        addActions(row, item.actions);
+        group.appendChild(row);
+      });
+      wrapper.appendChild(group);
+    });
+    return wrapper;
   }
 
   function render(state) {

@@ -3,6 +3,8 @@ import { detectManyCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { detectExtension } from "../core/vscodeDetection";
+import { getProjectPlatformConfig } from "../core/projectState";
+import { resolveManifestPath } from "../core/projectManifest";
 
 export class InfrastructureAdapter implements PlatformAdapter {
   readonly id = "infrastructure";
@@ -24,12 +26,16 @@ export class InfrastructureAdapter implements PlatformAdapter {
       detectExtension("ms-vscode-remote.remote-ssh", "Remote SSH"),
       ...cli
     ];
-    const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const projectConfig = await getProjectPlatformConfig();
+    const manifestRoot = projectConfig?.infrastructure?.root?.trim();
+    const root = workspaceRoot && manifestRoot ? resolveManifestPath(workspaceRoot, manifestRoot) : workspaceRoot;
     return {
       id: this.id,
       title: this.displayName,
       status: deriveStatus(tools, Boolean(root)),
       summary: "Infrastructure remains in best-of-breed peer extensions and CLIs; DataPass adds project-aware status and safe commands.",
+      details: [root ? `Infrastructure root: ${root}` : "No infrastructure root is bound."],
       tools,
       actions: [
         { id: "infra.copyTofuValidate", label: "Copy tofu validate", enabled: Boolean(root && cli.find(tool => tool.id === "tofu")?.available), kind: "copy" },

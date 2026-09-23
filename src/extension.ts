@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
+import { executeGalaxyAction } from "./core/actions";
 
 export function activate(context: vscode.ExtensionContext): void {
   const galaxy = new GalaxyViewProvider(context.extensionUri);
@@ -28,6 +29,17 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("datapass.openGalaxy", async () => {
       await vscode.commands.executeCommand("workbench.actions.view.openView", GalaxyViewProvider.viewType);
     }),
+    vscode.commands.registerCommand("datapass.initializeProjectManifest", async () => {
+      await executeGalaxyAction("project.initializeManifest", context.extensionUri);
+      await galaxy.refresh();
+    }),
+    vscode.commands.registerCommand("datapass.initializeFoilProjectManifest", async () => {
+      await executeGalaxyAction("project.initializeManifestFoil", context.extensionUri);
+      await galaxy.refresh();
+    }),
+    vscode.commands.registerCommand("datapass.openProjectManifest", async () => {
+      await executeGalaxyAction("project.openManifest", context.extensionUri);
+    }),
     vscode.commands.registerCommand("datapass.selectFoilControlRoot", async () => {
       await selectFoilRoot("foil.controlRoot", "Select foil-control-v1 repository");
       await galaxy.refresh();
@@ -38,12 +50,18 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
-  const watcher = vscode.workspace.createFileSystemWatcher("**/{databricks,bundle}.{yml,yaml}");
   const refresh = () => void galaxy.refresh();
-  watcher.onDidCreate(refresh);
-  watcher.onDidChange(refresh);
-  watcher.onDidDelete(refresh);
-  context.subscriptions.push(watcher);
+  const bundleWatcher = vscode.workspace.createFileSystemWatcher("**/{databricks,bundle}.{yml,yaml}");
+  bundleWatcher.onDidCreate(refresh);
+  bundleWatcher.onDidChange(refresh);
+  bundleWatcher.onDidDelete(refresh);
+
+  const manifestWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/project.json");
+  manifestWatcher.onDidCreate(refresh);
+  manifestWatcher.onDidChange(refresh);
+  manifestWatcher.onDidDelete(refresh);
+
+  context.subscriptions.push(bundleWatcher, manifestWatcher);
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(event => {

@@ -16,6 +16,17 @@ export interface PlatformAction {
   detail?: string;
 }
 
+export interface CatalogItemState {
+  id: string;
+  name: string;
+  category: string;
+  kind: string;
+  source: string;
+  description?: string;
+  verifiedRef?: string;
+  actions: PlatformAction[];
+}
+
 export interface PlatformState {
   id: string;
   title: string;
@@ -24,6 +35,10 @@ export interface PlatformState {
   tools: ToolProbe[];
   actions: PlatformAction[];
   details?: string[];
+  catalog?: {
+    title: string;
+    items: CatalogItemState[];
+  };
 }
 
 export interface ProjectBinding {

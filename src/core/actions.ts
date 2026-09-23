@@ -1,9 +1,27 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { buildDatabricksBundleCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quoteShellArg } from "./commands";
-import { parseToolCatalog } from "./catalog";
+import {
+  buildDatabricksBundleCommand,
+  buildFabricSecurityAuditCommand,
+  buildGrafanaPreviewCommand,
+  buildIaCCommand,
+  quoteShellArg
+} from "./commands";
+import { parseToolCatalog, type ToolCatalogItem } from "./catalog";
 import { commandAvailable } from "./vscodeDetection";
 import { getFoilBinding } from "../profiles/foil";
+import {
+  getProjectPlatformConfig,
+  resolveProjectRepository,
+  workspaceFolderName
+} from "./projectState";
+import {
+  foilProjectManifest,
+  genericProjectManifest,
+  readProjectManifest,
+  resolveManifestPath,
+  writeProjectManifest
+} from "./projectManifest";
 
 const URLS: Record<string, string> = {
   "fabric.toolbox": "https://github.com/microsoft/fabric-toolbox",
@@ -19,8 +37,24 @@ const URLS: Record<string, string> = {
 };
 
 export async function executeGalaxyAction(action: string, extensionUri: vscode.Uri): Promise<void> {
+  if (action.startsWith("fabric.catalog::")) {
+    await executeFabricCatalogAction(action, extensionUri);
+    return;
+  }
+  if (action.startsWith("project.openRepo::")) {
+    await openProjectRepository(action.slice("project.openRepo::".length));
+    return;
+  }
+  if (action.startsWith("project.openLink::")) {
+    await openProjectLink(action.slice("project.openLink::".length));
+    return;
+  }
+
   switch (action) {
     case "refresh": await vscode.commands.executeCommand("datapass.refresh"); return;
+    case "project.initializeManifest": await initializeProjectManifest("generic"); return;
+    case "project.initializeManifestFoil": await initializeProjectManifest("foil"); return;
+    case "project.openManifest": await openProjectManifest(); return;
     case "fabric.open": await openFabric(); return;
     case "fabric.openStudio": await openFabricStudio(); return;
     case "fabric.openToolbox": await openUrl(URLS["fabric.toolbox"]!); return;
@@ -48,6 +82,63 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
   }
 }
 
+async function initializeProjectManifest(kind: "generic" | "foil"): Promise<void> {
+  if (!vscode.workspace.workspaceFolders?.[0]) {
+    void vscode.window.showWarningMessage("DataPass: open a workspace folder before creating a project manifest.");
+    return;
+  }
+
+  const existing = await readProjectManifest();
+  if (existing.exists) {
+    await openProjectManifest();
+    return;
+  }
+
+  const manifest = kind === "foil"
+    ? foilProjectManifest()
+    : genericProjectManifest(workspaceFolderName());
+
+  const uri = await writeProjectManifest(manifest);
+  await vscode.window.showTextDocument(uri);
+  await vscode.commands.executeCommand("datapass.refresh");
+  void vscode.window.showInformationMessage("DataPass: created .datapass/project.json. Keep secrets out of this file.");
+}
+
+async function openProjectManifest(): Promise<void> {
+  const result = await readProjectManifest();
+  if (!result.uri || !result.exists) {
+    void vscode.window.showWarningMessage("DataPass: no .datapass/project.json exists in this workspace.");
+    return;
+  }
+  await vscode.window.showTextDocument(result.uri);
+}
+
+async function openProjectLink(indexText: string): Promise<void> {
+  const index = Number(indexText);
+  const manifest = (await readProjectManifest()).manifest;
+  const link = Number.isInteger(index) ? manifest?.links?.[index] : undefined;
+  if (!link) {
+    void vscode.window.showWarningMessage("DataPass: project link is no longer available.");
+    return;
+  }
+  await openUrl(link.url);
+}
+
+async function openProjectRepository(key: string): Promise<void> {
+  const root = await resolveProjectRepository(key);
+  if (!root) {
+    void vscode.window.showWarningMessage(`DataPass: project repository "${key}" is not bound.`);
+    return;
+  }
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(root));
+  } catch {
+    void vscode.window.showErrorMessage(`DataPass: project repository path does not exist: ${root}`);
+    return;
+  }
+  await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(root), { forceNewWindow: true });
+}
+
 async function openFabric(): Promise<void> {
   if (await commandAvailable("vscode-fabric.refreshArtifactView")) {
     try {
@@ -72,16 +163,89 @@ async function openFabricStudio(): Promise<void> {
   await openUrl(URLS["fabric.studioMarketplace"]!);
 }
 
+async function executeFabricCatalogAction(actionId: string, extensionUri: vscode.Uri): Promise<void> {
+  const parts = actionId.split("::");
+  const itemId = parts[1];
+  const action = parts[2];
+  if (!itemId || !action) {
+    void vscode.window.showWarningMessage("DataPass: malformed Fabric Toolbox action.");
+    return;
+  }
+
+  const catalog = await loadFabricCatalog(extensionUri);
+  const item = catalog.items.find(candidate => candidate.id === itemId);
+  if (!item) {
+    void vscode.window.showWarningMessage(`DataPass: Fabric Toolbox item "${itemId}" is not registered.`);
+    return;
+  }
+
+  switch (action) {
+    case "read":
+      await openUrl(item.url);
+      return;
+    case "clone":
+      await copyCatalogCloneCommand(item);
+      return;
+    case "configure":
+      if (item.id === "fabric-security-audit") {
+        await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone");
+        return;
+      }
+      await openCatalogConfiguration(item);
+      return;
+    case "run":
+      if (item.id === "fabric-security-audit") {
+        await runFabricSecurityAudit(extensionUri);
+        return;
+      }
+      break;
+  }
+
+  void vscode.window.showInformationMessage(`DataPass: ${item.name} · ${action} is catalogued but intentionally not automated yet.`);
+}
+
+async function openCatalogConfiguration(item: ToolCatalogItem): Promise<void> {
+  const toolboxRoot = await resolveFabricToolboxRoot();
+  if (toolboxRoot && item.relativePath) {
+    const localUri = vscode.Uri.file(path.join(toolboxRoot, item.relativePath));
+    try {
+      await vscode.workspace.fs.stat(localUri);
+      await vscode.window.showTextDocument(localUri);
+      return;
+    } catch {
+      // fall back to upstream documentation
+    }
+  }
+  await openUrl(item.url);
+  void vscode.window.showInformationMessage(`DataPass: opened upstream setup for ${item.name}.`);
+}
+
+async function copyCatalogCloneCommand(item: ToolCatalogItem): Promise<void> {
+  const repoUrl = sourceRepositoryUrl(item.source);
+  if (!repoUrl) {
+    void vscode.window.showWarningMessage(`DataPass: no clone source registered for ${item.source}.`);
+    return;
+  }
+  const command = `git clone ${quoteShellArg(repoUrl)}`;
+  await vscode.env.clipboard.writeText(command);
+  void vscode.window.showInformationMessage(`DataPass: copied clone command for ${item.source}.`);
+}
+
+function sourceRepositoryUrl(source: string): string | undefined {
+  if (/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(source)) {
+    return `https://github.com/${source}.git`;
+  }
+  return undefined;
+}
+
 async function runFabricSecurityAudit(extensionUri: vscode.Uri): Promise<void> {
-  const toolboxRoot = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
+  const toolboxRoot = await resolveFabricToolboxRoot();
   if (!toolboxRoot) {
     void vscode.window.showWarningMessage("DataPass: configure a local Fabric Toolbox clone first.");
     return;
   }
 
-  const catalogUri = vscode.Uri.joinPath(extensionUri, "resources", "catalogs", "fabric-tools.json");
-  const bytes = await vscode.workspace.fs.readFile(catalogUri);
-  const catalog = parseToolCatalog(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
+  const catalog = await loadFabricCatalog(extensionUri);
   const tool = catalog.items.find(item => item.id === "fabric-security-audit");
   if (!tool?.relativePath) {
     void vscode.window.showErrorMessage("DataPass: Fabric Security Audit catalog entry is missing its local path.");
@@ -139,6 +303,23 @@ async function runFabricSecurityAudit(extensionUri: vscode.Uri): Promise<void> {
   void vscode.window.showInformationMessage("DataPass: Fabric Security Audit command copied.");
 }
 
+async function loadFabricCatalog(extensionUri: vscode.Uri) {
+  const catalogUri = vscode.Uri.joinPath(extensionUri, "resources", "catalogs", "fabric-tools.json");
+  const bytes = await vscode.workspace.fs.readFile(catalogUri);
+  return parseToolCatalog(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
+}
+
+async function resolveFabricToolboxRoot(): Promise<string | undefined> {
+  const localOverride = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
+  if (localOverride) return localOverride;
+
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const projectConfig = await getProjectPlatformConfig();
+  const configured = projectConfig?.fabric?.toolboxRoot?.trim();
+  if (workspaceRoot && configured) return resolveManifestPath(workspaceRoot, configured);
+  return undefined;
+}
+
 async function openDatabricks(): Promise<void> {
   if (await commandAvailable("databricks.quickstart.open")) {
     await vscode.commands.executeCommand("databricks.quickstart.open");
@@ -159,8 +340,17 @@ async function copyDatabricks(operation: "validate" | "deploy"): Promise<void> {
 }
 
 async function resolveDatabricksRoot(): Promise<string | undefined> {
+  const repoRoot = await resolveProjectRepository("databricks");
+  if (repoRoot) return repoRoot;
+
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const projectConfig = await getProjectPlatformConfig();
+  const configured = projectConfig?.databricks?.bundleRoot?.trim();
+  if (workspaceRoot && configured) return resolveManifestPath(workspaceRoot, configured);
+
   const foil = await getFoilBinding("databricks");
   if (foil) return foil;
+
   for (const glob of ["**/databricks.yml", "**/databricks.yaml", "**/bundle.yml", "**/bundle.yaml"]) {
     const found = await vscode.workspace.findFiles(glob, "**/{node_modules,.git,dist,out}/**", 1);
     if (found[0]) return path.dirname(found[0].fsPath);
@@ -170,8 +360,14 @@ async function resolveDatabricksRoot(): Promise<string | undefined> {
 
 async function copyGrafanaPreview(): Promise<void> {
   const config = vscode.workspace.getConfiguration("datapass");
-  const generator = config.get<string>("grafana.generatorCommand", "");
-  const watch = config.get<string>("grafana.watchPath", "");
+  const projectConfig = await getProjectPlatformConfig();
+  const generator = config.get<string>("grafana.generatorCommand", "").trim()
+    || projectConfig?.grafana?.generatorCommand?.trim()
+    || "";
+  const watch = config.get<string>("grafana.watchPath", "").trim()
+    || projectConfig?.grafana?.watchPath?.trim()
+    || "";
+
   try {
     const command = buildGrafanaPreviewCommand(generator, watch || undefined);
     await vscode.env.clipboard.writeText(command);
@@ -182,11 +378,14 @@ async function copyGrafanaPreview(): Promise<void> {
 }
 
 async function copyIaC(operation: "validate" | "plan"): Promise<void> {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!root) {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open an infrastructure project folder first.");
     return;
   }
+  const projectConfig = await getProjectPlatformConfig();
+  const configured = projectConfig?.infrastructure?.root?.trim();
+  const root = configured ? resolveManifestPath(workspaceRoot, configured) : workspaceRoot;
   const command = buildIaCCommand("tofu", operation, root);
   await vscode.env.clipboard.writeText(command);
   void vscode.window.showInformationMessage(`DataPass: copied tofu ${operation} command. It was not executed.`);
@@ -201,7 +400,8 @@ async function openRemoteSsh(): Promise<void> {
 }
 
 async function openFoilRoot(id: "control" | "databricks"): Promise<void> {
-  const root = await getFoilBinding(id);
+  const manifestRoot = await resolveProjectRepository(id);
+  const root = manifestRoot || await getFoilBinding(id);
   if (!root) {
     void vscode.window.showWarningMessage(`DataPass: FOIL ${id} repository is not bound.`);
     return;
@@ -210,9 +410,11 @@ async function openFoilRoot(id: "control" | "databricks"): Promise<void> {
 }
 
 async function openFoilOracle(): Promise<void> {
-  const host = vscode.workspace.getConfiguration("datapass").get<string>("foil.oracleSshHost", "").trim();
+  const localOverride = vscode.workspace.getConfiguration("datapass").get<string>("foil.oracleSshHost", "").trim();
+  const projectConfig = await getProjectPlatformConfig();
+  const host = localOverride || projectConfig?.oracle?.sshHost?.trim() || "";
   if (!host) {
-    void vscode.window.showWarningMessage("DataPass: configure datapass.foil.oracleSshHost with an SSH config host alias first.");
+    void vscode.window.showWarningMessage("DataPass: configure an SSH config host alias in settings or .datapass/project.json first.");
     return;
   }
   const command = `ssh ${quoteShellArg(host)}`;
