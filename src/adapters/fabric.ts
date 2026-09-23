@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { detectCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { CatalogItemState, PlatformAction, PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
-import { detectExtension } from "../core/vscodeDetection";
+import { anyWorkspaceFile, detectExtension } from "../core/vscodeDetection";
 import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/catalog";
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
@@ -23,8 +23,10 @@ export class FabricAdapter implements PlatformAdapter {
     const workflowTools: ToolProbe[] = [
       await detectCli({ id: "fat", label: "Fabric Assessment Tool", command: "fat", args: ["--help"] }),
       await detectCli({ id: "python", label: "Python", command: process.platform === "win32" ? "python" : "python3", args: ["--version"] }),
-      await detectCli({ id: "pwsh", label: "PowerShell 7", command: "pwsh", args: ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"] })
+      await detectCli({ id: "pwsh", label: "PowerShell 7", command: "pwsh", args: ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"] }),
+      await detectCli({ id: "dotnet", label: ".NET SDK", command: "dotnet", args: ["--version"] })
     ];
+    const workspaceMcp = await anyWorkspaceFile([".vscode/mcp.json"]);
     const config = vscode.workspace.getConfiguration("datapass");
     const localOverride = config.get<string>("fabric.toolboxRoot", "").trim();
     const platformConfig = await getProjectPlatformConfig();
@@ -37,6 +39,12 @@ export class FabricAdapter implements PlatformAdapter {
     const tools: ToolProbe[] = [
       ...integrationTools,
       ...workflowTools,
+      {
+        id: "workspace-mcp",
+        label: "Workspace MCP configuration",
+        available: workspaceMcp,
+        detail: workspaceMcp ? ".vscode/mcp.json detected" : "No workspace MCP configuration detected"
+      },
       {
         id: "fabric-toolbox-catalog",
         label: "Fabric Toolbox catalog",
