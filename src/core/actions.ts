@@ -1,11 +1,13 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { buildDatabricksBundleCommand, buildGrafanaPreviewCommand, buildIaCCommand, quoteShellArg } from "./commands";
+import { buildDatabricksBundleCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quoteShellArg } from "./commands";
+import { parseToolCatalog } from "./catalog";
 import { commandAvailable } from "./vscodeDetection";
 import { getFoilBinding } from "../profiles/foil";
 
 const URLS: Record<string, string> = {
   "fabric.toolbox": "https://github.com/microsoft/fabric-toolbox",
+  "fabric.costAnalysis": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-cost-analysis",
   "fabric.studioMarketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.fabricstudio",
   "databricks.marketplace": "https://marketplace.visualstudio.com/items?itemName=databricks.databricks",
   "powerbi.agentic": "https://github.com/data-goblin/power-bi-agentic-development",
@@ -16,12 +18,14 @@ const URLS: Record<string, string> = {
   "remoteSsh.marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh"
 };
 
-export async function executeGalaxyAction(action: string): Promise<void> {
+export async function executeGalaxyAction(action: string, extensionUri: vscode.Uri): Promise<void> {
   switch (action) {
     case "refresh": await vscode.commands.executeCommand("datapass.refresh"); return;
     case "fabric.open": await openFabric(); return;
     case "fabric.openStudio": await openFabricStudio(); return;
     case "fabric.openToolbox": await openUrl(URLS["fabric.toolbox"]!); return;
+    case "fabric.securityAudit": await runFabricSecurityAudit(extensionUri); return;
+    case "fabric.openCostAnalysis": await openUrl(URLS["fabric.costAnalysis"]!); return;
     case "fabric.configureToolbox": await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone"); return;
     case "databricks.open": await openDatabricks(); return;
     case "databricks.copyValidate": await copyDatabricks("validate"); return;
@@ -66,6 +70,73 @@ async function openFabricStudio(): Promise<void> {
     }
   }
   await openUrl(URLS["fabric.studioMarketplace"]!);
+}
+
+async function runFabricSecurityAudit(extensionUri: vscode.Uri): Promise<void> {
+  const toolboxRoot = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
+  if (!toolboxRoot) {
+    void vscode.window.showWarningMessage("DataPass: configure a local Fabric Toolbox clone first.");
+    return;
+  }
+
+  const catalogUri = vscode.Uri.joinPath(extensionUri, "resources", "catalogs", "fabric-tools.json");
+  const bytes = await vscode.workspace.fs.readFile(catalogUri);
+  const catalog = parseToolCatalog(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
+  const tool = catalog.items.find(item => item.id === "fabric-security-audit");
+  if (!tool?.relativePath) {
+    void vscode.window.showErrorMessage("DataPass: Fabric Security Audit catalog entry is missing its local path.");
+    return;
+  }
+
+  const scriptPath = path.join(toolboxRoot, tool.relativePath);
+  try {
+    await vscode.workspace.fs.stat(vscode.Uri.file(scriptPath));
+  } catch {
+    void vscode.window.showErrorMessage(`DataPass: Fabric Security Audit script not found at ${scriptPath}.`);
+    return;
+  }
+
+  const url = await vscode.window.showInputBox({
+    title: "Fabric Security Audit",
+    prompt: "Paste the Fabric or Power BI item URL to audit",
+    placeHolder: "https://app.fabric.microsoft.com/...",
+    validateInput: value => /^https:\/\//i.test(value.trim()) ? undefined : "Enter a full https:// URL."
+  });
+  if (!url) return;
+
+  const user = await vscode.window.showInputBox({
+    title: "Fabric Security Audit",
+    prompt: "Optional user UPN/email for the upstream audit script",
+    placeHolder: "user@example.com"
+  });
+
+  let command: string;
+  try {
+    command = buildFabricSecurityAuditCommand(scriptPath, url, user || undefined);
+  } catch (error) {
+    void vscode.window.showErrorMessage(`DataPass: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
+
+  const choice = await vscode.window.showInformationMessage(
+    "Run the upstream Fabric Security Audit script now, or copy the generated command?",
+    { modal: true },
+    "Run",
+    "Copy command"
+  );
+  if (!choice) return;
+
+  await vscode.env.clipboard.writeText(command);
+  if (choice === "Run") {
+    const terminal = vscode.window.createTerminal({
+      name: "Fabric Security Audit",
+      shellPath: process.platform === "win32" ? "powershell.exe" : "pwsh"
+    });
+    terminal.show(true);
+    terminal.sendText(command, true);
+    return;
+  }
+  void vscode.window.showInformationMessage("DataPass: Fabric Security Audit command copied.");
 }
 
 async function openDatabricks(): Promise<void> {
