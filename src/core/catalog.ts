@@ -8,6 +8,8 @@ export interface ToolCatalogItem {
   source: string;
   url: string;
   relativePath?: string;
+  description?: string;
+  verifiedRef?: string;
   actions: CatalogAction[];
 }
 
@@ -46,6 +48,8 @@ export function parseToolCatalog(raw: unknown): ToolCatalog {
       source: String(item.source),
       url: String(item.url),
       relativePath: typeof item.relativePath === "string" ? item.relativePath : undefined,
+      description: typeof item.description === "string" ? item.description : undefined,
+      verifiedRef: typeof item.verifiedRef === "string" ? item.verifiedRef : undefined,
       actions: item.actions as CatalogAction[]
     } satisfies ToolCatalogItem;
   });
