@@ -109,6 +109,15 @@ async function manifestToState(manifest: DataPassProjectManifest): Promise<Proje
     });
   }
 
+  (manifest.links ?? []).forEach((link, index) => {
+    actions.push({
+      id: `project.openLink::${index}`,
+      label: link.label,
+      enabled: true,
+      kind: "link"
+    });
+  });
+
   return {
     id: manifest.project.id,
     title: manifest.project.title,
