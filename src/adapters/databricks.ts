@@ -2,7 +2,10 @@ import { detectCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { anyWorkspaceFile, detectExtension } from "../core/vscodeDetection";
+import * as vscode from "vscode";
 import { getFoilBinding } from "../profiles/foil";
+import { getProjectPlatformConfig, resolveProjectRepository } from "../core/projectState";
+import { resolveManifestPath } from "../core/projectManifest";
 
 export class DatabricksAdapter implements PlatformAdapter {
   readonly id = "databricks";
@@ -12,8 +15,14 @@ export class DatabricksAdapter implements PlatformAdapter {
     const extension = detectExtension("databricks.databricks", "Official Databricks extension");
     const cli = await detectCli({ id: "databricks-cli", label: "Databricks CLI", command: "databricks", args: ["--version"] });
     const bundleInWorkspace = await anyWorkspaceFile(["**/databricks.yml", "**/databricks.yaml", "**/bundle.yml", "**/bundle.yaml"]);
+    const projectConfig = await getProjectPlatformConfig();
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const manifestBundleRoot = projectConfig?.databricks?.bundleRoot?.trim();
+    const manifestRepoRoot = await resolveProjectRepository("databricks");
+    const manifestRoot = manifestRepoRoot || (workspaceRoot && manifestBundleRoot ? resolveManifestPath(workspaceRoot, manifestBundleRoot) : undefined);
     const foilRoot = await getFoilBinding("databricks");
-    const projectBound = Boolean(bundleInWorkspace || foilRoot);
+    const boundRoot = manifestRoot || foilRoot;
+    const projectBound = Boolean(bundleInWorkspace || boundRoot);
     const tools: ToolProbe[] = [
       extension,
       cli,
@@ -21,7 +30,7 @@ export class DatabricksAdapter implements PlatformAdapter {
         id: "bundle-project",
         label: "Asset Bundle project",
         available: projectBound,
-        detail: foilRoot ? `FOIL binding: ${foilRoot}` : (bundleInWorkspace ? "Bundle manifest found in workspace" : "No bundle project bound")
+        detail: boundRoot ? `Project binding: ${boundRoot}` : (bundleInWorkspace ? "Bundle manifest found in workspace" : "No bundle project bound")
       }
     ];
     return {
@@ -37,7 +46,10 @@ export class DatabricksAdapter implements PlatformAdapter {
         { id: "databricks.copyValidate", label: "Copy bundle validate", enabled: Boolean(cli.available && projectBound), kind: "copy" },
         { id: "databricks.copyDeploy", label: "Copy bundle deploy", enabled: Boolean(cli.available && projectBound), kind: "copy" }
       ],
-      details: ["The historical databricks-vscode-foil fork is reference-only and is not required by this extension."]
+      details: [
+        projectConfig?.databricks?.defaultTarget ? `Manifest default target: ${projectConfig.databricks.defaultTarget}` : "No default Databricks target declared.",
+        "The historical databricks-vscode-foil fork is reference-only and is not required by this extension."
+      ]
     };
   }
 }
