@@ -5,7 +5,7 @@ import { DatabricksAdapter } from "../adapters/databricks";
 import { PowerBiAdapter } from "../adapters/powerbi";
 import { ObservabilityAdapter } from "../adapters/observability";
 import { InfrastructureAdapter } from "../adapters/infrastructure";
-import { detectFoilProfile } from "../profiles/foil";
+import { detectActiveProject } from "./projectState";
 
 export function createAdapters(extensionUri: vscode.Uri): PlatformAdapter[] {
   return [
@@ -19,7 +19,7 @@ export function createAdapters(extensionUri: vscode.Uri): PlatformAdapter[] {
 
 export async function collectGalaxyState(extensionUri: vscode.Uri): Promise<GalaxyState> {
   const [project, platforms] = await Promise.all([
-    detectFoilProfile(),
+    detectActiveProject(),
     Promise.all(createAdapters(extensionUri).map(adapter => safeDetect(adapter)))
   ]);
   return { generatedAt: new Date().toISOString(), project, platforms };
