@@ -19,6 +19,11 @@ export interface DataPassProjectManifest {
       workspaceName?: string;
       workspaceId?: string;
       toolboxRoot?: string;
+      deployment?: {
+        configPath?: string;
+        repositoryDirectory?: string;
+        targetEnvironment?: string;
+      };
     };
     databricks?: {
       bundleRoot?: string;
@@ -80,6 +85,32 @@ export function validateProjectManifest(raw: unknown): string[] {
 
   if (doc.platforms !== undefined && (!doc.platforms || typeof doc.platforms !== "object" || Array.isArray(doc.platforms))) {
     issues.push("platforms must be an object.");
+  } else if (doc.platforms && typeof doc.platforms === "object" && !Array.isArray(doc.platforms)) {
+    const platforms = doc.platforms as Record<string, unknown>;
+    if (platforms.fabric !== undefined) {
+      if (!platforms.fabric || typeof platforms.fabric !== "object" || Array.isArray(platforms.fabric)) {
+        issues.push("platforms.fabric must be an object.");
+      } else {
+        const fabric = platforms.fabric as Record<string, unknown>;
+        for (const key of ["workspaceName", "workspaceId", "toolboxRoot"]) {
+          if (fabric[key] !== undefined && typeof fabric[key] !== "string") {
+            issues.push(`platforms.fabric.${key} must be a string.`);
+          }
+        }
+        if (fabric.deployment !== undefined) {
+          if (!fabric.deployment || typeof fabric.deployment !== "object" || Array.isArray(fabric.deployment)) {
+            issues.push("platforms.fabric.deployment must be an object.");
+          } else {
+            const deployment = fabric.deployment as Record<string, unknown>;
+            for (const key of ["configPath", "repositoryDirectory", "targetEnvironment"]) {
+              if (deployment[key] !== undefined && (typeof deployment[key] !== "string" || !String(deployment[key]).trim())) {
+                issues.push(`platforms.fabric.deployment.${key} must be a non-empty string.`);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   if (doc.links !== undefined) {
