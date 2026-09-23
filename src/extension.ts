@@ -40,6 +40,9 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("datapass.openProjectManifest", async () => {
       await executeGalaxyAction("project.openManifest", context.extensionUri);
     }),
+    vscode.commands.registerCommand("datapass.copyEnvironmentSnapshot", async () => {
+      await executeGalaxyAction("project.copyEnvironmentSnapshot", context.extensionUri);
+    }),
     vscode.commands.registerCommand("datapass.selectFoilControlRoot", async () => {
       await selectFoilRoot("foil.controlRoot", "Select foil-control-v1 repository");
       await galaxy.refresh();
