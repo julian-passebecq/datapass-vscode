@@ -81,6 +81,8 @@ function toCatalogItemState(
     category: item.category,
     kind: item.kind,
     source: item.source,
+    description: item.description,
+    verifiedRef: item.verifiedRef,
     actions: item.actions.map(action => catalogAction(item.id, action, hasToolboxRoot))
   };
 }
