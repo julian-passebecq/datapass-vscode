@@ -1,9 +1,11 @@
 import * as vscode from "vscode";
 import { detectCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
-import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
+import type { CatalogItemState, PlatformAction, PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { detectExtension } from "../core/vscodeDetection";
-import { parseToolCatalog, type ToolCatalog } from "../core/catalog";
+import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/catalog";
+import { getProjectPlatformConfig } from "../core/projectState";
+import { resolveManifestPath } from "../core/projectManifest";
 
 export class FabricAdapter implements PlatformAdapter {
   readonly id = "fabric";
@@ -18,8 +20,14 @@ export class FabricAdapter implements PlatformAdapter {
       detectExtension("GerhardBrueckl.onelake-vscode", "OneLake-VSCode"),
       await detectCli({ id: "fab", label: "Fabric CLI", command: "fab", args: ["--version"] })
     ];
-    const toolboxRoot = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
+    const config = vscode.workspace.getConfiguration("datapass");
+    const localOverride = config.get<string>("fabric.toolboxRoot", "").trim();
+    const platformConfig = await getProjectPlatformConfig();
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const manifestToolbox = platformConfig?.fabric?.toolboxRoot?.trim();
+    const toolboxRoot = localOverride || (workspaceRoot && manifestToolbox ? resolveManifestPath(workspaceRoot, manifestToolbox) : "");
     const catalog = await this.loadCatalog();
+    const catalogItems = catalog.items.map(item => toCatalogItemState(item, Boolean(toolboxRoot)));
     const tools: ToolProbe[] = [
       ...integrationTools,
       {
@@ -46,8 +54,13 @@ export class FabricAdapter implements PlatformAdapter {
       ],
       details: [
         toolboxRoot ? `Local Toolbox: ${toolboxRoot}` : "Local Fabric Toolbox clone not configured.",
+        platformConfig?.fabric?.workspaceName ? `Manifest workspace: ${platformConfig.fabric.workspaceName}` : "Fabric workspace identity is not declared in the project manifest.",
         "DataPass composes Fabric tooling; it does not replace vendor/community clients."
-      ]
+      ],
+      catalog: {
+        title: "Fabric Toolbox",
+        items: catalogItems
+      }
     };
   }
 
@@ -56,4 +69,56 @@ export class FabricAdapter implements PlatformAdapter {
     const bytes = await vscode.workspace.fs.readFile(uri);
     return parseToolCatalog(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
   }
+}
+
+function toCatalogItemState(
+  item: ToolCatalog["items"][number],
+  hasToolboxRoot: boolean
+): CatalogItemState {
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    kind: item.kind,
+    source: item.source,
+    actions: item.actions.map(action => catalogAction(item.id, action, hasToolboxRoot))
+  };
+}
+
+function catalogAction(itemId: string, action: CatalogAction, hasToolboxRoot: boolean): PlatformAction {
+  const supportedRun = itemId === "fabric-security-audit";
+  const enabled =
+    action === "read" ||
+    action === "clone" ||
+    action === "configure" ||
+    (action === "run" && supportedRun && hasToolboxRoot);
+
+  const labels: Record<CatalogAction, string> = {
+    read: "Open",
+    clone: "Clone",
+    configure: "Configure",
+    run: "Run",
+    scaffold: "Scaffold",
+    deploy: "Deploy"
+  };
+  const kinds: Record<CatalogAction, PlatformAction["kind"]> = {
+    read: "link",
+    clone: "copy",
+    configure: "configure",
+    run: "run",
+    scaffold: "configure",
+    deploy: "run"
+  };
+
+  return {
+    id: `fabric.catalog::${itemId}::${action}`,
+    label: labels[action],
+    enabled,
+    kind: kinds[action],
+    detail: enabled
+      ? undefined
+      : action === "run" && !hasToolboxRoot
+        ? "Configure a local Fabric Toolbox clone first."
+        : "This catalog action is registered but not implemented in Pass 2."
+  };
 }
