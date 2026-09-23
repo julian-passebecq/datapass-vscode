@@ -4,6 +4,13 @@ export interface SanitizedEnvironmentSnapshot {
   schemaVersion: 1;
   generatedAt: string;
   redaction: string;
+  health?: {
+    overall: "healthy" | "attention" | "setup";
+    platformCounts: Record<string, number>;
+    tools: { available: number; total: number };
+    bindings: { bound: number; missing: number; unknown: number; total: number };
+    attention: Array<{ severity: string; label: string }>;
+  };
   project: {
     id: string;
     title: string;
@@ -35,7 +42,19 @@ export function buildSanitizedEnvironmentSnapshot(state: GalaxyState): Sanitized
   return {
     schemaVersion: 1,
     generatedAt: state.generatedAt,
-    redaction: "Local binding values, filesystem paths, action payloads, tool detail strings and credentials are omitted.",
+    redaction: "Local binding values, filesystem paths, action payloads, tool/platform detail strings and credentials are omitted.",
+    ...(state.health ? {
+      health: {
+        overall: state.health.overall,
+        platformCounts: { ...state.health.platformCounts },
+        tools: { ...state.health.tools },
+        bindings: { ...state.health.bindings },
+        attention: state.health.attention.map(item => ({
+          severity: item.severity,
+          label: item.label
+        }))
+      }
+    } : {}),
     project: {
       id: state.project.id,
       title: state.project.title,
