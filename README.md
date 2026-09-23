@@ -6,7 +6,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 - **Galaxy** — one status/control view for projects and platforms.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
-- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery with verified upstream provenance, a guided Assessment Tool workflow, and workspace MCP configuration.
+- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment Tool and MCP workflows, plus safe Fabric CLI auth/workspace navigation.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
 - **Power BI** — detects PBIP/TMDL/PBIR source projects and links specialized/agentic tooling.
 - **Observability / Grafana** — treats dashboards as code with `gcx`, Foundation SDK and OpenTofu/Terraform deployment paths.
@@ -204,3 +204,14 @@ With a local Microsoft Fabric Toolbox clone configured, the Galaxy can add suppo
 DataPass does **not** build these servers for you and does not collect MCP credentials. It verifies the expected upstream executable first. If setup has not been completed, it routes you to the upstream setup instructions instead.
 
 Existing workspace MCP servers are preserved. Replacing an existing server with the same name requires explicit confirmation.
+
+## Official Fabric CLI navigation
+
+When `fab` is installed, the Fabric card exposes:
+
+- **Auth status** — runs `fab auth status`;
+- **Login** — runs the official interactive `fab auth login`;
+- **List workspaces** — runs `fab ls`;
+- **Project workspace** — runs `fab ls "<workspace>.Workspace" -l` using `platforms.fabric.workspaceName` from the DataPass project manifest.
+
+DataPass does not request or persist Fabric CLI credentials. Pass 4 intentionally avoids Fabric CLI mutation commands.
