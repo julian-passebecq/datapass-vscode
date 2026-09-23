@@ -1,0 +1,11 @@
+{
+  "schemaVersion":1,
+  "items":[
+    {"id":"fabric-cost-analysis","name":"Fabric Cost Analysis","category":"Monitoring","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-cost-analysis","actions":["read","clone"]},
+    {"id":"fabric-platform-monitoring","name":"Fabric Platform Monitoring","category":"Monitoring","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring","actions":["read","clone"]},
+    {"id":"fabric-security-audit","name":"Fabric Security Audit","category":"Operations","kind":"powershell_tool","source":"microsoft/fabric-toolbox","relativePath":"tools/fabric-security-audit/Invoke-FabricSecurityAudit.ps1","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-security-audit","actions":["read","configure","run"]},
+    {"id":"fabric-assessment-tool","name":"Fabric Assessment Tool","category":"Migration","kind":"cli_tool","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-assessment-tool","actions":["read","run"]},
+    {"id":"semantic-model-mcp","name":"Semantic Model MCP Server","category":"BI","kind":"mcp_server","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/SemanticModelMCPServer","actions":["read","clone","configure"]},
+    {"id":"fabric-rti-eventstream","name":"Real-Time Intelligence Eventstream Accelerator","category":"Real-time","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/real-time-intelligence_eventstream","actions":["read","clone","scaffold"]}
+  ]
+}
