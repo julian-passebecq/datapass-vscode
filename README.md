@@ -4,7 +4,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 ## Current surfaces
 
-- **Galaxy** — one status/control view for projects and platforms, with a sanitized environment snapshot for debugging/handoffs.
+- **Galaxy** — health-first control plane with readiness metrics, attention queue, grouped/collapsible platform cards, filters, persistent view state, and a sanitized environment snapshot for debugging/handoffs.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
 - **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment/MCP workflows, read-only environment capture, and review-first CI/CD scaffolding.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
@@ -288,3 +288,22 @@ DataPass exposes focused modules from `data-goblin/power-bi-agentic-development`
 **Copy marketplace add** and each module's **Copy install** action only place the documented Copilot CLI command on the clipboard. DataPass does not install plugins automatically because Copilot CLI plugin scope is user-wide.
 
 The MacGyver toolbox remains a visual/reference resource; Power BI Desktop, Tabular Editor and other specialized tools remain external peer applications.
+
+## Galaxy health UX
+
+The Galaxy now prioritizes **what needs attention** before low-level tool detail.
+
+At a glance it shows:
+
+- platform readiness;
+- detected tools;
+- project bindings;
+- actionable attention items.
+
+Platforms are grouped into **Data platforms** and **Engineering & runtime** and can be filtered by **All / Ready / Partial / Attention**. Tool lists and upstream catalogs stay collapsed until needed.
+
+The extension deliberately uses status categories rather than an opaque numeric health score.
+
+Galaxy filter and expanded-card state are retained by the VS Code webview while the view is alive.
+
+The VS Code status bar uses the same health summary and links back to the Galaxy.

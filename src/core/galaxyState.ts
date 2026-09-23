@@ -6,6 +6,7 @@ import { PowerBiAdapter } from "../adapters/powerbi";
 import { ObservabilityAdapter } from "../adapters/observability";
 import { InfrastructureAdapter } from "../adapters/infrastructure";
 import { detectActiveProject } from "./projectState";
+import { buildGalaxyHealth } from "./health";
 
 export function createAdapters(extensionUri: vscode.Uri): PlatformAdapter[] {
   return [
@@ -22,22 +23,24 @@ export async function collectGalaxyState(extensionUri: vscode.Uri): Promise<Gala
     detectActiveProject(),
     Promise.all(createAdapters(extensionUri).map(adapter => safeDetect(adapter)))
   ]);
+  const projectWithActions = {
+    ...project,
+    actions: [
+      ...project.actions,
+      {
+        id: "project.copyEnvironmentSnapshot",
+        label: "Copy environment snapshot",
+        enabled: true,
+        kind: "copy" as const,
+        detail: "Copy a sanitized capability/status snapshot without local paths or credentials."
+      }
+    ]
+  };
   return {
     generatedAt: new Date().toISOString(),
-    project: {
-      ...project,
-      actions: [
-        ...project.actions,
-        {
-          id: "project.copyEnvironmentSnapshot",
-          label: "Copy environment snapshot",
-          enabled: true,
-          kind: "copy",
-          detail: "Copy a sanitized capability/status snapshot without local paths or credentials."
-        }
-      ]
-    },
-    platforms
+    project: projectWithActions,
+    platforms,
+    health: buildGalaxyHealth(projectWithActions, platforms)
   };
 }
 

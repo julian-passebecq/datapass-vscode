@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
 import { executeGalaxyAction } from "./core/actions";
+import type { GalaxyState } from "./core/types";
 
 export function activate(context: vscode.ExtensionContext): void {
   const galaxy = new GalaxyViewProvider(context.extensionUri);
@@ -19,23 +20,26 @@ export function activate(context: vscode.ExtensionContext): void {
   status.show();
   context.subscriptions.push(status);
 
+  const refreshState = async (): Promise<GalaxyState> => {
+    const state = await galaxy.refresh();
+    updateStatusBar(status, state);
+    return state;
+  };
+
   context.subscriptions.push(
     vscode.commands.registerCommand("datapass.refresh", async () => {
-      const state = await galaxy.refresh();
-      const ready = state.platforms.filter(item => item.status === "ready").length;
-      const partial = state.platforms.filter(item => item.status === "partial").length;
-      status.text = `$(dashboard) DataPass ${ready} ready · ${partial} partial`;
+      await refreshState();
     }),
     vscode.commands.registerCommand("datapass.openGalaxy", async () => {
       await vscode.commands.executeCommand("workbench.actions.view.openView", GalaxyViewProvider.viewType);
     }),
     vscode.commands.registerCommand("datapass.initializeProjectManifest", async () => {
       await executeGalaxyAction("project.initializeManifest", context.extensionUri);
-      await galaxy.refresh();
+      await refreshState();
     }),
     vscode.commands.registerCommand("datapass.initializeFoilProjectManifest", async () => {
       await executeGalaxyAction("project.initializeManifestFoil", context.extensionUri);
-      await galaxy.refresh();
+      await refreshState();
     }),
     vscode.commands.registerCommand("datapass.openProjectManifest", async () => {
       await executeGalaxyAction("project.openManifest", context.extensionUri);
@@ -48,7 +52,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand("datapass.fabric.scaffoldDeployConfig", async () => {
       await executeGalaxyAction("fabric.scaffoldDeployConfig", context.extensionUri);
-      await galaxy.refresh();
+      await refreshState();
     }),
     vscode.commands.registerCommand("datapass.fabric.copyDeployCommand", async () => {
       await executeGalaxyAction("fabric.copyDeployCommand", context.extensionUri);
@@ -58,15 +62,15 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.commands.registerCommand("datapass.selectFoilControlRoot", async () => {
       await selectFoilRoot("foil.controlRoot", "Select foil-control-v1 repository");
-      await galaxy.refresh();
+      await refreshState();
     }),
     vscode.commands.registerCommand("datapass.selectFoilDatabricksRoot", async () => {
       await selectFoilRoot("foil.databricksRoot", "Select foil_databrick_dab repository");
-      await galaxy.refresh();
+      await refreshState();
     })
   );
 
-  const refresh = () => void galaxy.refresh();
+  const refresh = () => void refreshState();
   const bundleWatcher = vscode.workspace.createFileSystemWatcher("**/{databricks,bundle}.{yml,yaml}");
   bundleWatcher.onDidCreate(refresh);
   bundleWatcher.onDidChange(refresh);
@@ -81,12 +85,39 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(event => {
-      if (event.affectsConfiguration("datapass")) void galaxy.refresh();
+      if (event.affectsConfiguration("datapass")) void refreshState();
     })
   );
+
+  void refreshState();
 }
 
 export function deactivate(): void {}
+
+function updateStatusBar(status: vscode.StatusBarItem, state: GalaxyState): void {
+  const health = state.health;
+  if (!health) {
+    const ready = state.platforms.filter(item => item.status === "ready").length;
+    const partial = state.platforms.filter(item => item.status === "partial").length;
+    status.text = `$(dashboard) DataPass ${ready} ready · ${partial} partial`;
+    return;
+  }
+
+  if (health.overall === "healthy") {
+    status.text = `$(pass) DataPass · ${health.platformCounts.ready}/${state.platforms.length} ready`;
+  } else if (health.overall === "attention") {
+    status.text = `$(warning) DataPass · ${health.attention.length} attention`;
+  } else {
+    status.text = "$(tools) DataPass · setup";
+  }
+
+  status.tooltip = [
+    "Open DataPass Galaxy",
+    `Tools: ${health.tools.available}/${health.tools.total} detected`,
+    `Bindings: ${health.bindings.bound}/${health.bindings.total} bound`,
+    `Attention: ${health.attention.length}`
+  ].join("\n");
+}
 
 async function selectFoilRoot(setting: string, title: string): Promise<void> {
   const picked = await vscode.window.showOpenDialog({
