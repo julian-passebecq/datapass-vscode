@@ -105,7 +105,8 @@
         "read",
         "clone",
         "configure"
-      ]
+      ],
+      "relativePath": "tools/SemanticModelMCPServer/.vscode/mcp.json"
     },
     {
       "id": "fabric-management-mcp",
@@ -120,7 +121,8 @@
         "read",
         "clone",
         "configure"
-      ]
+      ],
+      "relativePath": "tools/MicrosoftFabricMgmtMCPServer/README.md"
     },
     {
       "id": "dax-performance-mcp",
@@ -135,7 +137,8 @@
         "read",
         "clone",
         "configure"
-      ]
+      ],
+      "relativePath": "tools/DAXPerformanceTunerMCPServer/README.md"
     },
     {
       "id": "fabric-rti-eventstream",
