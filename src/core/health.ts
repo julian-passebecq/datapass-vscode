@@ -83,8 +83,9 @@ export function buildGalaxyHealth(
     }
   }
 
+  const hasBlockingAttention = attention.some(item => item.severity === "error" || item.severity === "warning");
   const overall: GalaxyHealthSummary["overall"] =
-    platformCounts.error > 0 || bindings.missing > 0
+    hasBlockingAttention
       ? "attention"
       : !project.active
         ? "setup"
