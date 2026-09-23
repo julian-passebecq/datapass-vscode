@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import {
   buildDatabricksBundleCommand,
   buildFabricAssessmentCommand,
+  buildFabricCliCommand,
   buildFabricSecurityAuditCommand,
   buildGrafanaPreviewCommand,
   buildIaCCommand,
@@ -60,6 +61,10 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "fabric.open": await openFabric(); return;
     case "fabric.openStudio": await openFabricStudio(); return;
     case "fabric.openToolbox": await openUrl(URLS["fabric.toolbox"]!); return;
+    case "fabric.authStatus": await runFabricCli("auth-status"); return;
+    case "fabric.login": await runFabricCli("login"); return;
+    case "fabric.listWorkspaces": await runFabricCli("list-workspaces"); return;
+    case "fabric.listProjectWorkspace": await runFabricCli("list-workspace-items"); return;
     case "fabric.securityAudit": await runFabricSecurityAudit(extensionUri); return;
     case "fabric.openCostAnalysis": await openUrl(URLS["fabric.costAnalysis"]!); return;
     case "fabric.configureToolbox": await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone"); return;
@@ -139,6 +144,40 @@ async function openProjectRepository(key: string): Promise<void> {
     return;
   }
   await vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(root), { forceNewWindow: true });
+}
+
+async function runFabricCli(
+  operation: "auth-status" | "login" | "list-workspaces" | "list-workspace-items"
+): Promise<void> {
+  const projectConfig = await getProjectPlatformConfig();
+  const workspace = projectConfig?.fabric?.workspaceName?.trim();
+
+  if (operation === "list-workspace-items" && !workspace) {
+    void vscode.window.showWarningMessage(
+      "DataPass: declare platforms.fabric.workspaceName in .datapass/project.json before inspecting the project workspace."
+    );
+    return;
+  }
+
+  let command: string;
+  try {
+    command = buildFabricCliCommand(operation, workspace);
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `DataPass: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return;
+  }
+
+  const title =
+    operation === "auth-status" ? "Fabric CLI Auth Status" :
+    operation === "login" ? "Fabric CLI Login" :
+    operation === "list-workspaces" ? "Fabric CLI Workspaces" :
+    "Fabric CLI Project Workspace";
+
+  const terminal = vscode.window.createTerminal({ name: title });
+  terminal.show(true);
+  terminal.sendText(command, true);
 }
 
 async function openFabric(): Promise<void> {
