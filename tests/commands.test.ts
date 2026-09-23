@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDatabricksBundleCommand, buildFabricAssessmentCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
+import { buildDatabricksBundleCommand, buildFabricAssessmentCommand, buildFabricCliCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
 
 test("quoteShellArg escapes POSIX single quotes", () => {
   assert.equal(quoteShellArg("a'b", "linux"), `'a'"'"'b'`);
@@ -55,5 +55,21 @@ test("Fabric assessment rejects control characters", () => {
   assert.throws(
     () => buildFabricAssessmentCommand({ source: "synapse", output: "./out\nrm -rf /" }, "linux"),
     /control characters/
+  );
+});
+
+test("Fabric CLI uses official read-only workspace commands", () => {
+  assert.equal(buildFabricCliCommand("auth-status"), "fab auth status");
+  assert.equal(buildFabricCliCommand("list-workspaces"), "fab ls");
+  assert.equal(
+    buildFabricCliCommand("list-workspace-items", "FOIL Wind Lab", "linux"),
+    "fab ls 'FOIL Wind Lab.Workspace' -l"
+  );
+});
+
+test("Fabric CLI does not duplicate .Workspace suffix", () => {
+  assert.equal(
+    buildFabricCliCommand("list-workspace-items", "FOIL.Workspace", "linux"),
+    "fab ls 'FOIL.Workspace' -l"
   );
 });
