@@ -1,11 +1,187 @@
 {
-  "schemaVersion":1,
-  "items":[
-    {"id":"fabric-cost-analysis","name":"Fabric Cost Analysis","category":"Monitoring","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-cost-analysis","actions":["read","clone"]},
-    {"id":"fabric-platform-monitoring","name":"Fabric Platform Monitoring","category":"Monitoring","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring","actions":["read","clone"]},
-    {"id":"fabric-security-audit","name":"Fabric Security Audit","category":"Operations","kind":"powershell_tool","source":"microsoft/fabric-toolbox","relativePath":"tools/fabric-security-audit/Invoke-FabricSecurityAudit.ps1","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-security-audit","actions":["read","configure","run"]},
-    {"id":"fabric-assessment-tool","name":"Fabric Assessment Tool","category":"Migration","kind":"cli_tool","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-assessment-tool","actions":["read","run"]},
-    {"id":"semantic-model-mcp","name":"Semantic Model MCP Server","category":"BI","kind":"mcp_server","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/tools/SemanticModelMCPServer","actions":["read","clone","configure"]},
-    {"id":"fabric-rti-eventstream","name":"Real-Time Intelligence Eventstream Accelerator","category":"Real-time","kind":"accelerator","source":"microsoft/fabric-toolbox","url":"https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/real-time-intelligence_eventstream","actions":["read","clone","scaffold"]}
+  "schemaVersion": 1,
+  "items": [
+    {
+      "id": "fabric-cost-analysis",
+      "name": "Fabric Cost Analysis",
+      "category": "Monitoring",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Microsoft Fabric cost, capacity, quota and reservation analysis accelerator.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-cost-analysis",
+      "actions": [
+        "read",
+        "clone",
+        "deploy"
+      ]
+    },
+    {
+      "id": "fabric-platform-monitoring",
+      "name": "Fabric Platform Monitoring",
+      "category": "Monitoring",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Platform observability assets covering activity, capacity, gateway and Fabric runtime monitoring.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-platform-monitoring",
+      "actions": [
+        "read",
+        "clone",
+        "deploy"
+      ]
+    },
+    {
+      "id": "fabric-unified-admin-monitoring",
+      "name": "Fabric Unified Admin Monitoring",
+      "category": "Monitoring",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Tenant and administrative inventory/monitoring solution for Fabric governance workflows.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-unified-admin-monitoring",
+      "actions": [
+        "read",
+        "clone",
+        "deploy"
+      ]
+    },
+    {
+      "id": "fabric-spark-monitoring",
+      "name": "Fabric Spark Monitoring",
+      "category": "Monitoring",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Spark monitoring solution with Eventstream, Eventhouse, KQL, report and recommendations assets.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/fabric-spark-monitoring",
+      "actions": [
+        "read",
+        "clone",
+        "deploy"
+      ]
+    },
+    {
+      "id": "fabric-security-audit",
+      "name": "Fabric Security Audit",
+      "category": "Operations",
+      "kind": "powershell_tool",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Upstream PowerShell security audit tool for Fabric/Power BI item URLs.",
+      "relativePath": "tools/fabric-security-audit/Invoke-FabricSecurityAudit.ps1",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-security-audit",
+      "actions": [
+        "read",
+        "configure",
+        "run"
+      ]
+    },
+    {
+      "id": "fabric-assessment-tool",
+      "name": "Fabric Assessment Tool",
+      "category": "Migration",
+      "kind": "python_cli",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Assessment tooling for migration analysis, including Databricks and Synapse-oriented collectors/views.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/tools/fabric-assessment-tool",
+      "actions": [
+        "read",
+        "clone",
+        "run"
+      ]
+    },
+    {
+      "id": "semantic-model-mcp",
+      "name": "Semantic Model MCP Server",
+      "category": "Agentic / MCP",
+      "kind": "mcp_server",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "MCP server for semantic-model inspection and engineering workflows.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/tools/SemanticModelMCPServer",
+      "actions": [
+        "read",
+        "clone",
+        "configure"
+      ]
+    },
+    {
+      "id": "fabric-management-mcp",
+      "name": "Microsoft Fabric Management MCP Server",
+      "category": "Agentic / MCP",
+      "kind": "mcp_server",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "MCP wrapper around Fabric management tooling with workspace, lakehouse, notebook, pipeline and admin tools.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/tools/MicrosoftFabricMgmtMCPServer",
+      "actions": [
+        "read",
+        "clone",
+        "configure"
+      ]
+    },
+    {
+      "id": "dax-performance-mcp",
+      "name": "DAX Performance Tuner MCP Server",
+      "category": "Agentic / MCP",
+      "kind": "mcp_server",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "MCP-based DAX performance analysis and tuning tooling.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/tools/DAXPerformanceTunerMCPServer",
+      "actions": [
+        "read",
+        "clone",
+        "configure"
+      ]
+    },
+    {
+      "id": "fabric-rti-eventstream",
+      "name": "Real-Time Intelligence Eventstream Accelerator",
+      "category": "Real-time",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Eventstream creation/definition accelerator relevant to real-time ingestion scenarios such as FOIL telemetry.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/real-time-intelligence_eventstream",
+      "actions": [
+        "read",
+        "clone",
+        "scaffold"
+      ]
+    },
+    {
+      "id": "fabric-cicd-branch-workspace",
+      "name": "Branch Out to New Workspace",
+      "category": "CI/CD",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "CI/CD accelerator for creating feature-branch Fabric workspaces.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/CICD/Branch-out-to-new-workspace",
+      "actions": [
+        "read",
+        "clone",
+        "scaffold"
+      ]
+    },
+    {
+      "id": "fabric-cicd-deployment-pipelines",
+      "name": "Deploy Using Fabric Deployment Pipelines",
+      "category": "CI/CD",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Automation example for promoting changes through Fabric deployment pipelines.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/accelerators/CICD/Deploy-using-Fabric-deployment-pipelines",
+      "actions": [
+        "read",
+        "clone",
+        "scaffold",
+        "deploy"
+      ]
+    }
   ]
 }
