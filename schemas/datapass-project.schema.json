@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/julian-passebecq/datapass-vscode/schemas/datapass-project.schema.json",
+  "title": "DataPass Project Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "project"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "profile": { "type": "string" },
+        "description": { "type": "string" }
+      }
+    },
+    "repositories": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "platforms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fabric": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "workspaceName": { "type": "string" },
+            "workspaceId": { "type": "string" },
+            "toolboxRoot": { "type": "string" }
+          }
+        },
+        "databricks": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "bundleRoot": { "type": "string" },
+            "defaultTarget": { "type": "string" }
+          }
+        },
+        "grafana": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "generatorCommand": { "type": "string" },
+            "watchPath": { "type": "string" }
+          }
+        },
+        "infrastructure": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "root": { "type": "string" }
+          }
+        },
+        "oracle": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "sshHost": {
+              "type": "string",
+              "description": "SSH config host alias only. Do not store credentials here."
+            }
+          }
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "url"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1 },
+          "url": { "type": "string", "pattern": "^https://" }
+        }
+      }
+    }
+  }
+}
