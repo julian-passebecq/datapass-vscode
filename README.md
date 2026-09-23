@@ -4,7 +4,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 ## Current surfaces
 
-- **Galaxy** — one status/control view for projects and platforms.
+- **Galaxy** — one status/control view for projects and platforms, with a sanitized environment snapshot for debugging/handoffs.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
 - **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment Tool and MCP workflows, plus safe Fabric CLI auth/workspace navigation.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
@@ -215,3 +215,9 @@ When `fab` is installed, the Fabric card exposes:
 - **Project workspace** — runs `fab ls "<workspace>.Workspace" -l` using `platforms.fabric.workspaceName` from the DataPass project manifest.
 
 DataPass does not request or persist Fabric CLI credentials. Pass 4 intentionally avoids Fabric CLI mutation commands.
+
+## Sanitized environment snapshot
+
+Use **Copy environment snapshot** in the project card or **DataPass: Copy Environment Snapshot** from the Command Palette.
+
+The exported JSON contains project/platform capability state and detected tool versions, but deliberately excludes local repository paths, binding values, generated commands, tool detail strings and credentials. It is intended for troubleshooting and handoffs, not as a source of project truth.

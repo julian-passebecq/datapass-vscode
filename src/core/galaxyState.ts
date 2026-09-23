@@ -22,7 +22,23 @@ export async function collectGalaxyState(extensionUri: vscode.Uri): Promise<Gala
     detectActiveProject(),
     Promise.all(createAdapters(extensionUri).map(adapter => safeDetect(adapter)))
   ]);
-  return { generatedAt: new Date().toISOString(), project, platforms };
+  return {
+    generatedAt: new Date().toISOString(),
+    project: {
+      ...project,
+      actions: [
+        ...project.actions,
+        {
+          id: "project.copyEnvironmentSnapshot",
+          label: "Copy environment snapshot",
+          enabled: true,
+          kind: "copy",
+          detail: "Copy a sanitized capability/status snapshot without local paths or credentials."
+        }
+      ]
+    },
+    platforms
+  };
 }
 
 async function safeDetect(adapter: PlatformAdapter): Promise<PlatformState> {
