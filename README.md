@@ -6,7 +6,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 - **Galaxy** — one status/control view for projects and platforms, with a sanitized environment snapshot for debugging/handoffs.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
-- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment Tool and MCP workflows, plus safe Fabric CLI auth/workspace navigation.
+- **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment/MCP workflows, read-only environment capture, and review-first CI/CD scaffolding.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
 - **Power BI** — detects PBIP/TMDL/PBIR source projects and links specialized/agentic tooling.
 - **Observability / Grafana** — treats dashboards as code with `gcx`, Foundation SDK and OpenTofu/Terraform deployment paths.
@@ -221,3 +221,53 @@ DataPass does not request or persist Fabric CLI credentials. Pass 4 intentionall
 Use **Copy environment snapshot** in the project card or **DataPass: Copy Environment Snapshot** from the Command Palette.
 
 The exported JSON contains project/platform capability state and detected tool versions, but deliberately excludes local repository paths, binding values, generated commands, tool detail strings and credentials. It is intended for troubleshooting and handoffs, not as a source of project truth.
+
+## Fabric environment summary
+
+With a verified `platforms.fabric.workspaceName`, DataPass can capture workspace metadata and the detailed workspace item listing into a local VS Code Output channel.
+
+Only the official read-only commands `fab get` and `fab ls -l` are used.
+
+## Fabric deployment configuration
+
+Optional project-manifest settings:
+
+```json
+{
+  "platforms": {
+    "fabric": {
+      "workspaceName": "Verified workspace name",
+      "deployment": {
+        "configPath": ".deploy/fabric.yml",
+        "repositoryDirectory": ".",
+        "targetEnvironment": "dev"
+      }
+    }
+  }
+}
+```
+
+**Scaffold deploy config** creates a fabric-cicd-compatible YAML with orphan removal disabled:
+
+```yaml
+publish:
+  skip: false
+
+unpublish:
+  skip: true
+```
+
+**Copy deploy command** copies the corresponding `fab deploy` command. DataPass does not execute it and does not add `--force` or experimental bulk-publish options.
+
+## Fabric CI preflight
+
+**Scaffold CI preflight** creates a manual-only GitHub Actions workflow using Azure OIDC and `ms-fabric-cli`.
+
+The workflow validates:
+
+- authentication;
+- access to the configured Fabric workspace;
+- workspace item listing;
+- presence of the generated deployment config.
+
+It contains no deployment step. This keeps CI readiness separate from cloud mutation until the real environment has been validated.

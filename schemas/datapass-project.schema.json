@@ -4,18 +4,36 @@
   "title": "DataPass Project Manifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "project"],
+  "required": [
+    "schemaVersion",
+    "project"
+  ],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": {
+      "const": 1
+    },
     "project": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "title"],
+      "required": [
+        "id",
+        "title"
+      ],
       "properties": {
-        "id": { "type": "string", "minLength": 1 },
-        "title": { "type": "string", "minLength": 1 },
-        "profile": { "type": "string" },
-        "description": { "type": "string" }
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "repositories": {
@@ -23,10 +41,17 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["path"],
+        "required": [
+          "path"
+        ],
         "properties": {
-          "path": { "type": "string", "minLength": 1 },
-          "label": { "type": "string" }
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string"
+          }
         }
       }
     },
@@ -38,32 +63,69 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "workspaceName": { "type": "string" },
-            "workspaceId": { "type": "string" },
-            "toolboxRoot": { "type": "string" }
+            "workspaceName": {
+              "type": "string"
+            },
+            "workspaceId": {
+              "type": "string"
+            },
+            "toolboxRoot": {
+              "type": "string"
+            },
+            "deployment": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "configPath": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Workspace-relative Fabric deployment config path. Defaults to .deploy/fabric.yml."
+                },
+                "repositoryDirectory": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Workspace-relative directory containing Fabric item definitions. Defaults to workspace root."
+                },
+                "targetEnvironment": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Optional environment name passed to fab deploy --target_env."
+                }
+              }
+            }
           }
         },
         "databricks": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "bundleRoot": { "type": "string" },
-            "defaultTarget": { "type": "string" }
+            "bundleRoot": {
+              "type": "string"
+            },
+            "defaultTarget": {
+              "type": "string"
+            }
           }
         },
         "grafana": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "generatorCommand": { "type": "string" },
-            "watchPath": { "type": "string" }
+            "generatorCommand": {
+              "type": "string"
+            },
+            "watchPath": {
+              "type": "string"
+            }
           }
         },
         "infrastructure": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "root": { "type": "string" }
+            "root": {
+              "type": "string"
+            }
           }
         },
         "oracle": {
@@ -83,10 +145,19 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["label", "url"],
+        "required": [
+          "label",
+          "url"
+        ],
         "properties": {
-          "label": { "type": "string", "minLength": 1 },
-          "url": { "type": "string", "pattern": "^https://" }
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://"
+          }
         }
       }
     }

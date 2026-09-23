@@ -112,24 +112,63 @@ function sanitizeCommandValue(value: string, label: string): string {
   return trimmed;
 }
 
-export type FabricCliOperation = "auth-status" | "login" | "list-workspaces" | "list-workspace-items";
+export type FabricCliOperation =
+  | "auth-status"
+  | "login"
+  | "list-workspaces"
+  | "get-workspace"
+  | "list-workspace-items";
+
+export function fabricCliArgs(
+  operation: FabricCliOperation,
+  workspaceName?: string
+): string[] {
+  switch (operation) {
+    case "auth-status":
+      return ["auth", "status"];
+    case "login":
+      return ["auth", "login"];
+    case "list-workspaces":
+      return ["ls"];
+    case "get-workspace": {
+      const workspace = sanitizeCommandValue(workspaceName || "", "Fabric workspace");
+      const target = /\.workspace$/i.test(workspace) ? workspace : `${workspace}.Workspace`;
+      return ["get", target];
+    }
+    case "list-workspace-items": {
+      const workspace = sanitizeCommandValue(workspaceName || "", "Fabric workspace");
+      const target = /\.workspace$/i.test(workspace) ? workspace : `${workspace}.Workspace`;
+      return ["ls", target, "-l"];
+    }
+  }
+}
 
 export function buildFabricCliCommand(
   operation: FabricCliOperation,
   workspaceName?: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  switch (operation) {
-    case "auth-status":
-      return "fab auth status";
-    case "login":
-      return "fab auth login";
-    case "list-workspaces":
-      return "fab ls";
-    case "list-workspace-items": {
-      const workspace = sanitizeCommandValue(workspaceName || "", "Fabric workspace");
-      const target = /\.workspace$/i.test(workspace) ? workspace : `${workspace}.Workspace`;
-      return `fab ls ${quoteShellArg(target, platform)} -l`;
-    }
+  return ["fab", ...fabricCliArgs(operation, workspaceName).map(arg => quoteShellArg(arg, platform))]
+    .join(" ")
+    .replace(/^fab 'auth' 'status'$/, "fab auth status")
+    .replace(/^fab 'auth' 'login'$/, "fab auth login")
+    .replace(/^fab 'ls'$/, "fab ls")
+    .replace(/^fab 'get' /, "fab get ")
+    .replace(/^fab 'ls' /, "fab ls ")
+    .replace(/ '-l'$/, " -l");
+}
+
+export function buildFabricDeployCommand(
+  configPath: string,
+  targetEnvironment?: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  const config = sanitizeCommandValue(configPath, "Fabric deployment config");
+  const parts = ["fab", "deploy", "--config", quoteShellArg(config, platform)];
+  const target = targetEnvironment?.trim();
+  if (target) {
+    sanitizeCommandValue(target, "Fabric target environment");
+    parts.push("--target_env", quoteShellArg(target, platform));
   }
+  return parts.join(" ");
 }

@@ -34,6 +34,12 @@ export class FabricAdapter implements PlatformAdapter {
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const manifestToolbox = platformConfig?.fabric?.toolboxRoot?.trim();
     const toolboxRoot = localOverride || (workspaceRoot && manifestToolbox ? resolveManifestPath(workspaceRoot, manifestToolbox) : "");
+    const fabricConfig = platformConfig?.fabric;
+    const hasWorkspaceIdentity = Boolean(fabricConfig?.workspaceName?.trim() || fabricConfig?.workspaceId?.trim());
+    const deployConfigRelative = fabricConfig?.deployment?.configPath?.trim() || ".deploy/fabric.yml";
+    const deployConfigExists = workspaceRoot
+      ? await exists(vscode.Uri.file(resolveManifestPath(workspaceRoot, deployConfigRelative)))
+      : false;
     const catalog = await this.loadCatalog();
     const fatAvailable = workflowTools.find(tool => tool.id === "fat")?.available ?? false;
     const catalogItems = catalog.items.map(item => toCatalogItemState(item, Boolean(toolboxRoot), fatAvailable));
@@ -66,7 +72,11 @@ export class FabricAdapter implements PlatformAdapter {
         { id: "fabric.authStatus", label: "Auth status", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run official fab auth status." : "Install Microsoft Fabric CLI first." },
         { id: "fabric.login", label: "Login", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run official interactive fab auth login." : "Install Microsoft Fabric CLI first." },
         { id: "fabric.listWorkspaces", label: "List workspaces", enabled: fabAvailable, kind: "run", detail: fabAvailable ? "Run read-only fab ls." : "Install Microsoft Fabric CLI first." },
-        { id: "fabric.listProjectWorkspace", label: "Project workspace", enabled: fabAvailable && Boolean(platformConfig?.fabric?.workspaceName), kind: "run", detail: platformConfig?.fabric?.workspaceName ? `Inspect ${platformConfig.fabric.workspaceName}.Workspace with fab ls -l.` : "Declare platforms.fabric.workspaceName in the project manifest." },
+        { id: "fabric.listProjectWorkspace", label: "Project workspace", enabled: fabAvailable && Boolean(fabricConfig?.workspaceName), kind: "run", detail: fabricConfig?.workspaceName ? `Inspect ${fabricConfig.workspaceName}.Workspace with fab ls -l.` : "Declare platforms.fabric.workspaceName in the project manifest." },
+        { id: "fabric.captureSummary", label: "Environment summary", enabled: fabAvailable && Boolean(fabricConfig?.workspaceName), kind: "run", detail: fabricConfig?.workspaceName ? "Capture read-only workspace metadata and item listing in a local VS Code output channel." : "Declare platforms.fabric.workspaceName first." },
+        { id: "fabric.scaffoldDeployConfig", label: "Scaffold deploy config", enabled: Boolean(workspaceRoot && hasWorkspaceIdentity), kind: "configure", detail: hasWorkspaceIdentity ? "Create a local Fabric deployment YAML with unpublish disabled." : "Verify and declare a Fabric workspace name or ID first." },
+        { id: "fabric.copyDeployCommand", label: "Copy deploy command", enabled: fabAvailable && deployConfigExists, kind: "copy", detail: deployConfigExists ? "Copy fab deploy command only; DataPass will not execute it." : `Scaffold ${deployConfigRelative} first.` },
+        { id: "fabric.scaffoldPreflightWorkflow", label: "Scaffold CI preflight", enabled: Boolean(workspaceRoot && fabricConfig?.workspaceName && deployConfigExists), kind: "configure", detail: deployConfigExists ? "Create a manual read-only GitHub Actions preflight using Azure OIDC." : "Scaffold the Fabric deployment config first." },
         { id: "fabric.openToolbox", label: "Fabric Toolbox", enabled: true, kind: "link" },
         { id: "fabric.securityAudit", label: "Security audit", enabled: Boolean(toolboxRoot), kind: "run", detail: toolboxRoot ? "Run the upstream Fabric Toolbox security audit script." : "Configure a local Fabric Toolbox clone first." },
         { id: "fabric.openCostAnalysis", label: "Cost Analysis", enabled: true, kind: "link" },
@@ -74,7 +84,8 @@ export class FabricAdapter implements PlatformAdapter {
       ],
       details: [
         toolboxRoot ? `Local Toolbox: ${toolboxRoot}` : "Local Fabric Toolbox clone not configured.",
-        platformConfig?.fabric?.workspaceName ? `Manifest workspace: ${platformConfig.fabric.workspaceName}` : "Fabric workspace identity is not declared in the project manifest.",
+        fabricConfig?.workspaceName ? `Manifest workspace: ${fabricConfig.workspaceName}` : "Fabric workspace name is not declared in the project manifest.",
+        hasWorkspaceIdentity ? `Deployment config: ${deployConfigRelative} · ${deployConfigExists ? "present" : "not created"}` : "Fabric deployment is unbound until a workspace identity is verified.",
         "DataPass composes Fabric tooling; it does not replace vendor/community clients."
       ],
       catalog: {
@@ -153,4 +164,13 @@ function catalogAction(
           ? "Install the upstream Fabric Assessment Tool (fat) first."
           : "This catalog action is registered but not automated yet."
   };
+}
+
+async function exists(uri: vscode.Uri): Promise<boolean> {
+  try {
+    await vscode.workspace.fs.stat(uri);
+    return true;
+  } catch {
+    return false;
+  }
 }

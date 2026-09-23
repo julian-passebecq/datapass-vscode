@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDatabricksBundleCommand, buildFabricAssessmentCommand, buildFabricCliCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
+import { buildDatabricksBundleCommand, buildFabricAssessmentCommand, buildFabricCliCommand, buildFabricDeployCommand, buildFabricSecurityAuditCommand, fabricCliArgs, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
 
 test("quoteShellArg escapes POSIX single quotes", () => {
   assert.equal(quoteShellArg("a'b", "linux"), `'a'"'"'b'`);
@@ -72,4 +72,21 @@ test("Fabric CLI does not duplicate .Workspace suffix", () => {
     buildFabricCliCommand("list-workspace-items", "FOIL.Workspace", "linux"),
     "fab ls 'FOIL.Workspace' -l"
   );
+});
+
+test("Fabric CLI read-only args can be executed without a shell", () => {
+  assert.deepEqual(
+    fabricCliArgs("get-workspace", "FOIL Wind Lab"),
+    ["get", "FOIL Wind Lab.Workspace"]
+  );
+  assert.deepEqual(
+    fabricCliArgs("list-workspace-items", "FOIL Wind Lab"),
+    ["ls", "FOIL Wind Lab.Workspace", "-l"]
+  );
+});
+
+test("Fabric deploy command is review-first and never forces execution", () => {
+  const command = buildFabricDeployCommand(".deploy/fabric.yml", "dev", "linux");
+  assert.equal(command, "fab deploy --config '.deploy/fabric.yml' --target_env 'dev'");
+  assert.doesNotMatch(command, /--force|-f\b|bulk_publish/);
 });

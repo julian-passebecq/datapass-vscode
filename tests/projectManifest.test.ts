@@ -49,3 +49,31 @@ test("manifest paths resolve relative to the workspace root", () => {
     path.normalize("/opt/data")
   );
 });
+
+test("manifest accepts portable Fabric deployment settings", () => {
+  const manifest = genericProjectManifest("Fabric Project");
+  manifest.platforms = {
+    fabric: {
+      workspaceName: "Fabric Dev",
+      deployment: {
+        configPath: ".deploy/fabric.yml",
+        repositoryDirectory: "fabric",
+        targetEnvironment: "dev"
+      }
+    }
+  };
+  assert.deepEqual(validateProjectManifest(manifest), []);
+});
+
+test("manifest rejects empty Fabric deployment fields", () => {
+  const errors = validateProjectManifest({
+    schemaVersion: 1,
+    project: { id: "x", title: "X" },
+    platforms: {
+      fabric: {
+        deployment: { configPath: "" }
+      }
+    }
+  });
+  assert.ok(errors.some(error => error.includes("configPath")));
+});

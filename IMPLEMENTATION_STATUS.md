@@ -1,60 +1,113 @@
-# Implementation Status — Pass 5
+# Implementation Status — Pass 6
 
 Date: 2026-09-23
-Branch: `codex/pass5-environment-snapshot`
+Branch: `codex/pass6-fabric-summary-cicd`
+Version: `0.6.0`
 
 ## Implemented
 
-### Sanitized environment snapshot
+### Read-only Fabric environment capture
 
-The Galaxy and Command Palette now provide **Copy Environment Snapshot**.
+DataPass can now capture the project-bound Fabric workspace into a local VS Code Output channel using the official `fab` CLI with argument arrays rather than shell interpolation.
 
-The snapshot is intentionally non-authoritative and support-oriented. It includes:
+The capture runs only:
 
-- DataPass project id/title/active state;
-- binding names and bound/missing/unknown status;
-- platform status;
-- detected tool names, availability and versions;
-- Fabric Toolbox item count and categories;
-- generation timestamp.
+- `fab get <workspace>.Workspace`
+- `fab ls <workspace>.Workspace -l`
 
-It intentionally omits:
+It does not mutate Fabric.
 
-- repository binding values;
-- local filesystem paths;
-- action payloads and generated commands;
-- tool detail strings;
-- platform detail strings;
-- credentials/tokens/secrets.
+### Safe Fabric deployment baseline
 
-The result is copied as formatted JSON to the clipboard and is suitable for issue reports, AI handoffs and debugging.
+The project manifest now supports:
 
-## Safety
+```json
+{
+  "platforms": {
+    "fabric": {
+      "workspaceName": "Verified workspace name",
+      "deployment": {
+        "configPath": ".deploy/fabric.yml",
+        "repositoryDirectory": ".",
+        "targetEnvironment": "dev"
+      }
+    }
+  }
+}
+```
 
-The snapshot is built through an explicit redaction model rather than serializing live Galaxy state directly.
+The Galaxy can scaffold a Fabric deployment YAML based on the official Fabric CLI / fabric-cicd configuration model.
 
-Unit coverage injects:
+Safety baseline:
 
-- a Windows user path;
-- private local tool paths;
-- token-like action detail content;
-- project summaries containing sensitive-looking text;
+- target workspace must already be declared in the project manifest;
+- workspace ID, when used, must be a GUID;
+- repository path is calculated relative to the generated config;
+- `publish.skip: false` is explicit;
+- **`unpublish.skip: true` is explicit** to avoid automatic orphan removal;
+- no bulk-publish feature flags are generated.
 
-and verifies these values do not appear in the exported snapshot.
+### Deploy command generation
 
-## Existing capabilities retained
+DataPass can copy:
 
-- portable `.datapass/project.json`;
-- Fabric Toolbox Galaxy;
-- Fabric Security Audit;
-- Fabric Assessment Tool;
-- Fabric/Power BI MCP configuration;
-- official Fabric CLI auth/workspace navigation;
-- official Databricks extension + CLI/Bundle routing;
-- Power BI source detection;
-- Grafana as code;
-- OpenTofu/Terraform/Docker/Kubernetes/Remote SSH detection;
-- FOIL profile #1.
+```bash
+fab deploy --config <config> [--target_env <environment>]
+```
+
+It does not execute the command.
+
+DataPass does not add:
+
+- `--force`;
+- `--bulk_publish`;
+- experimental feature flags.
+
+### Manual CI preflight
+
+DataPass can scaffold:
+
+```text
+.github/workflows/fabric-preflight.yml
+```
+
+The workflow is deliberately:
+
+- `workflow_dispatch` only;
+- Azure OIDC based;
+- read-only;
+- no client secret embedded;
+- no deployment step.
+
+It installs `ms-fabric-cli`, binds it to the Azure CLI OIDC session, checks auth status, verifies the project workspace, lists workspace items and verifies that the deployment config exists.
+
+Expected GitHub secrets:
+
+- `AZURE_CLIENT_ID`
+- `AZURE_TENANT_ID`
+- `AZURE_SUBSCRIPTION_ID`
+
+### Command Palette
+
+Pass 6 adds:
+
+- **DataPass: Fabric Capture Environment Summary**
+- **DataPass: Fabric Scaffold Deploy Config**
+- **DataPass: Fabric Copy Deploy Command**
+- **DataPass: Fabric Scaffold CI Preflight**
+
+## Upstream provenance
+
+Implementation was checked against:
+
+- `microsoft/fabric-cli@0183fbf1809826040ed4805e6163cb51c1613cb9`
+  - `docs/commands/fs/deploy.md`
+  - `docs/examples/workspace_examples.md`
+  - authentication implementation for `--azure-cli`
+- `microsoft/fabric-cicd@8d9e6f8025fff5aba484e4b9ecf331a186ae40f2`
+  - `docs/how_to/deployment_overview.md`
+  - `docs/how_to/config_deployment.md`
+  - `docs/example/release_pipeline.md`
 
 ## Verification
 
@@ -67,23 +120,30 @@ CI remains the merge gate:
 5. VSIX packaging;
 6. artifact upload.
 
-## Pending live validation
+New tests enforce:
 
-The principal remaining uncertainty is now desktop/runtime integration rather than compile-time structure:
+- shell-free Fabric CLI argument construction;
+- Fabric deployment manifest validation;
+- `unpublish.skip: true`;
+- no `--force` / bulk publish in generated deploy commands;
+- manual-only, read-only GitHub Actions preflight;
+- OIDC secret references without embedded client secrets.
 
-- install the VSIX in the user's desktop VS Code;
-- inspect Galaxy layout;
-- verify real extension/CLI detection;
-- load a real FOIL project manifest;
-- test Fabric CLI auth/workspace navigation;
-- test one built MCP server;
-- test Fabric Assessment Tool in a non-production context.
+## Deliberately deferred
+
+DataPass still does not automatically run Fabric deployment.
+
+Before enabling an execution button, validate on the user's real environment:
+
+1. desktop VSIX;
+2. Fabric CLI authentication;
+3. real workspace identity;
+4. repository item definitions;
+5. generated config;
+6. manual copied deployment command in a non-production workspace.
 
 ## Next likely pass
 
-After desktop smoke testing:
-
-1. add read-only Fabric item/environment summary capture;
-2. add explicit Fabric CI/CD task generation with confirmation boundaries;
-3. improve Galaxy navigation/visual grouping based on actual desktop ergonomics;
-4. deepen Power BI source/agentic integration where it complements specialized tools.
+- Power BI / semantic-model engineering integration around existing agentic/MCP tools;
+- richer project health UI once desktop ergonomics are observed;
+- optional Fabric CI/CD execution only after the preflight and manual deployment path are verified.
