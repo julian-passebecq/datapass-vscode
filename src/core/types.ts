@@ -57,10 +57,29 @@ export interface ProjectProfileState {
   actions: PlatformAction[];
 }
 
+export type GalaxyAttentionSeverity = "error" | "warning" | "setup";
+
+export interface GalaxyAttentionItem {
+  id: string;
+  severity: GalaxyAttentionSeverity;
+  label: string;
+  detail: string;
+  action?: PlatformAction;
+}
+
+export interface GalaxyHealthSummary {
+  overall: "healthy" | "attention" | "setup";
+  platformCounts: Record<StatusLevel, number>;
+  tools: { available: number; total: number };
+  bindings: { bound: number; missing: number; unknown: number; total: number };
+  attention: GalaxyAttentionItem[];
+}
+
 export interface GalaxyState {
   generatedAt: string;
   project: ProjectProfileState;
   platforms: PlatformState[];
+  health?: GalaxyHealthSummary;
 }
 
 export interface PlatformAdapter {
