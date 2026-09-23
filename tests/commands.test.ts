@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildDatabricksBundleCommand, buildGrafanaPreviewCommand, buildIaCCommand, quoteShellArg } from "../src/core/commands";
+import { buildDatabricksBundleCommand, buildFabricSecurityAuditCommand, buildGrafanaPreviewCommand, buildIaCCommand, quotePowerShellArg, quoteShellArg } from "../src/core/commands";
 
 test("quoteShellArg escapes POSIX single quotes", () => {
   assert.equal(quoteShellArg("a'b", "linux"), `'a'"'"'b'`);
@@ -25,4 +25,18 @@ test("Grafana preview quotes generator and watch path", () => {
 
 test("IaC command is copy-safe and explicit", () => {
   assert.match(buildIaCCommand("tofu", "plan", "/tmp/infra", "linux"), /tofu plan$/);
+});
+test("PowerShell quoting doubles embedded single quotes", () => {
+  assert.equal(quotePowerShellArg("O'Brien"), "'O''Brien'");
+});
+
+test("Fabric security audit requires https and quotes inputs", () => {
+  assert.throws(
+    () => buildFabricSecurityAuditCommand("/tmp/audit.ps1", "http://example.com"),
+    /https/
+  );
+  assert.equal(
+    buildFabricSecurityAuditCommand("/tmp/audit.ps1", "https://app.fabric.microsoft.com/item", "user@example.com"),
+    "& '/tmp/audit.ps1' -Url 'https://app.fabric.microsoft.com/item' -NoPrompt -User 'user@example.com'"
+  );
 });
