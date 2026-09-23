@@ -111,3 +111,25 @@ function sanitizeCommandValue(value: string, label: string): string {
   if (/\r|\n|\0/.test(trimmed)) throw new Error(`${label} contains unsupported control characters.`);
   return trimmed;
 }
+
+export type FabricCliOperation = "auth-status" | "login" | "list-workspaces" | "list-workspace-items";
+
+export function buildFabricCliCommand(
+  operation: FabricCliOperation,
+  workspaceName?: string,
+  platform: NodeJS.Platform = process.platform
+): string {
+  switch (operation) {
+    case "auth-status":
+      return "fab auth status";
+    case "login":
+      return "fab auth login";
+    case "list-workspaces":
+      return "fab ls";
+    case "list-workspace-items": {
+      const workspace = sanitizeCommandValue(workspaceName || "", "Fabric workspace");
+      const target = /\.workspace$/i.test(workspace) ? workspace : `${workspace}.Workspace`;
+      return `fab ls ${quoteShellArg(target, platform)} -l`;
+    }
+  }
+}
