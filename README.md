@@ -8,7 +8,7 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.
 - **Microsoft Fabric** — detects Microsoft Fabric VS Code, Fabric Studio, OneLake-VSCode, Fabric CLI and operational prerequisites; renders a curated Fabric Toolbox gallery, guided Assessment/MCP workflows, read-only environment capture, and review-first CI/CD scaffolding.
 - **Databricks** — detects the official Databricks extension, CLI and Asset Bundle projects; provides safe Bundle command generation.
-- **Power BI** — detects PBIP/TMDL/PBIR source projects and links specialized/agentic tooling.
+- **Power BI** — detects PBIP/TMDL/PBIR source projects and GitHub Copilot CLI; exposes focused agentic modules while keeping specialized editors external.
 - **Observability / Grafana** — treats dashboards as code with `gcx`, Foundation SDK and OpenTofu/Terraform deployment paths.
 - **Infrastructure** — detects OpenTofu/Terraform, Docker, Kubernetes, SSH and peer extensions without replacing them.
 
@@ -271,3 +271,20 @@ The workflow validates:
 - presence of the generated deployment config.
 
 It contains no deployment step. This keeps CI readiness separate from cloud mutation until the real environment has been validated.
+
+## Power BI agentic engineering
+
+The Power BI card detects PBIP, TMDL and PBIR source plus GitHub Copilot CLI.
+
+DataPass exposes focused modules from `data-goblin/power-bi-agentic-development`:
+
+- PBIP
+- Semantic models
+- Reports
+- Power BI Desktop
+- Tabular Editor
+- Fabric CLI
+
+**Copy marketplace add** and each module's **Copy install** action only place the documented Copilot CLI command on the clipboard. DataPass does not install plugins automatically because Copilot CLI plugin scope is user-wide.
+
+The MacGyver toolbox remains a visual/reference resource; Power BI Desktop, Tabular Editor and other specialized tools remain external peer applications.
