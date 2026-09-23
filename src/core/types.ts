@@ -22,6 +22,8 @@ export interface CatalogItemState {
   category: string;
   kind: string;
   source: string;
+  description?: string;
+  verifiedRef?: string;
   actions: PlatformAction[];
 }
 
