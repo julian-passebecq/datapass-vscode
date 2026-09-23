@@ -14,6 +14,9 @@ export class ObservabilityAdapter implements PlatformAdapter {
       { id: "tofu", label: "OpenTofu", command: "tofu", args: ["version"] },
       { id: "terraform", label: "Terraform", command: "terraform", args: ["version"] }
     ]);
+    const gcx = detected[0]!;
+    const tofu = detected[1]!;
+    const terraform = detected[2]!;
     const sourceDetected = await anyWorkspaceFile(["**/grafana/**/*.{ts,go,json,yaml,yml}", "**/*dashboard*.{ts,go,json,yaml,yml}"]);
     const generator = vscode.workspace.getConfiguration("datapass").get<string>("grafana.generatorCommand", "").trim();
     const tools: ToolProbe[] = [
