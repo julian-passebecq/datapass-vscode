@@ -57,7 +57,7 @@ export async function getProjectPlatformConfig(): Promise<DataPassProjectManifes
   return (await readProjectManifest()).manifest?.platforms;
 }
 
-function manifestToState(manifest: DataPassProjectManifest): ProjectProfileState {
+async function manifestToState(manifest: DataPassProjectManifest): Promise<ProjectProfileState> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const bindings: ProjectBinding[] = [];
   const actions: PlatformAction[] = [
@@ -67,11 +67,18 @@ function manifestToState(manifest: DataPassProjectManifest): ProjectProfileState
   if (root) {
     for (const [key, repo] of Object.entries(manifest.repositories ?? {})) {
       const value = resolveManifestPath(root, repo.path);
+      let exists = false;
+      try {
+        await vscode.workspace.fs.stat(vscode.Uri.file(value));
+        exists = true;
+      } catch {
+        exists = false;
+      }
       bindings.push({
         id: key,
         label: repo.label || key,
         value,
-        status: "bound"
+        status: exists ? "bound" : "missing"
       });
       actions.push({
         id: `project.openRepo::${key}`,
