@@ -15,7 +15,7 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
     view.webview.html = this.html(view.webview);
     view.webview.onDidReceiveMessage(async message => {
       if (message?.type === "action" && typeof message.action === "string") {
-        await executeGalaxyAction(message.action);
+        await executeGalaxyAction(message.action, this.extensionUri);
         await this.refresh();
       }
     });
