@@ -17,6 +17,7 @@ import {
   renderSafeFabricDeploymentConfig,
   repositoryPathRelativeToConfig
 } from "./fabricDeployment";
+import { renderFabricPreflightWorkflow } from "./fabricWorkflow";
 import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mcp";
 import { commandAvailable } from "./vscodeDetection";
 import { collectGalaxyState } from "./galaxyState";
@@ -78,6 +79,7 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "fabric.captureSummary": await captureFabricEnvironmentSummary(); return;
     case "fabric.scaffoldDeployConfig": await scaffoldFabricDeployConfig(); return;
     case "fabric.copyDeployCommand": await copyFabricDeployCommand(); return;
+    case "fabric.scaffoldPreflightWorkflow": await scaffoldFabricPreflightWorkflow(); return;
     case "fabric.securityAudit": await runFabricSecurityAudit(extensionUri); return;
     case "fabric.openCostAnalysis": await openUrl(URLS["fabric.costAnalysis"]!); return;
     case "fabric.configureToolbox": await selectFolderSetting("fabric.toolboxRoot", "Select local Microsoft Fabric Toolbox clone"); return;
@@ -264,6 +266,65 @@ async function scaffoldFabricDeployConfig(): Promise<void> {
   await vscode.window.showTextDocument(configUri);
   void vscode.window.showInformationMessage(
     "DataPass: created Fabric deployment config with unpublish disabled. Review it before any deployment."
+  );
+}
+
+async function scaffoldFabricPreflightWorkflow(): Promise<void> {
+  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!workspaceRoot) {
+    void vscode.window.showWarningMessage("DataPass: open a workspace folder before scaffolding Fabric CI preflight.");
+    return;
+  }
+
+  const projectConfig = await getProjectPlatformConfig();
+  const fabric = projectConfig?.fabric;
+  const workspace = fabric?.workspaceName?.trim();
+  if (!workspace) {
+    void vscode.window.showWarningMessage(
+      "DataPass: declare platforms.fabric.workspaceName before creating the Fabric preflight workflow."
+    );
+    return;
+  }
+
+  const configRelative = fabric?.deployment?.configPath?.trim() || ".deploy/fabric.yml";
+  const workflowPath = path.join(workspaceRoot, ".github", "workflows", "fabric-preflight.yml");
+  const workflowUri = vscode.Uri.file(workflowPath);
+
+  let content: string;
+  try {
+    content = renderFabricPreflightWorkflow({
+      workspaceName: workspace,
+      deploymentConfigPath: configRelative
+    });
+  } catch (error) {
+    void vscode.window.showErrorMessage(
+      `DataPass: ${error instanceof Error ? error.message : String(error)}`
+    );
+    return;
+  }
+
+  try {
+    await vscode.workspace.fs.stat(workflowUri);
+    const choice = await vscode.window.showWarningMessage(
+      "Fabric preflight workflow already exists.",
+      { modal: true },
+      "Open existing",
+      "Replace"
+    );
+    if (choice === "Open existing") {
+      await vscode.window.showTextDocument(workflowUri);
+      return;
+    }
+    if (choice !== "Replace") return;
+  } catch {
+    // workflow does not exist
+  }
+
+  await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(workflowPath)));
+  await vscode.workspace.fs.writeFile(workflowUri, new TextEncoder().encode(content));
+  await vscode.window.showTextDocument(workflowUri);
+  void vscode.window.showInformationMessage(
+    "DataPass: created manual read-only Fabric preflight workflow. Configure the referenced Azure OIDC secrets before running it."
   );
 }
 
