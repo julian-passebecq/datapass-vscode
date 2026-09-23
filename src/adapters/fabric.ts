@@ -20,6 +20,11 @@ export class FabricAdapter implements PlatformAdapter {
       detectExtension("GerhardBrueckl.onelake-vscode", "OneLake-VSCode"),
       await detectCli({ id: "fab", label: "Fabric CLI", command: "fab", args: ["--version"] })
     ];
+    const workflowTools: ToolProbe[] = [
+      await detectCli({ id: "fat", label: "Fabric Assessment Tool", command: "fat", args: ["--help"] }),
+      await detectCli({ id: "python", label: "Python", command: process.platform === "win32" ? "python" : "python3", args: ["--version"] }),
+      await detectCli({ id: "pwsh", label: "PowerShell 7", command: "pwsh", args: ["-NoProfile", "-Command", "$PSVersionTable.PSVersion.ToString()"] })
+    ];
     const config = vscode.workspace.getConfiguration("datapass");
     const localOverride = config.get<string>("fabric.toolboxRoot", "").trim();
     const platformConfig = await getProjectPlatformConfig();
@@ -27,9 +32,11 @@ export class FabricAdapter implements PlatformAdapter {
     const manifestToolbox = platformConfig?.fabric?.toolboxRoot?.trim();
     const toolboxRoot = localOverride || (workspaceRoot && manifestToolbox ? resolveManifestPath(workspaceRoot, manifestToolbox) : "");
     const catalog = await this.loadCatalog();
-    const catalogItems = catalog.items.map(item => toCatalogItemState(item, Boolean(toolboxRoot)));
+    const fatAvailable = workflowTools.find(tool => tool.id === "fat")?.available ?? false;
+    const catalogItems = catalog.items.map(item => toCatalogItemState(item, Boolean(toolboxRoot), fatAvailable));
     const tools: ToolProbe[] = [
       ...integrationTools,
+      ...workflowTools,
       {
         id: "fabric-toolbox-catalog",
         label: "Fabric Toolbox catalog",
@@ -73,7 +80,8 @@ export class FabricAdapter implements PlatformAdapter {
 
 function toCatalogItemState(
   item: ToolCatalog["items"][number],
-  hasToolboxRoot: boolean
+  hasToolboxRoot: boolean,
+  fatAvailable: boolean
 ): CatalogItemState {
   return {
     id: item.id,
@@ -83,17 +91,24 @@ function toCatalogItemState(
     source: item.source,
     description: item.description,
     verifiedRef: item.verifiedRef,
-    actions: item.actions.map(action => catalogAction(item.id, action, hasToolboxRoot))
+    actions: item.actions.map(action => catalogAction(item.id, action, hasToolboxRoot, fatAvailable))
   };
 }
 
-function catalogAction(itemId: string, action: CatalogAction, hasToolboxRoot: boolean): PlatformAction {
-  const supportedRun = itemId === "fabric-security-audit";
+function catalogAction(
+  itemId: string,
+  action: CatalogAction,
+  hasToolboxRoot: boolean,
+  fatAvailable: boolean
+): PlatformAction {
+  const runEnabled =
+    (itemId === "fabric-security-audit" && hasToolboxRoot) ||
+    (itemId === "fabric-assessment-tool" && fatAvailable);
   const enabled =
     action === "read" ||
     action === "clone" ||
     action === "configure" ||
-    (action === "run" && supportedRun && hasToolboxRoot);
+    (action === "run" && runEnabled);
 
   const labels: Record<CatalogAction, string> = {
     read: "Open",
@@ -119,8 +134,10 @@ function catalogAction(itemId: string, action: CatalogAction, hasToolboxRoot: bo
     kind: kinds[action],
     detail: enabled
       ? undefined
-      : action === "run" && !hasToolboxRoot
+      : action === "run" && itemId === "fabric-security-audit" && !hasToolboxRoot
         ? "Configure a local Fabric Toolbox clone first."
-        : "This catalog action is registered but not implemented in Pass 2."
+        : action === "run" && itemId === "fabric-assessment-tool" && !fatAvailable
+          ? "Install the upstream Fabric Assessment Tool (fat) first."
+          : "This catalog action is registered but not automated yet."
   };
 }
