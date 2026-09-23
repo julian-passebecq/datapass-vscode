@@ -43,6 +43,19 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("datapass.copyEnvironmentSnapshot", async () => {
       await executeGalaxyAction("project.copyEnvironmentSnapshot", context.extensionUri);
     }),
+    vscode.commands.registerCommand("datapass.fabric.captureSummary", async () => {
+      await executeGalaxyAction("fabric.captureSummary", context.extensionUri);
+    }),
+    vscode.commands.registerCommand("datapass.fabric.scaffoldDeployConfig", async () => {
+      await executeGalaxyAction("fabric.scaffoldDeployConfig", context.extensionUri);
+      await galaxy.refresh();
+    }),
+    vscode.commands.registerCommand("datapass.fabric.copyDeployCommand", async () => {
+      await executeGalaxyAction("fabric.copyDeployCommand", context.extensionUri);
+    }),
+    vscode.commands.registerCommand("datapass.fabric.scaffoldPreflightWorkflow", async () => {
+      await executeGalaxyAction("fabric.scaffoldPreflightWorkflow", context.extensionUri);
+    }),
     vscode.commands.registerCommand("datapass.selectFoilControlRoot", async () => {
       await selectFoilRoot("foil.controlRoot", "Select foil-control-v1 repository");
       await galaxy.refresh();
