@@ -1,49 +1,60 @@
-# Implementation Status — Pass 4
+# Implementation Status — Pass 5
 
 Date: 2026-09-23
-Branch: `codex/pass4-fabric-cli-readonly`
+Branch: `codex/pass5-environment-snapshot`
 
 ## Implemented
 
-### Official Fabric CLI control surface
+### Sanitized environment snapshot
 
-DataPass now exposes a small, safe Fabric CLI navigation layer in the Galaxy using the official Microsoft `fab` CLI:
+The Galaxy and Command Palette now provide **Copy Environment Snapshot**.
 
-- **Auth status** → `fab auth status`
-- **Login** → `fab auth login`
-- **List workspaces** → `fab ls`
-- **Project workspace** → `fab ls "<workspace>.Workspace" -l`
+The snapshot is intentionally non-authoritative and support-oriented. It includes:
 
-The project-workspace action is enabled only when:
+- DataPass project id/title/active state;
+- binding names and bound/missing/unknown status;
+- platform status;
+- detected tool names, availability and versions;
+- Fabric Toolbox item count and categories;
+- generation timestamp.
 
-1. Fabric CLI is detected; and
-2. `platforms.fabric.workspaceName` exists in `.datapass/project.json`.
+It intentionally omits:
 
-The extension does not collect Fabric credentials. Interactive authentication is owned by Fabric CLI.
+- repository binding values;
+- local filesystem paths;
+- action payloads and generated commands;
+- tool detail strings;
+- platform detail strings;
+- credentials/tokens/secrets.
 
-### Safety boundary
+The result is copied as formatted JSON to the clipboard and is suitable for issue reports, AI handoffs and debugging.
 
-Pass 4 intentionally stays on the read/navigation side of Fabric CLI.
+## Safety
 
-It does **not** add:
+The snapshot is built through an explicit redaction model rather than serializing live Galaxy state directly.
 
-- `fab rm`
-- `fab mkdir`
-- `fab cp`
-- `fab import`
-- `fab set`
-- direct mutating Fabric REST calls
+Unit coverage injects:
 
-Those can be introduced later only behind explicit project tasks/confirmation and live verification.
+- a Windows user path;
+- private local tool paths;
+- token-like action detail content;
+- project summaries containing sensitive-looking text;
 
-### Existing Fabric operational surfaces retained
+and verifies these values do not appear in the exported snapshot.
 
-- Fabric Studio / Microsoft Fabric / OneLake peer-extension detection;
-- Fabric Toolbox gallery;
-- guarded Fabric Security Audit;
-- guided Fabric Assessment Tool;
-- Semantic Model / Fabric Management / DAX MCP setup;
-- Python / PowerShell / .NET / MCP readiness.
+## Existing capabilities retained
+
+- portable `.datapass/project.json`;
+- Fabric Toolbox Galaxy;
+- Fabric Security Audit;
+- Fabric Assessment Tool;
+- Fabric/Power BI MCP configuration;
+- official Fabric CLI auth/workspace navigation;
+- official Databricks extension + CLI/Bundle routing;
+- Power BI source detection;
+- Grafana as code;
+- OpenTofu/Terraform/Docker/Kubernetes/Remote SSH detection;
+- FOIL profile #1.
 
 ## Verification
 
@@ -56,32 +67,23 @@ CI remains the merge gate:
 5. VSIX packaging;
 6. artifact upload.
 
-New tests cover official Fabric CLI command generation and workspace suffix handling.
-
-## Current upstream basis
-
-Fabric CLI behavior is aligned with current Microsoft documentation/repository examples:
-
-- `fab auth status`
-- `fab auth login`
-- `fab ls`
-- `fab ls <workspace>.Workspace -l`
-
-DataPass remains a thin orchestrator over the vendor CLI rather than reimplementing Fabric APIs.
-
 ## Pending live validation
 
-- install VSIX in desktop VS Code;
-- verify Fabric CLI auth status in the user's environment;
-- list the user's accessible workspaces;
-- add the real FOIL Fabric workspace name to the project manifest only after it is verified;
-- inspect that workspace through the Galaxy.
+The principal remaining uncertainty is now desktop/runtime integration rather than compile-time structure:
+
+- install the VSIX in the user's desktop VS Code;
+- inspect Galaxy layout;
+- verify real extension/CLI detection;
+- load a real FOIL project manifest;
+- test Fabric CLI auth/workspace navigation;
+- test one built MCP server;
+- test Fabric Assessment Tool in a non-production context.
 
 ## Next likely pass
 
-After desktop validation:
+After desktop smoke testing:
 
-1. add read-only Fabric item summaries/exportable environment health;
-2. add explicit Fabric CI/CD task generation using Fabric CLI / `fabric-cicd`;
-3. add a compact project health/handoff export from the Galaxy;
-4. deepen Power BI source workflows while keeping heavy model editors external.
+1. add read-only Fabric item/environment summary capture;
+2. add explicit Fabric CI/CD task generation with confirmation boundaries;
+3. improve Galaxy navigation/visual grouping based on actual desktop ergonomics;
+4. deepen Power BI source/agentic integration where it complements specialized tools.
