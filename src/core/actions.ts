@@ -12,6 +12,8 @@ import {
 import { parseToolCatalog, type ToolCatalogItem } from "./catalog";
 import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mcp";
 import { commandAvailable } from "./vscodeDetection";
+import { collectGalaxyState } from "./galaxyState";
+import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
 import { getFoilBinding } from "../profiles/foil";
 import {
   getProjectPlatformConfig,
@@ -58,6 +60,7 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "project.initializeManifest": await initializeProjectManifest("generic"); return;
     case "project.initializeManifestFoil": await initializeProjectManifest("foil"); return;
     case "project.openManifest": await openProjectManifest(); return;
+    case "project.copyEnvironmentSnapshot": await copyEnvironmentSnapshot(extensionUri); return;
     case "fabric.open": await openFabric(); return;
     case "fabric.openStudio": await openFabricStudio(); return;
     case "fabric.openToolbox": await openUrl(URLS["fabric.toolbox"]!); return;
@@ -87,6 +90,15 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "foil.openOracle": await openFoilOracle(); return;
     default: void vscode.window.showWarningMessage(`DataPass: unknown action ${action}`);
   }
+}
+
+async function copyEnvironmentSnapshot(extensionUri: vscode.Uri): Promise<void> {
+  const state = await collectGalaxyState(extensionUri);
+  const snapshot = buildSanitizedEnvironmentSnapshot(state);
+  await vscode.env.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+  void vscode.window.showInformationMessage(
+    "DataPass: copied sanitized environment snapshot. Local paths, action payloads and credentials are omitted."
+  );
 }
 
 async function initializeProjectManifest(kind: "generic" | "foil"): Promise<void> {
