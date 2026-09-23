@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana, infrastructure and project profiles.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -18,7 +18,8 @@
     "onCommand:datapass.openGalaxy",
     "onCommand:datapass.initializeProjectManifest",
     "onCommand:datapass.initializeFoilProjectManifest",
-    "onCommand:datapass.openProjectManifest"
+    "onCommand:datapass.openProjectManifest",
+    "onCommand:datapass.copyEnvironmentSnapshot"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -51,6 +52,10 @@
       {
         "command": "datapass.openProjectManifest",
         "title": "DataPass: Open Project Manifest"
+      },
+      {
+        "command": "datapass.copyEnvironmentSnapshot",
+        "title": "DataPass: Copy Environment Snapshot"
       }
     ],
     "viewsContainers": {
