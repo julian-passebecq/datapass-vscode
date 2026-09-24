@@ -5,6 +5,8 @@ import type { GalaxyState } from "./core/types";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
+import { setClipboardForTests, type Clipboard } from "./core/clipboard";
+import { platformOperations } from "./core/capabilities/platformOperations";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -18,10 +20,15 @@ export interface DataPassTestApi {
   /** Walk the Work tree through the real provider, as the tree view renders it. */
   renderWorkTree(): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string }>>;
   workViewMessage(): string | undefined;
+  /** Replace the clipboard DataPass uses (undefined restores the system clipboard). */
+  setClipboard(impl?: Clipboard): void;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
-  const galaxy = new GalaxyViewProvider(context.extensionUri);
+  // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
+  const session = new WorkSession(context);
+  // Galaxy cards show the same operation readiness as the Work view.
+  const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()));
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       GalaxyViewProvider.viewType,
@@ -30,8 +37,6 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     )
   );
 
-  // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
-  const session = new WorkSession(context);
   const workTree = new WorkTreeProvider(session);
   const workView = vscode.window.createTreeView(WorkTreeProvider.viewType, { treeDataProvider: workTree, showCollapseAll: true });
   const updateWorkBadge = () => {
@@ -39,7 +44,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     workView.description = m.scopeSource === "declared" ? m.scope.id : undefined;
     workView.message = session.project.manifestErrors.length ? "The project manifest has errors; see Problems." : undefined;
   };
-  context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge));
+  context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge), session.onDidChange(() => void galaxy.refreshOperations()));
   registerWorkCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
@@ -50,7 +55,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(status);
 
   const refreshState = async (): Promise<GalaxyState> => {
-    const [state] = await Promise.all([galaxy.refresh(), session.refresh()]);
+    // The session probes tools first so the Galaxy cards' operation readiness is current.
+    await session.refresh();
+    const state = await galaxy.refresh();
     updateStatusBar(status, state);
     return state;
   };
@@ -135,6 +142,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     project: () => session.project,
     toolObservations: () => session.toolObservations(),
     workViewMessage: () => workView.message,
+    setClipboard: setClipboardForTests,
     renderWorkTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];
       const walk = async (node: Parameters<WorkTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

@@ -1,3 +1,5 @@
+import type { PreflightStatus } from "./capabilities/preflight";
+
 export type StatusLevel = "ready" | "partial" | "missing" | "unbound" | "error";
 
 export interface ToolProbe {
@@ -29,6 +31,16 @@ export interface CatalogItemState {
   actions: PlatformAction[];
 }
 
+/** Readiness of one registry operation on this platform (same preflight as the Work view). */
+export interface PlatformOperation {
+  id: string;
+  label: string;
+  status: PreflightStatus;
+  nextStep: string;
+  /** DataPass routes to the native tool and does not perform the operation itself. */
+  nativeTool: boolean;
+}
+
 export interface PlatformState {
   id: string;
   title: string;
@@ -37,6 +49,7 @@ export interface PlatformState {
   tools: ToolProbe[];
   actions: PlatformAction[];
   details?: string[];
+  operations?: PlatformOperation[];
   catalog?: {
     title: string;
     items: CatalogItemState[];

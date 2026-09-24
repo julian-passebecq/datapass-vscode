@@ -221,6 +221,7 @@ function validateV2Sections(doc: Record<string, unknown>): string[] {
         const s = raw as Record<string, unknown>;
         if (!s || typeof s !== "object" || typeof s.id !== "string" || !ID_RE.test(s.id)) { issues.push(`scopes[${i}].id is required (lowercase id).`); return; }
         if (seen.has(s.id)) issues.push(`scopes[${i}].id is duplicated.`);
+        if (s.id === "project") issues.push(`scopes[${i}].id "project" is reserved for the whole-project scope.`);
         seen.add(s.id);
         if (typeof s.title !== "string" || !s.title.trim()) issues.push(`scopes[${i}].title is required.`);
         if (s.objective !== undefined && typeof s.objective !== "string") issues.push(`scopes[${i}].objective must be a string.`);

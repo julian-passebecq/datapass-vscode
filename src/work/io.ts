@@ -5,6 +5,7 @@
 import * as vscode from "vscode";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { decodeUtf8Strict } from "../core/model/strictJson";
+import { clipboard } from "../core/clipboard";
 
 export const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
@@ -63,7 +64,7 @@ export async function readJsonInput(what: string, root: vscode.Uri | undefined):
   ], { title: `Import ${what}`, placeHolder: "Imported content is treated as untrusted data" });
   if (!choice) throw new Cancelled();
   if (choice.id === "clip") {
-    const text = await vscode.env.clipboard.readText();
+    const text = await clipboard.readText();
     if (!text.trim()) throw new UserFacingError("The clipboard is empty.");
     const bytes = new TextEncoder().encode(text);
     if (bytes.length > MAX_IMPORT_BYTES) throw new UserFacingError("Clipboard content is too large.");

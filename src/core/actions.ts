@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { clipboard } from "./clipboard";
 import {
   buildDatabricksBundleCommand,
   buildFabricAssessmentCommand,
@@ -116,7 +117,7 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
 
 async function copyPowerBiMarketplaceAdd(): Promise<void> {
   const command = buildCopilotMarketplaceCommand();
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showInformationMessage(
     "DataPass: copied Copilot CLI marketplace registration command. Nothing was installed."
   );
@@ -136,7 +137,7 @@ async function copyPowerBiPluginInstall(pluginId: string): Promise<void> {
     return;
   }
   const command = buildCopilotPluginInstallCommand(pluginId as PowerBiAgenticPlugin);
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showInformationMessage(
     `DataPass: copied Copilot CLI install command for ${pluginId}. Nothing was installed.`
   );
@@ -145,7 +146,7 @@ async function copyPowerBiPluginInstall(pluginId: string): Promise<void> {
 async function copyEnvironmentSnapshot(extensionUri: vscode.Uri): Promise<void> {
   const state = await collectGalaxyState(extensionUri);
   const snapshot = buildSanitizedEnvironmentSnapshot(state);
-  await vscode.env.clipboard.writeText(JSON.stringify(snapshot, null, 2));
+  await clipboard.writeText(JSON.stringify(snapshot, null, 2));
   void vscode.window.showInformationMessage(
     "DataPass: copied sanitized environment snapshot. Local paths, action payloads and credentials are omitted."
   );
@@ -401,7 +402,7 @@ async function copyFabricDeployCommand(): Promise<void> {
     return;
   }
 
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showWarningMessage(
     "DataPass copied a Fabric deployment command but did not run it. The generated baseline disables unpublish; review the config before execution."
   );
@@ -671,7 +672,7 @@ async function runFabricAssessment(): Promise<void> {
   );
   if (!choice) return;
 
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   if (choice === "Run") {
     const terminal = vscode.window.createTerminal({ name: "Fabric Assessment Tool" });
     terminal.show(true);
@@ -704,7 +705,7 @@ async function copyCatalogCloneCommand(item: ToolCatalogItem): Promise<void> {
     return;
   }
   const command = `git clone ${quoteShellArg(repoUrl)}`;
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showInformationMessage(`DataPass: copied clone command for ${item.source}.`);
 }
 
@@ -767,7 +768,7 @@ async function runFabricSecurityAudit(extensionUri: vscode.Uri): Promise<void> {
   );
   if (!choice) return;
 
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   if (choice === "Run") {
     const terminal = vscode.window.createTerminal({
       name: "Fabric Security Audit",
@@ -812,7 +813,7 @@ async function copyDatabricks(operation: "validate" | "deploy"): Promise<void> {
     return;
   }
   const command = buildDatabricksBundleCommand(operation, root);
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showInformationMessage(`DataPass: copied Databricks bundle ${operation} command.`);
 }
 
@@ -847,7 +848,7 @@ async function copyGrafanaPreview(): Promise<void> {
 
   try {
     const command = buildGrafanaPreviewCommand(generator, watch || undefined);
-    await vscode.env.clipboard.writeText(command);
+    await clipboard.writeText(command);
     void vscode.window.showInformationMessage("DataPass: copied Grafana gcx preview command.");
   } catch (error) {
     void vscode.window.showWarningMessage(`DataPass: ${error instanceof Error ? error.message : String(error)}`);
@@ -864,7 +865,7 @@ async function copyIaC(operation: "validate" | "plan"): Promise<void> {
   const configured = projectConfig?.infrastructure?.root?.trim();
   const root = configured ? resolveManifestPath(workspaceRoot, configured) : workspaceRoot;
   const command = buildIaCCommand("tofu", operation, root);
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   void vscode.window.showInformationMessage(`DataPass: copied tofu ${operation} command. It was not executed.`);
 }
 
@@ -895,7 +896,7 @@ async function openFoilOracle(): Promise<void> {
     return;
   }
   const command = `ssh ${quoteShellArg(host)}`;
-  await vscode.env.clipboard.writeText(command);
+  await clipboard.writeText(command);
   if (await commandAvailable("workbench.action.remote.showMenu")) {
     await vscode.commands.executeCommand("workbench.action.remote.showMenu");
     void vscode.window.showInformationMessage(`DataPass: Remote SSH menu opened and ${command} copied as fallback.`);

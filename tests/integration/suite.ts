@@ -9,6 +9,7 @@ import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { fixture, record, runAll, sleep, test, waitFor } from "./harness";
+import { registerFlows } from "./flows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -77,7 +78,18 @@ test("Galaxy webview resolves and renders platform state", async () => {
   await vscode.commands.executeCommand("datapass.galaxy.focus");
   const state = await api.refresh();
   assert.ok(state.platforms.length >= 5, `platforms: ${state.platforms.map(p => p.id).join(", ")}`);
-  record("galaxy", { overall: state.health?.overall, platforms: state.platforms.map(p => `${p.id}: ${p.status}`) });
+  // Cards carry operation readiness, and it agrees with the Work view for every shared operation.
+  const fabric = state.platforms.find(p => p.id === "fabric");
+  assert.ok(fabric?.operations?.length, "the Fabric card has no operations");
+  const work = new Map(api.workModel().operations.map(o => [o.capability.id, o.result.status]));
+  for (const op of state.platforms.flatMap(p => p.operations ?? [])) {
+    if (work.has(op.id)) assert.equal(op.status, work.get(op.id), `${op.id}: Galaxy says ${op.status}, Work says ${work.get(op.id)}`);
+  }
+  record("galaxyState", state);
+  record("galaxy", {
+    overall: state.health?.overall,
+    platforms: state.platforms.map(p => `${p.id}: ${p.status} · ops ${(p.operations ?? []).filter(o => o.status === "ready").length}/${(p.operations ?? []).length} ready`)
+  });
 });
 
 test("refresh commands complete and are repeatable", async () => {
@@ -183,6 +195,8 @@ test("the contributed JSON schema produces diagnostics in the editor", async () 
   record("schemaDiagnostics", diags.map(d => d.message).slice(0, 5));
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
 }, ["broken"]);
+
+registerFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

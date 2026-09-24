@@ -67,7 +67,10 @@ npm run test:desktop
 This launches real VS Code (installed, or a downloaded stable build) with a throwaway profile
 against generated fixture workspaces, and writes evidence to `out/integration/`. Add
 `-- --real-extensions` to also load your installed extensions and record what DataPass detects
-on your machine. Your settings, state and open windows are not touched.
+on your machine. Your settings, state, open windows and clipboard are not touched.
+
+After a desktop run, `npm run preview:galaxy` writes the real Galaxy panel, filled with the
+state captured in VS Code, to `out/preview/galaxy-{dark,light,hc}.html` for a visual check.
 
 ## Package locally
 
