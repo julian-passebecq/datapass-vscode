@@ -2375,3 +2375,822 @@ FOIL
 \`\`\`
 
 This is exactly why V2 needs to distinguish **known repository**, **target architecture**, **prepared configuration**, and **live deployed resource**.
+
+
+---
+
+## 37. FOIL architecture evolution and VNext state verified from MongoDB Atlas
+
+This section is based on the current FOIL MongoDB Atlas authorities inspected on 2026-09-24. Claude should treat these records as architecture/project-management evidence, while still verifying Git/provider runtime before claiming deployment.
+
+### 37.1 Authoritative Atlas references
+
+FOIL Project Management:
+
+- project: \`FOIL Project Management\`
+- database: \`foil_project_management\`
+- architecture pointer:
+  - \`architecture_index/ARCH-HYBRID-DATA-PLATFORM-VNEXT-20260924\`
+- backlog:
+  - \`backlog/BL-20260924-HYBRID-DATA-PLATFORM-VNEXT\`
+
+FOIL IT DEV:
+
+- project: \`FOIL IT DEV\`
+- database: \`foil_it_dev\`
+- detailed architecture:
+  - \`architecture_views/IT-ARCH-HYBRID-DATA-PLATFORM-VNEXT-20260924\`
+- decision:
+  - \`decisions/ADR-013\`
+
+These records were created/updated on **2026-09-24 at 14:58 +02:00**.
+
+Current status:
+
+- architecture status: \`PROPOSED_NOT_DEPLOYED\`
+- decision status: \`PROPOSED_DEFERRED\`
+- deployment claim: \`NONE\`
+- implementation state: no VNext platform is verified as deployed yet.
+
+Activation gate:
+
+> Finish DataPass VS Code desktop smoke/control-plane qualification before provisioning or promoting the VNext architecture.
+
+The currently registered DataPass gate still describes v0.8.0 as merged/CI-green with desktop smoke validation pending. V2 work should improve this control plane rather than bypass it.
+
+### 37.2 VNext target architecture
+
+The new target architecture is explicitly a **hybrid Oracle Edge + Azure/Fabric + Databricks platform**.
+
+#### Plane A — Oracle Edge
+
+Role:
+
+> Containerized renewable-machine and environment simulation/edge laboratory.
+
+Registered target runtime:
+
+- OCI VM
+- K3s
+- containerd
+
+Orchestration:
+
+- Apache Airflow
+- KubernetesExecutor
+
+Target workloads:
+
+- Wind machine simulator
+- environment / wind simulator
+- Mosquitto MQTT
+- telemetry gateway
+- Polars ETL jobs
+- DuckDB local SQL / Parquet jobs
+- Grafana Alloy / OpenTelemetry agent
+
+Development:
+
+- Docker images
+- Docker Compose is allowed for local development
+
+Explicit VNext exclusions on Oracle:
+
+- Spark
+- distributed Polars
+- AKS
+
+Evidence boundary:
+
+- synthetic/model telemetry remains non-measured unless separately validated.
+
+#### Plane B — Azure + Microsoft Fabric
+
+Role:
+
+> Enterprise telemetry, integration, real-time analytics, lakehouse and BI plane.
+
+Registered target components:
+
+- Azure IoT Hub / Event Hubs as candidate ingress
+- Azure Data Factory for external/Azure-to-Fabric integration
+- Fabric Eventstream
+- Fabric Real-Time Intelligence / Eventhouse
+- Fabric Data Factory for Fabric-native orchestration
+- OneLake / Lakehouse for analytical history
+- Fabric notebooks / PySpark where distributed processing is justified
+- Azure SQL free-tier candidate for compact relational serving
+- Power BI for engineering/business analytics
+
+#### Document intelligence / study search
+
+Candidate store:
+
+- Azure Cosmos DB for NoSQL free-tier candidate
+
+Intended role:
+
+- non-authoritative study/document chunks
+- metadata
+- embeddings
+- vector retrieval
+- full-text retrieval
+- hybrid retrieval
+
+Artifact boundary:
+
+- original PDF/PPTX/PNG binaries remain under Work Archive provenance and external binary storage;
+- Cosmos stores derived searchable representations only.
+
+Candidate Azure AI services:
+
+- Azure AI Vision embedding/image-analysis capabilities where relevant and available
+- Azure AI Document Intelligence F0 for bounded complex/scanned documents
+
+Authority rule:
+
+> Cosmos retrieval is derived analysis and must not overwrite FOIL Core Truth without controlled review.
+
+#### Ephemeral cache/state
+
+Candidate:
+
+- Redis Cloud free database on Azure infrastructure
+
+Strict intended role:
+
+- latest-state cache
+- API cache
+- run status
+- other short-lived operational state
+
+Redis is explicitly:
+
+- **not an authority**
+- **not a history store**
+
+This distinction must be visible in DataPass.
+
+#### Plane C — Databricks
+
+Role:
+
+> Advanced simulation, Monte Carlo, statistics and ML plane.
+
+Registered target components:
+
+- Lakeflow Jobs
+- PySpark
+- Monte Carlo/statistical workloads
+- MLflow
+- Gold results
+- AI/BI dashboard
+- Databricks App experiment console
+
+Compact selected-result store:
+
+- Neon \`foil_results\`
+
+Authority rule:
+
+- model/synthetic outputs remain derived and never automatically become measured Core Truth.
+
+### 37.3 Registered VNext cross-platform pipelines
+
+The current VNext architecture records the following target paths:
+
+1. **Oracle/K3s edge telemetry**
+   → Azure IoT/Event Hub
+   → Fabric Eventstream/Eventhouse
+   → OneLake
+   → Power BI
+
+2. **Azure/external sources**
+   → Azure Data Factory
+   → Fabric OneLake/Lakehouse
+
+3. **OneLake Bronze**
+   → Fabric Data Factory / notebooks
+   → Silver / Gold
+   → Power BI
+
+4. **Frozen shared synthetic data contract**
+   → Databricks Lakeflow / ML / MLflow
+   → selected Gold/results
+   → Power BI / Fabric and Neon where justified
+
+5. **Observability signals**
+   → Grafana Cloud
+
+These are target data paths. They are not proof of live resources.
+
+### 37.4 Platform boundaries recorded in VNext
+
+The current architecture explicitly assigns:
+
+- **GitHub** = code authority
+- **existing FOIL Mongo authorities** = project/evidence authority
+- **OpenTofu via reviewed CI** = infrastructure-as-code path
+- **DataPass VS Code** = developer control plane
+- **Azure DevOps** = optional Azure deployment/CI runner, not automatically code/backlog authority
+- **Grafana** = operational observability
+- **Power BI** = engineering/business BI
+
+Do not collapse Grafana and Power BI into one dashboarding concept.
+
+Do not promote Azure DevOps to global authority merely because an Azure/Fabric project uses it.
+
+### 37.5 Explicitly excluded from the VNext baseline
+
+The proposal deliberately excludes:
+
+- AKS
+- distributed Polars
+- Spark on Oracle VM
+- BigQuery
+- Snowflake
+- self-hosted Redis as the baseline
+- duplicate Bronze/Silver/Gold warehouses added only for technology breadth
+
+This is useful for DataPass because the extension should display not only what is in scope, but also important deliberate exclusions.
+
+### 37.6 Evolution from the previous Oracle architecture
+
+Earlier registered Oracle lab architecture:
+
+- repository: https://github.com/julian-passebecq/reactoracle
+- qualified implementation branch recorded by Atlas: \`feat/initial-control-plane\`
+- Atlas-qualified head for that earlier state: \`4dfda2e7a8f988cffaa3d5089b3f0fe8705d88ac\`
+- status: \`SOURCE_QUALIFIED_RUNTIME_NOT_VERIFIED\`
+
+Earlier architecture/ADR direction:
+
+- K3s
+- Airflow + KubernetesExecutor
+- Polars
+- DuckDB
+- MotherDuck / DuckLake as the primary Oracle analytical Bronze/Silver/Gold plane
+- OCI Object Storage planned raw/archive
+- Neon compact serving only
+- Spark external to Oracle
+
+The new VNext proposal preserves:
+
+- K3s
+- Airflow
+- Polars
+- DuckDB
+- Databricks/Fabric separation
+- GitHub code authority
+- Mongo authority boundaries
+
+but proposes:
+
+- MotherDuck becomes optional portable analytical sandbox rather than the main Oracle Bronze/Silver/Gold plane;
+- Azure/Fabric becomes the explicit cloud integration, streaming, analytical history and BI plane;
+- Cosmos becomes the candidate derived document/vector/hybrid search store;
+- Redis is added only as ephemeral cache/state.
+
+### 37.7 Known repository/document drift to resolve
+
+The current public \`reactoracle/main\` README still says:
+
+- K3s on the VM for Airflow, **Spark** and observability workloads.
+
+This conflicts with the newer Atlas architecture, where Spark is explicitly excluded from the Oracle VNext baseline.
+
+Claude should not silently choose one.
+
+Recommended rule:
+
+> FOIL IT DEV architecture records govern the intended architecture; GitHub governs implementation. When they differ, DataPass should show a drift/attention item and the implementation/docs should be reconciled explicitly.
+
+This is a concrete example of why the V2 project layer needs architecture version + implementation version + runtime verification as separate states.
+
+---
+
+## 38. Architecture and project versioning — required V2 capability
+
+The user explicitly needs to see FOIL architecture evolve over time, for example:
+
+- earlier Oracle-focused architecture;
+- Azure added later;
+- Redis added later;
+- Fabric scope expanded;
+- Databricks role refined;
+- future v2/v3 architectures.
+
+Do not use one mutable \`architecture.json\` with no lineage.
+
+### 38.1 Separate version dimensions
+
+DataPass should distinguish at least:
+
+1. **Project/product version**
+   - business/product milestone
+
+2. **Architecture version**
+   - overall topology/technology contract
+
+3. **Component version**
+   - individual app/runtime/platform version
+
+4. **Implementation revision**
+   - Git branch/commit/tag
+
+5. **Runtime verification**
+   - actual provider deployment/version observed
+
+Example:
+
+\`\`\`yaml
+project:
+  id: foil
+  productVersion: "wind-lab-v1"
+
+architecture:
+  id: foil-cloud
+  version: "1.5-draft"
+  status: proposed
+  supersedes: "1.0"
+  gitCommit: null
+  mongoRef: "IT-ARCH-HYBRID-DATA-PLATFORM-VNEXT-20260924"
+
+components:
+  oracleRuntime:
+    architectureVersion: "2"
+    repo: julian-passebecq/reactoracle
+    implementationRef: feat/initial-control-plane
+    runtimeVerification: not-verified
+
+  databricksLab:
+    architectureVersion: "1"
+    repo: julian-passebecq/foil_databrick_dab
+    runtimeVerification: pending-live-test
+\`\`\`
+
+The actual public version labels can be decided later. Do not automatically rename the Atlas \`VNext\` proposal to \`v1.5\` until explicitly adopted. The user used “v1.5” as the type of evolution they want to support.
+
+### 38.2 Architecture lifecycle
+
+Recommended lifecycle:
+
+- \`DRAFT\`
+- \`PROPOSED\`
+- \`ACCEPTED\`
+- \`IMPLEMENTING\`
+- \`IMPLEMENTED_UNVERIFIED\`
+- \`VERIFIED\`
+- \`SUPERSEDED\`
+- \`ABANDONED\`
+
+This is much more informative than a Boolean “deployed”.
+
+### 38.3 Suggested Git structure
+
+Illustrative:
+
+\`\`\`text
+.datapass/
+├── project.json
+├── architecture/
+│   ├── current.json
+│   ├── releases/
+│   │   ├── foil-cloud-v1.0.json
+│   │   ├── foil-cloud-v1.5-draft.json
+│   │   └── ...
+│   ├── diagrams/
+│   │   ├── foil-cloud-v1.0.mmd
+│   │   └── foil-cloud-v1.5-draft.mmd
+│   └── decisions/
+│       └── ...
+│
+├── roadmap/
+│   └── capabilities.json
+│
+└── ai/
+    └── instructions...
+\`\`\`
+
+Mongo can remain architecture/project authority for FOIL where already established. DataPass Git files should be portable interfaces/snapshots/config and must not silently become a competing FOIL truth.
+
+For non-FOIL projects, Git may be the only durable authority.
+
+### 38.4 AI export/import must carry version identity
+
+Every DataPass AI export should include:
+
+\`\`\`yaml
+projectId: foil
+workspaceId: wind-realtime
+architectureId: foil-cloud
+architectureVersion: 1.5-draft
+architectureStatus: proposed
+sourceRevision: ...
+runtimeVerification: ...
+\`\`\`
+
+Every imported AI plan should state which version it was prepared against.
+
+If the current architecture changed meanwhile, DataPass should warn:
+
+> Plan generated for architecture v1.0; current selected architecture is v1.5-draft.
+
+Do not silently apply stale plans.
+
+---
+
+## 39. Capability roadmap / lightweight sprint planning
+
+The user wants planning visibility but explicitly **does not want DataPass to become Trello/Jira/Kanban**.
+
+Therefore implement a **capability roadmap**, not a general task-board product.
+
+### 39.1 Main view: versions × capabilities
+
+Example:
+
+| Capability | v1 | v1.5 candidate | v2 |
+|---|---|---|---|
+| Oracle VM / K3s | Yes | Yes | Yes |
+| Airflow | Yes | Yes | Yes |
+| Polars / DuckDB | Yes | Yes | Yes |
+| MotherDuck primary analytical plane | Yes/planned | Optional | Optional |
+| Azure ingestion | No | Planned | Yes |
+| Fabric Eventstream/Eventhouse | No | Planned | Yes |
+| OneLake/Lakehouse | Lab | Planned | Yes |
+| Cosmos document/vector retrieval | No | Candidate | Yes/Review |
+| Redis ephemeral state/cache | No | Candidate | Yes/Review |
+| Databricks ML/Monte Carlo | Separate lab | Integrated result flow | Mature |
+| Grafana Cloud | Basic target | Cross-platform target | Mature |
+| Power BI | Separate/reporting | Integrated | Mature |
+
+This is illustrative. The persisted values should use explicit statuses, not ambiguous yes/no where implementation is partial.
+
+Recommended capability states:
+
+- \`NO\`
+- \`PLANNED\`
+- \`PARTIAL\`
+- \`READY\`
+- \`VERIFIED\`
+- \`DEPRECATED\`
+- \`EXCLUDED\`
+
+### 39.2 Keep “sprint” lightweight
+
+For each architecture/project version, DataPass may show:
+
+- objective;
+- capability list;
+- blockers;
+- current gate;
+- next small batch;
+- acceptance criteria.
+
+Do not add:
+
+- drag/drop Kanban columns;
+- story points;
+- generic issue tracking;
+- duplicate GitHub Issues/Azure Boards/Jira.
+
+Example:
+
+\`\`\`text
+FOIL Cloud v1.5-draft
+
+Goal
+Hybrid Oracle + Azure/Fabric + Databricks architecture
+
+Gate
+DataPass control plane qualified
+
+Capability progress
+Oracle edge              PARTIAL
+Azure ingress            PLANNED
+Fabric real-time         PLANNED
+Cosmos RAG               PLANNED
+Redis cache              PLANNED
+Databricks integration   PARTIAL
+Grafana                  PLANNED
+
+Next implementation batch
+1. qualify DataPass
+2. verify OCI runtime
+3. bind Azure/Fabric identities
+\`\`\`
+
+This gives the user a mental model of progress without becoming a project-management suite.
+
+### 39.3 Current Atlas VNext backlog as a concrete example
+
+The registered FOIL backlog already provides a good model:
+
+- **T0 P0 BLOCKING** — qualify DataPass VS Code desktop control plane
+- **T1 P1 DEFERRED** — verify OCI VM; deploy/verify K3s, Airflow KubernetesExecutor, simulation pods, MQTT, Polars/DuckDB
+- **T2 P1 DEFERRED** — Azure integration via reviewed OpenTofu: IoT/Event ingress, ADF, Azure SQL candidate, Cosmos candidate
+- **T3 P1 DEFERRED** — register real Fabric workspace; build Eventstream/Real-Time, Azure-Data-Factory-to-Fabric and Fabric-native paths
+- **T4 P1 DEFERRED** — run Databricks Lakeflow/Monte Carlo/statistics/MLflow; expose selected results
+- **T5 P2 DEFERRED** — Redis Cloud ephemeral cache + Grafana Cloud observability
+- **T6 P1 DEFERRED** — verify lineage, cost/free-tier boundaries, security/secrets and end-to-end contracts
+
+DataPass should be able to represent something this compactly.
+
+It must not duplicate FOIL PM backlog authority. For FOIL, V2 can import/render this as a read model or Git snapshot and preserve authority refs.
+
+---
+
+## 40. V3 candidate — Architecture Lab / reference architectures
+
+This is a future module and should **not block V2**.
+
+The user wants a project-independent place to explore practical end-to-end data architectures, especially architectures that can be run cheaply on VMs.
+
+Possible name:
+
+- Architecture Lab
+- Reference Architectures
+- Stack Lab
+
+Purpose:
+
+> Compare and understand reusable architecture scenarios without attaching them to FOIL or another business project.
+
+### 40.1 Example scenarios
+
+Oracle/Ampere or generic VM scenarios:
+
+- Docker + DuckDB
+- Docker + DuckDB + MotherDuck
+- DuckDB + DuckLake
+- Airflow + DuckDB
+- Airflow + Polars + DuckDB
+- Kafka + consumer + DuckDB
+- MQTT + Polars + DuckDB
+- K3s + Airflow + containers
+- K3s + Kafka + Airflow
+- Spark standalone only where hardware/resources justify it
+- lightweight observability with Grafana/Prometheus/Loki/Alloy
+
+Cloud/hybrid scenarios:
+
+- edge → Kafka/Event Hub → Fabric
+- edge → MQTT → Azure/Fabric
+- Databricks + Neon result serving
+- Fabric + Cosmos document intelligence
+- Postgres/Neon + Grafana
+- Redis cache in front of API/serving layer
+
+### 40.2 Resource-envelope model
+
+Every reference architecture should declare approximate needs:
+
+\`\`\`yaml
+resources:
+  cpu:
+    minimumCores: 2
+    comfortableCores: 4
+
+  memory:
+    minimumGB: 4
+    comfortableGB: 8
+
+  disk:
+    minimumGB: 20
+    recommendedGB: 50
+
+  network:
+    publicIngressRequired: false
+    outboundInternetRequired: true
+
+  notes:
+    - "Kafka memory usage depends strongly on broker/config/load."
+    - "Spark may be inappropriate on small free-tier VMs."
+\`\`\`
+
+Values must be clearly labeled as estimates/assumptions, not guarantees.
+
+The goal is to answer:
+
+- “Can this fit on my Oracle VM?”
+- “Do I need 4 GB, 8 GB or 16 GB?”
+- “Should Spark be moved off the VM?”
+- “Can Kafka and Airflow realistically coexist here?”
+
+### 40.3 Dockerization goal
+
+Reference architectures should ideally produce:
+
+- Dockerfiles;
+- Docker Compose;
+- optional K3s manifests/Helm values;
+- \`.env.example\`;
+- test data;
+- health checks;
+- architecture diagram;
+- expected RAM/CPU envelope;
+- teardown instructions.
+
+This makes the guide practical rather than purely theoretical.
+
+---
+
+## 41. V3 candidate — Free-tier / provider capability guide
+
+Also future; not required for V2.
+
+The user wants a project-independent guide showing what can realistically be built for free/cheap.
+
+Possible providers/services:
+
+- Oracle Cloud
+- Azure
+- Microsoft Fabric trial/free capabilities where applicable
+- Databricks Free Edition
+- Neon
+- Redis Cloud
+- MongoDB Atlas
+- MotherDuck
+- Vercel
+- Cloudflare
+- Netlify
+- GitHub
+- GitLab
+- other genuinely useful free/community tiers
+
+### 41.1 Do not hard-code commercial limits as timeless facts
+
+Free-tier limits change.
+
+Every capability record should support:
+
+- provider;
+- service;
+- plan/tier name;
+- category;
+- current limits;
+- unit;
+- region constraints;
+- expiry/trial vs persistent-free distinction;
+- payment-card requirement if known;
+- source URL;
+- \`verifiedAt\`;
+- notes;
+- suitable architecture scenarios.
+
+Example shape:
+
+\`\`\`yaml
+provider: redis
+service: redis-cloud
+tier: free
+verifiedAt: 2026-09-24
+source: <official-doc-url>
+
+capabilities:
+  storage: ...
+  connections: ...
+  regions: ...
+
+classification:
+  persistentFree: true/false/unknown
+  trialCredit: true/false
+\`\`\`
+
+When exact current limits matter, DataPass or AI should refresh from official sources rather than rely on an old bundled number.
+
+### 41.2 Guide should explain architectural role
+
+Do not only show quota tables.
+
+Examples:
+
+- Neon → compact PostgreSQL control/result serving
+- Redis → cache/latest state, not history/authority
+- MongoDB Atlas → document/search/vector/project authorities depending workload
+- MotherDuck → remote DuckDB analytics/collaboration
+- Oracle VM → general-purpose compute for lightweight containerized labs
+- Cloudflare/Vercel → front-end/app deployment
+
+The guide should help the user decide **where a technology belongs**, not just whether it is free.
+
+---
+
+## 42. V3 forward compatibility — Mongoku / global project-state export
+
+This is only a design reservation for now.
+
+Current FOIL Project Management already registers:
+
+- \`julian-passebecq/Mongoku-datapass\`
+- role: generic multi-project Mongo control cockpit/query/report UI
+- \`DATAPASSCONTROL\` Atlas project
+- \`dataprojects_control\` database as global project/entity/work-item control
+
+Important authority boundary:
+
+> Mongoku/Datapass global control may reference FOIL at portfolio level, but it must not become a second FOIL Project Management or deep engineering authority.
+
+### 42.1 V2 should prepare a clean export seam
+
+Even if V2 does not send anything to Mongoku, structure project state so V3 can emit a sanitized status snapshot.
+
+Possible future file:
+
+\`\`\`text
+.datapass/export/project-status.json
+\`\`\`
+
+Potential fields:
+
+\`\`\`json
+{
+  "schemaVersion": 1,
+  "projectId": "foil",
+  "projectVersion": "...",
+  "architectureVersion": "...",
+  "status": "...",
+  "activeWorkspaces": [],
+  "capabilities": [],
+  "modules": [],
+  "repositories": [],
+  "runtimeVerification": [],
+  "blockers": [],
+  "nextMilestone": "...",
+  "updatedAt": "..."
+}
+\`\`\`
+
+No:
+
+- secrets;
+- passwords;
+- raw \`.env\` values;
+- private keys;
+- detailed domain truth copied from FOIL authorities.
+
+### 42.2 V3 could later publish/sync
+
+Future options:
+
+- Git artifact consumed by Mongoku;
+- explicit API sync;
+- controlled write to \`DATAPASSCONTROL\`;
+- cloud-hosted status snapshot.
+
+Do not implement this in V2 simply because the future seam exists.
+
+The V2 requirement is only:
+
+> Keep schemas structured/versioned enough that a future sanitized multi-project export is easy.
+
+---
+
+## 43. Claude implementation note — distinguish architecture truth, implementation and runtime
+
+The FOIL VNext records expose the exact problem DataPass is meant to solve.
+
+At any point, the same component may have:
+
+1. **Architecture target**
+   - e.g. Redis planned as ephemeral cache
+
+2. **Implementation source**
+   - e.g. Git repo/file prepared
+
+3. **Provider resource**
+   - e.g. Redis Cloud instance exists
+
+4. **Configuration completeness**
+   - e.g. endpoint/auth reference configured
+
+5. **Runtime validation**
+   - e.g. health check passed
+
+6. **Project promotion**
+   - e.g. accepted into FOIL architecture v1.5
+
+These must not be represented by one status Boolean.
+
+A strong V2 data model should allow this progression:
+
+\`\`\`text
+IDEA
+  ↓
+ARCHITECTURE_PROPOSED
+  ↓
+CONFIG_PREPARED
+  ↓
+SOURCE_COMMITTED
+  ↓
+RESOURCE_PROVISIONED
+  ↓
+CONFIGURED
+  ↓
+RUNTIME_VERIFIED
+  ↓
+ARCHITECTURE_ACCEPTED
+\`\`\`
+
+That lifecycle is one of the strongest reasons to build DataPass as a project-aware VS Code layer instead of relying on scattered cloud portals, chat histories and repository READMEs.
