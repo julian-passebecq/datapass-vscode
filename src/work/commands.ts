@@ -561,7 +561,7 @@ async function copyAiContext(session: WorkSession): Promise<void> {
 
 // ---------------------------------------------------------------- manifest & graph
 
-function workspaceJournalFs(root: vscode.Uri): JournalFs {
+export function workspaceJournalFs(root: vscode.Uri): JournalFs {
   const uri = (p: string) => {
     const vet = vetRelativePath(p);
     if (!vet.ok) throw new Error(`Refusing path ${p}: ${vet.reason}`);

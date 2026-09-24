@@ -5,6 +5,7 @@ import type { GalaxyState } from "./core/types";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
+import { registerBridgeCommands } from "./work/bridgeCommands";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -41,6 +42,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   };
   context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge));
   registerWorkCommands(context, session);
+  registerBridgeCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";

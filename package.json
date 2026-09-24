@@ -142,6 +142,22 @@
         "icon": "$(copy)"
       },
       {
+        "command": "datapass.diagramCloud.openArchitecture",
+        "title": "DataPass: Open Architecture in DiagramCloud"
+      },
+      {
+        "command": "datapass.diagramCloud.copyAiContext",
+        "title": "DataPass: Copy DiagramCloud AI Context (JSON)…"
+      },
+      {
+        "command": "datapass.diagramCloud.importAiPlan",
+        "title": "DataPass: Import DiagramCloud AI Plan…"
+      },
+      {
+        "command": "datapass.diagramCloud.copySummary",
+        "title": "DataPass: Copy Project/Scope Summary"
+      },
+      {
         "command": "datapass.migrateManifestToV2",
         "title": "DataPass: Upgrade Project Manifest to v2"
       },
@@ -297,6 +313,12 @@
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.diagramCloud.url": {
+          "type": "string",
+          "default": "",
+          "scope": "application",
+          "description": "Where DiagramCloud runs (https://…, or http://localhost for a dev server). Opened by \"Open Architecture in DiagramCloud\"; no project data is ever put in the URL."
+        },
         "datapass.foil.controlRoot": {
           "type": "string",
           "default": "",
@@ -385,6 +407,7 @@
     "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.6.0",
+    "ajv": "^8.20.0",
     "esbuild": "^0.25.9",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
