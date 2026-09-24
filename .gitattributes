@@ -1,0 +1,2 @@
+# Test fixtures are hashed byte-for-byte (frozen request digests); never convert line endings.
+tests/fixtures/** -text
