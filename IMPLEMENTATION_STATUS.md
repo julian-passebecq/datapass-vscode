@@ -1,3 +1,69 @@
+# Implementation Status — V2.2 (Pass 9.1: Windows desktop qualification)
+
+Date: 2026-09-24
+Version: `0.9.1`
+
+Pass 9 was verified only on Linux with a stubbed `vscode` API. Pass 9.1 runs the extension
+in real desktop VS Code on Windows and fixes what that exposed.
+
+### Bugs found on Windows / real VS Code and fixed
+
+| Bug | Effect before the fix | Fix |
+|---|---|---|
+| `DataPass: Open Galaxy` called `workbench.actions.view.openView`, which does not exist | The command and the **status bar item** failed with "command not found" on every platform | Uses the generated `datapass.galaxy.focus` |
+| CLI probes used `execFile` with bare names | On Windows, CLIs installed as `.cmd` shims (Azure CLI `az.cmd`, npm tools such as `copilot`) were reported **absent** even when installed | `resolveWindowsCommand` (PATH × PATHEXT); `.cmd`/`.bat` run through `cmd.exe` only with arguments cmd cannot reinterpret, otherwise refused |
+| Copied `cd "…" && tool` commands | `&&` is a parse error in Windows PowerShell 5.1 (the stock Windows shell); cmd-style `"…"` lets PowerShell expand `$` in names | Windows commands use `Set-Location -LiteralPath '…'; if ($?) { … }`, which works in PowerShell 5.1 and 7 and never runs the tool in the wrong directory; arguments use literal single quotes |
+| Paths resolved with the host's `path` module regardless of target platform | Wrong command text when building for another platform | `inDirectory` uses `path.win32`/`path.posix` for the target |
+| `fab` commands on Windows came out as `fab "auth" "status"` | Readability only | `shellWord` leaves plain tokens bare |
+
+The PowerShell form was executed in real Windows PowerShell 5.1.26100 and PowerShell 7.6.6:
+it runs in a directory containing `$` and `'`, stops when the directory is missing, and passes
+a hostile workspace name (`O'Neil $env:USERNAME `x`) to `fab` as one literal argument.
+
+### Desktop acceptance harness (new)
+
+`npm run test:desktop` launches real VS Code (the installed one, or a downloaded stable build)
+with the extension in development mode, a throwaway `--user-data-dir`, and four generated
+fixture workspaces: `empty`, `v2-retail` (non-FOIL, builtin `sample.retail` pack), `v1-foil`,
+`broken` (schemaVersion 3). It checks activation, command registration, menu/tree command
+references, Work tree rendering through the real provider with unique IDs, Work and Galaxy view
+resolution, refresh, preflight quick picks, graph initialisation through the real workspace FS,
+validation without prompts, scope picker dismissal, manifest error reporting and JSON-schema
+diagnostics from the built-in JSON server. `--real-extensions` also loads the user's installed
+extensions (read-only) to record detection. Evidence is written to `out/integration/*.json`.
+A read-only test API is returned from `activate()` **only** in `ExtensionMode.Test`.
+
+CI now runs unit tests on Ubuntu **and Windows**, and the desktop suite on both (`xvfb-run` on Linux).
+
+### Verification (this pass)
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` (Windows 11, Node 26) | 122 / 122 pass |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11 x64, isolated profile) | 48 / 48 across 4 fixtures (11 + 14 + 11 + 12) |
+| `--real-extensions` run (v2-retail) | 14 / 14; detections below |
+| VSIX | 21 files, 112 KB; no test code, `out/` or fixtures |
+
+Detections recorded on this machine: Databricks extension 2.18.0, Jupyter 2025.9.1, Python
+2026.4.0, Container Tools 2.5.2, Remote-SSH 0.128.0, Fabric Studio 2.25.2, OneLake explorer
+0.4.0, JDK 22, Python 3.14, Git 2.44, OpenSSH 9.6 present; Fabric core, Fabric Data
+Engineering, TMDL, MongoDB, Draw.io extensions and `fab`, `az`, `databricks`, `tofu`,
+`terraform`, `gcx`, `mongosh`, `copilot` CLIs absent; Power BI Desktop and Tabular Editor
+`unknown` (never probed). `databricks.quickstart.open`, `workbench.view.extension.fabricstudio`
+and `workbench.action.remote.showMenu` exist; the Fabric core view commands do not (extension
+not installed). This is **detection** evidence only: no operation has been run against a Fabric,
+Databricks or Power BI account.
+
+### Still needs a human (not automatable here)
+
+1. Modal confirmations (manifest upgrade, brief approval, review confirmations) and file dialogs.
+2. Visual check of the Galaxy webview and Work tree in light, dark and high-contrast themes.
+3. Anything signed in: Fabric workspace browse, Databricks `bundle validate`, Power BI Desktop
+   with a PBIP project. Record results as observations, per capability.
+
+---
+
 # Implementation Status — V2.2 (Pass 9)
 
 Date: 2026-09-24

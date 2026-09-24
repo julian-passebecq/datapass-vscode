@@ -6,7 +6,21 @@ import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
 
-export function activate(context: vscode.ExtensionContext): void {
+/**
+ * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
+ * VS Code runs the extension in Test mode, so installed users never get an API surface.
+ */
+export interface DataPassTestApi {
+  refresh(): Promise<GalaxyState>;
+  workModel(): ReturnType<WorkSession["model"]>;
+  project(): WorkSession["project"];
+  toolObservations(): ReturnType<WorkSession["toolObservations"]>;
+  /** Walk the Work tree through the real provider, as the tree view renders it. */
+  renderWorkTree(): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string }>>;
+  workViewMessage(): string | undefined;
+}
+
+export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
   const galaxy = new GalaxyViewProvider(context.extensionUri);
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
@@ -46,7 +60,8 @@ export function activate(context: vscode.ExtensionContext): void {
       await refreshState();
     }),
     vscode.commands.registerCommand("datapass.openGalaxy", async () => {
-      await vscode.commands.executeCommand("workbench.actions.view.openView", GalaxyViewProvider.viewType);
+      // VS Code generates `<viewId>.focus` for every contributed view.
+      await vscode.commands.executeCommand(`${GalaxyViewProvider.viewType}.focus`);
     }),
     vscode.commands.registerCommand("datapass.initializeProjectManifest", async () => {
       await executeGalaxyAction("project.initializeManifest", context.extensionUri);
@@ -112,6 +127,28 @@ export function activate(context: vscode.ExtensionContext): void {
   );
 
   void refreshState();
+
+  if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
+  return {
+    refresh: refreshState,
+    workModel: () => session.model(),
+    project: () => session.project,
+    toolObservations: () => session.toolObservations(),
+    workViewMessage: () => workView.message,
+    renderWorkTree: async () => {
+      const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];
+      const walk = async (node: Parameters<WorkTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {
+        for (const child of await workTree.getChildren(node)) {
+          const item = await workTree.getTreeItem(child);
+          const label = typeof item.label === "string" ? item.label : item.label?.label ?? "";
+          rows.push({ depth, id: item.id, label, description: typeof item.description === "string" ? item.description : undefined, contextValue: item.contextValue, command: item.command?.command });
+          if (depth < 6) await walk(child, depth + 1);
+        }
+      };
+      await walk(undefined, 0);
+      return rows;
+    }
+  };
 }
 
 export function deactivate(): void {}

@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { vetRelativePath, resolveWithinRoot } from "../src/core/exchange/pathSafety";
@@ -44,11 +45,14 @@ test("path policy flags executable setup files as high-risk without blocking the
 });
 
 test("resolveWithinRoot rejects a symlink that escapes the root", async () => {
-  const real: Record<string, string> = { "/ws": "/ws", "/ws/link": "/elsewhere", "/ws/ok": "/ws/ok" };
+  // Host-native paths: on Windows "/ws" resolves to "<drive>:\ws".
+  const ws = path.resolve("/ws");
+  const at = (...p: string[]) => path.join(ws, ...p);
+  const real: Record<string, string> = { [ws]: ws, [at("link")]: path.resolve("/elsewhere"), [at("ok")]: at("ok") };
   const realpath = async (p: string) => real[p];
-  assert.deepEqual(await resolveWithinRoot("/ws", "link/file.json", realpath), { ok: false, reason: "symlink escapes root" });
-  assert.deepEqual(await resolveWithinRoot("/ws", "ok/new.json", realpath), { ok: true, absolute: "/ws/ok/new.json" });
-  assert.deepEqual(await resolveWithinRoot("/ws", "fresh/dir/new.json", realpath), { ok: true, absolute: "/ws/fresh/dir/new.json" });
+  assert.deepEqual(await resolveWithinRoot(ws, "link/file.json", realpath), { ok: false, reason: "symlink escapes root" });
+  assert.deepEqual(await resolveWithinRoot(ws, "ok/new.json", realpath), { ok: true, absolute: at("ok", "new.json") });
+  assert.deepEqual(await resolveWithinRoot(ws, "fresh/dir/new.json", realpath), { ok: true, absolute: at("fresh", "dir", "new.json") });
 });
 
 test("a correlated result with matching artifact bytes becomes a candidate, not an accepted state", () => {

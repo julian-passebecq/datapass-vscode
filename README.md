@@ -58,6 +58,17 @@ npm run build
 
 Press **F5** with the included `Run DataPass Extension` launch configuration to open an Extension Development Host.
 
+### Desktop acceptance tests
+
+```bash
+npm run test:desktop
+```
+
+This launches real VS Code (installed, or a downloaded stable build) with a throwaway profile
+against generated fixture workspaces, and writes evidence to `out/integration/`. Add
+`-- --real-extensions` to also load your installed extensions and record what DataPass detects
+on your machine. Your settings, state and open windows are not touched.
+
 ## Package locally
 
 ```bash
