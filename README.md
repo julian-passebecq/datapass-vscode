@@ -47,6 +47,42 @@ it as a candidate or quarantines it. Nothing is applied automatically, and priva
 history stays in `.datapass/local/` (git-ignored). See `IMPLEMENTATION_STATUS.md` for what is
 implemented, documented-only and qualified.
 
+## Links: Grafana, Mongoku and DiagramCloud (v0.9.3, all optional)
+
+When configured, the Work view shows a **Links** section for the selected scope:
+
+- **Grafana** — your stack's home, Explore and the dashboards declared for this scope, plus each
+  dashboard's as-code source file. The Galaxy Observability card gets **Open Grafana**.
+- **Mongoku** — **Open in Mongoku** (Mongoku's own `/?project=<entity>` page) and the last
+  **imported Mongoku context**: status, test gate, stop point, next action and the listed work
+  items, always labelled with its age and "not live".
+- **DiagramCloud** — when `.datapass/diagramcloud.json` exists: open it in DiagramCloud, copy a
+  bounded AI context, import a reviewed AI plan (Work view **…** menu).
+
+```json
+{
+  "platforms": {
+    "grafana": {
+      "url": "https://your-stack.grafana.net/",
+      "dashboards": [{ "uid": "weekly-1", "title": "Weekly metrics", "scopes": ["weekly"], "source": "grafana/weekly.ts" }]
+    }
+  },
+  "companions": { "mongoku": { "entityId": "retail_bi", "scopeEntities": { "hydro": "retail_hydro" } } }
+}
+```
+
+Addresses of apps that serve every project are **user settings**, not manifest fields:
+`datapass.mongoku.url` (e.g. `http://localhost:3100/`) and `datapass.diagramCloud.url`. DataPass
+asks for them the first time. To bring Mongoku context in: in Mongoku, open the project →
+**Developer context** → **JSON** → **Copy**, then run **DataPass: Import Mongoku Context…**.
+Mongoku (or any page) can open `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` to
+select the scope mapped to that entity; the link can do nothing else.
+
+Every link shows its exact address once per window before opening and is re-checked afterwards;
+a destination that changed meanwhile is refused. A link is navigation only: DataPass never
+checks sign-in, datasource reachability or data freshness, makes no HTTP request and holds no
+credential.
+
 ## Development
 
 ```bash
@@ -213,6 +249,9 @@ Configure either VS Code settings or the project manifest:
 ```
 
 The Galaxy generates a `gcx dev serve` preview command while keeping dashboard source in Git.
+Declaring `platforms.grafana.url` (see *Links* above) also names the target stack for the
+*Configure Grafana datasources/alerts as code* preflight. Grafana Git Sync covers dashboards and
+folders only; datasources and alert rules need their own qualified path (gcx or IaC).
 
 ## Safety
 

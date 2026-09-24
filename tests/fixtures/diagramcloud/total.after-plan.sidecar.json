@@ -1,0 +1,1742 @@
+{
+  "schemaVersion": 1,
+  "id": "total-project-controls",
+  "revision": 1,
+  "title": "Renamed by plan",
+  "summary": "New summary",
+  "author": "Julian Passebecq",
+  "category": "Portfolio",
+  "tags": [
+    "Project controls",
+    "Oracle",
+    "SQL",
+    "Power BI"
+  ],
+  "rootViewId": "overview",
+  "provenance": "Reconstructed from the user-provided portfolio PDFs. Tables, code and visual flow speeds in this app are synthetic teaching examples, not verified employer data or measured performance.",
+  "nodes": [
+    {
+      "id": "business",
+      "label": "Business inputs",
+      "kind": "source",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Planning, drilling, cost estimates and revisions",
+      "role": "",
+      "status": "idle",
+      "blockIds": [],
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "excel",
+      "label": "Excel preparation",
+      "kind": "process",
+      "provider": "Excel",
+      "icon": "generic",
+      "summary": "Assumptions, structures and update files",
+      "role": "Data maintenance and schedule coordination",
+      "status": "idle",
+      "blockIds": [],
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "oracle",
+      "label": "Oracle project database",
+      "kind": "storage",
+      "provider": "Oracle",
+      "icon": "generic",
+      "summary": "Consolidated project cost and schedule",
+      "role": "",
+      "status": "idle",
+      "childViewId": "data-model",
+      "blockIds": [],
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "checks",
+      "label": "SQL quality checks",
+      "kind": "control",
+      "provider": "SQL",
+      "icon": "generic",
+      "summary": "Validate, reconcile and explain discrepancies",
+      "role": "Checked data consistency and prepared reporting views",
+      "status": "running",
+      "childViewId": "validation",
+      "experienceWorkspaceId": "quality-screen",
+      "blockIds": [],
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "powerbi",
+      "label": "Power BI reporting",
+      "kind": "report",
+      "provider": "Power BI",
+      "icon": "generic",
+      "summary": "Planning snapshots, CAPEX phasing, variance",
+      "role": "",
+      "status": "idle",
+      "childViewId": "reporting",
+      "experienceWorkspaceId": "controls-screen",
+      "blockIds": [],
+      "sourceIds": [
+        "pdf-six",
+        "pdf-eighteen"
+      ],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "mandatory",
+      "label": "Required fields",
+      "kind": "function",
+      "provider": "SQL",
+      "icon": "generic",
+      "summary": "WBS, dates and costs must be populated",
+      "role": "",
+      "status": "idle",
+      "childViewId": "check-detail",
+      "blockIds": [
+        "mandatory-explanation"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "dates",
+      "label": "Date sequence",
+      "kind": "function",
+      "provider": "SQL",
+      "icon": "generic",
+      "summary": "Start date must not follow finish date",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "date-query"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "reconcile",
+      "label": "Cost reconciliation",
+      "kind": "function",
+      "provider": "SQL",
+      "icon": "generic",
+      "summary": "Detail cost must agree with the reporting total",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "reconciliation"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "exceptions",
+      "label": "Review exceptions",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Separate suspect records; keep the reason visible",
+      "role": "",
+      "status": "warning",
+      "blockIds": [
+        "exceptions-story"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "sample-rows",
+      "label": "Input rows",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Small synthetic schedule extract",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "schedule-input"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "check-function",
+      "label": "Validation query",
+      "kind": "function",
+      "provider": "SQL",
+      "icon": "generic",
+      "summary": "A readable, deterministic row-level check",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "sql-quality"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "check-output",
+      "label": "Flagged records",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Return exceptions, not a misleading clean result",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "schedule-errors"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "fact-schedule",
+      "label": "FactSchedule",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Illustrative grain: WBS item per revision",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "fact-columns"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "dim-project",
+      "label": "DimProject",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Project identity and reporting attributes",
+      "role": "",
+      "status": "idle",
+      "blockIds": [],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "dim-date",
+      "label": "DimDate",
+      "kind": "table",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Calendar used for scheduling and phasing",
+      "role": "",
+      "status": "idle",
+      "blockIds": [],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "schedule",
+      "label": "Schedule view",
+      "kind": "report",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Milestones and delivery sequence",
+      "role": "",
+      "status": "idle",
+      "blockIds": [],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "cost",
+      "label": "Cost phasing",
+      "kind": "report",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Quarterly spending and cumulative values",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "cost-table"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    },
+    {
+      "id": "decision",
+      "label": "Management review",
+      "kind": "process",
+      "provider": "Generic",
+      "icon": "generic",
+      "summary": "Explain changes and uncertainties",
+      "role": "",
+      "status": "idle",
+      "blockIds": [
+        "interview"
+      ],
+      "sourceIds": [],
+      "tags": [],
+      "visibility": "public"
+    }
+  ],
+  "edges": [
+    {
+      "id": "overview-e0",
+      "source": "business",
+      "target": "excel",
+      "label": "update files",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "overview-e1",
+      "source": "excel",
+      "target": "oracle",
+      "label": "load",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "overview-e2",
+      "source": "oracle",
+      "target": "checks",
+      "label": "validate",
+      "kind": "query",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "overview-e3",
+      "source": "checks",
+      "target": "powerbi",
+      "label": "trusted views",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "validation-e0",
+      "source": "mandatory",
+      "target": "dates",
+      "label": "presence OK",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "validation-e1",
+      "source": "dates",
+      "target": "reconcile",
+      "label": "dates OK",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "validation-e2",
+      "source": "reconcile",
+      "target": "exceptions",
+      "label": "review results",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "check-detail-e0",
+      "source": "sample-rows",
+      "target": "check-function",
+      "label": "evaluate",
+      "kind": "query",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "check-detail-e1",
+      "source": "check-function",
+      "target": "check-output",
+      "label": "exceptions",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "data-model-e0",
+      "source": "dim-project",
+      "target": "fact-schedule",
+      "label": "project key",
+      "kind": "dependency",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "data-model-e1",
+      "source": "dim-date",
+      "target": "fact-schedule",
+      "label": "date key",
+      "kind": "dependency",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "reporting-e0",
+      "source": "schedule",
+      "target": "decision",
+      "label": "delivery status",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    },
+    {
+      "id": "reporting-e1",
+      "source": "cost",
+      "target": "decision",
+      "label": "cost outlook",
+      "kind": "batch",
+      "speed": "medium",
+      "visibility": "public"
+    }
+  ],
+  "views": [
+    {
+      "id": "overview",
+      "title": "Project controls | end-to-end",
+      "description": "A readable overview. Click SQL quality checks to open the task underneath, then a check to inspect its SQL and sample rows.",
+      "nodeIds": [
+        "business",
+        "excel",
+        "oracle",
+        "checks",
+        "powerbi"
+      ],
+      "edgeIds": [
+        "overview-e0",
+        "overview-e1",
+        "overview-e2",
+        "overview-e3"
+      ],
+      "positions": {
+        "business": {
+          "x": 0,
+          "y": 0
+        },
+        "excel": {
+          "x": 300,
+          "y": 0
+        },
+        "oracle": {
+          "x": 600,
+          "y": 0
+        },
+        "checks": {
+          "x": 0,
+          "y": 180
+        },
+        "powerbi": {
+          "x": 300,
+          "y": 180
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "validation",
+      "title": "What the validation task does",
+      "description": "Source: six-page portfolio, page 3. The SQL implementation and sample records below are newly authored examples.",
+      "nodeIds": [
+        "mandatory",
+        "dates",
+        "reconcile",
+        "exceptions"
+      ],
+      "edgeIds": [
+        "validation-e0",
+        "validation-e1",
+        "validation-e2"
+      ],
+      "positions": {
+        "mandatory": {
+          "x": 0,
+          "y": 0
+        },
+        "dates": {
+          "x": 300,
+          "y": 0
+        },
+        "reconcile": {
+          "x": 600,
+          "y": 0
+        },
+        "exceptions": {
+          "x": 0,
+          "y": 180
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "check-detail",
+      "title": "Inside one quality check",
+      "description": "A third level of explanation: input, function and output. This is displayed code, not a database execution environment.",
+      "nodeIds": [
+        "sample-rows",
+        "check-function",
+        "check-output"
+      ],
+      "edgeIds": [
+        "check-detail-e0",
+        "check-detail-e1"
+      ],
+      "positions": {
+        "sample-rows": {
+          "x": 0,
+          "y": 0
+        },
+        "check-function": {
+          "x": 300,
+          "y": 0
+        },
+        "check-output": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "data-model",
+      "title": "Data structure | not just a database icon",
+      "description": "The detailed 18-page portfolio includes a much broader semantic model. This intentionally small model is an illustrative project-controls subset, not a transcription of all 35 tables.",
+      "nodeIds": [
+        "dim-project",
+        "fact-schedule",
+        "dim-date"
+      ],
+      "edgeIds": [
+        "data-model-e0",
+        "data-model-e1"
+      ],
+      "positions": {
+        "dim-project": {
+          "x": 0,
+          "y": 0
+        },
+        "fact-schedule": {
+          "x": 300,
+          "y": 0
+        },
+        "dim-date": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      "visibility": "public"
+    },
+    {
+      "id": "reporting",
+      "title": "Reporting and the decision it supports",
+      "description": "No employer performance claim is inferred from the sample figures.",
+      "nodeIds": [
+        "schedule",
+        "cost",
+        "decision"
+      ],
+      "edgeIds": [
+        "reporting-e0",
+        "reporting-e1"
+      ],
+      "positions": {
+        "schedule": {
+          "x": 0,
+          "y": 0
+        },
+        "cost": {
+          "x": 300,
+          "y": 0
+        },
+        "decision": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      "visibility": "public"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "sql-quality",
+      "title": "Row-level validation",
+      "visibility": "public",
+      "sourceIds": [],
+      "provenance": "synthetic",
+      "type": "code",
+      "language": "sql",
+      "code": "SELECT wbs_code, activity_name, start_date, finish_date,\n       forecast_cost_eur\nFROM staging_schedule\nWHERE wbs_code IS NULL\n   OR start_date IS NULL\n   OR finish_date IS NULL\n   OR forecast_cost_eur IS NULL\n   OR start_date > finish_date\n   OR forecast_cost_eur < 0;"
+    },
+    {
+      "id": "schedule-input",
+      "title": "Synthetic input",
+      "visibility": "public",
+      "sourceIds": [],
+      "provenance": "synthetic",
+      "type": "table",
+      "columns": [
+        "WBS",
+        "Activity",
+        "Start",
+        "Finish",
+        "Cost EUR"
+      ],
+      "rows": [
+        [
+          "wbs-01",
+          "Site preparation",
+          "2026-01-10",
+          "2026-01-31",
+          120000
+        ],
+        [
+          "wbs-02",
+          "Drilling",
+          "2026-03-20",
+          "2026-03-01",
+          420000
+        ],
+        [
+          "wbs-03",
+          "Commissioning",
+          "2026-07-01",
+          "2026-07-15",
+          -1000
+        ]
+      ]
+    },
+    {
+      "id": "schedule-errors",
+      "title": "Expected exceptions",
+      "visibility": "public",
+      "sourceIds": [],
+      "provenance": "synthetic",
+      "type": "table",
+      "columns": [
+        "WBS",
+        "Reason"
+      ],
+      "rows": [
+        [
+          "wbs-02",
+          "Start occurs after finish"
+        ],
+        [
+          "wbs-03",
+          "Negative forecast cost"
+        ]
+      ]
+    },
+    {
+      "id": "mandatory-explanation",
+      "title": "Why check this?",
+      "visibility": "public",
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "provenance": "source-derived",
+      "type": "text",
+      "text": "The six-page portfolio identifies missing WBS, dates and costs as a quality-control concern. In an interview, explain the grain of the record, the mandatory fields, the owner of an exception and whether a failed check blocks publication."
+    },
+    {
+      "id": "date-query",
+      "title": "Date logic",
+      "visibility": "public",
+      "sourceIds": [],
+      "provenance": "synthetic",
+      "type": "code",
+      "language": "sql",
+      "code": "SELECT wbs_code, revision_id\nFROM staging_schedule\nWHERE start_date > finish_date;"
+    },
+    {
+      "id": "reconciliation",
+      "title": "Define the comparison before the SQL",
+      "visibility": "public",
+      "sourceIds": [],
+      "provenance": "synthetic",
+      "type": "text",
+      "text": "Aggregate the same revision, currency and reporting scope on each side. Explain any tolerance and rounding rule. Do not compare the latest detailed estimate with a different baseline and call the difference a data error."
+    },
+    {
+      "id": "exceptions-story",
+      "title": "My contribution versus the system",
+      "visibility": "public",
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "provenance": "source-derived",
+      "type": "text",
+      "text": "The supplied portfolio describes maintaining project data, updating milestones, checking consistency, preparing views and supporting reviews. This reconstruction does not claim sole ownership of the platform."
+    },
+    {
+      "id": "fact-columns",
+      "title": "Explain the grain first",
+      "visibility": "public",
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "provenance": "synthetic",
+      "type": "table",
+      "columns": [
+        "Column",
+        "Type",
+        "Meaning"
+      ],
+      "rows": [
+        [
+          "wbs_code",
+          "STRING",
+          "Work breakdown item"
+        ],
+        [
+          "revision_id",
+          "STRING",
+          "Estimate version"
+        ],
+        [
+          "start_date",
+          "DATE",
+          "Planned start"
+        ],
+        [
+          "finish_date",
+          "DATE",
+          "Planned finish"
+        ],
+        [
+          "forecast_cost_eur",
+          "DECIMAL",
+          "Illustrative forecast amount"
+        ]
+      ]
+    },
+    {
+      "id": "cost-table",
+      "title": "Illustrative quarterly phasing",
+      "visibility": "public",
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "provenance": "synthetic",
+      "type": "table",
+      "columns": [
+        "Quarter",
+        "CAPEX EUR m",
+        "Cumulative EUR m"
+      ],
+      "rows": [
+        [
+          "Q1",
+          120,
+          120
+        ],
+        [
+          "Q2",
+          180,
+          300
+        ],
+        [
+          "Q3",
+          220,
+          520
+        ],
+        [
+          "Q4",
+          260,
+          780
+        ]
+      ]
+    },
+    {
+      "id": "interview",
+      "title": "Interview narrative",
+      "visibility": "public",
+      "sourceIds": [
+        "pdf-six"
+      ],
+      "provenance": "source-derived",
+      "type": "text",
+      "text": "Context: cost and schedule information came from multiple sources. Contribution: maintained and checked data, prepared reporting views and supported project reviews. Decision: make revisions and discrepancies visible. Evidence: a synthetic row-level check and a small example data model, not confidential employer records."
+    }
+  ],
+  "assets": [],
+  "sources": [
+    {
+      "id": "pdf-six",
+      "title": "Total_Foilo_Portfolio_6_pages (2).pdf",
+      "location": "User-supplied six-page portfolio; illustrative/synthetic labels retained.",
+      "visibility": "public"
+    },
+    {
+      "id": "pdf-eighteen",
+      "title": "Julian_Passebecq_Portfolio_TotalEnergies_First_NoGlossary (2).pdf",
+      "location": "User-supplied 18-page portfolio; TotalEnergies first, then Foil’O.",
+      "visibility": "public"
+    }
+  ],
+  "story": [
+    {
+      "title": "Start with the business problem",
+      "viewId": "overview",
+      "nodeId": "business",
+      "narration": "Project controllers need a consistent view of cost and schedule, not another disconnected spreadsheet.",
+      "highlightEdgeIds": []
+    },
+    {
+      "title": "Explain your contribution",
+      "viewId": "overview",
+      "nodeId": "checks",
+      "narration": "Separate the overall architecture from my work on consistency checks and reporting preparation.",
+      "highlightEdgeIds": []
+    },
+    {
+      "title": "Open one concrete task",
+      "viewId": "validation",
+      "nodeId": "mandatory",
+      "narration": "Show the required fields, date logic and reconciliation before discussing the implementation.",
+      "highlightEdgeIds": []
+    },
+    {
+      "title": "Show the evidence",
+      "viewId": "check-detail",
+      "nodeId": "check-function",
+      "narration": "A small query and clearly labelled synthetic rows make the work understandable without disclosing employer data.",
+      "highlightEdgeIds": []
+    },
+    {
+      "title": "Close on the decision",
+      "viewId": "reporting",
+      "nodeId": "decision",
+      "narration": "Explain who uses the output and what it changes about a project review.",
+      "highlightEdgeIds": []
+    }
+  ],
+  "experience": {
+    "format": "diagramcloud.experience",
+    "schemaVersion": 1,
+    "id": "total-project-experience",
+    "title": "TotalEnergies project experience",
+    "revision": 0,
+    "rootId": "total",
+    "sources": [
+      {
+        "id": "portfolio-six",
+        "title": "Total / Foilo six-page portfolio",
+        "kind": "pdf",
+        "locator": "User-supplied portfolio: illustrative structure and synthetic examples",
+        "page": 2,
+        "visibility": "public"
+      },
+      {
+        "id": "portfolio-wide",
+        "title": "TotalEnergies-first 18-page portfolio",
+        "kind": "pdf",
+        "locator": "User-supplied portfolio: DAX/SQL workspace composition reference",
+        "page": 9,
+        "visibility": "public"
+      },
+      {
+        "id": "datapass-manifest",
+        "title": "DataPass VS Code manifest schema",
+        "kind": "repository",
+        "locator": "julian-passebecq/datapass-vscode / schemas/datapass-project.schema.json",
+        "revision": "blob:5415629f43b79137765becf8ec62bbd1fb7a7378",
+        "visibility": "public"
+      },
+      {
+        "id": "datapass-readme",
+        "title": "DataPass VS Code control-plane README",
+        "kind": "repository",
+        "locator": "julian-passebecq/datapass-vscode / README.md",
+        "revision": "5af14e5e9a5e825b5c3e5d1854cde04b35be5e4b",
+        "visibility": "public"
+      }
+    ],
+    "entities": [
+      {
+        "id": "all-projects",
+        "label": "Project experience atlas",
+        "type": "project",
+        "summary": "Architecture is navigation. Workspaces show the work, not just more boxes.",
+        "children": [
+          "total",
+          "foil",
+          "datapass",
+          "portfolio-remix"
+        ],
+        "workspaceIds": [],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "total",
+        "label": "TotalEnergies",
+        "type": "organization",
+        "summary": "",
+        "children": [
+          "project-controls"
+        ],
+        "workspaceIds": [],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "project-controls",
+        "label": "Project controls",
+        "type": "project",
+        "summary": "Reconstructed portfolio walkthrough. No confidential employer records.",
+        "children": [
+          "reporting",
+          "quality-task"
+        ],
+        "workspaceIds": [],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "reporting",
+        "label": "Planning and cost reporting",
+        "type": "workstream",
+        "summary": "",
+        "children": [],
+        "workspaceIds": [
+          "controls-screen"
+        ],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "quality-task",
+        "label": "Validate schedule rows",
+        "type": "task",
+        "summary": "Input rows -> validation rule -> expected exceptions -> decision.",
+        "children": [],
+        "workspaceIds": [
+          "quality-screen"
+        ],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "foil",
+        "label": "FOIL",
+        "type": "organization",
+        "summary": "",
+        "children": [
+          "foil-scenarios"
+        ],
+        "workspaceIds": [],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "foil-scenarios",
+        "label": "Scenario comparison",
+        "type": "task",
+        "summary": "New synthetic teaching example; no live Databricks run or validated physical model.",
+        "children": [],
+        "workspaceIds": [
+          "foil-screen"
+        ],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "datapass",
+        "label": "DataPass VS Code",
+        "type": "project",
+        "summary": "",
+        "children": [
+          "manifest-task",
+          "galaxy-task"
+        ],
+        "workspaceIds": [],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      },
+      {
+        "id": "manifest-task",
+        "label": "Project manifest and official tools",
+        "type": "task",
+        "summary": "",
+        "children": [],
+        "workspaceIds": [
+          "manifest-screen"
+        ],
+        "sourceIds": [
+          "datapass-manifest"
+        ],
+        "visibility": "public",
+        "assertion": "verified-in-source"
+      },
+      {
+        "id": "galaxy-task",
+        "label": "Operate the Galaxy control plane",
+        "type": "task",
+        "summary": "Repository-backed view of the implemented control-plane surfaces and their safety boundaries.",
+        "children": [],
+        "workspaceIds": [
+          "galaxy-screen"
+        ],
+        "sourceIds": [
+          "datapass-readme"
+        ],
+        "visibility": "public",
+        "assertion": "verified-in-source"
+      },
+      {
+        "id": "portfolio-remix",
+        "label": "Portfolio remix",
+        "type": "project",
+        "summary": "References existing items from different workspaces. No copied data and no implied data join.",
+        "children": [],
+        "workspaceIds": [
+          "remix-screen"
+        ],
+        "sourceIds": [],
+        "visibility": "public",
+        "assertion": "declared"
+      }
+    ],
+    "relations": [
+      {
+        "id": "report-quality",
+        "source": "quality-task",
+        "target": "reporting",
+        "kind": "validates",
+        "assertion": "illustrative",
+        "sourceIds": [],
+        "visibility": "public"
+      },
+      {
+        "id": "manifest-galaxy",
+        "source": "manifest-task",
+        "target": "galaxy-task",
+        "kind": "documents",
+        "assertion": "verified-in-source",
+        "sourceIds": [
+          "datapass-readme"
+        ],
+        "visibility": "public"
+      }
+    ],
+    "items": [
+      {
+        "id": "capex-kpi",
+        "title": "Illustrative CAPEX phasing",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "kpi",
+        "value": "780",
+        "unit": "EUR million",
+        "note": "Sum of the four illustrated quarters, not a verified project investment."
+      },
+      {
+        "id": "capex-data",
+        "title": "Quarterly CAPEX source table",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "Quarter",
+          "CAPEX",
+          "Cumulative"
+        ],
+        "rows": [
+          [
+            "Q1",
+            120,
+            120
+          ],
+          [
+            "Q2",
+            180,
+            300
+          ],
+          [
+            "Q3",
+            220,
+            520
+          ],
+          [
+            "Q4",
+            260,
+            780
+          ]
+        ]
+      },
+      {
+        "id": "capex-chart",
+        "title": "Quarterly CAPEX",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "chart",
+        "chartType": "bar",
+        "dataItemId": "capex-data",
+        "labelColumn": "Quarter",
+        "valueColumns": [
+          "CAPEX"
+        ],
+        "unit": "EUR million - illustrative"
+      },
+      {
+        "id": "capex-curve",
+        "title": "Cumulative cost curve",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "chart",
+        "chartType": "line",
+        "dataItemId": "capex-data",
+        "labelColumn": "Quarter",
+        "valueColumns": [
+          "Cumulative"
+        ],
+        "unit": "EUR million - same table, different view"
+      },
+      {
+        "id": "schedule-gantt",
+        "title": "Delivery schedule",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "gantt",
+        "tasks": [
+          {
+            "label": "Engineering",
+            "start": "2026-01-05",
+            "end": "2026-03-20",
+            "progress": 100
+          },
+          {
+            "label": "Procurement",
+            "start": "2026-02-15",
+            "end": "2026-05-30",
+            "progress": 70
+          },
+          {
+            "label": "Construction",
+            "start": "2026-04-01",
+            "end": "2026-08-15",
+            "progress": 25
+          },
+          {
+            "label": "Commissioning",
+            "start": "2026-08-16",
+            "end": "2026-09-30",
+            "progress": 0
+          }
+        ],
+        "milestones": []
+      },
+      {
+        "id": "report-narrative",
+        "title": "My contribution and decision",
+        "entityId": "reporting",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "reconstruction",
+        "approval": "approved",
+        "type": "note",
+        "text": "Purpose: explain cost/schedule preparation, validation and reporting.\n\nThe portfolio describes data maintenance, milestone updates, consistency checks and preparation of reporting views. This screen reconstructs that workflow. It is not a screenshot of the historical production application.\n\nNext: open Validate schedule rows to see a concrete task."
+      },
+      {
+        "id": "quality-input",
+        "title": "Synthetic input rows",
+        "entityId": "quality-task",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "WBS",
+          "Start",
+          "Finish",
+          "Cost"
+        ],
+        "rows": [
+          [
+            "wbs-01",
+            "2026-01-10",
+            "2026-01-31",
+            120000
+          ],
+          [
+            "wbs-02",
+            "2026-03-20",
+            "2026-03-01",
+            420000
+          ],
+          [
+            "wbs-03",
+            "2026-07-01",
+            "2026-07-15",
+            -1000
+          ]
+        ]
+      },
+      {
+        "id": "quality-sql",
+        "title": "SQL validation rule",
+        "entityId": "quality-task",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "code",
+        "language": "sql",
+        "code": "SELECT wbs_code, start_date, finish_date, forecast_cost_eur\nFROM staging_schedule\nWHERE start_date > finish_date\n   OR forecast_cost_eur < 0;\n\n-- Displayed example only. Nothing is executed.",
+        "file": "illustrative/validate_schedule.sql"
+      },
+      {
+        "id": "quality-output",
+        "title": "Expected exceptions",
+        "entityId": "quality-task",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "WBS",
+          "Reason"
+        ],
+        "rows": [
+          [
+            "wbs-02",
+            "Start is after finish"
+          ],
+          [
+            "wbs-03",
+            "Negative forecast cost"
+          ]
+        ]
+      },
+      {
+        "id": "quality-contract",
+        "title": "Task contract",
+        "entityId": "quality-task",
+        "sourceIds": [
+          "portfolio-six"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "note",
+        "text": "Intent: identify suspect schedule records.\nInputs: a versioned schedule extract.\nRule: start <= finish and forecast cost >= 0.\nOutput: exception list with a reason.\nAcceptance: exactly wbs-02 and wbs-03 for this fixture.\nDecision: review before publication.\nEvidence class: synthetic teaching example, not executed SQL."
+      },
+      {
+        "id": "foil-data",
+        "title": "Synthetic scenario outputs",
+        "entityId": "foil-scenarios",
+        "sourceIds": [],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "Scenario",
+          "Proxy_kW"
+        ],
+        "rows": [
+          [
+            "S-01",
+            12
+          ],
+          [
+            "S-02",
+            18
+          ],
+          [
+            "S-03",
+            27
+          ]
+        ]
+      },
+      {
+        "id": "foil-chart",
+        "title": "Scenario comparison",
+        "entityId": "foil-scenarios",
+        "sourceIds": [],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "chart",
+        "chartType": "bar",
+        "dataItemId": "foil-data",
+        "labelColumn": "Scenario",
+        "valueColumns": [
+          "Proxy_kW"
+        ],
+        "unit": "Invented power proxy - not machine performance"
+      },
+      {
+        "id": "foil-note",
+        "title": "Interpretation boundary",
+        "entityId": "foil-scenarios",
+        "sourceIds": [],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "note",
+        "text": "This screen demonstrates the layout pattern in the Streamlit portfolio page: parameters, result table, comparison chart and interpretation.\n\nThe three values are newly invented UI fixtures. They do not reproduce a simulation, measured performance, financial return or historical result."
+      },
+      {
+        "id": "manifest-code",
+        "title": "Portable project context",
+        "entityId": "manifest-task",
+        "sourceIds": [
+          "datapass-manifest"
+        ],
+        "visibility": "public",
+        "provenance": "synthetic",
+        "approval": "approved",
+        "type": "code",
+        "language": "json",
+        "code": "{\n  \"schemaVersion\": 1,\n  \"project\": {\n    \"id\": \"foil\",\n    \"title\": \"FOIL\"\n  },\n  \"repositories\": {\n    \"databricks\": {\n      \"path\": \"../foil_databrick_dab\"\n    }\n  },\n  \"platforms\": {\n    \"fabric\": {},\n    \"databricks\": {},\n    \"grafana\": {}\n  }\n}",
+        "file": ".datapass/project.json (sanitized teaching example)"
+      },
+      {
+        "id": "manifest-contract",
+        "title": "What the manifest proves",
+        "entityId": "manifest-task",
+        "sourceIds": [
+          "datapass-manifest"
+        ],
+        "visibility": "public",
+        "provenance": "source-derived",
+        "approval": "approved",
+        "type": "note",
+        "text": "The inspected v1 schema describes project identity, repository bindings, platform configuration and links.\n\nA declaration does NOT prove the cloud resource exists, is authenticated or is deployed.\n\nThe importer deliberately drops local paths, URLs, commands and environment values. The V2 typed-graph handoff is a target contract, not a claim that current exports already implement it."
+      },
+      {
+        "id": "galaxy-surfaces",
+        "title": "Implemented Galaxy surfaces",
+        "entityId": "galaxy-task",
+        "sourceIds": [
+          "datapass-readme"
+        ],
+        "visibility": "public",
+        "provenance": "source-derived",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "Surface",
+          "Implemented responsibility",
+          "Boundary"
+        ],
+        "rows": [
+          [
+            "Galaxy",
+            "health-first control plane, readiness, attention queue, grouped platform cards",
+            "status/control surface; not a provider client"
+          ],
+          [
+            "Projects",
+            ".datapass/project.json manifests with schema validation",
+            "Git-safe context; no credentials"
+          ],
+          [
+            "Fabric",
+            "detect official tools, toolbox assets, assessment/MCP workflows, read-only capture",
+            "official Fabric tooling remains primary"
+          ],
+          [
+            "Databricks",
+            "detect extension/CLI/bundles and generate safe bundle commands",
+            "official Databricks extension remains primary"
+          ],
+          [
+            "Power BI",
+            "detect PBIP/TMDL/PBIR and expose focused agentic modules",
+            "specialized editors remain external"
+          ],
+          [
+            "Grafana",
+            "dashboard-as-code paths using gcx / Foundation SDK / IaC",
+            "not a dashboard designer"
+          ],
+          [
+            "Infrastructure",
+            "detect OpenTofu/Terraform, Docker, Kubernetes and SSH",
+            "does not replace peer tooling"
+          ]
+        ]
+      },
+      {
+        "id": "galaxy-safety",
+        "title": "Control-plane safety contract",
+        "entityId": "galaxy-task",
+        "sourceIds": [
+          "datapass-readme"
+        ],
+        "visibility": "public",
+        "provenance": "source-derived",
+        "approval": "approved",
+        "type": "note",
+        "text": "The repository states that DataPass does not persist cloud credentials, vendor authentication remains vendor-owned, mutating cloud/IaC actions are explicit, and missing tools degrade to actionable Missing/Partial states. Project manifests are schema-validated and exclude secret fields.\n\nThis workspace documents repository behavior; it is not a live environment-health capture."
+      },
+      {
+        "id": "galaxy-flow",
+        "title": "Typical operator flow",
+        "entityId": "galaxy-task",
+        "sourceIds": [
+          "datapass-readme"
+        ],
+        "visibility": "public",
+        "provenance": "source-derived",
+        "approval": "approved",
+        "type": "table",
+        "columns": [
+          "Step",
+          "Action",
+          "Evidence"
+        ],
+        "rows": [
+          [
+            1,
+            "Open Galaxy / choose project",
+            "current project manifest and detected tools"
+          ],
+          [
+            2,
+            "Review readiness / attention",
+            "Ready, Partial or Attention state"
+          ],
+          [
+            3,
+            "Open or copy provider-specific action",
+            "official extension, CLI, repo or upstream docs"
+          ],
+          [
+            4,
+            "Keep mutation explicit",
+            "user-triggered command or reviewed scaffold"
+          ],
+          [
+            5,
+            "Copy sanitized environment snapshot",
+            "handoff/debug JSON without paths, commands or credentials"
+          ]
+        ]
+      }
+    ],
+    "workspaces": [
+      {
+        "id": "controls-screen",
+        "title": "Project controls | reconstructed screen",
+        "entityId": "reporting",
+        "description": "Screen-like composition inspired by the supplied portfolio. Reusable native cards, not a flattened screenshot.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "p-kpi",
+            "itemId": "capex-kpi",
+            "x": 0,
+            "y": 0,
+            "w": 4,
+            "h": 2
+          },
+          {
+            "id": "p-context",
+            "itemId": "report-narrative",
+            "x": 4,
+            "y": 0,
+            "w": 8,
+            "h": 2
+          },
+          {
+            "id": "p-chart",
+            "itemId": "capex-chart",
+            "x": 0,
+            "y": 2,
+            "w": 6,
+            "h": 4
+          },
+          {
+            "id": "p-line",
+            "itemId": "capex-curve",
+            "x": 6,
+            "y": 2,
+            "w": 6,
+            "h": 4
+          },
+          {
+            "id": "p-gantt",
+            "itemId": "schedule-gantt",
+            "x": 0,
+            "y": 6,
+            "w": 7,
+            "h": 4
+          },
+          {
+            "id": "p-table",
+            "itemId": "capex-data",
+            "x": 7,
+            "y": 6,
+            "w": 5,
+            "h": 4
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      },
+      {
+        "id": "quality-screen",
+        "title": "SQL quality task | input, code, output",
+        "entityId": "quality-task",
+        "description": "A business task may map to several source symbols. This is not a live query editor.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "q-code",
+            "itemId": "quality-sql",
+            "x": 0,
+            "y": 0,
+            "w": 7,
+            "h": 4
+          },
+          {
+            "id": "q-contract",
+            "itemId": "quality-contract",
+            "x": 7,
+            "y": 0,
+            "w": 5,
+            "h": 4
+          },
+          {
+            "id": "q-input",
+            "itemId": "quality-input",
+            "x": 0,
+            "y": 4,
+            "w": 7,
+            "h": 3
+          },
+          {
+            "id": "q-output",
+            "itemId": "quality-output",
+            "x": 7,
+            "y": 4,
+            "w": 5,
+            "h": 3
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      },
+      {
+        "id": "foil-screen",
+        "title": "FOIL | scenario workspace",
+        "entityId": "foil-scenarios",
+        "description": "Reconstructed application-style evidence layout with explicitly synthetic fixtures.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "f-note",
+            "itemId": "foil-note",
+            "x": 0,
+            "y": 0,
+            "w": 4,
+            "h": 4
+          },
+          {
+            "id": "f-chart",
+            "itemId": "foil-chart",
+            "x": 4,
+            "y": 0,
+            "w": 8,
+            "h": 4
+          },
+          {
+            "id": "f-table",
+            "itemId": "foil-data",
+            "x": 0,
+            "y": 4,
+            "w": 12,
+            "h": 3
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      },
+      {
+        "id": "manifest-screen",
+        "title": "DataPass | manifest to architecture",
+        "entityId": "manifest-task",
+        "description": "Repository-sourced contract plus a sanitized illustrative instance.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "m-code",
+            "itemId": "manifest-code",
+            "x": 0,
+            "y": 0,
+            "w": 7,
+            "h": 5
+          },
+          {
+            "id": "m-contract",
+            "itemId": "manifest-contract",
+            "x": 7,
+            "y": 0,
+            "w": 5,
+            "h": 5
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      },
+      {
+        "id": "galaxy-screen",
+        "title": "DataPass | Galaxy control-plane screen",
+        "entityId": "galaxy-task",
+        "description": "Source-derived view of the implemented control-plane surfaces and safety model at repository revision 5af14e5.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "g-surfaces",
+            "itemId": "galaxy-surfaces",
+            "x": 0,
+            "y": 0,
+            "w": 8,
+            "h": 5
+          },
+          {
+            "id": "g-safety",
+            "itemId": "galaxy-safety",
+            "x": 8,
+            "y": 0,
+            "w": 4,
+            "h": 5
+          },
+          {
+            "id": "g-flow",
+            "itemId": "galaxy-flow",
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 4
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      },
+      {
+        "id": "remix-screen",
+        "title": "Portfolio | mixed evidence board",
+        "entityId": "portfolio-remix",
+        "description": "The same item IDs are reused across source workspaces and this composition. Placing panels together does not join their datasets.",
+        "visibility": "public",
+        "placements": [
+          {
+            "id": "r-code",
+            "itemId": "quality-sql",
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          {
+            "id": "r-curve",
+            "itemId": "capex-curve",
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          {
+            "id": "r-gantt",
+            "itemId": "schedule-gantt",
+            "x": 0,
+            "y": 4,
+            "w": 6,
+            "h": 4
+          },
+          {
+            "id": "r-foil",
+            "itemId": "foil-chart",
+            "x": 6,
+            "y": 4,
+            "w": 6,
+            "h": 4
+          }
+        ],
+        "context": [],
+        "accent": "blue"
+      }
+    ]
+  }
+}

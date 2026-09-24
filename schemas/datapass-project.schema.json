@@ -152,6 +152,48 @@
             },
             "watchPath": {
               "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "pattern": "^(https://[^\\s/?#@]+(/[^\\s?#\\\\]*)?|http://(localhost|127\\.0\\.0\\.1|\\[::1\\])(:[0-9]{1,5})?(/[^\\s?#\\\\]*)?)$",
+              "description": "Grafana stack base URL, e.g. https://<stack>.grafana.net/. https (or http://localhost); no credentials, query or #fragment. Navigation only: DataPass never checks sign-in or data freshness."
+            },
+            "dashboards": {
+              "type": "array",
+              "maxItems": 50,
+              "description": "Dashboards to open from the Work view. Requires url.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "uid",
+                  "title"
+                ],
+                "properties": {
+                  "uid": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,40}$",
+                    "description": "Grafana dashboard UID (opened as <url>/d/<uid>)."
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Scope ids (or \"project\") this dashboard belongs to; omit for every scope."
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Workspace-relative dashboard-as-code file (Foundation SDK, JSON, …)."
+                  }
+                }
+              }
             }
           }
         },
@@ -231,6 +273,44 @@
         }
       }
     },
+    "companions": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional companion apps. Their addresses are user settings (datapass.mongoku.url); the manifest only maps stable ids.",
+      "properties": {
+        "mongoku": {
+          "type": "object",
+          "additionalProperties": false,
+          "anyOf": [
+            {
+              "required": [
+                "entityId"
+              ]
+            },
+            {
+              "required": [
+                "scopeEntities"
+              ]
+            }
+          ],
+          "properties": {
+            "entityId": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
+              "description": "Mongoku entity id for the whole project, e.g. foil_project."
+            },
+            "scopeEntities": {
+              "type": "object",
+              "description": "Scope id (or \"project\") → Mongoku entity id, for scopes that map to a different entity.",
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+              }
+            }
+          }
+        }
+      }
+    },
     "scopes": {
       "type": "array",
       "description": "v2: work scopes. One is active per window; a scope focuses navigation and preflight, it does not sandbox tools.",
@@ -245,7 +325,9 @@
           "id": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
-            "not": { "const": "project" },
+            "not": {
+              "const": "project"
+            },
             "description": "\"project\" is reserved for the whole-project scope."
           },
           "title": {

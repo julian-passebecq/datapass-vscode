@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/julian-passebecq/datapass-vscode/contracts/diagramcloud/datapass-ai-context-v1.schema.json",
+  "title": "DataPass AI Context V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "schemaVersion", "project", "scope", "base", "repositories", "platforms", "tasks", "redactions"],
+  "properties": {
+    "format": { "const": "datapass.ai-context" },
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "kind": {
+          "enum": ["active-engineering", "learning", "portfolio-reconstruction", "reference", "archived"]
+        },
+        "profile": { "type": "string", "maxLength": 160 }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "type": {
+          "enum": ["organization", "project", "workstream", "workspace", "task", "component", "resource", "repository"]
+        },
+        "title": { "type": "string", "maxLength": 240 }
+      }
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectManifestRevision"],
+      "properties": {
+        "projectManifestRevision": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "diagramCloudRevision": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "minLength": 1, "maxLength": 200 },
+            { "type": "null" }
+          ]
+        },
+        "repositoryCommit": { "type": ["string", "null"], "maxLength": 200 }
+      }
+    },
+    "diagramCloud": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "present": { "type": "boolean" },
+        "documentPath": { "type": "string", "maxLength": 500 },
+        "documentId": { "type": "string", "maxLength": 160 },
+        "revision": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "maxLength": 200 },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "repositories": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "revision": { "type": "string", "maxLength": 200 },
+          "role": { "type": "string", "maxLength": 500 }
+        }
+      }
+    },
+    "platforms": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "label", "status", "evidence"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 160 },
+          "label": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "status": { "enum": ["unknown", "missing", "partial", "ready", "attention"] },
+          "evidence": { "enum": ["declared", "inferred", "observed", "verified-in-source", "verified-at-runtime"] },
+          "summary": { "type": "string", "maxLength": 1200 }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "status"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "status": { "enum": ["unknown", "todo", "in-progress", "blocked", "done"] },
+          "summary": { "type": "string", "maxLength": 2000 },
+          "sourceIds": {
+            "type": "array",
+            "maxItems": 100,
+            "items": { "type": "string", "maxLength": 200 }
+          }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "string", "maxLength": 2000 }
+    },
+    "redactions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "string", "maxLength": 500 }
+    }
+  }
+}

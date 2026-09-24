@@ -1,5 +1,6 @@
 import type { CapabilityRecord } from "./registry";
 import { TOOL_INDEX, type ToolObservation } from "./tools";
+import { FACT_MANIFEST_FIELDS } from "../workspace/facts";
 
 export type PreflightStatus = "ready" | "blocked" | "needs-review" | "needs-config" | "unsupported" | "unknown";
 
@@ -82,7 +83,7 @@ export function preflight(cap: CapabilityRecord, ctx: PreflightContext): Preflig
       ? `Run "${cap.label}" (${cap.actionMode}).`
       : `Open the native tool: ${cap.label}.`
     : first.kind === "tool" ? `Install or enable ${first.label}. ${first.detail}`
-    : first.kind === "fact" ? `Declare ${first.label} in the project manifest. ${first.detail}`
+    : first.kind === "fact" ? `Declare ${FACT_MANIFEST_FIELDS[first.id] ?? first.label} in the project manifest. ${first.detail}`
     : first.kind === "constraint" ? first.detail
     : `Review: ${first.label}.`;
 

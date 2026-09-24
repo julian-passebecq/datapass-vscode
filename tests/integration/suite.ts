@@ -10,6 +10,7 @@ import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { fixture, record, runAll, sleep, test, waitFor } from "./harness";
 import { registerFlows } from "./flows";
+import { registerBridgeAndCompanionFlows } from "./companionFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -197,6 +198,7 @@ test("the contributed JSON schema produces diagnostics in the editor", async () 
 }, ["broken"]);
 
 registerFlows(() => api);
+registerBridgeAndCompanionFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

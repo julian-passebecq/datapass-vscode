@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/julian-passebecq/datapass-vscode/contracts/diagramcloud/datapass-ai-plan-v1.schema.json",
+  "title": "DataPass AI Plan V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "schemaVersion", "base", "scope", "summary", "operations"],
+  "properties": {
+    "format": { "const": "datapass.ai-plan" },
+    "schemaVersion": { "const": 1 },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["projectManifestRevision"],
+      "properties": {
+        "projectManifestRevision": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "diagramCloudRevision": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "minLength": 1, "maxLength": 200 },
+            { "type": "null" }
+          ]
+        },
+        "contextHash": { "type": "string", "maxLength": 200 }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 240 },
+        "type": {
+          "enum": ["organization", "project", "workstream", "workspace", "task", "component", "resource", "repository"]
+        }
+      }
+    },
+    "summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "operations": {
+      "type": "array",
+      "maxItems": 300,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "target", "action", "reviewLabel", "payload"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "target": { "enum": ["project-manifest", "diagramcloud-document"] },
+          "action": {
+            "enum": [
+              "add-task",
+              "update-task",
+              "add-relation",
+              "update-relation",
+              "add-item",
+              "update-item",
+              "add-workspace",
+              "update-workspace",
+              "add-placement",
+              "remove-placement",
+              "link-node-workspace",
+              "set-project-metadata"
+            ]
+          },
+          "reviewLabel": { "type": "string", "minLength": 1, "maxLength": 500 },
+          "entityId": { "type": "string", "maxLength": 240 },
+          "payload": {
+            "type": "object",
+            "maxProperties": 60,
+            "propertyNames": {
+              "not": {
+                "pattern": "(password|Password|secret|Secret|token|Token|credential|Credential|privateKey|clientSecret)"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "type": "string", "maxLength": 2000 }
+    },
+    "notes": { "type": "string", "maxLength": 6000 }
+  }
+}

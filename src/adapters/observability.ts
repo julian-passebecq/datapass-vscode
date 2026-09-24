@@ -4,6 +4,7 @@ import { deriveStatus } from "../core/status";
 import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { anyWorkspaceFile } from "../core/vscodeDetection";
 import { getProjectPlatformConfig } from "../core/projectState";
+import { hostLabel, safeAppUrl } from "../core/model/safeUrl";
 
 export class ObservabilityAdapter implements PlatformAdapter {
   readonly id = "observability";
@@ -23,6 +24,8 @@ export class ObservabilityAdapter implements PlatformAdapter {
     const projectConfig = await getProjectPlatformConfig();
     const generator = config.get<string>("grafana.generatorCommand", "").trim() || projectConfig?.grafana?.generatorCommand?.trim() || "";
     const watchPath = config.get<string>("grafana.watchPath", "").trim() || projectConfig?.grafana?.watchPath?.trim() || "";
+    // A configured stack is a destination, not a tool: it never raises the card's readiness.
+    const stack = safeAppUrl(projectConfig?.grafana?.url);
     const tools: ToolProbe[] = [
       gcx,
       tofu,
@@ -41,6 +44,7 @@ export class ObservabilityAdapter implements PlatformAdapter {
       summary: "Grafana is treated as observability as code: source -> Foundation SDK -> gcx preview -> Git -> deployment.",
       tools,
       actions: [
+        { id: "grafana.openStack", label: "Open Grafana", enabled: Boolean(stack), kind: "link", detail: stack ? `${hostLabel(stack)} · link only, not a health check` : "Set platforms.grafana.url in .datapass/project.json" },
         { id: "grafana.copyPreview", label: "Copy gcx preview", enabled: Boolean(gcx.available && generator), kind: "copy", detail: watchPath ? `Watch: ${watchPath}` : undefined },
         { id: "grafana.openFoundation", label: "Foundation SDK", enabled: true, kind: "link" },
         { id: "grafana.openProvider", label: "Grafana provider", enabled: true, kind: "link" }

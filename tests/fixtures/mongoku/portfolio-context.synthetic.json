@@ -1,0 +1,104 @@
+{
+  "format": "mongoku.portfolio-context",
+  "schema_version": "0.1-proposal",
+  "classification": "PRIVATE_REVIEW",
+  "generated_at": "2026-09-25T09:30:00.000Z",
+  "scope": {
+    "organization_id": "demo_org",
+    "project_id": "retail_bi"
+  },
+  "purpose": "Developer handoff for Retail BI (synthetic): resume from the stop point, respect the test gate, report results back to Mongoku.",
+  "project": {
+    "name": "Retail BI (synthetic)",
+    "category": "analytics",
+    "status": "ongoing",
+    "test_gate": "READY_FOR_REVIEW",
+    "repo": "example/retail-bi",
+    "branch": "main",
+    "head": "0123456789abcdef0123456789abcdef01234567",
+    "ci": "success runs 101 @0123456789ab",
+    "runtime": "fabric · not deployed",
+    "stop_point": "Weekly forecast notebook refactored; report visuals not yet reviewed.",
+    "next_action": "Review the weekly report against last week's numbers.",
+    "mongoku_url": "http://localhost:3100/?project=retail_bi"
+  },
+  "sources": [
+    {
+      "id": "mongo:entity:retail_bi",
+      "kind": "MONGO_METADATA",
+      "locator": "DATAPASSCONTROL/dataprojects_control/entities#retail_bi",
+      "revision": null,
+      "observed_at": "2026-09-25T08:00:00.000Z",
+      "freshness": "CURRENT_FOR_DECLARED_SCOPE"
+    },
+    {
+      "id": "github:example/retail-bi",
+      "kind": "GITHUB",
+      "locator": "https://github.com/example/retail-bi/tree/main",
+      "revision": "0123456789abcdef0123456789abcdef01234567",
+      "observed_at": "2026-09-25T08:00:00.000Z",
+      "freshness": "CURRENT_FOR_DECLARED_SCOPE"
+    },
+    {
+      "id": "ref:github:example/retail-bi",
+      "kind": "GITHUB",
+      "locator": "github:example/retail-bi",
+      "revision": null,
+      "observed_at": null,
+      "freshness": "UNKNOWN"
+    }
+  ],
+  "items": [
+    {
+      "id": "gate:retail_bi",
+      "kind": "TEST_GATE",
+      "summary": "READY_FOR_REVIEW — Review the weekly report against last week's numbers.",
+      "assertion": "OBSERVED",
+      "source_refs": [
+        "mongo:entity:retail_bi"
+      ]
+    },
+    {
+      "id": "W-1",
+      "kind": "WORK",
+      "summary": "P1 · blocked · Refresh sales semantic model — next: Wait for the Fabric capacity to be resumed",
+      "assertion": "OBSERVED",
+      "source_refs": [
+        "mongo:work_items#W-1"
+      ]
+    },
+    {
+      "id": "W-2",
+      "kind": "TEST_GATE",
+      "summary": "P0 · ready · Validate weekly totals — next: Compare with finance export",
+      "assertion": "OBSERVED",
+      "source_refs": [
+        "mongo:work_items#W-2"
+      ]
+    },
+    {
+      "id": "W-3",
+      "kind": "WORK",
+      "summary": "P2 · ongoing · Document the report measures",
+      "assertion": "OBSERVED",
+      "source_refs": [
+        "mongo:work_items#W-3"
+      ]
+    },
+    {
+      "id": "E-1",
+      "kind": "CHANGE",
+      "summary": "2026-09-24T17:00:00.000Z Notebook merged",
+      "assertion": "OBSERVED",
+      "source_refs": [
+        "mongo:events#E-1"
+      ]
+    }
+  ],
+  "exclusions": [
+    "6 other portfolio project(s) excluded",
+    "Domain-authority backlogs (for example FOIL Project Management) are referenced, never copied",
+    "No credentials, connection strings, tokens or environment values",
+    "Full document/library content (for example AtlasNote PDFs or notebooks) is not included"
+  ]
+}

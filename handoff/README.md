@@ -1,6 +1,12 @@
 # DataPass handoff index
 
-## Current entry point — V2.2
+## Start here — v1 status (2026-09-25)
+
+- [V1 handoff](V1_HANDOFF.md): what is what, version chronology, v1 gates with their status, next passes, cross-repository follow-ups.
+- [Next-pass prompt for Claude](v1/CLAUDE_PROMPT.md).
+- Runtime truth: [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md).
+
+## Architecture reference — V2.2
 
 1. [V2.2 decisions and scope](V2_2_HANDOFF.md)
 2. [V2.2 complete Claude implementation prompt](v2.2/CLAUDE_PROMPT.md)
@@ -11,6 +17,7 @@
 7. [DiagramCloud bridge](v2.2/05_DIAGRAMCLOUD_CONTRACT.md)
 8. [Optional Mongo context](v2.2/06_MONGO_CONTEXT.md)
 9. [Executable draft contract kit](v2.2/contracts/README.md) and [actual validation scope](v2.2/VALIDATION.md)
+10. [DiagramCloud bridge V1 handoff](DIAGRAMCLOUD_BRIDGE_V1.md) — cross-product contract for project context, AI exchange and `.datapass/diagramcloud.json` (canonical spec: [contracts/diagramcloud](../contracts/diagramcloud/README.md)).
 
 V2.2 extends rather than replaces the V2.1 foundation. It adds current FOIL repository reconciliation, operation-specific tooling, external-app/data/publication contracts and explicit integration boundaries. These are design fixtures, not inputs already accepted by the current v1 runtime manifest.
 

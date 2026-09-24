@@ -1,15 +1,15 @@
 /**
  * Scripted UI for desktop tests. Replaces the `vscode.window` prompt methods (and the
- * clipboard) of the extension host's API object with a queue of scripted answers, so the
- * real command handlers run end to end without a human. Every prompt is recorded; the
- * system clipboard is never read or written.
+ * clipboard and browser seams) of the extension host's API object with a queue of scripted
+ * answers, so the real command handlers run end to end without a human. Every prompt is
+ * recorded; the system clipboard is never read or written and no browser is launched.
  */
 import * as vscode from "vscode";
 
 export type Step =
   | { pick: string | string[] }          // label substring(s); canPickMany takes all matches
   | { input: string }
-  | { button: string }                   // message/modal button
+  | { button: string; during?: () => Promise<void> } // message/modal button; `during` runs while the dialog is open
   | { open: vscode.Uri[] }               // file dialog result
   | { dismiss: true };                   // Esc / close
 
@@ -22,6 +22,8 @@ export class ScriptedUi {
   readonly prompts: Prompt[] = [];
   readonly errors: string[] = [];
   readonly notices: string[] = [];
+  /** URLs DataPass asked to open in the browser (through the Test-mode seam). */
+  readonly opened: string[] = [];
   clipboard = "";
   private steps: Step[] = [];
   private saved: Array<[object, string, unknown]> = [];
@@ -69,6 +71,7 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
       if (!step || "dismiss" in step) return undefined;
       if (!("button" in step)) throw new Error(`expected a button step for "${text}", got ${JSON.stringify(step)}`);
       if (!buttons.includes(step.button)) throw new Error(`no button "${step.button}" on "${text}": ${buttons.join(" | ")}`);
+      if (step.during) await step.during();
       return rest.find(b => labelOf(b) === step.button);
     };
     patch(w, "showInformationMessage", message("info"));
@@ -84,13 +87,18 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
     // vscode.env.clipboard is frozen; DataPass routes all clipboard use through a Test-mode seam.
     this.setClipboard({ readText: async () => this.clipboard, writeText: async (value: string) => { this.clipboard = value; } });
     this.saved.push([{}, "clipboard", undefined]);
+    this.setOpener(async uri => { this.opened.push(uri.toString(true)); return true; });
     return this;
   }
 
-  constructor(private readonly setClipboard: (impl?: { readText(): Thenable<string>; writeText(v: string): Thenable<void> }) => void) {}
+  constructor(
+    private readonly setClipboard: (impl?: { readText(): Thenable<string>; writeText(v: string): Thenable<void> }) => void,
+    private readonly setOpener: (impl?: (uri: vscode.Uri) => Thenable<boolean>) => void
+  ) {}
 
   restore(): void {
     this.setClipboard(undefined);
+    this.setOpener(undefined);
     for (const [target, key, value] of this.saved.reverse()) if (key !== "clipboard") (target as Record<string, unknown>)[key] = value;
     this.saved = [];
   }
@@ -104,14 +112,16 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
 
 /** Run `fn` with a scripted UI; fail if the command reported an error or left steps unused. */
 let setClipboard: ConstructorParameters<typeof ScriptedUi>[0] = () => { throw new Error("call bindUi() first"); };
+let setOpener: ConstructorParameters<typeof ScriptedUi>[1] = () => { throw new Error("call bindUi() first"); };
 
-/** Connect the scripted UI to the extension's Test-mode clipboard seam. */
-export function bindUi(api: { setClipboard: ConstructorParameters<typeof ScriptedUi>[0] }): void {
+/** Connect the scripted UI to the extension's Test-mode clipboard and browser seams. */
+export function bindUi(api: { setClipboard: ConstructorParameters<typeof ScriptedUi>[0]; setExternalOpener: ConstructorParameters<typeof ScriptedUi>[1] }): void {
   setClipboard = impl => api.setClipboard(impl);
+  setOpener = impl => api.setExternalOpener(impl);
 }
 
 export async function withUi(steps: Step[], fn: (ui: ScriptedUi) => PromiseLike<unknown>, opts: { allowErrors?: boolean } = {}): Promise<ScriptedUi> {
-  const ui = new ScriptedUi(setClipboard).script(...steps);
+  const ui = new ScriptedUi(setClipboard, setOpener).script(...steps);
   try {
     ui.install();
     await fn(ui);
