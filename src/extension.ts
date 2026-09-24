@@ -5,6 +5,7 @@ import type { GalaxyState } from "./core/types";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
+import { registerBridgeCommands } from "./work/bridgeCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
 import { platformOperations } from "./core/capabilities/platformOperations";
 
@@ -46,6 +47,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   };
   context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge), session.onDidChange(() => void galaxy.refreshOperations()));
   registerWorkCommands(context, session);
+  registerBridgeCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";

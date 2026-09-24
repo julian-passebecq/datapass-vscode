@@ -104,3 +104,21 @@ The corresponding DiagramCloud Pro branch must pin the exact contract commit it 
 `docs/contracts/datapass-diagramcloud-bridge.lock.json`
 
 That lock prevents the two repos from silently drifting.
+
+## Implementation status (branch feat/diagramcloud-bridge-v1)
+
+Implemented on top of the `claude0.9` code line (V2.2 Work view):
+
+| Acceptance step (contract README) | Where |
+| --- | --- |
+| 2. Detect `.datapass/diagramcloud.json` | `src/core/diagramcloud/bridge.ts` `inspectSidecar` (identity and revision only; DiagramCloud validates the whole document) |
+| 3. Open architecture | **DataPass: Open Architecture in DiagramCloud** opens the configured `datapass.diagramCloud.url` with no data in the URL, then DiagramCloud → JSON / AI → Open project folder… |
+| 4. Copy AI context | **DataPass: Copy DiagramCloud AI Context (JSON)…**: `buildBridgeContext`, checked against `datapass-ai-context-v1` before copying |
+| 5–7. Validate plan, check base revisions, review | **DataPass: Import DiagramCloud AI Plan…**: strict JSON → `planIssues` → `reviewPlan` (manifest + sidecar revisions) → per-operation approval (nothing pre-ticked) → confirmation |
+| 8. Apply accepted changes | `applyApproved` + `applyWithJournal` against the reviewed bytes' SHA-256; only `set-project-metadata` and `link-node-workspace` in V1 |
+| 9. DiagramCloud validates before opening | DiagramCloud `feat/diagramcloud-experience-pro-pass`: Open project folder / Reopen repository file |
+| Copy current project/scope summary | **DataPass: Copy Project/Scope Summary** |
+
+Tests: `tests/diagramcloudBridge.test.ts` checks that the runtime validators agree with the canonical JSON Schemas (ajv, dev-only) on positive and negative fixtures. It also covers sanitization (no paths, remote URLs, hosts or binding values), revision conflicts, selective apply, the journaled stale-base refusal, and byte-identical output against a DiagramCloud-generated golden file.
+
+Not in V1: applying other plan actions, `project-manifest` operations, a VS Code webview host for DiagramCloud, and persisting the DiagramCloud folder link across browser reloads.
