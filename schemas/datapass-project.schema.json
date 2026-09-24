@@ -10,7 +10,10 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": 1
+      "enum": [
+        1,
+        2
+      ]
     },
     "project": {
       "type": "object",
@@ -41,9 +44,6 @@
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "path"
-        ],
         "properties": {
           "path": {
             "type": "string",
@@ -51,8 +51,44 @@
           },
           "label": {
             "type": "string"
+          },
+          "remote": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "url"
+            ],
+            "properties": {
+              "url": {
+                "type": "string",
+                "pattern": "^(https://[^\\s@/]+/[^\\s]+|git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+)$",
+                "description": "https or git@host:path; never embed credentials."
+              },
+              "branch": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9._/-]{1,200}$"
+              }
+            }
+          },
+          "management": {
+            "enum": [
+              "local",
+              "remote-only"
+            ]
           }
-        }
+        },
+        "anyOf": [
+          {
+            "required": [
+              "path"
+            ]
+          },
+          {
+            "required": [
+              "remote"
+            ]
+          }
+        ]
       }
     },
     "platforms": {
@@ -137,6 +173,40 @@
               "description": "SSH config host alias only. Do not store credentials here."
             }
           }
+        },
+        "airflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "local-docker",
+                "oci-k3s",
+                "fabric-git-sync",
+                "fabric-workspace-git",
+                "managed-other"
+              ]
+            },
+            "identity": {
+              "type": "string"
+            },
+            "gitSyncRepo": {
+              "type": "string"
+            },
+            "workspaceGitAlm": {
+              "type": "boolean"
+            }
+          }
+        },
+        "powerbi": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "projectRoot": {
+              "type": "string",
+              "description": "Folder containing the .pbip file(s)."
+            }
+          }
         }
       }
     },
@@ -160,6 +230,213 @@
           }
         }
       }
+    },
+    "scopes": {
+      "type": "array",
+      "description": "v2: work scopes. One is active per window; a scope focuses navigation and preflight, it does not sandbox tools.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "objective": {
+            "type": "string"
+          },
+          "itemRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            }
+          },
+          "capabilityRefs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Operation capability ids, e.g. fabric.notebook.local-sync."
+          },
+          "checklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "label"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                },
+                "label": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "capabilityRef": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "apps": {
+      "type": "array",
+      "description": "v2: external applications (Streamlit, React…) exchanged with through contracts, not hosted by DataPass.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "appType",
+          "repoRef"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "label": {
+            "type": "string"
+          },
+          "appType": {
+            "enum": [
+              "streamlit",
+              "react",
+              "static-site",
+              "api",
+              "other"
+            ]
+          },
+          "repoRef": {
+            "type": "string",
+            "description": "Key in repositories."
+          },
+          "entrypoint": {
+            "type": "string"
+          },
+          "inputContracts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            }
+          },
+          "outputContracts": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            }
+          },
+          "hosting": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider"
+            ],
+            "properties": {
+              "provider": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "pattern": "^https://"
+              }
+            }
+          },
+          "owner": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "domainPacks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^(builtin:[a-z][a-z0-9.-]+|[^/\\\\~].*\\.json)$"
+      },
+      "description": "v2: builtin:<name> (e.g. builtin:foil.programme, builtin:sample.retail) or workspace-relative pack files."
+    },
+    "graph": {
+      "type": "string",
+      "description": "v2: workspace-relative path of the project graph (default .datapass/graph.json)."
     }
-  }
+  },
+  "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; schemaVersion 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories. Never put secrets in this file.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "repositories": {
+            "additionalProperties": {
+              "required": [
+                "path"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "remote"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "management"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "scopes"
+              ]
+            },
+            {
+              "required": [
+                "apps"
+              ]
+            },
+            {
+              "required": [
+                "domainPacks"
+              ]
+            },
+            {
+              "required": [
+                "graph"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/contracts/authority-snapshot.schema.json",
+  "title": "DataPass authority-snapshot envelope (0.1-draft)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.authority-snapshot"
+    },
+    "contractVersion": {
+      "const": "0.1-draft"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "projectRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "scopeRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scopeRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "manifestHash": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "const": "sha256"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "algorithm",
+            "value"
+          ]
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "workingTreeHash": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "algorithm": {
+                    "const": "sha256"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "algorithm",
+                  "value"
+                ]
+              }
+            },
+            "required": [
+              "repoRef",
+              "revision",
+              "workingTreeHash"
+            ]
+          },
+          "maxItems": 30,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "scopeRevision",
+        "manifestHash",
+        "repositories"
+      ]
+    },
+    "classification": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "recordRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classification": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential"
+            ]
+          },
+          "snapshotHash": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "const": "sha256"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "algorithm",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "authority",
+          "recordRef",
+          "revision",
+          "observedAt",
+          "classification",
+          "snapshotHash"
+        ]
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "querySpecRef": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+        },
+        "querySpecHash": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "const": "sha256"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "algorithm",
+            "value"
+          ]
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "state": {
+          "enum": [
+            "complete",
+            "partial",
+            "empty",
+            "error",
+            "not-authorized"
+          ]
+        },
+        "recordRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "nextCursorAvailable": {
+          "type": "boolean"
+        },
+        "encoding": {
+          "enum": [
+            "json",
+            "mongodb-canonical-ejson"
+          ]
+        },
+        "dataArtifactRef": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "querySpecRef",
+        "querySpecHash",
+        "asOf",
+        "state",
+        "recordRefs",
+        "omissions",
+        "nextCursorAvailable",
+        "encoding",
+        "dataArtifactRef"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "contractVersion",
+    "id",
+    "projectRef",
+    "scopeRef",
+    "base",
+    "classification",
+    "createdAt",
+    "sources",
+    "payload"
+  ]
+}

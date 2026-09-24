@@ -25,14 +25,17 @@ export function buildGalaxyHealth(
 
   for (const platform of platforms) {
     platformCounts[platform.status] += 1;
-    toolsAvailable += platform.tools.filter(tool => tool.available).length;
-    toolsTotal += platform.tools.length;
+    // Optional companions are informational; they are not counted as missing capability.
+    const required = platform.tools.filter(tool => !tool.optional);
+    toolsAvailable += required.filter(tool => tool.available).length;
+    toolsTotal += required.length;
   }
 
   const bindings = {
     bound: project.bindings.filter(binding => binding.status === "bound").length,
     missing: project.bindings.filter(binding => binding.status === "missing").length,
     unknown: project.bindings.filter(binding => binding.status === "unknown").length,
+    remote: project.bindings.filter(binding => binding.status === "remote").length,
     total: project.bindings.length
   };
 

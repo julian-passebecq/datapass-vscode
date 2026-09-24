@@ -6,3 +6,10 @@ src/**
 node_modules/**
 *.vsix
 *.map
+scripts/**
+**/*.map
+CLAUDE.md
+esbuild.mjs
+tsconfig.json
+out/**
+.vscode-test/**

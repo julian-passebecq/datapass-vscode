@@ -49,6 +49,7 @@ export async function resolveProjectRepository(key: string): Promise<string | un
   const manifest = read.manifest;
   const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const configured = manifest?.repositories?.[key]?.path;
+  // Remote-only repositories have no local path; callers must not treat them as clones.
   if (!root || !configured) return undefined;
   return resolveManifestPath(root, configured);
 }
@@ -66,6 +67,16 @@ async function manifestToState(manifest: DataPassProjectManifest): Promise<Proje
 
   if (root) {
     for (const [key, repo] of Object.entries(manifest.repositories ?? {})) {
+      if (!repo.path) {
+        // Remote-only repositories are valid; DataPass never clones them implicitly.
+        bindings.push({
+          id: key,
+          label: `${repo.label || key} (remote-only)`,
+          value: repo.remote?.url,
+          status: "remote"
+        });
+        continue;
+      }
       const value = resolveManifestPath(root, repo.path);
       let exists = false;
       try {

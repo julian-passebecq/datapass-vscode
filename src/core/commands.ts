@@ -1,9 +1,31 @@
 import * as path from "node:path";
 
+/**
+ * Quote one argument for the shell a copied command is pasted into. On Windows that is
+ * PowerShell (VS Code's default Windows terminal): single quotes are literal there, so `$`
+ * and backticks in names cannot expand, where cmd-style double quotes would interpolate.
+ */
 export function quoteShellArg(value: string, platform: NodeJS.Platform = process.platform): string {
   if (/\r|\n|\0/.test(value)) throw new Error("Command argument contains unsupported control characters.");
-  if (platform === "win32") return `"${value.replace(/"/g, '""')}"`;
+  if (platform === "win32") return quotePowerShellArg(value);
   return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
+
+/** Leave plain tokens bare (readable in every shell) and quote anything else. */
+export function shellWord(value: string, platform: NodeJS.Platform = process.platform): string {
+  const bare = platform === "win32" ? /^-?[A-Za-z0-9_][A-Za-z0-9_./\\:-]*$/ : /^-?[A-Za-z0-9_][A-Za-z0-9_./:-]*$/;
+  return bare.test(value) ? value : quoteShellArg(value, platform);
+}
+
+/**
+ * Run a tool inside a directory. POSIX shells get `cd … && …`. Windows gets a form that works
+ * in Windows PowerShell 5.1 (which has no `&&`) and PowerShell 7, and that stops when the
+ * directory is missing instead of running the tool somewhere else.
+ */
+export function inDirectory(directory: string, command: string, platform: NodeJS.Platform = process.platform): string {
+  const dir = (platform === "win32" ? path.win32 : path.posix).resolve(directory);
+  if (platform === "win32") return `Set-Location -LiteralPath ${quotePowerShellArg(dir)}; if ($?) { ${command} }`;
+  return `cd ${quoteShellArg(dir, platform)} && ${command}`;
 }
 
 export function buildDatabricksBundleCommand(
@@ -12,12 +34,11 @@ export function buildDatabricksBundleCommand(
   target?: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  const prefix = `cd ${quoteShellArg(path.resolve(projectRoot), platform)}`;
   if (operation === "run") {
     if (!target?.trim()) throw new Error("A Databricks bundle run target is required.");
-    return `${prefix} && databricks bundle run ${quoteShellArg(target.trim(), platform)}`;
+    return inDirectory(projectRoot, `databricks bundle run ${shellWord(target.trim(), platform)}`, platform);
   }
-  return `${prefix} && databricks bundle ${operation}`;
+  return inDirectory(projectRoot, `databricks bundle ${operation}`, platform);
 }
 
 export function buildGrafanaPreviewCommand(
@@ -43,7 +64,7 @@ export function buildIaCCommand(
   root: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  return `cd ${quoteShellArg(path.resolve(root), platform)} && ${tool} ${operation}`;
+  return inDirectory(root, `${tool} ${operation}`, platform);
 }
 export function quotePowerShellArg(value: string): string {
   if (/\r|\n|\0/.test(value)) throw new Error("PowerShell argument contains unsupported control characters.");
@@ -148,14 +169,7 @@ export function buildFabricCliCommand(
   workspaceName?: string,
   platform: NodeJS.Platform = process.platform
 ): string {
-  return ["fab", ...fabricCliArgs(operation, workspaceName).map(arg => quoteShellArg(arg, platform))]
-    .join(" ")
-    .replace(/^fab 'auth' 'status'$/, "fab auth status")
-    .replace(/^fab 'auth' 'login'$/, "fab auth login")
-    .replace(/^fab 'ls'$/, "fab ls")
-    .replace(/^fab 'get' /, "fab get ")
-    .replace(/^fab 'ls' /, "fab ls ")
-    .replace(/ '-l'$/, " -l");
+  return ["fab", ...fabricCliArgs(operation, workspaceName).map(arg => shellWord(arg, platform))].join(" ");
 }
 
 export function buildFabricDeployCommand(

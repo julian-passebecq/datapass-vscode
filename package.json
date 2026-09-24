@@ -1,8 +1,8 @@
 {
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
-  "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana, infrastructure and project profiles.",
-  "version": "0.8.0",
+  "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana and infrastructure: work scopes, operation preflight, contracted app exchanges, impact analysis and publication briefs.",
+  "version": "0.9.1",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -14,16 +14,8 @@
   ],
   "activationEvents": [
     "onView:datapass.galaxy",
-    "onCommand:datapass.refresh",
-    "onCommand:datapass.openGalaxy",
-    "onCommand:datapass.initializeProjectManifest",
-    "onCommand:datapass.initializeFoilProjectManifest",
-    "onCommand:datapass.openProjectManifest",
-    "onCommand:datapass.copyEnvironmentSnapshot",
-    "onCommand:datapass.fabric.captureSummary",
-    "onCommand:datapass.fabric.scaffoldDeployConfig",
-    "onCommand:datapass.fabric.copyDeployCommand",
-    "onCommand:datapass.fabric.scaffoldPreflightWorkflow"
+    "onView:datapass.work",
+    "workspaceContains:.datapass/project.json"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -76,6 +68,94 @@
       {
         "command": "datapass.fabric.scaffoldPreflightWorkflow",
         "title": "DataPass: Fabric Scaffold CI Preflight"
+      },
+      {
+        "command": "datapass.work.refresh",
+        "title": "DataPass: Refresh Work View (re-probe tools)",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.selectScope",
+        "title": "DataPass: Select Work Scope",
+        "icon": "$(target)"
+      },
+      {
+        "command": "datapass.setChecklistState",
+        "title": "DataPass: Set Checklist Item State"
+      },
+      {
+        "command": "datapass.showPreflight",
+        "title": "DataPass: Show Operation Preflight",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.createAppRequest",
+        "title": "DataPass: Create External App Request",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "datapass.importAppResult",
+        "title": "DataPass: Import External App Result",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "datapass.observeAppRevision",
+        "title": "DataPass: Observe App Remote Revision",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "datapass.createCandidate",
+        "title": "DataPass: Create Parameter Candidate"
+      },
+      {
+        "command": "datapass.analyzeImpact",
+        "title": "DataPass: Analyze Output Impact"
+      },
+      {
+        "command": "datapass.prepareBrief",
+        "title": "DataPass: Prepare Publication Brief"
+      },
+      {
+        "command": "datapass.approveBrief",
+        "title": "DataPass: Approve Brief for Generation",
+        "icon": "$(verified)"
+      },
+      {
+        "command": "datapass.importOutputManifest",
+        "title": "DataPass: Import Publication Output Manifest"
+      },
+      {
+        "command": "datapass.importAuthoritySnapshot",
+        "title": "DataPass: Import Authority Snapshot"
+      },
+      {
+        "command": "datapass.exportDiagramCloud",
+        "title": "DataPass: Export DiagramCloud Projection"
+      },
+      {
+        "command": "datapass.inspectPowerBiProject",
+        "title": "DataPass: Inspect Power BI Project (PBIP/PBIR/TMDL)"
+      },
+      {
+        "command": "datapass.copyAiContext",
+        "title": "DataPass: Copy AI Context…",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.migrateManifestToV2",
+        "title": "DataPass: Upgrade Project Manifest to v2"
+      },
+      {
+        "command": "datapass.initGraph",
+        "title": "DataPass: Initialize Project Graph"
+      },
+      {
+        "command": "datapass.validateContract",
+        "title": "DataPass: Validate DataPass JSON (contract/pack/graph/claims)"
+      },
+      {
+        "command": "datapass.openExchange",
+        "title": "DataPass: Open Exchange File"
       }
     ],
     "viewsContainers": {
@@ -90,6 +170,11 @@
     "views": {
       "datapass": [
         {
+          "id": "datapass.work",
+          "name": "Work",
+          "type": "tree"
+        },
+        {
           "id": "datapass.galaxy",
           "name": "Galaxy",
           "type": "webview"
@@ -102,6 +187,110 @@
           "command": "datapass.refresh",
           "when": "view == datapass.galaxy",
           "group": "navigation@1"
+        },
+        {
+          "command": "datapass.selectScope",
+          "when": "view == datapass.work",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datapass.copyAiContext",
+          "when": "view == datapass.work",
+          "group": "navigation@2"
+        },
+        {
+          "command": "datapass.work.refresh",
+          "when": "view == datapass.work",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datapass.createAppRequest",
+          "when": "view == datapass.work",
+          "group": "1_exchange@1"
+        },
+        {
+          "command": "datapass.importAppResult",
+          "when": "view == datapass.work",
+          "group": "1_exchange@2"
+        },
+        {
+          "command": "datapass.createCandidate",
+          "when": "view == datapass.work",
+          "group": "2_model@1"
+        },
+        {
+          "command": "datapass.analyzeImpact",
+          "when": "view == datapass.work",
+          "group": "2_model@2"
+        },
+        {
+          "command": "datapass.prepareBrief",
+          "when": "view == datapass.work",
+          "group": "3_publish@1"
+        },
+        {
+          "command": "datapass.importOutputManifest",
+          "when": "view == datapass.work",
+          "group": "3_publish@2"
+        },
+        {
+          "command": "datapass.importAuthoritySnapshot",
+          "when": "view == datapass.work",
+          "group": "4_context@1"
+        },
+        {
+          "command": "datapass.exportDiagramCloud",
+          "when": "view == datapass.work",
+          "group": "4_context@2"
+        },
+        {
+          "command": "datapass.inspectPowerBiProject",
+          "when": "view == datapass.work",
+          "group": "4_context@3"
+        },
+        {
+          "command": "datapass.initGraph",
+          "when": "view == datapass.work",
+          "group": "5_project@1"
+        },
+        {
+          "command": "datapass.migrateManifestToV2",
+          "when": "view == datapass.work",
+          "group": "5_project@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "datapass.showPreflight",
+          "when": "view == datapass.work && viewItem =~ /^operation/",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.observeAppRevision",
+          "when": "view == datapass.work && viewItem == app.remote",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.approveBrief",
+          "when": "view == datapass.work && viewItem == exchange.brief",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "datapass.setChecklistState",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openExchange",
+          "when": "false"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "datapass.validateContract",
+          "when": "resourceExtname == .json && resourcePath =~ /\\.datapass/",
+          "group": "7_datapass"
         }
       ]
     },
@@ -152,6 +341,32 @@
           "**/.datapass/project.json"
         ],
         "url": "./schemas/datapass-project.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/graph.json"
+        ],
+        "url": "./schemas/datapass-graph.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/claims.json"
+        ],
+        "url": "./schemas/datapass-claims-register.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/packs/*.json",
+          "**/resources/domain-packs/*.json"
+        ],
+        "url": "./schemas/datapass-domain-pack.schema.json"
+      }
+    ],
+    "viewsWelcome": [
+      {
+        "view": "datapass.work",
+        "contents": "Open a folder to plan and prepare DataPass work.\n[Open Folder](command:vscode.openFolder)",
+        "when": "workbenchState == empty"
       }
     ]
   },
@@ -161,15 +376,19 @@
     "check": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "verify": "npm run check && npm test && npm run build",
-    "package": "npm run verify && vsce package"
+    "package": "npm run verify && vsce package",
+    "schemas": "tsx scripts/emit-schemas.ts",
+    "test:desktop": "npm run build && tsx scripts/desktop-test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.96.0",
+    "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.9",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "zod": "^3.25.76"
   },
   "repository": {
     "type": "git",

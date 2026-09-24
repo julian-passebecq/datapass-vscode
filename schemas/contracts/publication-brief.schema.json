@@ -1,0 +1,326 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/contracts/publication-brief.schema.json",
+  "title": "DataPass publication-brief envelope (0.1-draft)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.publication-brief"
+    },
+    "contractVersion": {
+      "const": "0.1-draft"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "projectRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "scopeRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scopeRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "manifestHash": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "const": "sha256"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "algorithm",
+            "value"
+          ]
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "workingTreeHash": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "algorithm": {
+                    "const": "sha256"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "algorithm",
+                  "value"
+                ]
+              }
+            },
+            "required": [
+              "repoRef",
+              "revision",
+              "workingTreeHash"
+            ]
+          },
+          "maxItems": 30,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "scopeRevision",
+        "manifestHash",
+        "repositories"
+      ]
+    },
+    "classification": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "recordRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classification": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential"
+            ]
+          },
+          "snapshotHash": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "const": "sha256"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "algorithm",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "authority",
+          "recordRef",
+          "revision",
+          "observedAt",
+          "classification",
+          "snapshotHash"
+        ]
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "audience": {
+          "enum": [
+            "internal",
+            "named-reviewers",
+            "public"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "outputFormats": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "pptx",
+              "pdf",
+              "docx",
+              "web"
+            ]
+          },
+          "maxItems": 4,
+          "minItems": 1
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "basis": {
+                "enum": [
+                  "source-reported",
+                  "assumption",
+                  "model-output",
+                  "measured",
+                  "target"
+                ]
+              },
+              "sourceRefs": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                },
+                "maxItems": 100,
+                "minItems": 0
+              },
+              "review": {
+                "enum": [
+                  "draft",
+                  "approved",
+                  "rejected"
+                ]
+              },
+              "limitations": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                },
+                "maxItems": 100,
+                "minItems": 0
+              },
+              "allowedAudiences": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "internal",
+                    "named-reviewers",
+                    "public"
+                  ]
+                },
+                "maxItems": 3,
+                "minItems": 0
+              }
+            },
+            "required": [
+              "id",
+              "statement",
+              "basis",
+              "sourceRefs",
+              "review",
+              "limitations",
+              "allowedAudiences"
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "assetRefs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "maxItems": 100,
+          "minItems": 0
+        },
+        "releaseState": {
+          "enum": [
+            "draft",
+            "reviewed-for-generation"
+          ]
+        },
+        "publication": {
+          "const": "not-authorized"
+        }
+      },
+      "required": [
+        "audience",
+        "purpose",
+        "outputFormats",
+        "claims",
+        "assetRefs",
+        "releaseState",
+        "publication"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "contractVersion",
+    "id",
+    "projectRef",
+    "scopeRef",
+    "base",
+    "classification",
+    "createdAt",
+    "sources",
+    "payload"
+  ]
+}

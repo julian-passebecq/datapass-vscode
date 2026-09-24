@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { detectManyCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
-import { detectExtension } from "../core/vscodeDetection";
+import { detectAnyExtension, detectExtension } from "../core/vscodeDetection";
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
 
@@ -18,13 +18,16 @@ export class InfrastructureAdapter implements PlatformAdapter {
       { id: "kubectl", label: "kubectl", command: "kubectl", args: ["version", "--client"] },
       { id: "ssh", label: "SSH client", command: "ssh", args: ["-V"] }
     ]);
+    // OpenTofu is the declared IaC route; Terraform and Kubernetes tooling are alternatives or
+    // later capabilities and never lower the card status on their own.
+    const optionalCli = new Set(["terraform", "kubectl"]);
     const tools: ToolProbe[] = [
       detectExtension("OpenTofu.vscode-opentofu", "OpenTofu VS Code"),
-      detectExtension("hashicorp.terraform", "Terraform VS Code"),
-      detectExtension("ms-kubernetes-tools.vscode-kubernetes-tools", "Kubernetes VS Code"),
-      detectExtension("ms-azuretools.vscode-docker", "Docker VS Code"),
+      { ...detectExtension("hashicorp.terraform", "Terraform VS Code"), optional: true },
+      { ...detectExtension("ms-kubernetes-tools.vscode-kubernetes-tools", "Kubernetes VS Code"), optional: true },
+      detectAnyExtension(["ms-azuretools.vscode-containers", "ms-azuretools.vscode-docker"], "Container Tools", { optional: true }),
       detectExtension("ms-vscode-remote.remote-ssh", "Remote SSH"),
-      ...cli
+      ...cli.map(tool => (optionalCli.has(tool.id) ? { ...tool, optional: true } : tool))
     ];
     const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     const projectConfig = await getProjectPlatformConfig();

@@ -1,0 +1,57 @@
+{
+  "format": "datapass.domain-pack",
+  "packVersion": "0.1-draft",
+  "namespace": "foil.programme",
+  "version": "0.1.0-draft",
+  "title": "FOIL Programme",
+  "description": "Programme projection for FOIL. Facets are declared at section level only. Field-level forms, native pointers and the dependency list must be confirmed by the FOIL kernel owner (see handoff/v2.2/FEEDBACK_TO_FOIL.md item 4) before this pack is marked reviewed. The pack contains no physics, CAD or LCOE logic.",
+  "mappingStatus": "draft-awaiting-owner-declaration",
+  "acceptedSchemas": ["foil.experiment/1.0-rc1"],
+  "views": [
+    { "id": "design", "title": "Design", "description": "Families and cases, geometry/kinematics/pose references, CAD/2D artifacts and candidate revisions.", "tags": ["design"] },
+    { "id": "experiments", "title": "Experiments", "description": "Hypotheses, input snapshots, campaigns, observables, fidelity, receipts and limitations.", "tags": ["experiment", "campaign"] },
+    { "id": "economics", "title": "Economics", "description": "Native LCOE model/config/result references, assumptions, currency/year and sensitivities. Computation stays in the FOIL kernel.", "tags": ["economics"] },
+    { "id": "studies", "title": "Studies and Francis questions", "description": "Bounded study/claim summaries and question references with answer provenance.", "tags": ["study", "question"] },
+    { "id": "business", "title": "Business and funding", "description": "Objectives, milestone gates, funding scenarios and approved budget references. Not an accounting system.", "tags": ["business", "funding"] },
+    { "id": "publication", "title": "Applications and publication", "description": "Streamlit, React website, reports, presentations, diagrams and their review status.", "tags": ["app", "publication"] }
+  ],
+  "facets": [
+    { "id": "economics", "label": "Economic assumptions", "pointers": ["/economics"], "help": "Unit budget, discount and cost assumptions." },
+    { "id": "geometry", "label": "Geometry", "pointers": ["/geometry"] },
+    { "id": "kinematics", "label": "Kinematics", "pointers": ["/kinematics"] },
+    { "id": "pose", "label": "Pose / yaw", "pointers": ["/pose"] },
+    { "id": "generator", "label": "Generator", "pointers": ["/generator"] },
+    { "id": "presentation", "label": "Camera / layout", "pointers": ["/presentation"], "help": "Rendering only; never part of the scientific case identity." }
+  ],
+  "outputs": [
+    { "id": "simulation-results", "label": "Simulation results", "view": "experiments", "producer": "FOIL kernel",
+      "dependsOn": [ { "ref": "case", "facets": ["geometry", "kinematics", "pose", "generator"] }, { "ref": "kernel", "facets": "*" }, { "ref": "dataset", "facets": "*" } ] },
+    { "id": "lcoe-result", "label": "LCOE result", "view": "economics", "producer": "FOIL kernel",
+      "dependsOn": [ { "ref": "case", "facets": ["economics"] }, { "ref": "simulation-results", "facets": "*" }, { "ref": "kernel", "facets": "*" } ] },
+    { "id": "cad-model", "label": "CAD model", "view": "design", "producer": "FOIL CAD pipeline",
+      "dependsOn": [ { "ref": "case", "facets": ["geometry", "kinematics", "pose"] } ] },
+    { "id": "drawings-2d", "label": "2D drawings", "view": "design", "producer": "FOIL CAD pipeline",
+      "dependsOn": [ { "ref": "case", "facets": ["geometry", "pose"] } ] },
+    { "id": "economic-report", "label": "Economic report", "view": "economics",
+      "dependsOn": [ { "ref": "lcoe-result", "facets": "*" }, { "ref": "case", "facets": ["economics"] } ] },
+    { "id": "francis-report", "label": "Francis report", "view": "studies",
+      "dependsOn": [ { "ref": "simulation-results", "facets": "*" }, { "ref": "lcoe-result", "facets": "*" }, { "ref": "case", "facets": ["economics", "geometry", "kinematics", "pose", "generator"] } ] },
+    { "id": "business-brief", "label": "Business brief", "view": "business",
+      "dependsOn": [ { "ref": "economic-report", "facets": "*" } ] },
+    { "id": "presentation-render", "label": "Presentation render", "view": "publication",
+      "dependsOn": [ { "ref": "case", "facets": ["presentation", "geometry", "pose"] } ] }
+  ],
+  "validators": [
+    { "id": "foil-kernel", "label": "FOIL kernel validation", "kind": "external-kernel", "owner": "FOIL Design Lab (foil-streamlit-wind-3d-lcoe)",
+      "instructions": "Validate candidates and recompute outputs in the FOIL kernel. DataPass only correlates the returned result by byte hash and case hash." }
+  ],
+  "briefTemplates": [
+    { "id": "francis-questions", "title": "Francis review", "audience": "named-reviewers", "purpose": "Questions and results for Francis with assumptions and limitations intact.",
+      "sections": ["Scope and case revision", "Questions", "Results with basis", "Assumptions", "Limitations", "Open decisions"] },
+    { "id": "funding-discussion", "title": "Funding discussion", "audience": "named-reviewers",
+      "sections": ["Programme objective", "Milestones", "Evidence to date", "Funding states (target/requested/committed/received)", "Risks", "Asks"] },
+    { "id": "website-public", "title": "Public website content", "audience": "public",
+      "sections": ["Approved public claims", "Approved images", "Legal/rights"] }
+  ],
+  "moneyKinds": ["unit-capex-assumption", "programme-budget", "funding-target", "funding-requested", "funding-committed", "funding-received", "cloud-spend"]
+}

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { validateProjectManifest, type DataPassProjectManifest } from "./projectManifestModel";
+import { parseStrictJson } from "./model/strictJson";
 
 export * from "./projectManifestModel";
 
@@ -7,6 +8,8 @@ export interface ManifestReadResult {
   exists: boolean;
   uri?: vscode.Uri;
   manifest?: DataPassProjectManifest;
+  /** Exact bytes read, for base hashing. */
+  bytes?: Uint8Array;
   errors: string[];
 }
 
@@ -23,11 +26,12 @@ export async function readProjectManifest(): Promise<ManifestReadResult> {
 
   try {
     const bytes = await vscode.workspace.fs.readFile(uri);
-    const raw = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+    // Strict parse: duplicate keys, non-finite numbers and prototype keys are rejected.
+    const raw = parseStrictJson(bytes, { maxBytes: 1_048_576 });
     const errors = validateProjectManifest(raw);
     return errors.length
-      ? { exists: true, uri, errors }
-      : { exists: true, uri, manifest: raw as DataPassProjectManifest, errors: [] };
+      ? { exists: true, uri, bytes, errors }
+      : { exists: true, uri, bytes, manifest: raw as DataPassProjectManifest, errors: [] };
   } catch (error) {
     return {
       exists: true,

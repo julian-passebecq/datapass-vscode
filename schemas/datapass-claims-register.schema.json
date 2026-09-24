@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-claims-register.schema.json",
+  "title": "DataPass claims register (0.1-draft)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.claims-register"
+    },
+    "version": {
+      "const": "0.1-draft"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "recordRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classification": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential"
+            ]
+          },
+          "snapshotHash": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "const": "sha256"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "algorithm",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "authority",
+          "recordRef",
+          "revision",
+          "observedAt",
+          "classification",
+          "snapshotHash"
+        ]
+      },
+      "maxItems": 500,
+      "minItems": 0
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "basis": {
+            "enum": [
+              "source-reported",
+              "assumption",
+              "model-output",
+              "measured",
+              "target"
+            ]
+          },
+          "sourceRefs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            "maxItems": 50,
+            "minItems": 0
+          },
+          "review": {
+            "enum": [
+              "draft",
+              "approved",
+              "rejected"
+            ]
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4000
+            },
+            "maxItems": 30,
+            "minItems": 0
+          },
+          "allowedAudiences": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "internal",
+                "named-reviewers",
+                "public"
+              ]
+            },
+            "maxItems": 3,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "statement",
+          "basis",
+          "sourceRefs",
+          "review",
+          "limitations",
+          "allowedAudiences"
+        ]
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "sources",
+    "claims"
+  ]
+}

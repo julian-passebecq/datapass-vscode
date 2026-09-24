@@ -68,3 +68,6 @@ Git Sync currently covers dashboards and folders, not datasources/alerts/library
 ## Things not qualified by this review
 
 No native extensions were installed in a desktop VS Code here. Exact command IDs, extension APIs, running CLI versions, OS support, account entitlements, tenant feature flags, private networking and cloud execution must be tested. Documentation links and source detection are evidence only for their stated scope. Use a manifest-based compatibility register with lastCheckedAt and a repeatable smoke test, not a promise to know every present/future vendor feature.
+
+
+> **Implementation note (2026-09-24, v0.9.0):** the Marketplace lists the Microsoft TMDL extension as `analysis-services.TMDL`. DataPass detects that ID first and keeps `CPIM.TMDL-language-support` as an alias. Fabric Data Engineering is `SynapseVSCode.synapse` (web: `SynapseVSCode.vscode-synapse-remote`) and needs the Jupyter extension and a JDK. Installation remains unqualified until tested on a desktop.
