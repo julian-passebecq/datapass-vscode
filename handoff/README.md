@@ -1,6 +1,12 @@
 # DataPass handoff index
 
-## Current entry point — V2.2
+## Start here — v1 status (2026-09-25)
+
+- [V1 handoff](V1_HANDOFF.md): what is what, version chronology, v1 gates with their status, next passes, cross-repository follow-ups.
+- [Next-pass prompt for Claude](v1/CLAUDE_PROMPT.md).
+- Runtime truth: [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md).
+
+## Architecture reference — V2.2
 
 1. [V2.2 decisions and scope](V2_2_HANDOFF.md)
 2. [V2.2 complete Claude implementation prompt](v2.2/CLAUDE_PROMPT.md)

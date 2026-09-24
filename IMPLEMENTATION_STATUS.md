@@ -1,3 +1,80 @@
+# Implementation Status — V2.2 (Pass 9.3: DiagramCloud bridge on main, Grafana and Mongoku links)
+
+Date: 2026-09-25
+Version: `0.9.3` — branch `claude/v0.9.3-bridge-companions`, based on main `6bce8b8` (v0.9.2)
+Start-here handoff: [`handoff/V1_HANDOFF.md`](handoff/V1_HANDOFF.md)
+
+### Integrated
+
+- **DiagramCloud Bridge V1** from PR #11 (`0dc93ab`) and its contract from PR #9 (`fde955a`),
+  moved onto current main (both targeted the stale `claude0.9` branch). Commands: *Open
+  Architecture in DiagramCloud*, *Copy DiagramCloud AI Context*, *Import DiagramCloud AI Plan*,
+  *Copy Project/Scope Summary* (Work view **…** menu). They are separate from the older
+  *Export DiagramCloud Projection*.
+- **Links** section in the Work view (optional; absent unless configured):
+  - **Grafana**: `platforms.grafana.url` + `dashboards[{uid,title,scopes?,source?}]` → home,
+    Explore, the scope's dashboards and their as-code source; **Open Grafana** on the Galaxy
+    Observability card.
+  - **Mongoku Lite**: `companions.mongoku.{entityId,scopeEntities}` + the `datapass.mongoku.url`
+    user setting → **Open in Mongoku** (`<base>/?project=<entity>`) and **Import Mongoku
+    Context** (Mongoku's own `mongoku.portfolio-context` 0.1-proposal "Developer context" JSON),
+    shown as a dated snapshot, never as live state.
+  - **Open in DataPass**: `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` selects
+    the scope mapped to that Mongoku entity. Nothing else; other parameters are ignored.
+  - **DiagramCloud** row when `.datapass/diagramcloud.json` exists.
+
+Links open only after a modal showing the exact address (once per address per window) and a
+re-check against freshly loaded state; a destination or scope that changed during review is
+refused. No HTTP request, database client, polling or credential anywhere in these features.
+
+### Bugs found and fixed
+
+| Bug | Effect before the fix | Fix |
+|---|---|---|
+| The bridge wrote to `vscode.env.clipboard` directly | Bypassed the Pass 9.2 clipboard seam: desktop tests could not drive *Copy AI Context* / *Copy Summary*, and would have used the real clipboard | Routed through `src/core/clipboard.ts` |
+| No seam for opening a browser | "Open in browser" flows (bridge, Galaxy links) could not be tested without launching a browser | `src/core/external.ts`, swapped only in Test mode |
+| The `grafana.instance` fact was hard-coded `undefined` | *Configure Grafana datasources/alerts as code* could never leave `blocked`; its next step asked for a manifest field that did not exist | Supplied by `platforms.grafana.url` (host only) |
+| Preflight next steps named internal fact ids ("Declare grafana.instance…") | Not actionable for a person | Next steps name the manifest field (`FACT_MANIFEST_FIELDS`) |
+| Bridge fixtures drifted from DiagramCloud after its PR #6 merged (new defaulted fields) | The serializer-parity test compared against an older DiagramCloud | Regenerated from DiagramCloud main `43f3d95`; round trip re-checked byte-identical |
+
+### The 2026-09-25 GPT "0.9.3 review kit": reviewed, not applied as-is
+
+| Kit proposal | Problem found | Done instead |
+|---|---|---|
+| Separate `.datapass/linked-services.json` repeating `projectId` and scope ids | Renaming a scope silently drops its links; a second Grafana config surface next to `platforms.grafana` | Config lives in the manifest; a dangling scope reference is a manifest error |
+| A third, collapsed "Companions" view | Splits scope context; the tested layout is exactly Work + Galaxy | A **Links** section inside the Work view |
+| New `datapass.mongoku-summary` contract (counts, expiry) | No producer exists; Mongoku has no summary endpoint | Consume Mongoku's real export; the test fixture is produced by Mongoku's own `buildProjectContext` |
+| "No Mongoku deep-link route is known" | Mongoku documents `?project=<entity_id>` as its stable deep link | Used as-is |
+| No reverse link | Mongoku's notes propose `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` | Implemented, scope selection only |
+| Node `fs` with `O_NOFOLLOW`, local `file:` only | Not usable in remote workspaces | `vscode.workspace.fs` with symlink and size refusal |
+
+Kept from the kit: strict bounded validation, control/bidi character rejection, "not live / not
+a health check" labelling, confirm-then-re-check before opening, no network or credentials.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` (Windows 11, Node 26.9) | 151 / 151 (129 from main, 12 bridge, 10 companions) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11 x64, isolated profile) | 82 / 82 across 4 fixtures (empty 12, v2-retail 40, v1-foil 15, broken 15), including 16 new bridge/companion flows |
+| Bridge, end to end in real VS Code | *Import DiagramCloud AI Plan* writes exactly DiagramCloud's own bytes; a stale plan is refused; a manifest operation is never offered for approval |
+| Cross-repo: DiagramCloud main `43f3d95` | Its serializer reproduces the fixtures and DataPass's post-plan write byte for byte; the bridge contract schemas are identical git blobs in both repositories |
+| Cross-repo: Mongoku master (`aiContext.ts` blob `d673d4b`) | A context produced by its own exporter is accepted; a context for another entity is refused |
+| Galaxy preview | Observability card shows *Open Grafana*; card status unchanged (a configured URL is not a tool) |
+
+### Still needs a human
+
+1. Real services: open a real Grafana stack and dashboard; run Mongoku (`http://localhost:3100`)
+   on real data → *Developer context* → import; click a `vscode://…/open?entity=` link in a browser
+   (VS Code first asks whether to let DataPass open it).
+2. DiagramCloud by hand: open the DataPass-written sidecar in DiagramCloud, save, and check that
+   `git diff` is empty.
+3. Remote SSH / WSL workspaces (the code uses `vscode.workspace.fs`, but this is untested remotely).
+4. A glance at the Work view **Links** section in your own theme.
+
+---
+
 # Implementation Status — V2.2 (Pass 9.2: end-to-end desktop flows, Galaxy fixed)
 
 Date: 2026-09-24
