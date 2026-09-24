@@ -11,6 +11,7 @@
 7. [DiagramCloud bridge](v2.2/05_DIAGRAMCLOUD_CONTRACT.md)
 8. [Optional Mongo context](v2.2/06_MONGO_CONTEXT.md)
 9. [Executable draft contract kit](v2.2/contracts/README.md) and [actual validation scope](v2.2/VALIDATION.md)
+10. [DiagramCloud bridge V1 handoff](DIAGRAMCLOUD_BRIDGE_V1.md) — cross-product contract for project context, AI exchange and `.datapass/diagramcloud.json` (canonical spec: [contracts/diagramcloud](../contracts/diagramcloud/README.md)).
 
 V2.2 extends rather than replaces the V2.1 foundation. It adds current FOIL repository reconciliation, operation-specific tooling, external-app/data/publication contracts and explicit integration boundaries. These are design fixtures, not inputs already accepted by the current v1 runtime manifest.
 
