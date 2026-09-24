@@ -13,6 +13,9 @@ import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
 import { confirmModal, guarded, readJsonInput, report, requireRoot, UserFacingError } from "./io";
+import { clipboard } from "../core/clipboard";
+import { openExternal } from "../core/external";
+import { safeAppUrl } from "../core/model/safeUrl";
 import { workspaceJournalFs } from "./commands";
 import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import { readRepoRevision } from "../core/workspace/gitBase";
@@ -41,28 +44,19 @@ async function readSidecar(root: vscode.Uri): Promise<{ bytes?: Uint8Array; stat
   return { bytes, state: inspectSidecar(bytes) };
 }
 
-/** http(s) only; plain http only for a local dev server. The URL never carries project data. */
-export function safeAppUrl(value: string): string | undefined {
-  try {
-    const u = new URL(value.trim());
-    if (u.username || u.password || u.search || u.hash) return undefined;
-    if (u.protocol === "https:" || (u.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(u.hostname))) return u.toString();
-  } catch { /* invalid */ }
-  return undefined;
-}
-
 async function diagramCloudUrl(): Promise<string | undefined> {
   const config = vscode.workspace.getConfiguration("datapass");
-  const configured = safeAppUrl(config.get<string>(URL_SETTING) ?? "");
+  // The URL never carries project data; see safeAppUrl.
+  const configured = safeAppUrl((config.get<string>(URL_SETTING) ?? "").trim());
   if (configured) return configured;
   const entered = await vscode.window.showInputBox({
     title: "DiagramCloud address",
     prompt: "Where DiagramCloud runs, e.g. your Vercel deployment or http://localhost:5173 from `npm run dev`. Saved in your user settings (datapass.diagramCloud.url).",
     placeHolder: "https://…",
-    validateInput: v => safeAppUrl(v) ? undefined : "Use https://, or http://localhost for a local dev server. No credentials or query strings."
+    validateInput: v => safeAppUrl(v.trim()) ? undefined : "Use https://, or http://localhost for a local dev server. No credentials or query strings."
   });
   if (!entered) return undefined;
-  const url = safeAppUrl(entered)!;
+  const url = safeAppUrl(entered.trim())!;
   await config.update(URL_SETTING, url, vscode.ConfigurationTarget.Global);
   return url;
 }
@@ -87,7 +81,7 @@ async function openArchitecture(session: WorkSession): Promise<void> {
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri(root, SIDECAR_PATH)), { preview: true });
   } else if (choice === "Open DiagramCloud") {
     const url = await diagramCloudUrl();
-    if (url) await vscode.env.openExternal(vscode.Uri.parse(url));
+    if (url) await openExternal(vscode.Uri.parse(url, true));
   }
 }
 
@@ -148,7 +142,7 @@ async function copyContext(session: WorkSession): Promise<void> {
     return;
   }
   const text = choice === "Copy JSON only" ? json : planInstructions(context, outline);
-  await vscode.env.clipboard.writeText(text);
+  await clipboard.writeText(text);
   await session.recordExchange({ id: newLocalId("ctx"), kind: "ai-context", label: `DiagramCloud AI context (${context.scope.id})`, status: "copied", digest: sha256Bytes(json).value, scopeRef: context.scope.id, at: now() });
   void vscode.window.showInformationMessage("AI context copied. Paste the plan the AI returns with “DataPass: Import DiagramCloud AI Plan…”.");
 }
@@ -198,6 +192,6 @@ async function importPlan(session: WorkSession): Promise<void> {
 
 async function copySummary(session: WorkSession): Promise<void> {
   const { context, sidecar } = await currentContext(session);
-  await vscode.env.clipboard.writeText(projectSummary(context, sidecar));
+  await clipboard.writeText(projectSummary(context, sidecar));
   void vscode.window.showInformationMessage("Project/scope summary copied (declared state and user-reported checklist; no paths or binding values).");
 }
