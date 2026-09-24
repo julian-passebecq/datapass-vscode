@@ -1,0 +1,16 @@
+# Reply to the FOIL Design/Cloud implementation agent
+
+DataPass V2.2 accepts the focused supplement. Do not restart the research or rewrite the scientific kernel for the extension.
+
+1. **Repository binding:** the new Design Lab is foil-streamlit-wind-3d-lcoe/app.py. Supply the current commit and package locator in each handoff. Old source pointers remain provenance; Mongo reconciliation is still a separate reviewed batch.
+2. **Shared contract:** publish the native schema version/hash and reference package identity. Keep the frozen R0 references immutable. Agree a candidate envelope/migration before adding revised case IDs. DataPass's draft exchange schema does not replace foil.experiment.
+3. **Hash interoperability:** expose exact byte hashes and native case-hash algorithm/version separately. Provide golden Python/JavaScript vectors including numeric and Unicode edge cases. Do not promise JSON.stringify equals Python canonicalization. A hash alone does not establish scientific validity or approval.
+4. **Selective dependencies:** declare which facets each output consumes. Budget-only changes invalidate LCOE/report/brief; geometry/kinematics/pose/generator changes invalidate applicable CAD/2D and models. Unknown dependencies remain conservative. Do not mutate accepted state before validation.
+5. **App outputs:** expose a bounded request/result manifest containing request identity, base/input refs, produced artifacts, schemas/hashes, errors and execution evidence. No inline shell, credentials or automatic cloud launch. This also supports future React work developed directly in GitHub with ChatGPT.
+6. **Programme and business:** keep unit economics, programme R&D budgets, funding stages and cloud spend separate. Return their authoritative references and assumptions rather than a new LCOE engine in DataPass. Presentations/Francis reports/website content consume audience-reviewed briefs and return artifact manifests; do not promote generated claims automatically.
+7. **Cloud path:** retain a small first circuit and version the broader VNext separately. Eventstream deployment can activate target resources; reviewed identity/budget/rebinding are required. Airflow has one campaign schedule owner. Grafana Git Sync does not configure every datasource/alert.
+8. **Evidence:** show source tests, numerical checks, CAD validity, visual qualification, cloud execution and measured validation separately. UI demo or HTTP success does not imply the current geometry/model is represented correctly.
+
+Suggested shared acceptance: select a reference case → request an economic candidate externally → receive the exact correlated result → leave CAD current while LCOE/report/brief become stale → attach recalculated output by hashes → prepare a separately approved campaign. Repeat with geometry/pose change and verify CAD/2D invalidation. No private inputs are to be published in DataPass's public repository.
+
+DataPass is not requesting another science pass or rewriting FOIL facts. It is requesting stable boundaries so the same work can be operated through native tools with or without the extension. The current V2.2 handoff and executable design fixtures live in julian-passebecq/datapass-vscode/handoff/v2.2. No changes to the FOIL repository, Mongo authorities or cloud runtime were performed by the DataPass documentation pass.
