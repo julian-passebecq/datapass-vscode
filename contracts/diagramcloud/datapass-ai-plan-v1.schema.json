@@ -69,7 +69,7 @@
             "maxProperties": 60,
             "propertyNames": {
               "not": {
-                "pattern": "(?i)(password|secret|token|credential|privateKey|clientSecret)"
+                "pattern": "(password|Password|secret|Secret|token|Token|credential|Credential|privateKey|clientSecret)"
               }
             },
             "additionalProperties": true
