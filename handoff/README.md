@@ -13,6 +13,7 @@
 9. [Workspace, Git, storage and daily UX](v2.1/07_WORKSPACE_GIT_AND_UX.md)
 10. [Implementation sequence and acceptance](v2.1/08_IMPLEMENTATION_AND_ACCEPTANCE.md)
 11. [Sources, verification and unresolved questions](v2.1/09_SOURCES_AND_OPEN_QUESTIONS.md)
+12. [DiagramCloud bridge V1 handoff](DIAGRAMCLOUD_BRIDGE_V1.md) — cross-product contract for project context, AI exchange and `.datapass/diagramcloud.json`.
 
 The [examples](v2.1/examples/) and [contracts](v2.1/contracts/) are **design fixtures**, not input accepted by the current V1 runtime schema. The [Mongoku note](v2.1/MONGOKU_LATER.md) is a compatibility reservation only; that product is paused.
 
