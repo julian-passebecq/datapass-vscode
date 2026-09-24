@@ -1190,7 +1190,8 @@
             "end": "2026-09-30",
             "progress": 0
           }
-        ]
+        ],
+        "milestones": []
       },
       {
         "id": "report-narrative",
@@ -1549,7 +1550,9 @@
             "w": 5,
             "h": 4
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       },
       {
         "id": "quality-screen",
@@ -1590,7 +1593,9 @@
             "w": 5,
             "h": 3
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       },
       {
         "id": "foil-screen",
@@ -1623,7 +1628,9 @@
             "w": 12,
             "h": 3
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       },
       {
         "id": "manifest-screen",
@@ -1648,7 +1655,9 @@
             "w": 5,
             "h": 5
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       },
       {
         "id": "galaxy-screen",
@@ -1681,7 +1690,9 @@
             "w": 12,
             "h": 4
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       },
       {
         "id": "remix-screen",
@@ -1722,7 +1733,9 @@
             "w": 6,
             "h": 4
           }
-        ]
+        ],
+        "context": [],
+        "accent": "blue"
       }
     ]
   }
