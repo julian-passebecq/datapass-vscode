@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { migrateManifestToV2, validateProjectManifest, foilProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
+import { genericProjectManifest, migrateManifestToV2, validateProjectManifest, foilProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { parseGraph } from "../src/core/workspace/graph";
 import { groupMoney, sumSameKind, type MoneyFigure } from "../src/core/programme/money";
 
@@ -69,4 +69,10 @@ test("money kinds are never summed together and unknown is not zero", () => {
   assert.equal(groups.length, 2);
   assert.ok(groups.find(g => g.kind === "funding-received")!.note!.includes("unknown"));
   assert.ok(warnings.some(w => /not .*secured/.test(w)));
+});
+
+test("the whole-project scope id is reserved", () => {
+  const m = migrateManifestToV2(genericProjectManifest("x"));
+  m.scopes = [{ id: "project", title: "Clash" }];
+  assert.ok(validateProjectManifest(m).some(e => /reserved/.test(e)));
 });

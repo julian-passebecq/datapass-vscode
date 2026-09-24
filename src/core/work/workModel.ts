@@ -111,7 +111,8 @@ export function buildWorkModel(input: WorkModelInput): WorkModel {
   const m = input.manifest;
   const problems: string[] = [];
   const scopes = m?.scopes ?? [];
-  const declared = scopes.find(s => s.id === input.selectedScopeId) ?? scopes[0];
+  // "Whole project" is an explicit choice, not a missing one: it must not fall back to the first scope.
+  const declared = scopes.find(s => s.id === input.selectedScopeId) ?? (input.selectedScopeId === IMPLICIT_SCOPE_ID ? undefined : scopes[0]);
   if (input.selectedScopeId && input.selectedScopeId !== IMPLICIT_SCOPE_ID && !scopes.some(s => s.id === input.selectedScopeId)) {
     problems.push(`Selected scope "${input.selectedScopeId}" is no longer declared; showing ${declared ? `"${declared.id}"` : "the whole project"}.`);
   }

@@ -38,6 +38,7 @@ import { buildAiContext, type ContextPreset } from "../core/exchange/aiContext";
 import { migrateManifestToV2, validateProjectManifest, DATAPASS_MANIFEST_PATH } from "../core/projectManifestModel";
 import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
+import { clipboard } from "../core/clipboard";
 
 const now = () => new Date().toISOString();
 
@@ -193,7 +194,7 @@ async function createAppRequest(session: WorkSession): Promise<void> {
     "Give the external app/AI the exact file bytes; do not reformat them."
   ]);
   const act = await vscode.window.showInformationMessage(`Request ${id} saved.`, "Copy request", "Open");
-  if (act === "Copy request") await vscode.env.clipboard.writeText(text(frozen.bytes));
+  if (act === "Copy request") await clipboard.writeText(text(frozen.bytes));
   if (act === "Open") await openLocal(root, `${LOCAL_DIR}/${rel}`);
 }
 
@@ -414,7 +415,7 @@ async function approveBrief(session: WorkSession, rec?: ExchangeRecord): Promise
   const trust = assessBriefTrust(bytes, session.approvals());
   await session.recordExchange({ ...r, status: trust.state });
   const act = await vscode.window.showInformationMessage(`Brief ${r.id}: ${trust.state}.`, "Copy brief");
-  if (act) await vscode.env.clipboard.writeText(text(bytes));
+  if (act) await clipboard.writeText(text(bytes));
 }
 
 async function importOutputManifest(session: WorkSession): Promise<void> {
@@ -555,7 +556,7 @@ async function copyAiContext(session: WorkSession): Promise<void> {
     return;
   }
   if (choice !== "Copy") return;
-  await vscode.env.clipboard.writeText(ctx.text);
+  await clipboard.writeText(ctx.text);
   await session.recordExchange({ id: newLocalId("ctx"), kind: "ai-context", label: `AI context: ${preset}`, status: "copied", digest: sha256Bytes(ctx.text).value, scopeRef: m.scope.id, at: now() });
 }
 

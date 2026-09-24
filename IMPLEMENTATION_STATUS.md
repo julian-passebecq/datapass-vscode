@@ -1,3 +1,54 @@
+# Implementation Status — V2.2 (Pass 9.2: end-to-end desktop flows, Galaxy fixed)
+
+Date: 2026-09-24
+Version: `0.9.2`
+
+### Bugs found and fixed
+
+| Bug | Effect before the fix | Fix |
+|---|---|---|
+| The Galaxy webview script was a plain template literal, so the source `'\\'` reached the webview as `'\'` | **SyntaxError: the Galaxy panel showed only its title** in v0.8.0–v0.9.1; `split(/[\\/]/)` also lost its backslash | HTML moved to `src/views/galaxyHtml.ts` (pure) as `String.raw`; unit test parses every embedded script; the same test fails on the v0.9.1 source |
+| Choosing "Whole project" in the scope picker fell back to the first declared scope | The picker offered an option that was silently ignored | Explicit whole-project selection is honoured; scope id `project` is reserved (validator + JSON schema) |
+
+### New
+
+- **Operation readiness on Galaxy cards.** Each platform card lists the registry operations
+  for that platform with the same preflight the Work view uses (asserted equal in the desktop
+  suite); clicking one opens the full preflight. Only registry IDs are accepted from the
+  webview. Grafana operations appear on the Observability card; Mongo, apps, Airflow and
+  diagram operations stay in the Work view. Readiness is re-posted when the session changes
+  (for example a review confirmation) without re-detecting platforms.
+- **End-to-end desktop flows** (`tests/integration/flows.ts`), driven through the real command
+  handlers with a scripted UI (quick picks, inputs, modals, file dialogs):
+  checklist state + note (and the 500-character limit), scope switching, app request (frozen
+  bytes, digest, self-ignoring `.datapass/local`, no local paths), result import → `candidate`
+  with verified artifact and untouched manifest, stale base → `quarantined`, clipboard import,
+  AI context copy (no workspace path, home directory or user name in the text), claims
+  register creation, brief preparation (confidential sources never reach an internal brief)
+  and approval, manifest upgrade declined (no change) and accepted (byte-identical backup,
+  committed journal with its own backup, loads as v2), and refusals on an invalid manifest.
+- **Clipboard seam.** All clipboard use goes through `src/core/clipboard.ts`; the test suite
+  replaces it through the Test-mode API, so desktop tests never read or write the user's
+  system clipboard (`vscode.env.clipboard` itself is frozen).
+- **Visual preview.** `npm run preview:galaxy` renders the real Galaxy HTML with the state
+  captured in real VS Code into `out/preview/galaxy-{dark,light,hc}.html`. Reviewed in dark,
+  light and high contrast; high-contrast text contrast is ≥ 8.5:1.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm test` (Windows 11) | 129 / 129 |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 66 / 66 across 4 fixtures, including 16 end-to-end flows |
+
+### Still needs a human
+
+Anything signed in: Fabric workspace browse, Databricks `bundle validate`, Power BI Desktop
+with a PBIP project. The Galaxy preview approximates theme colours; a glance at the real panel
+in your own theme is still worthwhile.
+
+---
+
 # Implementation Status — V2.2 (Pass 9.1: Windows desktop qualification)
 
 Date: 2026-09-24

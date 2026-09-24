@@ -9,6 +9,7 @@ import { execFile } from "node:child_process";
 import { loadProjectContext, projectFacts, type ProjectContext } from "../core/workspace/loader";
 import { probeTools, invalidateToolProbes } from "../core/capabilities/probe";
 import type { ToolObservation } from "../core/capabilities/tools";
+import type { PreflightContext } from "../core/capabilities/preflight";
 import { buildWorkModel, checklistKey, type ChecklistRecord, type ChecklistState, type ExchangeRecord, type WorkModel } from "../core/work/workModel";
 import type { ImpactEntry } from "../core/impact/facets";
 import { readRepoRevision, type GitRunner, type RemoteObservation } from "../core/workspace/gitBase";
@@ -82,6 +83,11 @@ export class WorkSession implements vscode.Disposable {
   }
 
   toolObservations(): ReadonlyMap<string, ToolObservation> { return this.tools; }
+
+  /** The context every preflight in this window uses (Work view, preflight command, Galaxy cards). */
+  preflightContext(): PreflightContext {
+    return { tools: this.tools, facts: projectFacts(this.ctx), reviewsConfirmed: this.reviews };
+  }
   reviewConfirmed(key: string): boolean { return this.reviews.has(key); }
 
   async selectScope(id: string): Promise<void> {

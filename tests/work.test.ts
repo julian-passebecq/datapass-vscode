@@ -233,3 +233,12 @@ test("package.json contributes every registered command and every datapass.* cap
   const views = pkg.contributes.views.datapass.map((v: { id: string }) => v.id);
   assert.deepEqual(views, ["datapass.work", "datapass.galaxy"]);
 });
+
+test("choosing the whole project is honoured even when scopes are declared", () => {
+  const m = buildWorkModel(base(v2Manifest(), { selectedScopeId: IMPLICIT_SCOPE_ID }));
+  assert.equal(m.scopeSource, "implicit");
+  assert.equal(m.scope.id, IMPLICIT_SCOPE_ID);
+  assert.deepEqual(m.problems, []);
+  // No selection yet still defaults to the first declared scope.
+  assert.equal(buildWorkModel(base(v2Manifest())).scope.id, "weekly-forecast");
+});
