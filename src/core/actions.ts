@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { clipboard } from "./clipboard";
+import { openExternal } from "./external";
 import {
   buildDatabricksBundleCommand,
   buildFabricAssessmentCommand,
@@ -101,6 +102,8 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "powerbi.openMacguyver": await openUrl(URLS["powerbi.macguyver"]!); return;
     case "powerbi.openPbiBench": await openUrl(URLS["powerbi.pbibench"]!); return;
     case "grafana.copyPreview": await copyGrafanaPreview(); return;
+    // Same reviewed path as the Work view's Links: confirm once per address, re-resolve, open.
+    case "grafana.openStack": await vscode.commands.executeCommand("datapass.openCompanionLink", "grafana.home"); return;
     case "grafana.openFoundation": await openUrl(URLS["grafana.foundation"]!); return;
     case "grafana.openProvider": await openUrl(URLS["grafana.provider"]!); return;
     case "infra.copyTofuValidate": await copyIaC("validate"); return;
@@ -913,5 +916,5 @@ async function selectFolderSetting(setting: string, title: string): Promise<void
 }
 
 async function openUrl(url: string): Promise<void> {
-  await vscode.env.openExternal(vscode.Uri.parse(url));
+  await openExternal(vscode.Uri.parse(url, true));
 }

@@ -8,6 +8,7 @@ import { readProjectManifest, type DataPassProjectManifest } from "../projectMan
 import { parseGraph, type ProjectGraph } from "./graph";
 import { parseDomainPack, type DomainPack } from "../domainPacks/pack";
 import { vetRelativePath } from "../exchange/pathSafety";
+export { projectFacts } from "./facts";
 
 export interface ProjectContext {
   root?: vscode.Uri;
@@ -19,6 +20,8 @@ export interface ProjectContext {
   graphError?: string;
   packs: DomainPack[];
   packErrors: string[];
+  /** `.datapass/diagramcloud.json` exists (presence only; the bridge reads it when used). */
+  diagramCloudSidecar?: boolean;
 }
 
 export const LOCAL_DIR = ".datapass/local";
@@ -28,6 +31,7 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   const read = await readProjectManifest();
   const ctx: ProjectContext = { root, manifest: read.manifest, manifestBytes: read.bytes, manifestExists: read.exists, manifestErrors: read.errors, packs: [], packErrors: [] };
   if (!root) return ctx;
+  try { ctx.diagramCloudSidecar = (await vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".datapass", "diagramcloud.json"))).type === vscode.FileType.File; } catch { ctx.diagramCloudSidecar = false; }
 
   const graphRel = read.manifest?.graph ?? ".datapass/graph.json";
   const graphVet = vetRelativePath(graphRel);
@@ -59,31 +63,6 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
     }
   }
   return ctx;
-}
-
-/** Facts for capability preflight, derived from declared bindings only (never from secrets). */
-export function projectFacts(ctx: ProjectContext): Map<string, string | boolean | undefined> {
-  const m = ctx.manifest;
-  const p = m?.platforms;
-  const facts = new Map<string, string | boolean | undefined>();
-  facts.set("fabric.workspace", p?.fabric?.workspaceName || p?.fabric?.workspaceId);
-  facts.set("fabric.workspaceName", p?.fabric?.workspaceName);
-  facts.set("fabric.deployConfig", p?.fabric?.deployment?.configPath ? true : undefined);
-  facts.set("databricks.bundleRoot", p?.databricks?.bundleRoot || (m?.repositories?.databricks?.path ? true : undefined));
-  facts.set("databricks.target", p?.databricks?.defaultTarget);
-  facts.set("grafana.repo", p?.grafana?.watchPath || p?.grafana?.generatorCommand ? true : undefined);
-  facts.set("grafana.instance", undefined);
-  facts.set("infrastructure.root", p?.infrastructure?.root || (ctx.root ? true : undefined));
-  facts.set("vm.sshHost", p?.oracle?.sshHost);
-  facts.set("powerbi.pbip", p?.powerbi?.projectRoot ? true : undefined);
-  facts.set("powerbi.semanticModel", p?.powerbi?.projectRoot ? true : undefined);
-  facts.set("powerbi.reportPbir", p?.powerbi?.projectRoot ? true : undefined);
-  facts.set("airflow.mode", p?.airflow?.mode);
-  facts.set("airflow.identity", p?.airflow?.identity);
-  facts.set("airflow.gitSync.repo", p?.airflow?.gitSyncRepo);
-  facts.set("airflow.workspaceGitAlm", p?.airflow?.workspaceGitAlm);
-  facts.set("app.repoUrl", Object.values(m?.repositories ?? {}).some(r => r.remote?.url) ? true : undefined);
-  return facts;
 }
 
 export async function readOptional(uri: vscode.Uri): Promise<Uint8Array | undefined> {

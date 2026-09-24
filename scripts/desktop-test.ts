@@ -24,7 +24,12 @@ const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixtur
 
 function v2Retail(): DataPassProjectManifest {
   const m = migrateManifestToV2(genericProjectManifest("retail-bi"));
-  m.platforms = { fabric: { workspaceName: "Retail" }, powerbi: { projectRoot: "bi" }, databricks: { bundleRoot: "bundle" } };
+  m.platforms = {
+    fabric: { workspaceName: "Retail" }, powerbi: { projectRoot: "bi" }, databricks: { bundleRoot: "bundle" },
+    // Synthetic stack; nothing is contacted (links only reach the Test-mode browser seam).
+    grafana: { url: "https://metrics.example.com/grafana/", dashboards: [{ uid: "weekly-1", title: "Weekly metrics", scopes: ["weekly-forecast"], source: "grafana/weekly.json" }] }
+  };
+  m.companions = { mongoku: { entityId: "retail_bi" } };
   m.repositories = { site: { remote: { url: "https://github.com/example/site", branch: "main" }, management: "remote-only" } };
   m.apps = [{ id: "forecast-app", appType: "streamlit", repoRef: "site", entrypoint: "app.py" }];
   m.domainPacks = ["builtin:sample.retail"];
@@ -39,12 +44,23 @@ function v2Retail(): DataPassProjectManifest {
   return m;
 }
 
+/** Byte-exact fixture text (tests/fixtures is -text in .gitattributes). */
+function fixtureText(rel: string): string {
+  return fs.readFileSync(path.join(repo, "tests", "fixtures", ...rel.split("/")), "utf8");
+}
+
 const FIXTURES: Record<string, Record<string, string>> = {
   "empty": { "README.md": "# empty workspace\n" },
   "v2-retail": {
     ".datapass/project.json": JSON.stringify(v2Retail(), null, 2) + "\n",
     "bundle/databricks.yml": "bundle:\n  name: retail\n",
-    "bi/.gitkeep": ""
+    "bi/.gitkeep": "",
+    "grafana/weekly.json": "{}\n",
+    // DiagramCloud's own sidecar sample and its own serialization after a known plan (tests/fixtures/diagramcloud).
+    ".datapass/diagramcloud.json": fixtureText("diagramcloud/total.sidecar.json"),
+    "incoming/diagramcloud.after-plan.golden.json": fixtureText("diagramcloud/total.after-plan.sidecar.json"),
+    // Produced by Mongoku's own exporter from synthetic input (tests/fixtures/mongoku).
+    "incoming/mongoku-context.json": fixtureText("mongoku/portfolio-context.synthetic.json")
   },
   "v1-foil": { ".datapass/project.json": JSON.stringify(foilProjectManifest(), null, 2) + "\n" },
   // Parses as JSON, but schemaVersion 3 does not exist: both the extension and the schema must say so.

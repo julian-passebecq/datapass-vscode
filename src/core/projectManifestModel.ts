@@ -1,4 +1,5 @@
 import * as path from "node:path";
+import { validateCompanionSections } from "./companions/companions";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 
@@ -59,6 +60,10 @@ export interface DataPassProjectManifest {
     grafana?: {
       generatorCommand?: string;
       watchPath?: string;
+      /** Grafana stack base URL (https, or http://localhost). Navigation only, never a credential. */
+      url?: string;
+      /** Dashboards worth opening, optionally limited to scopes; `source` is the dashboard-as-code file. */
+      dashboards?: Array<{ uid: string; title: string; scopes?: string[]; source?: string }>;
     };
     infrastructure?: {
       root?: string;
@@ -85,6 +90,15 @@ export interface DataPassProjectManifest {
     label: string;
     url: string;
   }>;
+  /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
+  companions?: {
+    mongoku?: {
+      /** Mongoku entity for the whole project. */
+      entityId?: string;
+      /** Per-scope entity (scope id or "project" → Mongoku entity id). */
+      scopeEntities?: Record<string, string>;
+    };
+  };
 }
 
 export function parseProjectManifest(raw: unknown): DataPassProjectManifest {
@@ -179,6 +193,8 @@ export function validateProjectManifest(raw: unknown): string[] {
   }
 
   if (v2) issues.push(...validateV2Sections(doc));
+  const declaredScopes = new Set(v2 && Array.isArray(doc.scopes) ? doc.scopes.map(s => (s as { id?: unknown } | null)?.id).filter((id): id is string => typeof id === "string") : []);
+  issues.push(...validateCompanionSections(doc, declaredScopes));
 
   if (doc.links !== undefined) {
     if (!Array.isArray(doc.links)) {

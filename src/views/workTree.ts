@@ -9,10 +9,11 @@ import type { WorkChecklistEntry, WorkOperation, WorkApp, ExchangeRecord } from 
 import type { ImpactEntry } from "../core/impact/facets";
 import type { PreflightStatus } from "../core/capabilities/preflight";
 import type { ProgrammeView } from "../core/programme/programme";
+import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
 
 type Node =
-  | { t: "section"; id: string; label: string; description?: string; icon: string; tooltip?: string; command?: vscode.Command; children: () => Node[] }
-  | { t: "info"; id: string; label: string; description?: string; icon?: string; tooltip?: string; command?: vscode.Command; contextValue?: string }
+  | { t: "section"; id: string; label: string; description?: string; icon: string; tooltip?: string | vscode.MarkdownString; command?: vscode.Command; collapsed?: boolean; children: () => Node[] }
+  | { t: "info"; id: string; label: string; description?: string; icon?: string | [string, string]; tooltip?: string | vscode.MarkdownString; command?: vscode.Command; contextValue?: string }
   | { t: "check"; entry: WorkChecklistEntry }
   | { t: "op"; op: WorkOperation }
   | { t: "output"; entry: ImpactEntry; parent: string }
@@ -67,7 +68,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
   getTreeItem(node: Node): vscode.TreeItem {
     switch (node.t) {
       case "section": {
-        const item = new vscode.TreeItem(node.label, vscode.TreeItemCollapsibleState.Expanded);
+        const item = new vscode.TreeItem(node.label, node.collapsed ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
         item.id = node.id;
         item.description = node.description;
         item.iconPath = icon(node.icon);
@@ -81,7 +82,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
         item.id = node.id;
         item.description = node.description;
         item.tooltip = node.tooltip ?? node.label;
-        if (node.icon) item.iconPath = icon(node.icon);
+        if (node.icon) item.iconPath = typeof node.icon === "string" ? icon(node.icon) : icon(...node.icon);
         item.command = node.command;
         item.contextValue = node.contextValue;
         return item;
@@ -215,6 +216,15 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
     if (m.apps.length) {
       nodes.push({ t: "section", id: "apps", label: "Apps", icon: "rocket", description: String(m.apps.length), children: () => m.apps.map(app => ({ t: "app", app })) });
     }
+    const companions = s.companions();
+    if (companions.grafana || companions.mongoku || ctx.diagramCloudSidecar) {
+      const names = [companions.grafana && "Grafana", companions.mongoku && "Mongoku", ctx.diagramCloudSidecar && "DiagramCloud"].filter(Boolean).join(" · ");
+      nodes.push({
+        t: "section", id: "links", label: "Links", icon: "link-external", description: names,
+        tooltip: "Companion apps for this scope. Links open your browser; they are navigation, not health or sign-in checks.",
+        children: () => linkNodes(companions, s.mongokuStatus(), Boolean(ctx.diagramCloudSidecar))
+      });
+    }
     nodes.push({
       t: "section", id: "exchanges", label: "Exchanges", icon: "arrow-swap", description: m.exchanges.length ? String(m.exchanges.length) : "none yet",
       children: () => m.exchanges.length ? m.exchanges.slice(0, 25).map(rec => ({ t: "exchange", rec })) : [
@@ -234,6 +244,76 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
       ...v.outputs.map((entry): Node => ({ t: "output", entry, parent: `prog:${v.id}` }))
     ];
   }
+}
+
+const openLink = (link: CompanionLink): vscode.Command => ({ command: "datapass.openCompanionLink", title: "Open", arguments: [link.id] });
+const clipText = (text: string, max = 110) => { const one = text.replace(/\s+/g, " ").trim(); return one.length > max ? `${one.slice(0, max - 1)}…` : one; };
+
+/** Grafana, Mongoku and DiagramCloud rows for the selected scope. Every string from Mongoku is untrusted text. */
+function linkNodes(c: ResolvedCompanions, mongoku: MongokuStatus | undefined, sidecar: boolean): Node[] {
+  const out: Node[] = [];
+  if (c.grafana) {
+    const g = c.grafana;
+    out.push({
+      t: "section", id: "links:grafana", label: "Grafana", description: g.host, icon: "pulse",
+      tooltip: "Links only. DataPass does not check sign-in, datasources or data freshness; dashboards as code, gcx preview and deployment stay in Galaxy → Observability.",
+      children: () => g.links.flatMap((link): Node[] => {
+        const dashboard = link.id.startsWith("grafana.dashboard:");
+        const row: Node = { t: "info", id: `link:${link.id}`, label: link.label, description: dashboard ? "dashboard" : "browser", icon: dashboard ? "dashboard" : "link-external", tooltip: link.url, command: openLink(link) };
+        if (!link.source) return [row];
+        return [row, { t: "info", id: `linksrc:${link.id}`, label: `Source: ${link.source}`, description: "dashboard as code", icon: "file-code", tooltip: `Open ${link.source}`, command: { command: "datapass.openExchange", title: "Open source", arguments: [link.source] } }];
+      })
+    });
+  }
+  if (c.mongoku) {
+    const mk = c.mongoku;
+    out.push({
+      t: "section", id: "links:mongoku", label: "Mongoku", description: mk.entityId, icon: "project",
+      tooltip: `Mongoku project "${mk.entityId}" (${mk.entitySource === "scope" ? "mapped for this scope" : "project-level mapping"}). Imported contexts are dated snapshots, never live data.`,
+      children: () => mongokuNodes(mk.links, mk.needsUrl, mongoku)
+    });
+  }
+  if (sidecar) {
+    out.push({ t: "info", id: "links:diagramcloud", label: "DiagramCloud architecture", description: ".datapass/diagramcloud.json", icon: "type-hierarchy", tooltip: "Open in DiagramCloud, copy its AI context or import a reviewed AI plan (Work view … menu).", command: { command: "datapass.diagramCloud.openArchitecture", title: "Open" } });
+  }
+  return out;
+}
+
+function mongokuNodes(links: CompanionLink[], needsUrl: boolean, status: MongokuStatus | undefined): Node[] {
+  const out: Node[] = needsUrl
+    ? [{ t: "info", id: "mongoku:setUrl", label: "Set Mongoku address…", description: "user setting", icon: "gear", command: { command: "datapass.mongoku.setUrl", title: "Set" } }]
+    : links.map((link): Node => ({ t: "info", id: `link:${link.id}`, label: link.label, description: "browser", icon: "link-external", tooltip: link.url, command: openLink(link) }));
+  const importRow: Node = { t: "info", id: "mongoku:import", label: "Import Mongoku context…", description: "Developer context → JSON → Copy", icon: "cloud-download", command: { command: "datapass.mongoku.importContext", title: "Import" } };
+  if (!status || status.state === "missing") return [...out, { t: "info", id: "mongoku:none", label: "No context imported", description: "optional", icon: "circle-large-outline" }, importRow];
+  if (status.state === "invalid") return [...out, { t: "info", id: "mongoku:invalid", label: "Stored context rejected", description: clipText(status.reason, 80), icon: ["warning", "problemsWarningIcon.foreground"], tooltip: status.reason }, importRow];
+  const ctx = status.context;
+  const now = Date.now();
+  const view = viewMongokuContext(ctx, now);
+  const old = view.age === "old";
+  const reported = old ? "reported · old snapshot" : "reported";
+  const p = ctx.project;
+  const md = new vscode.MarkdownString();
+  md.appendMarkdown(`**${esc(p.name)}** — Mongoku context generated ${esc(ctx.generatedAt)} (${esc(ctx.classification)})\n\n`);
+  md.appendMarkdown(`Imported snapshot, not live. Mongoku marks its entity source *${esc(view.sourceFreshness)}*.\n\n`);
+  if (ctx.exclusions.length) md.appendMarkdown(ctx.exclusions.map(e => `- ${esc(e)}`).join("\n"));
+  out.push({
+    t: "info", id: "mongoku:snapshot", label: `Snapshot · ${ageLabel(ctx.generatedAt, now)}`,
+    description: ["not live", old ? "old: re-import" : undefined, view.sourceFreshness !== "CURRENT_FOR_DECLARED_SCOPE" ? `source ${view.sourceFreshness.toLowerCase().replace(/_/g, " ")}` : undefined].filter(Boolean).join(" · "),
+    icon: old ? ["history", "problemsWarningIcon.foreground"] : "history", tooltip: md
+  });
+  const field = (id: string, label: string, value: string | undefined): Node[] => value
+    ? [{ t: "info", id: `mongoku:${id}`, label: `${label}: ${clipText(value)}`, description: reported, tooltip: `${label} (reported by Mongoku at ${ctx.generatedAt})\n\n${value}` }]
+    : [];
+  out.push(...field("status", "Status", p.status), ...field("gate", "Test gate", p.test_gate), ...field("stop", "Stop point", p.stop_point), ...field("next", "Next", p.next_action));
+  const listed = ctx.items.filter(i => i.kind === "WORK" || i.kind === "TEST_GATE");
+  if (listed.length) {
+    out.push({
+      t: "section", id: "mongoku:items", label: `${view.work} work · ${view.testGates} test gate(s) listed`, description: "capped by Mongoku", icon: "list-unordered", collapsed: true,
+      tooltip: "Mongoku lists at most 15 open work items per context. This is not a complete backlog count.",
+      children: () => listed.map((item, i): Node => ({ t: "info", id: `mongoku:item:${i}`, label: clipText(item.summary), description: item.kind === "TEST_GATE" ? "test gate" : undefined, icon: item.kind === "TEST_GATE" ? "beaker" : "circle-small-filled", tooltip: `${item.id} · ${item.kind} · ${item.assertion}\n\n${item.summary}` }))
+    });
+  }
+  return [...out, importRow];
 }
 
 function esc(s: string): string {

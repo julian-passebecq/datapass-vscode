@@ -6,7 +6,7 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
-import { loadProjectContext, projectFacts, type ProjectContext } from "../core/workspace/loader";
+import { loadProjectContext, projectFacts, LOCAL_DIR, type ProjectContext } from "../core/workspace/loader";
 import { probeTools, invalidateToolProbes } from "../core/capabilities/probe";
 import type { ToolObservation } from "../core/capabilities/tools";
 import type { PreflightContext } from "../core/capabilities/preflight";
@@ -16,6 +16,11 @@ import { readRepoRevision, type GitRunner, type RemoteObservation } from "../cor
 import { sha256Bytes, slugId } from "../core/model/ids";
 import type { BaseRef } from "../core/contracts/envelopes";
 import type { LocalApproval } from "../core/publication/brief";
+import { parseStrictJson } from "../core/model/strictJson";
+import {
+  MAX_MONGOKU_CONTEXT_BYTES, mongokuEntityFor, parseMongokuContext, resolveCompanions,
+  type MongokuStatus, type ResolvedCompanions
+} from "../core/companions/companions";
 
 const KEYS = {
   scope: "datapass.v22.scope",
@@ -46,6 +51,10 @@ export class WorkSession implements vscode.Disposable {
   private tools: Map<string, ToolObservation> = new Map();
   /** Review confirmations are session-only: a new window asks again. */
   private readonly reviews = new Set<string>();
+  /** Companion URLs the user confirmed in this window; a changed URL is a new URL and asks again. */
+  private readonly confirmedLinks = new Set<string>();
+  /** The selected scope's imported Mongoku context (read on refresh, scope change and import). */
+  private mongokuSnapshot?: { scopeId: string; status: MongokuStatus };
   private cached?: WorkModel;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -61,6 +70,8 @@ export class WorkSession implements vscode.Disposable {
     const [ctx, tools] = await Promise.all([loadProjectContext(this.context.extensionUri), probeTools(forceProbe)]);
     this.ctx = ctx;
     this.tools = tools;
+    this.cached = undefined;
+    await this.loadMongokuSnapshot();
     this.changed();
   }
 
@@ -93,7 +104,55 @@ export class WorkSession implements vscode.Disposable {
   async selectScope(id: string): Promise<void> {
     await this.context.workspaceState.update(KEYS.scope, id);
     await this.context.workspaceState.update(KEYS.impact, undefined);
+    this.cached = undefined;
+    await this.loadMongokuSnapshot();
     this.changed();
+  }
+
+  // ------------------------------------------------------------ companions (Grafana, Mongoku)
+
+  /** Links for the selected scope. The Mongoku address is a user setting shared by all projects. */
+  companions(): ResolvedCompanions {
+    const mongokuUrl = vscode.workspace.getConfiguration("datapass").get<string>("mongoku.url") ?? "";
+    return resolveCompanions({ manifest: this.ctx.manifest, scopeId: this.model().scope.id, mongokuUrl });
+  }
+
+  /** The imported Mongoku context for the selected scope; undefined when the scope maps to no entity. */
+  mongokuStatus(): MongokuStatus | undefined {
+    const scopeId = this.model().scope.id;
+    const snap = this.mongokuSnapshot;
+    return snap?.scopeId === scopeId && mongokuEntityFor(this.ctx.manifest, scopeId)?.entityId === snap.status.entityId ? snap.status : undefined;
+  }
+
+  linkConfirmed(url: string): boolean { return this.confirmedLinks.has(url); }
+  confirmLink(url: string): void { this.confirmedLinks.add(url); }
+
+  /** Re-read after an import; the file itself is written by the import command. */
+  async reloadMongokuSnapshot(): Promise<void> {
+    await this.loadMongokuSnapshot();
+    this.changed();
+  }
+
+  private async loadMongokuSnapshot(): Promise<void> {
+    this.mongokuSnapshot = undefined;
+    const root = this.ctx.root;
+    const scopeId = this.model().scope.id;
+    const entity = mongokuEntityFor(this.ctx.manifest, scopeId);
+    if (!root || !entity) return;
+    const status = (s: MongokuStatus) => { this.mongokuSnapshot = { scopeId, status: s }; };
+    const uri = vscode.Uri.joinPath(root, ...LOCAL_DIR.split("/"), "mongoku", `${scopeId}.json`);
+    let stat: vscode.FileStat;
+    try { stat = await vscode.workspace.fs.stat(uri); } catch { return status({ entityId: entity.entityId, state: "missing" }); }
+    // Private local data: refuse links (a checked-out symlink could point anywhere) and oversize files.
+    if (stat.type & vscode.FileType.SymbolicLink) return status({ entityId: entity.entityId, state: "invalid", reason: "the stored snapshot is a symbolic link" });
+    if (stat.size > MAX_MONGOKU_CONTEXT_BYTES) return status({ entityId: entity.entityId, state: "invalid", reason: "the stored snapshot is larger than 256 KiB" });
+    try {
+      const bytes = await vscode.workspace.fs.readFile(uri);
+      const value = parseStrictJson(bytes, { maxBytes: MAX_MONGOKU_CONTEXT_BYTES, maxDepth: 8, maxEntries: 5000, maxStringLength: 4000 });
+      status({ entityId: entity.entityId, state: "ok", context: parseMongokuContext(value, entity.entityId, Date.now()) });
+    } catch (error) {
+      status({ entityId: entity.entityId, state: "invalid", reason: error instanceof Error ? error.message : String(error) });
+    }
   }
 
   async setChecklist(scopeId: string, itemId: string, state: ChecklistState, note?: string): Promise<void> {

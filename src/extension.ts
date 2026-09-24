@@ -6,7 +6,9 @@ import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
 import { registerBridgeCommands } from "./work/bridgeCommands";
+import { registerCompanionCommands } from "./work/companionCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
+import { setExternalOpenerForTests, type ExternalOpener } from "./core/external";
 import { platformOperations } from "./core/capabilities/platformOperations";
 
 /**
@@ -23,6 +25,12 @@ export interface DataPassTestApi {
   workViewMessage(): string | undefined;
   /** Replace the clipboard DataPass uses (undefined restores the system clipboard). */
   setClipboard(impl?: Clipboard): void;
+  /** Replace how DataPass opens URLs outside VS Code (undefined restores the real browser). */
+  setExternalOpener(impl?: ExternalOpener): void;
+  companions(): ReturnType<WorkSession["companions"]>;
+  mongokuStatus(): ReturnType<WorkSession["mongokuStatus"]>;
+  /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
+  handleUri(uri: vscode.Uri): Promise<void>;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -48,6 +56,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge), session.onDidChange(() => void galaxy.refreshOperations()));
   registerWorkCommands(context, session);
   registerBridgeCommands(context, session);
+  const companionUri = registerCompanionCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -145,6 +154,10 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     toolObservations: () => session.toolObservations(),
     workViewMessage: () => workView.message,
     setClipboard: setClipboardForTests,
+    setExternalOpener: setExternalOpenerForTests,
+    companions: () => session.companions(),
+    mongokuStatus: () => session.mongokuStatus(),
+    handleUri: uri => companionUri.handleUri(uri),
     renderWorkTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];
       const walk = async (node: Parameters<WorkTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {
