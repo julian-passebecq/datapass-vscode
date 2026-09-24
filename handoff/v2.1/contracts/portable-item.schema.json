@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:datapass:design:portable-item:2.1-draft",
+  "title": "DataPass V2.1 portable item design fixture",
+  "description": "Design-only subset. Not the production project manifest, execution policy or complete native provider schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["documentKind", "contractVersion", "exampleOnly", "id", "kind", "purposes", "languages", "native", "source", "targetProfiles", "inputArtifactRefs", "outputArtifactRefs", "dataClassification"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "documentKind": {"const": "datapass.item-design"},
+    "contractVersion": {"const": "2.1-draft"},
+    "exampleOnly": {"const": true},
+    "id": {"$ref": "#/$defs/id"},
+    "kind": {"enum": ["notebook", "workflow", "dataflow", "streaming-flow", "domain-config"]},
+    "purposes": {"$ref": "#/$defs/stringList"},
+    "languages": {"$ref": "#/$defs/stringList"},
+    "native": {
+      "type": "object", "additionalProperties": false,
+      "required": ["engine", "type", "representation"],
+      "properties": {"engine": {"type": "string", "minLength": 1}, "type": {"type": "string", "minLength": 1}, "representation": {"type": "string", "minLength": 1}}
+    },
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repositoryId", "path", "revision", "state"],
+      "properties": {"repositoryId": {"$ref": "#/$defs/id"}, "path": {"type": "string", "minLength": 1}, "revision": {"type": ["string", "null"]}, "state": {"enum": ["proposed", "observed"]}}
+    },
+    "targetProfiles": {"type": "array", "items": {"$ref": "#/$defs/target"}},
+    "inputArtifactRefs": {"$ref": "#/$defs/stringList"},
+    "outputArtifactRefs": {"$ref": "#/$defs/stringList"},
+    "dataClassification": {"enum": ["synthetic-example", "private-reference", "unknown"]},
+    "domainType": {"type": ["string", "null"]},
+    "extensions": {"type": "object", "propertyNames": {"pattern": "^[a-z][a-z0-9.-]+$"}, "additionalProperties": {"type": "object"}}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9._-]*$"},
+    "stringList": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+    "target": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "provider", "hosting", "environment", "engineVersion", "nativeType", "actionState"],
+      "properties": {
+        "id": {"$ref": "#/$defs/id"}, "provider": {"type": "string", "minLength": 1}, "hosting": {"type": "string", "minLength": 1},
+        "environment": {"type": "string", "minLength": 1}, "engineVersion": {"type": ["string", "null"]},
+        "nativeType": {"type": "string", "minLength": 1}, "actionState": {"const": "not-qualified"},
+        "executor": {"type": ["string", "null"]}, "triggerMode": {"enum": ["manual", "scheduled", "event", "unknown"]},
+        "triggerOwnerRef": {"type": ["string", "null"]}
+      }
+    }
+  }
+}

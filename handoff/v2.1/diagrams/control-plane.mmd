@@ -1,0 +1,24 @@
+flowchart TB
+  U[User and external AI conversation] -->|reviewed manual exchange| X[Context and plan boundary]
+  X --> C[Generic DataPass core]
+  C --> I[Logical items and artifact revisions]
+  C --> W[Workspaces and checklists]
+  C --> E[Approvals and receipts]
+  T[Core type catalog] --> C
+  P[Opt-in declarative company packs] --> C
+  I --> B[Target bindings]
+  B --> A[Provider capability adapters]
+  A --> F[Official Fabric tools]
+  A --> D[Official Databricks tools]
+  A --> AF[Airflow native tools]
+  A --> O[SSH and IaC tools]
+  A --> G[Hosted Grafana tools]
+  A --> AP[Apps and Git clients]
+  AF -->|external runtime owns schedules| R[Runtime and observed evidence]
+  F --> R
+  D --> R
+  O --> R
+  G --> R
+  AP --> R
+  R -->|bounded observations| E
+  E --> X

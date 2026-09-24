@@ -1,0 +1,21 @@
+{
+  "$schema": "../contracts/portable-item.schema.json",
+  "documentKind": "datapass.item-design",
+  "contractVersion": "2.1-draft",
+  "exampleOnly": true,
+  "id": "item.example.archive-workflow",
+  "kind": "workflow",
+  "purposes": ["batch-orchestration", "archive-validation"],
+  "languages": ["python"],
+  "native": {"engine": "airflow", "type": "apache-airflow.dag", "representation": "python-source"},
+  "source": {"repositoryId": "repo.example.runtime", "path": "dags/archive_workflow.py", "revision": null, "state": "proposed"},
+  "targetProfiles": [
+    {"id": "binding.example.compose", "provider": "self-hosted", "hosting": "local-docker-compose", "environment": "development", "engineVersion": null, "nativeType": "apache-airflow.dag", "executor": null, "triggerMode": "manual", "triggerOwnerRef": "user", "actionState": "not-qualified"},
+    {"id": "binding.example.oci", "provider": "self-hosted", "hosting": "oci-k3s", "environment": "pilot", "engineVersion": null, "nativeType": "apache-airflow.dag", "executor": "KubernetesExecutor", "triggerMode": "manual", "triggerOwnerRef": "user", "actionState": "not-qualified"},
+    {"id": "binding.example.fabric-airflow", "provider": "microsoft-fabric", "hosting": "managed-airflow", "environment": "candidate", "engineVersion": null, "nativeType": "fabric.apache-airflow-job", "executor": null, "triggerMode": "manual", "triggerOwnerRef": "user", "actionState": "not-qualified"}
+  ],
+  "inputArtifactRefs": ["artifact.example.case-bundle"],
+  "outputArtifactRefs": ["artifact.example.archive-manifest"],
+  "dataClassification": "synthetic-example",
+  "extensions": {"org.datapass.workflow": {"graphCompleteness": "declared-example-only", "runtimeOwner": "native-airflow", "tasks": [{"id": "verify", "dependsOn": []}, {"id": "archive", "dependsOn": ["verify"]}], "missingPrerequisites": ["engine-version", "metadata-database", "auth-reference", "native-ui", "approved-budget"]}}
+}

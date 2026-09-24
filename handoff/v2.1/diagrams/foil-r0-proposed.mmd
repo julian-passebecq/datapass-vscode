@@ -1,0 +1,24 @@
+flowchart TB
+  S[Streamlit case editor and external CAD tools] -->|reviewed case and artifact hashes| G[Git definitions and immutable artifact references]
+  M[Existing FOIL authorities] -->|versioned authorized context| G
+  DP[DataPass project and artifact context] -.->|explicit native-tool handoff| G
+  G --> O[OCI shared simulation kernel]
+  AF[Airflow finite campaigns and archives] --> O
+  O --> Q[Mosquitto and gateway with bounded durable outbox]
+  Q --> EH[Azure Event Hubs]
+  EH --> ES[Fabric Eventstream]
+  ES --> EV[Eventhouse]
+  O --> AR[Immutable Parquet and manifest archives]
+  AF --> AR
+  AR --> FN[OneLake and Fabric preparation]
+  FN --> DB[Databricks pinned campaigns]
+  DB --> RE[Versioned results and reports]
+  RE --> BI[Power BI or Streamlit comparison]
+  EV --> RT[Real-time lab app]
+  O -.-> AL[Operational telemetry and bounded labels]
+  AF -.-> AL
+  Q -.-> AL
+  DB -.-> AL
+  AL --> GR[Grafana Cloud and Alloy]
+  RE -.->|optional approved summaries| NE[Existing Neon result index]
+  NOTE[Proposed R0 circuit - not a deployed or validated physical system] -.-> DP

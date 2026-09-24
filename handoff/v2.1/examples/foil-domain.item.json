@@ -1,0 +1,28 @@
+{
+  "$schema": "../contracts/portable-item.schema.json",
+  "documentKind": "datapass.item-design",
+  "contractVersion": "2.1-draft",
+  "exampleOnly": true,
+  "id": "item.foil.case-template",
+  "kind": "domain-config",
+  "purposes": ["experimental-case-preparation"],
+  "languages": [],
+  "native": {"engine": "external-foil-kernel", "type": "foil.experiment/1.0-rc1", "representation": "json"},
+  "source": {"repositoryId": "repo.foil.cao-to-bind", "path": "cases/CASE_TO_BIND.json", "revision": null, "state": "proposed"},
+  "targetProfiles": [],
+  "inputArtifactRefs": ["artifact.foil.source-context-to-bind"],
+  "outputArtifactRefs": ["artifact.foil.case-candidate-to-bind"],
+  "dataClassification": "private-reference",
+  "domainType": "com.foil.experiment-case",
+  "extensions": {"com.foil.experiment": {
+    "schemaId": "urn:foil:experiment:1.0-rc1",
+    "nativeSchemaField": "schema_version",
+    "formGroups": ["identity", "geometry", "kinematics", "environment", "economics", "provenance", "artifacts", "campaign"],
+    "editableClassification": "hypothesis-candidate",
+    "computeOwner": "external-versioned-kernel",
+    "parameterValuesIncluded": false,
+    "promotionToCoreTruthAllowed": false,
+    "affectedArtifactRoles": ["cad", "screening-result", "campaign-input", "briefing"],
+    "validatorAction": {"id": "foil.validate-candidate", "implementation": "not-registered", "autoExecute": false}
+  }}
+}

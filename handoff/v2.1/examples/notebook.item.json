@@ -1,0 +1,21 @@
+{
+  "$schema": "../contracts/portable-item.schema.json",
+  "documentKind": "datapass.item-design",
+  "contractVersion": "2.1-draft",
+  "exampleOnly": true,
+  "id": "item.example.sensitivity",
+  "kind": "notebook",
+  "purposes": ["sensitivity-analysis", "ml-experiment"],
+  "languages": ["python"],
+  "native": {"engine": "spark", "type": "databricks.notebook", "representation": "source-python"},
+  "source": {"repositoryId": "repo.example.analytics", "path": "notebooks/sensitivity.py", "revision": null, "state": "proposed"},
+  "targetProfiles": [
+    {"id": "binding.example.dbx", "provider": "databricks", "hosting": "unbound", "environment": "development", "engineVersion": null, "nativeType": "databricks.notebook", "actionState": "not-qualified"},
+    {"id": "binding.example.fabric-candidate", "provider": "microsoft-fabric", "hosting": "microsoft-managed", "environment": "migration-candidate", "engineVersion": null, "nativeType": "fabric.notebook", "actionState": "not-qualified"}
+  ],
+  "inputArtifactRefs": ["artifact.example.snapshot"],
+  "outputArtifactRefs": ["artifact.example.results"],
+  "dataClassification": "synthetic-example",
+  "domainType": null,
+  "extensions": {"org.datapass.portability": {"assessmentRequired": true, "runtimeEquivalent": false, "unresolvedMappings": ["libraries", "storage", "identity", "provider-utilities"]}}
+}
