@@ -1,0 +1,73 @@
+{
+  "format": "datapass.architecture-view",
+  "contractVersion": "0.1-draft",
+  "id": "architecture-view-example",
+  "projectRef": "sample-retail",
+  "scopeRef": "analytics",
+  "base": {
+    "scopeRevision": "draft-1",
+    "manifestHash": {
+      "algorithm": "sha256",
+      "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+    },
+    "repositories": [
+      {
+        "repoRef": "main",
+        "revision": "fixture-revision",
+        "workingTreeHash": {
+          "algorithm": "sha256",
+          "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+        }
+      }
+    ]
+  },
+  "classification": "internal",
+  "createdAt": "2026-09-24T00:00:00Z",
+  "sources": [
+    {
+      "id": "source-1",
+      "authority": "synthetic-example",
+      "recordRef": "fixture-only",
+      "revision": "1",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "classification": "internal",
+      "snapshotHash": {
+        "algorithm": "sha256",
+        "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+      }
+    }
+  ],
+  "payload": {
+    "semanticRevision": "candidate-1",
+    "layoutRevision": "layout-1",
+    "mode": "learning",
+    "nodes": [
+      {
+        "id": "app",
+        "itemRef": "app-1",
+        "label": "External app",
+        "evidenceRefs": [],
+        "state": "planned"
+      },
+      {
+        "id": "data",
+        "itemRef": "data-1",
+        "label": "Dataset",
+        "evidenceRefs": [],
+        "state": "unknown"
+      }
+    ],
+    "edges": [
+      {
+        "id": "edge-1",
+        "source": "app",
+        "target": "data",
+        "relation": "produces"
+      }
+    ],
+    "omissions": [
+      "private runtime details"
+    ],
+    "publication": "not-authorized"
+  }
+}

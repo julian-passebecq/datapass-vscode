@@ -16,6 +16,37 @@ DataPass VS Code is a **single VS Code control-plane extension** for composing e
 
 One VSIX first. Platform code is separated internally into adapters so a domain can be packaged independently later only if a real distribution, runtime, security or lifecycle boundary appears.
 
+## Work view (v0.9, V2.2)
+
+The **Work** view answers, for one selected scope: what are we trying to do, what is next,
+which operations are ready (and why not), which outputs a change makes stale, and which
+exchanges with external apps are pending. Readiness is evaluated per operation — e.g.
+*develop a Fabric notebook locally* needs Fabric Data Engineering, Jupyter and a JDK — and
+"ready" means prerequisites are present, not that the operation will succeed.
+
+Declare scopes, apps and domain packs in a schemaVersion 2 manifest
+(`DataPass: Upgrade Project Manifest to v2` migrates with a backup):
+
+```json
+{
+  "schemaVersion": 2,
+  "project": { "id": "retail-bi", "title": "Retail BI" },
+  "repositories": { "site": { "remote": { "url": "https://github.com/example/site", "branch": "main" }, "management": "remote-only" } },
+  "apps": [{ "id": "forecast-app", "appType": "streamlit", "repoRef": "site" }],
+  "domainPacks": ["builtin:sample.retail"],
+  "scopes": [{
+    "id": "weekly", "title": "Weekly forecast", "objective": "Publish the weekly forecast",
+    "checklist": [{ "id": "nb", "label": "Update notebook", "capabilityRef": "fabric.notebook.edit-local-sync" }]
+  }]
+}
+```
+
+External apps and AI tools exchange **contracted envelopes** (`schemas/contracts/`): DataPass
+freezes a request, correlates the returned result against the exact request bytes and stages
+it as a candidate or quarantines it. Nothing is applied automatically, and private exchange
+history stays in `.datapass/local/` (git-ignored). See `IMPLEMENTATION_STATUS.md` for what is
+implemented, documented-only and qualified.
+
 ## Development
 
 ```bash

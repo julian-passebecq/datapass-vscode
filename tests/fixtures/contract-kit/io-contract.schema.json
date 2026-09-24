@@ -1,0 +1,329 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.io-contract"
+    },
+    "contractVersion": {
+      "const": "0.1-draft"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "projectRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "scopeRef": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scopeRevision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "manifestHash": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "algorithm": {
+              "const": "sha256"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          },
+          "required": [
+            "algorithm",
+            "value"
+          ]
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "revision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "workingTreeHash": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "algorithm": {
+                    "const": "sha256"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  }
+                },
+                "required": [
+                  "algorithm",
+                  "value"
+                ]
+              }
+            },
+            "required": [
+              "repoRef",
+              "revision",
+              "workingTreeHash"
+            ]
+          },
+          "maxItems": 30,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "scopeRevision",
+        "manifestHash",
+        "repositories"
+      ]
+    },
+    "classification": {
+      "enum": [
+        "public",
+        "internal",
+        "confidential"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "authority": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "recordRef": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "revision": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "classification": {
+            "enum": [
+              "public",
+              "internal",
+              "confidential"
+            ]
+          },
+          "snapshotHash": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "algorithm": {
+                "const": "sha256"
+              },
+              "value": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "algorithm",
+              "value"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "authority",
+          "recordRef",
+          "revision",
+          "observedAt",
+          "classification",
+          "snapshotHash"
+        ]
+      },
+      "maxItems": 100,
+      "minItems": 0
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schemaRef": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "compatibility": {
+          "enum": [
+            "exact",
+            "backward",
+            "assessment-required"
+          ]
+        },
+        "grain": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "maxItems": 20,
+          "minItems": 0
+        },
+        "units": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "field": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "unit": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              }
+            },
+            "required": [
+              "field",
+              "unit"
+            ]
+          },
+          "maxItems": 50,
+          "minItems": 0
+        },
+        "timeSemantics": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "delivery": {
+          "enum": [
+            "snapshot",
+            "at-least-once",
+            "request-response"
+          ]
+        },
+        "qualityChecks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "maxItems": 50,
+          "minItems": 0
+        },
+        "retentionPolicyRef": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "direction": {
+                "enum": [
+                  "in",
+                  "out"
+                ]
+              },
+              "contractRef": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+              },
+              "dataMode": {
+                "enum": [
+                  "snapshot",
+                  "stream",
+                  "request",
+                  "result"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "direction",
+              "contractRef",
+              "dataMode",
+              "required"
+            ]
+          },
+          "maxItems": 30,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "schemaRef",
+        "compatibility",
+        "grain",
+        "keys",
+        "units",
+        "timeSemantics",
+        "delivery",
+        "qualityChecks",
+        "retentionPolicyRef",
+        "ports"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "contractVersion",
+    "id",
+    "projectRef",
+    "scopeRef",
+    "base",
+    "classification",
+    "createdAt",
+    "sources",
+    "payload"
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

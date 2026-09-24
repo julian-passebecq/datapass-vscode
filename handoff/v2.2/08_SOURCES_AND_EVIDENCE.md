@@ -42,3 +42,6 @@ Review date: 2026-09-24. URLs below are primary documentation or inspected repos
 - Private FOIL schema/package redistribution permission and publication rights.
 
 No current live cloud/Mongo inventory was recreated in this pass. No commercial quota is hard-coded as a permanent architectural guarantee. Any previously quoted free-tier amount must be verified against the actual account and current official terms before use.
+
+
+> **Implementation note (2026-09-24, v0.9.0):** the Marketplace lists the Microsoft TMDL extension as `analysis-services.TMDL`. DataPass detects that ID first and keeps `CPIM.TMDL-language-support` as an alias. Fabric Data Engineering is `SynapseVSCode.synapse` (web: `SynapseVSCode.vscode-synapse-remote`) and needs the Jupyter extension and a JDK. Installation remains unqualified until tested on a desktop.

@@ -1,0 +1,71 @@
+{
+  "format": "datapass.app-exchange",
+  "contractVersion": "0.1-draft",
+  "id": "result-example",
+  "projectRef": "foil-example",
+  "scopeRef": "analytics",
+  "base": {
+    "scopeRevision": "draft-1",
+    "manifestHash": {
+      "algorithm": "sha256",
+      "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+    },
+    "repositories": [
+      {
+        "repoRef": "main",
+        "revision": "fixture-revision",
+        "workingTreeHash": {
+          "algorithm": "sha256",
+          "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+        }
+      }
+    ]
+  },
+  "classification": "internal",
+  "createdAt": "2026-09-24T00:00:00Z",
+  "sources": [
+    {
+      "id": "source-1",
+      "authority": "synthetic-example",
+      "recordRef": "fixture-only",
+      "revision": "1",
+      "observedAt": "2026-09-24T00:00:00Z",
+      "classification": "internal",
+      "snapshotHash": {
+        "algorithm": "sha256",
+        "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+      }
+    }
+  ],
+  "payload": {
+    "direction": "result",
+    "correlationId": "request-1",
+    "appRef": "external-streamlit",
+    "operation": "prepare-candidate",
+    "inputRefs": [
+      "case-1"
+    ],
+    "outputArtifacts": [
+      {
+        "id": "candidate-1",
+        "locatorRef": "private-artifact-location",
+        "mediaType": "application/json",
+        "schemaRef": "sample.candidate/1",
+        "byteHash": {
+          "algorithm": "sha256",
+          "value": "761b83212a13d9cea140970f1628b4a3d212a60a2c4ae4f3177d9f0fba31afeb"
+        },
+        "inputRefs": [
+          "case-1"
+        ],
+        "producerRef": "external-streamlit"
+      }
+    ],
+    "requestHash": {
+      "algorithm": "sha256",
+      "value": "1ca2bc1d3dc466da8334c4e6111d41cc5ffd7e8bb993893cfc571cbaff02b139"
+    },
+    "resultState": "succeeded",
+    "executionEvidenceRef": "external-receipt-1"
+  }
+}

@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { detectCli } from "../core/detection";
 import { deriveStatus } from "../core/status";
 import type { CatalogItemState, PlatformAction, PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
-import { anyWorkspaceFile, detectExtension } from "../core/vscodeDetection";
+import { anyWorkspaceFile, detectAnyExtension, detectExtension } from "../core/vscodeDetection";
 import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/catalog";
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
@@ -14,11 +14,18 @@ export class FabricAdapter implements PlatformAdapter {
   constructor(private readonly extensionUri: vscode.Uri) {}
 
   async detect(): Promise<PlatformState> {
+    // Card status reflects the core route (Fabric extension + fab CLI). Task-specific routes
+    // (Data Engineering notebooks, community explorers) are evaluated per operation in the
+    // Work view preflight, so they are optional here and never lower the card status.
     const integrationTools: ToolProbe[] = [
       detectExtension("fabric.vscode-fabric", "Microsoft Fabric VS Code"),
-      detectExtension("GerhardBrueckl.fabricstudio", "Fabric Studio"),
-      detectExtension("GerhardBrueckl.onelake-vscode", "OneLake-VSCode"),
-      await detectCli({ id: "fab", label: "Fabric CLI", command: "fab", args: ["--version"] })
+      await detectCli({ id: "fab", label: "Fabric CLI", command: "fab", args: ["--version"] }),
+      detectAnyExtension(["SynapseVSCode.synapse", "SynapseVSCode.vscode-synapse-remote"], "Fabric Data Engineering", {
+        optional: true, note: "notebooks, Spark job definitions, environments, lakehouses; needs Jupyter + a JDK for local runs"
+      }),
+      detectAnyExtension(["ms-toolsai.jupyter"], "Jupyter", { optional: true, note: "required by Fabric Data Engineering notebooks" }),
+      { ...detectExtension("GerhardBrueckl.fabricstudio", "Fabric Studio (community)"), optional: true },
+      { ...detectExtension("GerhardBrueckl.onelake-vscode", "OneLake-VSCode (community)"), optional: true }
     ];
     const workflowTools: ToolProbe[] = [
       await detectCli({ id: "fat", label: "Fabric Assessment Tool", command: "fat", args: ["--help"] }),
@@ -50,6 +57,7 @@ export class FabricAdapter implements PlatformAdapter {
         id: "workspace-mcp",
         label: "Workspace MCP configuration",
         available: workspaceMcp,
+        optional: true,
         detail: workspaceMcp ? ".vscode/mcp.json detected" : "No workspace MCP configuration detected"
       },
       {
@@ -64,7 +72,7 @@ export class FabricAdapter implements PlatformAdapter {
       id: this.id,
       title: this.displayName,
       status: deriveStatus(integrationTools, Boolean(toolboxRoot)),
-      summary: `${integrationTools.filter(tool => tool.available).length}/${integrationTools.length} Fabric integration surfaces detected. ${catalog.items.length} curated Toolbox assets registered.`,
+      summary: `${integrationTools.filter(tool => !tool.optional && tool.available).length}/${integrationTools.filter(tool => !tool.optional).length} core Fabric surfaces detected (+${integrationTools.filter(tool => tool.optional && tool.available).length} optional). ${catalog.items.length} curated Toolbox assets registered.`,
       tools,
       actions: [
         { id: "fabric.open", label: "Open Fabric", enabled: true, kind: "open" },
@@ -86,7 +94,10 @@ export class FabricAdapter implements PlatformAdapter {
         toolboxRoot ? `Local Toolbox: ${toolboxRoot}` : "Local Fabric Toolbox clone not configured.",
         fabricConfig?.workspaceName ? `Manifest workspace: ${fabricConfig.workspaceName}` : "Fabric workspace name is not declared in the project manifest.",
         hasWorkspaceIdentity ? `Deployment config: ${deployConfigRelative} · ${deployConfigExists ? "present" : "not created"}` : "Fabric deployment is unbound until a workspace identity is verified.",
-        "DataPass composes Fabric tooling; it does not replace vendor/community clients."
+        integrationTools.find(tool => tool.label === "Fabric Data Engineering")?.available
+          ? "Fabric Data Engineering is installed. Local-sync and remote-VFS notebook editing are different routes; see Operations in the Work view."
+          : "Fabric Data Engineering (SynapseVSCode.synapse) is not installed; notebook/Spark job work uses the Fabric portal until it is.",
+        "DataPass composes Fabric tooling; it does not replace vendor/community clients. Eventstream deployment activates target resources: review before deploying."
       ],
       catalog: {
         title: "Fabric Toolbox",

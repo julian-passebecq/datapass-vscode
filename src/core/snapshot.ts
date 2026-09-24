@@ -8,7 +8,7 @@ export interface SanitizedEnvironmentSnapshot {
     overall: "healthy" | "attention" | "setup";
     platformCounts: Record<string, number>;
     tools: { available: number; total: number };
-    bindings: { bound: number; missing: number; unknown: number; total: number };
+    bindings: { bound: number; missing: number; unknown: number; remote?: number; total: number };
     attention: Array<{ severity: string; label: string }>;
   };
   project: {
@@ -18,7 +18,7 @@ export interface SanitizedEnvironmentSnapshot {
     bindings: Array<{
       id: string;
       label: string;
-      status: "bound" | "missing" | "unknown";
+      status: "bound" | "missing" | "unknown" | "remote";
     }>;
   };
   platforms: Array<{
@@ -73,6 +73,7 @@ export function buildSanitizedEnvironmentSnapshot(state: GalaxyState): Sanitized
         id: tool.id,
         label: tool.label,
         available: tool.available,
+        ...(tool.optional ? { optional: true } : {}),
         ...(tool.version ? { version: tool.version } : {})
       })),
       ...(platform.catalog ? {

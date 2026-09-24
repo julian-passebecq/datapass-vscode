@@ -2,6 +2,9 @@ import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
 import { executeGalaxyAction } from "./core/actions";
 import type { GalaxyState } from "./core/types";
+import { WorkSession } from "./work/session";
+import { WorkTreeProvider } from "./views/workTree";
+import { registerWorkCommands } from "./work/commands";
 
 export function activate(context: vscode.ExtensionContext): void {
   const galaxy = new GalaxyViewProvider(context.extensionUri);
@@ -13,6 +16,18 @@ export function activate(context: vscode.ExtensionContext): void {
     )
   );
 
+  // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
+  const session = new WorkSession(context);
+  const workTree = new WorkTreeProvider(session);
+  const workView = vscode.window.createTreeView(WorkTreeProvider.viewType, { treeDataProvider: workTree, showCollapseAll: true });
+  const updateWorkBadge = () => {
+    const m = session.model();
+    workView.description = m.scopeSource === "declared" ? m.scope.id : undefined;
+    workView.message = session.project.manifestErrors.length ? "The project manifest has errors; see Problems." : undefined;
+  };
+  context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge));
+  registerWorkCommands(context, session);
+
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
   status.tooltip = "Open DataPass Galaxy";
@@ -21,7 +36,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(status);
 
   const refreshState = async (): Promise<GalaxyState> => {
-    const state = await galaxy.refresh();
+    const [state] = await Promise.all([galaxy.refresh(), session.refresh()]);
     updateStatusBar(status, state);
     return state;
   };
@@ -81,7 +96,14 @@ export function activate(context: vscode.ExtensionContext): void {
   manifestWatcher.onDidChange(refresh);
   manifestWatcher.onDidDelete(refresh);
 
-  context.subscriptions.push(bundleWatcher, manifestWatcher);
+  // Graph, packs and claims only affect the Work view; .datapass/local is private session data.
+  const workRefresh = () => void session.refresh();
+  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,claims.json,packs/*.json,queries/*.json}");
+  workWatcher.onDidCreate(workRefresh);
+  workWatcher.onDidChange(workRefresh);
+  workWatcher.onDidDelete(workRefresh);
+
+  context.subscriptions.push(bundleWatcher, manifestWatcher, workWatcher);
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(event => {

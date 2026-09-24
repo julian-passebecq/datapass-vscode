@@ -1,0 +1,55 @@
+{
+  "format": "datapass.domain-pack",
+  "packVersion": "0.1-draft",
+  "namespace": "sample.retail",
+  "version": "0.1.0",
+  "title": "Retail BI (synthetic)",
+  "description": "Synthetic non-FOIL pack used by acceptance tests to prove the core has no wind-turbine assumptions.",
+  "mappingStatus": "synthetic-example",
+  "acceptedSchemas": ["sample.forecast-scenario/1"],
+  "views": [
+    { "id": "data", "title": "Data", "itemKinds": ["dataset", "dataset-snapshot", "workflow", "notebook"] },
+    { "id": "bi", "title": "BI", "itemKinds": ["semantic-model", "dashboard"] },
+    { "id": "deliverables", "title": "Deliverables", "itemKinds": ["report"] }
+  ],
+  "facets": [
+    { "id": "pricing", "label": "Pricing assumptions", "pointers": ["/pricing"] },
+    { "id": "calendar", "label": "Fiscal calendar", "pointers": ["/calendar"] },
+    { "id": "scope", "label": "Store scope", "pointers": ["/scope"] },
+    { "id": "presentation", "label": "Presentation", "pointers": ["/presentation"] }
+  ],
+  "forms": [
+    { "id": "forecast-scenario", "title": "Forecast scenario", "schemaRef": "sample.forecast-scenario/1",
+      "groups": [
+        { "id": "pricing", "title": "Pricing", "fields": [
+          { "pointer": "/pricing/discountRate", "label": "Promotional discount", "role": "assumption", "type": "number", "unit": "ratio", "min": 0, "max": 0.9, "facet": "pricing" },
+          { "pointer": "/pricing/currency", "label": "Currency", "role": "reference", "type": "enum", "options": ["EUR", "NOK", "USD"], "facet": "pricing" }
+        ] },
+        { "id": "calendar", "title": "Calendar", "fields": [
+          { "pointer": "/calendar/fiscalYearStartMonth", "label": "Fiscal year start month", "role": "reference", "type": "integer", "min": 1, "max": 12, "facet": "calendar" }
+        ] },
+        { "id": "scope", "title": "Scope", "fields": [
+          { "pointer": "/scope/region", "label": "Region", "role": "proposal", "type": "enum", "options": ["north", "south", "all"], "facet": "scope" },
+          { "pointer": "/scope/storeCount", "label": "Store count", "role": "computed", "type": "integer", "facet": "scope" },
+          { "pointer": "/scope/weatherAdjustment", "label": "Weather adjustment", "role": "assumption", "type": "boolean", "facet": "scope", "coupledToModel": false }
+        ] },
+        { "id": "presentation", "title": "Presentation", "fields": [
+          { "pointer": "/presentation/theme", "label": "Report theme", "role": "proposal", "type": "enum", "options": ["light", "dark"], "facet": "presentation" }
+        ] }
+      ] }
+  ],
+  "outputs": [
+    { "id": "sales-forecast", "label": "Sales forecast table", "view": "data",
+      "dependsOn": [ { "ref": "scenario", "facets": ["pricing", "calendar", "scope"] }, { "ref": "orders-snapshot", "facets": "*" } ] },
+    { "id": "semantic-model-refresh", "label": "Semantic model refresh", "view": "bi",
+      "dependsOn": [ { "ref": "sales-forecast", "facets": "*" } ] },
+    { "id": "revenue-report", "label": "Revenue report", "view": "bi",
+      "dependsOn": [ { "ref": "semantic-model-refresh", "facets": "*" }, { "ref": "scenario", "facets": ["presentation"] } ] },
+    { "id": "exec-brief", "label": "Executive brief", "view": "deliverables",
+      "dependsOn": [ { "ref": "revenue-report", "facets": "*" } ] }
+  ],
+  "briefTemplates": [
+    { "id": "exec-review", "title": "Executive review", "audience": "internal", "sections": ["Scope", "Results", "Assumptions", "Limitations"] }
+  ],
+  "moneyKinds": ["programme-budget", "cloud-spend"]
+}

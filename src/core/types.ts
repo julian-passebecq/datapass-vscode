@@ -4,6 +4,8 @@ export interface ToolProbe {
   id: string;
   label: string;
   available: boolean;
+  /** Optional companions are shown but never lower a platform's status. */
+  optional?: boolean;
   version?: string;
   detail?: string;
 }
@@ -45,7 +47,7 @@ export interface ProjectBinding {
   id: string;
   label: string;
   value?: string;
-  status: "bound" | "missing" | "unknown";
+  status: "bound" | "missing" | "unknown" | "remote";
 }
 
 export interface ProjectProfileState {
@@ -71,7 +73,7 @@ export interface GalaxyHealthSummary {
   overall: "healthy" | "attention" | "setup";
   platformCounts: Record<StatusLevel, number>;
   tools: { available: number; total: number };
-  bindings: { bound: number; missing: number; unknown: number; total: number };
+  bindings: { bound: number; missing: number; unknown: number; remote?: number; total: number };
   attention: GalaxyAttentionItem[];
 }
 

@@ -1,6 +1,8 @@
 import type { StatusLevel, ToolProbe } from "./types";
 
-export function deriveStatus(tools: ToolProbe[], configured = false): StatusLevel {
+export function deriveStatus(allTools: ToolProbe[], configured = false): StatusLevel {
+  // Optional companions (community extensions, AI helpers) never lower platform status.
+  const tools = allTools.filter(tool => !tool.optional);
   if (tools.length === 0) return configured ? "partial" : "unbound";
   const available = tools.filter(tool => tool.available).length;
   if (available === tools.length && configured) return "ready";
