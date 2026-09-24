@@ -2103,3 +2103,275 @@ and immediately see:
 The user should then be able to work with ChatGPT/Claude as the detailed guide, while DataPass remains the **persistent, versioned, project-aware cockpit** that keeps the entire system coherent.
 
 That is the V2 vision.
+
+
+---
+
+## 36. Verified FOIL repositories and concrete examples
+
+This section is intentionally concrete. Claude should inspect these repositories before creating new FOIL-specific structures.
+
+### 36.1 Databricks DAB — real V2 reference
+
+Repository:
+
+- https://github.com/julian-passebecq/foil_databrick_dab
+
+Status verified on 2026-09-24:
+
+- private repository;
+- current FOIL Wind / Eolien synthetic digital-twin lab;
+- root \`databricks.yml\` exists;
+- DAB is explicitly the deployment source of truth;
+- current shell is described as **live-test-ready**, but no successful live Databricks deployment should be claimed until it has actually been executed in the authenticated workspace;
+- intended workflow uses the official Databricks VS Code extension + Databricks CLI + bundle validate/deploy/run;
+- serverless / Free Edition oriented;
+- Unity Catalog + Bronze/Silver/Gold + Spark Declarative Pipeline + Lakeflow Job + dbt + MLflow + AI/BI dashboards + optional Databricks App;
+- contains a documented synthetic-only/non-confidential boundary;
+- also contains an **optional Neon export**, but Neon is not the project authority and is not required by DataPass V2.
+
+Claude should read at least:
+
+- \`README.md\`
+- \`AGENTS.md\`
+- \`docs/PRO_AI_HANDOFF.md\`
+- \`docs/CURRENT_LAB_SCOPE.md\`
+- \`docs/LIVE_TEST.md\`
+- \`docs/ARCHITECTURE.md\`
+- \`docs/DIGITAL_TWIN_CONTRACT.md\`
+
+This repository is the strongest concrete example of what DataPass V2 should prepare and hand off to an official vendor extension.
+
+### 36.2 Legacy Databricks reference — do not revive as product
+
+Repository:
+
+- https://github.com/julian-passebecq/databricks-vscode-foil
+
+Use only as historical/reference material for previous FOIL extension experiments and command/workflow ideas.
+
+Do not copy/repackage Databricks vendor code and do not make this fork the primary client. The official Databricks extension remains the primary VS Code client.
+
+### 36.3 FOIL control/export repository — current high-level authority bridge
+
+Repository:
+
+- https://github.com/julian-passebecq/foil-control-v1
+
+Verified README boundary:
+
+- control/export/schema tooling;
+- deterministic snapshots/interfaces;
+- generated review views;
+- FOIL Eye source;
+- not a second mutable engineering database;
+- FOIL domain/Mongo authorities remain the deeper current engineering truth;
+- GitHub remains code/schemas/tests/deployment config.
+
+The repository currently describes:
+
+- Wind / Eolien as the primary focus;
+- Hydro / Hydrolien as historical/reference;
+- Databricks Lab as R&D/test with frozen versioned inputs;
+- **Fabric Lab as R&D/test, \`ACTIVE_SETUP\` until real workspace identities exist**.
+
+This is important:
+
+> There is not yet a verified dedicated FOIL Fabric real-time repository that Claude should treat as deployed/authoritative.
+
+DataPass V2 should therefore help create/bind the real Fabric project/workspace/repository cleanly rather than inventing an existing one.
+
+### 36.4 Fabric tooling donor/reference — not the FOIL runtime
+
+Repository:
+
+- https://github.com/julian-passebecq/fabricdatapasstoolbox
+
+This is a donor/prototype for the DataPass Fabric companion experience, not a FOIL production Fabric project.
+
+The V2 source map already identifies the useful branch/history and the files worth reusing/adapting. Claude should not confuse this repo with FOIL's future real-time Fabric implementation.
+
+Other Fabric references already tracked:
+
+- https://github.com/microsoft/fabric-toolbox
+- https://github.com/microsoft/fabric-cicd
+- https://github.com/gbrueckl/FabricStudio
+- https://github.com/gbrueckl/OneLake-VSCode
+
+### 36.5 Fabric learning/simulation repositories — examples only
+
+Repository:
+
+- https://github.com/julian-passebecq/fastapi-fabric
+
+This is a standalone FastAPI backend for a Fabric/Data Factory **learning/simulation app**. It simulates orchestration and is explicitly not a real FOIL Fabric deployment.
+
+Repository:
+
+- https://github.com/julian-passebecq/Contoso_Data_Fabric
+
+This is Contoso/sample data tooling and can be useful as a data/Fabric example, but it is not FOIL project truth.
+
+Claude may inspect these for patterns, never as authoritative FOIL architecture.
+
+### 36.6 FOIL real-time Fabric status
+
+A repository/code search on 2026-09-24 found no dedicated FOIL repository containing an implemented Eventstream/Eventhouse/OneLake real-time Fabric stack.
+
+The current FOIL control repo explicitly labels Fabric Lab as \`ACTIVE_SETUP\`.
+
+Therefore treat the user-supplied real-time architecture:
+
+\`\`\`text
+Machine / Environment / Airflow
+             ↓
+            MQTT
+             ↓
+        Polars / DuckDB
+             ↓
+           Azure
+             ↓
+     IoT/Event path
+             ↓
+        Eventstream
+             ↓
+        Eventhouse
+             ↓
+          Power BI
+\`\`\`
+
+as the **target architecture to bind/build**, not as an already-deployed repository.
+
+V2 should make this distinction visible:
+
+- Concept / target
+- Config prepared
+- Workspace bound
+- Files generated
+- Ready to deploy
+- Live validated
+
+Do not collapse all of these into a single "Ready" state.
+
+### 36.7 Oracle / OCI / K3s / MQTT status
+
+A repository search on 2026-09-24 found **no dedicated FOIL Oracle/OCI/K3s/MQTT infrastructure repository** and no verified FOIL repo implementing the user-described Oracle Edge runtime.
+
+This means Claude must not silently assume:
+
+- OCI tenancy/region;
+- VM name/count;
+- K3s topology;
+- Docker/Compose layout;
+- MQTT broker;
+- Airflow deployment;
+- SSH aliases;
+- ports;
+- DNS;
+- secrets;
+- Wind/Hydro sharing topology.
+
+These are V2 setup tasks to discover/configure.
+
+A sensible future Git structure might be a dedicated FOIL infra repository or an existing owning repository, but Claude should first inspect the real environment and ask DataPass to capture/represent it.
+
+The user explicitly wants DataPass to help because they are starting from near zero on Oracle configuration.
+
+### 36.8 FOIL 3D / frontend concrete repositories
+
+These are useful examples for the V2 Apps/reference-only/assisted model.
+
+Repository:
+
+- https://github.com/julian-passebecq/foil-3d-stream
+
+Verified purpose:
+
+- investor-facing 3D/science/finance application;
+- Wind + Hydro views;
+- native WebGL2;
+- optional Streamlit host;
+- currently local/private-review oriented;
+- explicitly not a live machine connection or certified digital twin.
+
+This is a good example of an app that DataPass should **understand and link** without necessarily owning its development workflow.
+
+Repository:
+
+- https://github.com/julian-passebecq/foil3dnextjs
+
+Verified purpose:
+
+- Next.js migration candidate for the Foil3D investor application;
+- Wind workspace, 3D, science, investor surfaces;
+- uses Mongo project authorities as source context.
+
+Repository:
+
+- https://github.com/julian-passebecq/foilnextjscloudflare
+
+Verified purpose:
+
+- closely related Next.js/Cloudflare deployment candidate.
+
+These repos demonstrate why the V2 project graph needs an Apps/Frontend module and why a component can be \`reference-only\` or \`assisted\`.
+
+### 36.9 Other FOIL repositories discovered
+
+The connected GitHub account also contains, among others:
+
+- https://github.com/julian-passebecq/foilv2
+- https://github.com/julian-passebecq/foilv3
+- https://github.com/julian-passebecq/foilstreamV1
+- https://github.com/julian-passebecq/foildbv
+- https://github.com/julian-passebecq/foilpilotage
+- https://github.com/julian-passebecq/foilsitev1
+- https://github.com/julian-passebecq/foilweb
+
+Do not automatically treat every historical FOIL repository as current authority.
+
+Before binding one into DataPass V2, classify it as:
+
+- current authority/implementation;
+- active candidate;
+- reference/donor;
+- historical/archive;
+- superseded.
+
+The DataPass project graph should store that classification so the user no longer has to remember it mentally.
+
+### 36.10 Example of how these repositories should appear in DataPass
+
+Conceptually:
+
+\`\`\`text
+FOIL
+│
+├── Wind / Databricks Lab
+│   ├── repo: foil_databrick_dab
+│   ├── status: live-test-ready shell
+│   ├── tool: official Databricks extension
+│   └── deployment: DAB
+│
+├── Wind / Fabric Real-time
+│   ├── repo: NOT YET VERIFIED/BOUND
+│   ├── status: ACTIVE_SETUP / target architecture
+│   ├── tool: official Fabric extension + Fabric CLI
+│   └── companions: FabricStudio / OneLake-VSCode / Fabric Toolbox
+│
+├── Wind / Oracle Edge
+│   ├── repo: NOT YET VERIFIED/BOUND
+│   ├── status: setup required
+│   ├── provider: OCI
+│   └── runtime target: VM / K3s / MQTT / Airflow
+│
+├── Wind / 3D App
+│   ├── repo: foil-3d-stream or current successor
+│   └── mode: assisted/reference-only
+│
+└── Wind / Next.js App
+    ├── repo: foil3dnextjs / deployment candidate
+    └── hosting candidate: Cloudflare-related repo exists
+\`\`\`
+
+This is exactly why V2 needs to distinguish **known repository**, **target architecture**, **prepared configuration**, and **live deployed resource**.
