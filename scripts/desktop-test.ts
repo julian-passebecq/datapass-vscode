@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as esbuild from "esbuild";
+import { execFileSync } from "node:child_process";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 
@@ -62,6 +63,13 @@ const FIXTURES: Record<string, Record<string, string>> = {
     "bundle/databricks.yml": "bundle:\n  name: retail\n",
     "bi/.gitkeep": "",
     "grafana/weekly.json": "{}\n",
+    // Static inventory samples (never executed): one of each asset kind.
+    "notebooks/eda.ipynb": JSON.stringify({ cells: [], metadata: {}, nbformat: 4, nbformat_minor: 5 }) + "\n",
+    "fabric/Sales.Notebook/.platform": JSON.stringify({ metadata: { type: "Notebook", displayName: "Sales notebook" }, config: { version: "2.0", logicalId: "00000000-0000-0000-0000-000000000000" } }, null, 2) + "\n",
+    "fabric/Sales.Notebook/notebook-content.py": "# Fabric notebook source\n",
+    "dags/weekly.py": "from airflow import DAG\nwith DAG(dag_id=\"weekly_refresh\", schedule=None) as dag:\n    pass\n",
+    "bundle/src/job.py": "# Databricks notebook source\nprint('synthetic')\n",
+    "adf/pipeline/CopySales.json": JSON.stringify({ name: "CopySales", properties: { activities: [{ name: "Copy", type: "Copy" }] } }, null, 2) + "\n",
     // DiagramCloud's own sidecar sample and its own serialization after a known plan (tests/fixtures/diagramcloud).
     ".datapass/diagramcloud.json": fixtureText("diagramcloud/total.sidecar.json"),
     "incoming/diagramcloud.after-plan.golden.json": fixtureText("diagramcloud/total.after-plan.sidecar.json"),
@@ -104,6 +112,13 @@ async function main(): Promise<void> {
     for (const [rel, content] of Object.entries(files)) {
       fs.mkdirSync(path.dirname(path.join(ws, rel)), { recursive: true });
       fs.writeFileSync(path.join(ws, rel), content);
+    }
+    // v2-retail is a real Git repository so the Repositories section shows branch and commit.
+    if (name === "v2-retail") {
+      const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=DataPass test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: ws, stdio: "ignore" });
+      git("init", "-q", "-b", "main");
+      git("add", "-A");
+      git("commit", "-q", "-m", "fixture");
     }
     const reportFile = path.join(out, `report-${name}.json`);
     const launchArgs = [

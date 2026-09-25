@@ -1,3 +1,42 @@
+# Implementation Status — Pass 11: static inventory and repository state
+
+Date: 2026-09-25
+Version: `0.11.0` — branch `claude/pass-11-inventory`, based on main `1645df0` (v0.10.1)
+
+### Implemented (v1 gates 5 and 7)
+
+- Work view **Assets** (collapsed): notebooks (`.ipynb`), Fabric items in Git format (`*.Notebook`,
+  `*.DataPipeline`, `*.Lakehouse`, `*.SemanticModel`, … read from `.platform`), Databricks bundles
+  (`databricks.yml`, bundle name) and notebooks (`# Databricks notebook source`), Airflow DAG files
+  (literal `dag_id` only; a computed id is shown as "DAG id not static"), Data Factory pipelines
+  (`pipeline/*.json` with activities) and Power BI projects (`.pbip`). Each row opens the file in its
+  native editor, or reveals a Fabric item folder.
+- Recognition is static: file names plus at most the first 64 KiB of text. Notebooks are not run,
+  DAG Python is never imported, JSON/YAML is not evaluated; symlinks and files over 4 MiB are not
+  read; `node_modules`, `.git`, virtualenvs, build output and `.datapass` are skipped; at most 3000
+  Python files are scanned (the count shows "+" when capped). Assets of a switched-off module are hidden.
+- Work view **Repositories** (collapsed): the workspace and each declared repository with branch,
+  commit, uncommitted changes and ahead/behind *as of the last fetch*
+  (`git status --porcelain=v2 --branch`, local only); "not found locally (never cloned
+  automatically)", "not a Git repository" and "remote-only" are stated as such.
+- The scan is cached for 60 s and redone by the Work view's refresh button.
+
+### Bug found by the desktop run and fixed
+
+| Bug | Effect | Fix |
+|---|---|---|
+| On Windows the workspace URI and search results can differ in drive-letter case (`/c:/` vs `/C:/`) | Every found file looked "outside the folder": the Assets section was empty in real VS Code although the unit tests passed | Relative paths are computed after normalising the drive letter |
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 163 / 163 (3 new inventory tests) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 89 / 89: the v2-retail fixture (now a real Git repository) lists one asset of each kind and "main · <commit> · N changes · no upstream"; the remote-only repository is not contacted; switching Airflow off hides its DAGs |
+
+---
+
 # Implementation Status — Pass 10b: shared resources and workload bindings
 
 Date: 2026-09-25
