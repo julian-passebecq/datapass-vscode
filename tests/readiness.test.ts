@@ -127,17 +127,21 @@ test("identifiers: secret-shaped values and secret names are refused, and a refu
   assert.deepEqual(check({ value: "4f1e2d3c-aaaa-bbbb-cccc-0123456789ab", envKey: "AZURE_SUBSCRIPTION_ID" }), []);
 });
 
-test("migration: v1, v2 and v3 upgrade to v4 without losing a field or mutating the input", () => {
-  for (const m of [genericProjectManifest("x"), foilProjectManifest(), inputA().manifest!]) {
+test("migration: v1, v2, v3 and v4 upgrade to the latest (v5) without losing a field or mutating the input", () => {
+  assert.equal(LATEST_MANIFEST_VERSION, 5);
+  for (const m of [genericProjectManifest("x"), foilProjectManifest(), inputA().manifest!, cloudflareManifest()]) {
     const before = structuredClone(m);
     const up = migrateManifestToLatest(m);
-    assert.equal(up.schemaVersion, 4);
+    assert.equal(up.schemaVersion, 5);
     assert.deepEqual(m, before, "input not mutated");
     assert.deepEqual(validateProjectManifest(up), []);
     for (const key of Object.keys(m)) if (key !== "schemaVersion") assert.ok(key in up, key);
   }
   const v3 = inputA().manifest!;
   assert.deepEqual({ ...migrateManifestToLatest(v3), schemaVersion: 3 }, v3);
+  // A v4 identifier's single value stays valid in v5: only the version moves.
+  const v4 = cloudflareManifest();
+  assert.deepEqual({ ...migrateManifestToLatest(v4), schemaVersion: 4 }, v4);
 });
 
 // ------------------------------------------------------------------ readiness and checks

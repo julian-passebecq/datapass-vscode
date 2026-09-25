@@ -35,18 +35,25 @@ export class PowerBiAdapter implements PlatformAdapter {
       id: plugin.id,
       name: plugin.label,
       category: "Agentic / Skills",
-      kind: "Copilot CLI plugin",
+      kind: "Claude Code / Copilot CLI plugin",
       source: "data-goblin/power-bi-agentic-development",
       description: plugin.description,
       actions: [
         {
           id: `powerbi.installPlugin::${plugin.id}`,
-          label: "Copy install",
+          label: "Copy install (Copilot CLI)",
           enabled: copilot.available,
           kind: "copy",
           detail: copilot.available
             ? "Copy the Copilot CLI plugin install command. DataPass will not install it automatically."
             : "Install GitHub Copilot CLI first."
+        },
+        {
+          id: `powerbi.installPluginClaude::${plugin.id}`,
+          label: "Copy install (Claude Code)",
+          enabled: true,
+          kind: "copy",
+          detail: "Copy the Claude Code plugin install command (claude plugin install …). DataPass will not install it automatically."
         },
         {
           id: "powerbi.openAgentic",
@@ -76,6 +83,13 @@ export class PowerBiAdapter implements PlatformAdapter {
           detail: copilot.available
             ? "Copy the Data Goblin marketplace registration command for Copilot CLI."
             : "Install GitHub Copilot CLI first."
+        },
+        {
+          id: "powerbi.addMarketplaceClaude",
+          label: "Copy marketplace add (Claude Code)",
+          enabled: true,
+          kind: "copy",
+          detail: "Copy the Data Goblin marketplace registration command for Claude Code."
         },
         { id: "powerbi.openAgentic", label: "Agentic development", enabled: true, kind: "link" },
         { id: "powerbi.openMacguyver", label: "MacGyver toolbox", enabled: true, kind: "link" }

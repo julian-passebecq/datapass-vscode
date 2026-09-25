@@ -5,13 +5,15 @@ writes the files in Git; DataPass reads them, checks them against the disk and r
 official tools. DataPass never generates your code, never deploys and never trusts a declaration it
 cannot observe.
 
-- Contract: **manifest `schemaVersion: 4`** (`.datapass/project.json`) and **graph `version: "0.2"`**
+- Contract: **manifest `schemaVersion: 5`** (`.datapass/project.json`, DataPass ≥ 0.18.0; section 12
+  adds the toolchain, the ID map and connections) and **graph `version: "0.2"`**
   (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/). Three optional files:
   **architecture options** (`.datapass/options.json`, section 7, DataPass ≥ 0.15.0), the
   **project sheet** (`.datapass/sheet.json`, section 8, DataPass ≥ 0.15.0) and the **board**
   (`.datapass/board.json`, section 10, DataPass ≥ 0.16.0).
-- Older manifests (v1, v2, v3) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project
-  Manifest* moves a manifest forward with a backup copy and a journal.
+- Older manifests (v1 to v4) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project
+  Manifest* moves a manifest forward with a backup copy and a journal. Write `schemaVersion: 4` only
+  for a person still on DataPass 0.14–0.17 (they refuse a v5 file).
 
 ## 1. What goes where
 
@@ -42,7 +44,7 @@ native repositories                the real code, in native formats: databricks.
   window per company) is created by DataPass on each computer, not in a repository — never add one
   to a pull request.
 
-## 2. `.datapass/project.json` (manifest v4)
+## 2. `.datapass/project.json` (manifest v5)
 
 ```json
 {
@@ -115,6 +117,8 @@ variable **names** a project needs, without ever touching a value.
   identifier is treated as a secret: DataPass tells the person to fetch it from their local vault (Power
   Ops) and never asks you, the AI, for it.
 - `localEnv` and `identifiers` require `schemaVersion: 4`; a v3 manifest (still accepted) cannot use them.
+- v5 adds `toolchain`, `connections`, and per-environment `values` and a `kind` for identifiers:
+  section 12.
 
 ## 3. `.datapass/graph.json` (graph 0.2)
 
@@ -242,6 +246,14 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
     request**: move the card you worked on to the review column (or the last open column if there is
     none), add its pull request link, and add a card for every new bug you find. Never delete a
     card and never change an existing card's `id`.
+13. Keep the **toolchain** (section 12) in line with what the project really uses, and
+    `.vscode/extensions.json` in line with the toolchain's VS Code extensions. Name tools only by the
+    ids listed in section 12; never put an install command, a script or a path in the manifest.
+14. Refer to workspaces, subscriptions, lakehouses… by their **ID map** id (`ws-sales`), and give
+    each environment its own value in `identifiers[].values`. Ids only: a token, a key, a URL or a
+    connection string is refused in every environment. Declare **connections** by name (a CLI
+    sign-in, a Git binding, a data connection's display name); the person signs in with the
+    official CLIs, DataPass never does.
 
 ## 5. The loop with the AI
 
@@ -520,3 +532,119 @@ settings — DataPass never reads them).
 **Azure Boards.** Microsoft's Azure Boards VS Code extension was archived in 2023: boards open on the
 web (`…/_workitems`) — or use the DataPass board (section 10) instead for what the project itself
 tracks.
+
+## 12. Tools, versions, the ID map and connections (manifest v5, DataPass ≥ 0.18.0)
+
+`schemaVersion: 5` lets a project say which tools and versions it needs, which ids it uses in each
+environment, and what must be signed in or bound. DataPass compares that with the computer and
+shows it in the Project view (**Tools & versions**, **Connections**, and the ids under **Local
+environment**), in the Workbench and in AI packs. It never installs, signs in, binds or deploys
+anything. Example: [`examples/v3/sales-bi`](../examples/v3/sales-bi/).
+
+```json
+{
+  "schemaVersion": 5,
+  "environments": [ { "id": "dev" }, { "id": "prod", "production": true } ],
+  "toolchain": {
+    "tools": [
+      { "tool": "cli.fab", "version": ">=1.0" },
+      { "tool": "cli.az", "version": "^2.60" },
+      { "tool": "ext.fabric" },
+      { "tool": "pack.powerbi-gbrueckl", "optional": true },
+      { "tool": "py.fabric-cicd", "version": ">=0.1.20,<1", "where": "ci" },
+      { "tool": "py.semantic-link-labs", "where": "fabric" }
+    ]
+  },
+  "identifiers": [
+    { "id": "tenant", "label": "Entra tenant", "provider": "azure", "kind": "tenant", "value": "33333333-3333-3333-3333-333333333333" },
+    { "id": "sub-data", "label": "Data subscription", "provider": "azure", "kind": "subscription",
+      "values": { "dev": "44444444-4444-4444-4444-444444444444", "prod": "55555555-5555-5555-5555-555555555555" } },
+    { "id": "ws-sales", "label": "Sales workspace", "provider": "fabric", "kind": "workspace",
+      "values": { "dev": "11111111-1111-1111-1111-111111111111", "prod": "22222222-2222-2222-2222-222222222222" } }
+  ],
+  "connections": [
+    { "id": "azure-dev", "kind": "sign-in", "tool": "cli.az", "identifier": "tenant", "subscription": "sub-data", "environment": "dev" },
+    { "id": "fabric", "kind": "sign-in", "tool": "cli.fab", "identifier": "tenant" },
+    { "id": "dbx-dev", "kind": "sign-in", "tool": "cli.databricks", "profile": "sales-dev", "environment": "dev" },
+    { "id": "sales-git", "kind": "git-binding", "provider": "fabric", "identifier": "ws-sales", "environment": "dev",
+      "folder": "fabric", "branch": "dev" },
+    { "id": "sales-sql", "kind": "cloud-connection", "provider": "fabric", "name": "conn-sales-sql", "environment": "dev" }
+  ]
+}
+```
+
+### `toolchain.tools[]`
+
+| Field | Meaning |
+|---|---|
+| `tool` | A tool id DataPass knows (list below). Unknown but well-formed ids are shown as "unknown to DataPass" with a suggestion, and nothing is run for them. |
+| `version` | Accepted versions (optional): `>=1.0`, `>1.2.3`, `<2`, `<=2.1`, `1.4` (the 1.4 line), `==1.4.2`, `!=1.5.0`, `1.x`, `1.2.*`, `^1.2` (same major; `^0.3` stays below 0.4), `~1.2` (same minor), `~=1.4.2` (pip), comparators joined by spaces or commas (`>=1.0 <2.0`, `>=0.1.20,<1`), alternatives with `\|\|` (`^1.4 \|\| ^2.0`). No pre-release tags, no `latest`. |
+| `optional` | `true`: missing is a note, never a warning. |
+| `where` | `local` (default, this computer: checked), `ci` (the CI pipeline) or `fabric` (Fabric notebooks): shown, not checked here. |
+
+Known ids (DataPass ≥ 0.18.0):
+
+- VS Code extensions: `ext.fabric`, `ext.fabric-data-engineering`, `ext.fabric-studio`, `ext.onelake`,
+  `ext.powerbi-studio`, `ext.powerbi-modeling-mcp`, `ext.tmdl`, `ext.databricks`, `ext.jupyter`,
+  `ext.python`, `ext.azure-functions`, `ext.azure-storage`, `ext.cosmosdb`, `ext.azure-resources`,
+  `ext.pgsql`, `ext.neon`, `ext.mongodb`, `ext.containers`, `ext.remote-ssh`, `ext.drawio`,
+  `ext.gcloud-data`, `ext.github-actions`, `ext.github-prs`, `ext.azure-pipelines`, `ext.gitlab`,
+  `ext.grafana`; extension pack `pack.powerbi-gbrueckl` (Power BI Studio, Fabric Studio, OneLake,
+  TMDL, DAX, Power BI Modeling MCP in one install).
+- Command-line tools: `cli.az`, `cli.databricks`, `cli.fab`, `cli.git`, `cli.python`, `cli.java`,
+  `cli.func`, `cli.tofu`, `cli.terraform`, `cli.docker`, `cli.ssh`, `cli.psql`, `cli.mongosh`,
+  `cli.gcloud`, `cli.gcx`, `cli.copilot`.
+- Applications (never probed): `app.pbi-desktop`, `app.tabular-editor`. Workspace file: `ws.mcp`.
+- Python libraries (never probed: DataPass does not look inside Python environments):
+  `py.fabric-cicd`, `py.semantic-link-labs`. Agent plugins: `plugin.power-bi-agentic-development`.
+
+What DataPass does: for each `local` tool it compares the version its probe read (`fab --version`,
+`az version`, an extension's own version…) with the range — *ok*, *outside the range*, *missing* or
+*version not read* — and shows the install command for this platform to **copy** (winget on
+Windows, Homebrew on macOS, `pip`, `code --install-extension <id>`, or the vendor's page). A version
+outside the range is a warning on the operations that use the tool (deploy, run…), never a blocker
+and never on reading.
+
+### `.vscode/extensions.json`
+
+Keep the toolchain's VS Code extensions in the coordination repository's
+`.vscode/extensions.json` (`recommendations`). DataPass compares the two ("2/3 toolchain
+extensions recommended", an extension listed in `unwantedRecommendations` that the toolchain needs)
+and offers VS Code's own **Show Recommended Extensions**. It never writes this file and never
+installs an extension.
+
+### The ID map: `identifiers[]` in v5
+
+- `values` gives one id per declared environment (`{ "dev": "…", "prod": "…" }`); use `value` for an
+  id that is the same everywhere. Exactly one of the two.
+- `kind` says what the id is: `tenant`, `subscription`, `resource-group`, `workspace`, `capacity`,
+  `lakehouse`, `warehouse`, `item`, `account`, `project`…
+- Every value follows the v4 rules: a plain id, never a token, a key, a URL or a connection string —
+  in **any** environment. The error names the identifier and the environment, never the value.
+- Copying an id with several values asks which environment. Hovering an id in any file (a
+  `parameter.yml`, a notebook's metadata) shows which identifier and environment it is; *DataPass:
+  Look Up an Id…* does the same for a GUID pasted from a portal address.
+- AI packs carry the ID map as logical ids, labels, kinds and the environments that have a value —
+  never the values themselves.
+
+### `connections[]`
+
+| `kind` | Fields | What DataPass does |
+|---|---|---|
+| `sign-in` | `tool` (required), `identifier` (the tenant, for `cli.az` / `cli.fab`), `subscription` (`cli.az`), `profile` (`cli.databricks`, a profile **name**), `environment` | On **Check connections** only, runs the CLI's own read-only status command: `az account show` (tenant and subscription compared with the ID map), `databricks auth profiles` (the profile exists and is valid) and `fab auth status` (signed in, tenant). States: ok, signed in elsewhere, signed out, profile missing or invalid, tool missing, check failed. It offers the sign-in command to copy (`az login --tenant …`, `databricks auth login --profile …`, `fab auth login`); the person runs it. Another tool is "declared, not checked". |
+| `git-binding` | `provider` (required: `fabric`, `databricks`…), `identifier` (the workspace), `repoRef`, `folder`, `branch`, `environment`, `portal` | Declared, not checked: DataPass cannot observe it. It says whether the folder exists in the local clone and opens the page where the binding is verified (a Fabric workspace from its id in the ID map: Workspace settings → Git integration). |
+| `cloud-connection` | `provider` (required), `name` (required: the display name in the service, never a connection string), `environment`, `portal` | Declared, not checked, with its page (Fabric: Manage connections and gateways). |
+
+Every connection has an `id` and an optional `label`. Rules DataPass enforces: `identifier` and
+`subscription` name declared identifiers (of kind `tenant` / `subscription` when the kind is given),
+`environment` a declared environment — required when the named identifier has one value per
+environment, and that identifier must have a value for it — `repoRef` a declared repository, `folder` a relative folder
+(omit it for the repository root); `portal` is an https page without credentials.
+
+The checks run from your home folder, never the workspace, with no prompt (a CLI that would ask
+something stops at once) and a timeout. **No manifest value is ever passed to a CLI.** DataPass
+never opens credential files (`.databrickscfg`, the Azure CLI's token cache and profile, the Fabric
+CLI's): each official CLI reads its own. From their output DataPass keeps only whether you are signed
+in, the tenant and subscription ids to compare, and profile names with their validity; the account
+name and the masked token prefixes `fab auth status` prints are dropped. The results stay in memory
+(a new window checks again) and AI packs carry connection names and states only.

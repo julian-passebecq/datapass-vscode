@@ -31,6 +31,20 @@
         "python",
         "postgres"
       ]
+    },
+    {
+      "id": "sales-bi",
+      "title": "Sales BI",
+      "organization": "Example Org",
+      "description": "Fabric lakehouse and Power BI model, deployed with fabric-cicd (manifest v5).",
+      "repository": {
+        "url": "https://github.com/example-org/sales-bi",
+        "branch": "main"
+      },
+      "tags": [
+        "fabric",
+        "powerbi"
+      ]
     }
   ]
 }

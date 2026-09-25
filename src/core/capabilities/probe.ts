@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { defaultProbeRunner, type ProbeRunner } from "../detection";
 import { TOOLS, type ToolObservation } from "./tools";
+import { cliVersion } from "../toolchain/versions";
 
 const TTL_MS = 5 * 60_000;
 let cache: { at: number; map: Map<string, ToolObservation> } | undefined;
@@ -22,7 +23,7 @@ export async function probeTools(force = false, runner: ProbeRunner = defaultPro
         const cli = tool.cli!;
         const command = process.platform === "win32" && cli.windowsCommand ? cli.windowsCommand : cli.command;
         const r = await runner(command, cli.args, 2000);
-        return { toolId: tool.id, state: r.ok ? "present" : "absent", via: command, version: r.ok ? r.output?.split(/\r?\n/, 1)[0] : undefined, observedAt: now };
+        return { toolId: tool.id, state: r.ok ? "present" : "absent", via: command, version: r.ok ? cliVersion(r.output) : undefined, observedAt: now };
       }
       case "workspace-file": {
         const found = await vscode.workspace.findFiles(".vscode/mcp.json", undefined, 1);

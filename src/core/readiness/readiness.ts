@@ -12,6 +12,11 @@
  * Secrets, tokens and passwords are never declared here: a variable without a declared
  * identifier is treated as a secret the person fetches from their local vault (Power Ops).
  * DataPass never guesses that a value is safe to show.
+ *
+ * 0.18 (manifest v5) adds the project's toolchain (tools and version ranges compared with the
+ * probes), identifiers with a value per environment (the ID map) and connections (sign-ins checked
+ * read-only on request; bindings DataPass cannot observe are "declared, not checked"). The same
+ * rule holds: tool versions, identifier labels, environment names and connection states only.
  */
 import { scrub } from "../exchange/aiContext";
 import { vetRelativePath } from "../exchange/pathSafety";
@@ -21,10 +26,15 @@ import type { MapProblem } from "../project/projectMap";
 import type { RepoView } from "../project/resolve";
 import { safeAppUrl } from "../model/safeUrl";
 import { ENV_KEY_NAME, isEnvFileName, type KeyPresence } from "./envFile";
+import type { ToolObservation } from "../capabilities/tools";
+import { buildToolchain, toolStateText, validateToolchain, type ToolchainView } from "../toolchain/toolchain";
+import { compareExtensionsJson, extensionsJsonText, EXTENSIONS_JSON, type ExtensionsJsonObservation, type ExtensionsJsonView } from "../toolchain/extensionsJson";
+import { buildConnections, CONNECTION_STATE_TEXT, validateConnections, type ConnectionProbe, type ConnectionView } from "../toolchain/connections";
 
 export const MAX_ENV_FILES = 10;
 export const MAX_REQUIRED_KEYS = 100;
 export const MAX_IDENTIFIERS = 50;
+export const MAX_IDENTIFIER_ENVIRONMENTS = 20;
 const ID_RE = /^[a-z][a-z0-9_.-]{0,79}$/;
 /** Identifier values: plain ids (hex, GUIDs, slugs, numeric ids). No URL, no `=`, no whitespace. */
 const IDENTIFIER_VALUE = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -55,9 +65,13 @@ export interface LocalEnvDecl {
 export interface IdentifierDecl {
   id: string;
   label: string;
-  /** Explicitly non-secret value (account, subscription, workspace or project id). */
-  value: string;
+  /** Explicitly non-secret value (account, subscription, workspace or project id). Exactly one of value / values. */
+  value?: string;
+  /** v5: one non-secret value per declared environment (the ID map): { "dev": "…", "prod": "…" }. */
+  values?: Record<string, string>;
   provider?: string;
+  /** v5: what the id is (tenant, subscription, workspace, capacity, lakehouse…). */
+  kind?: string;
   /** The env variable this identifier fills, when there is one. */
   envKey?: string;
 }
@@ -66,11 +80,18 @@ export const normalizeEnvFile = (f: string | EnvFileDecl): EnvFileDecl => typeof
 export const envFileId = (f: EnvFileDecl) => `${f.repoRef ?? ""}:${f.path}`;
 export const looksSecretName = (name: string) => SECRET_NAME.test(name);
 
-/** Validate `localEnv` and `identifiers` (v4). Values are checked for shape only, never echoed. */
+/**
+ * Validate `localEnv` and `identifiers` (v4), and `toolchain`, `connections` and per-environment
+ * identifier `values` (v5). Values are checked for shape only, never echoed.
+ */
 export function validateReadinessSections(doc: Record<string, unknown>, repoKeys: ReadonlySet<string>): string[] {
   const issues: string[] = [];
   const v4 = typeof doc.schemaVersion === "number" && doc.schemaVersion >= 4;
+  const v5 = typeof doc.schemaVersion === "number" && doc.schemaVersion >= 5;
   for (const key of ["localEnv", "identifiers"]) if (doc[key] !== undefined && !v4) issues.push(`${key} requires schemaVersion 4.`);
+  for (const key of ["toolchain", "connections"]) if (doc[key] !== undefined && !v5) issues.push(`${key} requires schemaVersion 5.`);
+  if (v5) issues.push(...validateToolchain(doc), ...validateConnections(doc, repoKeys));
+  const envIds = new Set(Array.isArray(doc.environments) ? (doc.environments as Array<Record<string, unknown> | null>).map(e => e?.id).filter((x): x is string => typeof x === "string") : []);
   if (doc.localEnv !== undefined) {
     const e = doc.localEnv as Record<string, unknown> | null;
     if (!e || typeof e !== "object" || Array.isArray(e)) issues.push("localEnv must be an object with files and requiredKeys.");
@@ -117,9 +138,24 @@ export function validateReadinessSections(doc: Record<string, unknown>, repoKeys
         else ids.add(d.id);
         if (typeof d.label !== "string" || !d.label.trim() || d.label.length > 120) issues.push(`${at}.label is required (at most 120 characters).`);
         if (d.provider !== undefined && (typeof d.provider !== "string" || !ID_RE.test(d.provider))) issues.push(`${at}.provider must be a lowercase id (e.g. cloudflare).`);
-        // The value is never echoed in a message: it may be a secret pasted by mistake.
-        if (typeof d.value !== "string" || !IDENTIFIER_VALUE.test(d.value)) issues.push(`${at}.value must be a plain identifier (letters, digits, . _ : -, at most 128 characters).`);
-        else if (scrub(d.value) !== d.value) issues.push(`${at}.value looks like a credential. Keep secrets in your local vault (Power Ops), never in the manifest.`);
+        if (d.kind !== undefined && (!v5 || typeof d.kind !== "string" || !ID_RE.test(d.kind))) issues.push(v5 ? `${at}.kind must be a lowercase id (e.g. tenant, subscription, workspace).` : `${at}.kind requires schemaVersion 5.`);
+        // A value is never echoed in a message: it may be a secret pasted by mistake.
+        const checkValue = (v: unknown, where: string) => {
+          if (typeof v !== "string" || !IDENTIFIER_VALUE.test(v)) issues.push(`${where} must be a plain identifier (letters, digits, . _ : -, at most 128 characters).`);
+          else if (scrub(v) !== v) issues.push(`${where} looks like a credential. Keep secrets in your local vault (Power Ops), never in the manifest.`);
+        };
+        if (d.values !== undefined && !v5) issues.push(`${at}.values requires schemaVersion 5.`);
+        else if (d.values !== undefined) {
+          if (d.value !== undefined) issues.push(`${at} has both value and values; use value for one id, values for one id per environment.`);
+          const vals = d.values as Record<string, unknown> | null;
+          if (!vals || typeof vals !== "object" || Array.isArray(vals) || !Object.keys(vals).length || Object.keys(vals).length > MAX_IDENTIFIER_ENVIRONMENTS) issues.push(`${at}.values must map 1 to ${MAX_IDENTIFIER_ENVIRONMENTS} declared environments to their id.`);
+          else for (const [env, v] of Object.entries(vals)) {
+            // Environment names are declared ids, so they are safe to name; the value is not.
+            const envName = ID_RE.test(env) ? env : "?";
+            if (!envIds.has(env)) issues.push(`${at}.values names environment "${envName}", which environments does not declare.`);
+            checkValue(v, `${at}.values.${envName}`);
+          }
+        } else checkValue(d.value, `${at}.value`);
         const secretLabel = [d.id, d.label].some(v => typeof v === "string" && looksSecretName(v.replace(/[\s.:-]+/g, "_")));
         if (secretLabel) issues.push(`${at} is named like a secret (key, token, password, URL…). identifiers holds non-secret ids only; keep secrets in your local vault (Power Ops).`);
         if (d.envKey !== undefined) {
@@ -167,7 +203,11 @@ export interface EnvKeyView {
   identifierId?: string;
   identifierLabel?: string;
 }
-export interface IdentifierView { id: string; label: string; provider?: string; envKey?: string }
+export interface IdentifierView {
+  id: string; label: string; provider?: string; kind?: string; envKey?: string;
+  /** Environments with their own value (v5 `values`); empty for a single `value`. Names only. */
+  environments: string[];
+}
 export type CompanionState = "disabled" | "not-configured" | "needs-url" | "configured";
 export interface CompanionView { module: "mongoku" | "diagramcloud"; label: string; state: CompanionState; detail: string }
 export interface RepoReadiness {
@@ -175,7 +215,7 @@ export interface RepoReadiness {
   changes?: number; ahead?: number; behind?: number; upstream: boolean;
 }
 export type CheckSeverity = "error" | "warning" | "info";
-export type CheckArea = "environment" | "companion" | "manifest" | "repository";
+export type CheckArea = "environment" | "companion" | "manifest" | "repository" | "tools" | "connection";
 export interface ReadinessCheck { id: string; severity: CheckSeverity; area: CheckArea; message: string; nextStep?: string }
 
 export interface Readiness {
@@ -187,6 +227,12 @@ export interface Readiness {
   identifiers: IdentifierView[];
   companions: CompanionView[];
   repositories: RepoReadiness[];
+  /** v5: declared tools compared with this computer's probes. */
+  toolchain: ToolchainView;
+  /** v5: .vscode/extensions.json compared with the toolchain's extensions. */
+  extensions: ExtensionsJsonView;
+  /** v5: declared sign-ins and bindings with their state (names and states only). */
+  connections: ConnectionView[];
   checks: ReadinessCheck[];
   summary: { keysSet: number; keysTotal: number; filesFound: number; filesRequired: number; errors: number; warnings: number; infos: number };
 }
@@ -202,6 +248,15 @@ export interface ReadinessInput {
   /** .datapass/diagramcloud.json exists in the project. */
   diagramCloudSidecar: boolean;
   latestSchemaVersion: number;
+  /** v5: this computer's tool probes, and the platform (for install commands). */
+  tools?: ReadonlyMap<string, ToolObservation>;
+  platform?: NodeJS.Platform | string;
+  /** v5: the last read-only sign-in checks (only run when the person asks), by tool id. */
+  connectionProbes?: ReadonlyMap<string, ConnectionProbe>;
+  /** v5: the coordination repository's .vscode/extensions.json. */
+  extensionsJson?: ExtensionsJsonObservation;
+  /** v5: git-binding folders seen in local clones, by connection id. */
+  bindingFolders?: ReadonlyMap<string, "found" | "missing" | "not-cloned">;
 }
 
 const VAULT_STEP = "Fetch the value from your local vault (Power Ops) and put it in the env file. DataPass never reads, stores or shows values.";
@@ -221,7 +276,7 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     const keysDefined = obs?.presence ? obs.presence.size : 0;
     return { id, path: f.path, repoKey: f.repoRef, repoLabel: repoLabel(f.repoRef), optional: f.optional === true, state, git: obs?.git ?? "unknown", reason: obs?.reason, keysDefined };
   });
-  const identifiers: IdentifierView[] = (m?.identifiers ?? []).map(d => ({ id: d.id, label: d.label, provider: d.provider, envKey: d.envKey }));
+  const identifiers: IdentifierView[] = (m?.identifiers ?? []).map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: d.values ? Object.keys(d.values) : [] }));
   const byEnvKey = new Map(identifiers.filter(d => d.envKey).map(d => [d.envKey!, d]));
   const anyChecked = files.some(f => f.state === "found" || f.state === "missing");
   const keys: EnvKeyView[] = (decl?.requiredKeys ?? []).map(name => {
@@ -274,9 +329,38 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     } else companions.push({ module: "diagramcloud", label: "DiagramCloud", state: "configured", detail: "architecture file present · address set" });
   }
 
+  // v5: tools & versions, extensions.json, connections.
+  const tools = input.tools ?? new Map<string, ToolObservation>();
+  const toolchain = buildToolchain({ toolchain: m?.toolchain, tools, platform: input.platform ?? "linux" });
+  for (const e of toolchain.entries) {
+    const at = `${e.label}${e.where !== "local" ? ` (${e.where})` : ""}`;
+    const install = e.install?.command ? `Install it: ${e.install.command}${e.install.where ? ` in ${e.install.where}` : ""} (copy it from DataPass; DataPass installs nothing).` : e.install?.docs ? `Install it from ${e.install.docs}.` : undefined;
+    if (e.state === "unknown-tool") add({ id: `tools.unknown:${e.tool}`, severity: "warning", area: "tools", message: `toolchain names "${e.tool}", a tool DataPass does not know: nothing is checked for it.`, nextStep: e.suggestions?.length ? `Check the id in .datapass/project.json (did you mean ${e.suggestions.join(", ")}?).` : "Check the id in .datapass/project.json (docs/PREPARING_A_PROJECT.md lists the known ids)." });
+    else if (e.state === "missing") add({ id: `tools.missing:${e.tool}`, severity: e.optional ? "info" : "warning", area: "tools", message: `${at} is ${e.optional ? "optional and " : ""}not installed here${e.range ? ` (the project needs ${e.range})` : ""}.`, nextStep: install });
+    else if (e.state === "outside-range") add({ id: `tools.range:${e.tool}`, severity: e.optional ? "info" : "warning", area: "tools", message: `${at} ${e.version} is outside the project's range ${e.range}.`, nextStep: `Update it${e.install?.command ? ` (${e.install.command} installs the current version)` : ""}, or ask for the range to change in .datapass/project.json.` });
+    else if (e.state === "version-unknown") add({ id: `tools.version:${e.tool}`, severity: "info", area: "tools", message: `${at} is installed, but DataPass could not read its version to compare with ${e.range}.` });
+  }
+  const extensions = compareExtensionsJson(m?.toolchain, input.extensionsJson);
+  if (extensions.state === "invalid") add({ id: "tools.extensionsJson.invalid", severity: "warning", area: "tools", message: `${EXTENSIONS_JSON} could not be read: ${extensions.reason}.` });
+  else if (extensions.state !== "no-toolchain") {
+    const notRecommended = extensions.expected.filter(x => !x.recommended && !x.optional);
+    if (notRecommended.length) add({ id: "tools.extensionsJson.missing", severity: "info", area: "tools", message: `${EXTENSIONS_JSON} ${extensions.state === "absent" ? "does not exist, so VS Code recommends none of" : "does not recommend"} ${notRecommended.map(x => x.extensionId).join(", ")} from the toolchain.`, nextStep: "Ask the AI to keep .vscode/extensions.json in line with the toolchain (DataPass never writes it)." });
+    for (const x of extensions.expected.filter(y => y.unwanted)) add({ id: `tools.extensionsJson.unwanted:${x.tool}`, severity: "warning", area: "tools", message: `${EXTENSIONS_JSON} lists ${x.extensionId} as unwanted, but the toolchain needs ${x.label}.` });
+  }
+  const connections = buildConnections({
+    connections: m?.connections, identifiers: m?.identifiers, probes: input.connectionProbes ?? new Map(),
+    present: tool => { const o = tools.get(tool); return o ? o.state === "present" : undefined; }, bindingFolders: input.bindingFolders
+  });
+  for (const c of connections) {
+    const attention = c.state === "mismatch" || c.state === "signed-out" || c.state === "profile-missing" || c.state === "profile-invalid" || c.state === "tool-missing" || c.state === "check-failed";
+    if (attention) add({ id: `connection.${c.state}:${c.id}`, severity: "warning", area: "connection", message: `${c.label}: ${c.detail}.`, nextStep: c.nextStep });
+    if (c.folderState === "missing") add({ id: `connection.folder:${c.id}`, severity: "info", area: "connection", message: `${c.label}: the bound folder is not in the local clone.` });
+  }
+
   // Manifest consistency.
-  if (m && m.schemaVersion < input.latestSchemaVersion) add({ id: "manifest.version", severity: "info", area: "manifest", message: `The manifest is schemaVersion ${m.schemaVersion}; v${input.latestSchemaVersion} can declare env files, variable names and non-secret ids.`, nextStep: "Run \"DataPass: Upgrade Project Manifest\" (a backup copy is kept)." });
+  if (m && m.schemaVersion < input.latestSchemaVersion) add({ id: "manifest.version", severity: "info", area: "manifest", message: `The manifest is schemaVersion ${m.schemaVersion}; v${input.latestSchemaVersion} can declare ${m.schemaVersion < 4 ? "env files, variable names, non-secret ids, " : ""}the tools and versions the project needs, ids per environment and connections.`, nextStep: "Run \"DataPass: Upgrade Project Manifest\" (a backup copy is kept)." });
   if (m && m.schemaVersion >= 4 && !decl) add({ id: "manifest.localEnv", severity: "info", area: "manifest", message: "No localEnv declared: DataPass cannot tell which env files and variables this project needs." });
+  if (m && m.schemaVersion >= 5 && !m.toolchain) add({ id: "manifest.toolchain", severity: "info", area: "manifest", message: "No toolchain declared: DataPass cannot tell which tools and versions this project needs." });
   for (const d of identifiers) {
     if (d.envKey && !(decl?.requiredKeys ?? []).includes(d.envKey)) add({ id: `manifest.identifier.unused:${d.id}`, severity: "info", area: "manifest", message: `Identifier "${d.label}" fills ${d.envKey}, which localEnv.requiredKeys does not list.` });
   }
@@ -310,7 +394,7 @@ export function buildReadiness(input: ReadinessInput): Readiness {
   const rank: Record<CheckSeverity, number> = { error: 0, warning: 1, info: 2 };
   checks.sort((a, b) => rank[a.severity] - rank[b.severity]);
   return {
-    declared: Boolean(decl), schemaVersion: m?.schemaVersion, files, keys, identifiers, companions, repositories, checks,
+    declared: Boolean(decl), schemaVersion: m?.schemaVersion, files, keys, identifiers, companions, repositories, toolchain, extensions, connections, checks,
     summary: {
       keysSet: keys.filter(k => k.state === "set").length, keysTotal: keys.length,
       filesFound: files.filter(f => f.state === "found").length, filesRequired: files.filter(f => !f.optional).length,
@@ -351,7 +435,9 @@ export interface ReadinessSnapshot {
   declared: boolean;
   files: Array<{ path: string; repository?: string; optional: boolean; state: EnvFileState; git: EnvFileGit }>;
   keys: Array<{ name: string; state: EnvKeyState; source: "identifier" | "vault" }>;
-  identifiers: Array<{ id: string; label: string; provider?: string; envKey?: string }>;
+  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments?: string[] }>;
+  tools?: Array<{ tool: string; where: string; optional: boolean; range?: string; version?: string; state: string }>;
+  connections?: Array<{ id: string; kind: string; tool?: string; provider?: string; environment?: string; state: string }>;
   companions: Array<{ module: string; state: CompanionState }>;
   repositories: Array<{ key: string; state: string; branch?: string; head?: string; changes?: number; ahead?: number; behind?: number }>;
   checks: { errors: number; warnings: number; infos: number; items: Array<{ severity: CheckSeverity; area: CheckArea; message: string }> };
@@ -362,11 +448,36 @@ export function readinessSnapshot(r: Readiness): ReadinessSnapshot {
     declared: r.declared,
     files: r.files.map(f => ({ path: f.path, repository: f.repoKey, optional: f.optional, state: f.state, git: f.git })),
     keys: r.keys.map(k => ({ name: k.name, state: k.state, source: k.source })),
-    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, envKey: d.envKey })),
+    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, ...(d.environments.length ? { environments: d.environments } : {}) })),
+    ...(r.toolchain.declared ? { tools: r.toolchain.entries.map(e => ({ tool: e.tool, where: e.where, optional: e.optional, range: e.range, version: e.version, state: e.state })) } : {}),
+    ...(r.connections.length ? { connections: r.connections.map(c => ({ id: c.id, kind: c.kind, tool: c.tool, provider: c.provider, environment: c.environment, state: c.state })) } : {}),
     companions: r.companions.map(c => ({ module: c.module, state: c.state })),
     repositories: r.repositories.map(x => ({ key: x.key, state: x.state, branch: x.branch, head: x.head, changes: x.changes, ahead: x.ahead, behind: x.behind })),
     checks: { errors: r.summary.errors, warnings: r.summary.warnings, infos: r.summary.infos, items: r.checks.slice(0, 50).map(c => ({ severity: c.severity, area: c.area, message: c.message })) }
   };
+}
+
+/**
+ * v5 lines for AI contexts: the toolchain state, the ID map (logical ids, labels, kinds and which
+ * environments have a value, never the values) and the connection states. Empty without v5 data.
+ */
+export function toolchainContextLines(r: Readiness): string[] {
+  const lines: string[] = [];
+  if (r.toolchain.declared) {
+    lines.push("- Tools & versions (toolchain in .datapass/project.json, compared with my computer):");
+    for (const e of r.toolchain.entries) lines.push(`  - \`${e.tool}\`${e.label !== e.tool ? ` (${e.label})` : ""}: ${toolStateText(e)}`);
+    if (r.extensions.state !== "no-toolchain") lines.push(`- ${EXTENSIONS_JSON}: ${extensionsJsonText(r.extensions)}`);
+  }
+  const mapped = r.identifiers.filter(d => d.kind || d.environments.length);
+  if (mapped.length) {
+    lines.push("- ID map (logical ids; the values are in .datapass/project.json, refer to them by id):");
+    for (const d of mapped) lines.push(`  - \`${d.id}\` ${d.label}${d.provider ? ` · ${d.provider}` : ""}${d.kind ? ` ${d.kind}` : ""}${d.environments.length ? ` · per environment: ${d.environments.join(", ")}` : ""}`);
+  }
+  if (r.connections.length) {
+    lines.push("- Connections (names and states only):");
+    for (const c of r.connections) lines.push(`  - \`${c.id}\` ${c.kind}${c.tool ? ` ${c.tool}` : c.provider ? ` ${c.provider}` : ""}${c.environment ? ` (${c.environment})` : ""}: ${CONNECTION_STATE_TEXT[c.state]}`);
+  }
+  return lines;
 }
 
 /** Lines for AI contexts (preparation pack, Copy AI context): names and states only. */
@@ -393,7 +504,16 @@ export function readinessReport(r: Readiness, project: { id: string; title: stri
   for (const k of r.keys) lines.push(`- \`${k.name}\`: ${keyStateText(k)} · ${keySourceText(k)}`);
   if (r.identifiers.length) {
     lines.push("", "## Non-secret identifiers declared in the manifest");
-    for (const d of r.identifiers) lines.push(`- ${d.label}${d.provider ? ` (${d.provider})` : ""}${d.envKey ? ` → \`${d.envKey}\`` : ""} — value in the manifest; copy it from DataPass`);
+    for (const d of r.identifiers) lines.push(`- ${d.label}${d.provider || d.kind ? ` (${[d.provider, d.kind].filter(Boolean).join(" ")})` : ""}${d.envKey ? ` → \`${d.envKey}\`` : ""} — ${d.environments.length ? `one value per environment (${d.environments.join(", ")})` : "value"} in the manifest; copy it from DataPass`);
+  }
+  if (r.toolchain.declared) {
+    lines.push("", "## Tools & versions");
+    for (const e of r.toolchain.entries) lines.push(`- ${e.label} (\`${e.tool}\`): ${toolStateText(e)}${e.state === "missing" || e.state === "outside-range" ? e.install?.command ? ` — install: \`${e.install.command}\`${e.install.where ? ` in ${e.install.where}` : ""}` : e.install?.docs ? ` — ${e.install.docs}` : "" : ""}`);
+    lines.push(`- ${EXTENSIONS_JSON}: ${extensionsJsonText(r.extensions)}`);
+  }
+  if (r.connections.length) {
+    lines.push("", "## Connections");
+    for (const c of r.connections) lines.push(`- ${c.label} (${c.kind}${c.environment ? `, ${c.environment}` : ""}): ${CONNECTION_STATE_TEXT[c.state]} — ${c.detail}${c.checkedAt ? ` (checked ${c.checkedAt})` : ""}`);
   }
   lines.push("", "## Optional companions");
   for (const c of r.companions) lines.push(`- ${c.label}: ${c.detail}`);

@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 5,
+  "project": {
+    "id": "sales-bi",
+    "title": "Sales BI",
+    "description": "Synthetic DataPass 0.18 example: a Fabric lakehouse, a notebook and a Power BI model, deployed with fabric-cicd."
+  },
+  "modules": {
+    "mongoku": false
+  },
+  "environments": [
+    {
+      "id": "dev",
+      "title": "Development"
+    },
+    {
+      "id": "prod",
+      "title": "Production",
+      "production": true
+    }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "sales",
+      "title": "Sales reporting",
+      "objective": "A daily sales report from the lakehouse",
+      "itemRefs": [
+        "lakehouse",
+        "load",
+        "model",
+        "deploy"
+      ],
+      "checklist": [
+        {
+          "id": "signin",
+          "label": "Sign in to Azure and Fabric (Connections)"
+        },
+        {
+          "id": "tools",
+          "label": "Install the tools the project needs (Tools & versions)"
+        }
+      ]
+    }
+  ],
+  "identifiers": [
+    {
+      "id": "tenant",
+      "label": "Entra tenant",
+      "provider": "azure",
+      "kind": "tenant",
+      "value": "7f3c2a10-0d4e-4b8a-9c61-2e5f7a9b1c30"
+    },
+    {
+      "id": "sub-data",
+      "label": "Data subscription",
+      "provider": "azure",
+      "kind": "subscription",
+      "values": {
+        "dev": "a1b2c3d4-0000-4000-8000-00000000d001",
+        "prod": "a1b2c3d4-0000-4000-8000-00000000f001"
+      }
+    },
+    {
+      "id": "ws-sales",
+      "label": "Sales workspace",
+      "provider": "fabric",
+      "kind": "workspace",
+      "values": {
+        "dev": "5e1d7c42-8a3b-4f60-9d2e-1b4c6a8e0d11",
+        "prod": "5e1d7c42-8a3b-4f60-9d2e-1b4c6a8e0f22"
+      }
+    },
+    {
+      "id": "lh-sales",
+      "label": "Sales lakehouse",
+      "provider": "fabric",
+      "kind": "lakehouse",
+      "values": {
+        "dev": "c0ffee00-1111-4222-8333-444455556666",
+        "prod": "c0ffee00-1111-4222-8333-44445555f777"
+      }
+    }
+  ],
+  "toolchain": {
+    "tools": [
+      {
+        "tool": "cli.fab",
+        "version": ">=1.0"
+      },
+      {
+        "tool": "cli.az",
+        "version": "^2.60"
+      },
+      {
+        "tool": "cli.git",
+        "version": ">=2.40"
+      },
+      {
+        "tool": "ext.fabric"
+      },
+      {
+        "tool": "ext.tmdl"
+      },
+      {
+        "tool": "pack.powerbi-gbrueckl",
+        "optional": true
+      },
+      {
+        "tool": "app.pbi-desktop"
+      },
+      {
+        "tool": "py.fabric-cicd",
+        "version": ">=0.1.20,<1",
+        "where": "ci"
+      },
+      {
+        "tool": "py.semantic-link-labs",
+        "where": "fabric"
+      }
+    ]
+  },
+  "connections": [
+    {
+      "id": "azure-dev",
+      "kind": "sign-in",
+      "label": "Azure CLI (dev subscription)",
+      "tool": "cli.az",
+      "identifier": "tenant",
+      "subscription": "sub-data",
+      "environment": "dev"
+    },
+    {
+      "id": "fabric",
+      "kind": "sign-in",
+      "label": "Fabric CLI",
+      "tool": "cli.fab",
+      "identifier": "tenant"
+    },
+    {
+      "id": "sales-git",
+      "kind": "git-binding",
+      "label": "Sales workspace ↔ this repository",
+      "provider": "fabric",
+      "identifier": "ws-sales",
+      "environment": "dev",
+      "folder": "fabric",
+      "branch": "dev"
+    },
+    {
+      "id": "sales-sql",
+      "kind": "cloud-connection",
+      "label": "Sales database connection",
+      "provider": "fabric",
+      "name": "conn-sales-sql",
+      "environment": "dev"
+    }
+  ]
+}

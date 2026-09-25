@@ -16,6 +16,10 @@ import { optionsA, sheetA } from "../tests/fixtures/v3/researchOptions";
 import { boardA } from "../tests/fixtures/v3/researchBoard";
 import { boardView } from "../src/core/project/board";
 import { TOOLS, type ToolObservation } from "../src/core/capabilities/tools";
+import { buildReadiness } from "../src/core/readiness/readiness";
+import { LATEST_MANIFEST_VERSION } from "../src/core/projectManifestModel";
+import { parseExtensionsJson } from "../src/core/toolchain/extensionsJson";
+import { manifestSales, SALES_EXTENSIONS_JSON, SALES_IDS } from "../tests/fixtures/v3/salesBi";
 
 const light = process.argv.includes("--light");
 const T = new Date().toISOString();
@@ -45,7 +49,15 @@ const script = readFileSync(join(__dirname, "..", "dist", "workbench.js"), "utf8
 const out = join(__dirname, "..", "out", "preview");
 mkdirSync(out, { recursive: true });
 
-interface Page { name: string; mode: WorkbenchMode; selection: { subproject?: string; component?: string }; ui?: Record<string, unknown>; preview?: boolean }
+// 0.18: the Sales BI example's readiness (tools & versions, ID map, connections) after a check.
+const salesTools = new Map<string, ToolObservation>(TOOLS.map(t => [t.id, { toolId: t.id, state: ["cli.git", "cli.fab", "cli.az", "ext.tmdl"].includes(t.id) ? "present" : "absent", version: t.id === "cli.az" ? "2.59.1" : t.id === "cli.fab" ? "1.1.0" : t.id === "cli.git" ? "2.46.0" : "1.6.5", observedAt: T }]));
+const salesReadiness = buildReadiness({
+  manifest: manifestSales(), coordinationKey: ".", envFiles: new Map(), repositories: [], problems: [], settings: {}, diagramCloudSidecar: false, latestSchemaVersion: LATEST_MANIFEST_VERSION,
+  tools: salesTools, platform: "win32", extensionsJson: parseExtensionsJson(JSON.stringify(SALES_EXTENSIONS_JSON)), bindingFolders: new Map([["sales-git", "found"]]),
+  connectionProbes: new Map([["cli.az", { tool: "cli.az", ranAt: T, outcome: "ok", signedIn: true, tenantId: SALES_IDS.tenant, subscriptionId: SALES_IDS.subDev }], ["cli.fab", { tool: "cli.fab", ranAt: T, outcome: "ok", signedIn: false }]])
+});
+
+interface Page { name: string; mode: WorkbenchMode; selection: { subproject?: string; component?: string }; ui?: Record<string, unknown>; preview?: boolean; readiness?: boolean }
 const pages: Page[] = [
   { name: "full", mode: "full", selection: { subproject: "papers", component: "extract" } },
   { name: "full-preview", mode: "full", selection: { subproject: "papers" }, ui: { groupBy: "cloud" }, preview: true },
@@ -56,12 +68,13 @@ const pages: Page[] = [
   { name: "board-filtered", mode: "full", selection: {}, ui: { view: "board", boardSub: "papers", boardTypes: ["bug", "task"], boardFocus: "task-review-guide" } },
   { name: "map", mode: "map", selection: { subproject: "papers", component: "extract" } },
   { name: "map-vertical", mode: "map", selection: { subproject: "papers" }, ui: { dir: "TB", groupBy: "level" }, preview: true },
-  { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } }
+  { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } },
+  { name: "readiness", mode: "full", selection: {}, readiness: true }
 ];
 for (const p of pages) {
   const state = workbenchState({
     map, selection: p.selection, version: "preview", hasRoot: true, hasManifest: true, manifestErrors: [], trusted: true, observedAt: T, multipleProjectFolders: false,
-    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board
+    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board, readiness: p.readiness ? salesReadiness : undefined
   });
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.

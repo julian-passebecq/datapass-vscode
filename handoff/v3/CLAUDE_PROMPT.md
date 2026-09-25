@@ -11,11 +11,14 @@ not Power Ops).
    repository wins; say which document is superseded. `git worktree list` may show parallel sessions
    working beside this one.
 3. Branch from current main. Run `npm ci`, `npm run check`, `npm test`, `npm run test:desktop`.
-4. 0.16.0 (work and DevOps) and 0.17.0 (windows and work views, `handoff/v3/07_WINDOWS_AND_POWER_OPS.md`)
-   are done. Take the next item of `handoff/v3/04_NEXT_PASSES.md`: the PowerToy_UI Power Ops task
-   (separate repository, effort high), then the V3 acceptance with Julian (testlab projects 4 to 7,
-   FOIL), account qualification, then 1.0.0. Fixes from Julian's acceptance report come first when
-   there is one.
+4. 0.16.0 (work and DevOps), 0.17.0 (windows and work views, `handoff/v3/07_WINDOWS_AND_POWER_OPS.md`)
+   and 0.18.0 (toolchain, ID map, connections: manifest v5, `handoff/v3/08_TOOLKIT_AND_AGENTS.md`
+   section 8) are done. The order of the next passes is Julian's, in
+   `handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md` §13.1: 0.19.0 the Git module (AI-1), AI-2 work orders,
+   the toolkit catalogue (08 sections 5.1–5.4, with free tier and pricing per tool), AI-3, AI-4. Also
+   open: the PowerToy_UI Power Ops task (separate repository, effort high), the V3 acceptance with
+   Julian (testlab projects 4 to 8, FOIL), account qualification, then 1.0.0. Fixes from Julian's
+   acceptance report come first when there is one.
 5. Keep the V3 rules: declarations are expectations, only observations make something present;
    reviews and results are bound to operation, environment, target names and file digests; the
    runtime and editor schemas agree (extend `schemas/datapass-project.schema.json` and the parity

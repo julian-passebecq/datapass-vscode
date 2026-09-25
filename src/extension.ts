@@ -10,6 +10,8 @@ import { registerCompanionCommands } from "./work/companionCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
 import { setAppLauncherForTests, setExternalOpenerForTests, setFolderOpenerForTests, type AppLauncher, type ExternalOpener, type FolderOpener } from "./core/external";
 import { registerReadinessCommands } from "./work/readinessCommands";
+import { registerToolchainCommands } from "./work/toolchainCommands";
+import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
 import { platformOperations } from "./core/capabilities/platformOperations";
@@ -87,6 +89,8 @@ export interface DataPassTestApi {
   setExportFile(file?: string): void;
   /** Resolves once the startup work view (or a launcher's request) was handled: the view applied, if any. */
   startup(): Promise<string | undefined>;
+  /** 0.18: replace the runner of the read-only sign-in checks (fake CLIs; undefined restores the real one). */
+  setConnectionRunner(impl?: ConnectionRunner): void;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -116,6 +120,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerResourceCommands(context, session);
   registerQualificationCommands(context, session);
   registerReadinessCommands(context, session);
+  registerToolchainCommands(context, session);
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.
@@ -309,6 +314,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setDiagramUi: ui => host.applyUi(ui),
     setExportFile: setExportFileForTests,
     startup: () => startup,
+    setConnectionRunner: impl => { session.connectionRunner = impl; },
     renderProjectTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
       const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

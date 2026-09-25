@@ -7,6 +7,7 @@ import { optionsAJson, sheetAJson } from "./researchOptions";
 import { boardAJson } from "./researchBoard";
 import { graphDevopsJson, manifestDevops } from "./devops";
 import { filesB } from "./monorepo";
+import { filesSales } from "./salesBi";
 
 // No "$schema" line: the extension attaches the schema of the installed version to .datapass/*.json,
 // and a web $schema would replace it (VS Code blocks untrusted schema downloads).
@@ -86,7 +87,8 @@ const CATALOG = {
   description: "Entry points only: each project keeps its own .datapass/project.json in its coordination repository.",
   projects: [
     { id: "research-library", title: "Research library", organization: "Example Org", description: "PDF papers to reviewed knowledge in MongoDB.", repository: { url: "https://github.com/example-org/research-hub", branch: "main" }, tags: ["azure", "documents"] },
-    { id: "catalog-import", title: "Supplier catalogue import", organization: "Example Org", description: "CSV cleaning into PostgreSQL (Neon).", repository: { url: "https://github.com/example-org/catalog-import", branch: "main" }, tags: ["python", "postgres"] }
+    { id: "catalog-import", title: "Supplier catalogue import", organization: "Example Org", description: "CSV cleaning into PostgreSQL (Neon).", repository: { url: "https://github.com/example-org/catalog-import", branch: "main" }, tags: ["python", "postgres"] },
+    { id: "sales-bi", title: "Sales BI", organization: "Example Org", description: "Fabric lakehouse and Power BI model, deployed with fabric-cicd (manifest v5).", repository: { url: "https://github.com/example-org/sales-bi", branch: "main" }, tags: ["fabric", "powerbi"] }
   ]
 };
 
@@ -103,6 +105,7 @@ export function exampleFiles(): Record<string, string> {
   out["examples/v3/shop-platform/.datapass/project.json"] = json(manifestDevops());
   out["examples/v3/shop-platform/.datapass/graph.json"] = json(graphDevopsJson());
   out["examples/v3/shop-platform/README.md"] = SHOP_README;
+  for (const [rel, content] of Object.entries(filesSales())) out[`examples/v3/sales-bi/${rel}`] = content;
   out["examples/v3/hub/.datapass/catalog.json"] = json(CATALOG);
   out["examples/v3/hub/README.md"] = "# Project hub (example)\n\nA small repository whose only job is `.datapass/catalog.json`: the list of projects and where their\ncoordination repositories live. Add its path to the `datapass.catalogs` setting (or open it) and use\n*DataPass: Switch Project*.\n";
   return out;

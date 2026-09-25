@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.17.0",
+  "version": "0.18.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -419,7 +419,7 @@
       },
       {
         "command": "datapass.readinessReport",
-        "title": "DataPass: Show Readiness Report (env files, variables, companions, repositories)",
+        "title": "DataPass: Show Readiness Report (env files, variables, tools, connections, companions, repositories)",
         "icon": "$(checklist)"
       },
       {
@@ -525,6 +525,35 @@
         "command": "datapass.openCiRuns",
         "title": "DataPass: Open the Pipeline Runs of a Component…",
         "icon": "$(link-external)"
+      },
+      {
+        "command": "datapass.checkConnections",
+        "title": "DataPass: Check Connections (read-only: az account show, databricks auth profiles, fab auth status)",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "datapass.connections.copySignIn",
+        "title": "DataPass: Copy Sign-in Command (you run it; DataPass never signs in)",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.connections.openPortal",
+        "title": "DataPass: Open the Connection's Portal Page",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "datapass.toolchain.copyInstall",
+        "title": "DataPass: Copy Install Command (DataPass installs nothing)",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.showRecommendedExtensions",
+        "title": "DataPass: Show Recommended Extensions (.vscode/extensions.json)",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "datapass.lookUpId",
+        "title": "DataPass: Look Up an Id in the Project's ID Map…"
       }
     ],
     "viewsContainers": {
@@ -888,6 +917,11 @@
           "command": "datapass.createCompanyWorkspace",
           "when": "view == datapass.project",
           "group": "4_switch@3"
+        },
+        {
+          "command": "datapass.checkConnections",
+          "when": "view == datapass.project",
+          "group": "3_project@8"
         }
       ],
       "view/item/context": [
@@ -995,6 +1029,36 @@
           "command": "datapass.openBoardFile",
           "when": "view == datapass.project && viewItem == boardCard",
           "group": "1_board@2"
+        },
+        {
+          "command": "datapass.checkConnections",
+          "when": "view == datapass.project && viewItem == section.connections",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.showRecommendedExtensions",
+          "when": "view == datapass.project && viewItem == section.tools",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.connections.copySignIn",
+          "when": "view == datapass.project && viewItem == connection.signIn",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.connections.openPortal",
+          "when": "view == datapass.project && viewItem == connection.portal",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.toolchain.copyInstall",
+          "when": "view == datapass.project && viewItem == tool.install",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.installTool",
+          "when": "view == datapass.project && viewItem == tool.extension",
+          "group": "inline"
         }
       ],
       "commandPalette": [
@@ -1044,6 +1108,18 @@
         },
         {
           "command": "datapass.board.openLink",
+          "when": "false"
+        },
+        {
+          "command": "datapass.connections.copySignIn",
+          "when": "false"
+        },
+        {
+          "command": "datapass.connections.openPortal",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolchain.copyInstall",
           "when": "false"
         }
       ],

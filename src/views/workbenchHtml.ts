@@ -153,6 +153,8 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .envcard { display: grid; gap: 6px; border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; background: var(--card); }
   .envcard h3 { margin: 0; font-size: 13px; }
   .envrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+  .envsub { display: grid; gap: 4px; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+  .envsub .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .envcard .checks { list-style: none; margin: 0; padding: 0; }
 
   /* 0.15: views, preview, diagram toolbar, lanes, folding */

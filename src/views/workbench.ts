@@ -24,6 +24,9 @@ const ALLOWED = new Set([
   "datapass.recordComponentResult", "datapass.setProjectChecklist", "datapass.openDoc", "datapass.installTool", "datapass.explainMissingFile",
   "datapass.initializeProjectManifest", "datapass.openProjectManifest", "datapass.openGraph", "datapass.openPreparationGuide", "datapass.switchProject",
   "datapass.env.copyKeyName", "datapass.env.openFile", "datapass.env.copyIdentifier", "datapass.copyProjectId", "datapass.openPowerOps", "datapass.readinessReport",
+  // 0.18: tools & versions, connections, ID map.
+  "datapass.checkConnections", "datapass.connections.copySignIn", "datapass.connections.openPortal", "datapass.toolchain.copyInstall",
+  "datapass.showRecommendedExtensions", "datapass.lookUpId",
   "vscode.openFolder",
   // 0.15: architecture options, project sheet, AI exchange of DataPass files, backups.
   "datapass.openOptions", "datapass.openSheet", "datapass.recordDecision", "datapass.exportOptionsComparison", "datapass.optionsAiContext",

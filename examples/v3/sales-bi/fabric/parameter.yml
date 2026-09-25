@@ -1,0 +1,8 @@
+# fabric-cicd: replace the dev ids with each environment's (https://microsoft.github.io/fabric-cicd/)
+find_replace:
+  - find_value: "5e1d7c42-8a3b-4f60-9d2e-1b4c6a8e0d11"      # ws-sales (dev)
+    replace_value:
+      prod: "5e1d7c42-8a3b-4f60-9d2e-1b4c6a8e0f22"          # ws-sales (prod)
+  - find_value: "c0ffee00-1111-4222-8333-444455556666"   # lh-sales (dev)
+    replace_value:
+      prod: "c0ffee00-1111-4222-8333-44445555f777"   # lh-sales (prod)

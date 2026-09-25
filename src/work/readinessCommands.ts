@@ -30,7 +30,7 @@ export function registerReadinessCommands(context: vscode.ExtensionContext, sess
   const reg = (id: string, fn: (...args: any[]) => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(fn)));
   reg("datapass.env.copyKeyName", async (arg?: unknown) => copyKeyName(session, nameArg(arg)));
   reg("datapass.env.openFile", async (arg?: unknown) => openEnvFile(session, fileArg(arg)));
-  reg("datapass.env.copyIdentifier", async (arg?: unknown) => copyIdentifier(session, idArg(arg)));
+  reg("datapass.env.copyIdentifier", async (arg?: unknown, env?: unknown) => copyIdentifier(session, idArg(arg), env ?? (arg as { environment?: unknown } | undefined)?.environment));
   reg("datapass.copyProjectId", async () => copyProjectId(session));
   reg("datapass.openPowerOps", async () => openPowerOps());
   reg("datapass.readinessReport", async () => showReport(session));
@@ -123,19 +123,35 @@ async function createEnvFile(session: WorkSession, display: string, relative: st
 
 // ------------------------------------------------------------------ identifiers, project id, Power Ops
 
-async function copyIdentifier(session: WorkSession, id: unknown): Promise<void> {
+async function copyIdentifier(session: WorkSession, id: unknown, environment: unknown): Promise<void> {
   const m = requireManifest(session);
   const list = m.identifiers ?? [];
   if (!list.length) throw new UserFacingError("This project declares no non-secret identifiers (identifiers in .datapass/project.json, manifest v4).");
   let ident = typeof id === "string" ? list.find(d => d.id === id) : undefined;
   if (typeof id === "string" && !ident) throw new UserFacingError("That identifier is not declared by this project.");
   if (!ident) {
-    ident = (await vscode.window.showQuickPick(list.map(d => ({ label: d.label, description: [d.provider, d.envKey].filter(Boolean).join(" · "), d })), { title: "Copy a non-secret identifier declared in the manifest" }))?.d;
+    ident = (await vscode.window.showQuickPick(list.map(d => ({ label: d.label, description: [d.provider, d.kind, d.values ? Object.keys(d.values).join("/") : undefined, d.envKey].filter(Boolean).join(" · "), d })), { title: "Copy a non-secret identifier declared in the manifest" }))?.d;
     if (!ident) return;
   }
-  // The manifest was validated on load: the value is a plain id that does not look like a credential.
-  await clipboard.writeText(ident.value);
-  void vscode.window.showInformationMessage(`Copied ${ident.label}${ident.envKey ? ` (for ${ident.envKey})` : ""}, a non-secret id declared in the manifest.`);
+  // v5: one value per environment. The environment comes from the caller or is asked; never guessed.
+  let env: string | undefined;
+  if (ident.values) {
+    const envs = Object.keys(ident.values);
+    if (typeof environment === "string") {
+      if (!envs.includes(environment)) throw new UserFacingError(`${ident.label} has no value for the environment "${environment}".`);
+      env = environment;
+    } else if (envs.length === 1) env = envs[0];
+    else {
+      const production = new Set((m.environments ?? []).filter(e => e.production).map(e => e.id));
+      env = (await vscode.window.showQuickPick(envs.map(e => ({ label: e, description: production.has(e) ? "production" : undefined })), { title: `Copy ${ident.label} for which environment?` }))?.label;
+      if (!env) return;
+    }
+  }
+  // The manifest was validated on load: each value is a plain id that does not look like a credential.
+  const value = env ? ident.values![env] : ident.value;
+  if (!value) throw new UserFacingError(`${ident.label} has no value to copy.`);
+  await clipboard.writeText(value);
+  void vscode.window.showInformationMessage(`Copied ${ident.label}${env ? ` for ${env}` : ""}${ident.envKey ? ` (for ${ident.envKey})` : ""}, a non-secret id declared in the manifest.`);
 }
 
 async function copyProjectId(session: WorkSession): Promise<void> {

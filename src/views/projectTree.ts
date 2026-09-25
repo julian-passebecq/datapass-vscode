@@ -14,6 +14,9 @@ import type { WorkSession } from "../work/session";
 import type { ComponentView, SubprojectView } from "../core/project/projectMap";
 import type { ExpectedFile, RepoView } from "../core/project/resolve";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
+import { toolStateText, type ToolchainEntryView } from "../core/toolchain/toolchain";
+import { extensionsJsonText } from "../core/toolchain/extensionsJson";
+import { CONNECTION_STATE_TEXT, SIGN_IN_CHECKS, type ConnectionView } from "../core/toolchain/connections";
 import { openCardsByUrgency, TYPE_LABELS, type BoardItemType, type BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
 
@@ -303,8 +306,10 @@ function readinessNodes(r: Readiness): Node[] {
         command: { command: "datapass.env.copyKeyName", title: "Copy name", arguments: [k.name] }, contextValue: k.source === "identifier" ? "envKey.identifier" : "envKey"
       });
       for (const d of r.identifiers) rows.push({
-        t: "info", id: `env:id:${d.id}`, label: d.label, description: ["non-secret id", d.provider, d.envKey ? `→ ${d.envKey}` : undefined, "click to copy"].filter(Boolean).join(" · "),
-        icon: ["symbol-constant"], tooltip: `${d.label}: declared in .datapass/project.json as non-secret. Click to copy its value.`,
+        t: "info", id: `env:id:${d.id}`, label: d.label,
+        description: ["non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined, "click to copy"].filter(Boolean).join(" · "),
+        icon: ["symbol-constant"],
+        tooltip: `${d.label} (${d.id}): declared in .datapass/project.json as non-secret.${d.environments.length ? ` One value per environment: ${d.environments.join(", ")}.` : ""} Click to copy its value${d.environments.length > 1 ? " (DataPass asks which environment)" : ""}. Hover an id in any file, or run "Look Up an Id…", to see which one it is.`,
         command: { command: "datapass.env.copyIdentifier", title: "Copy", arguments: [d.id] }, contextValue: "identifier"
       });
       rows.push({ t: "info", id: "env:projectId", label: "Copy project ID", description: "to find this project in Power Ops", icon: ["copy"], command: { command: "datapass.copyProjectId", title: "Copy" } });
@@ -319,6 +324,8 @@ function readinessNodes(r: Readiness): Node[] {
       kids
     });
   }
+  if (r.toolchain.declared) nodes.push(toolsSection(r));
+  if (r.connections.length) nodes.push(connectionsSection(r.connections));
   const serious = r.summary.errors + r.summary.warnings;
   nodes.push({
     t: "section", id: "readiness", label: "Readiness", icon: "checklist", collapsed: !serious,
@@ -337,6 +344,80 @@ function readinessNodes(r: Readiness): Node[] {
     ]
   });
   return nodes;
+}
+
+const TOOL_ICON: Record<ToolchainEntryView["state"], [string, string?]> = {
+  "ok": OK, "outside-range": WARN, "version-unknown": ["question", "problemsInfoIcon.foreground"], "missing": WARN,
+  "not-checked": ["circle-large-outline", "disabledForeground"], "unknown-tool": ERR
+};
+
+/** "Tools & versions" (manifest v5 toolchain): each tool, its version against the range, how to install it. */
+function toolsSection(r: Readiness): Node {
+  const tc = r.toolchain;
+  const rows = (): Node[] => [
+    ...tc.entries.map((e): Node => {
+      const fix = e.state === "missing" || e.state === "outside-range";
+      const showExt = fix && e.extensionId;
+      const command: vscode.Command | undefined = showExt ? { command: "datapass.installTool", title: "Show extension", arguments: [e.extensionId] }
+        : (fix || e.state === "not-checked") && (e.install?.command || e.install?.docs) ? { command: "datapass.toolchain.copyInstall", title: "Copy install command", arguments: [e.tool] }
+        : undefined;
+      const install = e.install?.command ? `\nInstall: ${e.install.command}${e.install.where ? ` (in ${e.install.where})` : ""} — click to copy; DataPass installs nothing.` : e.install?.docs ? `\nInstall: ${e.install.docs}` : "";
+      return {
+        t: "info", id: `tool:${e.tool}@${e.where}`, label: e.label, description: toolStateText(e), icon: e.optional && fix ? MUTED : TOOL_ICON[e.state],
+        tooltip: `${e.label} (${e.tool})${e.publisher ? ` · ${e.publisher}` : ""}\n${e.detail}${fix || e.state === "not-checked" ? install : ""}${showExt ? "\nClick to open its page in the Extensions view; you decide whether to install it." : ""}`,
+        command, contextValue: showExt ? "tool.extension" : command ? "tool.install" : "tool"
+      };
+    }),
+    {
+      t: "info", id: "tool:extensions-json", label: ".vscode/extensions.json", description: extensionsJsonText(r.extensions),
+      icon: r.extensions.state === "invalid" ? WARN : r.extensions.expected.some(x => !x.recommended && !x.optional) ? ["extensions", "problemsWarningIcon.foreground"] : ["extensions"],
+      tooltip: `Workspace recommendations compared with the toolchain.${r.extensions.expected.length ? `\n${r.extensions.expected.map(x => `${x.recommended ? "✓" : "✗"} ${x.extensionId}${x.unwanted ? " (listed as unwanted)" : ""}`).join("\n")}` : ""}${r.extensions.extra.length ? `\nAlso recommended: ${r.extensions.extra.join(", ")}` : ""}\nClick for VS Code's Show Recommended Extensions (it never installs anything by itself). The AI keeps this file in line with the toolchain; DataPass never writes it.`,
+      command: { command: "datapass.showRecommendedExtensions", title: "Show Recommended Extensions" }
+    }
+  ];
+  return {
+    t: "section", id: "tools", label: "Tools & versions", icon: "tools", collapsed: !tc.summary.attention,
+    description: [`${tc.summary.ok}/${tc.summary.total} ok`, tc.summary.attention ? `${tc.summary.attention} to fix` : undefined, tc.summary.notChecked ? `${tc.summary.notChecked} not checked here` : undefined].filter(Boolean).join(" · "),
+    kids: rows
+  };
+}
+
+const CONNECTION_ICON: Record<ConnectionView["state"], [string, string?]> = {
+  "ok": OK, "mismatch": WARN, "signed-out": WARN, "profile-missing": WARN, "profile-invalid": WARN, "tool-missing": WARN, "check-failed": WARN,
+  "not-checked-yet": ["question", "disabledForeground"], "declared": ["circle-large-outline", "disabledForeground"]
+};
+
+/** "Connections" (manifest v5): sign-ins checked read-only on request, bindings declared, not checked. */
+function connectionsSection(list: ConnectionView[]): Node {
+  const signIns = list.filter(c => c.kind === "sign-in");
+  const checked = signIns.filter(c => c.checkedAt);
+  const checks = [...new Set(signIns.map(c => c.tool && SIGN_IN_CHECKS[c.tool as keyof typeof SIGN_IN_CHECKS]?.text).filter(Boolean))];
+  const rows = (): Node[] => [
+    ...(signIns.length ? [{
+      t: "info" as const, id: "connections:check", label: "Check connections", description: `read-only, no prompt: ${checks.join(", ") || "nothing DataPass can check"}`,
+      icon: ["plug"] as [string], tooltip: "Runs each CLI's own status command from your home folder, with no prompt. DataPass never opens credential files (.databrickscfg, the Azure token cache) and never signs in for you.",
+      command: { command: "datapass.checkConnections", title: "Check connections" }
+    }] : []),
+    ...list.map((c): Node => {
+      const command: vscode.Command | undefined = c.signIn ? { command: "datapass.connections.copySignIn", title: "Copy sign-in command", arguments: [c.id] }
+        : c.hasPortal ? { command: "datapass.connections.openPortal", title: "Open portal page", arguments: [c.id] }
+        : c.state === "not-checked-yet" ? { command: "datapass.checkConnections", title: "Check connections" }
+        : c.state === "tool-missing" && c.tool ? { command: "datapass.toolchain.copyInstall", title: "Copy install command", arguments: [c.tool] }
+        : undefined;
+      return {
+        t: "info", id: `connection:${c.id}`, label: c.label, description: `${c.kind}${c.environment ? ` · ${c.environment}` : ""} · ${c.detail}`, icon: CONNECTION_ICON[c.state],
+        tooltip: `${c.label} (${c.id}, ${c.kind}${c.tool ? `, ${c.tool}` : c.provider ? `, ${c.provider}` : ""})\n${CONNECTION_STATE_TEXT[c.state]}: ${c.detail}${c.nextStep ? `\nNext: ${c.nextStep}` : ""}${c.checkedAt ? `\nChecked ${c.checkedAt}` : ""}`,
+        command, contextValue: c.signIn ? "connection.signIn" : c.hasPortal ? "connection.portal" : "connection"
+      };
+    })
+  ];
+  const ok = list.filter(c => c.state === "ok").length;
+  const attention = list.filter(c => CONNECTION_ICON[c.state] === WARN).length;
+  return {
+    t: "section", id: "connections", label: "Connections", icon: "plug", collapsed: !attention,
+    description: [`${list.length} declared`, checked.length ? `${ok} ok` : signIns.length ? "not checked yet" : undefined, attention ? `${attention} to fix` : undefined].filter(Boolean).join(" · "),
+    kids: rows
+  };
 }
 
 function esc(s: string): string {
