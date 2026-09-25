@@ -1,6 +1,7 @@
 # Implementation Status — 0.20.0 (pass AI-2): work orders
 
-Date: 2026-09-25. Version `0.20.0` — branch `claude/work-orders-ai2`, on 0.19.0 (PR #29). Design and
+Date: 2026-09-25. Version `0.20.0` — merged, PR #30 (main `538a3d3`), on 0.19.0 (PR #29). The guide
+for preparing a client project from scratch is [docs/guide/](docs/guide/README.md). Design and
 Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
 sections 3.2, 4, 5, 8.1–8.5, 8.9, 9, 11, 12 and **13.1** (which wins). Galaxy contracts
 `datapass.work-order/1`, `datapass.work-order-result/1`, `datapass.work-order-marker/1` and

@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { validateCompanionSections } from "./companions/companions";
 import { validateModules, type ModuleSwitches } from "./modules";
-import { validateResources, type BindingDecl, type ResourceDecl } from "./resources/resources";
+import { SSH_ALIAS, validateResources, type BindingDecl, type ResourceDecl } from "./resources/resources";
 import { unknownFields } from "./contracts/schemaKeys";
 import { vetRelativePath } from "./exchange/pathSafety";
 import { validateReadinessSections, type IdentifierDecl, type LocalEnvDecl } from "./readiness/readiness";
@@ -261,6 +261,11 @@ export function validateProjectManifest(raw: unknown): string[] {
         }
       }
     }
+  }
+
+  const oracle = (doc.platforms as { oracle?: { sshHost?: unknown } } | undefined)?.oracle;
+  if (oracle && typeof oracle === "object" && oracle.sshHost !== undefined && (typeof oracle.sshHost !== "string" || (oracle.sshHost !== "" && !SSH_ALIAS.test(oracle.sshHost)))) {
+    issues.push("platforms.oracle.sshHost must be an alias from your ~/.ssh/config (no user@, port or key).");
   }
 
   if (v2) issues.push(...validateV2Sections(doc));

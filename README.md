@@ -27,8 +27,8 @@ merged work — without ever deploying, pushing or running project code.
 - **Prepare AI context**: a bounded pack for ChatGPT/Claude with the exact repository, folder and files.
 - Several repositories per project, found by Git origin; **Clone**, **Locate**; a hub **catalog** of projects.
 
-A project is described by `.datapass/project.json` (**manifest v4**, v3 still accepted) and
-`.datapass/graph.json` (**graph 0.2**): see [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
+A project is described by `.datapass/project.json` (**manifest v5**, v3 and v4 still accepted) and
+`.datapass/graph.json` (**graph 0.2**): see the step-by-step guide [docs/guide/](docs/guide/README.md) (preparing a client project from scratch, in order, with validated examples; what the person prepares, in French), the field reference [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
 [examples/v3](examples/v3/). Architecture and status: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ```json

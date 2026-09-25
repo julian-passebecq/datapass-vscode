@@ -48,8 +48,8 @@ native repositories                the real code, in native formats: databricks.
 
 ```json
 {
-  "schemaVersion": 3,
-  "project": { "id": "research-library", "title": "Research library", "description": "Find answers in papers, cite the PDF and page." },
+  "schemaVersion": 5,
+  "project": { "id": "research-library", "title": "Research library", "description": "Find answers in papers, cite the PDF and page.", "type": "dev" },
   "repositories": {
     "pipeline": { "label": "Document pipeline", "remote": { "url": "https://github.com/example-org/research-pipeline", "branch": "main" }, "description": "ADF, Functions, Cosmos and Mongo definitions" },
     "lab": { "label": "Simulation lab", "remote": { "url": "git@github.com:example-org/research-lab.git" } },
@@ -63,7 +63,7 @@ native repositories                the real code, in native formats: databricks.
       "itemRefs": ["pdf-archive", "adf", "extract", "cosmos", "review", "study-db"],
       "checklist": [ { "id": "inventory", "label": "Inventory the PDFs and reading rights" } ] }
   ],
-  "modules": { "azure": true, "databases": true, "fabric": false }
+  "modules": { "azure": true, "databases": true, "fabric": false, "mongoku": false }
 }
 ```
 
@@ -81,6 +81,13 @@ native repositories                the real code, in native formats: databricks.
 
 Unknown fields are errors (in the editor and at runtime): a field DataPass would ignore must not
 look like configuration.
+
+Shared machines (VMs, container hosts) are declared with `resources[]` and `bindings[]` (manifest
+v2 and later): an SSH **alias** of the person's `~/.ssh/config`, the folder on the host, the
+repository, and environment variable **names** per sub-project. Walkthrough with two VMs:
+[guide/04_CUSTOMIZATION.md](guide/04_CUSTOMIZATION.md#45-resources-such-as-vms--worked-example-with-two-vms).
+The step-by-step guide for an AI preparing a project from scratch, with validated minimal and full
+examples of every file, is [guide/](guide/README.md).
 
 ### `localEnv` and `identifiers` (v4): what a developer needs locally
 
@@ -270,8 +277,9 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 
 ## 6. Checking your JSON
 
-- In VS Code, `.datapass/project.json`, `graph.json` and `catalog.json` are validated as you type,
-  with the schemas of the installed DataPass version (no `$schema` line needed; see rule 9).
+- In VS Code, `.datapass/project.json`, `graph.json`, `catalog.json`, `options.json`, `sheet.json`,
+  `board.json`, `work-log.json` (and `claims.json`, domain packs, work-order files) are validated as
+  you type, with the schemas of the installed DataPass version (no `$schema` line needed; see rule 9).
 - The Project view lists **Problems in project files**: a repository that is not declared, a scope
   naming an unknown component, an environment that does not exist, an unknown operation.
 - `DataPass: Validate DataPass JSON` checks any DataPass file.
