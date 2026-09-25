@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -376,6 +376,68 @@
         "command": "datapass.readinessReport",
         "title": "DataPass: Show Readiness Report (env files, variables, companions, repositories)",
         "icon": "$(checklist)"
+      },
+      {
+        "command": "datapass.openOptions",
+        "title": "DataPass: Compare Architecture Options",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "datapass.openSheet",
+        "title": "DataPass: Open Project Sheet (data, formulas, runtimes)",
+        "icon": "$(table)"
+      },
+      {
+        "command": "datapass.previewArchitecture",
+        "title": "DataPass: Preview an Architecture on the Diagram…",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "datapass.clearPreview",
+        "title": "DataPass: Show the Current Architecture (end preview)",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "datapass.recordDecision",
+        "title": "DataPass: Record an Architecture Decision…"
+      },
+      {
+        "command": "datapass.exportOptionsComparison",
+        "title": "DataPass: Export the Options Comparison (Markdown)"
+      },
+      {
+        "command": "datapass.optionsAiContext",
+        "title": "DataPass: Ask the AI to Compare Architecture Options"
+      },
+      {
+        "command": "datapass.openOptionsFile",
+        "title": "DataPass: Open options.json"
+      },
+      {
+        "command": "datapass.openSheetFile",
+        "title": "DataPass: Open sheet.json"
+      },
+      {
+        "command": "datapass.copyForAi",
+        "title": "DataPass: Copy a DataPass File for the AI…",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.importFromAi",
+        "title": "DataPass: Import the AI's Answer into a DataPass File…",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.restoreBackup",
+        "title": "DataPass: Restore a Backup of a DataPass File…"
+      },
+      {
+        "command": "datapass.openOptionSource",
+        "title": "DataPass: Open a Declared Source"
+      },
+      {
+        "command": "datapass.openSheetReference",
+        "title": "DataPass: Open the File that Computes a Formula"
       }
     ],
     "viewsContainers": {
@@ -652,6 +714,41 @@
           "command": "datapass.readinessReport",
           "when": "view == datapass.project",
           "group": "3_project@4"
+        },
+        {
+          "command": "datapass.openOptions",
+          "when": "view == datapass.project",
+          "group": "1_workbench@2"
+        },
+        {
+          "command": "datapass.openSheet",
+          "when": "view == datapass.project",
+          "group": "1_workbench@3"
+        },
+        {
+          "command": "datapass.copyForAi",
+          "when": "view == datapass.project",
+          "group": "3_project@5"
+        },
+        {
+          "command": "datapass.importFromAi",
+          "when": "view == datapass.project",
+          "group": "3_project@6"
+        },
+        {
+          "command": "datapass.restoreBackup",
+          "when": "view == datapass.project",
+          "group": "3_project@7"
+        },
+        {
+          "command": "datapass.previewArchitecture",
+          "when": "view == datapass.architecture",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datapass.clearPreview",
+          "when": "view == datapass.architecture",
+          "group": "1_preview@1"
         }
       ],
       "view/item/context": [
@@ -773,6 +870,14 @@
         {
           "command": "datapass.installTool",
           "when": "false"
+        },
+        {
+          "command": "datapass.openOptionSource",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openSheetReference",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -891,6 +996,18 @@
           "**/.datapass/catalog.json"
         ],
         "url": "./schemas/datapass-catalog.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/options.json"
+        ],
+        "url": "./schemas/datapass-options.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/sheet.json"
+        ],
+        "url": "./schemas/datapass-sheet.schema.json"
       }
     ],
     "viewsWelcome": [

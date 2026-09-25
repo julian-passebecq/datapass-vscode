@@ -9,6 +9,8 @@ import { parseGraph, type ProjectGraph } from "./graph";
 import { parseDomainPack, type DomainPack } from "../domainPacks/pack";
 import { vetRelativePath } from "../exchange/pathSafety";
 import { projectRoot } from "./root";
+import { OPTIONS_PATH, parseOptions, type OptionsFile } from "../project/options";
+import { SHEET_PATH, parseSheet, type ProjectSheet } from "../project/sheet";
 export { projectFacts } from "./facts";
 
 export interface ProjectContext {
@@ -23,6 +25,13 @@ export interface ProjectContext {
   packErrors: string[];
   /** `.datapass/diagramcloud.json` exists (presence only; the bridge reads it when used). */
   diagramCloudSidecar?: boolean;
+  /** 0.15: architecture options (.datapass/options.json) and project sheet (.datapass/sheet.json). */
+  options?: OptionsFile;
+  optionsBytes?: Uint8Array;
+  optionsError?: string;
+  sheet?: ProjectSheet;
+  sheetBytes?: Uint8Array;
+  sheetError?: string;
 }
 
 export const LOCAL_DIR = ".datapass/local";
@@ -43,6 +52,18 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
     }
   } else {
     ctx.graphError = `graph path rejected: ${graphVet.reason}`;
+  }
+
+  // Optional files: absent is normal; present but invalid is reported, never replaced by a default.
+  const optionsBytes = await readOptional(vscode.Uri.joinPath(root, ...OPTIONS_PATH.split("/")));
+  if (optionsBytes) {
+    ctx.optionsBytes = optionsBytes;
+    try { ctx.options = parseOptions(optionsBytes); } catch (error) { ctx.optionsError = message(error); }
+  }
+  const sheetBytes = await readOptional(vscode.Uri.joinPath(root, ...SHEET_PATH.split("/")));
+  if (sheetBytes) {
+    ctx.sheetBytes = sheetBytes;
+    try { ctx.sheet = parseSheet(sheetBytes); } catch (error) { ctx.sheetError = message(error); }
   }
 
   for (const ref of read.manifest?.domainPacks ?? []) {

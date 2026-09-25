@@ -20,6 +20,7 @@ import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { pathToFileURL } from "node:url";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
+import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
 import { filesB } from "../tests/fixtures/v3/monorepo";
 
 const repo = path.resolve(__dirname, "..");
@@ -155,6 +156,8 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
   writeTree(hub, {
     ".datapass/project.json": JSON.stringify(manifestA(), null, 2) + "\n",
     ".datapass/graph.json": JSON.stringify(graphAJson(), null, 2) + "\n",
+    ".datapass/options.json": JSON.stringify(optionsAJson(), null, 2) + "\n",
+    ".datapass/sheet.json": JSON.stringify(sheetAJson(), null, 2) + "\n",
     "README.md": "# Research library (coordination)\n\nSynthetic DataPass V3 fixture.\n"
   });
   commitAll(hub, "coordination");

@@ -32,6 +32,30 @@ A project is described by `.datapass/project.json` (**manifest v4**, v3 still ac
                   { "capability": "azure-functions.deploy", "environment": "dev", "target": { "functionApp": "func-papers-dev" } } ] }
 ```
 
+## Architecture options and project sheet (0.15.0)
+
+- **Options** view (Workbench tab): compares 2–3 alternatives per architecture decision (e.g. "Where
+  do the PDFs live?"), each with its changes to the graph, declared criteria (text or a 1–5 score),
+  pros, cons, consequences and cost lines (official source URL + date). DataPass computes the
+  consequences itself — components added/removed/changed, official tools needed and whether they
+  are installed, DataPass support level, repositories touched, sum of declared costs — it never
+  picks an architecture for you. A **Scenarios** table compares whole architectures side by side,
+  each with **Preview on diagram**, plus a **Build your own combination** picker per decision.
+  **Record decision** writes `chosen`/`decidedOn`/`rationale` to `.datapass/options.json` (with a
+  backup); the AI applies it later in a pull request.
+- **Project sheet** view: datasets, formulas (shown exactly as the code computes them, with a link
+  to the file), runtimes and a glossary, from `.datapass/sheet.json`. DataPass never computes a
+  formula or counts rows itself.
+- The architecture diagram toolbar adds orientation (horizontal/vertical), grouping into
+  foldable lanes (sub-project, repository, cloud/service family, level), and a preview dropdown
+  that marks components new/changed/removed for a scenario, without writing anything.
+- An API-free JSON round trip with an AI assistant: **Copy a DataPass File for the AI…** and
+  **Import the AI's Answer into a DataPass File…** validate, diff, back up (`.datapass/local/backups/`)
+  and refuse files containing credential-shaped text or local paths.
+
+See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the full example in
+[examples/v3/research-library](examples/v3/research-library/).
+
 ## Earlier surfaces (still available)
 
 - **Galaxy** — health-first control plane with readiness metrics, attention queue, grouped/collapsible platform cards, filters, persistent view state, and a sanitized environment snapshot for debugging/handoffs.

@@ -23,8 +23,10 @@ import { parseStrictJson } from "../core/model/strictJson";
 import { upsertQualification, type QualificationRecord } from "../core/qualification/qualification";
 import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
 import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
-import { observeProject, type ProjectObservation } from "./projectObserver";
-import { buildProjectMap, type ProjectMap } from "../core/project/projectMap";
+import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
+import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
+import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
+import { sheetProblems } from "../core/project/sheet";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
 import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
@@ -32,6 +34,13 @@ import { observeLocalEnv } from "./envObserver";
 
 /** V3 selection shared by the Project tree, the Workbench, the diagram and the detail view. */
 export interface Selection { subproject?: string; component?: string }
+
+/**
+ * 0.15: the architecture being previewed on the diagram (session UI state, never written to the
+ * project): a scenario ("current", "decided" or a declared one) or a list of "decision=option" picks.
+ */
+export interface PreviewRequest { scenario?: string; picks?: string[] }
+export interface Preview { key: string; title: string; picks: Map<string, string>; impact: ArchitectureImpact; derived: DerivedArchitecture; map: ProjectMap }
 
 /** Machine-local repository locations chosen with "Locate clone" (git-ignored, never shared). */
 export const LOCAL_REPOSITORIES_FILE = "repositories.json";
@@ -49,6 +58,7 @@ import {
 const KEYS = {
   root: "datapass.v3.root",
   selection: "datapass.v3.selection",
+  preview: "datapass.v32.preview",
   scope: "datapass.v22.scope",
   checklist: "datapass.v22.checklist",
   exchanges: "datapass.v22.exchanges",
@@ -97,6 +107,8 @@ export class WorkSession implements vscode.Disposable {
   /** Env files as observed (names' presence only, never values). */
   private envObs: Map<string, EnvFileObservation> = new Map();
   private readinessCache?: Readiness;
+  private analysisCache?: OptionsAnalysis;
+  private previewCache?: Preview;
   private rootCandidates: vscode.Uri[] = [];
   private readonly selectionEmitter = new vscode.EventEmitter<Selection>();
   /** Fires when the selection changes (tree, diagram, workbench); views follow it. */
@@ -122,7 +134,8 @@ export class WorkSession implements vscode.Disposable {
     this.factObs = await observeFileFacts(ctx.root, ctx.manifest);
     this.projectObs = ctx.root ? await observeProject({
       root: ctx.root, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
-      localBindings: await this.localBindings(), cloneParents: cloneParents()
+      localBindings: await this.localBindings(), cloneParents: cloneParents(),
+      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordinationKeyOf(ctx.manifest, ctx.root))
     }) : undefined;
     this.envObs = ctx.root ? await observeLocalEnv({
       root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map(),
@@ -395,6 +408,8 @@ export class WorkSession implements vscode.Disposable {
     this.cached = undefined;
     this.mapCache = undefined;
     this.readinessCache = undefined;
+    this.analysisCache = undefined;
+    this.previewCache = undefined;
     this.emitter.fire();
   }
 
@@ -409,18 +424,71 @@ export class WorkSession implements vscode.Disposable {
     await this.refresh();
   }
 
-  /** The V3 project map: repositories, sub-projects, components, files, operations. */
-  projectMap(): ProjectMap {
-    if (this.mapCache) return this.mapCache;
+  /** Everything the project map is built from (also the base of every architecture preview). */
+  private mapInput(): ProjectMapInput {
     const obs = this.projectObs;
-    this.mapCache = buildProjectMap({
+    return {
       manifest: this.ctx.manifest, graph: this.ctx.graph, coordinationKey: obs?.coordinationKey ?? ".",
       repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
       tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
       qualification: this.qualification()
-    });
+    };
+  }
+
+  /** The V3 project map: repositories, sub-projects, components, files, operations. */
+  projectMap(): ProjectMap {
+    if (this.mapCache) return this.mapCache;
+    const map = buildProjectMap(this.mapInput());
+    // The project's companion files are part of what "Problems in project files" lists.
+    const c = this.ctx;
+    if (c.optionsError) map.problems.push({ severity: "error", where: "options.json", message: c.optionsError });
+    if (c.sheetError) map.problems.push({ severity: "error", where: "sheet.json", message: c.sheetError });
+    if (c.options) map.problems.push(...optionsProblems(c.options, c.manifest, c.graph).filter(p => p.severity !== "info"));
+    if (c.sheet) map.problems.push(...sheetProblems(c.sheet, c.manifest, c.graph, c.options?.decisions.map(d => d.id) ?? []));
+    this.mapCache = map;
     return this.mapCache;
+  }
+
+  // ------------------------------------------------------------ 0.15 architecture options
+
+  /** Consequences of every option and scenario of .datapass/options.json (undefined without a valid file). */
+  optionsAnalysis(): OptionsAnalysis | undefined {
+    const options = this.ctx.options;
+    if (!options) return undefined;
+    if (!this.analysisCache) this.analysisCache = analyzeOptions({ base: this.mapInput(), options, baseMap: this.projectMap() });
+    return this.analysisCache;
+  }
+
+  /** The architecture previewed on the diagram, when one is selected and still valid. */
+  preview(): Preview | undefined {
+    const options = this.ctx.options;
+    const req = this.state<PreviewRequest>(KEYS.preview);
+    if (!options || !req) return undefined;
+    let picks: Map<string, string> | undefined, key: string, title: string;
+    if (req.scenario) {
+      picks = scenarioPicks(options, req.scenario);
+      key = `scenario:${req.scenario}`;
+      title = req.scenario === "current" ? "Current architecture" : req.scenario === "decided" ? "Decided (to apply)" : options.scenarios?.find(s => s.id === req.scenario)?.title ?? req.scenario;
+    } else {
+      picks = picksFrom(options, (req.picks ?? []).slice(0, 50));
+      key = `picks:${[...picks].map(([d, o]) => `${d}=${o}`).join(",")}`;
+      const changed = options.decisions.filter(d => picks!.get(d.id) !== d.current).map(d => d.options.find(o => o.id === picks!.get(d.id))?.label ?? picks!.get(d.id));
+      title = changed.length ? `Custom: ${changed.join(" + ")}` : "Current architecture";
+    }
+    if (!picks) return undefined;
+    if (this.previewCache?.key !== key) {
+      const r = evaluatePicks({ base: this.mapInput(), options, baseMap: this.projectMap() }, picks, key);
+      this.previewCache = { key, title, picks, ...r };
+    }
+    return this.previewCache;
+  }
+
+  /** Select (or clear) the previewed architecture; every view follows. */
+  async setPreview(req: PreviewRequest | undefined): Promise<void> {
+    await this.context.workspaceState.update(KEYS.preview, req && (req.scenario || req.picks?.length) ? { scenario: req.scenario, picks: req.picks?.slice(0, 50) } : undefined);
+    this.previewCache = undefined;
+    this.selectionEmitter.fire(this.selection());
   }
 
   observedAt(): string | undefined { return this.projectObs?.observedAt; }
@@ -455,17 +523,26 @@ export class WorkSession implements vscode.Disposable {
   selection(): Selection {
     const sel = this.state<Selection>(KEYS.selection) ?? {};
     const map = this.projectMap();
-    const component = sel.component && map.components.some(c => c.id === sel.component) ? sel.component : undefined;
+    // A component that exists only in the previewed architecture can be selected while that preview lasts.
+    const component = sel.component && (map.components.some(c => c.id === sel.component) || this.preview()?.map.components.some(c => c.id === sel.component)) ? sel.component : undefined;
     const subproject = sel.subproject && map.subprojects.some(s => s.id === sel.subproject) ? sel.subproject
-      : component ? map.components.find(c => c.id === component)?.subprojects[0] ?? map.subprojects.find(s => s.componentIds.includes(component))?.id
+      : component ? this.subprojectOf(component)
       : undefined;
     return { subproject, component };
+  }
+
+  /** First sub-project of a component (of the project, else of the previewed architecture). */
+  private subprojectOf(componentId: string): string | undefined {
+    const map = this.projectMap();
+    return map.components.find(c => c.id === componentId)?.subprojects[0]
+      ?? this.preview()?.map.components.find(c => c.id === componentId)?.subprojects[0]
+      ?? map.subprojects.find(s => s.componentIds.includes(componentId))?.id;
   }
 
   /** Select a sub-project and/or a component. A declared sub-project is also the Work view's scope. */
   async select(sel: Selection): Promise<void> {
     const map = this.projectMap();
-    const subproject = sel.subproject ?? (sel.component ? map.components.find(c => c.id === sel.component)?.subprojects[0] ?? map.subprojects.find(s => s.componentIds.includes(sel.component!))?.id : undefined);
+    const subproject = sel.subproject ?? (sel.component ? this.subprojectOf(sel.component) : undefined);
     const next: Selection = { subproject, component: sel.component };
     await this.context.workspaceState.update(KEYS.selection, next);
     if (subproject && (this.ctx.manifest?.scopes ?? []).some(s => s.id === subproject) && this.model().scope.id !== subproject) {

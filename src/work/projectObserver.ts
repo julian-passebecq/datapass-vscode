@@ -10,7 +10,7 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
-import type { ProjectGraph } from "../core/workspace/graph";
+import type { GraphItem, ProjectGraph } from "../core/workspace/graph";
 import { componentRepositories } from "../core/project/projectMap";
 import { artifactPlan, COORDINATION_KEY, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type RepoObservation } from "../core/project/resolve";
 import { parseStatusV2 } from "../core/inventory/inventory";
@@ -37,6 +37,8 @@ export interface ObserveOptions {
   localBindings: Readonly<Record<string, string>>;
   /** Extra parent folders where clones live (setting datapass.projectsFolders). */
   cloneParents: readonly string[];
+  /** 0.15: components of architecture alternatives, observed too (their files may already exist). */
+  extraItems?: ReadonlyArray<{ item: GraphItem; repoKey: string }>;
 }
 
 const MAX_HASH_BYTES = 2 * 1024 * 1024;
@@ -116,7 +118,7 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
 
   // Expected files of every component, in the repository that holds them.
   const files = new Map<string, FileObservation>();
-  const plan = artifactPlan(componentRepositories(o.manifest, o.graph, coordinationKey)).slice(0, MAX_PLAN);
+  const plan = artifactPlan([...componentRepositories(o.manifest, o.graph, coordinationKey), ...(o.extraItems ?? [])]).slice(0, MAX_PLAN);
   const tracked = new Map<string, string[]>();
   await Promise.all(plan.map(async entry => {
     const base = folders.get(entry.repoKey);

@@ -1,0 +1,385 @@
+{
+  "format": "datapass.options",
+  "version": "1",
+  "title": "Research library — architecture options",
+  "description": "Alternatives prepared before building the papers pipeline. graph.json describes each decision's current option.",
+  "currency": "USD",
+  "criteria": [
+    {
+      "id": "cost",
+      "label": "Monthly cost (declared)",
+      "better": "lower",
+      "unit": "USD/month"
+    },
+    {
+      "id": "setup",
+      "label": "Setup effort",
+      "description": "5 = quick to set up",
+      "better": "higher"
+    },
+    {
+      "id": "lockin",
+      "label": "Vendor lock-in",
+      "description": "5 = easy to move away",
+      "better": "higher"
+    },
+    {
+      "id": "skills",
+      "label": "What you must learn"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "archive",
+      "title": "Where do the PDFs live?",
+      "level": "storage",
+      "subproject": "papers",
+      "concerns": [
+        "pdf-archive"
+      ],
+      "question": "The archive keeps the original PDFs; the extraction reads them and cites them by page.",
+      "current": "blob",
+      "options": [
+        {
+          "id": "blob",
+          "label": "Azure Blob Storage",
+          "summary": "One storage account, one private container.",
+          "values": {
+            "cost": "≈ 1",
+            "setup": {
+              "text": "portal or extension",
+              "score": 4
+            },
+            "lockin": {
+              "score": 3
+            },
+            "skills": "Storage accounts, access keys in Key Vault"
+          },
+          "pros": [
+            "Same cloud as the Function and Data Factory: no egress between clouds"
+          ],
+          "cons": [
+            "Azure account and subscription needed"
+          ],
+          "costs": [
+            {
+              "label": "Blob storage, Hot LRS, 50 GB",
+              "service": "Azure Blob Storage",
+              "price": "0.0196 USD per GB-month (West Europe, first 50 TB)",
+              "monthly": 0.98,
+              "source": "https://azure.microsoft.com/pricing/details/storage/blobs/",
+              "asOf": "2026-09-25"
+            }
+          ]
+        },
+        {
+          "id": "gcs",
+          "label": "Google Cloud Storage",
+          "summary": "One bucket in a European region.",
+          "changes": {
+            "replace": [
+              {
+                "id": "pdf-archive",
+                "kind": "storage",
+                "label": "PDF archive (GCS)",
+                "provider": "google-cloud-storage",
+                "status": "planned"
+              }
+            ]
+          },
+          "values": {
+            "cost": "≈ 1",
+            "setup": {
+              "text": "console or gcloud",
+              "score": 4
+            },
+            "lockin": {
+              "score": 3
+            },
+            "skills": "GCP projects, buckets, service accounts"
+          },
+          "pros": [
+            "Natural input for BigQuery object tables"
+          ],
+          "cons": [
+            "The Azure Function reads across clouds: egress is billed by Google"
+          ],
+          "consequences": [
+            "DataPass shows the archive but has no operations for Google Cloud Storage yet (files only)"
+          ],
+          "costs": [
+            {
+              "label": "Standard storage, 50 GB",
+              "service": "Cloud Storage",
+              "price": "about 0.020–0.026 USD per GB-month (region dependent)",
+              "monthly": 1.1,
+              "source": "https://cloud.google.com/storage/pricing",
+              "asOf": "2026-09-25",
+              "note": "The 5 GiB free tier only applies to three US regions."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "processing",
+      "title": "What extracts the pages?",
+      "level": "processing",
+      "subproject": "papers",
+      "current": "adf-function",
+      "options": [
+        {
+          "id": "adf-function",
+          "label": "Data Factory + Azure Function (Python)",
+          "values": {
+            "cost": "≈ 2",
+            "setup": {
+              "score": 2
+            },
+            "lockin": {
+              "score": 2
+            },
+            "skills": "ADF pipelines, Functions, managed identity"
+          },
+          "costs": [
+            {
+              "label": "ADF orchestration, ~1,000 activity runs",
+              "service": "Azure Data Factory",
+              "price": "1 USD per 1,000 activity runs",
+              "monthly": 1,
+              "source": "https://azure.microsoft.com/pricing/details/data-factory/data-pipeline/",
+              "asOf": "2026-09-25"
+            },
+            {
+              "label": "Functions Flex Consumption within the free grant",
+              "service": "Azure Functions",
+              "price": "250,000 executions and 100,000 GB-s free per month",
+              "monthly": 0,
+              "source": "https://azure.microsoft.com/pricing/details/functions/",
+              "asOf": "2026-09-25"
+            }
+          ]
+        },
+        {
+          "id": "bigquery",
+          "label": "BigQuery object table + Document AI",
+          "summary": "PDFs stay in Cloud Storage; SQL calls the document parser and writes pages to a table.",
+          "changes": {
+            "remove": [
+              "adf",
+              "extract",
+              "cosmos"
+            ],
+            "add": [
+              {
+                "id": "bq-pages",
+                "kind": "database",
+                "label": "BigQuery pages table",
+                "provider": "bigquery",
+                "status": "planned",
+                "description": "Object table over the bucket; ML.PROCESS_DOCUMENT with a Document AI processor writes one row per page."
+              }
+            ],
+            "addRelations": [
+              {
+                "id": "bq1",
+                "source": "bq-pages",
+                "target": "pdf-archive",
+                "relation": "consumes"
+              },
+              {
+                "id": "bq2",
+                "source": "review",
+                "target": "bq-pages",
+                "relation": "consumes"
+              }
+            ]
+          },
+          "requires": [
+            "archive=gcs"
+          ],
+          "values": {
+            "cost": "≈ 30 one-time",
+            "setup": {
+              "score": 3
+            },
+            "lockin": {
+              "score": 2
+            },
+            "skills": "BigQuery SQL, Document AI processors"
+          },
+          "pros": [
+            "No function to deploy: one SQL statement per batch",
+            "Pages are queryable in SQL"
+          ],
+          "cons": [
+            "Document AI is billed per page",
+            "DataPass has no BigQuery operations yet"
+          ],
+          "consequences": [
+            "Data Factory, the Function and Cosmos DB disappear from this flow",
+            "Review reads BigQuery instead of Cosmos DB"
+          ],
+          "costs": [
+            {
+              "label": "Document AI OCR, 20,000 pages once",
+              "service": "Document AI",
+              "price": "1.50 USD per 1,000 pages (Enterprise Document OCR)",
+              "oneTime": 30,
+              "source": "https://cloud.google.com/document-ai/pricing",
+              "asOf": "2026-09-25"
+            },
+            {
+              "label": "BigQuery queries and storage within the free tier",
+              "service": "BigQuery",
+              "price": "1 TiB queries and 10 GiB storage free per month",
+              "monthly": 0,
+              "source": "https://cloud.google.com/bigquery/pricing",
+              "asOf": "2026-09-25"
+            }
+          ]
+        },
+        {
+          "id": "script",
+          "label": "One Python script, run by hand",
+          "changes": {
+            "remove": [
+              "adf"
+            ],
+            "replace": [
+              {
+                "id": "extract",
+                "kind": "script",
+                "label": "PDF extraction (script)",
+                "provider": "python",
+                "status": "planned",
+                "artifacts": {
+                  "profile": "python.script",
+                  "root": "scripts/extract",
+                  "entry": "extract.py",
+                  "files": [
+                    "tests/test_extract.py"
+                  ]
+                }
+              }
+            ]
+          },
+          "values": {
+            "cost": "0",
+            "setup": {
+              "score": 5
+            },
+            "lockin": {
+              "score": 5
+            },
+            "skills": "Python only"
+          },
+          "pros": [
+            "Nothing to deploy for a first batch"
+          ],
+          "cons": [
+            "No schedule, no retries: you run it"
+          ],
+          "costs": [
+            {
+              "label": "Runs on your PC",
+              "monthly": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "staging",
+      "title": "Where are pages staged before review?",
+      "level": "databases",
+      "subproject": "papers",
+      "current": "cosmos",
+      "options": [
+        {
+          "id": "cosmos",
+          "label": "Cosmos DB for NoSQL",
+          "values": {
+            "cost": "≈ 1",
+            "lockin": {
+              "score": 2
+            }
+          },
+          "costs": [
+            {
+              "label": "Serverless, ~2 M RU and 2 GB",
+              "service": "Azure Cosmos DB",
+              "price": "0.305 USD per million RU + 0.25 USD per GB-month (West Europe)",
+              "monthly": 1.11,
+              "source": "https://azure.microsoft.com/pricing/details/cosmos-db/serverless/",
+              "asOf": "2026-09-25"
+            }
+          ]
+        },
+        {
+          "id": "mongo-staging",
+          "label": "A staging collection in MongoDB Atlas",
+          "changes": {
+            "remove": [
+              "cosmos"
+            ],
+            "addRelations": [
+              {
+                "id": "m1",
+                "source": "extract",
+                "target": "study-db",
+                "relation": "produces"
+              }
+            ]
+          },
+          "excludes": [
+            "processing=bigquery"
+          ],
+          "values": {
+            "cost": "0",
+            "lockin": {
+              "score": 4
+            }
+          },
+          "pros": [
+            "One database less"
+          ],
+          "cons": [
+            "The free cluster holds 512 MB"
+          ],
+          "costs": [
+            {
+              "label": "Atlas free cluster",
+              "service": "MongoDB Atlas",
+              "price": "free: 512 MB storage",
+              "monthly": 0,
+              "source": "https://www.mongodb.com/pricing",
+              "asOf": "2026-09-25"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "google",
+      "title": "Archi 2 — Google for documents",
+      "picks": [
+        "archive=gcs",
+        "processing=bigquery"
+      ],
+      "description": "PDFs and pages in Google Cloud; review and publication unchanged."
+    },
+    {
+      "id": "lean",
+      "title": "Archi 3 — lean first batch",
+      "picks": [
+        "processing=script",
+        "staging=mongo-staging"
+      ],
+      "recommended": true,
+      "description": "A script and one database for the first 100 PDFs."
+    }
+  ]
+}

@@ -3,6 +3,7 @@
  * invented: example-org repositories, no FOIL or client content.
  */
 import { graphAJson, manifestA } from "./research";
+import { optionsAJson, sheetAJson } from "./researchOptions";
 import { filesB } from "./monorepo";
 
 // No "$schema" line: the extension attaches the schema of the installed version to .datapass/*.json,
@@ -18,6 +19,11 @@ several repositories. Open this folder in VS Code with DataPass installed.
   environments, sub-projects.
 - \`.datapass/graph.json\` — components, the files each expects in which repository, operations per
   environment, links between steps.
+- \`.datapass/options.json\` — architecture options: for each decision (where the PDFs live, what extracts
+  the pages, where pages are staged) the current option and one or two alternatives, with declared
+  prices (source + date), pros, cons and consequences, and two scenarios to compare with the current one.
+- \`.datapass/sheet.json\` — the project sheet: order of magnitude of each data set, the columns that
+  matter, the page-coverage formula and where it is computed, where the extraction runs.
 - \`AGENTS.md\` — what an AI assistant must respect when it prepares files for this project.
 
 Flow of the "Papers pipeline" sub-project:
@@ -61,6 +67,8 @@ export function exampleFiles(): Record<string, string> {
   const out: Record<string, string> = {};
   out["examples/v3/research-library/.datapass/project.json"] = json(manifestA());
   out["examples/v3/research-library/.datapass/graph.json"] = json(graphAJson());
+  out["examples/v3/research-library/.datapass/options.json"] = json(optionsAJson());
+  out["examples/v3/research-library/.datapass/sheet.json"] = json(sheetAJson());
   out["examples/v3/research-library/README.md"] = RESEARCH_README;
   out["examples/v3/research-library/AGENTS.md"] = RESEARCH_AGENTS;
   for (const [rel, content] of Object.entries(filesB())) out[`examples/v3/catalog-import/${rel}`] = content;

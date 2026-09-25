@@ -16,6 +16,7 @@ import { platformOperations } from "./core/capabilities/platformOperations";
 import { WorkbenchHost } from "./views/workbench";
 import { ProjectTreeProvider } from "./views/projectTree";
 import { registerWorkbenchCommands } from "./work/workbenchCommands";
+import { registerOptionsCommands } from "./work/optionsCommands";
 import type { WorkbenchState } from "./views/workbenchState";
 
 /**
@@ -54,6 +55,9 @@ export interface DataPassTestApi {
   setAppLauncher(impl?: AppLauncher): void;
   /** Walk the Project tree through the real provider. */
   renderProjectTree(): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string; commandArgs?: unknown[] }>>;
+  /** 0.15: architecture options analysis and the previewed architecture. */
+  optionsAnalysis(): ReturnType<WorkSession["optionsAnalysis"]>;
+  setPreview(req: Parameters<WorkSession["setPreview"]>[0]): Promise<void>;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -96,6 +100,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     vscode.window.registerWebviewViewProvider("datapass.details", host.viewProvider("detail"), { webviewOptions: { retainContextWhenHidden: true } })
   );
   registerWorkbenchCommands(context, session, host);
+  registerOptionsCommands(context, session, host);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -170,7 +175,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 
   // Graph, packs and claims only affect the Work view; .datapass/local is private session data.
   const workRefresh = () => void session.refresh();
-  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,claims.json,packs/*.json,queries/*.json}");
+  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,options.json,sheet.json,claims.json,packs/*.json,queries/*.json}");
   workWatcher.onDidCreate(workRefresh);
   workWatcher.onDidChange(workRefresh);
   workWatcher.onDidDelete(workRefresh);
@@ -228,6 +233,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     workbenchState: () => host.state(),
     selection: () => session.selection(),
     select: sel => session.select(sel),
+    optionsAnalysis: () => session.optionsAnalysis(),
+    setPreview: req => session.setPreview(req),
     renderProjectTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
       const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

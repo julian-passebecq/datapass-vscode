@@ -80,10 +80,14 @@ export function scopeTitles(m: DataPassProjectManifest | undefined, bindings: Bi
 
 /** Remote-SSH target: authority `ssh-remote+<alias>` and an absolute folder ("/" when none). */
 export function remoteTarget(resource: ResourceDecl, binding?: BindingDecl): { authority: string; path: string } | undefined {
-  const host = resource.ssh?.host;
+  return sshRemoteTarget(resource.ssh?.host, binding?.folder);
+}
+
+/** Remote-SSH target from an SSH config alias and an optional absolute folder on the host. */
+export function sshRemoteTarget(host: string | undefined, folder?: string): { authority: string; path: string } | undefined {
   if (!host || !SSH_ALIAS.test(host)) return undefined;
-  const folder = binding?.folder && HOST_FOLDER.test(binding.folder) && !binding.folder.split("/").includes("..") ? binding.folder : "/";
-  return { authority: `ssh-remote+${host}`, path: folder };
+  const path = folder && HOST_FOLDER.test(folder) && !folder.split("/").includes("..") ? folder : "/";
+  return { authority: `ssh-remote+${host}`, path };
 }
 
 export function validateResources(doc: Record<string, unknown>, declaredScopes: ReadonlySet<string>, repositoryKeys: ReadonlySet<string>): string[] {

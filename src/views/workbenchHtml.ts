@@ -155,6 +155,72 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .envrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
   .envcard .checks { list-style: none; margin: 0; padding: 0; }
 
+  /* 0.15: views, preview, diagram toolbar, lanes, folding */
+  .grow { flex: 1; }
+  .vtabs { display: inline-flex; gap: 2px; border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+  .vtab { border: none; background: transparent; padding: 3px 10px; border-radius: 4px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+  .vtab:hover { background: var(--vscode-list-hoverBackground); }
+  .vtab.active { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+  .vbadge { font-size: 10px; border-radius: 999px; padding: 0 6px; background: var(--vscode-badge-background, rgba(128,128,128,.3)); color: var(--vscode-badge-foreground, inherit); }
+  .banner { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; border: 1px solid var(--border); border-left: 4px solid var(--info); border-radius: var(--radius); padding: 5px 10px; margin: 6px 0; background: var(--card); font-size: 12px; }
+  .banner.small { font-size: 11.5px; }
+  .dtoolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .segs { display: inline-flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+  .seg { border: none; background: transparent; padding: 2px 8px; cursor: pointer; font-size: 12px; }
+  .seg + .seg { border-left: 1px solid var(--border); }
+  .seg.active { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+  .sel { font: inherit; font-size: 12px; color: var(--vscode-dropdown-foreground, inherit); background: var(--vscode-dropdown-background, transparent); border: 1px solid var(--vscode-dropdown-border, var(--border)); border-radius: 4px; padding: 2px 4px; max-width: 280px; }
+  .seg:focus-visible, .sel:focus-visible, .vtab:focus-visible, .lanehead:focus-visible, .foldbtn:focus-visible, .clickrow:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
+  .lane { position: absolute; border: 1px dashed var(--border); border-radius: 8px; background: rgba(128,128,128,.035); }
+  .lanehead { position: absolute; left: 6px; top: 2px; border: none; background: transparent; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--muted); padding: 0 4px; }
+  .lanehead:hover { color: var(--vscode-foreground); }
+  .nodewrap { position: absolute; }
+  .foldbtn { position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; background: var(--vscode-editor-background); cursor: pointer; font-size: 10px; line-height: 14px; padding: 0; color: var(--muted); }
+  .node.group { border-style: dashed; border-left: 4px dashed var(--info); background: var(--card); }
+  .node.parent { box-shadow: 3px 3px 0 -1px var(--vscode-editor-background), 3px 3px 0 0 var(--border); }
+  .node.diff-added { border-color: var(--ok); border-style: dashed; }
+  .node.diff-replaced { border-color: var(--info); }
+  .node.diff-removed { opacity: .45; border-style: dotted; }
+  .node.diff-removed .nodelabel { text-decoration: line-through; }
+  .tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: .6px; border-radius: 3px; padding: 0 4px; margin-left: auto; }
+  .tag.added { background: var(--ok); color: var(--vscode-editor-background); }
+  .tag.replaced { background: var(--info); color: var(--vscode-editor-background); }
+  .tag.removed { background: var(--muted); color: var(--vscode-editor-background); }
+  .lg-diff { display: inline-flex; gap: 4px; }
+  .edge.diff-added { stroke: var(--ok); stroke-width: 2; opacity: 1; }
+  .edge.diff-removed { stroke-dasharray: 3 3; opacity: .35; }
+  .shell.wide { grid-template-columns: 250px minmax(420px, 1fr) 330px; }
+  @media (max-width: 1100px) { .shell.wide { grid-template-columns: 220px minmax(320px, 1fr); } }
+  @media (max-width: 720px) { .shell.wide { display: block; } }
+  .levelhead { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; margin: 10px 0 2px 4px; }
+  .cmpwrap { overflow: auto; border: 1px solid var(--border); border-radius: 8px; margin: 8px 0 12px; }
+  table.cmp { border-collapse: collapse; width: 100%; font-size: 12px; }
+  table.cmp th, table.cmp td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+  table.cmp thead th { background: var(--card); position: sticky; top: 0; min-width: 170px; }
+  table.cmp tbody th { font-weight: 600; color: var(--muted); width: 170px; min-width: 140px; }
+  table.cmp th.cur { border-top: 3px solid var(--muted); }
+  table.cmp th.rec { border-top: 3px solid var(--ok); }
+  table.cmp th.focus { outline: 2px solid var(--vscode-focusBorder); outline-offset: -2px; }
+  table.cmp tr.sep th { background: var(--card); color: var(--info); font-size: 10.5px; text-transform: uppercase; letter-spacing: .8px; }
+  table.cmp tr.computed td { background: rgba(128,128,128,.03); }
+  table.cmp.costs thead th, table.cmp.cols thead th, table.cmp.sheet thead th { min-width: 0; }
+  table.cmp tr.clickrow { cursor: pointer; }
+  table.cmp tr.clickrow:hover { background: var(--vscode-list-hoverBackground); }
+  table.cmp tr.clickrow.focus { background: var(--vscode-list-inactiveSelectionBackground, rgba(128,128,128,.15)); }
+  .colhead { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 2px; }
+  .dots { letter-spacing: 1px; color: var(--info); font-size: 11px; }
+  .money { font-variant-numeric: tabular-nums; }
+  ul.bul { margin: 0; padding-left: 16px; }
+  ul.bul.ok li::marker { color: var(--ok); } ul.bul.warn li::marker { color: var(--warn); }
+  .custom { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: var(--card); display: grid; gap: 6px; }
+  .customgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; }
+  .customrow { display: grid; gap: 2px; }
+  .chip { display: inline-block; font-size: 10.5px; border: 1px solid var(--border); border-radius: 4px; padding: 0 5px; margin: 1px 3px 1px 0; }
+  code.formula { font-family: var(--vscode-editor-font-family); font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  code.formula.inline { color: var(--muted); font-size: 11px; }
+  code.formula.block { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
+  .sheetbits, .optbits { display: grid; gap: 2px; }
+
   /* map (bottom panel) */
   .map { padding: 6px 10px; display: grid; gap: 6px; }
   .map .diagram { margin: 0; }

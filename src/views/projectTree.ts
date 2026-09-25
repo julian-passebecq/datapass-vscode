@@ -183,6 +183,32 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     if (ctx.graphError) nodes.push({ t: "info", id: "graphError", label: `graph.json: ${ctx.graphError}`, icon: ["error", "problemsErrorIcon.foreground"], command: { command: "datapass.openGraph", title: "Open" } });
     if (!map.components.length && !ctx.graphError) nodes.push({ t: "info", id: "nographs", label: "No components yet: describe them in .datapass/graph.json", icon: ["type-hierarchy"], command: { command: "datapass.openGraph", title: "Open" } });
     for (const sp of map.subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
+    // 0.15: architecture options and project sheet, when the project has them.
+    const o = ctx.options;
+    if (o || ctx.optionsError) nodes.push({
+      t: "section", id: "options", label: "Architecture options", icon: "git-compare", collapsed: true,
+      description: o ? `${o.decisions.length} decision(s) · ${(o.scenarios?.length ?? 0)} scenario(s)` : "errors in options.json",
+      kids: () => o ? [
+        { t: "info" as const, id: "opt:scenarios", label: "Compare scenarios", description: (o.scenarios ?? []).map(x => x.title).slice(0, 3).join(" · "), icon: ["type-hierarchy"] as [string], command: { command: "datapass.openOptions", title: "Compare", arguments: ["scenarios"] } },
+        ...o.decisions.map(d => {
+          const cur = d.options.find(x => x.id === d.current)?.label ?? d.current;
+          const chosen = d.chosen && d.chosen !== d.current ? d.options.find(x => x.id === d.chosen)?.label : undefined;
+          return { t: "info" as const, id: `opt:${d.id}`, label: d.title, description: `current: ${cur}${chosen ? ` · decided: ${chosen}` : ""} · ${d.options.length} options`, icon: (chosen ? ["star-full", "charts.yellow"] : ["git-compare"]) as [string, string?], tooltip: d.question ?? d.title, command: { command: "datapass.openOptions", title: "Compare", arguments: [d.id] } };
+        })
+      ] : [{ t: "info" as const, id: "opt:error", label: ctx.optionsError ?? "", icon: ["error", "problemsErrorIcon.foreground"] as [string, string], command: { command: "datapass.openOptionsFile", title: "Open" } }]
+    });
+    const sh = ctx.sheet;
+    if (sh || ctx.sheetError) nodes.push({
+      t: "section", id: "sheet", label: "Project sheet", icon: "table", collapsed: true,
+      description: sh ? `${sh.datasets?.length ?? 0} data · ${sh.formulas?.length ?? 0} formulas · ${sh.runtimes?.length ?? 0} runtimes` : "errors in sheet.json",
+      kids: () => sh ? ([
+        ["datasets", "Data (tables, collections, files)", "database", sh.datasets?.length ?? 0],
+        ["formulas", "Formulas", "symbol-operator", sh.formulas?.length ?? 0],
+        ["runtimes", "Where code runs", "server-environment", sh.runtimes?.length ?? 0],
+        ["glossary", "Glossary", "book", sh.glossary?.length ?? 0]
+      ] as Array<[string, string, string, number]>).filter(([, , , n]) => n > 0).map(([section, label, icon, n]) => ({ t: "info" as const, id: `sheet:${section}`, label, description: String(n), icon: [icon] as [string], command: { command: "datapass.openSheet", title: "Open", arguments: [{ section }] } }))
+        : [{ t: "info" as const, id: "sheet:error", label: ctx.sheetError ?? "", icon: ["error", "problemsErrorIcon.foreground"] as [string, string], command: { command: "datapass.openSheetFile", title: "Open" } }]
+    });
     nodes.push({
       t: "section", id: "repositories", label: "Repositories", icon: "repo",
       description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,

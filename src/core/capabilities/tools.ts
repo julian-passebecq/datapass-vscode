@@ -60,7 +60,13 @@ export const TOOLS: ToolDefinition[] = [
     note: "Sign-in and resource tree shared by the Azure extensions." },
   { id: "ext.pgsql", label: "PostgreSQL (Microsoft)", kind: "extension", extensionIds: ["ms-ossdata.vscode-pgsql"], publisher: "microsoft" },
   { id: "ext.neon", label: "Neon (serverless Postgres)", kind: "extension", extensionIds: ["databricks.neon-local-connect"], publisher: "vendor" },
-  { id: "cli.psql", label: "psql", kind: "cli", cli: { command: "psql", args: ["--version"] }, publisher: "vendor" }
+  { id: "cli.psql", label: "psql", kind: "cli", cli: { command: "psql", args: ["--version"] }, publisher: "vendor" },
+  // 0.15: tools of architecture alternatives (probed so a comparison can say what is installed here).
+  { id: "cli.docker", label: "Docker CLI", kind: "cli", cli: { command: "docker", args: ["--version"] }, publisher: "vendor",
+    note: "Docker Desktop is free for personal use and small businesses; larger companies need a paid subscription." },
+  { id: "ext.gcloud-data", label: "Google Cloud Data Agent Kit", kind: "extension", extensionIds: ["GoogleCloudTools.datacloud"], publisher: "vendor",
+    note: "Browse BigQuery schemas and Cloud Storage files, query, build pipelines. Verified on the Marketplace on 2026-09-25." },
+  { id: "cli.gcloud", label: "Google Cloud CLI (gcloud)", kind: "cli", cli: { command: "gcloud", args: ["--version"] }, publisher: "vendor" }
 ];
 
 export const TOOL_INDEX: ReadonlyMap<string, ToolDefinition> = new Map(TOOLS.map(t => [t.id, t]));

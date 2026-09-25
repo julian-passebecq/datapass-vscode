@@ -13,6 +13,7 @@ import { registerFlows } from "./flows";
 import { registerBridgeAndCompanionFlows } from "./companionFlows";
 import { registerV3Flows } from "./v3Flows";
 import { registerReadinessFlows } from "./readinessFlows";
+import { registerOptionsFlows } from "./optionsFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -203,6 +204,7 @@ registerFlows(() => api);
 registerBridgeAndCompanionFlows(() => api);
 registerV3Flows(() => api);
 registerReadinessFlows(() => api);
+registerOptionsFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

@@ -231,7 +231,8 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
     if (declared.length) {
       wanted = [...(artifacts && !declared.some(d => d.capability === "generic.files.open") ? [{ capability: "generic.files.open", source: "profile" as const }] : []), ...declared];
     } else {
-      const ids = artifacts ? artifacts.profile.operations : provider?.capabilityProvider ? CAPABILITIES.filter(c => c.provider === provider.capabilityProvider).map(c => c.id) : [];
+      const ids = artifacts ? artifacts.profile.operations
+        : provider?.capabilities ?? (provider?.capabilityProvider ? CAPABILITIES.filter(c => c.provider === provider.capabilityProvider).map(c => c.id) : []);
       wanted = ids.map(id => ({ capability: id, source: "profile" as const }));
     }
     const operations: OperationView[] = [];
@@ -280,6 +281,8 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
       }
       if (cap.provider === "databricks" && (target?.bundleTarget ?? want.environment)) facts.set("databricks.target", target?.bundleTarget ?? want.environment);
       if (cap.provider === "fabric" && target?.workspace) { facts.set("fabric.workspace", target.workspace); facts.set("fabric.workspaceName", target.workspace); }
+      // A VM component names its SSH config alias (never an address with credentials).
+      if (cap.id === "infra.remote.ssh" && target?.sshHost) { facts.set("vm.sshHost", target.sshHost); notes.delete("vm.sshHost"); }
       const key = operationKey(item.id, cap.id, want.environment);
       const result = preflight(cap, {
         tools: input.tools, facts, factNotes: notes, reviewsConfirmed: input.reviewsConfirmed,

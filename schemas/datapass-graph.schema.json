@@ -148,6 +148,8 @@
                   "terraform",
                   "bicep",
                   "sql",
+                  "vm",
+                  "docker",
                   "google-cloud-storage",
                   "google-drive",
                   "bigquery",
