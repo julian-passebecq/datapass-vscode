@@ -1,0 +1,174 @@
+{
+  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-graph.schema.json",
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "pdf-archive",
+      "kind": "storage",
+      "label": "PDF archive",
+      "provider": "azure-storage",
+      "status": "planned"
+    },
+    {
+      "id": "adf",
+      "kind": "pipeline",
+      "label": "Build candidates pipeline",
+      "provider": "azure-data-factory",
+      "artifacts": {
+        "profile": "adf.factory",
+        "root": "adf",
+        "entry": "pipeline/build_candidates.json"
+      },
+      "operations": [
+        {
+          "capability": "adf.studio.open"
+        },
+        {
+          "capability": "adf.validate"
+        },
+        {
+          "capability": "adf.publish",
+          "environment": "dev"
+        }
+      ]
+    },
+    {
+      "id": "extract",
+      "kind": "function",
+      "label": "PDF extraction",
+      "provider": "azure-functions",
+      "description": "Reads a PDF, keeps page numbers.",
+      "artifacts": {
+        "profile": "azure-functions.python",
+        "root": "functions/extract",
+        "files": [
+          "tests/test_extract.py"
+        ]
+      },
+      "operations": [
+        {
+          "capability": "python.tests.run"
+        },
+        {
+          "capability": "azure-functions.run-local"
+        },
+        {
+          "capability": "azure-functions.deploy",
+          "environment": "dev",
+          "target": {
+            "functionApp": "func-papers-dev"
+          }
+        }
+      ],
+      "checklist": [
+        {
+          "id": "pages",
+          "label": "Keep physical page numbers"
+        }
+      ]
+    },
+    {
+      "id": "cosmos",
+      "kind": "database",
+      "label": "Cosmos staging",
+      "provider": "cosmos-nosql",
+      "artifacts": {
+        "profile": "cosmos-nosql.container",
+        "root": "cosmos"
+      }
+    },
+    {
+      "id": "review",
+      "kind": "step",
+      "label": "Human review",
+      "provider": "manual",
+      "checklist": [
+        {
+          "id": "batch",
+          "label": "Review the candidate batch"
+        }
+      ]
+    },
+    {
+      "id": "study-db",
+      "kind": "database",
+      "label": "Published knowledge",
+      "provider": "mongodb-atlas",
+      "artifacts": {
+        "profile": "mongodb.database",
+        "root": "mongo"
+      }
+    },
+    {
+      "id": "lab-bundle",
+      "kind": "artifact-bundle",
+      "label": "Lab bundle",
+      "provider": "databricks",
+      "artifacts": {
+        "repoRef": "lab",
+        "profile": "databricks.bundle",
+        "root": ".",
+        "generated": [
+          {
+            "path": ".lab/build/**",
+            "producer": "lab campaign compiler",
+            "how": "compile, then apply the campaign"
+          }
+        ]
+      },
+      "operations": [
+        {
+          "capability": "databricks.bundle.validate"
+        },
+        {
+          "capability": "databricks.bundle.deploy",
+          "environment": "dev"
+        }
+      ]
+    },
+    {
+      "id": "infra-store",
+      "kind": "infrastructure-definition",
+      "label": "Archive storage (IaC)",
+      "provider": "terraform",
+      "artifacts": {
+        "repoRef": "infra",
+        "profile": "terraform",
+        "root": "."
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "source": "adf",
+      "target": "extract",
+      "relation": "orchestrates"
+    },
+    {
+      "id": "r2",
+      "source": "extract",
+      "target": "pdf-archive",
+      "relation": "consumes"
+    },
+    {
+      "id": "r3",
+      "source": "extract",
+      "target": "cosmos",
+      "relation": "produces"
+    },
+    {
+      "id": "r4",
+      "source": "review",
+      "target": "cosmos",
+      "relation": "consumes"
+    },
+    {
+      "id": "r5",
+      "source": "review",
+      "target": "study-db",
+      "relation": "produces"
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { anyWorkspaceFile, detectAnyExtension, detectExtension } from "../core/v
 import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/catalog";
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
+import { projectRoot } from "../core/workspace/root";
 
 export class FabricAdapter implements PlatformAdapter {
   readonly id = "fabric";
@@ -38,7 +39,7 @@ export class FabricAdapter implements PlatformAdapter {
     const config = vscode.workspace.getConfiguration("datapass");
     const localOverride = config.get<string>("fabric.toolboxRoot", "").trim();
     const platformConfig = await getProjectPlatformConfig();
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceRoot = projectRoot()?.fsPath;
     const manifestToolbox = platformConfig?.fabric?.toolboxRoot?.trim();
     const toolboxRoot = localOverride || (workspaceRoot && manifestToolbox ? resolveManifestPath(workspaceRoot, manifestToolbox) : "");
     const fabricConfig = platformConfig?.fabric;

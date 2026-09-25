@@ -1,3 +1,77 @@
+# Implementation Status — V3 pass 1 (0.13.0): Project Workbench
+
+Date: 2026-09-25
+Version: `0.13.0` — branch `claude/v3-workbench`, based on main `91a0850` (0.12.0, the base of the
+GPT audit of 2026-09-25). Handoff: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+
+### Implemented
+
+- **Trust fixes (audit Lot 0).** F01 file-backed facts only when observed ("declared but not found",
+  "not checked" = unknown); F03 base fingerprint covers untracked bytes and binary diffs, partial
+  captures never match; F04 reviews keyed by a target digest (environment, target names, facts, file
+  digest); F05 redaction of JSON-quoted secrets, Azure connection strings, function keys, SAS, bearer,
+  PEM; F06 unknown manifest fields rejected at runtime from the schema file itself; F07 results per
+  project, scope, operation and target; F15 `untrustedWorkspaces: limited` (no Git in Restricted Mode).
+- **New finding fixed:** on Windows a `git.exe` inside an opened folder would have run (libuv searches
+  the working directory first). Git and probes now use absolute paths from absolute PATH entries;
+  Git runs with `core.fsmonitor=false`.
+- **Manifest v3** (`environments`, `docs`, planned repositories, repository `description`, scope
+  `repoRef`/`docs`, `$schema`) with *Upgrade Project Manifest to v3* (journaled, backup). **Graph 0.2**
+  (item `provider`, `status`, `artifacts`, `operations`, `checklist`, `docs`, `owner`; relations
+  `feeds`, `orchestrates`; kinds `function`, `pipeline`, `storage`, `database`, `contract`, `step`).
+  v1/v2 manifests and 0.1-draft graphs load unchanged.
+- **Resolution.** Project folder = the one holding the manifest (F02, chosen when several); repositories
+  by declared path, located clone, workspace or sibling folder whose Git origin matches (wrong origin
+  refused); expected files from profiles (`azure-functions.python`, `databricks.bundle`, `adf.factory`,
+  `cosmos-nosql.container`, `mongodb.database`, `postgres.migrations`, `python.*`, …) plus declarations;
+  generated outputs with their producer; content digests; `local.settings.json` tracked → problem.
+- **Operations per component** by phase (read → publish) and environment; profile operations when none
+  declared; 13 new capabilities (Azure Functions, Data Factory, Storage, Cosmos DB, MongoDB, PostgreSQL/
+  Neon, Python, Databricks run, open files); new `azure` and `databases` modules (ADF out of Fabric, F08).
+- **Workbench.** Project tree (left), Architecture diagram (bottom panel), Details (secondary side bar,
+  VS Code ≥ 1.106), Workbench tab (overview); one shared selection; files open in the editor, missing
+  ones explained; open repository or component folder in a new window; route to the official
+  extension's view (verified container ids) or ADF Studio.
+- **Git loop.** *Check for updates* (`git fetch`), *Get updates* (fast-forward only, commits listed,
+  refused on divergence or tracked local changes), what changed and what is now present; *Clone*
+  (VS Code Git) and *Locate*.
+- **AI preparation pack** per component or sub-project (4 questions), allowlisted and previewed.
+- **Catalog** (`datapass.catalog`, schema) and *Switch Project* (catalogs + recent projects);
+  `datapass.projectsFolders` and `datapass.catalogs` settings.
+- **Inventory:** Azure Functions apps (F09), IaC roots; ADF pipelines under `azure`.
+- Docs: [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) (bundled, *Open the Project
+  Preparation Guide*), [examples/v3](examples/v3/) generated from the test fixtures.
+
+### Bugs found by the tests of this pass and fixed
+
+| Bug | Effect | Fix |
+|---|---|---|
+| The editor schema accepted `resources`/`bindings` in a v1 manifest; the runtime refused them | Editor and runtime disagreed | Schema aligned (parity corpus) |
+| A result recorded before a file change disappeared instead of showing as stale | Lost evidence | Latest result for the operation shown, flagged stale |
+| Diagram scaled to 60 % in a narrow column | Unreadable labels | Layout computed in the webview for its width (narrower boxes, 2-line labels, 100 % toggle) |
+| State classes (`ok`, `blocked`) reused the colour utility classes | Green labels | Namespaced classes |
+| Recent-project bookkeeping wrote global state on every refresh | Intermittent loss of a just-recorded result in a desktop test | Written only when the project changes |
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 200 / 200 (33 new: trust regressions, manifest v3 parity corpus, project model A/B, examples) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 125 / 125 on 6 fixtures (`empty` 12, `v2-retail` 48, `v1-foil` 15, `broken` 15, `v3-research` 22, `v3-monorepo` 13). `v3-research` runs real Git offline: a local bare "GitHub", a sibling clone found by origin, an AI clone that pushes `requirements.txt`, Check → Get updates → the file is found; divergence refused; Locate accepts the right clone and refuses another |
+| Visual check | `scripts/workbench-preview.ts` rendered in a browser: full, map and detail modes |
+
+### Still needs a human
+
+- The V3 acceptance in [handoff/v3/04_NEXT_PASSES.md](handoff/v3/04_NEXT_PASSES.md): testlab project 4
+  (offline loop), the FOIL consumer on the real repositories, account qualification (Databricks,
+  Azure Functions, ADF Studio, Cosmos DB, MongoDB).
+- Restricted Mode and Remote-SSH/WSL are implemented by policy but not desktop-qualified yet.
+- `git.clone` (Clone) uses VS Code's Git extension and was not driven by the desktop tests (it needs
+  its own UI); Locate was.
+
+---
+
 # Implementation Status — Pass 12 (tooling): qualification records and report
 
 Date: 2026-09-25

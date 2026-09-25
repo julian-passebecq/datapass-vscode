@@ -12,6 +12,10 @@ import { setExternalOpenerForTests, setFolderOpenerForTests, type ExternalOpener
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
 import { platformOperations } from "./core/capabilities/platformOperations";
+import { WorkbenchHost } from "./views/workbench";
+import { ProjectTreeProvider } from "./views/projectTree";
+import { registerWorkbenchCommands } from "./work/workbenchCommands";
+import type { WorkbenchState } from "./views/workbenchState";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -38,6 +42,13 @@ export interface DataPassTestApi {
   repositories(): ReturnType<WorkSession["repositories"]>;
   /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
   handleUri(uri: vscode.Uri): Promise<void>;
+  /** V3: the project map, the Workbench state the webviews render, and the shared selection. */
+  projectMap(): ReturnType<WorkSession["projectMap"]>;
+  workbenchState(): WorkbenchState;
+  selection(): ReturnType<WorkSession["selection"]>;
+  select(sel: { subproject?: string; component?: string }): Promise<void>;
+  /** Walk the Project tree through the real provider. */
+  renderProjectTree(): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string; commandArgs?: unknown[] }>>;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -66,6 +77,18 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const companionUri = registerCompanionCommands(context, session);
   registerResourceCommands(context, session);
   registerQualificationCommands(context, session);
+
+  // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), Details (secondary side bar), Workbench tab.
+  const host = new WorkbenchHost(context, session);
+  const projectTree = new ProjectTreeProvider(session);
+  const projectView = vscode.window.createTreeView(ProjectTreeProvider.viewType, { treeDataProvider: projectTree, showCollapseAll: true });
+  projectTree.attach(projectView);
+  context.subscriptions.push(
+    host, projectTree, projectView,
+    vscode.window.registerWebviewViewProvider("datapass.architecture", host.viewProvider("map"), { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.window.registerWebviewViewProvider("datapass.details", host.viewProvider("detail"), { webviewOptions: { retainContextWhenHidden: true } })
+  );
+  registerWorkbenchCommands(context, session, host);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -147,6 +170,24 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 
   context.subscriptions.push(bundleWatcher, manifestWatcher, workWatcher);
 
+  // Files appearing or disappearing (an AI's pull request merged, a file created by hand) change what is
+  // "found" or "missing": re-inspect, debounced. Edits of existing files only matter for digests (next refresh).
+  let pending: NodeJS.Timeout | undefined;
+  const soon = (uri: vscode.Uri) => {
+    if (/[\\/](node_modules|\.git|\.venv|venv|dist|out|__pycache__|\.datapass[\\/]local)([\\/]|$)/.test(uri.fsPath)) return;
+    if (pending) clearTimeout(pending);
+    pending = setTimeout(() => { pending = undefined; void session.refresh(); }, 1500);
+  };
+  const filesWatcher = vscode.workspace.createFileSystemWatcher("**/*", false, true, false);
+  filesWatcher.onDidCreate(soon);
+  filesWatcher.onDidDelete(soon);
+  context.subscriptions.push(filesWatcher, { dispose: () => { if (pending) clearTimeout(pending); } });
+  // Trusting the workspace enables Git; adding or removing folders may change which one is the project.
+  context.subscriptions.push(
+    vscode.workspace.onDidGrantWorkspaceTrust(() => void refreshState()),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => void refreshState())
+  );
+
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(event => {
       if (event.affectsConfiguration("datapass")) void refreshState();
@@ -171,6 +212,23 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     inventory: () => session.inventory(),
     qualification: () => session.qualification(),
     repositories: () => session.repositories(),
+    projectMap: () => session.projectMap(),
+    workbenchState: () => host.state(),
+    selection: () => session.selection(),
+    select: sel => session.select(sel),
+    renderProjectTree: async () => {
+      const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
+      const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {
+        for (const child of await projectTree.getChildren(node)) {
+          const item = await projectTree.getTreeItem(child);
+          const label = typeof item.label === "string" ? item.label : item.label?.label ?? "";
+          rows.push({ depth, id: item.id, label, description: typeof item.description === "string" ? item.description : undefined, contextValue: item.contextValue, command: item.command?.command, commandArgs: item.command?.arguments });
+          if (depth < 6) await walk(child, depth + 1);
+        }
+      };
+      await walk(undefined, 0);
+      return rows;
+    },
     renderWorkTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];
       const walk = async (node: Parameters<WorkTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

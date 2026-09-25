@@ -11,7 +11,7 @@ import type { ProjectGraph } from "../workspace/graph";
 import { resolveOutputs } from "../workspace/graph";
 import type { DomainPack } from "../domainPacks/pack";
 import { CAPABILITIES, CAPABILITY_INDEX, type CapabilityRecord } from "../capabilities/registry";
-import { preflight, type PreflightResult } from "../capabilities/preflight";
+import { preflight, type FactNote, type PreflightResult } from "../capabilities/preflight";
 import type { ToolObservation } from "../capabilities/tools";
 import { analyzeImpact, type ImpactEntry } from "../impact/facets";
 import { buildProgramme, type ProgrammeView } from "../programme/programme";
@@ -43,6 +43,8 @@ export interface WorkModelInput {
   packs: DomainPack[];
   tools: ReadonlyMap<string, ToolObservation>;
   facts: ReadonlyMap<string, string | boolean | undefined>;
+  /** Declared-but-not-found and uncheckable file-backed facts (see workspace/facts.ts). */
+  factNotes?: ReadonlyMap<string, FactNote>;
   reviewsConfirmed: ReadonlySet<string>;
   selectedScopeId?: string;
   checklist: Readonly<Record<string, ChecklistRecord>>;
@@ -124,7 +126,7 @@ export function buildWorkModel(input: WorkModelInput): WorkModel {
     objective: m?.project.description
   };
 
-  const ctx = { tools: input.tools, facts: input.facts, reviewsConfirmed: input.reviewsConfirmed };
+  const ctx = { tools: input.tools, facts: input.facts, factNotes: input.factNotes, reviewsConfirmed: input.reviewsConfirmed };
 
   // Operations: declared capabilityRefs first, then those referenced by checklist items.
   const refs = new Set<string>(scope.capabilityRefs ?? []);

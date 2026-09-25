@@ -17,7 +17,10 @@ import * as path from "node:path";
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
+import { pathToFileURL } from "node:url";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
+import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
+import { filesB } from "../tests/fixtures/v3/monorepo";
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
@@ -77,8 +80,82 @@ const FIXTURES: Record<string, Record<string, string>> = {
     "incoming/mongoku-context.json": fixtureText("mongoku/portfolio-context.synthetic.json")
   },
   "v1-foil": { ".datapass/project.json": JSON.stringify(foilProjectManifest(), null, 2) + "\n" },
-  // Parses as JSON, but schemaVersion 3 does not exist: both the extension and the schema must say so.
-  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 3 }, null, 2) + "\n" }
+  // Parses as JSON, but schemaVersion 4 does not exist (3 is DataPass V3): both the extension and the schema must say so.
+  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 4 }, null, 2) + "\n" }
+};
+
+// ---------------------------------------------------------------- V3 fixtures (real Git, offline)
+
+const gitIn = (cwd: string, ...args: string[]) => execFileSync("git", ["-c", "user.name=DataPass test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd, stdio: "ignore" });
+function writeTree(root: string, files: Record<string, string>): void {
+  for (const [rel, content] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    fs.writeFileSync(path.join(root, rel), content);
+  }
+}
+function commitAll(dir: string, message: string, init = true): void {
+  if (init) gitIn(dir, "init", "-q", "-b", "main");
+  gitIn(dir, "add", "-A");
+  gitIn(dir, "commit", "-q", "-m", message);
+}
+
+/**
+ * Multi-repository project, fully offline. The coordination repository is the workspace; the
+ * pipeline repository is cloned next to it with its GitHub URL as origin, while Git fetches from a
+ * local bare repository (url.<bare>.insteadOf). The test plays the AI by pushing a commit from a
+ * second clone, then checks for updates and gets them through DataPass.
+ */
+function setupV3Research(base: string): { workspace: string; env: Record<string, string> } {
+  const remotes = path.join(base, "remotes");
+  const seed = path.join(remotes, "seed-pipeline");
+  writeTree(seed, {
+    "functions/extract/function_app.py": "import azure.functions as func\n\napp = func.FunctionApp()\n",
+    "functions/extract/host.json": JSON.stringify({ version: "2.0" }, null, 2) + "\n",
+    "functions/extract/tests/test_extract.py": "def test_placeholder():\n    assert True\n",
+    "adf/pipeline/build_candidates.json": JSON.stringify({ name: "build_candidates", properties: { activities: [{ name: "Extract", type: "AzureFunctionActivity" }] } }, null, 2) + "\n",
+    "cosmos/containers/chunks.json": JSON.stringify({ id: "chunks", partitionKey: { paths: ["/sourceId"] } }, null, 2) + "\n"
+  });
+  commitAll(seed, "seed pipeline");
+  const bare = path.join(remotes, "research-pipeline.git");
+  execFileSync("git", ["clone", "-q", "--bare", seed, bare], { stdio: "ignore" });
+  const parent = path.join(base, "projects");
+  const clone = path.join(parent, "research-pipeline");
+  execFileSync("git", ["clone", "-q", bare, clone], { stdio: "ignore" });
+  gitIn(clone, "remote", "set-url", "origin", "https://github.com/example-org/research-pipeline");
+  gitIn(clone, "config", `url.${pathToFileURL(bare).href}.insteadOf`, "https://github.com/example-org/research-pipeline");
+  gitIn(clone, "fetch", "-q", "origin");
+  gitIn(clone, "branch", "-q", "--set-upstream-to=origin/main", "main");
+  const hub = path.join(parent, "research-hub");
+  writeTree(hub, {
+    ".datapass/project.json": JSON.stringify(manifestA(), null, 2) + "\n",
+    ".datapass/graph.json": JSON.stringify(graphAJson(), null, 2) + "\n",
+    "README.md": "# Research library (coordination)\n\nSynthetic DataPass V3 fixture.\n"
+  });
+  commitAll(hub, "coordination");
+  const lab = path.join(base, "elsewhere", "lab-clone");
+  writeTree(lab, { "databricks.yml": "bundle:\n  name: research_lab\n" });
+  commitAll(lab, "lab");
+  gitIn(lab, "remote", "add", "origin", "git@github.com:example-org/research-lab.git");
+  const wrong = path.join(base, "elsewhere", "not-the-lab");
+  writeTree(wrong, { "README.md": "another project\n" });
+  commitAll(wrong, "other");
+  gitIn(wrong, "remote", "add", "origin", "https://github.com/someone-else/research-lab");
+  const ai = path.join(remotes, "ai-clone");
+  execFileSync("git", ["clone", "-q", bare, ai], { stdio: "ignore" });
+  return { workspace: hub, env: { DATAPASS_IT_V3: JSON.stringify({ aiClone: ai, labClone: lab, wrongClone: wrong, pipelineClone: clone }) } };
+}
+
+function setupV3Monorepo(base: string): { workspace: string; env: Record<string, string> } {
+  const ws = path.join(base, "catalog-import");
+  writeTree(ws, filesB());
+  commitAll(ws, "catalogue import");
+  return { workspace: ws, env: {} };
+}
+
+/** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
+const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
+  "v3-research": setupV3Research,
+  "v3-monorepo": setupV3Monorepo
 };
 
 async function vscodeExecutable(): Promise<string> {
@@ -106,12 +183,18 @@ async function main(): Promise<void> {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-desktop-"));
   const reports: unknown[] = [];
   let failed = 0;
-  for (const [name, files] of Object.entries(FIXTURES)) {
+  for (const name of [...Object.keys(FIXTURES), ...Object.keys(SETUPS)]) {
     if (only && only !== name) continue;
-    const ws = path.join(scratch, "ws", name);
-    for (const [rel, content] of Object.entries(files)) {
-      fs.mkdirSync(path.dirname(path.join(ws, rel)), { recursive: true });
-      fs.writeFileSync(path.join(ws, rel), content);
+    const files = FIXTURES[name];
+    let ws = path.join(scratch, "ws", name);
+    let env: Record<string, string> = {};
+    if (files) {
+      for (const [rel, content] of Object.entries(files)) {
+        fs.mkdirSync(path.dirname(path.join(ws, rel)), { recursive: true });
+        fs.writeFileSync(path.join(ws, rel), content);
+      }
+    } else {
+      ({ workspace: ws, env } = SETUPS[name]!(path.join(scratch, "ws", name)));
     }
     // v2-retail is a real Git repository so the Repositories section shows branch and commit.
     if (name === "v2-retail") {
@@ -135,7 +218,7 @@ async function main(): Promise<void> {
         extensionDevelopmentPath: repo,
         extensionTestsPath: path.join(out, "suite.js"),
         launchArgs,
-        extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile }
+        extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile, ...env }
       });
     } catch {
       failed++;

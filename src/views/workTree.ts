@@ -12,8 +12,10 @@ import type { ProgrammeView } from "../core/programme/programme";
 import { moduleEnabled, MODULES } from "../core/modules";
 import { resourcesForScope, scopeTitles, type ResourceView } from "../core/resources/resources";
 import { ASSET_GROUPS, describeRepo, type Asset } from "../core/inventory/inventory";
+import { findQualification } from "../core/qualification/qualification";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
+import { projectRoot } from "../core/workspace/root";
 
 type Node =
   | { t: "section"; id: string; label: string; description?: string; icon: string; tooltip?: string | vscode.MarkdownString; command?: vscode.Command; collapsed?: boolean; children: () => Node[] }
@@ -114,7 +116,8 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
         item.id = `op:${c.id}`;
         const [ic, color] = STATUS_ICON[r.status];
         item.iconPath = icon(ic, color);
-        const q = this.session.qualification().find(x => x.capabilityId === c.id && x.projectId === this.session.project.manifest?.project.id);
+        const projectId = this.session.project.manifest?.project.id;
+        const q = projectId ? findQualification(this.session.qualification(), { projectId, scopeId: this.session.model().scope.id, capabilityId: c.id }) : undefined;
         const tested = q ? (q.result === "worked" ? " · ✓ worked" : q.result === "failed" ? " · ✗ failed" : " · not tried") : "";
         item.description = `${r.status}${c.implementation === "documented-only" ? " · native tool" : ""}${tested}`;
         const md = new vscode.MarkdownString();
@@ -298,7 +301,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
 }
 
 function assetNode(a: Asset): Node {
-  const uri = (p: string) => vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0]!.uri, ...p.split("/"));
+  const uri = (p: string) => vscode.Uri.joinPath(projectRoot()!, ...p.split("/"));
   return {
     t: "info", id: `asset:${a.kind}:${a.path}`, label: a.name, description: [a.detail, a.path].filter(Boolean).join(" · "),
     tooltip: `${a.path}\nRecognised statically; opening it hands it to its native editor.`,

@@ -1,10 +1,16 @@
 # DataPass handoff index
 
-## Start here — v1 status (2026-09-25)
+## Start here — V3 (2026-09-25)
 
-- [V1 handoff](V1_HANDOFF.md): what is what, version chronology, v1 gates with their status, next passes, cross-repository follow-ups.
-- [Next-pass prompt for Claude](v1/CLAUDE_PROMPT.md).
+- [V3 handoff](V3_HANDOFF.md): what V3 is, the audit reconciled, what changed, FOIL as first consumer, next steps.
+- [Audit reconciliation](v3/01_AUDIT_RECONCILIATION.md) · [Architecture](v3/02_ARCHITECTURE.md) · [FOIL consumer](v3/03_FOIL_CONSUMER.md) · [Next passes and acceptance](v3/04_NEXT_PASSES.md) · [Sources](v3/05_SOURCES.md)
+- [Next-pass prompt for Claude](v3/CLAUDE_PROMPT.md).
+- The contract for AIs preparing a project: [docs/PREPARING_A_PROJECT.md](../docs/PREPARING_A_PROJECT.md).
 - Runtime truth: [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md).
+
+## Previous status — V1 (passes 9–12)
+
+- [V1 handoff](V1_HANDOFF.md) and its [prompt](v1/CLAUDE_PROMPT.md): superseded as "start here" by V3, kept as the record of 0.9.x–0.12.0.
 
 ## Architecture reference — V2.2
 

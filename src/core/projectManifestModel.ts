@@ -2,6 +2,9 @@ import * as path from "node:path";
 import { validateCompanionSections } from "./companions/companions";
 import { validateModules, type ModuleSwitches } from "./modules";
 import { validateResources, type BindingDecl, type ResourceDecl } from "./resources/resources";
+import { unknownFields } from "./contracts/schemaKeys";
+import { vetRelativePath } from "./exchange/pathSafety";
+import manifestSchema from "../../schemas/datapass-project.schema.json";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 
@@ -12,7 +15,28 @@ export type RepositoryBinding = {
   /** v2: remote identity; a remote-only repository is valid and is never cloned automatically. */
   remote?: { url: string; branch?: string };
   management?: "local" | "remote-only";
+  /** v3: the repository does not exist yet; operations needing its files stay blocked. */
+  planned?: true;
+  /** v3: what lives in this repository. */
+  description?: string;
 };
+
+/** v3: a documentation file (in a repository) or page (https) to open from DataPass. */
+export interface DocRef {
+  label: string;
+  path?: string;
+  /** Repository key; omitted = the repository holding the manifest. */
+  repoRef?: string;
+  url?: string;
+}
+
+/** v3: a deployment environment. A review confirmed for one environment never applies to another. */
+export interface EnvironmentDecl {
+  id: string;
+  title?: string;
+  production?: boolean;
+  description?: string;
+}
 
 export interface AppDescriptor {
   id: string;
@@ -33,10 +57,16 @@ export interface WorkScope {
   itemRefs?: string[];
   capabilityRefs?: string[];
   checklist?: Array<{ id: string; label: string; capabilityRef?: string }>;
+  /** v3: default repository of this scope (sub-project) for its components. */
+  repoRef?: string;
+  /** v3 */
+  docs?: DocRef[];
 }
 
 export interface DataPassProjectManifest {
-  schemaVersion: 1 | 2;
+  /** Optional URL of the JSON Schema (for editors and AI tools). */
+  $schema?: string;
+  schemaVersion: 1 | 2 | 3;
   project: {
     id: string;
     title: string;
@@ -97,6 +127,10 @@ export interface DataPassProjectManifest {
   bindings?: BindingDecl[];
   /** Per-project modules: `false` switches a module off; unlisted modules stay on. */
   modules?: ModuleSwitches;
+  /** v3: deployment environments named by component operations. */
+  environments?: EnvironmentDecl[];
+  /** v3: project documentation. */
+  docs?: DocRef[];
   /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
   companions?: {
     mongoku?: {
@@ -118,13 +152,22 @@ export function validateProjectManifest(raw: unknown): string[] {
   const issues: string[] = [];
   if (!raw || typeof raw !== "object") return ["Project manifest must be an object."];
   const doc = raw as Record<string, unknown>;
-  if (doc.schemaVersion !== 1 && doc.schemaVersion !== 2) issues.push("schemaVersion must be 1 or 2.");
-  const v2 = doc.schemaVersion === 2;
+  if (doc.schemaVersion !== 1 && doc.schemaVersion !== 2 && doc.schemaVersion !== 3) issues.push("schemaVersion must be 1, 2 or 3.");
+  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3;
+  const v3 = doc.schemaVersion === 3;
   if (!v2) {
     for (const key of ["scopes", "apps", "domainPacks", "graph"]) {
       if (doc[key] !== undefined) issues.push(`${key} requires schemaVersion 2.`);
     }
   }
+  if (!v3) {
+    for (const key of ["environments", "docs"]) {
+      if (doc[key] !== undefined) issues.push(`${key} requires schemaVersion 3.`);
+    }
+  }
+  // Fields the editor schema does not know are refused here too: accepted-but-ignored JSON is worse than an error.
+  for (const field of unknownFields(manifestSchema, raw)) issues.push(`${field} is not a known field of the project manifest.`);
+  if (doc.$schema !== undefined && typeof doc.$schema !== "string") issues.push("$schema must be a string.");
 
   if (!doc.project || typeof doc.project !== "object") {
     issues.push("project is required.");
@@ -148,6 +191,10 @@ export function validateProjectManifest(raw: unknown): string[] {
         const hasPath = typeof repo.path === "string" && Boolean(repo.path.trim());
         if (repo.path !== undefined && !hasPath) issues.push(`repositories.${key}.path must be a non-empty string.`);
         if (repo.label !== undefined && typeof repo.label !== "string") issues.push(`repositories.${key}.label must be a string.`);
+        if (!v3 && (repo.planned !== undefined || repo.description !== undefined)) issues.push(`repositories.${key}.planned and .description require schemaVersion 3.`);
+        if (repo.planned !== undefined && repo.planned !== true) issues.push(`repositories.${key}.planned can only be true.`);
+        if (repo.planned === true && hasPath) issues.push(`repositories.${key} is planned (not created yet), so it cannot have a local path.`);
+        if (repo.description !== undefined && (typeof repo.description !== "string" || repo.description.length > 500)) issues.push(`repositories.${key}.description must be a string of at most 500 characters.`);
         if (!v2) {
           if (!hasPath) issues.push(`repositories.${key}.path is required.`);
           if (repo.remote !== undefined || repo.management !== undefined) issues.push(`repositories.${key}.remote requires schemaVersion 2.`);
@@ -162,7 +209,7 @@ export function validateProjectManifest(raw: unknown): string[] {
             }
           }
           if (repo.management !== undefined && repo.management !== "local" && repo.management !== "remote-only") issues.push(`repositories.${key}.management must be local or remote-only.`);
-          if (!hasPath && repo.remote === undefined) issues.push(`repositories.${key} needs a path or a remote.`);
+          if (!hasPath && repo.remote === undefined && repo.planned !== true) issues.push(`repositories.${key} needs a path or a remote${v3 ? " (or planned: true)" : ""}.`);
           if (repo.management === "remote-only" && repo.remote === undefined) issues.push(`repositories.${key} is remote-only but has no remote.`);
         }
       }
@@ -200,6 +247,7 @@ export function validateProjectManifest(raw: unknown): string[] {
   }
 
   if (v2) issues.push(...validateV2Sections(doc));
+  if (v3) issues.push(...validateV3Sections(doc));
   const declaredScopes = new Set(v2 && Array.isArray(doc.scopes) ? doc.scopes.map(s => (s as { id?: unknown } | null)?.id).filter((id): id is string => typeof id === "string") : []);
   issues.push(...validateCompanionSections(doc, declaredScopes));
   issues.push(...validateModules(doc.modules));
@@ -253,6 +301,9 @@ function validateV2Sections(doc: Record<string, unknown>): string[] {
         if (s.objective !== undefined && typeof s.objective !== "string") issues.push(`scopes[${i}].objective must be a string.`);
         checkIdList(s.itemRefs, `scopes[${i}].itemRefs`);
         if (s.capabilityRefs !== undefined && (!Array.isArray(s.capabilityRefs) || s.capabilityRefs.some(c => typeof c !== "string"))) issues.push(`scopes[${i}].capabilityRefs must be strings.`);
+        if (doc.schemaVersion !== 3 && (s.repoRef !== undefined || s.docs !== undefined)) issues.push(`scopes[${i}].repoRef and .docs require schemaVersion 3.`);
+        if (s.repoRef !== undefined && (typeof s.repoRef !== "string" || !repoKeys.has(s.repoRef))) issues.push(`scopes[${i}].repoRef must name a declared repository.`);
+        if (s.docs !== undefined) issues.push(...validateDocs(s.docs, `scopes[${i}].docs`, repoKeys, 20));
         if (s.checklist !== undefined) {
           if (!Array.isArray(s.checklist)) issues.push(`scopes[${i}].checklist must be an array.`);
           else s.checklist.forEach((c, j) => {
@@ -285,12 +336,64 @@ function validateV2Sections(doc: Record<string, unknown>): string[] {
   return issues;
 }
 
+function validateDocs(value: unknown, where: string, repoKeys: ReadonlySet<string>, max: number): string[] {
+  if (!Array.isArray(value) || value.length > max) return [`${where} must be an array of at most ${max} entries.`];
+  const issues: string[] = [];
+  value.forEach((raw, i) => {
+    const d = raw as Record<string, unknown> | null;
+    const at = `${where}[${i}]`;
+    if (!d || typeof d !== "object" || Array.isArray(d)) { issues.push(`${at} must be an object.`); return; }
+    if (typeof d.label !== "string" || !d.label.trim() || d.label.length > 120) issues.push(`${at}.label is required (at most 120 characters).`);
+    const hasPath = d.path !== undefined, hasUrl = d.url !== undefined;
+    if (hasPath === hasUrl) issues.push(`${at} needs exactly one of path (a file in a repository) or url (https).`);
+    if (hasPath && (typeof d.path !== "string" || d.path.length > 400 || !vetRelativePath(d.path).ok)) issues.push(`${at}.path must be a relative path inside the repository.`);
+    if (hasUrl && (typeof d.url !== "string" || !/^https:\/\/\S+$/.test(d.url))) issues.push(`${at}.url must be https://.`);
+    if (d.repoRef !== undefined) {
+      if (hasUrl) issues.push(`${at}.repoRef only applies to a path.`);
+      else if (typeof d.repoRef !== "string" || !repoKeys.has(d.repoRef)) issues.push(`${at}.repoRef must name a declared repository.`);
+    }
+  });
+  return issues;
+}
+
+function validateV3Sections(doc: Record<string, unknown>): string[] {
+  const issues: string[] = [];
+  const repoKeys = new Set(Object.keys((doc.repositories as Record<string, unknown> | undefined) ?? {}));
+  if (doc.environments !== undefined) {
+    if (!Array.isArray(doc.environments) || doc.environments.length > 20) issues.push("environments must be an array of at most 20.");
+    else {
+      const seen = new Set<string>();
+      doc.environments.forEach((raw, i) => {
+        const e = raw as Record<string, unknown> | null;
+        if (!e || typeof e !== "object" || typeof e.id !== "string" || !ID_RE.test(e.id)) { issues.push(`environments[${i}].id is required (lowercase id, e.g. dev).`); return; }
+        if (seen.has(e.id)) issues.push(`environments[${i}].id "${e.id}" is duplicated.`);
+        seen.add(e.id);
+        if (e.title !== undefined && (typeof e.title !== "string" || !e.title.trim() || e.title.length > 120)) issues.push(`environments[${i}].title must be a non-empty string (at most 120).`);
+        if (e.production !== undefined && typeof e.production !== "boolean") issues.push(`environments[${i}].production must be true or false.`);
+        if (e.description !== undefined && (typeof e.description !== "string" || e.description.length > 500)) issues.push(`environments[${i}].description must be a string (at most 500).`);
+      });
+    }
+  }
+  if (doc.docs !== undefined) issues.push(...validateDocs(doc.docs, "docs", repoKeys, 50));
+  return issues;
+}
+
+/**
+ * In-memory v1/v2 -> v3 migration. Pure: v3 is a superset, so this only moves the version (through
+ * v2 for a v1 manifest). Writing it is a separate, explicit, journaled action.
+ */
+export function migrateManifestToV3(m: DataPassProjectManifest): DataPassProjectManifest {
+  const next = m.schemaVersion === 1 ? migrateManifestToV2(m) : structuredClone(m);
+  next.schemaVersion = 3;
+  return next;
+}
+
 /**
  * In-memory v1 -> v2 migration. Pure: returns a new object and never mutates the input,
  * so the original manifest stays recoverable. Writing it is a separate, explicit action.
  */
 export function migrateManifestToV2(v1: DataPassProjectManifest): DataPassProjectManifest {
-  if (v1.schemaVersion === 2) return structuredClone(v1);
+  if (v1.schemaVersion !== 1) return structuredClone(v1);
   const next = structuredClone(v1) as DataPassProjectManifest;
   next.schemaVersion = 2;
   for (const repo of Object.values(next.repositories ?? {})) if (repo.path && !repo.management) repo.management = "local";

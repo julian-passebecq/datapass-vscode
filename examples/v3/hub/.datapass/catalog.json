@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-catalog.schema.json",
+  "format": "datapass.catalog",
+  "version": "1",
+  "title": "Example organisation — projects",
+  "description": "Entry points only: each project keeps its own .datapass/project.json in its coordination repository.",
+  "projects": [
+    {
+      "id": "research-library",
+      "title": "Research library",
+      "organization": "Example Org",
+      "description": "PDF papers to reviewed knowledge in MongoDB.",
+      "repository": {
+        "url": "https://github.com/example-org/research-hub",
+        "branch": "main"
+      },
+      "tags": [
+        "azure",
+        "documents"
+      ]
+    },
+    {
+      "id": "catalog-import",
+      "title": "Supplier catalogue import",
+      "organization": "Example Org",
+      "description": "CSV cleaning into PostgreSQL (Neon).",
+      "repository": {
+        "url": "https://github.com/example-org/catalog-import",
+        "branch": "main"
+      },
+      "tags": [
+        "python",
+        "postgres"
+      ]
+    }
+  ]
+}

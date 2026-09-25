@@ -1,0 +1,51 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "clean",
+      "kind": "script",
+      "label": "Clean the CSV",
+      "provider": "python",
+      "description": "Normalises columns and drops duplicates.",
+      "artifacts": {
+        "profile": "python.script",
+        "root": "etl",
+        "entry": "clean.py",
+        "files": [
+          "tests/test_clean.py"
+        ]
+      }
+    },
+    {
+      "id": "db",
+      "kind": "database",
+      "label": "Catalogue tables",
+      "provider": "neon",
+      "artifacts": {
+        "profile": "postgres.migrations",
+        "root": "db"
+      },
+      "operations": [
+        {
+          "capability": "postgres.browse"
+        },
+        {
+          "capability": "postgres.migrations.apply",
+          "environment": "test",
+          "target": {
+            "branch": "test"
+          }
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "id": "load",
+      "source": "clean",
+      "target": "db",
+      "relation": "feeds"
+    }
+  ]
+}

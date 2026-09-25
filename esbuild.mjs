@@ -11,3 +11,15 @@ await esbuild.build({
   sourcemap: true,
   logLevel: "info"
 });
+
+// The Workbench webviews (editor tab, Architecture panel, Details side bar) run this in the browser sandbox.
+await esbuild.build({
+  entryPoints: ["src/webview/workbench.ts"],
+  bundle: true,
+  outfile: "dist/workbench.js",
+  platform: "browser",
+  format: "iife",
+  target: "es2020",
+  sourcemap: false,
+  logLevel: "info"
+});

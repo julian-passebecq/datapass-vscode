@@ -49,7 +49,18 @@ export const TOOLS: ToolDefinition[] = [
   { id: "ext.mongodb", label: "MongoDB for VS Code", kind: "extension", extensionIds: ["mongodb.mongodb-vscode"], publisher: "vendor" },
   { id: "cli.mongosh", label: "mongosh", kind: "cli", cli: { command: "mongosh", args: ["--version"] }, publisher: "vendor" },
   { id: "ext.drawio", label: "Draw.io Integration (community)", kind: "extension", extensionIds: ["hediet.vscode-drawio"], publisher: "community" },
-  { id: "cli.git", label: "Git", kind: "cli", cli: { command: "git", args: ["--version"] }, publisher: "vendor" }
+  { id: "cli.git", label: "Git", kind: "cli", cli: { command: "git", args: ["--version"] }, publisher: "vendor" },
+  // V3: Azure data services and databases used as project destinations.
+  { id: "ext.azure-functions", label: "Azure Functions", kind: "extension", extensionIds: ["ms-azuretools.vscode-azurefunctions"], publisher: "microsoft" },
+  { id: "cli.func", label: "Azure Functions Core Tools", kind: "cli", cli: { command: "func", args: ["--version"] }, publisher: "microsoft" },
+  { id: "ext.azure-storage", label: "Azure Storage", kind: "extension", extensionIds: ["ms-azuretools.vscode-azurestorage"], publisher: "microsoft" },
+  { id: "ext.cosmosdb", label: "Azure Cosmos DB (Azure Databases)", kind: "extension", extensionIds: ["ms-azuretools.vscode-cosmosdb"], publisher: "microsoft",
+    note: "Cosmos DB for NoSQL (and other Azure databases). Not the MongoDB Atlas client." },
+  { id: "ext.azure-resources", label: "Azure Resources", kind: "extension", extensionIds: ["ms-azuretools.vscode-azureresourcegroups"], publisher: "microsoft",
+    note: "Sign-in and resource tree shared by the Azure extensions." },
+  { id: "ext.pgsql", label: "PostgreSQL (Microsoft)", kind: "extension", extensionIds: ["ms-ossdata.vscode-pgsql"], publisher: "microsoft" },
+  { id: "ext.neon", label: "Neon (serverless Postgres)", kind: "extension", extensionIds: ["databricks.neon-local-connect"], publisher: "vendor" },
+  { id: "cli.psql", label: "psql", kind: "cli", cli: { command: "psql", args: ["--version"] }, publisher: "vendor" }
 ];
 
 export const TOOL_INDEX: ReadonlyMap<string, ToolDefinition> = new Map(TOOLS.map(t => [t.id, t]));

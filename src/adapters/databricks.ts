@@ -6,6 +6,7 @@ import * as vscode from "vscode";
 import { getFoilBinding } from "../profiles/foil";
 import { getProjectPlatformConfig, resolveProjectRepository } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
+import { projectRoot } from "../core/workspace/root";
 
 export class DatabricksAdapter implements PlatformAdapter {
   readonly id = "databricks";
@@ -16,7 +17,7 @@ export class DatabricksAdapter implements PlatformAdapter {
     const cli = await detectCli({ id: "databricks-cli", label: "Databricks CLI", command: "databricks", args: ["--version"] });
     const bundleInWorkspace = await anyWorkspaceFile(["**/databricks.yml", "**/databricks.yaml", "**/bundle.yml", "**/bundle.yaml"]);
     const projectConfig = await getProjectPlatformConfig();
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceRoot = projectRoot()?.fsPath;
     const manifestBundleRoot = projectConfig?.databricks?.bundleRoot?.trim();
     const manifestRepoRoot = await resolveProjectRepository("databricks");
     const manifestRoot = manifestRepoRoot || (workspaceRoot && manifestBundleRoot ? resolveManifestPath(workspaceRoot, manifestBundleRoot) : undefined);
