@@ -1037,6 +1037,9 @@ function focusCard(id: string): void {
   ui.boardFocus = id;
   saveUi();
   render();
+  // In a narrow tab the card panel is under the kanban: bring it into view when it is off-screen.
+  const side = document.querySelector<HTMLElement>(".shell.board aside.side");
+  if (side && side.getBoundingClientRect().top > window.innerHeight - 60) side.scrollIntoView({ block: "nearest" });
 }
 
 function boardNav(s: WorkbenchState): HTMLElement {
