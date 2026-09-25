@@ -40,6 +40,14 @@
         },
         "description": {
           "type": "string"
+        },
+        "type": {
+          "enum": [
+            "dev",
+            "work",
+            "perso"
+          ],
+          "description": "Project type (DataPass 0.20): dev and perso turn work orders on once the machine setting datapass.ai.workOrders.enabled is on, and the agent merges its PRs when CI is green; work (FOIL, clients) keeps work orders off unless modules.workOrders is true, and the person merges. The machine setting datapass.ai.projectTypes wins. Unset: dev."
         }
       }
     },
@@ -72,6 +80,14 @@
         },
         "diagramcloud": {
           "type": "boolean"
+        },
+        "workOrders": {
+          "type": "boolean",
+          "description": "Work orders for AI agents (DataPass 0.20). false switches them off for this project; a work project (project.type work) needs true to turn them on. A project can never switch them on alone: the machine setting datapass.ai.workOrders.enabled is required."
+        },
+        "pilot": {
+          "type": "boolean",
+          "description": "Pilot mode (later, read-only first). false switches it off for this project. Not built yet."
         },
         "azure": {
           "type": "boolean",

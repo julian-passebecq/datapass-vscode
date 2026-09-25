@@ -78,6 +78,8 @@ export interface DataPassProjectManifest {
     title: string;
     profile?: string;
     description?: string;
+    /** 0.20: dev · work · perso — the defaults of work orders (on/off) and who merges. The machine setting datapass.ai.projectTypes wins. */
+    type?: "dev" | "work" | "perso";
   };
   repositories?: Record<string, RepositoryBinding>;
   platforms?: {
@@ -190,6 +192,7 @@ export function validateProjectManifest(raw: unknown): string[] {
     if (typeof project.id !== "string" || !project.id.trim()) issues.push("project.id is required.");
     if (typeof project.title !== "string" || !project.title.trim()) issues.push("project.title is required.");
     if (project.profile !== undefined && typeof project.profile !== "string") issues.push("project.profile must be a string.");
+    if (project.type !== undefined && !["dev", "work", "perso"].includes(project.type as string)) issues.push("project.type must be dev, work or perso.");
   }
 
   if (doc.repositories !== undefined) {

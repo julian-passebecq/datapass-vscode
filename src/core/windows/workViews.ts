@@ -44,7 +44,7 @@ export const PANE_VIEW_IDS: Readonly<Record<Pane, string>> = {
 /** Panes that live in the secondary side bar (its container "datapass-details" holds both). */
 export const SECONDARY_PANES: readonly Pane[] = ["aiExchange", "details"];
 
-export const WORKBENCH_VIEWS = ["architecture", "options", "sheet", "board"] as const;
+export const WORKBENCH_VIEWS = ["architecture", "options", "sheet", "board", "workOrders"] as const;
 export type WorkbenchView = typeof WORKBENCH_VIEWS[number];
 
 /** Diagram settings of one webview mode ("full" = Workbench tab, "map" = Architecture panel). */

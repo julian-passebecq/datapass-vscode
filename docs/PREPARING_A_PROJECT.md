@@ -76,6 +76,8 @@ native repositories                the real code, in native formats: databricks.
 | `scopes[]` | Sub-projects (work areas). `itemRefs` lists their components (children via `contains` follow); `repoRef` is the default repository of their components. |
 | `docs[]` | Files (`path`, optional `repoRef`) or https pages opened from DataPass. |
 | `modules` | `false` hides a module (its operations and cards). `azure` = Data Factory, Functions, Storage, Cosmos DB; `databases` = MongoDB Atlas, PostgreSQL/Neon. Projects an AI prepares now set `"modules": { "mongoku": false }`: **Mongoku is frozen** — it reads `board.json` and `project.json` from GitHub on its own; DataPass never connects to it, so there is nothing to configure here beyond keeping those files well-formed. |
+| `project.type` | DataPass ≥ 0.20: `dev`, `work` or `perso`. **dev** and **perso**: work orders for Claude Code / Codex are on (once the person switches them on for their computer) and the agent merges its own pull requests when CI is green. **work** (FOIL, client projects): work orders stay off unless `modules.workOrders` is `true`, and the person merges. Unset = `dev`; the person's machine setting `datapass.ai.projectTypes` wins. |
+| `modules.workOrders`, `modules.pilot` | DataPass ≥ 0.20. `false` switches work orders (or the later pilot mode) off for this project; a **work** project needs `workOrders: true` to allow them. A project can never switch them on alone: the machine setting `datapass.ai.workOrders.enabled` is required. DataPass ≤ 0.19 reports these keys as unknown. |
 
 Unknown fields are errors (in the editor and at runtime): a field DataPass would ignore must not
 look like configuration.
@@ -648,3 +650,27 @@ CLI's): each official CLI reads its own. From their output DataPass keeps only w
 in, the tenant and subscription ids to compare, and profile names with their validity; the account
 name and the masked token prefixes `fab auth status` prints are dropped. The results stay in memory
 (a new window checks again) and AI packs carry connection names and states only.
+
+## 13. Work orders and the work log (DataPass ≥ 0.20.0)
+
+An AI agent (Claude Code, Codex) that receives a DataPass **work order** reads
+`<coordination repository>/.datapass/local/work-orders/<id>/order.md` first. Its rules win over the
+agent's usual rules: a new worktree per repository to change, from the recorded base, on the planned
+branch (`dp/<id>`); one pull request per repository; no merge unless the order says so; no
+deployment, cloud change or secret; `.datapass/*.json` kept valid (schemas in `attachments/schemas/`);
+and, at the end, `result.json` at the absolute path given (format `datapass.work-order-result` 1:
+the order's `orderId` and `receipt`, `status`, `summary`, then optional `repositories[]` with the
+branch, commits and PR address, `datapassFiles[]`, `checks[]`, `questions[]`, `followUps[]`). DataPass
+checks the result strictly and finds the PRs by the planned branch itself; the agent's claims are
+shown as "the agent says". A DataPass file returned for import goes to `proposed/<kind>.json` in the
+order folder, never committed; the person imports it after a diff.
+
+**`.datapass/work-log.json`** (format `datapass.work-log`, version `1`) is the committed summary of the
+project's work orders, written by DataPass when the person clicks *Publish summary*: order id, title,
+kind, dates, status, the agent and surface, the repositories by their declared remote, planned
+branches and pull requests (number, address, state), the result's status and number of questions.
+It never holds the goal text, the agent's summary, a local path or a secret. An AI keeping project
+files up to date may read it, must keep it valid, and should not rewrite it: DataPass merges it by
+order id. The same format, one file per project, can go to a private log repository
+(`work-logs/<project id>.json`) set on the person's computer.
+

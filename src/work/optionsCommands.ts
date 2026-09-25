@@ -322,7 +322,7 @@ export async function copyForAi(session: WorkSession, version: string, preset?: 
   return EXCHANGE_FILES[kind].path;
 }
 
-function importContext(session: WorkSession): ProjectContextForImport {
+export function importContext(session: WorkSession): ProjectContextForImport {
   const c = session.project;
   return { manifest: c.manifest, graph: c.graph, graphPath: c.manifest?.graph, decisionIds: c.options?.decisions.map(d => d.id), options: c.options };
 }

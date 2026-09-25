@@ -64,7 +64,12 @@ const SECRETS: Array<[RegExp, string]> = [
 ];
 
 export function scrub(text: string): string {
-  let out = text.replace(PATHLIKE, "<local-path>").replace(/(https?:\/\/)[^/\s:@]+:[^/\s@]+@/g, "$1<credentials>@");
+  return scrubSecrets(text.replace(PATHLIKE, "<local-path>"));
+}
+
+/** Credentials only; local paths are kept (work orders stay on this machine and name its clones). */
+export function scrubSecrets(text: string): string {
+  let out = text.replace(/(https?:\/\/)[^/\s:@]+:[^/\s@]+@/g, "$1<credentials>@");
   for (const [re, replacement] of SECRETS) out = out.replace(re, replacement);
   return out;
 }

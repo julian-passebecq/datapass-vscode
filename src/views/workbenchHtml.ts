@@ -209,6 +209,12 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   table.cmp tr.clickrow { cursor: pointer; }
   table.cmp tr.clickrow:hover { background: var(--vscode-list-hoverBackground); }
   table.cmp tr.clickrow.focus { background: var(--vscode-list-inactiveSelectionBackground, rgba(128,128,128,.15)); }
+  ol.timeline { list-style: none; margin: 0; padding: 0 0 0 10px; border-left: 2px solid var(--border); display: grid; gap: 6px; }
+  ol.timeline li { position: relative; font-size: 12px; }
+  ol.timeline li::before { content: ""; position: absolute; left: -15px; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  ol.timeline li.ok::before { background: var(--ok); } ol.timeline li.warn::before { background: var(--warn); } ol.timeline li.error::before { background: var(--bad); }
+  ol.timeline .tl-detail { color: var(--muted); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .note.warn { border-left: 3px solid var(--warn); padding: 6px 9px; background: var(--card); margin-top: 8px; }
   .colhead { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 2px; }
   .dots { letter-spacing: 1px; color: var(--info); font-size: 11px; }
   .money { font-variant-numeric: tabular-nums; }

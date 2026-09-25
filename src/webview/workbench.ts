@@ -7,7 +7,7 @@
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
  * select / openFile / preview / command, and the extension validates each against the project.
  */
-import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbOrder, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import type { CardView } from "../core/project/board";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
@@ -19,7 +19,7 @@ const MODE = (document.body.dataset.mode ?? "full") as "full" | "map" | "detail"
 const root = document.getElementById("app")!;
 let state: WorkbenchState | undefined;
 
-type View = "architecture" | "options" | "sheet" | "board";
+type View = "architecture" | "options" | "sheet" | "board" | "workOrders";
 type SheetSection = "datasets" | "formulas" | "runtimes" | "glossary";
 const CARD_TYPES = ["task", "bug", "feature", "decision", "question"] as const;
 interface Ui {
@@ -44,6 +44,8 @@ interface Ui {
   boardSprint?: string;
   boardTypes: string[];
   boardQuery?: string;
+  /** Work orders view: which orders are listed. */
+  woFilter?: "all" | "open" | "needs" | "done";
 }
 const ui = ((vscode.getState() as Partial<Ui> | undefined) ?? {}) as Ui;
 ui.collapsed ??= {};
@@ -75,7 +77,7 @@ function applyHostUi(u: Partial<Ui> | undefined): void {
   if (typeof u.groupBy === "string" && (GROUP_BY as readonly string[]).includes(u.groupBy)) ui.groupBy = u.groupBy;
   if (Array.isArray(u.folded)) ui.folded = u.folded.filter((f): f is string => typeof f === "string").slice(0, 100);
   if (u.zoom === "fit" || u.zoom === "100") ui.zoom = u.zoom;
-  if (MODE === "full" && (u.view === "architecture" || u.view === "options" || u.view === "sheet" || u.view === "board")) ui.view = u.view;
+  if (MODE === "full" && (u.view === "architecture" || u.view === "options" || u.view === "sheet" || u.view === "board" || u.view === "workOrders")) ui.view = u.view;
   reportedUi = JSON.stringify(diagramUi());
   vscode.setState(ui);
 }
@@ -168,7 +170,8 @@ function viewTabs(s: WorkbenchState): HTMLElement {
     tab("architecture", "Architecture"),
     tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined),
     tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined),
-    tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined));
+    tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined),
+    tab("workOrders", "Work orders", s.workOrders?.needs ? `${s.workOrders.needs}!` : s.workOrders?.open ? String(s.workOrders.open) : undefined));
 }
 
 function header(s: WorkbenchState): HTMLElement {
@@ -546,6 +549,7 @@ function componentDetail(c: WbComponent, s: WorkbenchState, withFiles: boolean):
       c.artifacts && repo?.state === "local" ? btn("Open this folder in a new window", () => command("datapass.openComponentFolder", c.id), { icon: "⧉", title: "Some official extensions work best with the component folder as the window root" }) : undefined,
       c.nativeTool ? btn(`Open ${c.nativeTool}`, () => command("datapass.openNativeTool", c.id), { icon: "⚙" }) : undefined,
       btn("Prepare AI context for this component", () => command("datapass.preparationPack", { componentId: c.id }), { icon: "✦" }),
+      c.artifacts && c.artifacts.summary.missing > 0 ? btn("Prepare the missing files as a work order", () => command("datapass.workOrders.newForMissingFiles", c.id), { icon: "⚒", title: "Opens the Agent tab with the order prefilled; nothing is written or launched until you click" }) : undefined,
       ...c.docs.map(d => btn(d.label, () => command("datapass.openDoc", d), { kind: "link", icon: "📄" }))),
     c.problems.length ? h("section", {}, eyebrow("Problems"), ...c.problems.map(p => h("div", { class: "problem warning", text: p }))) : undefined,
     h("p", { class: "muted small evidence", text: "Evidence, not promise: an installed extension does not prove access to an account; ready means the prerequisites are here, not that the operation will succeed." }));
@@ -718,6 +722,9 @@ function connectionsBlock(list: WbReadiness["connections"]): HTMLElement {
 }
 
 function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {
+  // 0.20: a selected work order shows its timeline until something else is selected.
+  const order = s.workOrders?.selected ? s.workOrders.orders.find(o => o.id === s.workOrders!.selected) : undefined;
+  if (order) return orderDetail(order, s, false);
   const c = comp(s.selection.component);
   if (c) return componentDetail(c, s, withFiles);
   const sp = subp(s.selection.subproject);
@@ -925,6 +932,7 @@ function optionsSide(s: WorkbenchState): HTMLElement {
         x.current ? undefined : btn(`Preview "${x.label}"`, () => previewPicks([`${d.id}=${x.id}`]), { kind: "primary", icon: "◎" }),
         btn(x.chosen ? `Decided: ${x.label}` : `Record decision: ${x.label}`, () => command("datapass.recordDecision", { decision: d.id, option: x.id }), { icon: "★", title: "Writes chosen/decidedOn/rationale in options.json (backup kept); the AI applies it later" }),
         x.chosen && !x.current ? btn("Ask the AI to apply this decision", () => command("datapass.optionsAiContext", { purpose: "apply", decision: d.id, option: x.id }), { icon: "✦" }) : undefined,
+        x.chosen && !x.current ? btn("Apply this decision as a work order", () => command("datapass.workOrders.newFromDecision", d.id), { icon: "⚒", title: "Opens the Agent tab with the order prefilled (the apply pack attached)" }) : undefined,
         ...common
       ].filter((b): b is HTMLElement => !!b);
       return impactSide(s, `${d.title}: ${x.label}`, x.impact, actions);
@@ -1253,6 +1261,7 @@ function boardSide(s: WorkbenchState): HTMLElement {
       h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: c.decision.title }), h("span", { class: "muted small", text: `  current: ${c.decision.current ?? "?"}${c.decision.chosen ? ` · decided: ${c.decision.chosen}` : ""}` })))) : undefined,
     h("section", { class: "actions-col" }, eyebrow("Actions"),
       btn("Prepare AI pack for this card", () => command("datapass.board.aiPack", { item: c.id }), { kind: "primary", icon: "✦", title: c.type === "bug" ? "With the error text you copied, credentials and local paths removed" : undefined }),
+      c.done ? undefined : btn("Work order for this card", () => command("datapass.workOrders.newFromCard", c.id), { icon: "⚒", title: "Opens the Agent tab with the order prefilled (the card pack attached)" }),
       h("label", { class: "row" }, h("span", { class: "small muted", text: "Move to" }), moveSel),
       btn("Open in board.json", () => command("datapass.openBoardFile", { item: c.id }), { kind: "link" })),
     h("p", { class: "muted small evidence", text: "The card is what the project says (board.json). A file is checked on this machine; a link opens only after you see its address." }));
@@ -1268,6 +1277,112 @@ function boardEmpty(s: WorkbenchState): HTMLElement {
       btn("Paste the AI's answer", () => command("datapass.showAiExchange", "board"), { icon: "⇣" }),
       s.boardError ? btn("Open board.json", () => command("datapass.openBoardFile")) : undefined,
       btn("How the board works (guide)", () => command("datapass.openPreparationGuide"), { kind: "link" })));
+}
+
+
+// ------------------------------------------------------------------ work orders (0.20, pass AI-2)
+
+const ORDER_TONE: Record<string, string> = { written: "muted", launched: "warn", reported: "info", done: "ok", abandoned: "muted", error: "bad" };
+const OUT_TONE: Record<string, string> = { open: "info", merged: "ok", closed: "muted", "no-pr": "warn", "not-checked": "muted" };
+
+function woRows(s: WorkbenchState): WbOrder[] {
+  const w = s.workOrders!;
+  const f = ui.woFilter ?? "all";
+  return w.orders.filter(o => f === "all" ? true : f === "open" ? !o.closed : f === "needs" ? o.needs.length > 0 : o.closed);
+}
+
+function woNav(s: WorkbenchState): HTMLElement {
+  const w = s.workOrders!;
+  const chip = (id: NonNullable<Ui["woFilter"]>, label: string, n: number) => {
+    const on = (ui.woFilter ?? "all") === id;
+    return h("button", { class: `chipbtn ${on ? "on" : ""}`, type: "button", "aria-pressed": String(on), onclick: () => { ui.woFilter = id; saveUi(); render(); } }, label, h("span", { class: "muted", text: ` ${n}` }));
+  };
+  return h("nav", { class: "nav", "aria-label": "Work order filters" },
+    eyebrow("Work orders"),
+    h("p", { class: "muted small", text: w.typeLine }),
+    w.allowed ? undefined : h("div", { class: "problem warning", text: w.why }),
+    h("div", { class: "row", role: "group", "aria-label": "Show" },
+      chip("all", "All", w.orders.length), chip("open", "Open", w.open), chip("needs", "Needs you", w.orders.filter(o => o.needs.length).length), chip("done", "Done", w.orders.filter(o => o.closed).length)),
+    h("div", { class: "divider" }),
+    h("div", { class: "actions-col" },
+      btn("New work order", () => command("datapass.workOrders.new"), { kind: "primary", icon: "+", title: "Opens the Agent tab of the AI view (right side bar)" }),
+      btn("Publish summary", () => command("datapass.workOrders.publishSummary"), { icon: "⇪", title: "Writes .datapass/work-log.json (and your private log repository when set); you commit them" }),
+      btn("Export JSON…", () => command("datapass.workOrders.exportProject"), { kind: "link", title: "Names and states of the project, a sub-project or the company" }),
+      btn("Re-read the orders", () => command("datapass.workOrders.refresh"), { kind: "link" })),
+    h("p", { class: "muted small", text: "Orders stay on this computer (.datapass/local/work-orders). The durable record is the branches, the pull requests and the summary you publish. DataPass never merges, deploys or deletes." }));
+}
+
+function woCenter(s: WorkbenchState): HTMLElement {
+  const w = s.workOrders!;
+  const rows = woRows(s);
+  const table = h("table", { class: "cmp sheet" },
+    h("thead", {}, h("tr", {}, ...["When", "Order", "Agent", "Output", "Result"].map(t => h("th", { text: t })))),
+    h("tbody", {}, ...rows.map(o => h("tr", {
+      class: `clickrow${w.selected === o.id ? " focus" : ""}`, tabindex: "0", title: `${o.id}\nClick: its timeline in Details, its components in the diagram`,
+      onclick: () => command("datapass.workOrders.select", o.id),
+      onkeydown: (e: Event) => { const k = (e as KeyboardEvent).key; if (k === "Enter" || k === " ") { e.preventDefault(); command("datapass.workOrders.select", o.id); } }
+    },
+      h("td", { class: "muted small", text: o.createdAt ? o.createdAt.slice(5, 16).replace("T", " ") : "" }),
+      h("td", {}, h("div", {}, pill(o.status, ORDER_TONE[o.status] ?? "muted"), " ", h("b", { text: `${o.short} ${o.title}` })), h("div", { class: "muted small", text: o.error ?? o.scope })),
+      h("td", { class: "small", text: o.agent }),
+      h("td", {}, ...(o.outputs.length ? o.outputs.map(x => h("div", { class: `small ${x.ci === "failing" ? "bad" : ""}`, text: x.text })) : [h("span", { class: "muted small", text: o.kind === "investigate" ? "no pull request (a report)" : "no pull request (files to import)" })])),
+      h("td", { class: "small" }, o.result.state === "valid" ? h("span", { text: `${o.result.status} (the agent says)${o.result.questions.length ? ` · ${o.result.questions.length} ?` : ""}` })
+        : o.result.state === "refused" ? h("span", { class: "bad", text: "refused" }) : h("span", { class: "muted", text: "—" }))))));
+  const needs = w.orders.filter(o => !o.closed && o.needs.length).map(o => `${o.short}: ${o.needs[0]}`);
+  return h("main", { class: "center" },
+    h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Work orders` }),
+    h("div", { class: "bar" }, h("div", {}, eyebrow("Work orders"), h("h2", { text: "What the agents were asked, and what came out" })),
+      h("span", { class: "muted small objective", text: `${w.open} open · ${w.orders.length} in total` })),
+    rows.length ? table : h("p", { class: "muted", text: w.orders.length ? "No order matches this filter." : "No work order yet. Write one in the Agent tab of the AI view (right side bar), or from a board card, a decision, a component's missing files or a failing pull request." }),
+    needs.length ? h("div", { class: "note warn small", text: `Needs you: ${needs.slice(0, 6).join(" · ")}` }) : undefined);
+}
+
+function orderDetail(o: WbOrder, s: WorkbenchState, inWorkbench: boolean): HTMLElement {
+  const timeline = h("ol", { class: "timeline" }, ...o.timeline.map(t => h("li", { class: t.tone ?? "" },
+    h("div", {}, t.at ? h("span", { class: "muted small", text: `${t.at.slice(5, 16).replace("T", " ")}  ` }) : undefined, h("b", { text: t.what })),
+    ...(t.detail ?? []).filter(Boolean).map(d => h("div", { class: "small tl-detail", text: d })))));
+  const act = (label: string, id: string, opts: { kind?: "primary" | "secondary" | "link"; icon?: string; title?: string; args?: unknown[] } = {}) => btn(label, () => command(id, o.id, ...(opts.args ?? [])), { kind: opts.kind, icon: opts.icon, title: opts.title });
+  return h("div", { class: "detail" },
+    eyebrow(`Work order · ${o.id}`),
+    h("h2", { text: o.title }),
+    h("div", { class: "row tight" }, pill(o.status, ORDER_TONE[o.status] ?? "muted"), h("span", { class: "muted small", text: `${o.kind} · ${o.agent} · ${o.scope}` })),
+    o.error ? h("div", { class: "problem warning", text: o.error }) : undefined,
+    ...o.needs.map(n => h("div", { class: "problem warning", text: n })),
+    h("div", { class: `next` }, h("b", { text: "Next: " }), h("span", { text: o.next })),
+    o.outputs.length ? h("section", {}, eyebrow("Pull requests (checked by DataPass)"), ...o.outputs.map(x => h("div", { class: "envrow" },
+      h("span", { text: x.text }), x.url ? btn("Open", () => command("datapass.workOrders.openPr", o.id, x.ref), { kind: "link", icon: "↗" }) : pill(x.state === "no-pr" ? "no PR" : x.state, OUT_TONE[x.state] ?? "muted")))) : undefined,
+    o.result.state === "valid" && (o.result.questions.length || o.result.followUps.length) ? h("section", {}, eyebrow("The agent asks / proposes"),
+      ...o.result.questions.map(q => h("div", { class: "small", text: `? ${q}` })),
+      ...o.result.followUps.map((f, i) => h("div", { class: "envrow" }, h("span", { class: "small", text: `→ ${f.title}` }), btn("Follow-up order", () => command("datapass.workOrders.followUp", o.id, i), { kind: "link" })))) : undefined,
+    h("section", {}, eyebrow("Timeline"), timeline),
+    h("section", { class: "actions-col" }, eyebrow("Actions"),
+      !o.closed && o.canLaunch && o.status === "written" ? act("Launch", "datapass.workOrders.launch", { kind: "primary", icon: "▸", title: "Asks you to confirm first" }) : undefined,
+      o.canResume ? act("Resume in terminal", "datapass.workOrders.resume", { icon: "↻" }) : undefined,
+      o.proposed.length ? act(`Import the proposed ${o.proposed.join(", ")}`, "datapass.workOrders.importProposed", { icon: "⇣", title: "Validated, shown as a diff, confirmed, backed up" }) : undefined,
+      o.changesCoordination && o.outputs.some(x => x.state === "open") ? act("Check the PR's DataPass files", "datapass.workOrders.checkPrFiles", { icon: "✓", title: "Fetches the branch and checks its .datapass/*.json like any import" }) : undefined,
+      o.suggestDone ? act("Mark done", "datapass.workOrders.markDone", { kind: "primary", icon: "✓" }) : undefined,
+      !o.closed ? act("Follow-up order", "datapass.workOrders.followUp", { icon: "→" }) : act("Follow-up order", "datapass.workOrders.followUp", { kind: "link" }),
+      act("Copy for a chat", "datapass.workOrders.copyForChat", { kind: "link", title: "The same order for claude.ai or ChatGPT (no Claude Code quota)" }),
+      act("Copy the prompt", "datapass.workOrders.copyPrompt", { kind: "link" }),
+      act("Open order.md", "datapass.workOrders.openFile", { kind: "link" }),
+      o.result.state !== "none" ? act("Open result.json", "datapass.workOrders.openFile", { kind: "link", args: ["result"] }) : undefined,
+      !o.closed ? act("Revise (new order)", "datapass.workOrders.revise", { kind: "link" }) : undefined,
+      !o.closed && !o.suggestDone ? act("Mark done", "datapass.workOrders.markDone", { kind: "link" }) : undefined,
+      !o.closed ? act("Abandon", "datapass.workOrders.abandon", { kind: "link" }) : act("Archive", "datapass.workOrders.archive", { kind: "link" }),
+      inWorkbench ? undefined : btn("All work orders", () => command("datapass.workOrders.show"), { kind: "link" }),
+      btn("Back to the selection", () => command("datapass.workOrders.select"), { kind: "link" })),
+    h("p", { class: "muted small evidence", text: "What the result claims is shown as \"the agent says\". Pull requests and CI come from Git and the host's CLI, found by the planned branch. Done is yours to set." }));
+}
+
+function woSide(s: WorkbenchState): HTMLElement {
+  const w = s.workOrders!;
+  const o = w.orders.find(x => x.id === w.selected);
+  if (!o) return h("div", { class: "detail" }, eyebrow("Work orders"), h("h2", { text: "Select an order" }), h("p", { class: "muted", text: "Click a row to see its timeline, its pull requests with their CI, the agent's result and questions, and what to do next." }));
+  return orderDetail(o, s, true);
+}
+
+function woEmpty(s: WorkbenchState): HTMLElement {
+  return h("div", { class: "empty" }, h("h2", { text: "Work orders" }), h("p", { class: "muted", text: "Open a DataPass project to prepare work orders for Claude Code or Codex." }), btn("Switch project…", () => command("datapass.switchProject")));
 }
 
 // ------------------------------------------------------------------ modes
@@ -1315,6 +1430,10 @@ function renderInner(): void {
     root.append(header(s), s.sheet ? h("div", { class: "shell" }, sheetNav(s), sheetCenter(s), h("aside", { class: "side", "aria-label": "Row details" }, sheetSide(s))) : sheetEmpty(s));
     return;
   }
+  if (ui.view === "workOrders") {
+    root.append(header(s), s.workOrders ? h("div", { class: "shell wide" }, woNav(s), woCenter(s), h("aside", { class: "side", "aria-label": "Work order" }, woSide(s))) : woEmpty(s));
+    return;
+  }
   if (ui.view === "board") {
     root.append(header(s), s.board ? h("div", { class: "shell wide board" }, boardNav(s), boardCenter(s), h("aside", { class: "side", "aria-label": "Card details" }, boardSide(s))) : boardEmpty(s));
     return;
@@ -1337,7 +1456,7 @@ window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string; ui?: Partial<Ui> };
   if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
   if (msg?.type === "ui") { applyHostUi(msg.ui); render(); return; }
-  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board")) {
+  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board" || msg.view === "workOrders")) {
     ui.view = msg.view;
     if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
     if (msg.view === "board" && typeof msg.focus === "string") revealCard(msg.focus);

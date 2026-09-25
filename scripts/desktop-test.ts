@@ -357,6 +357,84 @@ function setupV19Git(base: string): { workspace: string; env: Record<string, str
   return { workspace: hub, env: { DATAPASS_IT_V19: JSON.stringify({ ghStub: stub, projects: parent, pipeline: pipe, fixA, wip, side, squash }) } };
 }
 
+/**
+ * 0.20 work orders: the research project (manifest v5, project.type dev) with its coordination
+ * repository and the pipeline cloned beside it, both with GitHub origins fetched from local bare
+ * repositories, a stub gh (one failing PR on the pipeline, the private log repository marked
+ * private) and a stub `claude` that does what an order asks (worktree, commit, push, PR in the stub
+ * gh's answers, proposed files, result.json). Offline.
+ */
+function setupV20WorkOrders(base: string): { workspace: string; env: Record<string, string> } {
+  const remotes = path.join(base, "remotes");
+  const parent = path.join(base, "projects");
+  const bareOf = (name: string, files: Record<string, string>) => {
+    const seed = path.join(remotes, `seed-${name}`);
+    writeTree(seed, files);
+    commitAll(seed, `seed ${name}`);
+    const bare = path.join(remotes, `${name}.git`);
+    execFileSync("git", ["clone", "-q", "--bare", seed, bare], { stdio: "ignore" });
+    return bare;
+  };
+  const cloneAs = (bare: string, name: string) => {
+    const dir = path.join(parent, name);
+    const url = `https://github.com/example-org/${name}`;
+    execFileSync("git", ["clone", "-q", bare, dir], { stdio: "ignore" });
+    gitIn(dir, "remote", "set-url", "origin", url);
+    gitIn(dir, "config", `url.${pathToFileURL(bare).href}.insteadOf`, url);
+    gitIn(dir, "config", "user.name", "Fixture");
+    gitIn(dir, "config", "user.email", "fixture@example.invalid");
+    gitIn(dir, "fetch", "-q", "origin");
+    gitIn(dir, "branch", "-q", "--set-upstream-to=origin/main", "main");
+    gitIn(dir, "remote", "set-head", "origin", "main");
+    // As Claude Code does: its worktrees folder is excluded locally, so the main clone stays clean.
+    fs.appendFileSync(path.join(dir, ".git", "info", "exclude"), "\n.claude/worktrees/\n");
+    return dir;
+  };
+  const manifest = { ...manifestA(), schemaVersion: 5, project: { ...manifestA().project, type: "dev" } };
+  const hubBare = bareOf("research-library", {
+    ".datapass/project.json": JSON.stringify(manifest, null, 2) + "\n",
+    ".datapass/graph.json": JSON.stringify(graphAJson(), null, 2) + "\n",
+    ".datapass/board.json": JSON.stringify(boardAJson(), null, 2) + "\n",
+    "AGENTS.md": "# Conventions\n\nKeep .datapass files valid.\n",
+    "README.md": "# Research library (coordination)\n"
+  });
+  const hub = cloneAs(hubBare, "research-library");
+  const pipeBare = bareOf("research-pipeline", {
+    "functions/extract/function_app.py": "import azure.functions as func\n\napp = func.FunctionApp()\n",
+    "functions/extract/host.json": JSON.stringify({ version: "2.0" }, null, 2) + "\n",
+    "README.md": "# pipeline\n"
+  });
+  const pipe = cloneAs(pipeBare, "research-pipeline");
+  // A private log repository beside them (never pushed in the test).
+  const logRepo = path.join(parent, "work-log-private");
+  writeTree(logRepo, { "README.md": "# Work logs (private)\n" });
+  commitAll(logRepo, "log");
+  gitIn(logRepo, "remote", "add", "origin", "https://github.com/example-org/work-log-private");
+  // A clone the test uses to move origin/main (the "base moved" check).
+  const other = path.join(remotes, "hub-other");
+  execFileSync("git", ["clone", "-q", hubBare, other], { stdio: "ignore" });
+
+  const tools = path.join(base, "tools");
+  fs.mkdirSync(tools, { recursive: true });
+  const gh = path.join(tools, "gh-stub.cjs");
+  fs.copyFileSync(path.join(repo, "tests", "fixtures", "git", "gh-stub.cjs"), gh);
+  fs.writeFileSync(gh + ".json", JSON.stringify({
+    signedIn: true,
+    visibility: { "example-org/work-log-private": "PRIVATE" },
+    repos: {
+      "example-org/research-pipeline": {
+        open: [{ number: 38, title: "Fix lint", headRefName: "claude/fix-lint", isDraft: false, reviewDecision: "", mergeStateStatus: "UNSTABLE", updatedAt: "2026-09-25T15:00:00Z", statusCheckRollup: [{ __typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE" }] }],
+        closed: []
+      },
+      "example-org/research-library": { open: [], closed: [] }
+    }
+  }, null, 2));
+  const claude = path.join(tools, "claude-stub.cjs");
+  fs.copyFileSync(path.join(repo, "tests", "fixtures", "agents", "claude-stub.cjs"), claude);
+  fs.writeFileSync(claude + ".json", JSON.stringify({ mode: "good", ghStub: gh }, null, 2));
+  return { workspace: hub, env: { DATAPASS_IT_V20: JSON.stringify({ ghStub: gh, claudeStub: claude, hub, pipeline: pipe, logRepo, other, projects: parent }) } };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
@@ -364,7 +442,8 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v3-devops": setupV3Devops,
   "v17-company": setupV17Company,
   "v18-toolchain": setupV18Toolchain,
-  "v19-git": setupV19Git
+  "v19-git": setupV19Git,
+  "v20-work-orders": setupV20WorkOrders
 };
 
 async function vscodeExecutable(): Promise<string> {

@@ -3,6 +3,53 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.20.0 — work orders (pass AI-2, 2026-09-25)
+
+Design and Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
+sections 3.2, 4, 5 and 13.1. Project files: the manifest (still v5) gains the optional `project.type`
+and the `modules.workOrders` / `modules.pilot` switches (DataPass ≤ 0.19 reports them as unknown);
+new committed file `.datapass/work-log.json` (format `datapass.work-log` 1). Only an order DataPass
+wrote on this computer, unchanged since, can be launched.
+
+- **AI view, three tabs**: **DataPass-guided** (the existing JSON exchange, still the default tab),
+  **Agent** (work orders for Claude Code or Codex) and **Manual** (routes to Project, Git,
+  readiness, Workbench, the official tool, Check for updates). Pilot mode stays a later option.
+- **Work orders**: off by default (`datapass.ai.workOrders.enabled`, a machine setting a workspace
+  can never turn on). Project type — `project.type` in the manifest, or `datapass.ai.projectTypes`
+  by project id, which wins — decides the default: **dev** and **perso** have orders on and the
+  agent merges its own PRs when CI is green; **work** (FOIL, clients) has them off unless the
+  project sets `modules.workOrders: true`, and the person merges. `modules.workOrders: false`
+  always turns a project off.
+- **Writing an order**: goal, kind, scope (sub-project, component, board card, decision),
+  repositories to change or read, agent (Claude Code or Codex) and effort, merge policy, an
+  optional export-JSON attachment and which DataPass files the agent should return (in its pull
+  request, or as files to import). DataPass writes `order.md` (the prompt) and `order.json` (a
+  strict schema) under `.datapass/local/work-orders/<id>/` in the coordination repository
+  (git-ignored), with a receipt the result must repeat.
+- **Launch**: one modal, then the default is the **Claude desktop app** (prompt copied to the
+  clipboard, `claude://code/new` opened, you pick the folder and paste); the **Codex app**
+  (`codex:`) the same way; **Claude Code** or **Codex** in a VS Code terminal when configured.
+  Pre-launch checks: trust, the setting, the project type, clones with a verified origin, the base
+  commit still on `origin` after a fetch (else DataPass asks for a new revision), and a warning
+  when another open order already changes the same repository.
+- **Results**: a watcher plus a receipt check; pull requests are found by the planned branch
+  (`dp/<id>` by default) through the Git module. **Needs you** in the Git view gains rule 8: a
+  work order whose result names no pull request, or with neither a result nor a PR a day after
+  launch. The Work orders view (5th Workbench view) lists every order with filters; its Details
+  panel has the timeline, **Check the PR's DataPass files**, **Import a proposed file** (diff,
+  confirm, backup), **Follow-up**, **Revise**, **Mark done**, **Abandon**, **Archive** (moved,
+  never deleted) and **Copy for a chat**.
+- **Entry points**: a board card ("Work order for this card"), an architecture option ("Apply this
+  decision as a work order"), a component ("Prepare the missing files as a work order", in Details
+  and the Project tree), and a failing PR in the Git view ("Work order to fix this").
+- **Publish summary** writes `.datapass/work-log.json` (format `datapass.work-log` v1: ids,
+  titles, dates, statuses, planned branches, PR links — never goal text, the agent's summary,
+  paths or secrets) and, when `datapass.ai.workLog.privateRepository` is set, the same entry to
+  `<private repository>/work-logs/<project id>.json` (refused for the public DataPass repository
+  or a repository of the project; `gh` must say the repository is private, else DataPass asks).
+  DataPass never commits or pushes either file.
+- No MCP server in this pass (Julian's answer Q6 in section 13.1: kept as a later option).
+
 ## 0.19.0 — the Git module (pass AI-1, 2026-09-25)
 
 Design and Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)

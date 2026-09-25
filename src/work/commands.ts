@@ -39,7 +39,7 @@ import { migrateManifestToV2, validateProjectManifest, DATAPASS_MANIFEST_PATH } 
 import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { clipboard } from "../core/clipboard";
-import { MODULES, moduleEnabled, modulesBlock, type ModuleId } from "../core/modules";
+import { AI_SWITCH_IDS, MODULES, moduleEnabled, modulesBlock, type ModuleId } from "../core/modules";
 
 const now = () => new Date().toISOString();
 
@@ -601,13 +601,16 @@ async function chooseModules(session: WorkSession): Promise<void> {
   if (!picks) return;
   const enabled = new Set(picks.map(p => p.id));
   const raw = parseStrictJson(base) as Record<string, unknown>;
+  // workOrders / pilot are not cloud modules: kept exactly as the file has them.
+  const oldModules = (raw.modules && typeof raw.modules === "object" ? raw.modules : {}) as Record<string, unknown>;
+  const block = { ...modulesBlock(enabled), ...Object.fromEntries(AI_SWITCH_IDS.filter(k => typeof oldModules[k] === "boolean").map(k => [k, oldModules[k]])) };
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (key === "modules") continue;
     next[key] = value;
-    if (key === "project") next.modules = modulesBlock(enabled);
+    if (key === "project") next.modules = block;
   }
-  next.modules ??= modulesBlock(enabled);
+  next.modules ??= block;
   const errors = validateProjectManifest(next);
   if (errors.length) throw new UserFacingError(`The manifest would become invalid: ${errors.join("; ")}`);
   const on = MODULES.filter(m => enabled.has(m.id)).map(m => m.label);

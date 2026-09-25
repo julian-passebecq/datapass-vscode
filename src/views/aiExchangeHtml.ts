@@ -1,7 +1,11 @@
 /**
- * HTML of the AI exchange view (secondary side bar). Pure (no `vscode`): one inline script allowed
- * by nonce, theme variables only. Everything from the extension is rendered with textContent; the
- * pasted answer is sent to the extension, which validates it, and is never stored by the webview.
+ * HTML of the AI view (secondary side bar). Pure (no `vscode`): one inline script allowed by nonce,
+ * theme variables only. Everything from the extension is rendered with textContent; the pasted
+ * answer is sent to the extension, which validates it, and is never stored by the webview.
+ *
+ * 0.20 (pass AI-2): Julian's three modes as tabs — DataPass-guided (the JSON exchange, the default
+ * tab), Agent (work orders for Claude / Codex: the form, the apps, what the agents did last) and
+ * Manual (where things stand, and the route to each official tool). Pilot stays a later option.
  */
 export function aiExchangeHtml(cspSource: string, nonce: string): string {
   return String.raw`<!doctype html>
@@ -48,11 +52,40 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   .recent .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .foot { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 8px; }
   [hidden] { display: none !important; }
+  .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: -2px 0 10px; position: sticky; top: -10px; background: var(--vscode-sideBar-background); z-index: 1; }
+  .tab { background: transparent; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 5px 9px; color: var(--muted); }
+  .tab.active { color: var(--vscode-foreground); border-bottom-color: var(--vscode-focusBorder, var(--info)); }
+  .tab .badge { display: inline-block; min-width: 16px; margin-left: 4px; padding: 0 4px; border-radius: 8px; font-size: 10px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+  input[type=text] { width: 100%; font: inherit; color: var(--vscode-input-foreground, inherit); background: var(--vscode-input-background, transparent); border: 1px solid var(--vscode-input-border, var(--border)); border-radius: 3px; padding: 3px 5px; }
+  textarea.prose { white-space: pre-wrap; font-family: var(--vscode-font-family); font-size: 13px; min-height: 90px; }
+  textarea.short { min-height: 44px; white-space: pre-wrap; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .repo { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; align-items: center; padding: 3px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+  .repo select { width: auto; }
+  .repo .muted { grid-column: 1 / -1; font-size: 11px; }
+  label.check { display: flex; gap: 6px; align-items: center; color: var(--vscode-foreground); }
+  details { margin-top: 6px; } summary { cursor: pointer; color: var(--muted); font-size: 12px; }
+  .orders { list-style: none; padding: 0; margin: 4px 0 0; }
+  .orders li { border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; margin: 6px 0; background: var(--card); font-size: 12px; }
+  .orders .head { display: flex; gap: 6px; align-items: baseline; }
+  .orders .head b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { font-size: 10.5px; padding: 0 5px; border-radius: 8px; border: 1px solid var(--border); white-space: nowrap; }
+  .pill.ok { color: var(--ok); border-color: var(--ok); } .pill.warn { color: var(--warn); border-color: var(--warn); } .pill.bad { color: var(--bad); border-color: var(--bad); }
+  .warnline { color: var(--warn); } .badline { color: var(--bad); }
+  .routes { list-style: none; padding: 0; margin: 6px 0 0; }
+  .routes li { display: flex; justify-content: space-between; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+  .pilot { margin-top: 12px; opacity: .7; }
 </style>
 </head>
 <body>
+<nav class="tabs" role="tablist" aria-label="How you work with AI">
+  <button id="t-guided" class="tab active" role="tab" aria-selected="true" title="DataPass takes you step by step: copy a DataPass file for ChatGPT or Claude, paste the answer, review, write">DataPass-guided</button>
+  <button id="t-agent" class="tab" role="tab" aria-selected="false" title="Work orders for Claude Code or Codex, in your repositories">Agent<span id="agentbadge" class="badge" hidden></span></button>
+  <button id="t-manual" class="tab" role="tab" aria-selected="false" title="You work with the official tools; DataPass shows where things stand">Manual</button>
+</nav>
 <div id="notready" class="note" hidden>Open a project folder to exchange its DataPass files (project.json, graph.json, options.json, sheet.json) with ChatGPT or Claude.</div>
 <main id="main" hidden>
+<section id="tab-guided" role="tabpanel" aria-labelledby="t-guided">
   <h2><span class="step">1</span> Send a file to the AI</h2>
   <label for="file">File</label>
   <select id="file"></select>
@@ -89,6 +122,73 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     <button id="guide" class="link">File formats</button>
   </div>
   <div class="small muted" style="margin-top:6px">VS Code's Chat is still here: its icon at the top of this side bar.</div>
+</section>
+
+<section id="tab-agent" role="tabpanel" aria-labelledby="t-agent" hidden>
+  <div id="agentoff" class="note warn" hidden><span id="agentofftext"></span><div class="row"><button id="agentfix" class="secondary" hidden></button></div></div>
+  <div id="ptype" class="small muted"></div>
+  <div class="row">
+    <button id="openclaude" class="secondary" title="Open the Claude desktop app">Claude app</button>
+    <button id="opencodex" class="secondary" title="Open the ChatGPT desktop app (Codex)">Codex app</button>
+    <button id="exportjson" class="link" title="Names and states of the project, a sub-project or the company, as JSON">Export JSON…</button>
+  </div>
+
+  <h2>New work order</h2>
+  <div id="prefillnote" class="note" hidden></div>
+  <label for="goal">What do you want?</label>
+  <textarea id="goal" class="prose" maxlength="8000" spellcheck="true" placeholder="For example: pages over 230 s time out; split long PDFs into batches and retry a failed batch once."></textarea>
+  <label for="wotitle">Title <span class="muted">(optional: else the first line)</span></label>
+  <input id="wotitle" type="text" maxlength="80" />
+  <label for="kind">Kind</label>
+  <select id="kind"></select>
+  <div class="grid2">
+    <div><label for="sub">Sub-project</label><select id="sub"></select></div>
+    <div><label for="comp">Component</label><select id="comp"></select></div>
+  </div>
+  <div id="cardrow"><label for="card">Board card</label><select id="card"></select></div>
+  <div id="decrow"><label for="dec">Decision</label><select id="dec"></select></div>
+  <div class="grid2">
+    <div><label for="choice">Agent</label><select id="choice"></select></div>
+    <div><label for="effort">Effort</label><select id="effort"></select></div>
+  </div>
+  <label>Repositories <span class="muted">(change: its own branch and PR · read: context only)</span></label>
+  <div id="repos"></div>
+  <label for="merge">Merge</label>
+  <select id="merge"><option value="person">I merge</option><option value="agent-when-green">The agent merges when CI is green</option></select>
+  <label class="check"><input type="checkbox" id="attachexport" /> <span>Attach an export JSON of the <span id="expscope">project</span></span></label>
+  <div id="filesrow">
+    <label>DataPass files the agent returns</label>
+    <div class="row" id="dpfiles"></div>
+    <select id="dpvia" aria-label="How the files come back"><option value="pull-request">in its pull request (coordination repository)</option><option value="import">as files for you to import (no pull request)</option></select>
+  </div>
+  <details id="more"><summary>More options</summary>
+    <label for="donewhen">Done when <span class="muted">(one per line)</span></label>
+    <textarea id="donewhen" class="short" maxlength="4000"></textarea>
+    <label for="checks">Checks the agent runs itself <span class="muted">(one per line; DataPass never runs them)</span></label>
+    <textarea id="checks" class="short" maxlength="4000"></textarea>
+    <label for="perm">Permissions</label>
+    <select id="perm"><option value="usual">Your usual Claude / Codex settings</option><option value="ask">Ask before each action (Claude --permission-mode default)</option></select>
+    <label for="model">Model <span class="muted">(empty: the tool's default)</span></label>
+    <input id="model" type="text" maxlength="60" />
+  </details>
+  <div class="row">
+    <button id="wopreview" class="secondary" title="order.md as the agent will read it; nothing is written">Preview</button>
+    <button id="wowrite" class="secondary" title="Writes the order on this computer (.datapass/local/work-orders); nothing is launched">Write the order</button>
+    <button id="wolaunch" class="primary" title="Writes the order, then asks you to confirm the launch">Write and launch ▸</button>
+  </div>
+  <div id="wostatus" class="note" hidden></div>
+
+  <h2>What the agents did last on this project</h2>
+  <div id="woempty" class="small muted">No work order yet.</div>
+  <ul id="worecent" class="orders"></ul>
+  <div class="row"><button id="woall" class="link">All work orders ↗</button><button id="wopublish" class="link" title="Writes .datapass/work-log.json (and your private log repository when set); you commit them">Publish summary</button></div>
+  <div class="small muted pilot">Pilot mode (the agent reads your clouds read-only, you click each action): a later option.</div>
+</section>
+
+<section id="tab-manual" role="tabpanel" aria-labelledby="t-manual" hidden>
+  <p class="small">You work with the official tools (the Fabric, Databricks and Azure extensions, their CLIs, the portals). DataPass shows where things stand and opens the right place; it runs nothing for you.</p>
+  <ul class="routes" id="routes"></ul>
+</section>
 </main>
 <script nonce="${nonce}">
   const vscode = acquireVsCodeApi();
@@ -102,7 +202,10 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   let review = null;
   let timer = null;
 
-  function persist() { vscode.setState({ kind: kind, tasks: tasks }); }
+  let tab = saved.tab === 'agent' || saved.tab === 'manual' ? saved.tab : 'guided';
+  let prefillToken = null;
+  const touched = new Set();
+  function persist() { vscode.setState({ kind: kind, tasks: tasks, tab: tab }); }
   function post(message) { vscode.postMessage(message); }
   function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = String(text); return n; }
   function size(bytes) { return bytes < 1024 ? bytes + ' B' : (bytes / 1024).toFixed(bytes < 10240 ? 1 : 0) + ' KB'; }
@@ -197,6 +300,215 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     timer = setTimeout(() => { seq += 1; post({ type: 'check', seq: seq, text: text }); }, 250);
   }
 
+  // ------------------------------------------------------------------ tabs
+  function showTab(t) {
+    tab = t; persist();
+    for (const x of ['guided', 'agent', 'manual']) {
+      $('tab-' + x).hidden = x !== t;
+      $('t-' + x).classList.toggle('active', x === t);
+      $('t-' + x).setAttribute('aria-selected', String(x === t));
+    }
+  }
+  $('t-guided').addEventListener('click', () => showTab('guided'));
+  $('t-agent').addEventListener('click', () => showTab('agent'));
+  $('t-manual').addEventListener('click', () => showTab('manual'));
+
+  // ------------------------------------------------------------------ Agent tab
+  function opt(select, value, label) { const o = el('option', '', label); o.value = value; select.appendChild(o); return o; }
+  function fillSelect(id, items, value, none) {
+    const s = $(id); const keep = value !== undefined ? value : s.value;
+    s.textContent = '';
+    if (none !== undefined) opt(s, '', none);
+    for (const it of items) opt(s, it.id, it.label);
+    if (keep !== undefined && [...s.options].some(o => o.value === keep)) s.value = keep;
+  }
+  function agentState() { return state && state.agent; }
+  // The same defaults as the extension (defaultAccess): coordination changes (reads for a report), the components' repositories change.
+  function importOnly() { return $('kind').value === 'datapass-files' && $('dpvia').value === 'import' && dpKinds().length > 0; }
+  function dpKinds() { return [...$('dpfiles').querySelectorAll('input:checked')].map(i => i.value); }
+  function repoDefault(r) {
+    const a = agentState(); const k = $('kind').value;
+    if (r.coordination) return k === 'investigate' || importOnly() ? 'read' : 'change';
+    const comps = $('comp').value ? $('comp').value.split(',') : [];
+    const used = new Set(a.components.filter(c => comps.includes(c.id)).map(c => c.repoKey));
+    if (used.has(r.key)) return k === 'investigate' || k === 'datapass-files' ? 'read' : 'change';
+    return 'skip';
+  }
+  function renderRepos() {
+    const a = agentState(); const box = $('repos');
+    const current = {};
+    for (const s of box.querySelectorAll('select')) current[s.dataset.key] = s.value;
+    box.textContent = '';
+    for (const r of a.repos) {
+      const row = el('div', 'repo');
+      row.appendChild(el('span', '', r.label + (r.coordination ? ' (coordination)' : '')));
+      const s = el('select'); s.dataset.key = r.key; s.setAttribute('aria-label', 'Access for ' + r.label);
+      opt(s, 'change', 'change'); opt(s, 'read', 'read'); opt(s, 'skip', '—');
+      if (!r.usable) { s.value = 'skip'; s.disabled = true; }
+      else s.value = touched.has(r.key) && current[r.key] ? current[r.key] : repoDefault(r);
+      s.addEventListener('change', () => touched.add(r.key));
+      row.appendChild(s);
+      row.appendChild(el('span', 'muted', r.note));
+      box.appendChild(row);
+    }
+  }
+  function renderKindRows() {
+    const k = $('kind').value;
+    $('filesrow').hidden = k === 'investigate';
+    if (!$('dpfiles').children.length) {
+      for (const f of ['project', 'graph', 'options', 'sheet', 'board']) {
+        const l = el('label', 'check small'); const i = el('input'); i.type = 'checkbox'; i.value = f;
+        i.addEventListener('change', () => renderRepos());
+        l.appendChild(i); l.appendChild(document.createTextNode(f + '.json')); $('dpfiles').appendChild(l);
+      }
+    }
+    $('cardrow').hidden = !(k === 'fix-card' || $('card').value);
+    $('decrow').hidden = !(k === 'apply-decision' || $('dec').value);
+  }
+  function renderAgent() {
+    const a = agentState(); if (!a) return;
+    $('agentoff').hidden = a.verdict.allowed;
+    $('agentofftext').textContent = a.verdict.why;
+    const fix = $('agentfix');
+    const fixes = { 'machine-setting': 'Open the setting', trust: 'Manage Workspace Trust', 'project-module': 'Open project.json' };
+    fix.hidden = !a.verdict.fix || !fixes[a.verdict.fix];
+    fix.textContent = fixes[a.verdict.fix] || '';
+    $('ptype').textContent = a.projectType.type + ' project (' + a.projectType.source + '): ' + a.projectType.explain + '.';
+    for (const b of ['wowrite', 'wolaunch']) $(b).disabled = !a.verdict.allowed;
+    if (!$('kind').options.length) {
+      fillSelect('kind', a.kinds);
+      fillSelect('effort', a.efforts.map(e => ({ id: e, label: e })), a.defaults.effort);
+      fillSelect('choice', a.choices, a.defaults.choice);
+      $('merge').value = a.defaults.merge;
+      if (a.defaults.model) $('model').value = a.defaults.model;
+    }
+    const first = !$('sub').options.length;
+    fillSelect('sub', a.subprojects.map(x => ({ id: x.id, label: x.title })), first ? (a.selection.subproject || '') : undefined, 'Whole project');
+    if (first && a.selection.component) $('comp').dataset.initial = a.selection.component;
+    const compItems = a.components.filter(c => !$('sub').value || c.subproject === $('sub').value).map(c => ({ id: c.id, label: c.label }));
+    const multi = $('comp').value && $('comp').value.includes(',') ? [{ id: $('comp').value, label: $('comp').value.split(',').join(' + ') }] : [];
+    fillSelect('comp', multi.concat(compItems), $('comp').dataset.initial, 'None');
+    delete $('comp').dataset.initial;
+    fillSelect('card', a.cards.map(c => ({ id: c.id, label: c.id + ' · ' + c.title })), undefined, 'None');
+    fillSelect('dec', a.decisions.map(d => ({ id: d.id, label: d.title })), undefined, 'None');
+    $('expscope').textContent = a.defaults.exportScope === 'subproject' ? 'sub-project' : a.defaults.exportScope;
+    renderKindRows();
+    renderRepos();
+    const badge = $('agentbadge');
+    badge.hidden = !a.counts.needs;
+    badge.textContent = String(a.counts.needs);
+    const list = $('worecent'); list.textContent = '';
+    $('woempty').hidden = a.recent.length > 0;
+    const tone = { written: '', launched: 'warn', reported: 'ok', done: 'ok', abandoned: '', error: 'bad' };
+    for (const o of a.recent) {
+      const li = el('li');
+      const head = el('div', 'head');
+      head.appendChild(el('span', 'pill ' + (tone[o.status] || ''), o.status));
+      const title = el('b', '', o.short + ' ' + o.title); title.title = o.id + ' — ' + o.title; head.appendChild(title);
+      li.appendChild(head);
+      if (o.agent) li.appendChild(el('div', 'muted', o.agent + (o.createdAt ? ' · ' + when(o.createdAt) : '')));
+      for (const line of o.outputs) li.appendChild(el('div', '', line));
+      if (o.result) li.appendChild(el('div', o.result.startsWith('refused') ? 'badline' : '', 'Result: ' + o.result));
+      for (const n of o.needs) li.appendChild(el('div', 'warnline', '⚑ ' + n));
+      li.appendChild(el('div', 'muted', o.next));
+      const row = el('div', 'row');
+      const act = (label, command) => { const b = el('button', 'link', label); b.addEventListener('click', () => post({ type: 'wo.cmd', command: command, args: [o.id] })); row.appendChild(b); };
+      act('Open', 'datapass.workOrders.show');
+      if (o.status === 'written') act('Launch ▸', 'datapass.workOrders.launch');
+      if (o.canResume) act('Resume', 'datapass.workOrders.resume');
+      if (o.suggestDone) act('Mark done', 'datapass.workOrders.markDone');
+      if (o.status === 'reported' || o.status === 'done') act('Follow-up', 'datapass.workOrders.followUp');
+      li.appendChild(row);
+      list.appendChild(li);
+    }
+  }
+  function lines(id) { return $(id).value.split(/\r?\n/).map(x => x.trim()).filter(Boolean); }
+  function draft() {
+    const repos = {};
+    for (const s of $('repos').querySelectorAll('select')) if (!s.disabled) repos[s.dataset.key] = s.value;
+    return {
+      kind: $('kind').value, title: $('wotitle').value, goal: $('goal').value,
+      subproject: $('sub').value || undefined, components: $('comp').value ? $('comp').value.split(',') : [],
+      boardCard: $('card').value || undefined, decision: $('dec').value || undefined, repos: repos,
+      choice: $('choice').value, effort: $('effort').value, merge: $('merge').value, permissions: $('perm').value,
+      model: $('model').value.trim() || undefined, attachExport: $('attachexport').checked,
+      expectedFiles: $('kind').value === 'investigate' ? undefined : (dpKinds().length ? dpKinds().map(k => ({ kind: k, via: $('dpvia').value })) : undefined),
+      doneWhen: lines('donewhen'), checks: lines('checks')
+    };
+  }
+  function woStatus(text, cls) { const b = $('wostatus'); b.hidden = !text; b.className = 'note ' + (cls || ''); b.textContent = text || ''; }
+  $('kind').addEventListener('change', () => { renderKindRows(); renderRepos(); });
+  $('dpvia').addEventListener('change', () => renderRepos());
+  $('sub').addEventListener('change', () => { renderAgent(); });
+  $('comp').addEventListener('change', () => { renderRepos(); });
+  $('card').addEventListener('change', renderKindRows);
+  $('dec').addEventListener('change', renderKindRows);
+  $('wopreview').addEventListener('click', () => post({ type: 'wo.preview', draft: draft(), token: prefillToken }));
+  $('wowrite').addEventListener('click', () => { woStatus('Writing the order…'); post({ type: 'wo.write', draft: draft(), launch: false, token: prefillToken }); });
+  $('wolaunch').addEventListener('click', () => { woStatus('Writing the order…'); post({ type: 'wo.write', draft: draft(), launch: true, token: prefillToken }); });
+  $('woall').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.show', args: [] }));
+  $('wopublish').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.publishSummary', args: [] }));
+  $('openclaude').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.openApp', args: ['claude'] }));
+  $('opencodex').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.openApp', args: ['codex'] }));
+  $('exportjson').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.exportProject', args: [] }));
+  $('agentfix').addEventListener('click', () => {
+    const f = agentState() && agentState().verdict.fix;
+    post({ type: 'wo.cmd', command: f === 'trust' ? 'workbench.trust.manage' : f === 'project-module' ? 'datapass.openProjectManifest' : 'datapass.workOrders.enable', args: [] });
+  });
+  function applyPrefill(m) {
+    const d = m.draft || {};
+    showTab('agent');
+    touched.clear();
+    prefillToken = typeof m.token === 'string' ? m.token : null;
+    renderAgent();
+    if (d.kind) $('kind').value = d.kind;
+    $('wotitle').value = d.title || '';
+    $('goal').value = d.goal || '';
+    $('sub').value = d.subproject || '';
+    renderAgent();
+    const comps = Array.isArray(d.components) ? d.components : [];
+    if (comps.length > 1) opt($('comp'), comps.join(','), comps.join(' + '));
+    $('comp').value = comps.join(',');
+    $('card').value = d.boardCard || '';
+    $('dec').value = d.decision || '';
+    if (d.choice) $('choice').value = d.choice;
+    if (d.effort) $('effort').value = d.effort;
+    if (d.merge) $('merge').value = d.merge;
+    $('donewhen').value = (d.doneWhen || []).join('\n');
+    $('checks').value = (d.checks || []).join('\n');
+    const ef = Array.isArray(d.expectedFiles) ? d.expectedFiles : [];
+    renderKindRows();
+    for (const i of $('dpfiles').querySelectorAll('input')) i.checked = ef.some(f => f.kind === i.value);
+    if (ef[0]) $('dpvia').value = ef[0].via;
+    renderKindRows();
+    if (d.repos) {
+      for (const k of Object.keys(d.repos)) touched.add(k);
+      renderRepos();
+      for (const s of $('repos').querySelectorAll('select')) if (!s.disabled && d.repos[s.dataset.key]) s.value = d.repos[s.dataset.key];
+    } else renderRepos();
+    const note = $('prefillnote'); note.hidden = !m.note; note.textContent = m.note || '';
+    woStatus('');
+    $('goal').focus();
+  }
+
+  // ------------------------------------------------------------------ Manual tab
+  function renderManual() {
+    const m = state && state.manual; if (!m) return;
+    const list = $('routes'); list.textContent = '';
+    const route = (label, info, command) => {
+      const li = el('li'); const b = el('button', 'link', label); b.addEventListener('click', () => post({ type: 'wo.cmd', command: command, args: [] }));
+      li.appendChild(b); li.appendChild(el('span', 'muted', info)); list.appendChild(li);
+    };
+    route('Project view', m.filesMissing ? m.filesMissing + ' expected file(s) missing' : 'files, repositories, readiness', 'datapass.project.focus');
+    route('Git view', m.gitNeeds ? m.gitNeeds + ' item(s) need you' : 'branches, worktrees, PRs', 'datapass.git.focus');
+    route('Readiness report', 'tools, sign-ins, env files', 'datapass.readinessReport');
+    route('Workbench', 'architecture, options, sheet, board, work orders', 'datapass.openWorkbench');
+    route('Open the official tool', 'of the selected component', 'datapass.openNativeTool');
+    route('Check for updates', m.behind ? m.behind + ' commit(s) to get' : 'git fetch, nothing merged', 'datapass.checkForUpdates');
+    route('How a project is prepared', 'the guide', 'datapass.openPreparationGuide');
+    if (m.problems) route('Problems in project files', m.problems + ' error(s)', 'workbench.actions.view.problems');
+  }
+
   $('file').addEventListener('change', e => { kind = e.target.value; persist(); $('copied').hidden = true; renderFile(); });
   $('task').addEventListener('change', e => { tasks[kind] = e.target.value; persist(); });
   $('copy').addEventListener('click', () => { const f = current(); if (f) post({ type: 'copy', kind: f.kind, task: $('task').value || (f.tasks[0] && f.tasks[0].id) }); });
@@ -215,9 +527,20 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       state = m.state;
       $('notready').hidden = state.ready;
       $('main').hidden = !state.ready;
-      if (state.ready) { renderFiles(); renderRecent(); }
+      if (state.ready) { renderFiles(); renderRecent(); renderAgent(); renderManual(); }
       if ($('answer').value.trim()) check();
+    } else if (m.type === 'prefill') {
+      if (state && state.ready) applyPrefill(m);
+    } else if (m.type === 'tab') {
+      if (m.tab === 'agent' || m.tab === 'manual' || m.tab === 'guided') showTab(m.tab);
+    } else if (m.type === 'wo.done') {
+      if (m.error) woStatus(m.error, 'bad');
+      else if (m.id) {
+        woStatus('Work order ' + m.id + ' written' + (m.launched ? ' and handed over.' : '. Launch it from the list below when you are ready.'), 'ok');
+        $('goal').value = ''; $('wotitle').value = ''; prefillToken = null; $('prefillnote').hidden = true;
+      } else woStatus('');
     } else if (m.type === 'focus') {
+      showTab('guided');
       if (typeof m.kind === 'string' && state && state.files.some(f => f.kind === m.kind)) { kind = m.kind; persist(); $('file').value = kind; renderFile(); }
       $('answer').focus();
     } else if (m.type === 'checked') {
@@ -241,6 +564,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       box.textContent = m.path + ' written' + (m.backup ? ' (backup kept)' : '') + '. Review and commit it in Source Control.';
     }
   });
+  showTab(tab);
   post({ type: 'ready' });
 </script>
 </body>

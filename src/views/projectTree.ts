@@ -142,7 +142,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         md.appendMarkdown(`**${esc(c.label)}** — ${esc(c.provider?.label ?? c.kind)}\n\n${c.description ? `${esc(c.description)}\n\n` : ""}${esc(c.headline)}\n\nNext: ${esc(c.nextStep)}`);
         item.tooltip = md;
         const repo = c.repoKey ? this.session.projectMap().repositories.find(r => r.key === c.repoKey) : undefined;
-        item.contextValue = `component${repo?.state === "local" ? ".local" : ""}${c.artifacts?.entry?.state === "found" ? ".entry" : ""}${c.provider?.nativeTool ? ".tool" : ""}`;
+        item.contextValue = `component${repo?.state === "local" ? ".local" : ""}${c.artifacts?.entry?.state === "found" ? ".entry" : ""}${c.provider?.nativeTool ? ".tool" : ""}${(c.artifacts?.summary.missing ?? 0) > 0 ? ".missing" : ""}`;
         return item;
       }
       case "file": {

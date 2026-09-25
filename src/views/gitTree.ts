@@ -37,7 +37,8 @@ const ERR = "problemsErrorIcon.foreground", WARN = "problemsWarningIcon.foregrou
 
 const NEED_ICON: Record<string, [string, string?]> = {
   "ci-failed": ["error", ERR], "pr-waiting": ["git-pull-request", WARN], "merged-not-pulled": ["arrow-down", WARN], "dirty-default": ["diff", WARN],
-  "worktree-cleanup": ["trash", WARN], "worktree-at-risk": ["warning", ERR], unpushed: ["cloud-upload", WARN], detached: ["debug-disconnect", WARN]
+  "worktree-cleanup": ["trash", WARN], "worktree-at-risk": ["warning", ERR], unpushed: ["cloud-upload", WARN], detached: ["debug-disconnect", WARN],
+  "work-order-no-pr": ["checklist", WARN]
 };
 const CI_ICON: Record<string, [string, string?]> = { failing: ["error", ERR], running: ["sync", "charts.yellow"], passing: ["pass", OK], none: ["git-pull-request", undefined], unknown: ["git-pull-request", undefined] };
 const REVIEW_TEXT: Record<string, string> = { approved: "approved", "changes-requested": "changes requested", "review-required": "review needed", none: "" };
@@ -57,6 +58,7 @@ export function needCommand(n: NeedsYou): vscode.Command {
     case "source-control": return { command: "datapass.git.openSourceControl", title: "Open in Source Control", arguments: [n.repoKey] };
     case "copy-cleanup": return { command: "datapass.git.copyCleanupCommand", title: "Copy the cleanup command", arguments: [n.repoKey, n.worktree] };
     case "open-worktree": return { command: "datapass.git.openInNewWindow", title: "Open the worktree in a new window", arguments: [n.repoKey, n.worktree] };
+    case "open-work-order": return { command: "datapass.workOrders.show", title: "Open the work order", arguments: [n.order] };
   }
 }
 
@@ -149,7 +151,7 @@ export class GitTreeProvider implements vscode.TreeDataProvider<GitNode>, vscode
       case "needs": {
         const item = new vscode.TreeItem(`Needs you (${n.items.length})`, vscode.TreeItemCollapsibleState.Expanded);
         item.id = n.id; item.iconPath = icon(["bell-dot", WARN]); item.contextValue = "gitNeeds";
-        item.tooltip = "Most urgent first: failed CI, green PRs waiting, merges not pulled, uncommitted changes on the default branch, finished worktrees, unpushed work, detached HEAD.";
+        item.tooltip = "Most urgent first: failed CI, green PRs waiting, merges not pulled, uncommitted changes on the default branch, finished worktrees, unpushed work, detached HEAD, work orders without a pull request.";
         return item;
       }
       case "need": {

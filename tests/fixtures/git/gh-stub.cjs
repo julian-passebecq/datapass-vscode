@@ -12,5 +12,10 @@ if (args[0] === "pr" && args[1] === "list") {
   process.stdout.write(JSON.stringify(rows));
   process.exit(0);
 }
+// 0.20: `gh repo view owner/repo --json visibility --jq .visibility` (the private work-log check), only when the JSON names it.
+if (args[0] === "repo" && args[1] === "view" && data.visibility && data.visibility[args[2]]) {
+  process.stdout.write(data.visibility[args[2]] + "\n");
+  process.exit(0);
+}
 process.stderr.write("gh stub: unsupported command " + args.join(" ") + "\n");
 process.exit(2);
