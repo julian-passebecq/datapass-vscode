@@ -1,7 +1,7 @@
 # AI work modes, work orders, Git module, Claude & Codex panel: design (2026-09-25)
 
-> **Status: design for Julian to validate.** Nothing here is built, and nothing is accepted until
-> Julian answers section 13. Brief: Claude Control's phase 4 plan
+> **Status: validated on 2026-09-25 with Julian's answers in section 13.1, which win where they
+> differ from the text below.** AI-1 (Git module) is being built as 0.19. Brief: Claude Control's phase 4 plan
 > (`D:\PROJ\claude-control\docs\integrations\datapass-vscode.md`) and its decision **D8**: no MCP
 > server and no VS Code agent mode for DataPass; DataPass hands a prepared work order to Codex or
 > Claude Code and tracks what comes out.
@@ -974,6 +974,41 @@ A recommendation comes first in each row. "Defaults OK" answers all eight.
 | Q6 | Scope of D8 | **Yes, D8 supersedes** the "later read-only DataPass MCP server" lines in `06_VISION_AND_READINESS.md`, PR #26 and CLAUDE.md ("MCP/agents are optional later work"); AI-2 updates them. The Claude Code and Codex *VS Code extension panels* are **not** hand-off targets for now: no reliable way to pass a prompt, and the same agents run in the terminal | Keep a read-only MCP server as a later option; or also hand orders to the extension panels |
 | Q7 | Git module scope and cleanup | **The project's repositories + an optional "Other repositories in D:\PROJ" section**; cleanup = **copy the command**, DataPass never deletes | Project only; or a *Remove this merged, clean worktree* button with a confirmation |
 | Q8 | First pilot targets | **Fabric CLI, Databricks CLI, Azure CLI, read-only, `dev` only, with read-only roles**; Oracle VM (SSH) and notebook runs excluded from stage 1 | Start with one CLI only (Fabric), or include `fab export` into the order folder in stage 1 |
+
+### 13.1 Julian's answers (2026-09-25)
+
+Given in the "Build DataPass AI-1: the Git module" session. They win over the recommendations above
+and over sections 1–12 where the two differ; AI-2 and AI-3 fold them into the formats.
+
+| # | Answer | What changes |
+|---|---|---|
+| Q1 | **As recommended, shifted by one**: the toolkit's toolchain / ID map / connections pass had already started as **0.18** (PR #26's order), so **AI-1 Git module = 0.19**, then AI-2 work orders, the toolkit catalogue, AI-3, AI-4 | Version numbers only |
+| Q2 | **Both**: the order folder stays on this machine, **and** a committed summary that ChatGPT (and so Mongoku) can read on GitHub — one `.datapass/work-log.json` per project in its coordination repository, **plus** one private log repository across projects (name to choose in AI-2; never this public repository) | AI-2 adds the work-log format and a "publish summary" step; a private log repository becomes a machine setting |
+| Q3 | By **project type** (below): dev and perso → the agent merges when CI is green; work (FOIL, clients) → Julian merges | Replaces the per-order default; the per-order switch stays |
+| Q4 | By **project type**: work orders on for dev and perso once the machine setting is on; off for work projects unless the project turns them on | `modules.workOrders` default depends on the type |
+| Q5 | **The Claude and Codex desktop apps** by default (DataPass prepares the order and copies the prompt; the CLI in a terminal stays available). Codex is installed on this PC as the Windows app "ChatGPT" (package `OpenAI.Codex`); `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` exists; the `codex` CLI is not on PATH | AI-2 launches through the desktop apps first |
+| Q6 | **No MCP server now; keep it as a later option** (not ruled out). Where it would live is undecided | Section 1 and D8 read as "not now", not "never" |
+| Q7 | **As recommended**: the project's repositories + optional "Other repositories in D:\PROJ"; cleanup = copy the command. Julian's model of a project folder holding the coordination repository beside the clones of its repositories (Databricks bundle, VM configuration, Functions…, each file in the repository its pipeline and official extension use) is exactly the V3 resolution model | Built in AI-1 |
+| Q8 | **Start with one small real flow: the FOIL PDF project** (PDF → Azure storage → Azure Functions → back to Mongo). Stage 1 stays read-only (storage, Function status, logs); deploying the Function and any Mongo write are stage 2, each on Julian's click | AI-4 targets `az` (+ `func`) first; Fabric and Databricks follow |
+
+**Additions Julian asked for in the same answers:**
+
+- **Three modes, as tabs, named in his words.** *Manual* (he works with the official tools, DataPass
+  shows where things stand), *DataPass-guided* (DataPass takes him step by step; the JSON
+  import/export exchange lives here and stays the default tab) and *Agent* (Claude Code / Codex).
+  Opening the Agent tab shows the Claude and Codex buttons **and what the agents did last on this
+  project** (last orders, conversations, PRs), and starting an agent can attach an **export JSON of
+  the whole project, a sub-project or the company**, the scope chosen in a setting. Pilot becomes a
+  later option inside Agent.
+- **Project types dev / work / perso** with different defaults (merge, work orders, work log),
+  mirroring Julian's global rules. A field of the project manifest or a machine setting per project:
+  to decide in AI-2 against the toolkit's manifest v5.
+- **Free tier and pricing of every tool and service.** DataPass should show, per tool or cloud service,
+  what is free, what costs how much, and which features each tier has (for example which AI features
+  need credits). Kept as a data file maintained on GitHub (ChatGPT can update it through a PR),
+  shipped with the extension or in the hub repository, and shown as-dated information, never as
+  authority. Belongs to the toolkit catalogue pass (08, "catalogue and recipes"), which gets the
+  fields `freeTier`, `pricingUrl`, `tiers[]` and `checkedAt`.
 
 ## 14. Sources
 
