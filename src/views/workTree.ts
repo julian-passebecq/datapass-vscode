@@ -114,11 +114,14 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
         item.id = `op:${c.id}`;
         const [ic, color] = STATUS_ICON[r.status];
         item.iconPath = icon(ic, color);
-        item.description = `${r.status}${c.implementation === "documented-only" ? " · native tool" : ""}`;
+        const q = this.session.qualification().find(x => x.capabilityId === c.id && x.projectId === this.session.project.manifest?.project.id);
+        const tested = q ? (q.result === "worked" ? " · ✓ worked" : q.result === "failed" ? " · ✗ failed" : " · not tried") : "";
+        item.description = `${r.status}${c.implementation === "documented-only" ? " · native tool" : ""}${tested}`;
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${esc(c.label)}** \`${c.id}\`\n\n**${r.status}** — ${esc(r.nextStep)}\n\n`);
         if (r.sideEffects.length) md.appendMarkdown(`Side effects: ${r.sideEffects.join(", ")}\n\n`);
         md.appendMarkdown(`*${esc(r.evidenceNote)}*`);
+        if (q) md.appendMarkdown(`\n\nYour test: **${q.result}** on ${esc(q.at)} (DataPass ${esc(q.dataPassVersion)})${q.note ? ` — ${esc(q.note)}` : ""}`);
         item.tooltip = md;
         item.contextValue = c.datapassActionId ? "operation.actionable" : "operation";
         item.command = { command: "datapass.showPreflight", title: "Show preflight", arguments: [c.id] };
