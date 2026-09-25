@@ -129,6 +129,9 @@ export class WorkOrderService implements vscode.Disposable {
   private readonly pulled = new Map<string, boolean>();
   private readonly pulling = new Set<string>();
   private lastGitRefresh = 0;
+  /** Orders written by this window (see markOwn). */
+  private readonly own = new Map<string, string>();
+  private ownChain: Promise<unknown> = Promise.resolve();
   /** Set once the first load finished (desktop tests wait on it). */
   loadedAt?: string;
 
@@ -165,17 +168,26 @@ export class WorkOrderService implements vscode.Disposable {
     });
   }
 
-  /** Record an order DataPass has just written here, with the digest of what the agent reads. */
+  /**
+   * Record an order DataPass has just written here, with the digest of what the agent reads. Kept in
+   * memory for this window (the source of truth while it runs) and persisted in the global state,
+   * one write at a time: a stored value that is briefly older (another write's echo) never hides it.
+   */
   async markOwn(id: string, digest: string): Promise<void> {
-    const own = { ...(this.context.globalState.get<Record<string, string>>(OWN_KEY) ?? {}), [id]: digest };
-    const ids = Object.keys(own).sort();
-    for (const old of ids.slice(0, Math.max(0, ids.length - OWN_KEPT))) delete own[old];
-    await this.context.globalState.update(OWN_KEY, own);
+    this.own.set(id, digest);
+    const write = this.ownChain.then(async () => {
+      const stored = { ...(this.context.globalState.get<Record<string, string>>(OWN_KEY) ?? {}), ...Object.fromEntries(this.own) };
+      const ids = Object.keys(stored).sort();
+      for (const old of ids.slice(0, Math.max(0, ids.length - OWN_KEPT))) delete stored[old];
+      await this.context.globalState.update(OWN_KEY, stored);
+    });
+    this.ownChain = write.catch(() => undefined);
+    await write;
   }
 
   /** The digest DataPass recorded when it wrote this order on this computer (undefined: not written here). */
   ownDigest(id: string): string | undefined {
-    const v = this.context.globalState.get<Record<string, string>>(OWN_KEY)?.[id];
+    const v = this.own.get(id) ?? this.context.globalState.get<Record<string, string>>(OWN_KEY)?.[id];
     return typeof v === "string" ? v : undefined;
   }
 
