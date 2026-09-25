@@ -22,11 +22,11 @@ import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { OPTIONS_PATH, type Decision, type OptionsFile } from "../core/project/options";
 import { optionsMarkdown } from "../core/project/optionsReport";
 import { SHEET_PATH } from "../core/project/sheet";
-import { AI_TASKS, EXCHANGE_FILES, checkIncoming, exportForAi, type ExchangeKind } from "../core/project/aiExchange";
+import { AI_TASKS, EXCHANGE_FILES, checkIncoming, exportForAi, reviewIncoming, type ExchangeKind, type IncomingReview, type ProjectContextForImport } from "../core/project/aiExchange";
 import { BACKUP_SUBDIR, backupFileName, backupsToPrune, parseBackupName } from "../core/project/backups";
 
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
-const KINDS: readonly ExchangeKind[] = ["options", "sheet", "graph", "manifest", "catalog"];
+export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "graph", "manifest", "catalog"];
 const str = (v: unknown, max = 300) => (typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined);
 
 /** Read-only documents shown in diffs ("the AI's proposal"), keyed by a random id. */
@@ -57,7 +57,7 @@ export function registerOptionsCommands(context: vscode.ExtensionContext, sessio
   reg("datapass.openSheetReference", async (formulaId?: unknown) => openFormulaFile(session, str(formulaId, 80)));
   reg("datapass.openOptionsFile", async () => openProjectFile(session, OPTIONS_PATH, "options"));
   reg("datapass.openSheetFile", async () => openProjectFile(session, SHEET_PATH, "sheet"));
-  reg("datapass.copyForAi", async (kind?: unknown) => copyForAi(session, version, str(kind, 20) as ExchangeKind | undefined));
+  reg("datapass.copyForAi", async (kind?: unknown) => { await copyForAi(session, version, str(kind, 20) as ExchangeKind | undefined); });
   reg("datapass.importFromAi", async (kind?: unknown) => importFromAi(session, str(kind, 20) as ExchangeKind | undefined));
   reg("datapass.restoreBackup", async () => restoreBackup(session));
 }
@@ -109,6 +109,11 @@ async function showDiff(root: vscode.Uri, rel: string, proposed: string, title: 
   const right = vscode.Uri.from({ scheme: PROPOSAL_SCHEME, path: `/${rel.split("/").pop()}`, query: key });
   if (exists) await vscode.commands.executeCommand("vscode.diff", left, right, title, { preview: true });
   else await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(right), { preview: true });
+}
+
+/** Open the project's copy of a DataPass file (the graph where project.json says it is). */
+export async function openExchangeFile(session: WorkSession, kind: ExchangeKind): Promise<void> {
+  await openProjectFile(session, kind === "graph" ? session.project.manifest?.graph ?? EXCHANGE_FILES.graph.path : EXCHANGE_FILES[kind].path, kind);
 }
 
 async function openProjectFile(session: WorkSession, rel: string, kind: ExchangeKind): Promise<void> {
@@ -297,22 +302,38 @@ function currentBytes(session: WorkSession, kind: ExchangeKind): Promise<Uint8Ar
   }
 }
 
-async function copyForAi(session: WorkSession, version: string, preset?: ExchangeKind): Promise<void> {
+/**
+ * Copy a DataPass file with the AI's instructions. With `taskId` (the AI exchange view) nothing is
+ * asked; from the Workbench or the palette the file and the task are picked. Returns the copied path.
+ */
+export async function copyForAi(session: WorkSession, version: string, preset?: ExchangeKind, taskId?: string, quiet = false): Promise<string | undefined> {
   requireRoot(session.root);
   const kind = await pickKind("Copy which DataPass file for the AI?", preset);
-  if (!kind) return;
+  if (!kind) return undefined;
   const tasks = AI_TASKS[kind];
-  const task = tasks.length === 1 ? tasks[0]! : (await vscode.window.showQuickPick(tasks.map(t => ({ label: t.label, detail: t.ask.slice(0, 150) + (t.ask.length > 150 ? "…" : ""), t })), { title: `What should the AI do with ${EXCHANGE_FILES[kind].path}?` }))?.t;
-  if (!task) return;
+  const task = tasks.find(t => t.id === taskId) ?? (tasks.length === 1 ? tasks[0]! : (await vscode.window.showQuickPick(tasks.map(t => ({ label: t.label, detail: t.ask.slice(0, 150) + (t.ask.length > 150 ? "…" : ""), t })), { title: `What should the AI do with ${EXCHANGE_FILES[kind].path}?` }))?.t);
+  if (!task) return undefined;
   const bytes = await currentBytes(session, kind);
   const text = exportForAi(kind, bytes ? new TextDecoder().decode(bytes) : undefined, task, { projectTitle: session.project.manifest?.project.title, guideUrl: GUIDE_URL, dataPassVersion: version });
   await clipboard.writeText(text);
   await session.recordExchange({ id: newLocalId("ai-file"), kind: "ai-context", label: `${EXCHANGE_FILES[kind].path} for the AI (${task.id})`, status: "copied", digest: sha256Bytes(text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
-  void vscode.window.showInformationMessage(`Copied ${EXCHANGE_FILES[kind].path} with instructions. Paste it into ChatGPT or Claude; then copy its complete answer and run "Import the AI's answer".`, "Import now").then(c => { if (c) void vscode.commands.executeCommand("datapass.importFromAi", kind); });
+  if (!quiet) void vscode.window.showInformationMessage(`Copied ${EXCHANGE_FILES[kind].path} with instructions. Paste it into ChatGPT or Claude, then paste its complete answer in the AI exchange view (right side bar).`, "Open the AI exchange").then(c => { if (c) void vscode.commands.executeCommand("datapass.showAiExchange", kind); });
+  return EXCHANGE_FILES[kind].path;
+}
+
+function importContext(session: WorkSession): ProjectContextForImport {
+  const c = session.project;
+  return { manifest: c.manifest, graph: c.graph, graphPath: c.manifest?.graph, decisionIds: c.options?.decisions.map(d => d.id) };
+}
+
+/** The live check of the AI exchange view: which file the answer is, whether it is valid, how much changes. */
+export async function reviewAnswer(session: WorkSession, raw: string): Promise<IncomingReview> {
+  if (!session.root) return { ok: false, error: "Open the project folder first." };
+  return reviewIncoming(raw, importContext(session), async kind => { const b = await currentBytes(session, kind); return b ? new TextDecoder().decode(b) : undefined; });
 }
 
 async function importFromAi(session: WorkSession, preset?: ExchangeKind): Promise<void> {
-  const root = requireRoot(session.root);
+  requireRoot(session.root);
   const source = await vscode.window.showQuickPick([
     { label: "$(clippy) From the clipboard", description: "the AI's answer, or only its JSON block", id: "clip" },
     { label: "$(file) From a file…", id: "file" }
@@ -327,28 +348,38 @@ async function importFromAi(session: WorkSession, preset?: ExchangeKind): Promis
     if (!picked?.[0]) return;
     raw = new TextDecoder().decode(await readBounded(picked[0], 2 * 1024 * 1024));
   }
-  const c = session.project;
+  await importAnswer(session, raw, preset);
+}
+
+/**
+ * Write an AI answer as its DataPass file: validated, shown as a diff, confirmed in a modal, backed
+ * up. `raw` is untrusted (clipboard, a file, or the AI exchange view). Returns what was written.
+ */
+export async function importAnswer(session: WorkSession, raw: string, preset?: ExchangeKind): Promise<{ path: string; backup?: string } | undefined> {
+  const root = requireRoot(session.root);
   let incoming;
   try {
-    incoming = checkIncoming(raw, { manifest: c.manifest, graph: c.graph, graphPath: c.manifest?.graph, decisionIds: c.options?.decisions.map(d => d.id) }, preset && KINDS.includes(preset) ? preset : undefined);
+    incoming = checkIncoming(raw, importContext(session), preset && KINDS.includes(preset) ? preset : undefined);
   } catch (e) {
     throw new UserFacingError(`Not imported: ${e instanceof Error ? e.message : String(e)}`);
   }
   const vet = vetRelativePath(incoming.path);
   if (!vet.ok) throw new UserFacingError(`Refusing ${incoming.path}: ${vet.reason}`);
   const base = await currentBytes(session, incoming.kind);
-  if (base && new TextDecoder().decode(base) === incoming.text) { void vscode.window.showInformationMessage(`${incoming.path} already has exactly this content.`); return; }
+  if (base && new TextDecoder().decode(base) === incoming.text) { void vscode.window.showInformationMessage(`${incoming.path} already has exactly this content.`); return undefined; }
   await showDiff(root, incoming.path, incoming.text, `${incoming.path}: current ↔ AI proposal`);
   const detail = [
     `The diff shows the current file (left) and the AI's proposal (right).`,
     incoming.warnings.length ? `Warnings (the file is still valid):\n${incoming.warnings.slice(0, 8).map(w => `• ${w}`).join("\n")}` : "",
     `The previous version is kept in ${LOCAL_DIR}/${BACKUP_SUBDIR}. Review, then commit it yourself: DataPass never commits or pushes.`
   ].filter(Boolean).join("\n\n");
-  if (!(await confirmModal(`Write the AI's ${EXCHANGE_FILES[incoming.kind].label}?`, detail, base ? "Replace the file" : "Create the file"))) return;
+  if (!(await confirmModal(`Write the AI's ${EXCHANGE_FILES[incoming.kind].label}?`, detail, base ? "Replace the file" : "Create the file"))) return undefined;
   const backup = await writeProjectFile(session, incoming.path, new TextEncoder().encode(incoming.text), base);
+  await session.recordExchange({ id: newLocalId("ai-import"), kind: "ai-context", label: `${incoming.path} from the AI`, status: "imported", digest: sha256Bytes(incoming.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
   await session.refresh();
   report(`Imported ${incoming.path}`, [`Kind: ${incoming.kind}`, backup ? `Backup: ${backup}` : "New file (no previous version).", ...incoming.warnings.map(w => `Warning: ${w}`), "Next: review the change in Source Control and commit it."]);
   void vscode.window.showInformationMessage(`${incoming.path} written${backup ? " (backup kept)" : ""}. Review and commit it in Source Control.`, "Open Source Control").then(x => { if (x) void vscode.commands.executeCommand("workbench.view.scm"); });
+  return { path: incoming.path, backup };
 }
 
 async function restoreBackup(session: WorkSession): Promise<void> {

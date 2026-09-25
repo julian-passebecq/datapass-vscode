@@ -22,7 +22,7 @@ const ALLOWED = new Set([
   "vscode.openFolder",
   // 0.15: architecture options, project sheet, AI exchange of DataPass files, backups.
   "datapass.openOptions", "datapass.openSheet", "datapass.recordDecision", "datapass.exportOptionsComparison", "datapass.optionsAiContext",
-  "datapass.copyForAi", "datapass.importFromAi", "datapass.openOptionsFile", "datapass.openSheetFile", "datapass.openOptionSource",
+  "datapass.copyForAi", "datapass.importFromAi", "datapass.showAiExchange", "datapass.openOptionsFile", "datapass.openSheetFile", "datapass.openOptionSource",
   "datapass.clearPreview", "datapass.restoreBackup", "datapass.openSheetReference"
 ]);
 

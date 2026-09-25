@@ -39,6 +39,19 @@ test("extension activates in desktop VS Code and exposes the Test-mode hooks", a
   record("host", { vscodeVersion: vscode.version, platform: process.platform, arch: process.arch, uiKind: vscode.env.uiKind === vscode.UIKind.Desktop ? "desktop" : "web", remoteName: vscode.env.remoteName ?? null, extensionVersion: ext.packageJSON.version });
 });
 
+// Before any test opens the secondary side bar: only the startup switch can have shown the view there.
+test("0.15.1: a DataPass project opens with DataPass, not Chat, in the secondary side bar", async () => {
+  await waitFor("the AI exchange view shown at startup", () => api.aiExchange.resolved());
+  const s = await api.aiExchange.state();
+  assert.equal(s.ready, true);
+  assert.ok(s.files.some(f => f.kind === "manifest" && f.exists), "the view lists the project's files");
+}, ["v2-retail", "v3-research", "v4-cloudflare"]);
+
+test("0.15.1: without a DataPass project the secondary side bar is left to VS Code", async () => {
+  await sleep(1500);
+  assert.equal(api.aiExchange.resolved(), false);
+}, ["empty"]);
+
 test("every contributed command is registered", async () => {
   const ext = vscode.extensions.getExtension(EXTENSION_ID)!;
   const contributed: string[] = ext.packageJSON.contributes.commands.map((c: { command: string }) => c.command);

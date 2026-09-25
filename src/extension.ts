@@ -18,6 +18,9 @@ import { ProjectTreeProvider } from "./views/projectTree";
 import { registerWorkbenchCommands } from "./work/workbenchCommands";
 import { registerOptionsCommands } from "./work/optionsCommands";
 import type { WorkbenchState } from "./views/workbenchState";
+import { AiExchangeView } from "./views/aiExchange";
+import type { AiExchangeState } from "./views/aiExchangeState";
+import type { ExchangeKind } from "./core/project/aiExchange";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -58,6 +61,14 @@ export interface DataPassTestApi {
   /** 0.15: architecture options analysis and the previewed architecture. */
   optionsAnalysis(): ReturnType<WorkSession["optionsAnalysis"]>;
   setPreview(req: Parameters<WorkSession["setPreview"]>[0]): Promise<void>;
+  /** 0.15.1: the AI exchange view (secondary side bar), driven through its real message handler. */
+  aiExchange: {
+    /** The view was shown in this window (the secondary side bar displays DataPass). */
+    resolved(): boolean;
+    state(): Promise<AiExchangeState>;
+    /** Send one webview message; resolves with the replies the webview would receive. */
+    send(message: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -89,15 +100,19 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerReadinessCommands(context, session);
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
 
-  // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), Details (secondary side bar), Workbench tab.
+  // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.
   const host = new WorkbenchHost(context, session);
+  const aiExchange = new AiExchangeView(context, session);
   const projectTree = new ProjectTreeProvider(session);
   const projectView = vscode.window.createTreeView(ProjectTreeProvider.viewType, { treeDataProvider: projectTree, showCollapseAll: true });
   projectTree.attach(projectView);
   context.subscriptions.push(
     host, projectTree, projectView,
     vscode.window.registerWebviewViewProvider("datapass.architecture", host.viewProvider("map"), { webviewOptions: { retainContextWhenHidden: true } }),
-    vscode.window.registerWebviewViewProvider("datapass.details", host.viewProvider("detail"), { webviewOptions: { retainContextWhenHidden: true } })
+    vscode.window.registerWebviewViewProvider("datapass.details", host.viewProvider("detail"), { webviewOptions: { retainContextWhenHidden: true } }),
+    // Kept alive while hidden so a pasted answer survives switching to Chat and back (memory only).
+    aiExchange, vscode.window.registerWebviewViewProvider(AiExchangeView.viewType, aiExchange, { webviewOptions: { retainContextWhenHidden: true } }),
+    vscode.commands.registerCommand("datapass.showAiExchange", (kind?: unknown) => aiExchange.reveal(typeof kind === "string" ? kind as ExchangeKind : undefined))
   );
   registerWorkbenchCommands(context, session, host);
   registerOptionsCommands(context, session, host);
@@ -209,7 +224,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
   );
 
-  void refreshState();
+  void refreshState().then(() => showDataPassSideBar(context, session), () => undefined);
 
   if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
   return {
@@ -235,6 +250,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     select: sel => session.select(sel),
     optionsAnalysis: () => session.optionsAnalysis(),
     setPreview: req => session.setPreview(req),
+    aiExchange: {
+      resolved: () => aiExchange.resolved(),
+      state: () => aiExchange.state(),
+      send: async message => {
+        const replies: Array<Record<string, unknown>> = [];
+        await aiExchange.handle(message, r => { replies.push(r); });
+        return replies;
+      }
+    },
     renderProjectTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
       const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {
@@ -265,6 +289,23 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 }
 
 export function deactivate(): void {}
+
+const SIDE_BAR_SHOWN = "datapass.layout.secondarySideBarShown";
+
+/**
+ * VS Code opens Chat in the secondary side bar. The first time a DataPass project opens in a
+ * workspace, show DataPass there instead (AI exchange and Details). VS Code then remembers the
+ * active tab per workspace, so switching back to Chat sticks; the setting turns this off.
+ */
+async function showDataPassSideBar(context: vscode.ExtensionContext, session: WorkSession): Promise<void> {
+  if (!session.project.manifestExists || context.workspaceState.get<boolean>(SIDE_BAR_SHOWN)) return;
+  if (!vscode.workspace.getConfiguration("datapass").get<boolean>("layout.showInSecondarySideBar", true)) return;
+  await context.workspaceState.update(SIDE_BAR_SHOWN, true);
+  const editor = vscode.window.activeTextEditor;
+  await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
+  // Give the keyboard back to the file being edited.
+  if (editor) await vscode.commands.executeCommand("workbench.action.focusActiveEditorGroup");
+}
 
 function updateStatusBar(status: vscode.StatusBarItem, state: GalaxyState): void {
   const health = state.health;
