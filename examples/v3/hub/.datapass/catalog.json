@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-catalog.schema.json",
   "format": "datapass.catalog",
   "version": "1",
   "title": "Example organisation — projects",

@@ -364,6 +364,11 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
   if (orphans.length || !scopes.length) subprojects.push(sub(undefined, orphans.length ? orphans : items.map(i => i.id)));
   if (scopes.length && orphans.length) problems.push({ severity: "info", where: "graph.json", message: `${orphans.length} component(s) belong to no sub-project (scope itemRefs): ${orphans.slice(0, 8).join(", ")}${orphans.length > 8 ? "…" : ""}.` });
   if (scopes.some(s => s.itemRefs?.length) && !g) problems.push({ severity: "warning", where: "project.json", message: "Scopes list components (itemRefs) but no graph was loaded (.datapass/graph.json)." });
+  // A "$schema" web address replaces the schema DataPass ships for the file, and VS Code blocks it
+  // unless the domain is trusted ("Schema download issue"), so the editor stops validating it.
+  for (const [where, doc] of [["project.json", m], ["graph.json", g]] as const) {
+    if (typeof doc?.$schema === "string" && /^https?:\/\//i.test(doc.$schema)) problems.push({ severity: "info", where, message: `"$schema" points to a web address: VS Code uses it instead of the schema DataPass ships, and reports "Schema download issue" unless that domain is trusted. Remove the "$schema" line; DataPass validates this file with the schema of the installed version.` });
+  }
 
   const all = components.flatMap(c => c.operations);
   const summary = {

@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-graph.schema.json",
   "format": "datapass.graph",
   "version": "0.2",
   "items": [
