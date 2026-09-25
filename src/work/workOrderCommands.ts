@@ -21,8 +21,9 @@ import { clipboard } from "../core/clipboard";
 import { openExternal } from "../core/external";
 import { resolveCommandOrScript } from "../core/exec";
 import { sha256Bytes, newLocalId } from "../core/model/ids";
-import { vetRelativePath } from "../core/exchange/pathSafety";
-import { EXCHANGE_FILES, checkIncoming, type ExchangeKind } from "../core/project/aiExchange";
+import { isInside, vetRelativePath } from "../core/exchange/pathSafety";
+import { scrub } from "../core/exchange/aiContext";
+import { EXCHANGE_FILES, MAX_EXCHANGE_BYTES, checkIncoming, type ExchangeKind } from "../core/project/aiExchange";
 import { buildPreparationPack, type PackQuestion } from "../core/project/preparation";
 import { buildCardPack, type CardQuestion } from "../core/project/boardPack";
 import { optionsMarkdown } from "../core/project/optionsReport";
@@ -37,7 +38,7 @@ import {
 } from "../core/workOrders/builder";
 import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, toolOf, type AgentChoice } from "../core/workOrders/launch";
 import { defaultMergePolicy } from "../core/workOrders/projectType";
-import { WORK_LOG_PATH, mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, serializeWorkLog, workLogEntry, type WorkLog } from "../core/workOrders/workLog";
+import { WORK_LOG_PATH, mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, serializeWorkLog, workLogEntry, type WorkLog } from "../core/workOrders/workLog";
 import { EXPORT_FORMAT, EXPORT_NOTE, EXPORT_SCOPES, exportEntry, exportText, type ExportScope, type ProjectExport } from "../core/workOrders/export";
 import { outputText } from "../core/workOrders/status";
 import { readProjectManifest } from "../core/projectManifest";
@@ -47,7 +48,7 @@ import { gitRunner } from "./session";
 import type { GitObserver } from "./gitObserver";
 import { machineSetting, orderDigest, type LoadedOrder, type WorkOrderService } from "./workOrders";
 import { importAnswer, importContext, writeProjectFile } from "./optionsCommands";
-import { UserFacingError, confirmModal, errorMessage, guarded, jsonBytes, report, requireRoot } from "./io";
+import { UserFacingError, confirmModal, errorMessage, guarded, jsonBytes, readBounded, report, requireRoot } from "./io";
 
 // ------------------------------------------------------------------ drafts
 
@@ -239,7 +240,8 @@ export class WorkOrderFlows {
       }
       let remote = view?.remoteUrl;
       if (!remote) { const r = await git(["config", "--get", "remote.origin.url"], folder.fsPath, 5000); remote = r.ok && remoteIdentity(r.stdout.trim()) ? r.stdout.trim() : undefined; }
-      if (remote && /\/\/[^/@\s]+:[^/@\s]+@/.test(remote)) remote = undefined; // never a URL with credentials
+      // Never a user, token or port: the address goes into the order and, through the summary, into a committed file.
+      remote = publicRemote(remote);
       plan.push({ key, ref: refOfKey(key, map.coordinationKey, manifestKeys), label: view?.label ?? "coordination repository", access: a, folder: folder.fsPath, remote, state: view?.state ?? "local" });
     }
     if (!plan.length) throw new UserFacingError("Choose at least one repository for the order.");
@@ -346,7 +348,7 @@ export class WorkOrderFlows {
       now: new Date(), random: randomBytes(12), sessionId: agent.tool === "claude-code" && agent.surface === "terminal" ? randomUUID() : undefined,
       createdBy: `DataPass ${this.version()}`, kind: draft.kind,
       title: draft.title?.trim() || firstLine(draft.goal) || KIND_LABELS[draft.kind], goal: draft.goal,
-      project: { id: manifest.project.id, title: manifest.project.title, coordination: map.repositories.find(r => r.coordination)?.remoteUrl ?? repositories.find(r => keyOfRef(r.ref, manifestKeys) === map.coordinationKey || r.ref === COORDINATION_REF)?.remote, type },
+      project: { id: manifest.project.id, title: manifest.project.title, coordination: publicRemote(map.repositories.find(r => r.coordination)?.remoteUrl) ?? repositories.find(r => keyOfRef(r.ref, manifestKeys) === map.coordinationKey || r.ref === COORDINATION_REF)?.remote, type },
       scope: { subproject: draft.subproject, components: comps, boardCard: draft.boardCard, decision: draft.decision },
       known: { subprojects: map.subprojects.map(s => s.id), components: map.components.map(c => c.id), cards: ctx.board?.items.map(i => i.id) ?? [], decisions: ctx.options?.decisions.map(d => d.id) ?? [], columns },
       repositories, branchPrefix: settings.branchPrefix,
@@ -395,6 +397,7 @@ export class WorkOrderFlows {
     const ignore = vscode.Uri.joinPath(requireRoot(this.session.root), ...LOCAL_DIR.split("/"), ".gitignore");
     if (!(await readOptional(ignore))) await vscode.workspace.fs.writeFile(ignore, new TextEncoder().encode("# DataPass private session data. Never committed.\n*\n"));
     const digest = await orderDigest(p.folder);
+    await this.service.markOwn(p.order.id, digest);
     await this.service.writeState(p.folder, { format: "datapass.work-order-state", version: "1", orderId: p.order.id, digest, status: "written", launches: [], seen: { pullRequests: [] }, closed: null });
     await this.session.recordExchange({ id: newLocalId("work-order"), kind: "ai-context", label: `Work order ${shortId(p.order.id)}: ${p.order.title}`, status: "prepared", digest: digest.slice(7), scopeRef: this.session.model().scope.id, at: new Date().toISOString() });
     await this.service.reload();
@@ -431,21 +434,11 @@ export class WorkOrderFlows {
     const verdict = this.service.verdict();
     if (!verdict.allowed) throw new UserFacingError(verdict.why);
     if (o.state?.status === "done" || o.state?.status === "abandoned") throw new UserFacingError(`Work order ${shortId(o.id)} is closed (${o.state.status}). Write a follow-up order instead.`);
+    await this.requireOwn(o);
     const map = this.session.projectMap();
-    const keys = Object.keys(this.session.project.manifest?.repositories ?? {});
     const choice = choiceOf(order.agent.tool, order.agent.surface);
-
-    // Clones: every repository must still be here, with the declared origin.
-    for (const r of order.repositories) {
-      const key = keyOfRef(r.ref, keys);
-      const folder = folderOfKey(this.session, key);
-      const view = map.repositories.find(x => x.key === key);
-      if (!folder || !fs.existsSync(r.localPath) || (view && view.state !== "local")) throw new UserFacingError(`${r.ref}: the clone ${r.localPath} is not usable here (${view?.detail ?? "not found"}).`);
-      if (r.remote) {
-        const origin = await git(["config", "--get", "remote.origin.url"], r.localPath, 5000);
-        if (!origin.ok || remoteIdentity(origin.stdout.trim()) !== remoteIdentity(r.remote)) throw new UserFacingError(`${r.ref}: the clone's origin is not ${r.remote}.`);
-      }
-    }
+    // Clones: every repository must be the clone DataPass resolves for the project, with the declared origin.
+    await this.checkClones(order);
     // Base commits: fetch the base branch (a plain fetch, nothing merged), then compare.
     const moved: string[] = [];
     for (const r of order.repositories.filter(x => x.access === "change")) {
@@ -475,11 +468,19 @@ export class WorkOrderFlows {
       order.agent.surface === "desktop"
         ? `DataPass copies the prompt and opens the ${order.agent.tool === "claude-code" ? "Claude" : "ChatGPT (Codex)"} app. Start a new session on ${ws.cwd} and paste it.`
         : `It runs in a new terminal in ${ws.cwd}${others2 ? ` and can also use ${others2}` : ""}.`,
-      `It uses your ${tool} plan. It will create the branch ${order.repositories.find(r => r.branch)?.branch ?? "(none)"} in ${nChange} repositor${nChange === 1 ? "y" : "ies"} and open pull requests.`,
-      order.policy.merge === "agent-when-green" ? `It merges its pull requests itself when CI is green (${this.service.projectType().type} project).` : "It will not merge: you review and merge.",
+      order.expected.pullRequests === "none"
+        ? `It uses your ${tool} plan. It changes no repository and opens no pull request: it ${order.kind === "investigate" ? "reports" : "writes the DataPass files for you to import"} in the order's folder.`
+        : `It uses your ${tool} plan. It will create the branch ${order.repositories.find(r => r.branch)?.branch} in ${nChange} repositor${nChange === 1 ? "y" : "ies"} and open pull requests.`,
+      order.expected.pullRequests === "none" ? "" : order.policy.merge === "agent-when-green" ? `It merges its pull requests itself when CI is green (${this.service.projectType().type} project).` : "It will not merge: you review and merge.",
       "It will not deploy or change anything in the cloud.",
       others.length ? `\nWarning: open order${others.length > 1 ? "s" : ""} ${others.map(x => shortId(x.id)).join(", ")} also change${others.length > 1 ? "" : "s"} ${[...mine].join(", ")}.` : ""
     ].filter(Boolean).join("\n");
+    const exe = order.agent.surface === "terminal" ? this.executable(order.agent.tool) : undefined;
+    const args = order.agent.tool === "claude-code" ? claudeArgs(order, orderMd, ws) : codexArgs(order, orderMd, ws);
+    if (order.agent.surface === "terminal" && !exe) {
+      await clipboard.writeText(copyableCommand(order.agent.tool === "claude-code" ? "claude" : "codex", args, ws.cwd, process.platform));
+      throw new UserFacingError(`${order.agent.tool === "claude-code" ? "claude" : "codex"} was not found (absolute PATH entries or datapass.ai.${order.agent.tool === "claude-code" ? "claude" : "codex"}.path). The command was copied instead.`);
+    }
     const primary = order.agent.surface === "desktop" ? "Copy the prompt and open the app" : "Launch";
     const buttons = order.agent.surface === "terminal" ? [primary, "Copy the command instead"] : [primary];
     const pick = await vscode.window.showWarningMessage(`Launch ${CHOICE_LABELS[choice]} for "${order.title}"?`, { modal: true, detail }, ...buttons);
@@ -497,12 +498,7 @@ export class WorkOrderFlows {
       return;
     }
 
-    const exe = this.executable(order.agent.tool);
-    const args = order.agent.tool === "claude-code" ? claudeArgs(order, orderMd, ws) : codexArgs(order, orderMd, ws);
-    if (!exe) {
-      await clipboard.writeText(copyableCommand(order.agent.tool === "claude-code" ? "claude" : "codex", args, ws.cwd, process.platform));
-      throw new UserFacingError(`${order.agent.tool === "claude-code" ? "claude" : "codex"} was not found (absolute PATH entries or datapass.ai.${order.agent.tool === "claude-code" ? "claude" : "codex"}.path). The command was copied instead.`);
-    }
+    if (!exe) return;
     if (pick === "Copy the command instead") {
       await clipboard.writeText(copyableCommand(exe.display, args, ws.cwd, process.platform));
       await this.recordLaunch(o, { how: "copied", cwd: ws.cwd });
@@ -524,6 +520,35 @@ export class WorkOrderFlows {
       ...s, status: s.status === "written" ? "launched" : s.status,
       launches: [...s.launches, { at: localIso(new Date()), tool: order.agent.tool, surface: order.agent.surface, ...(order.agent.sessionId && l.how === "launched" ? { sessionId: order.agent.sessionId } : {}), cwd: l.cwd, how: l.how }].slice(-50)
     }));
+  }
+
+  /**
+   * Only an order DataPass wrote on this computer, unchanged since, is launched: an order folder a
+   * repository ships (or one edited afterwards) could name other folders and another goal.
+   */
+  private async requireOwn(o: LoadedOrder): Promise<void> {
+    const own = this.service.ownDigest(o.id);
+    if (!own) throw new UserFacingError(`Work order ${shortId(o.id)} was not written by DataPass on this computer, so it is not launched. Write a new order (or Revise this one) from the Agent tab.`);
+    const now = await orderDigest(o.folder);
+    if (now !== own) throw new UserFacingError(`Work order ${shortId(o.id)} was changed on disk after DataPass wrote it, so it is not launched. Revise it: DataPass writes a new order from it.`);
+    if (o.order!.project.id !== this.session.project.manifest?.project.id) throw new UserFacingError(`Work order ${shortId(o.id)} belongs to the project "${o.order!.project.id}", not to this one.`);
+  }
+
+  /** Every repository of the order is the clone DataPass resolves for the project here, with the declared origin. */
+  private async checkClones(order: WorkOrder): Promise<void> {
+    const map = this.session.projectMap();
+    const keys = Object.keys(this.session.project.manifest?.repositories ?? {});
+    for (const r of order.repositories) {
+      const key = keyOfRef(r.ref, keys);
+      const folder = folderOfKey(this.session, key);
+      const view = map.repositories.find(x => x.key === key);
+      if (!folder || (view && view.state !== "local")) throw new UserFacingError(`${r.ref}: its clone is not usable here (${view?.detail ?? "not found"}).`);
+      if (!samePath(folder.fsPath, r.localPath)) throw new UserFacingError(`${r.ref}: the order names ${r.localPath}, but the project's clone is ${folder.fsPath}. Revise the order.`);
+      if (r.remote) {
+        const origin = await git(["config", "--get", "remote.origin.url"], folder.fsPath, 5000);
+        if (!origin.ok || remoteIdentity(origin.stdout.trim()) !== remoteIdentity(r.remote)) throw new UserFacingError(`${r.ref}: the clone's origin is not ${r.remote}.`);
+      }
+    }
   }
 
   /** The agent's executable: the machine setting (absolute), else an absolute PATH entry. A `.js` file runs with VS Code's Node (tests, wrappers). */
@@ -561,8 +586,11 @@ export class WorkOrderFlows {
     const o = this.requireOrder(id);
     const args = resumeArgs(o.order!);
     if (!args) throw new UserFacingError("Only an order launched with Claude Code in a terminal has a session DataPass can resume. For the apps, reopen the conversation in the app.");
+    if (!vscode.workspace.isTrusted) throw new UserFacingError("Restricted Mode: trust this workspace first.");
+    await this.requireOwn(o);
+    await this.checkClones(o.order!);
     const exe = this.executable("claude-code");
-    const cwd = o.state?.launches.find(l => l.cwd)?.cwd ?? o.order!.repositories.find(r => r.access === "change")?.localPath ?? requireRoot(this.session.root).fsPath;
+    const cwd = agentWorkspace(o.order!, o.folder.fsPath, requireRoot(this.session.root).fsPath, samePath, isInside).cwd;
     if (!exe) { await clipboard.writeText(copyableCommand("claude", args, cwd, process.platform)); throw new UserFacingError("claude was not found: the resume command was copied."); }
     const t = this.terminal(o, exe, args, cwd);
     if (!t) throw new UserFacingError("The resume command cannot be started safely here.");
@@ -572,7 +600,8 @@ export class WorkOrderFlows {
   /** The order for claude.ai or ChatGPT (mode 1): order.md and the result format, as text. */
   async copyForChat(id: unknown): Promise<void> {
     const o = this.requireOrder(id);
-    const md = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.joinPath(o.folder, "order.md")));
+    // A chat is not this computer: local paths are replaced, as in every chat pack.
+    const md = scrub(new TextDecoder().decode(await readBounded(vscode.Uri.joinPath(o.folder, "order.md"), 512 * 1024)));
     const text = [
       "You are a chat assistant, not an agent in my repositories: answer with text. Where the order below says to change files or open pull requests, give me the changes as complete files or a patch, and give any DataPass file (.datapass/*.json) as one complete JSON block I can import. You cannot write result.json: end with a short summary, your questions and the next steps.",
       "", md
@@ -628,10 +657,13 @@ export class WorkOrderFlows {
   /** Read the .datapass files the coordination branch changes (after a fetch) and check them like any import. */
   async checkPrFiles(id: unknown): Promise<void> {
     const o = this.requireOrder(id);
+    if (!vscode.workspace.isTrusted) throw new UserFacingError("Restricted Mode: DataPass runs no Git here. Trust this workspace first.");
     const map = this.session.projectMap();
     const keys = Object.keys(this.session.project.manifest?.repositories ?? {});
-    const coord = o.order!.repositories.find(r => r.access === "change" && keyOfRef(r.ref, keys) === map.coordinationKey);
-    if (!coord?.branch || !coord.base) throw new UserFacingError("This order does not change the coordination repository, so its pull requests carry no DataPass file.");
+    const planned = o.order!.repositories.find(r => r.access === "change" && keyOfRef(r.ref, keys) === map.coordinationKey);
+    if (!planned?.branch || !planned.base) throw new UserFacingError("This order does not change the coordination repository, so its pull requests carry no DataPass file.");
+    // Git runs in the project's own coordination folder, never in a folder the order file names.
+    const coord = { branch: planned.branch, base: planned.base, localPath: requireRoot(this.session.root).fsPath };
     const f = await git(["fetch", "--quiet", "origin", coord.branch], coord.localPath, 60000);
     if (!f.ok) throw new UserFacingError(`git fetch origin ${coord.branch} failed: ${(f.stderr ?? "").split(/\r?\n/)[0]?.slice(0, 200) ?? ""}. The branch may not be pushed yet.`);
     const diff = await git(["diff", "--name-only", `${coord.base.commit}`, `refs/remotes/origin/${coord.branch}`, "--", ".datapass"], coord.localPath);
@@ -663,7 +695,7 @@ export class WorkOrderFlows {
     let kind = oneOf(kindArg, kinds);
     if (!kind) kind = (await vscode.window.showQuickPick(kinds.map(k => ({ label: `${k}.json`, k })), { title: "Import which proposed file?" }))?.k;
     if (!kind) return;
-    const text = new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.joinPath(dir, `${kind}.json`)));
+    const text = new TextDecoder().decode(await readBounded(vscode.Uri.joinPath(dir, `${kind}.json`), MAX_EXCHANGE_BYTES));
     const written = await importAnswer(this.session, text, (kind === "project" ? "manifest" : kind) as ExchangeKind);
     if (!written) return;
     await this.service.updateState(o.id, s => ({ ...s, imported: [...(s.imported ?? []), { kind: kind!, at: localIso(new Date()), ...(written.backup ? { backup: written.backup.slice(-200) } : {}) }].slice(-20) }));
@@ -707,7 +739,7 @@ export class WorkOrderFlows {
     }
     for (const o of orders) {
       if (o.stateProblem) continue;
-      await this.service.writeState(o.folder, { ...o.state!, published: { at: now, workLog: true, privateLog: privateWritten } });
+      await this.service.updateState(o.id, s => ({ ...s, published: { at: now, workLog: true, privateLog: privateWritten } }), false);
     }
     await this.service.reload();
     await this.session.refresh();
@@ -809,10 +841,6 @@ export const samePath = (a: string, b: string) => {
   const n = (p: string) => path.resolve(p).replace(/[\\/]+$/, "");
   return process.platform === "win32" ? n(a).toLowerCase() === n(b).toLowerCase() : n(a) === n(b);
 };
-export const isInside = (rootDir: string, p: string) => {
-  const rel = path.relative(rootDir, p);
-  return !!rel && !rel.startsWith("..") && !path.isAbsolute(rel);
-};
 
 /** The draft an existing order was made from (for a revision or a follow-up). */
 export function draftOf(order: WorkOrder, session: WorkSession): Draft {
@@ -854,9 +882,12 @@ export function registerWorkOrderCommands(context: vscode.ExtensionContext, sess
   const reg = (id: string, fn: (...args: any[]) => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(fn)));
   reg("datapass.workOrders.new", async (d?: unknown) => prefill({ draft: d && typeof d === "object" ? sanitizeDraft(d) : { kind: "change", components: session.selection().component ? [session.selection().component!] : undefined, subproject: session.selection().subproject } }));
   reg("datapass.workOrders.refresh", async () => { await service.reload(); });
-  reg("datapass.workOrders.show", async (id?: unknown) => {
+  reg("datapass.workOrders.show", async (arg?: unknown) => {
+    // An order id, or the Git view's "needs you" node (rule 8) whose order it names.
+    const node = arg && typeof arg === "object" ? arg as { t?: string; n?: { order?: unknown } } : undefined;
+    const id = node?.t === "need" ? node.n?.order : arg;
     if (typeof id === "string" && ORDER_ID_RE.test(id)) { await service.reload(); await service.select(id); }
-    await showOrder(typeof id === "string" ? id : "");
+    await showOrder(typeof id === "string" && ORDER_ID_RE.test(id) ? id : "");
   });
   reg("datapass.workOrders.select", async (id?: unknown) => service.select(typeof id === "string" && ORDER_ID_RE.test(id) ? id : undefined));
   reg("datapass.workOrders.launch", async (id?: unknown) => flows.launch(id ?? await pickOrder(service, "Launch which work order?", o => !o.state?.closed)));

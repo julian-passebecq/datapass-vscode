@@ -15,7 +15,7 @@
 import { anyOf, arr, constOf, enumOf, obj, validateSchema, type Schema } from "../contracts/schemaDsl";
 import { parseStrictJson } from "../model/strictJson";
 import { scrub } from "../exchange/aiContext";
-import { remoteIdentity } from "../project/gitHosts";
+import { gitHostOf, remoteIdentity } from "../project/gitHosts";
 import {
   AGENT_TOOLS, ORDER_KINDS, ORDER_STATUSES, PROJECT_TYPES, RESULT_STATUSES, SURFACES, WorkOrderFormatError,
   type AgentTool, type OrderKind, type OrderState, type OrderStatus, type ProjectType, type ResultStatus, type Surface, type WorkOrder
@@ -118,7 +118,7 @@ export function workLogEntry(order: WorkOrder, state: OrderState | undefined, re
     repositories: order.repositories.map(r => {
       const own = prs.filter(p => p.repoRef === r.ref).slice(0, 10).map(p => ({ number: p.number, url: p.url, state: p.state }));
       return {
-        ref: r.ref, ...(r.remote ? { remote: r.remote } : {}), access: r.access,
+        ref: r.ref, ...(publicRemote(r.remote) ? { remote: publicRemote(r.remote) } : {}), access: r.access,
         ...(r.branch ? { branch: r.branch } : {}), ...(own.length ? { pullRequests: own } : {})
       };
     }),
@@ -145,6 +145,21 @@ export function serializeWorkLog(log: WorkLog): string {
   const issues = validateSchema(WORK_LOG_SCHEMA, log);
   if (issues.length) throw new WorkOrderFormatError("The work log would be invalid", issues);
   return JSON.stringify(log, null, 2) + "\n";
+}
+
+/**
+ * A remote address safe to write into an order or a committed file: the host's canonical https page
+ * when DataPass knows the host (no user, token or port), else the address without any user
+ * information. Undefined when nothing safe is left.
+ */
+export function publicRemote(url: string | undefined): string | undefined {
+  if (!url) return undefined;
+  const u = url.trim();
+  const host = gitHostOf(u);
+  if (host) return host.web;
+  if (/^git@[A-Za-z0-9.-]+:[^\s]+$/.test(u)) return u;
+  const m = /^(https|ssh):\/\/(?:[^@/\s]*@)?([^/\s]+\/[^\s]+)$/.exec(u);
+  return m ? `${m[1]}://${m[2]}` : undefined;
 }
 
 /** File of a project inside the private log repository (a safe file name from the project id). */

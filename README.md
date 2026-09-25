@@ -14,12 +14,13 @@ merged work — without ever deploying, pushing or running project code.
   files, and (0.14.0) **Local environment** / **Readiness**: which declared env files and variable
   names are set on this machine — never a value, always from your local vault (Power Ops).
 - **Architecture** panel (bottom): the diagram of the selected sub-project; click a component.
-- **AI exchange** (right, secondary side bar, 0.15.1): pick a DataPass file and what the AI should do,
-  **Copy the file and instructions**, paste the AI's answer back: it is checked as you paste (which
-  file, valid or not, about how many lines change, warnings), then **Show the diff and write**.
-  When a DataPass project opens, this side bar shows DataPass instead of VS Code's Chat (once per
-  workspace; Chat stays one click away; setting `datapass.layout.showInSecondarySideBar`).
-- **Details** (right, under AI exchange): the component's files, what each step needs (read, develop,
+- **AI** (right, secondary side bar, 0.15.1; three tabs since 0.20 — see *Work orders (0.20)* below):
+  **DataPass-guided**, the JSON exchange and the default tab — pick a DataPass file and what
+  the AI should do, **Copy the file and instructions**, paste the AI's answer back: it is checked as
+  you paste (which file, valid or not, about how many lines change, warnings), then **Show the diff
+  and write**. When a DataPass project opens, this side bar shows DataPass instead of VS Code's Chat
+  (once per workspace; Chat stays one click away; setting `datapass.layout.showInSecondarySideBar`).
+- **Details** (right, under AI): the component's files, what each step needs (read, develop,
   test, validate, deploy, run, publish) per environment, checklist and actions.
 - **Workbench** tab: the overview of every sub-project and what it still needs on this machine.
 - **Check for updates** (`git fetch`) and **Get updates** (fast-forward only, after listing the commits).
@@ -157,6 +158,53 @@ never deletes anything. *Other repositories* lists the Git repositories under
 `az` (Azure DevOps) or `glab` when installed and signed in, read-only; otherwise the view links the
 host's pages. Git never runs in Restricted Mode. Design:
 [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md) section 6.
+
+## Work orders (0.20)
+
+The **AI** side bar (secondary side bar, right) now has three tabs. **DataPass-guided** (above) is
+still the default. **Agent** prepares a **work order** for Claude Code or Codex and hands it to the
+desktop app or a terminal, using your own Claude or Codex plan; **Manual** just routes you to the
+Project view, the Git view, readiness, the Workbench and the official tool — DataPass runs nothing
+there.
+
+Work orders are off by default: `datapass.ai.workOrders.enabled` is a machine-level user setting, so
+a cloned repository can never turn itself on. The project's type then decides the default —
+`project.type` in `.datapass/project.json`, or `datapass.ai.projectTypes` by project id, which wins:
+**dev** and **perso** projects have orders on and the agent merges its own pull requests once CI is
+green; **work** projects (FOIL, clients) keep them off unless the project sets
+`modules.workOrders: true`, and you merge yourself. `modules.workOrders: false` always turns a
+project off, regardless of type.
+
+An order records a goal, its kind (change, investigate, prepare files, apply a decision, fix a
+board card, DataPass files only), its scope (sub-project, component, board card or decision), which
+repositories the agent may change or only read, the agent and effort, the merge policy, and which
+DataPass files it should return — in its pull request, or as files for you to import. DataPass
+writes `order.md` (the prompt the agent reads first) and `order.json` under
+`.datapass/local/work-orders/<id>/` in the coordination repository (git-ignored), with a receipt the
+result must repeat back.
+
+Launching asks once, then either copies the prompt and opens the **Claude app** (`claude://code/new`,
+you pick the folder and paste) or the **Codex app** the same way, or starts **Claude Code** / **Codex**
+in a VS Code terminal when one is configured (`datapass.ai.defaultTool`, `datapass.ai.claude.path`,
+`datapass.ai.codex.path`). DataPass checks trust, the setting, the project type, that every
+repository's origin is still what it expects, and that the base commit is still on `origin` after a
+fetch, before it launches.
+
+Results are picked up by a watcher and checked against the order's receipt; pull requests are found
+by the planned branch (`datapass.ai.branchPrefix`, `dp/<id>` by default) through the Git module. The
+Git view's **Needs you** gains a rule for a work order whose result names no pull request, or that
+has neither a result nor a PR a day after launch. The **Work orders** view (5th Workbench view)
+lists every order with filters; its Details panel has the timeline, **Import a proposed file**
+(diff, confirm, backup), **Follow-up**, **Revise**, **Mark done**, **Abandon** and **Archive**
+(moved, never deleted).
+
+New orders can start from a board card, an architecture option, a component missing files, or a
+failing pull request in the Git view. **Publish summary** writes `.datapass/work-log.json` (ids,
+titles, dates, statuses, branches, PR links — never goal text, the agent's summary or secrets) and,
+when `datapass.ai.workLog.privateRepository` names a private Git clone, the same entry to
+`work-logs/<project id>.json` there; DataPass never commits or pushes either file. See
+[handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md) sections 4, 5
+and 13.1.
 
 ## Earlier surfaces (still available)
 

@@ -195,7 +195,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     async id => {
       host.openPanel(vscode.ViewColumn.Active, "workOrders", id || undefined);
       if (id) await vscode.commands.executeCommand("datapass.details.focus");
-      if (gitView.visible || id) void git.refresh();
+      workOrders.refreshGit(Boolean(id));
     });
   void workOrders.reload();
 

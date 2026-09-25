@@ -32,6 +32,8 @@ import { sha256Bytes } from "../core/model/ids";
 import type { NeedsYou } from "../core/git/gitReport";
 import type { GitObserver } from "./gitObserver";
 import type { WorkSession } from "./session";
+import { gitRunner } from "./session";
+import type { ClosedPullRequest } from "../core/git/hostPrs";
 import { errorMessage, jsonBytes } from "./io";
 
 export interface LoadedOrder {
@@ -61,26 +63,49 @@ export function machineSetting<T>(key: string): T | undefined {
 
 export function workOrdersEnabled(): boolean { return machineSetting<boolean>("ai.workOrders.enabled") === true; }
 
-/** Digest of what the agent reads: order.json, order.md and every attachment, by relative path. */
-export async function orderDigest(folder: vscode.Uri): Promise<string> {
-  const parts: Array<[string, Uint8Array]> = [];
-  const add = async (rel: string) => { try { parts.push([rel, await vscode.workspace.fs.readFile(vscode.Uri.joinPath(folder, ...rel.split("/")))]); } catch { parts.push([rel, new Uint8Array()]); } };
-  await add("order.json");
-  await add("order.md");
+/** The files the agent reads — order.json, order.md and every attachment — by relative path. */
+async function orderFiles(folder: vscode.Uri): Promise<string[]> {
+  const files = ["order.json", "order.md"];
   const walk = async (rel: string, depth: number): Promise<void> => {
-    if (depth > 3 || parts.length > 200) return;
+    if (depth > 3 || files.length > 200) return;
     let entries: [string, vscode.FileType][] = [];
     try { entries = await vscode.workspace.fs.readDirectory(vscode.Uri.joinPath(folder, ...rel.split("/"))); } catch { return; }
     for (const [name, type] of entries.sort(([a], [b]) => a.localeCompare(b))) {
       const child = `${rel}/${name}`;
       if (type === vscode.FileType.Directory) await walk(child, depth + 1);
-      else if (type === vscode.FileType.File) await add(child);
+      else if (type === vscode.FileType.File) files.push(child);
     }
   };
   await walk("attachments", 0);
-  const text = parts.map(([rel, bytes]) => `${rel}\n${sha256Bytes(bytes).value}`).join("\n");
-  return `sha256:${sha256Bytes(text).value}`;
+  return files;
 }
+
+/** Digest of what the agent reads: order.json, order.md and every attachment, by relative path. */
+export async function orderDigest(folder: vscode.Uri): Promise<string> {
+  const parts: string[] = [];
+  for (const rel of await orderFiles(folder)) {
+    let bytes: Uint8Array;
+    try { bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(folder, ...rel.split("/"))); } catch { bytes = new Uint8Array(); }
+    parts.push(`${rel}\n${sha256Bytes(bytes).value}`);
+  }
+  return `sha256:${sha256Bytes(parts.join("\n")).value}`;
+}
+
+/** Sizes and times of the files the agent reads: the digest is recomputed only when one of them changed. */
+async function orderSignature(folder: vscode.Uri): Promise<string> {
+  const sig: string[] = [];
+  for (const rel of await orderFiles(folder)) {
+    try { const st = await vscode.workspace.fs.stat(vscode.Uri.joinPath(folder, ...rel.split("/"))); sig.push(`${rel}:${st.size}:${st.mtime}`); } catch { sig.push(`${rel}:-`); }
+  }
+  return sig.join("|");
+}
+
+/** Orders DataPass wrote on this computer, with the digest it wrote (only those can be launched). */
+const OWN_KEY = "datapass.v20.workOrders.own";
+const OWN_KEPT = 1000;
+/** An agent may still be working this long after its launch; later, results are picked up by the watcher and on focus. */
+const POLL_WINDOW_MS = 48 * 60 * 60 * 1000;
+const GIT_REFRESH_MS = 60_000;
 
 export class WorkOrderService implements vscode.Disposable {
   private readonly emitter = new vscode.EventEmitter<void>();
@@ -96,6 +121,14 @@ export class WorkOrderService implements vscode.Disposable {
   private lastNeeds = "";
   private selectedId?: string;
   private selecting = false;
+  /** state.json writes, one at a time (a reload's derived state never overwrites a launch or a close). */
+  private stateChain: Promise<unknown> = Promise.resolve();
+  private lastSignature = "";
+  private readonly digests = new Map<string, { sig: string; digest: string }>();
+  /** Merge commits checked in the clones' default branches: `${folder}\0${sha}` → contained. */
+  private readonly pulled = new Map<string, boolean>();
+  private readonly pulling = new Set<string>();
+  private lastGitRefresh = 0;
   /** Set once the first load finished (desktop tests wait on it). */
   loadedAt?: string;
 
@@ -132,6 +165,27 @@ export class WorkOrderService implements vscode.Disposable {
     });
   }
 
+  /** Record an order DataPass has just written here, with the digest of what the agent reads. */
+  async markOwn(id: string, digest: string): Promise<void> {
+    const own = { ...(this.context.globalState.get<Record<string, string>>(OWN_KEY) ?? {}), [id]: digest };
+    const ids = Object.keys(own).sort();
+    for (const old of ids.slice(0, Math.max(0, ids.length - OWN_KEPT))) delete own[old];
+    await this.context.globalState.update(OWN_KEY, own);
+  }
+
+  /** The digest DataPass recorded when it wrote this order on this computer (undefined: not written here). */
+  ownDigest(id: string): string | undefined {
+    const v = this.context.globalState.get<Record<string, string>>(OWN_KEY)?.[id];
+    return typeof v === "string" ? v : undefined;
+  }
+
+  /** Check the repositories' PRs again (the Git observer caches; at most once a minute unless forced). */
+  refreshGit(force = false): void {
+    if (!vscode.workspace.isTrusted || (!force && Date.now() - this.lastGitRefresh < GIT_REFRESH_MS)) return;
+    this.lastGitRefresh = Date.now();
+    void this.git.refresh();
+  }
+
   /** The coordination repository's work-orders folder. */
   ordersFolder(): vscode.Uri | undefined {
     const root = this.session.root;
@@ -160,8 +214,10 @@ export class WorkOrderService implements vscode.Disposable {
     this.emitter.fire();
   }
 
+  /** An order launched in the last 48 hours still waits for its result: worth polling for it. */
   private hasOpenLaunched(): boolean {
-    return this.orders.some(o => o.state && (o.state.status === "launched" || (o.state.status === "reported" && o.outputs.some(x => x.state === "open" || x.state === "no-pr"))));
+    const now = Date.now();
+    return this.orders.some(o => o.state?.status === "launched" && o.result.state === "none" && o.state.launches.some(l => now - Date.parse(l.at) < POLL_WINDOW_MS));
   }
 
   /** Re-read every order folder (coalesced). */
@@ -223,7 +279,13 @@ export class WorkOrderService implements vscode.Disposable {
       result = v.ok ? { state: "valid", checked: v.checked, at } : { state: "refused", why: v.why, message: v.message, at };
     }
     const open = state.status !== "done" && state.status !== "abandoned";
-    const digestNow = open && state.launches.length ? await orderDigest(folder) : undefined;
+    let digestNow: string | undefined;
+    if (open && state.launches.length) {
+      const sig = await orderSignature(folder);
+      const hit = this.digests.get(id);
+      digestNow = hit?.sig === sig ? hit.digest : await orderDigest(folder);
+      this.digests.set(id, { sig, digest: digestNow });
+    }
     let proposed: string[] = [];
     try {
       proposed = (await vscode.workspace.fs.readDirectory(vscode.Uri.joinPath(folder, "proposed")))
@@ -237,22 +299,25 @@ export class WorkOrderService implements vscode.Disposable {
     this.computeOutputs();
     for (const o of this.orders) {
       if (!o.order || !o.state || o.stateProblem) continue;
-      let next = o.state;
-      if (o.result.state === "valid" && (next.status === "written" || next.status === "launched")) next = { ...next, status: "reported" };
-      if (next.status !== "done" && next.status !== "abandoned") {
-        const now = new Date().toISOString();
-        const seen = seenPullRequests(o.outputs, now);
-        const strip = (x: typeof seen) => JSON.stringify(x.map(({ checkedAt: _c, ...rest }) => rest));
-        if (seen.length && strip(seen) !== strip(next.seen.pullRequests)) next = { ...next, seen: { pullRequests: seen, checkedAt: now } };
-      }
-      if (next !== o.state) {
-        await this.writeState(o.folder, next);
-        o.state = next;
+      // What DataPass observed (a valid result, PRs seen), applied to the state as it is on disk now.
+      const derive = (s: OrderState): OrderState => {
+        let next = s;
+        if (o.result.state === "valid" && (next.status === "written" || next.status === "launched")) next = { ...next, status: "reported" };
+        if (next.status !== "done" && next.status !== "abandoned") {
+          const now = new Date().toISOString();
+          const seen = seenPullRequests(o.outputs, now);
+          const strip = (x: typeof seen) => JSON.stringify(x.map(({ checkedAt: _c, ...rest }) => rest));
+          if (seen.length && strip(seen) !== strip(next.seen.pullRequests)) next = { ...next, seen: { pullRequests: seen, checkedAt: now } };
+        }
+        return next;
+      };
+      if (derive(o.state) !== o.state) {
+        o.state = await this.mutateState(o, derive);
         o.summary = this.summaryOf(o);
       }
       if (o.result.state !== "none" && o.resultKey && !this.announced.has(o.resultKey)) {
         this.announced.add(o.resultKey);
-        if (this.loadedAt) this.announce(o);
+        if (this.loadedAt) { this.announce(o); this.refreshGit(true); }
       }
     }
   }
@@ -271,9 +336,32 @@ export class WorkOrderService implements vscode.Disposable {
     for (const o of this.orders) {
       if (!o.order) continue;
       const checked = o.result.state === "valid" ? o.result.checked : undefined;
-      o.outputs = discoverOutputs(o.order, checked, ref => this.git.report(keyOfRef(ref, keys)));
+      o.outputs = discoverOutputs(o.order, checked, ref => this.git.report(keyOfRef(ref, keys)), (ref, pr) => this.pulledState(keyOfRef(ref, keys), pr));
       o.summary = this.summaryOf(o);
     }
+  }
+
+  /** Whether a merged PR's commit is in the clone's default branch; checked once per commit, in the background. */
+  private pulledState(key: string, pr: ClosedPullRequest): boolean | undefined {
+    if (!pr.mergeCommit || !/^[0-9a-f]{7,40}$/.test(pr.mergeCommit) || !vscode.workspace.isTrusted) return undefined;
+    const map = this.session.projectMap();
+    const folder = key === map.coordinationKey || key === "." ? this.session.root?.fsPath : this.session.repoFolder(key)?.fsPath;
+    if (!folder) return undefined;
+    const cacheKey = `${folder}\0${pr.mergeCommit}`;
+    const hit = this.pulled.get(cacheKey);
+    if (hit !== undefined) return hit;
+    if (!this.pulling.has(cacheKey)) {
+      this.pulling.add(cacheKey);
+      const branch = this.git.report(key)?.defaultBranch ?? "main";
+      void gitRunner(["merge-base", "--is-ancestor", pr.mergeCommit, `refs/heads/${branch}`], folder, 5000).then(r => {
+        this.pulling.delete(cacheKey);
+        // Not an ancestor, or the commit is not even fetched: not pulled here. A later Get updates changes the answer.
+        this.pulled.set(cacheKey, r.ok);
+        if (!r.ok) setTimeout(() => this.pulled.delete(cacheKey), GIT_REFRESH_MS);
+        this.recompute();
+      });
+    }
+    return undefined;
   }
 
   private summaryOf(o: LoadedOrder): OrderSummary | undefined {
@@ -292,7 +380,9 @@ export class WorkOrderService implements vscode.Disposable {
     // First load: results already there are not announced again.
     for (const o of this.orders) if (o.resultKey) this.announced.add(o.resultKey);
     this.schedulePoll();
-    this.emitter.fire();
+    // Views repaint only when what they show changed (a poll or a session change that changes nothing repaints nothing).
+    const signature = JSON.stringify([this.selectedId, this.orders.map(o => [o.id, o.error, o.stateProblem, o.proposed, o.summary, o.state?.published, o.state?.imported])]);
+    if (signature !== this.lastSignature) { this.lastSignature = signature; this.emitter.fire(); }
     const needs = JSON.stringify(this.needsYou());
     if (needs !== this.lastNeeds) { this.lastNeeds = needs; this.git.notifyChanged(); }
   }
@@ -319,8 +409,8 @@ export class WorkOrderService implements vscode.Disposable {
           ? { state: "valid", status: r.checked.result.status, summary: r.checked.result.summary, questions: r.checked.result.questions ?? [], followUps: r.checked.result.followUps ?? [], checks: (r.checked.result.checks ?? []).map(c => `${c.what}: ${c.outcome}${c.note ? ` (${c.note})` : ""}`), warnings: r.checked.warnings }
           : r.state === "refused" ? { state: "refused", message: r.message, questions: [], followUps: [], checks: [], warnings: [] }
           : { state: "none", questions: [], followUps: [], checks: [], warnings: [] },
-        needs: [...(o.stateProblem ? [`state.json: ${o.stateProblem}`] : []), ...s.needs], next: s.next, suggestDone: s.suggestDone,
-        canLaunch: !closed && verdict.allowed, canResume: Boolean(o.order.agent.sessionId) && (o.state?.launches.some(l => l.how === "launched") ?? false), closed,
+        needs: [...(o.stateProblem ? [`state.json: ${o.stateProblem}`] : []), ...(!closed && !this.ownDigest(o.id) ? ["not written by DataPass on this computer: it cannot be launched from here"] : []), ...s.needs], next: s.next, suggestDone: s.suggestDone,
+        canLaunch: !closed && verdict.allowed && !!this.ownDigest(o.id), canResume: Boolean(o.order.agent.sessionId) && (o.state?.launches.some(l => l.how === "launched") ?? false), closed,
         changesCoordination: o.order.repositories.some(x => x.access === "change" && keyOfRef(x.ref, keys) === coordination),
         proposed: o.proposed,
         timeline: s.timeline
@@ -357,27 +447,51 @@ export class WorkOrderService implements vscode.Disposable {
   /** While an agent may be working, results are also polled (a watcher can miss a folder outside the workspace). */
   private schedulePoll(): void {
     const want = this.hasOpenLaunched();
-    if (want && !this.poll) this.poll = setInterval(() => void this.reload(), 15_000);
+    if (want && !this.poll) this.poll = setInterval(() => { void this.reload(); this.refreshGit(); }, 15_000);
     else if (!want && this.poll) { clearInterval(this.poll); this.poll = undefined; }
   }
 
   // ------------------------------------------------------------------ writing
 
+  /** The first state.json of a new order (nothing else can write it yet). */
   async writeState(folder: vscode.Uri, state: OrderState): Promise<void> {
-    await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder, "state.json"), jsonBytes(state));
+    await this.lock(() => vscode.workspace.fs.writeFile(vscode.Uri.joinPath(folder, "state.json"), jsonBytes(state)));
   }
 
-  /** Change an order's state (launch, close, import, publish) and re-read. */
-  async updateState(id: string, fn: (s: OrderState, order: WorkOrder) => OrderState): Promise<OrderState> {
+  private lock<T>(fn: () => Thenable<T> | Promise<T>): Promise<T> {
+    const run = this.stateChain.then(() => fn(), () => fn());
+    this.stateChain = run.catch(() => undefined);
+    return run;
+  }
+
+  /**
+   * Read state.json as it is on disk now, apply `fn`, write it back — one order at a time, so a
+   * change made meanwhile (a launch, a close, an import) is never overwritten by an older copy.
+   */
+  private mutateState(o: LoadedOrder, fn: (s: OrderState, order: WorkOrder) => OrderState): Promise<OrderState> {
+    return this.lock(async () => {
+      const order = o.order!;
+      let current: OrderState;
+      try {
+        const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(o.folder, "state.json"));
+        if (bytes.byteLength > MAX_STATE_BYTES) throw new Error("state.json is too large");
+        current = parseOrderState(bytes, o.id);
+      } catch {
+        // A missing or broken state.json is rebuilt from the order as it is now.
+        current = initialState(order, await orderDigest(o.folder));
+      }
+      const next = fn(current, order);
+      if (JSON.stringify(next) !== JSON.stringify(current)) await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(o.folder, "state.json"), jsonBytes(next));
+      return next;
+    });
+  }
+
+  /** Change an order's state (launch, close, import, publish) and re-read (unless `reload` is false). */
+  async updateState(id: string, fn: (s: OrderState, order: WorkOrder) => OrderState, reload = true): Promise<OrderState> {
     const o = this.get(id);
-    if (!o?.order || !o.state) throw new Error(`Work order ${id} cannot be read${o?.error ? `: ${o.error}` : ""}.`);
-    if (o.stateProblem) {
-      // A missing or broken state.json is rebuilt from the order as it is now.
-      o.state = { ...o.state, digest: await orderDigest(o.folder) };
-    }
-    const next = fn(o.state, o.order);
-    await this.writeState(o.folder, next);
-    await this.reload();
+    if (!o?.order) throw new Error(`Work order ${id} cannot be read${o?.error ? `: ${o.error}` : ""}.`);
+    const next = await this.mutateState(o, fn);
+    if (reload) await this.reload();
     return next;
   }
 

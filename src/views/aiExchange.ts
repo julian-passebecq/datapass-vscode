@@ -103,7 +103,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
     view.webview.options = { enableScripts: true, localResourceRoots: [] };
     view.webview.html = aiExchangeHtml(view.webview.cspSource, makeNonce());
     view.webview.onDidReceiveMessage(m => void this.handle(m, r => view.webview.postMessage(r)));
-    view.onDidChangeVisibility(() => { if (view.visible) void this.post(); });
+    view.onDidChangeVisibility(() => { if (view.visible) { void this.post(); this.work?.service.refreshGit(); } });
     view.onDidDispose(() => { if (this.view === view) this.view = undefined; });
   }
 

@@ -10,7 +10,7 @@
  * "Done" is the person's to set; DataPass suggests it when every PR is merged and pulled. What a
  * result claims is shown as "the agent says", never as a check.
  */
-import type { CiState, ReviewState } from "../git/hostPrs";
+import type { CiState, ClosedPullRequest, ReviewState } from "../git/hostPrs";
 import type { GitRepoReport, NeedsYou } from "../git/gitReport";
 import { shortId, type CheckedResult, type OrderState, type ResultVerdict, type SeenPr, type WorkOrder } from "./format";
 import { CHOICE_LABELS, choiceOf } from "./launch";
@@ -27,12 +27,18 @@ export interface RepoOutput {
   state: "read-only" | "not-checked" | "no-pr" | "open" | "merged" | "closed";
   /** Why it is not checked (no host CLI, not cloned…). */
   why?: string;
-  pr?: { number: number; url: string; title?: string; ci?: CiState; review?: ReviewState; draft?: boolean; failing?: string[] };
+  pr?: { number: number; url: string; title?: string; ci?: CiState; review?: ReviewState; draft?: boolean; failing?: string[]; mergeCommit?: string };
   /** Merged on the host and in this clone's default branch (false: Get updates). */
   pulled?: boolean;
   /** The PR the result names, when DataPass did not find it by branch. */
   claimed?: { number: number; url: string };
 }
+
+/**
+ * Whether a merged PR's commit is in this clone's default branch: true / false from Git, undefined
+ * when DataPass cannot tell yet (the merge commit is unknown or not checked).
+ */
+export type PulledCheck = (ref: string, pr: ClosedPullRequest) => boolean | undefined;
 
 export interface TimelineEntry { at?: string; what: string; detail?: string[]; tone?: "ok" | "warn" | "error" | "muted" }
 
@@ -58,8 +64,12 @@ export interface OrderSummary {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CI_TEXT: Record<CiState, string> = { passing: "CI ✓", failing: "CI ✗", running: "CI ●", none: "no CI", unknown: "CI not reported" };
 
-/** Find each repository's PR by the planned branch (open, then merged/closed), else by the number the result names. */
-export function discoverOutputs(order: WorkOrder, checked: CheckedResult | undefined, reportOf: (ref: string) => GitRepoReport | undefined): RepoOutput[] {
+/**
+ * Find each repository's PR by the planned branch (open, then merged/closed). The number the result
+ * names is adopted only when that PR's head is the planned branch or the branch the result says it
+ * used: the agent's claim alone never decides which PR belongs to the order.
+ */
+export function discoverOutputs(order: WorkOrder, checked: CheckedResult | undefined, reportOf: (ref: string) => GitRepoReport | undefined, pulledOf?: PulledCheck): RepoOutput[] {
   return order.repositories.map(repo => {
     if (repo.access === "read") return { ref: repo.ref, access: "read", state: "read-only" };
     const claimed = checked?.pullRequests.find(p => p.ref === repo.ref);
@@ -70,16 +80,20 @@ export function discoverOutputs(order: WorkOrder, checked: CheckedResult | undef
       const why = r.hostData.kind === "links" ? `pull requests are not read here (${r.hostData.tool ?? "host CLI"}: ${r.hostData.reason})` : "no Git host";
       return { ...base, state: "not-checked", why };
     }
-    const open = r.prs.find(p => p.head === repo.branch) ?? (claimed ? r.prs.find(p => p.number === claimed.number) : undefined);
+    const heads = new Set([repo.branch, claimed?.branch].filter((b): b is string => !!b));
+    const byClaim = <T extends { number: number; head: string }>(list: readonly T[]) => claimed ? list.find(p => p.number === claimed.number && heads.has(p.head)) : undefined;
+    const open = r.prs.find(p => p.head === repo.branch) ?? byClaim(r.prs);
     if (open) {
       const { claimed: _c, ...rest } = base;
       return { ...rest, state: "open", pr: { number: open.number, url: open.url, title: open.title, ci: open.ci.state, review: open.review, draft: open.draft, failing: open.ci.failed.map(f => f.name).slice(0, 3) } };
     }
-    const closed = (r.closed ?? []).find(p => p.head === repo.branch) ?? (claimed ? (r.closed ?? []).find(p => p.number === claimed.number) : undefined);
+    const closed = (r.closed ?? []).find(p => p.head === repo.branch) ?? byClaim(r.closed ?? []);
     if (closed) {
       const { claimed: _c, ...rest } = base;
-      const pulled = closed.state === "merged" ? r.mergeNotPulled?.number !== closed.number : undefined;
-      return { ...rest, state: closed.state, pr: { number: closed.number, url: closed.url, title: closed.title }, ...(pulled !== undefined ? { pulled } : {}) };
+      // Pulled: the merge commit is in this clone's default branch (a Git check), else — without a merge commit — the report's latest-merge rule.
+      const pulled = closed.state !== "merged" ? undefined
+        : pulledOf?.(repo.ref, closed) ?? (closed.mergeCommit ? undefined : r.mergeNotPulled?.number !== closed.number);
+      return { ...rest, state: closed.state, pr: { number: closed.number, url: closed.url, title: closed.title, ...(closed.mergeCommit ? { mergeCommit: closed.mergeCommit } : {}) }, ...(pulled !== undefined ? { pulled } : {}) };
     }
     return base;
   });
@@ -104,7 +118,7 @@ function outputText(o: RepoOutput): string {
     case "not-checked": return `${o.ref}: ${o.claimed ? `PR #${o.claimed.number} (the agent says) · ` : ""}not checked (${o.why})`;
     case "no-pr": return `${o.ref}: no PR for ${o.branch}${o.claimed ? ` (the result names #${o.claimed.number}, not found)` : ""}`;
     case "open": return `${o.ref} #${o.pr!.number} open · ${CI_TEXT[o.pr!.ci ?? "unknown"]}${o.pr!.draft ? " · draft" : ""}${o.pr!.review === "approved" ? " · approved" : o.pr!.review === "changes-requested" ? " · changes requested" : ""}`;
-    case "merged": return `${o.ref} #${o.pr!.number} merged${o.pulled === false ? " · not pulled here: Get updates" : " ✓ pulled"}`;
+    case "merged": return `${o.ref} #${o.pr!.number} merged${o.pulled === false ? " · not pulled here: Get updates" : o.pulled === undefined ? " · not checked here yet" : " ✓ pulled"}`;
     case "closed": return `${o.ref} #${o.pr!.number} closed without merging`;
   }
 }
@@ -143,10 +157,10 @@ export function summarize(i: SummaryInput): OrderSummary {
     if (o.expected.pullRequests === "one-per-changed-repository" && noPrNeed(o, s, result, outputs, i.now)) needs.push("no pull request yet");
     if (changedAfterLaunch) needs.push("the order was changed on disk after its launch");
   }
-  const allMerged = changes.length > 0 && changes.every(x => x.state === "merged" && x.pulled !== false);
+  const allMerged = changes.length > 0 && changes.every(x => x.state === "merged" && x.pulled === true);
   const suggestDone = !closed && (o.expected.pullRequests === "none" ? result.state === "valid" && result.checked.result.status === "done" : allMerged);
   const next = closed ? (s.status === "done" ? "Done." : "Abandoned.")
-    : suggestDone ? "Everything is merged and pulled: mark it done, then publish the summary."
+    : suggestDone ? (o.expected.pullRequests === "none" ? `The agent says it is done${o.expected.datapassFiles.some(f => f.via === "import") ? ": import the proposed files, then" : ":"} mark it done and publish the summary.` : "Everything is merged and pulled: mark it done, then publish the summary.")
     : !s.launches.length ? "Launch it (Claude or Codex), or copy it for a chat."
     : result.state === "none" && changes.every(x => x.state === "no-pr" || x.state === "not-checked") ? "The agent is working, or has not written its result yet."
     : changes.some(x => x.state === "open") ? (o.policy.merge === "person" ? "Review and merge the pull requests, then Get updates." : "The agent merges its pull requests when CI is green; then Get updates.")
@@ -172,7 +186,7 @@ export function summarize(i: SummaryInput): OrderSummary {
   } else if (result.state === "refused") {
     timeline.push({ at: result.at, what: "result refused", detail: [result.message], tone: "error" });
   }
-  for (const x of changes) timeline.push({ what: outputText(x), tone: x.state === "open" && x.pr?.ci === "failing" ? "error" : x.state === "merged" && x.pulled !== false ? "ok" : x.state === "no-pr" || x.state === "not-checked" ? "muted" : undefined });
+  for (const x of changes) timeline.push({ what: outputText(x), tone: x.state === "open" && x.pr?.ci === "failing" ? "error" : x.state === "merged" && x.pulled === true ? "ok" : x.state === "no-pr" || x.state === "not-checked" ? "muted" : undefined });
   for (const imp of s.imported ?? []) timeline.push({ at: imp.at, what: `imported proposed ${imp.kind}.json`, detail: imp.backup ? [`backup ${imp.backup}`] : [] });
   if (s.published) timeline.push({ at: s.published.at, what: "summary published", detail: [[s.published.workLog ? ".datapass/work-log.json" : "", s.published.privateLog ? "private log repository" : ""].filter(Boolean).join(" · ")] });
   if (s.closed) timeline.push({ at: s.closed.at, what: s.closed.how === "done" ? "marked done" : "abandoned", detail: s.closed.note ? [s.closed.note] : [], tone: s.closed.how === "done" ? "ok" : "muted" });

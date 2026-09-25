@@ -16,7 +16,7 @@ import {
 import { buildOrder, cleanGoal, keyOfRef, refOfKey, renderOrderMd, resultFormatMd, type OrderInput } from "../src/core/workOrders/builder";
 import { agentCmdLine, agentWorkspace, claudeArgs, codexArgs, copyableCommand, resumeArgs, sessionName } from "../src/core/workOrders/launch";
 import { defaultMergePolicy, resolveProjectType, workOrdersVerdict } from "../src/core/workOrders/projectType";
-import { mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicText, serializeWorkLog, workLogEntry } from "../src/core/workOrders/workLog";
+import { mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, publicText, serializeWorkLog, workLogEntry } from "../src/core/workOrders/workLog";
 import { discoverOutputs, summarize, workOrderNeedsYou, type ResultInfo } from "../src/core/workOrders/status";
 import { needsYou, type GitRepoReport } from "../src/core/git/gitReport";
 import type { PullRequest } from "../src/core/git/hostPrs";
@@ -168,7 +168,7 @@ test("result.json: a valid result, PR addresses rebuilt from the declared reposi
   ] }), o);
   assert.ok(v.ok);
   if (!v.ok) return;
-  assert.deepEqual(v.checked.pullRequests, [{ ref: "pipeline", number: 41, url: "https://github.com/example-org/research-pipeline/pull/41" }]);
+  assert.deepEqual(v.checked.pullRequests, [{ ref: "pipeline", number: 41, url: "https://github.com/example-org/research-pipeline/pull/41", branch: o.repositories[0]!.branch }]);
   assert.ok(v.checked.warnings.some(w => w.includes("evil/research-library") && w.includes("dropped")));
   assert.ok(v.checked.warnings.some(w => w.includes('"lab" is not a repository this order changes')));
   assert.ok(v.checked.warnings.some(w => w.includes("listed twice")));
@@ -298,6 +298,15 @@ test("work log: no goal, summary, path, receipt or session id; merged by id, new
   const ajv = new Ajv2020({ strict: false, validateFormats: false }).compile(emittedSchemaFiles()["schemas/datapass-work-log.schema.json"] as object);
   assert.equal(ajv(JSON.parse(text2)), true, JSON.stringify(ajv.errors));
   assert.equal(publicText("a\u202e\nb C:\\Users\\me\\x", 80), "a b <local-path>");
+  // Remotes are published without any user, token or port.
+  const token = ["ghp", "_", "abcdefghijklmnopqrstuvwxyz0123456789"].join("");
+  assert.equal(publicRemote(`https://${token}@github.com/me/repo.git`), "https://github.com/me/repo");
+  assert.equal(publicRemote("https://org@dev.azure.com/org/p/_git/r"), "https://dev.azure.com/org/p/_git/r");
+  assert.equal(publicRemote("https://user:pw@git.example.com/team/repo.git"), "https://git.example.com/team/repo.git");
+  assert.equal(publicRemote("git@git.example.com:team/repo.git"), "git@git.example.com:team/repo.git");
+  assert.equal(publicRemote("file:///D:/repo"), undefined);
+  const leaky = workLogEntry({ ...o, repositories: [{ ...o.repositories[0]!, remote: `https://${token}@github.com/example-org/research-pipeline` }] }, s, undefined);
+  assert.equal(leaky.repositories[0]!.remote, "https://github.com/example-org/research-pipeline");
 });
 
 test("private log repository: never this public repository or a repository of the project", () => {
@@ -344,6 +353,14 @@ test("outputs: PRs found by the planned branch (open, merged, closed), by the nu
   const none = discoverOutputs(o, v.ok ? v.checked : undefined, () => report({}));
   assert.equal(none[0]!.state, "no-pr");
   assert.equal(none[0]!.claimed?.number, 77);
+  // The claim alone never adopts a PR: #77 exists, but on a branch neither planned nor named by the result.
+  const foreign = discoverOutputs(o, v.ok ? v.checked : undefined, () => report({ prs: [], closed: [{ number: 77, title: "someone else's", head: "feature/x", state: "merged", url: `${GH_WEB}/pull/77`, mergeCommit: SHA }] }));
+  assert.equal(foreign[0]!.state, "no-pr");
+  // Pulled comes from a Git check of the merge commit; unknown until checked.
+  const mergedPr = { number: 41, title: "t", head: branch, state: "merged" as const, url: `${GH_WEB}/pull/41`, mergeCommit: SHA };
+  assert.equal(discoverOutputs(o, undefined, () => report({ prs: [], closed: [mergedPr] }))[0]!.pulled, undefined);
+  assert.equal(discoverOutputs(o, undefined, () => report({ prs: [], closed: [mergedPr] }), () => false)[0]!.pulled, false);
+  assert.equal(discoverOutputs(o, undefined, () => report({ prs: [], closed: [mergedPr] }), () => true)[0]!.pulled, true);
 });
 
 test("summary: separate axes, needs in plain words, done suggested only when every PR is merged and pulled", () => {
@@ -355,7 +372,10 @@ test("summary: separate axes, needs in plain words, done suggested only when eve
   assert.equal(written.suggestDone, false);
   const launched = { ...s0, status: "launched" as const, launches: [{ at: "2026-09-25T18:31:04+02:00", tool: "claude-code" as const, surface: "terminal" as const, how: "launched" as const }] };
   const branches = o.repositories.filter(r => r.branch).map(r => r.branch!);
-  const mergedAll = discoverOutputs(o, undefined, () => report({ prs: [], closed: branches.map((b, n) => ({ number: n + 1, title: "t", head: b, state: "merged" as const, url: `${GH_WEB}/pull/${n + 1}` })) }));
+  const closedAll = branches.map((b, n) => ({ number: n + 1, title: "t", head: b, state: "merged" as const, url: `${GH_WEB}/pull/${n + 1}`, mergeCommit: SHA }));
+  const unchecked = summarize({ order: o, state: launched, result: none, outputs: discoverOutputs(o, undefined, () => report({ prs: [], closed: closedAll })), now: Date.now() });
+  assert.equal(unchecked.suggestDone, false, "not suggested before Git confirms the merges are here");
+  const mergedAll = discoverOutputs(o, undefined, () => report({ prs: [], closed: closedAll }), () => true);
   const done = summarize({ order: o, state: launched, result: none, outputs: mergedAll, now: Date.now(), digestNow: `sha256:${"d".repeat(64)}` });
   assert.equal(done.suggestDone, true);
   assert.ok(done.needs.includes("the order was changed on disk after its launch"));

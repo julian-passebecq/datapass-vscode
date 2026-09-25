@@ -217,7 +217,7 @@ export interface WorkOrderResult {
 export interface CheckedResult {
   result: WorkOrderResult;
   /** Per repository ref: the PR number and its canonical page (rebuilt, never the agent's text). */
-  pullRequests: Array<{ ref: string; number: number; url: string }>;
+  pullRequests: Array<{ ref: string; number: number; url: string; branch?: string }>;
   warnings: string[];
 }
 export type ResultVerdict =
@@ -366,7 +366,7 @@ export function checkResult(raw: string | Uint8Array, order: WorkOrder): ResultV
   if (r.orderId !== order.id || r.receipt !== order.receipt) {
     return { ok: false, why: "other-order", message: r.orderId !== order.id ? `written for another order (${r.orderId})` : "written for another revision of this order (the receipt does not match)" };
   }
-  const sensitive = resultTexts(r).flatMap(t => sensitiveFindings(t).filter(f => f.includes("credential")));
+  const sensitive = resultTexts(r).flatMap(t => sensitiveFindings(t).filter(f => /^line \d+: credential-shaped text/.test(f)));
   if (sensitive.length) return { ok: false, why: "sensitive", message: "refused: it contains credential-shaped text" };
   const warnings: string[] = [];
   const pullRequests: CheckedResult["pullRequests"] = [];
@@ -380,7 +380,7 @@ export function checkResult(raw: string | Uint8Array, order: WorkOrder): ResultV
     if (rr.branch && rr.branch !== repo.branch) warnings.push(`${rr.ref}: the agent used branch ${rr.branch}, not the planned ${repo.branch}`);
     if (rr.pullRequest) {
       const pr = pullRequestOf(rr.pullRequest, repo.remote);
-      if (pr) pullRequests.push({ ref: rr.ref, ...pr });
+      if (pr) pullRequests.push({ ref: rr.ref, ...pr, branch: rr.branch ?? repo.branch });
       else warnings.push(`${rr.ref}: "${rr.pullRequest.slice(0, 120)}" is not a pull request of ${repo.remote ?? "this repository"}: dropped`);
     }
   }
