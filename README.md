@@ -141,6 +141,23 @@ as Power Ops (PowerToy_UI) can open a company or a specific work view; see
 [handoff/v3/07_WINDOWS_AND_POWER_OPS.md](handoff/v3/07_WINDOWS_AND_POWER_OPS.md) for the full
 contract.
 
+## Git view (0.19)
+
+The **Git** view (left side bar, under Project) keeps you oriented across the project's
+repositories and the worktrees your AI sessions create: per repository, the branch (or detached
+HEAD), ↓behind ↑ahead, uncommitted changes, when it was last fetched, its worktrees, its open pull
+requests with their CI (✓ ✗ ●) and review, and the last three merges. **Needs you** (the view's
+badge) lists, most urgent first: a PR whose CI failed, a green PR waiting for you, a merge not
+pulled here, changes on the default branch, a finished worktree (merged or PR closed), unpushed
+work, a detached HEAD. Every action is a route — Source Control, a new window, the PR or its
+failing check, *Check / Get updates*, *Fetch all* (plain `git fetch`, never automatic), copy a
+branch — and a finished, clean worktree offers **Copy the cleanup command**: you run it, DataPass
+never deletes anything. *Other repositories* lists the Git repositories under
+`datapass.projectsFolders` (for example `D:\PROJ`) when you open it. Pull requests come from `gh`,
+`az` (Azure DevOps) or `glab` when installed and signed in, read-only; otherwise the view links the
+host's pages. Git never runs in Restricted Mode. Design:
+[handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md) section 6.
+
 ## Earlier surfaces (still available)
 
 - **Galaxy** — health-first control plane with readiness metrics, attention queue, grouped/collapsible platform cards, filters, persistent view state, and a sanitized environment snapshot for debugging/handoffs.

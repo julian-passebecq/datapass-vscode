@@ -3,6 +3,28 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.19.0 — the Git module (pass AI-1, 2026-09-25)
+
+Design and Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
+sections 6, 8.6, 9 and 13.1. No project-file format change.
+
+- **Git view** (left side bar, under Project, badge = items that need you): per repository of the
+  project, the branch or detached HEAD, ↓behind ↑ahead, staged / unstaged / untracked changes, the
+  last fetch, worktrees (clean or dirty, merged or PR closed), open PRs with their CI rollup and
+  review, and the last three merges.
+- **Needs you**, deterministic and ordered: failed CI, a green PR waiting, a merge not pulled here,
+  changes on the default branch, a finished worktree (cleanup candidate, or work at risk), unpushed
+  work, a detached HEAD.
+- **Routes only**: Source Control, open in a new window, the PR or its failing check (web or the
+  GitHub views), Check / Get updates, **Fetch all** (plain `git fetch`, never automatic, never
+  `--prune`), copy a branch, and **copy the cleanup command** of a finished, clean worktree —
+  DataPass never deletes.
+- **Other repositories** under `datapass.projectsFolders` (at most 60), read when the section opens;
+  a **Git card** on the Workbench overview.
+- PRs from `gh` (`datapass.git.ghPath`, machine-level), `az` or `glab` when installed and signed in,
+  read-only; otherwise the host's web pages. Read-only Git with `core.fsmonitor=false`, no optional
+  locks, 5 s per command, four at once, nothing in Restricted Mode.
+
 ## 0.18.0 — toolchain, ID map, connections (2026-09-25)
 
 Manifest **v5** (`schemaVersion: 5`). Design: [handoff/v3/08_TOOLKIT_AND_AGENTS.md](handoff/v3/08_TOOLKIT_AND_AGENTS.md)

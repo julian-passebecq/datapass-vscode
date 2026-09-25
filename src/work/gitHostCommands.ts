@@ -40,7 +40,7 @@ export function remoteOf(r: RepoView): string | undefined {
 }
 
 /** Show the exact address once per window, then open it in the browser. */
-async function openWebPage(session: WorkSession, url: string, what: string, from: string): Promise<void> {
+export async function openWebPage(session: WorkSession, url: string, what: string, from: string): Promise<void> {
   if (!/^https:\/\/\S+$/.test(url)) throw new UserFacingError("Only https pages open from DataPass.");
   if (!session.linkConfirmed(url)) {
     if (!(await confirmModal(`Open ${new URL(url).host}?`, `${what}\n${url}\n\n${from} DataPass sends nothing to this site and does not check that you can see the page.`, "Open"))) return;

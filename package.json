@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -14,6 +14,7 @@
   ],
   "activationEvents": [
     "onView:datapass.project",
+    "onView:datapass.git",
     "onView:datapass.work",
     "onView:datapass.galaxy",
     "onView:datapass.architecture",
@@ -554,6 +555,56 @@
       {
         "command": "datapass.lookUpId",
         "title": "DataPass: Look Up an Id in the Project's ID Map…"
+      },
+      {
+        "command": "datapass.git.refresh",
+        "title": "DataPass: Refresh Git",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.git.fetchAll",
+        "title": "DataPass: Fetch All Repositories (plain git fetch, nothing merged)",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.git.fetchRepository",
+        "title": "DataPass: Fetch This Repository (plain git fetch)",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.git.openSourceControl",
+        "title": "DataPass: Open in Source Control",
+        "icon": "$(source-control)"
+      },
+      {
+        "command": "datapass.git.openInNewWindow",
+        "title": "DataPass: Open Repository or Worktree in a New Window",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "datapass.git.openPullRequest",
+        "title": "DataPass: Open Pull Request",
+        "icon": "$(git-pull-request)"
+      },
+      {
+        "command": "datapass.git.openCiRun",
+        "title": "DataPass: Open the Pull Request's CI Run",
+        "icon": "$(github-action)"
+      },
+      {
+        "command": "datapass.git.openOnWeb",
+        "title": "DataPass: Open Repository Pages on the Web (PRs, pipelines)…",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "datapass.git.copyBranch",
+        "title": "DataPass: Copy Branch Name",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.git.copyCleanupCommand",
+        "title": "DataPass: Copy the Cleanup Command (you run it; DataPass never deletes)",
+        "icon": "$(clippy)"
       }
     ],
     "viewsContainers": {
@@ -584,6 +635,11 @@
         {
           "id": "datapass.project",
           "name": "Project",
+          "type": "tree"
+        },
+        {
+          "id": "datapass.git",
+          "name": "Git",
           "type": "tree"
         },
         {
@@ -922,6 +978,21 @@
           "command": "datapass.checkConnections",
           "when": "view == datapass.project",
           "group": "3_project@8"
+        },
+        {
+          "command": "datapass.git.fetchAll",
+          "when": "view == datapass.git",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datapass.git.refresh",
+          "when": "view == datapass.git",
+          "group": "navigation@2"
+        },
+        {
+          "command": "datapass.git.fetchAll",
+          "when": "view == datapass.project",
+          "group": "2_git@0"
         }
       ],
       "view/item/context": [
@@ -1059,6 +1130,91 @@
           "command": "datapass.installTool",
           "when": "view == datapass.project && viewItem == tool.extension",
           "group": "inline"
+        },
+        {
+          "command": "datapass.getUpdates",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok.behind/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.git.openSourceControl",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "group": "inline@2"
+        },
+        {
+          "command": "datapass.git.openOnWeb",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.web/",
+          "group": "inline@3"
+        },
+        {
+          "command": "datapass.checkForUpdates",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok/",
+          "group": "1_git@1"
+        },
+        {
+          "command": "datapass.getUpdates",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok.behind/",
+          "group": "1_git@2"
+        },
+        {
+          "command": "datapass.git.fetchRepository",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "group": "1_git@3"
+        },
+        {
+          "command": "datapass.git.openInNewWindow",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "group": "1_git@4"
+        },
+        {
+          "command": "datapass.git.copyBranch",
+          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.branch/",
+          "group": "2_copy@1"
+        },
+        {
+          "command": "datapass.git.copyCleanupCommand",
+          "when": "view == datapass.git && viewItem =~ /^gitWorktree.cleanup/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.git.openSourceControl",
+          "when": "view == datapass.git && viewItem =~ /^gitWorktree/",
+          "group": "1_git@1"
+        },
+        {
+          "command": "datapass.git.openInNewWindow",
+          "when": "view == datapass.git && viewItem =~ /^gitWorktree/",
+          "group": "inline@2"
+        },
+        {
+          "command": "datapass.git.copyCleanupCommand",
+          "when": "view == datapass.git && viewItem =~ /^gitWorktree.cleanup/",
+          "group": "1_git@2"
+        },
+        {
+          "command": "datapass.git.copyBranch",
+          "when": "view == datapass.git && viewItem =~ /^gitWorktree.*.branch/",
+          "group": "2_copy@1"
+        },
+        {
+          "command": "datapass.git.openCiRun",
+          "when": "view == datapass.git && viewItem =~ /^gitPr.failing/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.git.openPullRequest",
+          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "group": "inline@2"
+        },
+        {
+          "command": "datapass.git.openCiRun",
+          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "group": "1_git@1"
+        },
+        {
+          "command": "datapass.git.copyBranch",
+          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "group": "2_copy@1"
         }
       ],
       "commandPalette": [
@@ -1120,6 +1276,38 @@
         },
         {
           "command": "datapass.toolchain.copyInstall",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.fetchRepository",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.openSourceControl",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.openInNewWindow",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.openPullRequest",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.openCiRun",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.openOnWeb",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.copyBranch",
+          "when": "false"
+        },
+        {
+          "command": "datapass.git.copyCleanupCommand",
           "when": "false"
         }
       ],
@@ -1223,6 +1411,18 @@
           "default": "",
           "scope": "window",
           "markdownDescription": "Work view DataPass applies when this workspace opens (the id or name of a view saved in `.datapass/local/views.json`). Read only from a `.code-workspace` file, never from a folder's settings. Work views are saved per computer."
+        },
+        "datapass.git.ghPath": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path of the GitHub CLI (gh) the Git view uses to list pull requests and their CI; empty = gh from PATH. A .js file runs with VS Code's own Node (a wrapper or a test stub). Machine-level user setting: a workspace can never choose which program DataPass runs. Only `gh auth status` and `gh pr list` are run; the token is never read."
+        },
+        "datapass.git.showOtherRepositories": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "description": "Show an \"Other repositories\" section in the Git view: the Git repositories directly under datapass.projectsFolders (at most 60), read only when you open the section."
         }
       }
     },
@@ -1286,6 +1486,11 @@
       {
         "view": "datapass.work",
         "contents": "Open a folder to plan and prepare DataPass work.\n[Open Folder](command:vscode.openFolder)",
+        "when": "workbenchState == empty"
+      },
+      {
+        "view": "datapass.git",
+        "contents": "Open a folder to see its repositories, worktrees and pull requests.\n[Open Folder](command:vscode.openFolder)",
         "when": "workbenchState == empty"
       }
     ]

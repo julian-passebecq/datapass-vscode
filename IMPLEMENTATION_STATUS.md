@@ -1,3 +1,104 @@
+# Implementation Status — 0.19.0 (pass AI-1): the Git module
+
+Date: 2026-09-25. Version `0.19.0` — branch `claude/ai1-git-module`. Design and Julian's answers:
+[handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md) sections 6,
+8.6, 9 and 13.1 (merged as PR #27). Julian chose this order (Q1): the toolkit's toolchain / ID map /
+connections pass is 0.18.0 (PR #28, [handoff/v3/08](handoff/v3/08_TOOLKIT_AND_AGENTS.md)), and the
+Git module is 0.19.0, on top of it. No project-file format changes in this pass.
+
+### What's new
+
+- **Git view** (left side bar, under Project, badge = the project's "needs you" count). One row per
+  repository of the project — the coordination repository and every resolved clone — with its role,
+  Git host, branch or detached HEAD, ↓behind ↑ahead of its upstream (or "no upstream"), uncommitted
+  changes, open PRs (✗ failing) and when it was last fetched. Under each: the uncommitted changes
+  (staged · unstaged · untracked · conflicted), **Worktrees** (`git worktree list --porcelain`: branch,
+  clean or dirty, ↑↓, merged / PR closed, locked), **Pull requests** (number, title, branch, CI rollup
+  ✓ ✗ ● with the failing checks, draft, review decision, conflicts / behind) and **Recent merges**
+  (the last three). Planned and not-cloned repositories stay listed with their web pages.
+- **Needs you**, deterministic, most urgent first: (1) a PR whose CI failed; (2) a green PR (or one
+  whose CI the host CLI does not report, or with no checks) waiting for review or merge; (3) a PR
+  merged on the host but not in this clone — *Check for updates* while its commit is not fetched,
+  *Get updates* once it is; (4) uncommitted changes on the default branch of a main clone; (5) a
+  worktree whose branch is merged or whose PR is merged or closed — clean: cleanup candidate; dirty:
+  work that might be lost; (6) unpushed work: commits never pushed (no upstream), or ahead of the
+  upstream for more than a day; (7) detached HEAD in a main clone. "Behind with no local changes" is
+  information only. Rule 8 (work orders without a PR) comes with pass AI-2.
+- **Routes, nothing destructive**: open in Source Control (the built-in Git extension's
+  `git.openRepository`, no new window), open a repository or worktree in a new window, open a PR or
+  its failing check on the web (or in the GitHub Pull Requests / Actions views when installed),
+  *Check for updates* / *Get updates* (existing), *Fetch this repository*, copy a branch name, and
+  **copy the cleanup command** of a finished, clean worktree (`git -C '<repo>' worktree remove '<path>'`
+  then `branch -d`, or `-D` with a comment when only the host saw the merge — a squash merge).
+  DataPass never deletes a worktree or a branch (Q7).
+- **Fetch all** (view title, Project view menu, Workbench card): plain `git fetch` of every cloned
+  repository of the project, never `--prune`; nothing is merged. There is no automatic fetch.
+- **Other repositories in D:\PROJ** (optional, `datapass.git.showOtherRepositories`, on by default):
+  the Git repositories directly under `datapass.projectsFolders` (at most 60, worktrees and the
+  project's own repositories left out), read only when the section is opened, with their own
+  "needs you" list (not counted in the badge).
+- **Workbench overview Git card**: one line — how many items need you, repositories checked, open
+  PRs (failing), the oldest last fetch, the most urgent item — with *Open the Git view* and *Fetch all*.
+- **Pull requests from the host's own CLI, read-only**: GitHub through `gh pr list --repo owner/repo`
+  (open with `statusCheckRollup`, closed/merged with their merge commit) after `gh auth status` (exit
+  code only; the token is never read); Azure DevOps through `az repos pr list` (review votes; build
+  status is not in that list, so CI shows "not reported"); GitLab through `glab mr list -F json`. On
+  Windows `az` is `az.cmd`: it runs through `cmd.exe` only when every argument is quoted and matches a
+  strict character set (else the web links). Without the CLI, not signed in, on a timeout or an
+  unexpected answer, the repository shows the 0.16 web links (pull requests, pipelines) with the reason.
+
+### How it runs (security)
+
+Read-only commands only: `status --porcelain=v2`, `worktree list --porcelain`, `symbolic-ref`,
+`for-each-ref --merged`, `reflog show` (a branch Git sees as merged but that never got a commit is a
+fresh worktree, not finished work), `log`, `merge-base --is-ancestor`, `rev-parse`, `config --get`.
+Each runs with `-c core.fsmonitor=false`, `GIT_OPTIONAL_LOCKS=0` (no index write while other sessions
+work in the same repository), no credential prompt, a **5 s timeout** (a repository that times out
+is "not checked") and **at most four at once** (a slot is handed straight to the next waiter).
+Executables come from absolute PATH entries only; `datapass.git.ghPath` is a machine-level setting
+(a workspace value is ignored); a `.js` path runs with VS Code's own Node (wrappers, test stubs).
+**No Git at all in Restricted Mode.** Refresh: when the view becomes visible, on window focus, after
+the project changes (Get updates, file watchers) and on request, with a cache of 60 s for Git and
+120 s for host CLIs; never while the view is hidden. Status is reused from the project observation
+when it is less than 60 s old, so the Project tree and the Git view never disagree. CLI output is
+untrusted: every field is type-checked and bounded, control and bidi characters are removed, PR
+pages are rebuilt from the repository's own address (never taken from the output), and only check
+pages of the same repository are kept.
+
+### Files and settings
+
+`src/core/git/porcelain.ts` (status counts, worktree list, merge log, ref lists, branch-name and
+text safety), `src/core/git/hostPrs.ts` (gh / az / glab arguments and strict parsers, CI rollup),
+`src/core/git/gitReport.ts` (per-repository report, the Needs you rules, the summary, the cleanup
+command), `src/core/git/run.ts` (the four-at-once limiter, the `cmd.exe` line for `.cmd` scripts),
+`src/work/gitObserver.ts` (the observation service), `src/views/gitTree.ts` (the view),
+`src/work/gitCommands.ts` (routes). `RepoGitState` gains `counts` (staged/unstaged/untracked/
+conflicted); `resolveCommandOrScript` in `src/core/exec.ts`. Settings: `datapass.git.ghPath`
+(machine), `datapass.git.showOtherRepositories` (application). No project-file or contract change.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 309 / 309 on top of 0.18.0 (17 new in `tests/git.test.ts` — porcelain v2 counts, worktree list incl. hostile paths and bounds, merge log, default branch, branch-name safety, gh/az/glab arguments and parsers incl. rebuilt URLs, foreign check pages, control characters and bounds, CI rollup, every Needs you rule and its order, what stays information, cleanup commands incl. quoting refusals, the limiter, the `cmd.exe` line, `.cmd` resolution) |
+| `npm run test:desktop` (VS Code 1.139.1, Windows 11) | 237 / 237 on 11 fixtures (`empty` 13, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 21, `v3-research` 46, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13, `v18-toolchain` 16, `v19-git` 20). New fixture `v19-git`: two repositories with local bare remotes, two worktrees, a detached repository beside them and a stub `gh` (`datapass.git.ghPath`): the view checks when shown, Needs you in order drives the badge and the Workbench card, unique tree IDs and routes, PR / failing check / worktree / Source Control routes, the copied cleanup command (nothing deleted), Fetch all merges nothing and turns "merged, not pulled" into *Get updates*, other repositories read on opening, the web-links fallback without gh, and the stub's log proves only `auth status` and `pr list` reached gh |
+
+### Known limits
+
+Restricted Mode cannot be switched inside the desktop test runner (it starts with
+`--disable-workspace-trust`); the rule is covered by the observer's code path and the existing
+trust tests. `az` and `glab` are not installed on this PC: their arguments and parsers are unit
+tested, not run for real. Azure DevOps and GitLab list pages do not carry CI status (the view says
+"not reported" and links the pipelines page). The Git view is not a pane of work views yet (saved
+layouts cannot hide or show it). A worktree's own PR row appears under its repository, not under
+the worktree.
+
+### Still needs a human
+
+Testlab 7a (`D:\PROJ\datapass-testlab\7a-git`, about 15 minutes, offline, with the stub gh), then a
+look at the real `D:\PROJ` in *Other repositories*.
+
 # Implementation Status — 0.18.0: toolchain, ID map, connections
 
 Date: 2026-09-25. Version `0.18.0` — branch `claude/v018-toolchain`, on 0.17.0 (PR #25) and the
