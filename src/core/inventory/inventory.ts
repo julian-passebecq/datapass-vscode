@@ -9,7 +9,7 @@
 import type { ModuleId } from "../modules";
 import { parseStrictJson, isPlainObject } from "../model/strictJson";
 
-export type AssetKind = "notebook" | "fabric-item" | "databricks-bundle" | "databricks-notebook" | "airflow-dag" | "adf-pipeline" | "pbip";
+export type AssetKind = "notebook" | "fabric-item" | "databricks-bundle" | "databricks-notebook" | "airflow-dag" | "adf-pipeline" | "azure-functions" | "iac" | "pbip";
 
 export interface Asset {
   kind: AssetKind;
@@ -30,7 +30,9 @@ export const ASSET_GROUPS: ReadonlyArray<{ kind: AssetKind; label: string; icon:
   { kind: "databricks-bundle", label: "Databricks bundles", icon: "package" },
   { kind: "databricks-notebook", label: "Databricks notebooks", icon: "notebook" },
   { kind: "airflow-dag", label: "Airflow DAGs", icon: "type-hierarchy-sub" },
-  { kind: "adf-pipeline", label: "Data Factory pipelines", icon: "git-merge" },
+  { kind: "adf-pipeline", label: "Azure Data Factory pipelines", icon: "git-merge" },
+  { kind: "azure-functions", label: "Azure Functions apps", icon: "symbol-method" },
+  { kind: "iac", label: "Infrastructure as code", icon: "server-process" },
   { kind: "pbip", label: "Power BI projects", icon: "graph" }
 ];
 
@@ -88,10 +90,28 @@ export function classifyAsset(path: string, head?: string): Asset | undefined {
       const doc = parseStrictJson(head, { maxBytes: HEAD_BYTES, maxDepth: 40 });
       if (isPlainObject(doc) && isPlainObject(doc.properties) && Array.isArray(doc.properties.activities)) {
         const n = typeof doc.name === "string" && doc.name.trim() ? clip(doc.name.trim()) : name.replace(/\.json$/i, "");
-        return { kind: "adf-pipeline", path, name: n, detail: `${doc.properties.activities.length} activities`, module: "fabric", open: { type: "file", path } };
+        // Azure Data Factory is its own service (module "azure"), not Fabric's Data Factory.
+        return { kind: "adf-pipeline", path, name: n, detail: `${doc.properties.activities.length} activities`, module: "azure", open: { type: "file", path } };
       }
     } catch { /* not an ADF pipeline, or larger than the head */ }
     return undefined;
+  }
+
+  // Azure Functions app: a host.json with the v2 host schema marks the app root (deployed as a whole).
+  if (lower === "host.json") {
+    if (!head) return undefined;
+    try {
+      const doc = parseStrictJson(head, { maxBytes: HEAD_BYTES, maxDepth: 20 });
+      if (isPlainObject(doc) && doc.version === "2.0") {
+        const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : ".";
+        return { kind: "azure-functions", path, name: folder === "." ? "Functions app (root)" : baseName(folder), detail: `${folder}/`, module: "azure", open: { type: "file", path } };
+      }
+    } catch { /* not a Functions host file */ }
+    return undefined;
+  }
+  if (lower === "main.tf" || lower.endsWith(".bicep")) {
+    const folder = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : ".";
+    return { kind: "iac", path, name: lower === "main.tf" ? `${folder === "." ? "root" : baseName(folder)} (Terraform)` : name, detail: lower === "main.tf" ? "Terraform / OpenTofu" : "Bicep", module: "infrastructure", open: { type: "file", path } };
   }
 
   if (lower.endsWith(".py") && head !== undefined) {
@@ -107,7 +127,7 @@ export function classifyAsset(path: string, head?: string): Asset | undefined {
 
 // ---------------------------------------------------------------- repository status
 
-export type RepoState = "ok" | "missing" | "not-a-repo" | "remote-only";
+export type RepoState = "ok" | "missing" | "not-a-repo" | "remote-only" | "restricted";
 export interface RepoStatus {
   key: string;
   label: string;
@@ -119,12 +139,14 @@ export interface RepoStatus {
   behind?: number;
   /** Changed or untracked entries (porcelain lines). */
   changes?: number;
+  /** Changed tracked files only (untracked files do not block a fast-forward). */
+  trackedChanges?: number;
   remote?: string;
 }
 
 /** `git status --porcelain=v2 --branch` → branch, HEAD, upstream, ahead/behind, change count. Local only. */
-export function parseStatusV2(stdout: string): Pick<RepoStatus, "branch" | "head" | "upstream" | "ahead" | "behind" | "changes"> {
-  const out: Pick<RepoStatus, "branch" | "head" | "upstream" | "ahead" | "behind" | "changes"> = { changes: 0 };
+export function parseStatusV2(stdout: string): Pick<RepoStatus, "branch" | "head" | "upstream" | "ahead" | "behind" | "changes" | "trackedChanges"> {
+  const out: Pick<RepoStatus, "branch" | "head" | "upstream" | "ahead" | "behind" | "changes" | "trackedChanges"> = { changes: 0, trackedChanges: 0 };
   for (const line of stdout.split(/\r?\n/)) {
     if (!line) continue;
     if (line.startsWith("# branch.oid ")) { const oid = line.slice(13).trim(); if (/^[0-9a-f]{7,64}$/.test(oid)) out.head = oid; }
@@ -133,7 +155,10 @@ export function parseStatusV2(stdout: string): Pick<RepoStatus, "branch" | "head
     else if (line.startsWith("# branch.ab ")) {
       const m = /^\+(\d+) -(\d+)$/.exec(line.slice(12).trim());
       if (m) { out.ahead = Number(m[1]); out.behind = Number(m[2]); }
-    } else if (!line.startsWith("#")) out.changes!++;
+    } else if (!line.startsWith("#")) {
+      out.changes!++;
+      if (/^[12u] /.test(line)) out.trackedChanges!++;
+    }
   }
   return out;
 }
@@ -143,6 +168,7 @@ export function describeRepo(r: RepoStatus): string {
     case "missing": return "not found locally (never cloned automatically)";
     case "not-a-repo": return "not a Git repository";
     case "remote-only": return `remote-only${r.remote ? ` · ${r.remote}` : ""}`;
+    case "restricted": return "not inspected in Restricted Mode (trust the workspace to read Git state)";
     case "ok": {
       const parts = [r.branch === "(detached)" ? "detached" : r.branch ?? "?", r.head ? r.head.slice(0, 7) : "no commit"];
       parts.push(r.changes ? `${r.changes} change${r.changes === 1 ? "" : "s"}` : "clean");

@@ -20,11 +20,13 @@ export const openExternal: ExternalOpener = uri => current(uri);
 export type FolderOpener = (uri: vscode.Uri) => Thenable<unknown>;
 const REMOTE_SSH = "ms-vscode-remote.remote-ssh";
 const systemFolder: FolderOpener = async uri => {
-  if (!vscode.extensions.getExtension(REMOTE_SSH)) throw new Error(`Install the "Remote - SSH" extension (${REMOTE_SSH}) to open ${uri.authority.replace(/^ssh-remote\+/, "")}.`);
+  if (uri.scheme === "vscode-remote" && !vscode.extensions.getExtension(REMOTE_SSH)) throw new Error(`Install the "Remote - SSH" extension (${REMOTE_SSH}) to open ${uri.authority.replace(/^ssh-remote\+/, "")}.`);
   return vscode.commands.executeCommand("vscode.openFolder", uri, { forceNewWindow: true });
 };
 let currentFolder: FolderOpener = systemFolder;
 export const openRemoteFolder: FolderOpener = uri => currentFolder(uri);
+/** Open a local folder (a repository, a component folder) in a new window; same Test-mode seam. */
+export const openFolderWindow: FolderOpener = uri => currentFolder(uri);
 export function setFolderOpenerForTests(impl?: FolderOpener): void {
   currentFolder = impl ?? systemFolder;
 }

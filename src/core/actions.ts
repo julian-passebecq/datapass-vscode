@@ -43,6 +43,7 @@ import {
   resolveManifestPath,
   writeProjectManifest
 } from "./projectManifest";
+import { projectRoot } from "./workspace/root";
 
 const URLS: Record<string, string> = {
   "fabric.toolbox": "https://github.com/microsoft/fabric-toolbox",
@@ -157,7 +158,7 @@ async function copyEnvironmentSnapshot(extensionUri: vscode.Uri): Promise<void> 
 }
 
 async function initializeProjectManifest(kind: "generic" | "foil"): Promise<void> {
-  if (!vscode.workspace.workspaceFolders?.[0]) {
+  if (!projectRoot()) {
     void vscode.window.showWarningMessage("DataPass: open a workspace folder before creating a project manifest.");
     return;
   }
@@ -250,7 +251,7 @@ async function captureFabricEnvironmentSummary(): Promise<void> {
 }
 
 async function scaffoldFabricDeployConfig(): Promise<void> {
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open a workspace folder before scaffolding Fabric deployment.");
     return;
@@ -313,7 +314,7 @@ async function scaffoldFabricDeployConfig(): Promise<void> {
 }
 
 async function scaffoldFabricPreflightWorkflow(): Promise<void> {
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open a workspace folder before scaffolding Fabric CI preflight.");
     return;
@@ -372,7 +373,7 @@ async function scaffoldFabricPreflightWorkflow(): Promise<void> {
 }
 
 async function copyFabricDeployCommand(): Promise<void> {
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open a workspace folder first.");
     return;
@@ -526,7 +527,7 @@ function isFabricMcpItem(itemId: string): boolean {
 }
 
 async function configureFabricMcp(item: ToolCatalogItem): Promise<void> {
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+  const workspaceRoot = projectRoot();
   if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open a workspace folder before configuring MCP.");
     return;
@@ -795,7 +796,7 @@ async function resolveFabricToolboxRoot(): Promise<string | undefined> {
   const localOverride = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim();
   if (localOverride) return localOverride;
 
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   const projectConfig = await getProjectPlatformConfig();
   const configured = projectConfig?.fabric?.toolboxRoot?.trim();
   if (workspaceRoot && configured) return resolveManifestPath(workspaceRoot, configured);
@@ -825,7 +826,7 @@ async function resolveDatabricksRoot(): Promise<string | undefined> {
   const repoRoot = await resolveProjectRepository("databricks");
   if (repoRoot) return repoRoot;
 
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   const projectConfig = await getProjectPlatformConfig();
   const configured = projectConfig?.databricks?.bundleRoot?.trim();
   if (workspaceRoot && configured) return resolveManifestPath(workspaceRoot, configured);
@@ -860,7 +861,7 @@ async function copyGrafanaPreview(): Promise<void> {
 }
 
 async function copyIaC(operation: "validate" | "plan"): Promise<void> {
-  const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const workspaceRoot = projectRoot()?.fsPath;
   if (!workspaceRoot) {
     void vscode.window.showWarningMessage("DataPass: open an infrastructure project folder first.");
     return;

@@ -43,8 +43,45 @@ test("Eventstream deploy requires activation/rebind/budget review even with tool
   assert.equal(r.status, "needs-review");
   assert.ok(r.pendingReviews.some(p => /active/.test(p.label)));
   assert.ok(r.sideEffects.includes("activates-resources"));
-  const allReviewed = cap.reviews.map(x => `${cap.id}:${x.id}`);
+  // Confirmations are bound to the exact target: the keys come from the evaluation itself.
+  const allReviewed = Object.values(r.reviewKeys);
+  assert.equal(allReviewed.length, cap.reviews.length);
   assert.equal(preflight(cap, ctx(["ext.fabric"], [], { "fabric.workspace": "w" }, allReviewed)).status, "ready");
+  // The pre-0.13 key shape (capability:review, no target) no longer satisfies anything.
+  assert.equal(preflight(cap, ctx(["ext.fabric"], [], { "fabric.workspace": "w" }, cap.reviews.map(x => `${cap.id}:${x.id}`))).status, "needs-review");
+});
+
+test("F04: a review confirmed for one target does not carry over to another target", () => {
+  const cap = get("databricks.bundle.deploy");
+  const dev = { "databricks.bundleRoot": true, "databricks.target": "dev" };
+  const prod = { "databricks.bundleRoot": true, "databricks.target": "prod" };
+  const first = preflight(cap, ctx(["cli.databricks"], [], dev));
+  assert.equal(first.status, "needs-review");
+  const confirmed = Object.values(first.reviewKeys);
+  assert.equal(preflight(cap, ctx(["cli.databricks"], [], dev, confirmed)).status, "ready");
+  const afterSwitch = preflight(cap, ctx(["cli.databricks"], [], prod, confirmed));
+  assert.equal(afterSwitch.status, "needs-review", "the dev confirmation must not approve prod");
+  assert.notEqual(afterSwitch.targetDigest, first.targetDigest);
+  // A component operation is bound to its environment, declared target names and files.
+  const subject = (env: string, files: string) => ({ key: `wind-dab:${cap.id}@${env}`, environment: env, target: { bundleTarget: env }, artifactDigest: files, requirements: [] });
+  const base = { tools: new Map([["cli.databricks", { toolId: "cli.databricks", state: "present" as const, observedAt: T }]]), facts: new Map(Object.entries(dev)), reviewsConfirmed: new Set<string>() };
+  const a = preflight(cap, { ...base, subject: subject("dev", "files-1") });
+  const keys = new Set(Object.values(a.reviewKeys));
+  assert.equal(preflight(cap, { ...base, reviewsConfirmed: keys, subject: subject("dev", "files-1") }).status, "ready");
+  assert.equal(preflight(cap, { ...base, reviewsConfirmed: keys, subject: subject("dev", "files-2") }).status, "needs-review", "changed files need a new review");
+  assert.equal(preflight(cap, { ...base, reviewsConfirmed: keys, subject: subject("prod", "files-1") }).status, "needs-review", "another environment needs a new review");
+});
+
+test("F01: a declared path that was not observed never makes an operation ready", () => {
+  const cap = get("databricks.bundle.validate");
+  // Declared but not found: blocked, and the preflight says what was declared and what is missing.
+  const missing = preflight(cap, { ...ctx(["cli.databricks"]), factNotes: new Map([["databricks.bundleRoot", { state: "missing" as const, detail: "Declared \"../nowhere\", but databricks.yml was not found there." }]]) });
+  assert.equal(missing.status, "blocked");
+  assert.match(missing.blockers[0]!.detail, /not found/);
+  // Declared but not checkable (Restricted Mode, unreadable folder): unknown, not missing.
+  const unknown = preflight(cap, { ...ctx(["cli.databricks"]), factNotes: new Map([["databricks.bundleRoot", { state: "unknown" as const, detail: "could not check" }]]) });
+  assert.equal(unknown.status, "unknown");
+  assert.equal(unknown.blockers.length, 0);
 });
 
 test("Airflow Git-Sync with workspace identity is needs-config, never generic Ready", () => {

@@ -8,6 +8,7 @@ import { readProjectManifest, type DataPassProjectManifest } from "../projectMan
 import { parseGraph, type ProjectGraph } from "./graph";
 import { parseDomainPack, type DomainPack } from "../domainPacks/pack";
 import { vetRelativePath } from "../exchange/pathSafety";
+import { projectRoot } from "./root";
 export { projectFacts } from "./facts";
 
 export interface ProjectContext {
@@ -27,7 +28,7 @@ export interface ProjectContext {
 export const LOCAL_DIR = ".datapass/local";
 
 export async function loadProjectContext(extensionUri: vscode.Uri): Promise<ProjectContext> {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+  const root = projectRoot();
   const read = await readProjectManifest();
   const ctx: ProjectContext = { root, manifest: read.manifest, manifestBytes: read.bytes, manifestExists: read.exists, manifestErrors: read.errors, packs: [], packErrors: [] };
   if (!root) return ctx;

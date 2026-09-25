@@ -14,7 +14,6 @@ import { confirmModal, guarded, jsonBytes, openLocal, pickFile, pickFiles, readB
 import { writeLocal, LOCAL_DIR } from "../core/workspace/loader";
 import { CAPABILITY_INDEX } from "../core/capabilities/registry";
 import { preflight } from "../core/capabilities/preflight";
-import { projectFacts } from "../core/workspace/loader";
 import { executeGalaxyAction } from "../core/actions";
 import { CHECKLIST_STATES, IMPLICIT_SCOPE_ID, type ChecklistState, type ExchangeRecord, type WorkChecklistEntry } from "../core/work/workModel";
 import { buildAppRequest } from "../core/exchange/appExchange";
@@ -116,7 +115,8 @@ async function showPreflight(session: WorkSession, capabilityId?: string): Promi
   const cap = CAPABILITY_INDEX.get(id);
   if (!cap) throw new UserFacingError(`Unknown capability ${id}`);
   for (;;) {
-    const r = preflight(cap, { tools: session.toolObservations(), facts: projectFacts(session.project), reviewsConfirmed: new Set([...cap.reviews.map(rv => `${cap.id}:${rv.id}`)].filter(k => session.reviewConfirmed(k))) });
+    // The same context as the Work view and Galaxy: observed facts, and reviews bound to their target digest.
+    const r = preflight(cap, session.preflightContext());
     const section = (title: string, items: Array<{ label: string; detail: string }>) => (items.length ? [`${title}:`, ...items.map(i => `  - ${i.label} — ${i.detail}`)] : []);
     report(`Preflight: ${cap.label} [${cap.id}]`, [
       `Status: ${r.status.toUpperCase()}`,
@@ -141,8 +141,13 @@ async function showPreflight(session: WorkSession, capabilityId?: string): Promi
     if (!pick || pick.id === "blocked") return;
     if (pick.id.startsWith("review:")) {
       const review = cap.reviews.find(rv => rv.id === pick.id.slice("review:".length))!;
-      if (await confirmModal(review.prompt, `Operation: ${cap.label}\nThis confirmation lasts for this window session only and applies to the currently declared target.`, "I have reviewed this")) {
-        session.confirmReview(cap.id, review.id);
+      const targetFacts = cap.facts.map(f => `${f.fact} = ${String(session.preflightContext().facts.get(f.fact) ?? "—")}`);
+      if (await confirmModal(review.prompt, [
+        `Operation: ${cap.label}`,
+        ...(targetFacts.length ? [`Target as declared now: ${targetFacts.join(", ")}`] : []),
+        "This confirmation lasts for this window only and applies to this exact target: if the target, environment or files change, DataPass asks again."
+      ].join("\n"), "I have reviewed this")) {
+        session.confirmReview(r.reviewKeys[review.id]!);
       }
       continue;
     }

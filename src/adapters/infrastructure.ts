@@ -5,6 +5,7 @@ import type { PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { detectAnyExtension, detectExtension } from "../core/vscodeDetection";
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
+import { projectRoot } from "../core/workspace/root";
 
 export class InfrastructureAdapter implements PlatformAdapter {
   readonly id = "infrastructure";
@@ -29,7 +30,7 @@ export class InfrastructureAdapter implements PlatformAdapter {
       detectExtension("ms-vscode-remote.remote-ssh", "Remote SSH"),
       ...cli.map(tool => (optionalCli.has(tool.id) ? { ...tool, optional: true } : tool))
     ];
-    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceRoot = projectRoot()?.fsPath;
     const projectConfig = await getProjectPlatformConfig();
     const manifestRoot = projectConfig?.infrastructure?.root?.trim();
     const root = workspaceRoot && manifestRoot ? resolveManifestPath(workspaceRoot, manifestRoot) : workspaceRoot;

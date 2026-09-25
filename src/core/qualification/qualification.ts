@@ -26,9 +26,38 @@ export interface QualificationRecord {
   dataPassVersion: string;
   /** Tool id → version (or state) of the tools this operation depends on, at that moment. */
   tools: Record<string, string>;
+  /** V3: the component operation (component:capability@environment); absent = a project-level capability. */
+  operationKey?: string;
+  componentId?: string;
+  environment?: string;
+  /** Digest of the declared target the result was obtained on (a dev result is not a prod result). */
+  targetDigest?: string;
+  /** Digest of the component's files when recorded; a different digest now means the result is stale. */
+  artifactDigest?: string;
 }
 
 export const MAX_NOTE = 500;
+export const MAX_QUALIFICATION_RECORDS = 500;
+
+/**
+ * Identity of a result: project, scope, operation and target. Two scopes (or two targets) using
+ * the same capability are two results; recording one never replaces the other.
+ */
+export function qualificationKey(r: Pick<QualificationRecord, "projectId" | "scopeId" | "capabilityId" | "operationKey" | "targetDigest">): string {
+  return [r.projectId, r.scopeId, r.operationKey ?? r.capabilityId, r.targetDigest ?? ""].join("\u0000");
+}
+
+/** Newest first; replaces only the record with the same identity. */
+export function upsertQualification(list: readonly QualificationRecord[], r: QualificationRecord, max = MAX_QUALIFICATION_RECORDS): QualificationRecord[] {
+  const key = qualificationKey(r);
+  return [r, ...list.filter(x => qualificationKey(x) !== key)].slice(0, max);
+}
+
+/** The result recorded for exactly this project, scope, operation and target, if any. */
+export function findQualification(list: readonly QualificationRecord[], q: Pick<QualificationRecord, "projectId" | "scopeId" | "capabilityId" | "operationKey" | "targetDigest">): QualificationRecord | undefined {
+  const key = qualificationKey(q);
+  return list.find(x => qualificationKey(x) === key);
+}
 
 /** Keep notes short and free of local paths and credential-shaped text before storing them. */
 export function cleanNote(note: string | undefined): string | undefined {

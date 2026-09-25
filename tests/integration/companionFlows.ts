@@ -224,10 +224,10 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
   }, ["v2-retail"]);
 
   test("inventory: switching a module off hides its assets", async () => {
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
     const ids = new Set((await api().renderWorkTree()).map(r => r.id));
     assert.ok(!ids.has("assets:airflow-dag") && ids.has("assets:databricks-bundle"), [...ids].filter(i => i?.startsWith("assets")).join(","));
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
   }, ["v2-retail"]);
 
   // ------------------------------------------------------------ qualification (v2-retail)
@@ -294,7 +294,7 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     const core = ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Grafana"];
     await withUi([{ pick: core }, { button: "Save" }], () => run("datapass.chooseModules"));
     const saved = JSON.parse(await readText(".datapass/project.json"));
-    assert.deepEqual(saved.modules, { fabric: true, databricks: true, powerbi: false, grafana: true, infrastructure: true, airflow: true, mongoku: false, diagramcloud: false });
+    assert.deepEqual(saved.modules, { fabric: true, databricks: true, azure: false, databases: false, powerbi: false, grafana: true, infrastructure: true, airflow: true, mongoku: false, diagramcloud: false });
     assert.equal(Object.keys(saved)[2], "modules", "the block is written right after project");
     const state = await api().refresh();
     assert.ok(!state.platforms.some(p => p.id === "powerbi"), state.platforms.map(p => p.id).join(","));
@@ -306,7 +306,7 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     assert.ok(refused.errors.some(e => /DiagramCloud module is switched off/.test(e)), refused.errors.join(" / "));
     record("modulesOff", { galaxy: state.platforms.map(p => p.id), workRows: [...ids].filter(i => i?.startsWith("links")) });
 
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
     const restored = await api().refresh();
     assert.equal(restored.platforms.length, 5);
     assert.ok((await api().renderWorkTree()).some(r => r.id === "links:mongoku"));

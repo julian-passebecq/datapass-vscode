@@ -1,0 +1,74 @@
+{
+  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-project.schema.json",
+  "schemaVersion": 3,
+  "project": {
+    "id": "research-library",
+    "title": "Research library",
+    "description": "Find answers in papers, cite the PDF and page."
+  },
+  "repositories": {
+    "pipeline": {
+      "label": "Document pipeline",
+      "remote": {
+        "url": "https://github.com/example-org/research-pipeline",
+        "branch": "main"
+      },
+      "description": "ADF, Functions, Cosmos and Mongo definitions"
+    },
+    "lab": {
+      "label": "Simulation lab",
+      "remote": {
+        "url": "git@github.com:example-org/research-lab.git"
+      }
+    },
+    "infra": {
+      "label": "Archive infrastructure",
+      "planned": true,
+      "remote": {
+        "url": "https://github.com/example-org/research-infra"
+      }
+    }
+  },
+  "environments": [
+    {
+      "id": "dev",
+      "title": "Development"
+    },
+    {
+      "id": "prod",
+      "title": "Production",
+      "production": true
+    }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "papers",
+      "title": "Papers pipeline",
+      "objective": "PDF to reviewed JSON in MongoDB",
+      "repoRef": "pipeline",
+      "itemRefs": [
+        "pdf-archive",
+        "adf",
+        "extract",
+        "cosmos",
+        "review",
+        "study-db"
+      ],
+      "checklist": [
+        {
+          "id": "inventory",
+          "label": "Inventory the PDFs and reading rights"
+        }
+      ]
+    },
+    {
+      "id": "lab",
+      "title": "Simulation lab",
+      "itemRefs": [
+        "lab-bundle",
+        "infra-store"
+      ]
+    }
+  ]
+}

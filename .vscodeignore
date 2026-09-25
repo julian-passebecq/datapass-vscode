@@ -13,3 +13,4 @@ esbuild.mjs
 tsconfig.json
 out/**
 .vscode-test/**
+examples/**

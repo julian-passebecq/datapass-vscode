@@ -1,21 +1,25 @@
 {
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
-  "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana and infrastructure: work scopes, operation preflight, contracted app exchanges, impact analysis and publication briefs.",
-  "version": "0.12.0",
+  "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
+  "version": "0.13.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.106.0"
   },
   "categories": [
     "Data Science",
     "Other"
   ],
   "activationEvents": [
-    "onView:datapass.galaxy",
+    "onView:datapass.project",
     "onView:datapass.work",
+    "onView:datapass.galaxy",
+    "onView:datapass.architecture",
+    "onView:datapass.details",
     "workspaceContains:.datapass/project.json",
+    "workspaceContains:.datapass/catalog.json",
     "onUri"
   ],
   "main": "./dist/extension.js",
@@ -213,6 +217,136 @@
       {
         "command": "datapass.clearQualificationResults",
         "title": "DataPass: Clear Qualification Results"
+      },
+      {
+        "command": "datapass.openWorkbench",
+        "title": "DataPass: Open Project Workbench",
+        "icon": "$(layout)"
+      },
+      {
+        "command": "datapass.arrangeWorkbench",
+        "title": "DataPass: Workbench Layout (tree · architecture · details · file)",
+        "icon": "$(layout-sidebar-right)"
+      },
+      {
+        "command": "datapass.refreshProject",
+        "title": "DataPass: Re-inspect Project (files and Git state, no network)",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.checkForUpdates",
+        "title": "DataPass: Check for Updates (git fetch, nothing merged)",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.getUpdates",
+        "title": "DataPass: Get Updates (fast-forward only)…",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "datapass.preparationPack",
+        "title": "DataPass: Prepare AI Context for the Selection…",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "datapass.cloneRepository",
+        "title": "DataPass: Clone a Project Repository…",
+        "icon": "$(repo-clone)"
+      },
+      {
+        "command": "datapass.locateRepository",
+        "title": "DataPass: Locate an Existing Clone…",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "datapass.openRepositoryWindow",
+        "title": "DataPass: Open a Project Repository in a New Window…",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "datapass.openComponentFolder",
+        "title": "DataPass: Open the Component Folder in a New Window",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "datapass.openComponentEntry",
+        "title": "DataPass: Open the Component's Entry File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "datapass.openNativeTool",
+        "title": "DataPass: Open the Component's Official Tool",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.openAdfStudio",
+        "title": "DataPass: Open Azure Data Factory Studio",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "datapass.showOperation",
+        "title": "DataPass: Show a Component Operation (prerequisites, reviews)…",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "datapass.copyComponentCommand",
+        "title": "DataPass: Copy a Component Command…",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "datapass.recordComponentResult",
+        "title": "DataPass: Record a Component Operation Result…",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "datapass.installTool",
+        "title": "DataPass: Show an Official Extension",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "datapass.openGraph",
+        "title": "DataPass: Open Project Graph (graph.json)",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "datapass.openPreparationGuide",
+        "title": "DataPass: Open the Project Preparation Guide (for you and your AI)",
+        "icon": "$(book)"
+      },
+      {
+        "command": "datapass.upgradeManifestToV3",
+        "title": "DataPass: Upgrade Project Manifest to v3",
+        "icon": "$(arrow-circle-up)"
+      },
+      {
+        "command": "datapass.selectProjectFolder",
+        "title": "DataPass: Choose the Project Folder of this Window…",
+        "icon": "$(root-folder)"
+      },
+      {
+        "command": "datapass.switchProject",
+        "title": "DataPass: Switch Project…",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "datapass.selectComponent",
+        "title": "DataPass: Select a Component"
+      },
+      {
+        "command": "datapass.openComponentFile",
+        "title": "DataPass: Open a Component File"
+      },
+      {
+        "command": "datapass.explainMissingFile",
+        "title": "DataPass: Why Is This File Expected?"
+      },
+      {
+        "command": "datapass.setProjectChecklist",
+        "title": "DataPass: Set a Checklist Item State"
+      },
+      {
+        "command": "datapass.openDoc",
+        "title": "DataPass: Open a Project Document"
       }
     ],
     "viewsContainers": {
@@ -222,24 +356,144 @@
           "title": "DataPass",
           "icon": "resources/datapass.svg"
         }
+      ],
+      "panel": [
+        {
+          "id": "datapass-architecture",
+          "title": "DataPass Architecture",
+          "icon": "resources/datapass.svg"
+        }
+      ],
+      "secondarySidebar": [
+        {
+          "id": "datapass-details",
+          "title": "DataPass Details",
+          "icon": "resources/datapass.svg"
+        }
       ]
     },
     "views": {
       "datapass": [
         {
+          "id": "datapass.project",
+          "name": "Project",
+          "type": "tree"
+        },
+        {
           "id": "datapass.work",
           "name": "Work",
-          "type": "tree"
+          "type": "tree",
+          "visibility": "collapsed"
         },
         {
           "id": "datapass.galaxy",
           "name": "Galaxy",
+          "type": "webview",
+          "visibility": "collapsed"
+        }
+      ],
+      "datapass-architecture": [
+        {
+          "id": "datapass.architecture",
+          "name": "Architecture",
+          "type": "webview"
+        }
+      ],
+      "datapass-details": [
+        {
+          "id": "datapass.details",
+          "name": "Details",
           "type": "webview"
         }
       ]
     },
     "menus": {
       "view/title": [
+        {
+          "command": "datapass.refreshProject",
+          "when": "view == datapass.project",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datapass.checkForUpdates",
+          "when": "view == datapass.project",
+          "group": "navigation@2"
+        },
+        {
+          "command": "datapass.openWorkbench",
+          "when": "view == datapass.project",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datapass.preparationPack",
+          "when": "view == datapass.project",
+          "group": "navigation@4"
+        },
+        {
+          "command": "datapass.arrangeWorkbench",
+          "when": "view == datapass.project",
+          "group": "1_workbench@1"
+        },
+        {
+          "command": "datapass.getUpdates",
+          "when": "view == datapass.project",
+          "group": "2_git@1"
+        },
+        {
+          "command": "datapass.cloneRepository",
+          "when": "view == datapass.project",
+          "group": "2_git@2"
+        },
+        {
+          "command": "datapass.locateRepository",
+          "when": "view == datapass.project",
+          "group": "2_git@3"
+        },
+        {
+          "command": "datapass.openGraph",
+          "when": "view == datapass.project",
+          "group": "3_project@1"
+        },
+        {
+          "command": "datapass.openProjectManifest",
+          "when": "view == datapass.project",
+          "group": "3_project@2"
+        },
+        {
+          "command": "datapass.upgradeManifestToV3",
+          "when": "view == datapass.project",
+          "group": "3_project@3"
+        },
+        {
+          "command": "datapass.chooseModules",
+          "when": "view == datapass.project",
+          "group": "3_project@4"
+        },
+        {
+          "command": "datapass.selectProjectFolder",
+          "when": "view == datapass.project",
+          "group": "4_switch@1"
+        },
+        {
+          "command": "datapass.switchProject",
+          "when": "view == datapass.project",
+          "group": "4_switch@2"
+        },
+        {
+          "command": "datapass.openPreparationGuide",
+          "when": "view == datapass.project",
+          "group": "5_help@1"
+        },
+        {
+          "command": "datapass.refreshProject",
+          "when": "view == datapass.details || view == datapass.architecture",
+          "group": "navigation@1"
+        },
+        {
+          "command": "datapass.openWorkbench",
+          "when": "view == datapass.details || view == datapass.architecture",
+          "group": "navigation@2"
+        },
         {
           "command": "datapass.refresh",
           "when": "view == datapass.galaxy",
@@ -368,6 +622,51 @@
       ],
       "view/item/context": [
         {
+          "command": "datapass.openComponentEntry",
+          "when": "view == datapass.project && viewItem =~ /^component.*\\.entry/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.preparationPack",
+          "when": "view == datapass.project && viewItem =~ /^(component|subproject)/",
+          "group": "inline@2"
+        },
+        {
+          "command": "datapass.openComponentFolder",
+          "when": "view == datapass.project && viewItem =~ /^component\\.local/",
+          "group": "1_open@1"
+        },
+        {
+          "command": "datapass.openNativeTool",
+          "when": "view == datapass.project && viewItem =~ /^component.*\\.tool/",
+          "group": "1_open@2"
+        },
+        {
+          "command": "datapass.cloneRepository",
+          "when": "view == datapass.project && viewItem =~ /^repo\\.(unbound|missing|wrong-remote)/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.locateRepository",
+          "when": "view == datapass.project && viewItem =~ /^repo\\.(unbound|missing|wrong-remote|not-a-repo)/",
+          "group": "inline@2"
+        },
+        {
+          "command": "datapass.getUpdates",
+          "when": "view == datapass.project && viewItem =~ /^repo\\.local\\.behind/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.checkForUpdates",
+          "when": "view == datapass.project && viewItem =~ /^repo\\.local/",
+          "group": "1_git@1"
+        },
+        {
+          "command": "datapass.openRepositoryWindow",
+          "when": "view == datapass.project && viewItem =~ /^repo\\.local/ && !(viewItem =~ /coordination/)",
+          "group": "1_git@2"
+        },
+        {
           "command": "datapass.showPreflight",
           "when": "view == datapass.work && viewItem =~ /^operation/",
           "group": "inline"
@@ -395,6 +694,30 @@
         },
         {
           "command": "datapass.openExchange",
+          "when": "false"
+        },
+        {
+          "command": "datapass.selectComponent",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openComponentFile",
+          "when": "false"
+        },
+        {
+          "command": "datapass.explainMissingFile",
+          "when": "false"
+        },
+        {
+          "command": "datapass.setProjectChecklist",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openDoc",
+          "when": "false"
+        },
+        {
+          "command": "datapass.installTool",
           "when": "false"
         }
       ],
@@ -456,6 +779,24 @@
           "default": "",
           "scope": "window",
           "description": "Optional path passed to gcx dev serve --watch."
+        },
+        "datapass.catalogs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "application",
+          "description": "Absolute paths of DataPass project catalogs (datapass.catalog JSON, e.g. <hub clone>/.datapass/catalog.json) listed by \"Switch Project\". A catalog lists projects and their coordination repositories; no credentials."
+        },
+        "datapass.projectsFolders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "scope": "application",
+          "description": "Absolute folders where you keep clones (e.g. D:\\PROJ). DataPass looks there, besides the project folder's parent, for the repositories a project declares, and checks each clone's Git origin."
         }
       }
     },
@@ -484,9 +825,20 @@
           "**/resources/domain-packs/*.json"
         ],
         "url": "./schemas/datapass-domain-pack.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/catalog.json"
+        ],
+        "url": "./schemas/datapass-catalog.schema.json"
       }
     ],
     "viewsWelcome": [
+      {
+        "view": "datapass.project",
+        "contents": "Open the folder (or repository) that holds your project's .datapass/project.json.\n[Open Folder](command:vscode.openFolder)\n[Switch Project…](command:datapass.switchProject)\n[How to prepare a project](command:datapass.openPreparationGuide)",
+        "when": "workbenchState == empty"
+      },
       {
         "view": "datapass.work",
         "contents": "Open a folder to plan and prepare DataPass work.\n[Open Folder](command:vscode.openFolder)",
@@ -520,5 +872,11 @@
     "type": "git",
     "url": "https://github.com/julian-passebecq/datapass-vscode.git"
   },
-  "homepage": "https://github.com/julian-passebecq/datapass-vscode"
+  "homepage": "https://github.com/julian-passebecq/datapass-vscode",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "In Restricted Mode DataPass reads the project files but never runs Git or other programs inside the workspace: repository state is shown as not inspected, and Check for updates, Get updates, cloning and command operations are disabled until you trust the folder."
+    }
+  }
 }

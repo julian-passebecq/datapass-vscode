@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ToolProbe } from "./types";
+import { absolutePathEntries } from "./exec";
 
 export interface CliSpec {
   id: string;
@@ -36,7 +37,8 @@ export function resolveWindowsCommand(
     return ext === ".exe" || ext === ".com" ? "exe" : ext === ".cmd" || ext === ".bat" ? "script" : undefined;
   };
   const candidates = (base: string) => (path.win32.extname(base) ? [base] : exts.map(e => base + e));
-  const dirs = /[\\/]/.test(command) ? [""] : (env.PATH ?? env.Path ?? "").split(";").map(d => d.trim().replace(/^"(.*)"$/, "$1")).filter(Boolean);
+  // Only absolute PATH entries: a relative or "." entry would search the current directory.
+  const dirs = /[\\/]/.test(command) ? [""] : absolutePathEntries(env, "win32");
   for (const dir of dirs) {
     for (const candidate of candidates(dir ? path.win32.join(dir, command) : command)) {
       const k = kind(candidate);

@@ -6,7 +6,10 @@
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
-import { loadProjectContext, projectFacts, LOCAL_DIR, type ProjectContext } from "../core/workspace/loader";
+import { executablePath } from "../core/exec";
+import { loadProjectContext, projectFacts, writeLocal, LOCAL_DIR, type ProjectContext } from "../core/workspace/loader";
+import { factNotes, type FactObservation } from "../core/workspace/facts";
+import { observeFileFacts } from "./observe";
 import { probeTools, invalidateToolProbes } from "../core/capabilities/probe";
 import type { ToolObservation } from "../core/capabilities/tools";
 import type { PreflightContext } from "../core/capabilities/preflight";
@@ -17,19 +20,32 @@ import { sha256Bytes, slugId } from "../core/model/ids";
 import type { BaseRef } from "../core/contracts/envelopes";
 import type { LocalApproval } from "../core/publication/brief";
 import { parseStrictJson } from "../core/model/strictJson";
-import type { QualificationRecord } from "../core/qualification/qualification";
+import { upsertQualification, type QualificationRecord } from "../core/qualification/qualification";
 import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
+import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
+import { observeProject, type ProjectObservation } from "./projectObserver";
+import { buildProjectMap, type ProjectMap } from "../core/project/projectMap";
+import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
+
+/** V3 selection shared by the Project tree, the Workbench, the diagram and the detail view. */
+export interface Selection { subproject?: string; component?: string }
+
+/** Machine-local repository locations chosen with "Locate clone" (git-ignored, never shared). */
+export const LOCAL_REPOSITORIES_FILE = "repositories.json";
 
 /** Inventory scans are cached this long unless the user refreshes the Work view. */
 const INVENTORY_TTL_MS = 60_000;
 const MAX_PY_FILES = 3000;
 const QUALIFICATION_KEY = "datapass.qualification.v1";
+const RECENT_KEY = "datapass.v3.recentProjects";
 import {
   MAX_MONGOKU_CONTEXT_BYTES, mongokuEntityFor, parseMongokuContext, resolveCompanions,
   type MongokuStatus, type ResolvedCompanions
 } from "../core/companions/companions";
 
 const KEYS = {
+  root: "datapass.v3.root",
+  selection: "datapass.v3.selection",
   scope: "datapass.v22.scope",
   checklist: "datapass.v22.checklist",
   exchanges: "datapass.v22.exchanges",
@@ -39,9 +55,15 @@ const KEYS = {
 } as const;
 const MAX_EXCHANGES = 200;
 
+/**
+ * Git by absolute path (never a `git.exe` found in the folder being inspected, see core/exec.ts),
+ * with the repository's fsmonitor hook disabled, and never prompting for credentials.
+ */
 export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
   new Promise(resolve => {
-    execFile("git", args, {
+    const git = executablePath("git");
+    if (!git) { resolve({ ok: false, stdout: "", stderr: "git was not found on PATH" }); return; }
+    execFile(git, ["-c", "core.fsmonitor=false", ...args], {
       cwd: cwd || undefined,
       timeout: timeoutMs,
       windowsHide: true,
@@ -56,6 +78,8 @@ export class WorkSession implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private ctx: ProjectContext = { manifestErrors: [], manifestExists: false, packs: [], packErrors: [] };
   private tools: Map<string, ToolObservation> = new Map();
+  /** File-backed facts as observed on disk (a declared path counts only once it was seen). */
+  private factObs: Map<string, FactObservation> = new Map();
   /** Review confirmations are session-only: a new window asks again. */
   private readonly reviews = new Set<string>();
   /** Companion URLs the user confirmed in this window; a changed URL is a new URL and asks again. */
@@ -64,10 +88,17 @@ export class WorkSession implements vscode.Disposable {
   private mongokuSnapshot?: { scopeId: string; status: MongokuStatus };
   private inv?: { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[] };
   private cached?: WorkModel;
+  /** V3: repositories and component files as observed on this machine. */
+  private projectObs?: ProjectObservation;
+  private mapCache?: ProjectMap;
+  private rootCandidates: vscode.Uri[] = [];
+  private readonly selectionEmitter = new vscode.EventEmitter<Selection>();
+  /** Fires when the selection changes (tree, diagram, workbench); views follow it. */
+  readonly onDidChangeSelection = this.selectionEmitter.event;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
-  dispose(): void { this.emitter.dispose(); }
+  dispose(): void { this.emitter.dispose(); this.selectionEmitter.dispose(); }
 
   get project(): ProjectContext { return this.ctx; }
   get extensionUri(): vscode.Uri { return this.context.extensionUri; }
@@ -75,10 +106,20 @@ export class WorkSession implements vscode.Disposable {
 
   async refresh(forceProbe = false): Promise<void> {
     if (forceProbe) invalidateToolProbes();
+    // F02: the project is the folder holding .datapass/project.json (or the one chosen), not simply the first folder.
+    const { root, candidates } = await detectProjectRoot(this.context.workspaceState.get<string>(KEYS.root));
+    setProjectRoot(root);
+    this.rootCandidates = candidates;
     const [ctx, tools] = await Promise.all([loadProjectContext(this.context.extensionUri), probeTools(forceProbe)]);
     this.ctx = ctx;
     this.tools = tools;
+    this.factObs = await observeFileFacts(ctx.root, ctx.manifest);
+    this.projectObs = ctx.root ? await observeProject({
+      root: ctx.root, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
+      localBindings: await this.localBindings(), cloneParents: cloneParents()
+    }) : undefined;
     this.cached = undefined;
+    await this.rememberProject();
     await this.loadMongokuSnapshot();
     if (forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString()) await this.scanInventory();
     this.changed();
@@ -89,8 +130,7 @@ export class WorkSession implements vscode.Disposable {
   qualification(): QualificationRecord[] { return this.context.globalState.get<QualificationRecord[]>(QUALIFICATION_KEY) ?? []; }
 
   async recordQualification(r: QualificationRecord): Promise<void> {
-    const rest = this.qualification().filter(x => !(x.capabilityId === r.capabilityId && x.projectId === r.projectId));
-    await this.context.globalState.update(QUALIFICATION_KEY, [r, ...rest].slice(0, 500));
+    await this.context.globalState.update(QUALIFICATION_KEY, upsertQualification(this.qualification(), r));
     this.changed();
   }
 
@@ -108,7 +148,7 @@ export class WorkSession implements vscode.Disposable {
     const root = this.ctx.root;
     if (!root) { this.inv = { at: Date.now(), assets: [], truncated: false, repos: [] }; return; }
     const [named, py, platform, pipelines] = await Promise.all([
-      vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml}", INVENTORY_EXCLUDE, 2000),
+      vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}", INVENTORY_EXCLUDE, 2000),
       vscode.workspace.findFiles("**/*.py", INVENTORY_EXCLUDE, MAX_PY_FILES),
       vscode.workspace.findFiles("**/.platform", INVENTORY_EXCLUDE, 1000),
       vscode.workspace.findFiles("**/pipeline/*.json", INVENTORY_EXCLUDE, 500)
@@ -151,6 +191,8 @@ export class WorkSession implements vscode.Disposable {
     return Promise.all(targets.map(async (t): Promise<RepoStatus> => {
       if (!t.fsPath) return { key: t.key, label: t.label, state: "remote-only", remote: t.remote };
       try { await vscode.workspace.fs.stat(vscode.Uri.file(t.fsPath)); } catch { return { key: t.key, label: t.label, state: "missing", remote: t.remote }; }
+      // Restricted Mode: Git can run repository-configured programs (fsmonitor, hooks), so it is not run at all.
+      if (!vscode.workspace.isTrusted) return { key: t.key, label: t.label, state: "restricted", remote: t.remote };
       const r = await gitRunner(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], t.fsPath, 10000);
       return r.ok ? { key: t.key, label: t.label, state: "ok", remote: t.remote, ...parseStatusV2(r.stdout) } : { key: t.key, label: t.label, state: "not-a-repo", remote: t.remote };
     }));
@@ -163,7 +205,8 @@ export class WorkSession implements vscode.Disposable {
       graph: this.ctx.graph,
       packs: this.ctx.packs,
       tools: this.tools,
-      facts: projectFacts(this.ctx),
+      facts: projectFacts(this.ctx, this.factObs),
+      factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews,
       selectedScopeId: this.state<string>(KEYS.scope),
       checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
@@ -178,9 +221,8 @@ export class WorkSession implements vscode.Disposable {
 
   /** The context every preflight in this window uses (Work view, preflight command, Galaxy cards). */
   preflightContext(): PreflightContext {
-    return { tools: this.tools, facts: projectFacts(this.ctx), reviewsConfirmed: this.reviews };
+    return { tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs), reviewsConfirmed: this.reviews };
   }
-  reviewConfirmed(key: string): boolean { return this.reviews.has(key); }
 
   async selectScope(id: string): Promise<void> {
     await this.context.workspaceState.update(KEYS.scope, id);
@@ -237,14 +279,37 @@ export class WorkSession implements vscode.Disposable {
   }
 
   async setChecklist(scopeId: string, itemId: string, state: ChecklistState, note?: string): Promise<void> {
+    await this.setChecklistByKey(checklistKey(scopeId, itemId), state, note);
+  }
+
+  /** Scope items use `scope/item`; component items use `component:<id>/<item>` (V3). */
+  async setChecklistByKey(key: string, state: ChecklistState, note?: string): Promise<void> {
     const all = { ...(this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {}) };
-    all[checklistKey(scopeId, itemId)] = { state, note: note?.slice(0, 500) || undefined, at: new Date().toISOString() };
+    all[key] = { state, note: note?.slice(0, 500) || undefined, at: new Date().toISOString() };
     await this.context.workspaceState.update(KEYS.checklist, all);
     this.changed();
   }
 
-  confirmReview(capabilityId: string, reviewId: string): void {
-    this.reviews.add(`${capabilityId}:${reviewId}`);
+  /** Projects opened on this machine (for "Switch project"); titles and folders only. */
+  recentProjects(): Array<{ id: string; title: string; folder: string; at: string }> {
+    return this.context.globalState.get<Array<{ id: string; title: string; folder: string; at: string }>>(RECENT_KEY) ?? [];
+  }
+
+  private async rememberProject(): Promise<void> {
+    const m = this.ctx.manifest, root = this.ctx.root;
+    if (!m || !root || root.scheme !== "file") return;
+    const entry = { id: m.project.id, title: m.project.title, folder: root.fsPath, at: new Date().toISOString() };
+    const recent = this.recentProjects();
+    // Write only when this project is new or renamed: global state is shared with other writers (results).
+    const top = recent[0];
+    if (top && top.id === entry.id && top.title === entry.title && path.resolve(top.folder) === path.resolve(entry.folder)) return;
+    const rest = recent.filter(p => path.resolve(p.folder) !== path.resolve(entry.folder));
+    await this.context.globalState.update(RECENT_KEY, [entry, ...rest].slice(0, 30));
+  }
+
+  /** `key` comes from PreflightResult.reviewKeys: it binds the confirmation to one target digest. */
+  confirmReview(key: string): void {
+    this.reviews.add(key);
     this.changed();
   }
 
@@ -288,8 +353,10 @@ export class WorkSession implements vscode.Disposable {
       const ref = slugId(repoRef, "repo");
       if (seen.has(ref) || repositories.length >= 30) return;
       seen.add(ref);
-      const rev = await readRepoRevision(gitRunner, fsPath);
-      repositories.push({ repoRef: ref, revision: rev.dirty ? `${rev.revision}+dirty` : rev.revision, workingTreeHash: rev.workingTreeHash });
+      const rev = await readRepoRevision(vscode.workspace.isTrusted ? gitRunner : async () => ({ ok: false, stdout: "" }), fsPath);
+      // "+partial": some uncommitted bytes could not be fingerprinted, so this base never matches another capture.
+      const suffix = `${rev.dirty ? "+dirty" : ""}${rev.coverage === "partial" ? "+partial" : ""}`;
+      repositories.push({ repoRef: ref, revision: `${rev.revision}${suffix}`, workingTreeHash: rev.workingTreeHash });
     };
     if (this.ctx.root) await add("workspace", this.ctx.root.fsPath);
     for (const [key, repo] of Object.entries(m?.repositories ?? {})) {
@@ -297,6 +364,11 @@ export class WorkSession implements vscode.Disposable {
       const abs = path.isAbsolute(repo.path) ? repo.path : path.join(this.ctx.root.fsPath, repo.path);
       if (path.resolve(abs) === path.resolve(this.ctx.root.fsPath)) continue;
       await add(key, abs);
+    }
+    // V3: clones found by identity or located by the person are part of the base too.
+    for (const [key, folder] of this.projectObs?.folders ?? []) {
+      if (this.ctx.root && path.resolve(folder.fsPath) === path.resolve(this.ctx.root.fsPath)) continue;
+      await add(key, folder.fsPath);
     }
     return {
       scopeRevision: `${scope.id}@${scopeHash}`,
@@ -311,6 +383,118 @@ export class WorkSession implements vscode.Disposable {
 
   private changed(): void {
     this.cached = undefined;
+    this.mapCache = undefined;
     this.emitter.fire();
   }
+
+  // ------------------------------------------------------------ V3 project map, selection, repositories
+
+  /** Folders of this window holding a project manifest (more than one: the person chooses). */
+  projectRootCandidates(): readonly vscode.Uri[] { return this.rootCandidates; }
+
+  async chooseProjectRoot(uri: vscode.Uri): Promise<void> {
+    await this.context.workspaceState.update(KEYS.root, uri.toString());
+    await this.context.workspaceState.update(KEYS.selection, undefined);
+    await this.refresh();
+  }
+
+  /** The V3 project map: repositories, sub-projects, components, files, operations. */
+  projectMap(): ProjectMap {
+    if (this.mapCache) return this.mapCache;
+    const obs = this.projectObs;
+    this.mapCache = buildProjectMap({
+      manifest: this.ctx.manifest, graph: this.ctx.graph, coordinationKey: obs?.coordinationKey ?? ".",
+      repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
+      tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
+      reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
+      qualification: this.qualification()
+    });
+    return this.mapCache;
+  }
+
+  observedAt(): string | undefined { return this.projectObs?.observedAt; }
+
+  /** Local folder of a repository (session-private: never exported to AI context or files). */
+  repoFolder(key: string): vscode.Uri | undefined { return this.projectObs?.folders.get(key); }
+
+  selection(): Selection {
+    const sel = this.state<Selection>(KEYS.selection) ?? {};
+    const map = this.projectMap();
+    const component = sel.component && map.components.some(c => c.id === sel.component) ? sel.component : undefined;
+    const subproject = sel.subproject && map.subprojects.some(s => s.id === sel.subproject) ? sel.subproject
+      : component ? map.components.find(c => c.id === component)?.subprojects[0] ?? map.subprojects.find(s => s.componentIds.includes(component))?.id
+      : undefined;
+    return { subproject, component };
+  }
+
+  /** Select a sub-project and/or a component. A declared sub-project is also the Work view's scope. */
+  async select(sel: Selection): Promise<void> {
+    const map = this.projectMap();
+    const subproject = sel.subproject ?? (sel.component ? map.components.find(c => c.id === sel.component)?.subprojects[0] ?? map.subprojects.find(s => s.componentIds.includes(sel.component!))?.id : undefined);
+    const next: Selection = { subproject, component: sel.component };
+    await this.context.workspaceState.update(KEYS.selection, next);
+    if (subproject && (this.ctx.manifest?.scopes ?? []).some(s => s.id === subproject) && this.model().scope.id !== subproject) {
+      await this.selectScope(subproject);
+    }
+    this.selectionEmitter.fire(next);
+  }
+
+  private async localBindings(): Promise<Record<string, string>> {
+    const root = this.ctx.root ?? vscode.workspace.workspaceFolders?.[0]?.uri;
+    if (!root) return {};
+    try {
+      const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, ...LOCAL_DIR.split("/"), LOCAL_REPOSITORIES_FILE));
+      const doc = parseStrictJson(bytes, { maxBytes: 64 * 1024 }) as Record<string, unknown>;
+      const map = doc && typeof doc === "object" && !Array.isArray(doc) ? (doc.repositories as Record<string, unknown> | undefined) : undefined;
+      return Object.fromEntries(Object.entries(map ?? {}).filter((e): e is [string, string] => typeof e[1] === "string" && path.isAbsolute(e[1])));
+    } catch { return {}; }
+  }
+
+  /** Remember where a repository is cloned on this machine (.datapass/local, git-ignored). */
+  async setLocalBinding(key: string, folder: string | undefined): Promise<void> {
+    const root = this.ctx.root;
+    if (!root) return;
+    const current = await this.localBindings();
+    if (folder) current[key] = folder; else delete current[key];
+    await writeLocal(root, LOCAL_REPOSITORIES_FILE, new TextEncoder().encode(JSON.stringify({ format: "datapass.local-repositories", note: "Machine-local clone locations. Never committed.", repositories: current }, null, 2) + "\n"));
+    await this.refresh();
+  }
+
+  /** `git fetch` one repository: contacts its remote, changes no local branch or file. */
+  async fetchRepository(key: string): Promise<{ ok: boolean; detail?: string }> {
+    const folder = this.repoFolder(key);
+    if (!folder) return { ok: false, detail: "not cloned here" };
+    if (!vscode.workspace.isTrusted) return { ok: false, detail: "Restricted Mode: trust the workspace first" };
+    const r = await gitRunner(["fetch", "--prune", "origin"], folder.fsPath, 120000);
+    return r.ok ? { ok: true } : { ok: false, detail: (r.stderr ?? "").split(/\r?\n/).find(l => l.trim())?.slice(0, 200) ?? "fetch failed" };
+  }
+
+  /** Commits on the upstream that this clone does not have yet (after a fetch). */
+  async incomingCommits(key: string): Promise<IncomingCommit[]> {
+    const folder = this.repoFolder(key);
+    if (!folder || !vscode.workspace.isTrusted) return [];
+    const r = await gitRunner(INCOMING_LOG_ARGS, folder.fsPath, 15000);
+    return r.ok ? parseIncomingLog(r.stdout) : [];
+  }
+
+  /**
+   * Fast-forward only to the fetched upstream. Refuses anything that is not a clean fast-forward;
+   * never pushes, stashes, rebases or merges. Returns the paths that changed.
+   */
+  async fastForward(key: string): Promise<{ ok: boolean; changed: string[]; detail?: string }> {
+    const folder = this.repoFolder(key);
+    if (!folder) return { ok: false, changed: [], detail: "not cloned here" };
+    if (!vscode.workspace.isTrusted) return { ok: false, changed: [], detail: "Restricted Mode" };
+    const before = await gitRunner(["rev-parse", "HEAD"], folder.fsPath, 5000);
+    const r = await gitRunner(["merge", "--ff-only", "@{u}"], folder.fsPath, 60000);
+    if (!r.ok) return { ok: false, changed: [], detail: (r.stderr ?? "").split(/\r?\n/).find(l => l.trim())?.slice(0, 300) ?? "fast-forward refused" };
+    const diff = before.ok ? await gitRunner(["diff", "--name-status", before.stdout.trim(), "HEAD"], folder.fsPath, 15000) : { ok: false, stdout: "" };
+    return { ok: true, changed: diff.ok ? parseNameStatus(diff.stdout) : [] };
+  }
+}
+
+/** Parent folders where project clones live (user setting), besides the project folder's own parent. */
+function cloneParents(): string[] {
+  const v = vscode.workspace.getConfiguration("datapass").get<string[]>("projectsFolders") ?? [];
+  return Array.isArray(v) ? v.filter(p => typeof p === "string" && path.isAbsolute(p)).slice(0, 10) : [];
 }

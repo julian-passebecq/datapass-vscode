@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020";
-import { MODULES, MODULE_IDS, disabledProviders, galaxyCardEnabled, moduleEnabled, modulesBlock, validateModules } from "../src/core/modules";
+import { ALWAYS_ON_PROVIDERS, MODULES, MODULE_IDS, disabledProviders, galaxyCardEnabled, moduleEnabled, modulesBlock, validateModules } from "../src/core/modules";
 import { validateProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { buildWorkModel, IMPLICIT_SCOPE_ID } from "../src/core/work/workModel";
 import { resolveCompanions, scopesForEntity } from "../src/core/companions/companions";
@@ -29,9 +29,9 @@ test("modules: unlisted means on, only false switches off, no block keeps today'
   assert.equal(galaxyCardEnabled(manifest({ grafana: false }), "fabric"), true);
   assert.deepEqual([...disabledProviders(manifest({ mongoku: false, diagramcloud: false }))].sort(), ["diagram", "mongo"]);
   assert.deepEqual(Object.keys(modulesBlock(new Set(["fabric"]))), [...MODULE_IDS]);
-  // Every capability provider except the always-on external apps belongs to exactly one module.
+  // Every capability provider except the always-on core (apps, Python, opening files) belongs to exactly one module.
   for (const cap of CAPABILITIES) {
-    if (cap.provider === "apps") continue;
+    if (ALWAYS_ON_PROVIDERS.has(cap.provider)) { assert.equal(MODULES.filter(m => m.providers.includes(cap.provider)).length, 0, cap.id); continue; }
     assert.equal(MODULES.filter(m => m.providers.includes(cap.provider)).length, 1, cap.id);
   }
 });

@@ -5,6 +5,7 @@ import { supportedPowerBiAgenticPlugins } from "../core/powerbiAgentic";
 import { anyWorkspaceFile, detectAnyExtension } from "../core/vscodeDetection";
 import { analyzePbip, type PbiProjectGraph } from "../core/powerbi/pbipGraph";
 import * as vscode from "vscode";
+import { projectRoot } from "../core/workspace/root";
 
 export class PowerBiAdapter implements PlatformAdapter {
   readonly id = "powerbi";
@@ -95,7 +96,7 @@ export class PowerBiAdapter implements PlatformAdapter {
 
 /** Bounded structure scan used for the card summary; the full report is a Work command. */
 async function inspectStructure(): Promise<PbiProjectGraph | undefined> {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri;
+  const root = projectRoot();
   if (!root) return undefined;
   try {
     const found = await vscode.workspace.findFiles("**/*.{pbip,pbir,pbism,tmdl,bim,json}", "**/{node_modules,.git,dist,out,.datapass}/**", 5000);

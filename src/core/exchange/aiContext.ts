@@ -29,17 +29,34 @@ export interface ContextExport {
 
 const PATHLIKE = /(?:[A-Za-z]:\\|\\\\|\/(?:home|Users|mnt|var|etc|tmp)\/)[^\s"'`]*/g;
 
-/** Credential-shaped text: tokens, keys, connection strings and `secret=value` pairs. */
+/** Key names whose value is a credential, in `key=value`, `key: value` and JSON `"key": "value"` forms. */
+const SECRET_KEY = String.raw`(?:password|passwd|pwd|secret|token|api[_-]?key|client[_-]?secret|access[_-]?key|account[_-]?key|shared[_-]?access[_-]?key|shared[_-]?access[_-]?signature|sas[_-]?token|sas|sig|x-functions-key|auth[_-]?token|refresh[_-]?token|private[_-]?key|connection[_-]?string)`;
+
+/**
+ * Credential-shaped text: tokens, keys, connection strings and key/value pairs. A defensive filter,
+ * not a guarantee: contexts are built from allowlisted fields and previewed before anything is copied.
+ */
 const SECRETS: Array<[RegExp, string]> = [
-  [/\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis|amqps?|mssql|sqlserver):\/\/[^\s"'`]+/gi, "<connection-string>"],
+  [/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g, "<private-key>"],
+  [/\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis|rediss|amqps?|mssql|sqlserver):\/\/[^\s"'`]+/gi, "<connection-string>"],
   [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, "<token>"],
   [/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, "<token>"],
+  [/\bglpat-[A-Za-z0-9_-]{20,}\b/g, "<token>"],
+  [/\bnpm_[A-Za-z0-9]{30,}\b/g, "<token>"],
   [/\bsk-[A-Za-z0-9_-]{16,}\b/g, "<token>"],
+  [/\bsk_(?:live|test)_[A-Za-z0-9]{16,}\b/g, "<token>"],
+  [/\bAIza[0-9A-Za-z_-]{35}\b/g, "<token>"],
   [/\bAKIA[0-9A-Z]{16}\b/g, "<token>"],
   [/\bxox[abprs]-[A-Za-z0-9-]{10,}\b/g, "<token>"],
   [/\bdapi[0-9a-f]{32}\b/g, "<token>"],
   [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "<token>"],
-  [/\b(password|passwd|pwd|secret|token|api[_-]?key|client[_-]?secret|access[_-]?key|sas|sig)(\s*[:=]\s*)[^\s,;"'`]+/gi, "$1$2<redacted>"]
+  [/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}/g, "$1 <redacted>"],
+  // Azure Function keys and SAS signatures in URLs (?code=…, &sig=…).
+  [/([?&](?:code|sig|signature)=)[^&\s"'`#]+/gi, "$1<redacted>"],
+  // JSON / quoted form: "token": "value" or 'secret': 'value' (value up to the closing quote).
+  [new RegExp(String.raw`(["'])(${SECRET_KEY})\1(\s*:\s*)(["'])(?:\\.|(?!\4)[^\\])*\4`, "gi"), "$1$2$1$3$4<redacted>$4"],
+  // Plain form: token=value, AccountKey=value; (connection strings), password: value.
+  [new RegExp(String.raw`\b(${SECRET_KEY})(\s*[:=]\s*)(?!<redacted>)[^\s,;"'\x60}]+`, "gi"), "$1$2<redacted>"]
 ];
 
 export function scrub(text: string): string {

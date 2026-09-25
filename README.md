@@ -1,8 +1,36 @@
-# DataPass VS Code — Data Platform Control Plane
+# DataPass VS Code — Project Workbench for AI-prepared cloud projects
 
-DataPass VS Code is a **single VS Code control-plane extension** for composing existing data-platform tools around project context. It does not fork or replace Microsoft Fabric, Databricks, Grafana, OpenTofu/Terraform, Power BI tooling, Remote SSH, Docker or Kubernetes.
+DataPass VS Code is a **single VS Code extension** that sits between the AI assistant that prepares a
+project in Git (ChatGPT, Claude), GitHub, the **official** VS Code extensions and CLIs (Fabric,
+Databricks, Azure Functions, Azure Data Factory Studio, Cosmos DB, MongoDB, PostgreSQL/Neon, Power BI,
+Grafana, OpenTofu/Terraform, Remote SSH) and you. It shows the architecture, which files each step
+needs in which repository, what is missing and why, opens the right file or tool, and gets the AI's
+merged work — without ever deploying, pushing or running project code.
 
-## Current surfaces
+## V3 (0.13.0): the Project Workbench
+
+- **Project** view (left): sub-projects → components → expected files (found / missing / not cloned /
+  to generate), repositories (cloned, not cloned, planned, commits to get), problems in the project files.
+- **Architecture** panel (bottom): the diagram of the selected sub-project; click a component.
+- **Details** (right, secondary side bar): the component's files, what each step needs (read, develop,
+  test, validate, deploy, run, publish) per environment, checklist and actions.
+- **Workbench** tab: the overview of every sub-project and what it still needs on this machine.
+- **Check for updates** (`git fetch`) and **Get updates** (fast-forward only, after listing the commits).
+- **Prepare AI context**: a bounded pack for ChatGPT/Claude with the exact repository, folder and files.
+- Several repositories per project, found by Git origin; **Clone**, **Locate**; a hub **catalog** of projects.
+
+A project is described by `.datapass/project.json` (**manifest v3**) and `.datapass/graph.json`
+(**graph 0.2**): see [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
+[examples/v3](examples/v3/). Architecture and status: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+
+```json
+{ "id": "extract", "kind": "function", "label": "PDF extraction", "provider": "azure-functions",
+  "artifacts": { "repoRef": "pipeline", "root": "functions/extract", "profile": "azure-functions.python" },
+  "operations": [ { "capability": "azure-functions.run-local" },
+                  { "capability": "azure-functions.deploy", "environment": "dev", "target": { "functionApp": "func-papers-dev" } } ] }
+```
+
+## Earlier surfaces (still available)
 
 - **Galaxy** — health-first control plane with readiness metrics, attention queue, grouped/collapsible platform cards, filters, persistent view state, and a sanitized environment snapshot for debugging/handoffs.
 - **Projects** — portable `.datapass/project.json` manifests with JSON-schema validation; FOIL remains profile #1.

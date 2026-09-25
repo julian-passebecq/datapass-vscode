@@ -43,11 +43,12 @@ const KIND_MAP: Partial<Record<GraphItem["kind"], DcNodeKind>> = {
   dataset: "storage", "dataset-snapshot": "storage", notebook: "process", workflow: "control", dataflow: "process",
   "streaming-flow": "process", script: "function", package: "function", application: "app", dashboard: "report",
   report: "report", "semantic-model": "model", model: "model", "infrastructure-definition": "control", resource: "source",
-  "artifact-bundle": "storage", "domain-config": "source"
+  "artifact-bundle": "storage", "domain-config": "source",
+  function: "function", pipeline: "control", storage: "storage", database: "storage", contract: "source", step: "process"
 };
 const REL_MAP: Partial<Record<GraphRelation["relation"], DcEdgeKind>> = {
   consumes: "batch", produces: "batch", uses: "dependency", dependsOn: "dependency", derivedFrom: "dependency",
-  runsOn: "control", invokes: "control", deployedFrom: "control", observedBy: "query"
+  runsOn: "control", invokes: "control", deployedFrom: "control", observedBy: "query", feeds: "batch", orchestrates: "control"
 };
 const DC_ID = /^[a-z][a-z0-9_.-]{0,79}$/;
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + "…" : s);

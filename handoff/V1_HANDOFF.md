@@ -1,3 +1,5 @@
+> **Superseded as the entry point by [V3_HANDOFF.md](V3_HANDOFF.md) (2026-09-25, extension 0.13.0).** This document remains the record of passes 9–12 (0.9.x–0.12.0) and of the V1 gates.
+
 # DataPass VS Code — v1 handoff (2026-09-25)
 
 **Start here.** For *status and next steps*, this replaces every earlier "start here" (the V2.2

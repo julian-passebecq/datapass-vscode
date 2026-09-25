@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import type { PlatformAction, ProjectBinding, ProjectProfileState } from "./types";
 import { readProjectManifest, resolveManifestPath, type DataPassProjectManifest } from "./projectManifest";
 import { detectFoilProfile } from "../profiles/foil";
+import { projectRoot } from "./workspace/root";
 
 export async function detectActiveProject(): Promise<ProjectProfileState> {
   const read = await readProjectManifest();
@@ -47,7 +48,7 @@ export async function detectActiveProject(): Promise<ProjectProfileState> {
 export async function resolveProjectRepository(key: string): Promise<string | undefined> {
   const read = await readProjectManifest();
   const manifest = read.manifest;
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const root = projectRoot()?.fsPath;
   const configured = manifest?.repositories?.[key]?.path;
   // Remote-only repositories have no local path; callers must not treat them as clones.
   if (!root || !configured) return undefined;
@@ -59,7 +60,7 @@ export async function getProjectPlatformConfig(): Promise<DataPassProjectManifes
 }
 
 async function manifestToState(manifest: DataPassProjectManifest): Promise<ProjectProfileState> {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const root = projectRoot()?.fsPath;
   const bindings: ProjectBinding[] = [];
   const actions: PlatformAction[] = [
     { id: "project.openManifest", label: "Open manifest", enabled: true, kind: "open" }
@@ -140,6 +141,6 @@ async function manifestToState(manifest: DataPassProjectManifest): Promise<Proje
 }
 
 export function workspaceFolderName(): string {
-  const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const root = projectRoot()?.fsPath;
   return root ? path.basename(root) : "data-project";
 }

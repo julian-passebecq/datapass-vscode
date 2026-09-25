@@ -12,8 +12,10 @@
     "schemaVersion": {
       "enum": [
         1,
-        2
-      ]
+        2,
+        3
+      ],
+      "description": "1: V2.1 format. 2: scopes, apps, packs, graph, remote-only repositories. 3 (DataPass V3): environments, project docs, planned repositories and a default repository per scope; pairs with graph version 0.2."
     },
     "project": {
       "type": "object",
@@ -67,6 +69,14 @@
         },
         "diagramcloud": {
           "type": "boolean"
+        },
+        "azure": {
+          "type": "boolean",
+          "description": "Azure data services: Data Factory, Functions, Storage, Cosmos DB."
+        },
+        "databases": {
+          "type": "boolean",
+          "description": "Databases as project destinations: MongoDB Atlas, PostgreSQL / Neon."
         }
       }
     },
@@ -106,6 +116,15 @@
               "local",
               "remote-only"
             ]
+          },
+          "planned": {
+            "const": true,
+            "description": "v3: this repository does not exist yet (to be created). Operations that need its files stay blocked."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "v3: what lives in this repository (shown to people and in AI context)."
           }
         },
         "anyOf": [
@@ -118,8 +137,19 @@
             "required": [
               "remote"
             ]
+          },
+          {
+            "required": [
+              "planned"
+            ]
           }
-        ]
+        ],
+        "not": {
+          "required": [
+            "planned",
+            "path"
+          ]
+        }
       }
     },
     "platforms": {
@@ -405,6 +435,77 @@
                 }
               }
             }
+          },
+          "repoRef": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "v3: default repository of this scope (sub-project); components without their own repoRef use it."
+          },
+          "docs": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "label"
+              ],
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^(?![/\\\\~])(?![A-Za-z]:)(?!.*(^|[/\\\\])\\.\\.([/\\\\]|$)).+$",
+                  "description": "Path relative to the repository root. No absolute paths, no .. segments."
+                },
+                "repoRef": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+                  "description": "Repository key; omitted = the repository holding this manifest."
+                },
+                "url": {
+                  "type": "string",
+                  "pattern": "^https://[^\\s]+$"
+                }
+              },
+              "oneOf": [
+                {
+                  "required": [
+                    "path"
+                  ],
+                  "not": {
+                    "required": [
+                      "url"
+                    ]
+                  }
+                },
+                {
+                  "required": [
+                    "url"
+                  ],
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "path"
+                        ]
+                      },
+                      {
+                        "required": [
+                          "repoRef"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "description": "v3: documentation of this scope."
           }
         }
       }
@@ -600,9 +701,110 @@
           }
         }
       }
+    },
+    "$schema": {
+      "type": "string",
+      "description": "Optional URL of this JSON Schema, for editors and AI tools that validate the file."
+    },
+    "environments": {
+      "type": "array",
+      "maxItems": 20,
+      "description": "v3: deployment environments (dev, test, prod…). Component operations name one; a review confirmed for one environment never applies to another. Names only, never credentials.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "production": {
+            "type": "boolean",
+            "description": "true for environments where mistakes affect real users or data."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      }
+    },
+    "docs": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "v3: project documentation to open from DataPass (architecture notes, AGENTS.md…).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "pattern": "^(?![/\\\\~])(?![A-Za-z]:)(?!.*(^|[/\\\\])\\.\\.([/\\\\]|$)).+$",
+            "description": "Path relative to the repository root. No absolute paths, no .. segments."
+          },
+          "repoRef": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "Repository key; omitted = the repository holding this manifest."
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://[^\\s]+$"
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "path"
+            ],
+            "not": {
+              "required": [
+                "url"
+              ]
+            }
+          },
+          {
+            "required": [
+              "url"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "path"
+                  ]
+                },
+                {
+                  "required": [
+                    "repoRef"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
   },
-  "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; schemaVersion 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories. Never put secrets in this file.",
+  "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories; 3 (DataPass V3) adds environments, project docs, planned repositories and a default repository per scope. Never put secrets in this file.",
   "allOf": [
     {
       "if": {
@@ -629,6 +831,16 @@
                   {
                     "required": [
                       "management"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "planned"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "description"
                     ]
                   }
                 ]
@@ -657,8 +869,91 @@
               "required": [
                 "graph"
               ]
+            },
+            {
+              "required": [
+                "environments"
+              ]
+            },
+            {
+              "required": [
+                "docs"
+              ]
+            },
+            {
+              "required": [
+                "resources"
+              ]
+            },
+            {
+              "required": [
+                "bindings"
+              ]
             }
           ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "environments"
+              ]
+            },
+            {
+              "required": [
+                "docs"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "repositories": {
+            "additionalProperties": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "planned"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "description"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "scopes": {
+            "items": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "repoRef"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "docs"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

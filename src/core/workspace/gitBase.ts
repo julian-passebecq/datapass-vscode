@@ -11,23 +11,60 @@ export interface RepoRevision {
   revision: string;
   dirty: boolean;
   workingTreeHash: Sha256;
+  /**
+   * "partial" when some uncommitted content could not be fingerprinted (too many untracked files,
+   * a git command failed, no Git at all). A partial fingerprint includes a one-off nonce, so it
+   * never equals another capture: "unchanged" is only claimed when every byte was covered.
+   */
+  coverage: "complete" | "partial";
+  /** Untracked (not ignored) files found; their content is part of the fingerprint. */
+  untracked: number;
 }
 
 const EMPTY = sha256Bytes(new Uint8Array());
+/** Untracked files whose content is hashed; beyond this the capture is partial. */
+export const MAX_UNTRACKED_HASHED = 500;
+const HASH_BATCH = 50;
 
-/** Fingerprint of uncommitted state. Clean trees always produce the hash of empty input. */
-export function workingTreeFingerprint(statusPorcelain: string, diff: string): { dirty: boolean; hash: Sha256 } {
+const randomNonce = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
+/**
+ * Fingerprint of uncommitted state: porcelain status, the binary-safe diff of tracked files against
+ * HEAD and the blob ids of untracked files. Clean trees always produce the hash of empty input.
+ */
+export function workingTreeFingerprint(statusPorcelain: string, diff: string, untrackedBlobs = ""): { dirty: boolean; hash: Sha256 } {
   if (!statusPorcelain.trim()) return { dirty: false, hash: EMPTY };
-  return { dirty: true, hash: sha256Bytes(new TextEncoder().encode(`status\0${statusPorcelain}\0diff\0${diff}`)) };
+  return { dirty: true, hash: sha256Bytes(new TextEncoder().encode(`status\0${statusPorcelain}\0diff\0${diff}\0untracked\0${untrackedBlobs}`)) };
 }
 
-export async function readRepoRevision(run: GitRunner, cwd: string): Promise<RepoRevision> {
+export async function readRepoRevision(run: GitRunner, cwd: string, nonce: () => string = randomNonce): Promise<RepoRevision> {
+  const partialOnly = (revision: string, why: string): RepoRevision =>
+    ({ revision, dirty: true, workingTreeHash: sha256Bytes(`partial\0${why}\0${nonce()}`), coverage: "partial", untracked: 0 });
   const head = await run(["rev-parse", "--verify", "HEAD"], cwd, 5000);
-  if (!head.ok) return { revision: "unversioned", dirty: true, workingTreeHash: EMPTY };
+  if (!head.ok) return partialOnly("unversioned", "no-head");
+  const revision = head.stdout.trim();
   const status = await run(["status", "--porcelain=v1", "--untracked-files=normal"], cwd, 10000);
-  const diff = status.ok && status.stdout.trim() ? await run(["diff", "HEAD", "--no-color", "--no-ext-diff"], cwd, 15000) : { ok: true, stdout: "" };
-  const fp = workingTreeFingerprint(status.ok ? status.stdout : "status-unavailable", diff.ok ? diff.stdout : "diff-unavailable");
-  return { revision: head.stdout.trim(), dirty: fp.dirty, workingTreeHash: fp.hash };
+  if (!status.ok) return partialOnly(revision, "status-unavailable");
+  if (!status.stdout.trim()) return { revision, dirty: false, workingTreeHash: EMPTY, coverage: "complete", untracked: 0 };
+
+  // --binary: a changed binary file changes the fingerprint (plain diff only says "Binary files differ").
+  const diff = await run(["diff", "HEAD", "--binary", "--no-color", "--no-ext-diff"], cwd, 15000);
+  // Untracked files are not in `git diff`: hash their bytes (blob ids), bounded.
+  const others = await run(["ls-files", "--others", "--exclude-standard", "-z"], cwd, 10000);
+  let partial = !diff.ok || !others.ok;
+  const files = others.ok ? others.stdout.split("\0").filter(Boolean).sort() : [];
+  if (files.length > MAX_UNTRACKED_HASHED) partial = true;
+  const blobs: string[] = [];
+  const hashed = files.slice(0, MAX_UNTRACKED_HASHED);
+  for (let i = 0; i < hashed.length && !partial; i += HASH_BATCH) {
+    const batch = hashed.slice(i, i + HASH_BATCH);
+    const r = await run(["hash-object", "--", ...batch], cwd, 15000);
+    const ids = r.ok ? r.stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean) : [];
+    if (!r.ok || ids.length !== batch.length || ids.some(id => !/^[0-9a-f]{40}([0-9a-f]{24})?$/.test(id))) { partial = true; break; }
+    batch.forEach((f, j) => blobs.push(`${f}\0${ids[j]}`));
+  }
+  const fp = workingTreeFingerprint(status.stdout, diff.ok ? diff.stdout : "", blobs.join("\n") + (partial ? `\0partial\0${nonce()}` : ""));
+  return { revision, dirty: true, workingTreeHash: fp.hash, coverage: partial ? "partial" : "complete", untracked: files.length };
 }
 
 /** Remote URLs accepted for `git ls-remote`: https or ssh, never with embedded credentials. */

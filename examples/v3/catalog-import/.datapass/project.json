@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "id": "catalog-import",
+    "title": "Supplier catalogue import",
+    "description": "Clean a supplier CSV and load it into PostgreSQL."
+  },
+  "environments": [
+    {
+      "id": "test",
+      "title": "Neon test branch"
+    }
+  ],
+  "docs": [
+    {
+      "label": "How the import works",
+      "path": "docs/IMPORT.md"
+    }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "import",
+      "title": "Clean and load the catalogue",
+      "objective": "A clean catalogue table, reloaded weekly",
+      "itemRefs": [
+        "clean",
+        "db"
+      ],
+      "checklist": [
+        {
+          "id": "sample",
+          "label": "Get a sample CSV from the supplier"
+        }
+      ]
+    }
+  ]
+}

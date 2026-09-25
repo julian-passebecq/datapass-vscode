@@ -8,7 +8,7 @@
  */
 import type { CapabilityRecord } from "./capabilities/registry";
 
-export type ModuleId = "fabric" | "databricks" | "powerbi" | "grafana" | "infrastructure" | "airflow" | "mongoku" | "diagramcloud";
+export type ModuleId = "fabric" | "databricks" | "powerbi" | "grafana" | "infrastructure" | "airflow" | "azure" | "databases" | "mongoku" | "diagramcloud";
 
 export interface ModuleInfo {
   id: ModuleId;
@@ -22,8 +22,11 @@ export interface ModuleInfo {
 }
 
 export const MODULES: readonly ModuleInfo[] = [
-  { id: "fabric", label: "Microsoft Fabric", group: "core", galaxyCard: "fabric", providers: ["fabric", "adf"] },
+  { id: "fabric", label: "Microsoft Fabric", group: "core", galaxyCard: "fabric", providers: ["fabric"] },
   { id: "databricks", label: "Databricks", group: "core", galaxyCard: "databricks", providers: ["databricks"] },
+  // Azure Data Factory is its own service, not part of Fabric (Fabric has its own Data Factory items).
+  { id: "azure", label: "Azure data services (Data Factory, Functions, Storage, Cosmos DB)", group: "core", providers: ["adf", "azure-functions", "azure-storage", "cosmos"] },
+  { id: "databases", label: "Databases (MongoDB Atlas, PostgreSQL / Neon)", group: "core", providers: ["mongodb", "postgres"] },
   { id: "infrastructure", label: "Infrastructure (Azure/IaC, VM, SSH, containers)", group: "core", galaxyCard: "infrastructure", providers: ["infrastructure"] },
   { id: "airflow", label: "Airflow", group: "core", providers: ["airflow"] },
   { id: "powerbi", label: "Power BI", group: "core", galaxyCard: "powerbi", providers: ["powerbi"] },
@@ -48,7 +51,10 @@ export function galaxyCardEnabled(manifest: WithModules, cardId: string): boolea
   return !module || moduleEnabled(manifest, module.id);
 }
 
-/** Providers switched off by the project; `apps` is part of the core and cannot be switched off. */
+/** Operations every project has (external apps, Python code, opening files): never switched off. */
+export const ALWAYS_ON_PROVIDERS: ReadonlySet<CapabilityRecord["provider"]> = new Set(["apps", "python", "generic"]);
+
+/** Providers switched off by the project; ALWAYS_ON_PROVIDERS cannot be switched off. */
 export function disabledProviders(manifest: WithModules): Set<CapabilityRecord["provider"]> {
   return new Set(MODULES.filter(m => !moduleEnabled(manifest, m.id)).flatMap(m => m.providers));
 }

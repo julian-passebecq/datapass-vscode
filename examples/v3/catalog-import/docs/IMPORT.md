@@ -1,0 +1,3 @@
+# Catalogue import
+
+Synthetic example.
