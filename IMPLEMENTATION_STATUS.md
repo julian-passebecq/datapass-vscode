@@ -1,8 +1,46 @@
-# Implementation Status — V3 pass 1 (0.13.1): Project Workbench
+# Implementation Status — V3 pass 2 (0.14.0): environment readiness
 
 Date: 2026-09-25
-Version: `0.13.1`. 0.13.0 merged as PR #18 (main `c68f853`), based on main `91a0850` (0.12.0, the
-base of the GPT audit of 2026-09-25). Handoff: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+Version: `0.14.0`. 0.13.1 merged as PR #19 (main `748c32b`), based on 0.13.0 merged as PR #18 (main
+`c68f853`). Handoff: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+
+### 0.14.0 — local environment readiness, never a value
+
+Manifest **v4** adds two optional blocks: `localEnv` (env files a developer needs, e.g. `.env`,
+`.env.local`, `.dev.vars`, and the variable **names** the project requires) and `identifiers`
+(explicitly non-secret ids such as a Cloudflare account id). DataPass reads a declared env file only
+to learn which declared names are **set**, **empty** or **missing** — never the value, and never an
+undeclared name; symlinks are not followed and files over 256 KiB are not read. In a trusted
+workspace it also asks Git whether the file is committed (error), not ignored (warning) or ignored.
+A required name with no declared identifier is always treated as a secret: DataPass tells the person
+to fetch it from their local vault (Power Ops) and never asks for it itself.
+
+- **Project view**: new "Local environment" section (files found/missing/optional, each variable
+  set/empty/missing with "secret · vault" or "non-secret id", the declared identifiers, Copy project
+  ID, Open Power Ops) and "Readiness" section (deterministic checks: env files and keys, Git-ignore
+  status, companion addresses not set, manifest version/problems, repository branch/head — detached
+  HEAD, wrong branch, behind/ahead, uncommitted changes, no upstream — plus optional companion rows).
+  The Workbench overview tab shows the same "Local environment" card.
+- **Commands**: Copy Variable Name (never its value), Open Env File (a missing file can be created
+  with the declared names and empty values; a name already set elsewhere is written as a comment),
+  Copy Non-secret Identifier, Copy Project ID, Open Power Ops (starts the machine-level
+  `datapass.powerOps.path` program, `JUtilityPalette.exe`, with no argument — a workspace can never
+  choose the program), Show Readiness Report (markdown, names and states only).
+- **Migration**: *DataPass: Upgrade Project Manifest* (`datapass.upgradeManifest`, replaces
+  `datapass.upgradeManifestToV3`) upgrades v1/v2/v3 to v4, with a backup copy
+  (`.datapass/project.v<N>.json`) and a journal. v3 manifests keep working unchanged.
+- **Optional modules unaffected**: Mongoku and DiagramCloud switched off
+  (`modules.mongoku`/`modules.diagramcloud: false`) show only "optional module disabled" — no
+  warning, no error, no check. Enabled and mapped but with no address set is an info note, same as
+  before.
+- The environment snapshot, the V3 AI preparation pack and the V2.2 Copy AI context gain a "Local
+  environment (names and states only)" section; identifier values are not included there.
+- **Not built**: a Power Ops deep link (Power Ops exposes none yet — only "Open" is supported, no
+  secret ever crosses it); a Mongoku "DataPass maintenance" Galaxy projection (left for later).
+- **Tests**: `tests/readiness.test.ts` (parser, validation, checks, companions, migration, and a
+  no-leak test with fake secrets across every output) and a new desktop fixture `v4-cloudflare`
+  (real Git, a fake `.env`) in `tests/integration/readinessFlows.ts`. The `broken` fixture now uses
+  `schemaVersion: 5` to keep testing an unknown future version.
 
 ### 0.13.1 — `$schema` fix (first use by Julian)
 

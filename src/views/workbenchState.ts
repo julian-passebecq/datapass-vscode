@@ -9,6 +9,7 @@
 import { PHASE_LABELS } from "../core/capabilities/registry";
 import type { ComponentView, MapChecklistEntry, OperationView, ProjectMap } from "../core/project/projectMap";
 import type { LayoutEdgeInput } from "../core/project/layout";
+import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
 
 export interface WbFile {
   path: string; repoPath: string; kind: "file" | "dir" | "glob"; role: string; requiredFor: string[]; optional: boolean;
@@ -40,6 +41,17 @@ export interface WbSubproject {
   needs: { repositories: Array<{ key: string; label: string; state: string; nextStep?: string }>; tools: Array<{ label: string; extensionIds: string[]; neededFor: string[] }>; missingFiles: number; generationNeeded: number };
   checklist: WbChecklist[]; componentIds: string[]; docs: Array<{ label: string; path?: string; url?: string; repoKey?: string }>;
 }
+/** Environment readiness for the webview: names and states only (the Readiness never holds values). */
+export interface WbReadiness {
+  declared: boolean;
+  files: Array<{ id: string; path: string; repoLabel?: string; optional: boolean; state: string; stateText: string; git: string }>;
+  keys: Array<{ name: string; state: string; stateText: string; source: string; sourceText: string }>;
+  identifiers: Array<{ id: string; label: string; provider?: string; envKey?: string }>;
+  companions: Array<{ module: string; label: string; state: string; detail: string }>;
+  checks: Array<{ severity: string; area: string; message: string; nextStep?: string }>;
+  summary: Readiness["summary"];
+}
+
 export interface WorkbenchState {
   version: string;
   hasRoot: boolean;
@@ -61,6 +73,19 @@ export interface WorkbenchState {
   /** Components and links of the diagram (selected sub-project, else the whole project); laid out by the webview for its width. */
   diagram: { nodeIds: string[]; edges: LayoutEdgeInput[] };
   docs: Array<{ label: string; path?: string; url?: string; repoKey?: string }>;
+  readiness?: WbReadiness;
+}
+
+export function wbReadiness(r: Readiness): WbReadiness {
+  return {
+    declared: r.declared,
+    files: r.files.map(f => ({ id: f.id, path: f.path, repoLabel: f.repoLabel, optional: f.optional, state: f.state, stateText: fileStateText(f), git: f.git })),
+    keys: r.keys.map(k => ({ name: k.name, state: k.state, stateText: keyStateText(k), source: k.source, sourceText: keySourceText(k) })),
+    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, envKey: d.envKey })),
+    companions: r.companions.map(c => ({ module: c.module, label: c.label, state: c.state, detail: c.detail })),
+    checks: r.checks.slice(0, 30).map(c => ({ severity: c.severity, area: c.area, message: c.message, nextStep: c.nextStep })),
+    summary: r.summary
+  };
 }
 
 const checklist = (c: MapChecklistEntry): WbChecklist => ({ key: c.key, id: c.id, label: c.label, state: c.state, note: c.note });
@@ -109,6 +134,7 @@ export interface StateInput {
   trusted: boolean;
   observedAt?: string;
   multipleProjectFolders: boolean;
+  readiness?: Readiness;
 }
 
 export function workbenchState(input: StateInput): WorkbenchState {
@@ -136,6 +162,7 @@ export function workbenchState(input: StateInput): WorkbenchState {
     problems: map.problems.slice(0, 50),
     selection: input.selection,
     diagram,
-    docs: map.docs
+    docs: map.docs,
+    readiness: input.readiness ? wbReadiness(input.readiness) : undefined
   };
 }

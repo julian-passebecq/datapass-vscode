@@ -34,6 +34,7 @@ import { querySpecHash, validateQuerySpec } from "../core/authority/querySpec";
 import { projectToDiagramCloud } from "../core/diagramcloud/projection";
 import { analyzePbip } from "../core/powerbi/pbipGraph";
 import { buildAiContext, type ContextPreset } from "../core/exchange/aiContext";
+import { readinessContextLines } from "../core/readiness/readiness";
 import { migrateManifestToV2, validateProjectManifest, DATAPASS_MANIFEST_PATH } from "../core/projectManifestModel";
 import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
@@ -551,7 +552,8 @@ async function copyAiContext(session: WorkSession): Promise<void> {
     preflight: m.operations.map(o => ({ label: o.capability.label, result: o.result })),
     impact: m.outputs,
     programme: m.programme,
-    packs: session.project.packs.map(p => ({ namespace: p.namespace, version: p.version, mappingStatus: p.mappingStatus }))
+    packs: session.project.packs.map(p => ({ namespace: p.namespace, version: p.version, mappingStatus: p.mappingStatus })),
+    environment: readinessContextLines(session.readiness())
   });
   const choice = await vscode.window.showInformationMessage(`AI context: ${ctx.bytes} bytes, ${ctx.sections.length} section(s)${ctx.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true,
@@ -622,7 +624,7 @@ async function migrateManifest(session: WorkSession): Promise<void> {
   const root = requireRoot(session.root);
   const ctx = session.project;
   if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("No valid manifest to migrate.");
-  if (ctx.manifest.schemaVersion === 2) { void vscode.window.showInformationMessage("The manifest is already schemaVersion 2."); return; }
+  if (ctx.manifest.schemaVersion >= 2) { void vscode.window.showInformationMessage(`The manifest is already schemaVersion ${ctx.manifest.schemaVersion}.`); return; }
   const v2 = migrateManifestToV2(ctx.manifest);
   const errors = validateProjectManifest(v2);
   if (errors.length) throw new UserFacingError(`Migration produced an invalid manifest: ${errors.join("; ")}`);

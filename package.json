@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -314,8 +314,8 @@
         "icon": "$(book)"
       },
       {
-        "command": "datapass.upgradeManifestToV3",
-        "title": "DataPass: Upgrade Project Manifest to v3",
+        "command": "datapass.upgradeManifest",
+        "title": "DataPass: Upgrade Project Manifest (v4: env files, variable names, non-secret ids)",
         "icon": "$(arrow-circle-up)"
       },
       {
@@ -347,6 +347,35 @@
       {
         "command": "datapass.openDoc",
         "title": "DataPass: Open a Project Document"
+      },
+      {
+        "command": "datapass.env.copyKeyName",
+        "title": "DataPass: Copy Variable Name (never its value)",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.env.openFile",
+        "title": "DataPass: Open Env File",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "datapass.env.copyIdentifier",
+        "title": "DataPass: Copy Non-secret Identifier",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.copyProjectId",
+        "title": "DataPass: Copy Project ID"
+      },
+      {
+        "command": "datapass.openPowerOps",
+        "title": "DataPass: Open Power Ops (local vault)",
+        "icon": "$(lock)"
+      },
+      {
+        "command": "datapass.readinessReport",
+        "title": "DataPass: Show Readiness Report (env files, variables, companions, repositories)",
+        "icon": "$(checklist)"
       }
     ],
     "viewsContainers": {
@@ -460,7 +489,7 @@
           "group": "3_project@2"
         },
         {
-          "command": "datapass.upgradeManifestToV3",
+          "command": "datapass.upgradeManifest",
           "when": "view == datapass.project",
           "group": "3_project@3"
         },
@@ -618,6 +647,11 @@
           "command": "datapass.recordQualification",
           "when": "view == datapass.work",
           "group": "8_qualification@0"
+        },
+        {
+          "command": "datapass.readinessReport",
+          "when": "view == datapass.project",
+          "group": "3_project@4"
         }
       ],
       "view/item/context": [
@@ -684,6 +718,26 @@
         {
           "command": "datapass.recordQualification",
           "when": "view == datapass.work && viewItem =~ /^operation/",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.env.copyKeyName",
+          "when": "view == datapass.project && viewItem =~ /^envKey/",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.env.copyKeyName",
+          "when": "view == datapass.project && viewItem =~ /^envKey/",
+          "group": "1_env@1"
+        },
+        {
+          "command": "datapass.env.copyIdentifier",
+          "when": "view == datapass.project && viewItem == identifier",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.env.openFile",
+          "when": "view == datapass.project && viewItem == envFile",
           "group": "inline"
         }
       ],
@@ -797,6 +851,12 @@
           "default": [],
           "scope": "application",
           "description": "Absolute folders where you keep clones (e.g. D:\\PROJ). DataPass looks there, besides the project folder's parent, for the repositories a project declares, and checks each clone's Git origin."
+        },
+        "datapass.powerOps.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path of the Power Ops program (JUtilityPalette.exe) started by \"Open Power Ops\". Machine-level user setting: a workspace can never choose which program DataPass starts. Nothing is passed to it."
         }
       }
     },

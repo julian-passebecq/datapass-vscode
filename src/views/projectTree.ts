@@ -13,9 +13,10 @@ import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import type { ComponentView, SubprojectView } from "../core/project/projectMap";
 import type { ExpectedFile, RepoView } from "../core/project/resolve";
+import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
 
 type Node =
-  | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command }
+  | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
   | { t: "subproject"; id: string; sp: SubprojectView }
   | { t: "component"; id: string; c: ComponentView; parent: string }
   | { t: "file"; id: string; c: ComponentView; f: ExpectedFile; parent: string }
@@ -101,7 +102,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     switch (n.t) {
       case "info": {
         const item = new vscode.TreeItem(n.label, vscode.TreeItemCollapsibleState.None);
-        item.id = n.id; item.description = n.description; item.iconPath = icon(n.icon); item.tooltip = n.tooltip ?? n.label; item.command = n.command;
+        item.id = n.id; item.description = n.description; item.iconPath = icon(n.icon); item.tooltip = n.tooltip ?? n.label; item.command = n.command; item.contextValue = n.contextValue;
         return item;
       }
       case "subproject": {
@@ -187,6 +188,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,
       kids: () => map.repositories.map(r => ({ t: "repo" as const, id: `repo:${r.key}`, r }))
     });
+    nodes.push(...readinessNodes(s.readiness()));
     const serious = map.problems.filter(p => p.severity !== "info");
     if (map.problems.length) nodes.push({
       t: "section", id: "problems", label: "Problems in project files", icon: "warning", collapsed: !serious.length, description: `${serious.length || map.problems.length}`,
@@ -205,6 +207,69 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       try { await this.view.reveal(node, { select: true, focus: false, expand: false }); } catch { /* not rendered yet */ }
     }
   }
+}
+
+const WARN: [string, string] = ["warning", "problemsWarningIcon.foreground"];
+const ERR: [string, string] = ["error", "problemsErrorIcon.foreground"];
+const OK: [string, string] = ["pass", "testing.iconPassed"];
+const MUTED: [string, string] = ["circle-large-outline", "disabledForeground"];
+
+/**
+ * "Local environment" (env files, variable names, non-secret ids, vault) and "Readiness" (checks,
+ * optional companions). Built from the Readiness, which holds names and states only.
+ */
+function readinessNodes(r: Readiness): Node[] {
+  const nodes: Node[] = [];
+  if (r.declared || r.identifiers.length) {
+    const kids = (): Node[] => {
+      const rows: Node[] = [];
+      for (const f of r.files) rows.push({
+        t: "info", id: `env:file:${f.id}`, label: f.repoLabel ? `${f.path} · ${f.repoLabel}` : f.path, description: fileStateText(f),
+        icon: f.git === "tracked" ? ERR : f.state === "found" ? (f.git === "not-ignored" ? WARN : ["file", "testing.iconPassed"]) : f.state === "missing" ? (f.optional ? MUTED : WARN) : f.state === "not-cloned" ? ["cloud", "disabledForeground"] : WARN,
+        tooltip: `${f.path}${f.repoLabel ? ` in ${f.repoLabel}` : ""}: ${fileStateText(f)}${f.reason ? ` (${f.reason})` : ""}\nClick to open it${f.state === "missing" ? " (DataPass offers to create it with the variable names and empty values)" : ""}. DataPass only checks which names it defines, never the values.`,
+        command: { command: "datapass.env.openFile", title: "Open", arguments: [f.id] }, contextValue: "envFile"
+      });
+      for (const k of r.keys) rows.push({
+        t: "info", id: `env:key:${k.name}`, label: k.name, description: `${keyStateText(k)} · ${k.source === "identifier" ? "non-secret id" : "secret · vault"}`,
+        icon: k.state === "set" ? OK : k.state === "not-checked" ? ["question", "disabledForeground"] : WARN,
+        tooltip: `${k.name}: ${keyStateText(k)}\n${keySourceText(k)}\nClick to copy the name (never the value).`,
+        command: { command: "datapass.env.copyKeyName", title: "Copy name", arguments: [k.name] }, contextValue: k.source === "identifier" ? "envKey.identifier" : "envKey"
+      });
+      for (const d of r.identifiers) rows.push({
+        t: "info", id: `env:id:${d.id}`, label: d.label, description: ["non-secret id", d.provider, d.envKey ? `→ ${d.envKey}` : undefined, "click to copy"].filter(Boolean).join(" · "),
+        icon: ["symbol-constant"], tooltip: `${d.label}: declared in .datapass/project.json as non-secret. Click to copy its value.`,
+        command: { command: "datapass.env.copyIdentifier", title: "Copy", arguments: [d.id] }, contextValue: "identifier"
+      });
+      rows.push({ t: "info", id: "env:projectId", label: "Copy project ID", description: "to find this project in Power Ops", icon: ["copy"], command: { command: "datapass.copyProjectId", title: "Copy" } });
+      rows.push({ t: "info", id: "env:powerOps", label: "Open Power Ops", description: "secrets live in your local vault", icon: ["lock"], tooltip: "Starts Power Ops (datapass.powerOps.path). Nothing is passed to it; DataPass never handles secret values.", command: { command: "datapass.openPowerOps", title: "Open" } });
+      return rows;
+    };
+    const missing = r.keys.filter(k => k.state === "missing" || k.state === "empty").length;
+    const filesMissing = r.files.filter(f => f.state === "missing" && !f.optional).length;
+    nodes.push({
+      t: "section", id: "env", label: "Local environment", icon: "symbol-variable",
+      description: [r.keys.length ? `${r.summary.keysSet}/${r.keys.length} variables set` : undefined, filesMissing ? `${filesMissing} file(s) missing` : undefined, missing ? `${missing} to fill` : undefined].filter(Boolean).join(" · ") || "names only",
+      kids
+    });
+  }
+  const serious = r.summary.errors + r.summary.warnings;
+  nodes.push({
+    t: "section", id: "readiness", label: "Readiness", icon: "checklist", collapsed: !serious,
+    description: `${r.summary.errors} error(s) · ${r.summary.warnings} warning(s)${r.summary.infos ? ` · ${r.summary.infos} note(s)` : ""}`,
+    kids: () => [
+      ...r.checks.map((c, i): Node => ({
+        t: "info", id: `check:${c.id}:${i}`, label: c.message, description: c.area,
+        icon: c.severity === "error" ? ERR : c.severity === "warning" ? WARN : ["info", "problemsInfoIcon.foreground"], tooltip: `${c.message}${c.nextStep ? `\nNext: ${c.nextStep}` : ""}`
+      })),
+      ...r.companions.map((c): Node => ({
+        t: "info", id: `companion:${c.module}`, label: c.label, description: c.detail,
+        icon: c.state === "disabled" ? ["circle-slash", "disabledForeground"] : c.state === "configured" ? OK : MUTED,
+        tooltip: c.state === "disabled" ? `${c.label} is an optional module, switched off for this project.` : `${c.label} (optional): ${c.detail}`
+      })),
+      { t: "info", id: "readiness:report", label: "Show readiness report", description: "names and states only", icon: ["output"], command: { command: "datapass.readinessReport", title: "Report" } }
+    ]
+  });
+  return nodes;
 }
 
 function esc(s: string): string {

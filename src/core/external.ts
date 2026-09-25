@@ -4,6 +4,7 @@
  * "open in browser" are exercised without ever launching the user's browser.
  */
 import * as vscode from "vscode";
+import { spawn } from "node:child_process";
 
 export type ExternalOpener = (uri: vscode.Uri) => Thenable<boolean>;
 
@@ -34,4 +35,21 @@ export function setFolderOpenerForTests(impl?: FolderOpener): void {
 /** Test-mode only: replace (or with no argument, restore) the external opener. */
 export function setExternalOpenerForTests(impl?: ExternalOpener): void {
   current = impl ?? system;
+}
+
+/**
+ * Launching a local desktop app (Power Ops) goes through a seam too: desktop tests must never
+ * start a real program. The system launcher starts the executable detached, with no arguments,
+ * so nothing from the project reaches it.
+ */
+export type AppLauncher = (executable: string) => Promise<void>;
+const systemLauncher: AppLauncher = executable => new Promise((resolve, reject) => {
+  const child = spawn(executable, [], { detached: true, stdio: "ignore", windowsHide: false, shell: false });
+  child.once("error", reject);
+  child.once("spawn", () => { child.unref(); resolve(); });
+});
+let currentLauncher: AppLauncher = systemLauncher;
+export const launchApp: AppLauncher = executable => currentLauncher(executable);
+export function setAppLauncherForTests(impl?: AppLauncher): void {
+  currentLauncher = impl ?? systemLauncher;
 }

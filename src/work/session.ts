@@ -26,6 +26,9 @@ import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
 import { observeProject, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap } from "../core/project/projectMap";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
+import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
+import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
+import { observeLocalEnv } from "./envObserver";
 
 /** V3 selection shared by the Project tree, the Workbench, the diagram and the detail view. */
 export interface Selection { subproject?: string; component?: string }
@@ -91,6 +94,9 @@ export class WorkSession implements vscode.Disposable {
   /** V3: repositories and component files as observed on this machine. */
   private projectObs?: ProjectObservation;
   private mapCache?: ProjectMap;
+  /** Env files as observed (names' presence only, never values). */
+  private envObs: Map<string, EnvFileObservation> = new Map();
+  private readinessCache?: Readiness;
   private rootCandidates: vscode.Uri[] = [];
   private readonly selectionEmitter = new vscode.EventEmitter<Selection>();
   /** Fires when the selection changes (tree, diagram, workbench); views follow it. */
@@ -118,6 +124,10 @@ export class WorkSession implements vscode.Disposable {
       root: ctx.root, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
       localBindings: await this.localBindings(), cloneParents: cloneParents()
     }) : undefined;
+    this.envObs = ctx.root ? await observeLocalEnv({
+      root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map(),
+      trusted: vscode.workspace.isTrusted, git: gitRunner
+    }) : new Map();
     this.cached = undefined;
     await this.rememberProject();
     await this.loadMongokuSnapshot();
@@ -384,6 +394,7 @@ export class WorkSession implements vscode.Disposable {
   private changed(): void {
     this.cached = undefined;
     this.mapCache = undefined;
+    this.readinessCache = undefined;
     this.emitter.fire();
   }
 
@@ -413,6 +424,30 @@ export class WorkSession implements vscode.Disposable {
   }
 
   observedAt(): string | undefined { return this.projectObs?.observedAt; }
+
+  /**
+   * Env files, variable names, non-secret identifiers, optional companions and deterministic
+   * checks. Holds names and states only: safe for the tree, the Workbench, snapshots and AI context.
+   */
+  readiness(): Readiness {
+    if (this.readinessCache) return this.readinessCache;
+    const map = this.projectMap();
+    const config = vscode.workspace.getConfiguration("datapass");
+    this.readinessCache = buildReadiness({
+      manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: map.repositories, problems: map.problems,
+      settings: { mongokuUrl: config.get<string>("mongoku.url") ?? "", diagramCloudUrl: config.get<string>("diagramCloud.url") ?? "" },
+      diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION
+    });
+    return this.readinessCache;
+  }
+
+  /** Folder of the repository an env file belongs to (session-private). */
+  envFolder(repoRef: string | undefined): vscode.Uri | undefined {
+    const root = this.ctx.root;
+    if (!root) return undefined;
+    if (!repoRef || repoRef === (this.projectObs?.coordinationKey ?? ".")) return root;
+    return this.projectObs?.folders.get(repoRef);
+  }
 
   /** Local folder of a repository (session-private: never exported to AI context or files). */
   repoFolder(key: string): vscode.Uri | undefined { return this.projectObs?.folders.get(key); }

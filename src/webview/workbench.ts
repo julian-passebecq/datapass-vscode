@@ -7,7 +7,7 @@
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
  * select / openFile / command, and the extension validates each against the project map.
  */
-import type { WbComponent, WbOperation, WbRepository, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import type { WbComponent, WbOperation, WbReadiness, WbRepository, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import { layerCount, layoutGraph, sizeForWidth, type Layout } from "../core/project/layout";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void; getState(): unknown; setState(state: unknown): void };
@@ -352,7 +352,38 @@ function overview(s: WorkbenchState): HTMLElement {
       sp.needs.tools.length ? h("span", { class: "warn small", text: `tools missing: ${sp.needs.tools.map(t => t.label).slice(0, 3).join("; ")}` }) : undefined,
       h("span", { class: "muted small", text: `Next: ${sp.nextStep}` })))),
     s.environments.length ? h("p", { class: "muted small", text: `Environments: ${s.environments.map(e => `${e.id}${e.production ? " (production)" : ""}`).join(", ")}` }) : undefined,
+    s.readiness ? readinessCard(s.readiness) : undefined,
     s.docs.length ? h("div", { class: "row" }, ...s.docs.map(d => btn(d.label, () => command("datapass.openDoc", d), { kind: "link", icon: "📄" }))) : undefined);
+}
+
+const KEY_TONE: Record<string, string> = { set: "ok", empty: "warn", missing: "warn", "not-checked": "muted" };
+const FILE_TONE: Record<string, string> = { found: "ok", missing: "warn", "not-cloned": "muted", unreadable: "warn", "too-large": "warn", "not-checked": "muted" };
+
+/** Local environment and readiness: names and states only, never a value. */
+function readinessCard(r: WbReadiness): HTMLElement {
+  const sum = r.summary;
+  const serious = r.checks.filter(c => c.severity !== "info");
+  return h("section", { class: "envcard", "aria-label": "Local environment" },
+    h("div", { class: "bar" }, h("h3", { text: "Local environment" }),
+      r.keys.length ? pill(`${sum.keysSet}/${sum.keysTotal} variables set`, sum.keysSet === sum.keysTotal ? "ok" : "warn") : undefined,
+      pill(`${sum.errors} error(s) · ${sum.warnings} warning(s)`, sum.errors ? "bad" : sum.warnings ? "warn" : "ok", "Deterministic local checks")),
+    !r.declared ? h("p", { class: "muted small", text: "No env files or variable names declared yet (localEnv in .datapass/project.json, manifest v4)." }) : undefined,
+    ...r.files.map(f => h("div", { class: "envrow" },
+      h("code", { text: f.path }), f.repoLabel ? h("span", { class: "muted small", text: f.repoLabel }) : undefined,
+      pill(f.stateText, f.git === "tracked" ? "bad" : f.optional && f.state === "missing" ? "muted" : FILE_TONE[f.state] ?? "muted"),
+      btn(f.state === "missing" ? "Create…" : "Open", () => command("datapass.env.openFile", f.id), { kind: "link", title: f.state === "missing" ? "Create it with the variable names and empty values" : "Open in the editor" }))),
+    ...r.keys.map(k => h("div", { class: "envrow" },
+      h("code", { text: k.name }), pill(k.stateText, KEY_TONE[k.state] ?? "muted"), h("span", { class: "muted small", text: k.sourceText }),
+      btn("Copy name", () => command("datapass.env.copyKeyName", k.name), { kind: "link", title: "Copies the variable name, never its value" }))),
+    ...r.identifiers.map(d => h("div", { class: "envrow" },
+      h("span", { text: d.label }), h("span", { class: "muted small", text: ["non-secret id", d.provider, d.envKey ? `→ ${d.envKey}` : undefined].filter(Boolean).join(" · ") }),
+      btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
+    h("div", { class: "row" },
+      btn("Copy project ID", () => command("datapass.copyProjectId"), { icon: "⧉" }),
+      btn("Open Power Ops", () => command("datapass.openPowerOps"), { icon: "⚿", title: "Secrets live in your local vault; DataPass never reads their values" }),
+      btn("Readiness report", () => command("datapass.readinessReport"), { icon: "☰" })),
+    serious.length ? h("div", { class: "checks" }, ...serious.slice(0, 10).map(c => h("div", { class: `problem ${c.severity}` }, h("b", { text: c.area }), h("span", { text: c.nextStep ? `${c.message} Next: ${c.nextStep}` : c.message })))) : undefined,
+    h("p", { class: "muted small", text: `Optional companions: ${r.companions.map(c => `${c.label} — ${c.detail}`).join(" · ")}` }));
 }
 
 function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {

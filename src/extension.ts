@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
-import { executeGalaxyAction } from "./core/actions";
+import { executeGalaxyAction, setReadinessSource } from "./core/actions";
 import type { GalaxyState } from "./core/types";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
@@ -8,7 +8,8 @@ import { registerWorkCommands } from "./work/commands";
 import { registerBridgeCommands } from "./work/bridgeCommands";
 import { registerCompanionCommands } from "./work/companionCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
-import { setExternalOpenerForTests, setFolderOpenerForTests, type ExternalOpener, type FolderOpener } from "./core/external";
+import { setAppLauncherForTests, setExternalOpenerForTests, setFolderOpenerForTests, type AppLauncher, type ExternalOpener, type FolderOpener } from "./core/external";
+import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
 import { platformOperations } from "./core/capabilities/platformOperations";
@@ -47,6 +48,10 @@ export interface DataPassTestApi {
   workbenchState(): WorkbenchState;
   selection(): ReturnType<WorkSession["selection"]>;
   select(sel: { subproject?: string; component?: string }): Promise<void>;
+  /** Env files, variable names, identifiers, companions and checks (names and states only). */
+  readiness(): ReturnType<WorkSession["readiness"]>;
+  /** Replace how DataPass starts Power Ops (undefined restores the real launcher). */
+  setAppLauncher(impl?: AppLauncher): void;
   /** Walk the Project tree through the real provider. */
   renderProjectTree(): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string; commandArgs?: unknown[] }>>;
 }
@@ -77,6 +82,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const companionUri = registerCompanionCommands(context, session);
   registerResourceCommands(context, session);
   registerQualificationCommands(context, session);
+  registerReadinessCommands(context, session);
+  setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), Details (secondary side bar), Workbench tab.
   const host = new WorkbenchHost(context, session);
@@ -181,7 +188,10 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const filesWatcher = vscode.workspace.createFileSystemWatcher("**/*", false, true, false);
   filesWatcher.onDidCreate(soon);
   filesWatcher.onDidDelete(soon);
-  context.subscriptions.push(filesWatcher, { dispose: () => { if (pending) clearTimeout(pending); } });
+  // Env files: a name added or filled changes readiness. Only presence is re-read, never a value.
+  const envWatcher = vscode.workspace.createFileSystemWatcher("**/{.env,.env.*,*.env,.dev.vars,.dev.vars.*}");
+  envWatcher.onDidChange(soon);
+  context.subscriptions.push(filesWatcher, envWatcher, { dispose: () => { if (pending) clearTimeout(pending); } });
   // Trusting the workspace enables Git; adding or removing folders may change which one is the project.
   context.subscriptions.push(
     vscode.workspace.onDidGrantWorkspaceTrust(() => void refreshState()),
@@ -206,6 +216,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setClipboard: setClipboardForTests,
     setExternalOpener: setExternalOpenerForTests,
     setFolderOpener: setFolderOpenerForTests,
+    setAppLauncher: setAppLauncherForTests,
+    readiness: () => session.readiness(),
     companions: () => session.companions(),
     mongokuStatus: () => session.mongokuStatus(),
     handleUri: uri => companionUri.handleUri(uri),

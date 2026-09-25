@@ -7,10 +7,12 @@ Grafana, OpenTofu/Terraform, Remote SSH) and you. It shows the architecture, whi
 needs in which repository, what is missing and why, opens the right file or tool, and gets the AI's
 merged work — without ever deploying, pushing or running project code.
 
-## V3 (0.13.0): the Project Workbench
+## V3 (0.13.0, env readiness since 0.14.0): the Project Workbench
 
 - **Project** view (left): sub-projects → components → expected files (found / missing / not cloned /
-  to generate), repositories (cloned, not cloned, planned, commits to get), problems in the project files.
+  to generate), repositories (cloned, not cloned, planned, commits to get), problems in the project
+  files, and (0.14.0) **Local environment** / **Readiness**: which declared env files and variable
+  names are set on this machine — never a value, always from your local vault (Power Ops).
 - **Architecture** panel (bottom): the diagram of the selected sub-project; click a component.
 - **Details** (right, secondary side bar): the component's files, what each step needs (read, develop,
   test, validate, deploy, run, publish) per environment, checklist and actions.
@@ -19,8 +21,8 @@ merged work — without ever deploying, pushing or running project code.
 - **Prepare AI context**: a bounded pack for ChatGPT/Claude with the exact repository, folder and files.
 - Several repositories per project, found by Git origin; **Clone**, **Locate**; a hub **catalog** of projects.
 
-A project is described by `.datapass/project.json` (**manifest v3**) and `.datapass/graph.json`
-(**graph 0.2**): see [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
+A project is described by `.datapass/project.json` (**manifest v4**, v3 still accepted) and
+`.datapass/graph.json` (**graph 0.2**): see [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
 [examples/v3](examples/v3/). Architecture and status: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ```json
