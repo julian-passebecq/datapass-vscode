@@ -35,6 +35,12 @@ native repositories                the real code, in native formats: databricks.
 - **Local clone locations are machine-specific.** DataPass finds a clone next to the coordination
   repository (or in the `datapass.projectsFolders` setting) and checks its Git origin; otherwise the
   person uses *Clone* or *Locate*. The choice is saved in `.datapass/local/` (never committed).
+- **`.datapass/local/` is machine-local, never for an AI to prepare.** It holds per-computer state
+  DataPass writes itself (repository locations, work views in `views.json`, a transient
+  `open-view.json` request file…); it is git-ignored by the folder's own `.gitignore`. Do not create
+  or edit anything under it. Likewise, the company `.code-workspace` file (DataPass ≥ 0.17.0, one
+  window per company) is created by DataPass on each computer, not in a repository — never add one
+  to a pull request.
 
 ## 2. `.datapass/project.json` (manifest v4)
 

@@ -55,7 +55,30 @@ ui.folded ??= [];
 ui.custom ??= {};
 ui.sheetSection ??= "datasets";
 ui.boardTypes ??= [];
-const saveUi = () => vscode.setState(ui);
+/**
+ * 0.17: the diagram settings (and the Workbench tab's view) are also reported to the extension, so a
+ * work view can save them; a work view applied there comes back as a "ui" message.
+ */
+const diagramUi = () => ({ view: MODE === "full" ? ui.view : undefined, dir: ui.dir, groupBy: ui.groupBy, folded: ui.folded, zoom: ui.zoom });
+let reportedUi = "";
+const saveUi = () => {
+  vscode.setState(ui);
+  if (MODE === "detail") return;
+  const now = JSON.stringify(diagramUi());
+  if (now === reportedUi) return;
+  reportedUi = now;
+  vscode.postMessage({ type: "ui", ui: diagramUi() });
+};
+function applyHostUi(u: Partial<Ui> | undefined): void {
+  if (!u || typeof u !== "object" || MODE === "detail") return;
+  if (u.dir === "LR" || u.dir === "TB") ui.dir = u.dir;
+  if (typeof u.groupBy === "string" && (GROUP_BY as readonly string[]).includes(u.groupBy)) ui.groupBy = u.groupBy;
+  if (Array.isArray(u.folded)) ui.folded = u.folded.filter((f): f is string => typeof f === "string").slice(0, 100);
+  if (u.zoom === "fit" || u.zoom === "100") ui.zoom = u.zoom;
+  if (MODE === "full" && (u.view === "architecture" || u.view === "options" || u.view === "sheet" || u.view === "board")) ui.view = u.view;
+  reportedUi = JSON.stringify(diagramUi());
+  vscode.setState(ui);
+}
 
 type Attrs = Record<string, string | number | boolean | undefined | ((e: Event) => void)>;
 type Child = Node | string | undefined | null | false;
@@ -169,7 +192,9 @@ function header(s: WorkbenchState): HTMLElement {
       btn("Re-inspect", () => command("datapass.refreshProject"), { icon: "⟳", title: "Read the files and Git state again (no network)" }),
       btn("Check for updates", () => command("datapass.checkForUpdates"), { icon: "⇣", title: "git fetch every cloned repository: see what the AI pushed, change nothing yet" }),
       btn("Prepare AI context", () => command("datapass.preparationPack", {}), { icon: "✦" }),
-      btn("Layout", () => command("datapass.arrangeWorkbench"), { icon: "▦", title: "Show the Project tree, the architecture panel and the details side bar" })));
+      btn("Layout", () => command("datapass.arrangeWorkbench"), { icon: "▦", title: "Show the Project tree, the architecture panel and the details side bar" }),
+      btn("Work views", () => command("datapass.openSwitcher"), { icon: "▤", title: "Saved layouts of this window, sub-projects and other projects (also in the status bar, bottom left)" }),
+      btn("Own window", () => command("datapass.openWorkbenchFloating"), { icon: "⧉", title: "Move this Workbench tab into a floating window (for a second screen); it stays part of this VS Code window" })));
 }
 
 /** One line saying which architecture the diagram shows, when it is not the current one. */
@@ -1253,8 +1278,9 @@ function renderInner(): void {
 window.addEventListener("resize", () => { if (MODE === "map") { if (redrawTimer) clearTimeout(redrawTimer); redrawTimer = window.setTimeout(drawDiagrams, 60); } });
 
 window.addEventListener("message", (event: MessageEvent) => {
-  const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string };
+  const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string; ui?: Partial<Ui> };
   if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
+  if (msg?.type === "ui") { applyHostUi(msg.ui); render(); return; }
   if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board")) {
     ui.view = msg.view;
     if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
@@ -1268,4 +1294,5 @@ window.addEventListener("message", (event: MessageEvent) => {
   }
 });
 render();
-send({ type: "ready" });
+reportedUi = JSON.stringify(diagramUi());
+send({ type: "ready", ui: MODE === "detail" ? undefined : diagramUi() });

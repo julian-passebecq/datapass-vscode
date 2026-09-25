@@ -27,7 +27,8 @@ import { filesB } from "../tests/fixtures/v3/monorepo";
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
-const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length);
+/** `--fixture=v3-research,v17-company` runs only those fixtures (one report each). */
+const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length).split(",").map(s => s.trim()).filter(Boolean);
 
 function v4Cloudflare(): DataPassProjectManifest {
   return {
@@ -179,6 +180,38 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
   return { workspace: hub, env: { DATAPASS_IT_V3: JSON.stringify({ aiClone: ai, labClone: lab, wrongClone: wrong, pipelineClone: clone }) } };
 }
 
+/**
+ * 0.17: the research project as a company window — a `.code-workspace` file next to its two
+ * repositories (relative folders) naming the company and the work view to open with, and that work
+ * view saved machine-locally in the coordination repository's `.datapass/local/views.json`.
+ */
+function setupV17Company(base: string): { workspace: string; env: Record<string, string> } {
+  const { workspace: hub, env } = setupV3Research(base);
+  writeTree(hub, {
+    ".datapass/local/.gitignore": "*\n",
+    ".datapass/local/views.json": JSON.stringify({
+      format: "datapass.work-views", version: "1",
+      views: [{
+        id: "review", name: "Review", savedAt: "2026-09-25T15:00:00.000Z",
+        selection: { subproject: "papers", component: "review" },
+        editors: {
+          layout: { orientation: 0, groups: [{ size: 0.5 }, { size: 0.5 }] },
+          groups: [{ tabs: [{ repo: ".", path: "README.md" }] }, { tabs: [{ repo: "pipeline", path: "cosmos/containers/chunks.json" }] }],
+          activeGroup: 1
+        },
+        panes: ["project", "architecture"],
+        diagram: { full: { view: "architecture", dir: "TB", groupBy: "none", folded: [], zoom: "fit" } }
+      }]
+    }, null, 2) + "\n"
+  });
+  const file = path.join(path.dirname(hub), "Research Co.code-workspace");
+  fs.writeFileSync(file, JSON.stringify({
+    folders: [{ path: "research-hub" }, { path: "research-pipeline" }],
+    settings: { "datapass.company": "Research Co", "datapass.startupView": "review" }
+  }, null, "\t") + "\n");
+  return { workspace: file, env };
+}
+
 function setupV3Monorepo(base: string): { workspace: string; env: Record<string, string> } {
   const ws = path.join(base, "catalog-import");
   writeTree(ws, filesB());
@@ -216,7 +249,8 @@ function setupV3Devops(base: string): { workspace: string; env: Record<string, s
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,
-  "v3-devops": setupV3Devops
+  "v3-devops": setupV3Devops,
+  "v17-company": setupV17Company
 };
 
 async function vscodeExecutable(): Promise<string> {
@@ -245,7 +279,7 @@ async function main(): Promise<void> {
   const reports: unknown[] = [];
   let failed = 0;
   for (const name of [...Object.keys(FIXTURES), ...Object.keys(SETUPS)]) {
-    if (only && only !== name) continue;
+    if (only && !only.includes(name)) continue;
     const files = FIXTURES[name];
     let ws = path.join(scratch, "ws", name);
     let env: Record<string, string> = {};

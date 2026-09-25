@@ -23,6 +23,10 @@ import type { WorkbenchState } from "./views/workbenchState";
 import { AiExchangeView } from "./views/aiExchange";
 import type { AiExchangeState } from "./views/aiExchangeState";
 import type { ExchangeKind } from "./core/project/aiExchange";
+import { WorkViews } from "./work/workViews";
+import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
+import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";
+import { output } from "./work/io";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -73,6 +77,16 @@ export interface DataPassTestApi {
   };
   /** 0.16: the board as the kanban shows it. */
   boardView(): ReturnType<WorkSession["boardView"]>;
+  /** 0.17: this project's work views, the switcher, diagram settings, the floating Workbench, startup. */
+  workViews(): Promise<WorkViewsFile>;
+  windowInfo(): { switcherText: string; switcherTooltip: string; company: string; diagramUi: Partial<Record<DiagramMode, DiagramUi>>; lastApplied?: string; panes: Pane[] };
+  workbenchFloating(): Promise<boolean>;
+  /** Apply diagram settings as a work view does (stored, and sent to the open webviews). */
+  setDiagramUi(ui: Partial<Record<DiagramMode, DiagramUi>>): Promise<void>;
+  /** Write the Power Ops list to this file instead of the per-user application data (undefined restores it). */
+  setExportFile(file?: string): void;
+  /** Resolves once the startup work view (or a launcher's request) was handled: the view applied, if any. */
+  startup(): Promise<string | undefined>;
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -122,6 +136,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
   registerGitHostCommands(context, session);
+
+  // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
+  const visiblePanes = (): Pane[] => {
+    const shown: Record<Pane, boolean> = { project: projectView.visible, work: workView.visible, galaxy: galaxy.isVisible(), architecture: host.isVisible("map"), aiExchange: aiExchange.isVisible(), details: host.isVisible("detail") };
+    return PANES.filter(p => shown[p]);
+  };
+  const views = new WorkViews(session, host, visiblePanes);
+  context.subscriptions.push(views);
+  const windows = registerWindowCommands(context, session, host, views);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -230,7 +253,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
   );
 
-  void refreshState().then(() => showDataPassSideBar(context, session), () => undefined);
+  // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
+  // startup work view or a launcher's request (0.17), which may arrange the panes differently.
+  const startup = refreshState()
+    .then(() => showDataPassSideBar(context, session).catch(() => undefined))
+    .then(() => windows.startup())
+    .catch(error => {
+      output().appendLine(`[startup] ${error instanceof Error ? error.message : String(error)}`);
+      return undefined;
+    });
 
   if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
   return {
@@ -266,6 +297,18 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       }
     },
     boardView: () => session.boardView(),
+    workViews: async () => (await views.load()).file,
+    windowInfo: () => {
+      const full = session.diagramUi("full"), map = session.diagramUi("map");
+      return {
+        switcherText: windows.switcherText(), switcherTooltip: windows.switcherTooltip(), company: windows.company(),
+        diagramUi: { ...(full ? { full } : {}), ...(map ? { map } : {}) }, lastApplied: views.lastApplied()?.id, panes: visiblePanes()
+      };
+    },
+    workbenchFloating: () => host.isFloating(),
+    setDiagramUi: ui => host.applyUi(ui),
+    setExportFile: setExportFileForTests,
+    startup: () => startup,
     renderProjectTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
       const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

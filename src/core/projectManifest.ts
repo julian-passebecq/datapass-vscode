@@ -14,8 +14,9 @@ export interface ManifestReadResult {
   errors: string[];
 }
 
-export async function readProjectManifest(): Promise<ManifestReadResult> {
-  const root = projectRoot();
+/** The manifest of this window's project, or of the project in `folder` (another project, 0.17). */
+export async function readProjectManifest(folder?: vscode.Uri): Promise<ManifestReadResult> {
+  const root = folder ?? projectRoot();
   if (!root) return { exists: false, errors: [] };
   const uri = vscode.Uri.joinPath(root, ".datapass", "project.json");
 

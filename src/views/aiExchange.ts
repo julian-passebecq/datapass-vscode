@@ -41,6 +41,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
 
   /** The view has been shown at least once in this window (desktop tests). */
   resolved(): boolean { return Boolean(this.view); }
+  /** Whether the view is showing (a work view records it, 0.17). */
+  isVisible(): boolean { return this.view?.visible ?? false; }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;

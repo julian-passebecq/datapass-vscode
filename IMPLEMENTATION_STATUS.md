@@ -1,3 +1,85 @@
+# Implementation Status — 0.17.0: windows and work views
+
+Date: 2026-09-25. Version `0.17.0` — branch `claude/v017-windows-views`, on 0.16.0 (work and DevOps,
+PR #24) and 0.15.1 (AI exchange view, PR #23). Design: [handoff/v3/06_VISION_AND_READINESS.md](handoff/v3/06_VISION_AND_READINESS.md)
+section 2. Full detail and the Power Ops launcher contract:
+[handoff/v3/07_WINDOWS_AND_POWER_OPS.md](handoff/v3/07_WINDOWS_AND_POWER_OPS.md).
+
+### What's new
+
+- **Company workspace file** — *DataPass: Create the Company Workspace File (one window per
+  company)…* (Command Palette, status-bar switcher, Project view **…** menu): a five-step wizard
+  writes a multi-root `.code-workspace` — which DataPass projects, their folders (coordination
+  repository plus repositories found on this machine by Git origin, relative to the file whenever
+  possible), the company name, where to save, a title-bar colour (8 named colours, custom hex, or
+  none) and an optional startup work view. Replacing a file keeps its other settings, extensions,
+  tasks and launch configurations. Julian's recommended mapping: **1 VS Code window = 1 company**.
+- **Work views** — named saved layouts of the main window, kept in
+  `<project>/.datapass/local/views.json` (machine-local, git-ignored): selected sub-project/component,
+  editor grid and files per group (repository-relative paths), the Workbench tab (in a group or
+  floating), which DataPass views were visible, diagram settings (orientation, lanes, folds, zoom,
+  Workbench view) and the previewed architecture. *Save Work View…*, *Apply Work View…* (one call:
+  closes only unmodified/unpinned tabs, sets the grid, opens files, restores the Workbench, panes,
+  selection, diagram and preview — missing files or repositories become notes, never errors),
+  *Manage Work Views* (apply, replace, rename, startup, delete), *Rename*, *Delete*. Limits: 40
+  views per project, 9 groups, 3 levels, 30 tabs per group.
+- **Status-bar switcher** — `$(briefcase) <Company> · <Sub-project> ▾`: work views (apply in one
+  click), sub-projects, other DataPass projects of the window, *Switch project…*, *Open the
+  Workbench in a floating window*, *Create the company workspace file…*, *Export company
+  workspaces for Power Ops*. Also a **Company switcher** button in the Project view title and
+  **Work views** / **Own window** buttons in the Workbench header.
+- **`datapass.startupView`** — read only from a `.code-workspace` file (never a folder's own
+  settings); applied once the project loads. *Choose the Work View this Workspace Opens With…*
+  edits the workspace file through VS Code's settings API (keeps its comments). A launcher request
+  wins over it; an unknown view name warns instead of guessing.
+- **Floating Workbench** — *Open the Workbench in a Floating Window* (VS Code's own
+  `workbench.action.moveEditorToNewWindow`), verified to keep the floating window part of the same
+  VS Code workspace; component files opened while it floats target the main window's first group.
+- **Power Ops launcher list** — *Export Company Workspaces for Power Ops* writes a machine-local,
+  secret-free JSON (file paths and view names only) to `%LOCALAPPDATA%\DataPass\company-workspaces.json`
+  (macOS/Linux equivalents), kept up to date automatically after the first export. The launcher
+  contract (open a company, request a work view by writing a small file DataPass watches and
+  deletes, why not `vscode://` links, VS Code Profiles) is unchanged by, and does not touch,
+  PowerToy_UI — its own task is next.
+- **Also fixed**: the Project tree's own reveal could re-fire a stale selection event that brought
+  back the previous selection right after a work view changed it; the tree now ignores its own
+  reveal events.
+
+### Files and settings
+
+`src/core/windows/workViews.ts` (pure model: parsing, validation, layout normalisation, diagram-UI
+sanitising, open-view requests), `src/core/windows/company.ts` (pure: workspace-file JSONC
+reading/writing, relative-folder rules, the Power Ops export builder), `src/work/workViews.ts` (VS
+Code layer: capture/apply), `src/work/windowCommands.ts` (commands, status-bar item, launcher
+watcher). Settings: `datapass.company`, `datapass.startupView` (workspace-only). Files:
+`.datapass/local/views.json`, `.datapass/local/open-view.json` (transient launcher request),
+`<Company>.code-workspace`, `company-workspaces.json` (per-user application data).
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 268 / 268 (13 new in `tests/windows.test.ts` — views.json validation incl. path traversal, layout normalisation, ids/names, diagram-UI sanitising, launcher-request freshness, relative folders on Windows and POSIX, company-workspace merge, JSONC reading, Power Ops export, export location per platform) |
+| `npm run test:desktop` (VS Code 1.139.1, Windows 11) | 200 / 200 on 9 fixtures (`empty` 13, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 20, `v3-research` 46, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13), on top of 0.16.0. New in `v3-research`: layout commands, Save/Apply Work View (one call), unsaved work kept, rename/startup refused in a single-folder window, delete, the switcher, the floating Workbench (real VS Code command) with files opening in the main window, Create the Company Workspace File (relative folders, teal, startup view, Profiles note), the Power Ops list kept up to date on rename, a launcher request applied once and deleted, a stale one refused. New fixture `v17-company`: a real `Research Co.code-workspace` opens with its startup view; choosing/clearing the startup view edits the file |
+
+### Known limits
+
+Work views and the Power Ops export are machine-local by design (never committed, never shared);
+`datapass.startupView` only applies from a `.code-workspace` file; side bar and panel views cannot
+float (a VS Code limit); a view's editors are not touched when a floating window has the focus at
+apply time (VS Code arranges the focused window only) — DataPass says so instead of guessing which
+window to arrange.
+
+### Still needs a human
+
+- Testlab project 7 (`D:\PROJ\datapass-testlab\7-fenetres-vues`): dragging the floating Workbench to
+  a second screen is a physical check.
+- The PowerToy_UI task (read the Power Ops list, open a company or a view) is not started; see
+  `handoff/v3/07_WINDOWS_AND_POWER_OPS.md` section 7.
+
+---
+
 # Implementation Status — V3 pass 4 (0.16.0): work and DevOps
 
 Date: 2026-09-25

@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -328,6 +328,50 @@
         "command": "datapass.switchProject",
         "title": "DataPass: Switch Project…",
         "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "datapass.openSwitcher",
+        "title": "DataPass: Company Switcher (work views, sub-projects, projects)…",
+        "icon": "$(window)"
+      },
+      {
+        "command": "datapass.saveWorkView",
+        "title": "DataPass: Save Work View…",
+        "icon": "$(save)"
+      },
+      {
+        "command": "datapass.applyWorkView",
+        "title": "DataPass: Apply Work View…",
+        "icon": "$(layout)"
+      },
+      {
+        "command": "datapass.manageWorkViews",
+        "title": "DataPass: Manage Work Views (rename, delete, startup view)…"
+      },
+      {
+        "command": "datapass.renameWorkView",
+        "title": "DataPass: Rename Work View…"
+      },
+      {
+        "command": "datapass.deleteWorkView",
+        "title": "DataPass: Delete Work View…"
+      },
+      {
+        "command": "datapass.setStartupView",
+        "title": "DataPass: Choose the Work View this Workspace Opens With…"
+      },
+      {
+        "command": "datapass.openWorkbenchFloating",
+        "title": "DataPass: Open the Workbench in a Floating Window",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "datapass.createCompanyWorkspace",
+        "title": "DataPass: Create the Company Workspace File (one window per company)…"
+      },
+      {
+        "command": "datapass.exportCompanyWorkspaces",
+        "title": "DataPass: Export Company Workspaces for Power Ops"
       },
       {
         "command": "datapass.selectComponent",
@@ -824,6 +868,26 @@
           "command": "datapass.openRepositoryWeb",
           "when": "view == datapass.project",
           "group": "2_git@4"
+        },
+        {
+          "command": "datapass.openSwitcher",
+          "when": "view == datapass.project",
+          "group": "navigation@5"
+        },
+        {
+          "command": "datapass.saveWorkView",
+          "when": "view == datapass.project",
+          "group": "1_workbench@5"
+        },
+        {
+          "command": "datapass.openWorkbenchFloating",
+          "when": "view == datapass.project",
+          "group": "1_workbench@6"
+        },
+        {
+          "command": "datapass.createCompanyWorkspace",
+          "when": "view == datapass.project",
+          "group": "4_switch@3"
         }
       ],
       "view/item/context": [
@@ -1071,6 +1135,18 @@
           "default": true,
           "scope": "window",
           "description": "The first time a DataPass project opens in a workspace, show DataPass (AI exchange and Details) in the secondary side bar instead of VS Code's Chat. VS Code then remembers the tab you use there; Chat stays one click away at the top of that side bar."
+        },
+        "datapass.company": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "markdownDescription": "Company this window stands for (FOIL, DataPass, a client), shown in the status-bar switcher. Set in the company's `.code-workspace` file by *DataPass: Create the Company Workspace File*. Empty: the project's title."
+        },
+        "datapass.startupView": {
+          "type": "string",
+          "default": "",
+          "scope": "window",
+          "markdownDescription": "Work view DataPass applies when this workspace opens (the id or name of a view saved in `.datapass/local/views.json`). Read only from a `.code-workspace` file, never from a folder's settings. Work views are saved per computer."
         }
       }
     },

@@ -11,9 +11,10 @@ export type Step =
   | { input: string }
   | { button: string; during?: () => Promise<void> } // message/modal button; `during` runs while the dialog is open
   | { open: vscode.Uri[] }               // file dialog result
+  | { save: vscode.Uri }                 // save dialog result
   | { dismiss: true };                   // Esc / close
 
-export interface Prompt { kind: "pick" | "input" | "message" | "open"; title?: string; text?: string; options?: string[]; modal?: boolean }
+export interface Prompt { kind: "pick" | "input" | "message" | "open" | "save"; title?: string; text?: string; options?: string[]; modal?: boolean }
 
 const plain = (label: string) => label.replace(/\$\([^)]+\)\s*/g, "").trim();
 const labelOf = (item: unknown) => (typeof item === "string" ? item : String((item as { label?: string })?.label ?? ""));
@@ -85,6 +86,13 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
       if (!step || "dismiss" in step) return undefined;
       if (!("open" in step)) throw new Error(`expected an open step for "${options?.title}", got ${JSON.stringify(step)}`);
       return step.open;
+    });
+    patch(w, "showSaveDialog", async (options?: vscode.SaveDialogOptions) => {
+      this.prompts.push({ kind: "save", title: options?.title, text: options?.defaultUri?.path.split("/").pop() });
+      const step = this.next("save", options?.title);
+      if (!step || "dismiss" in step) return undefined;
+      if (!("save" in step)) throw new Error(`expected a save step for "${options?.title}", got ${JSON.stringify(step)}`);
+      return step.save;
     });
     // vscode.env.clipboard is frozen; DataPass routes all clipboard use through a Test-mode seam.
     this.setClipboard({ readText: async () => this.clipboard, writeText: async (value: string) => { this.clipboard = value; } });
