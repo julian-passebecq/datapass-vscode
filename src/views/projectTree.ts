@@ -67,10 +67,17 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     this.view = view;
     this.subs.push(view.onDidChangeSelection(e => {
       const n = e.selection[0];
+      // The tree's own reveals (following a selection made elsewhere) fire this event later; a late one
+      // must not bring back an older selection (0.17: a work view applied right after another selection).
+      const at = n?.id ? this.revealing.get(n.id) : undefined;
+      if (n?.id && at !== undefined) { this.revealing.delete(n.id); if (Date.now() - at < 3000) return; }
       if (n?.t === "subproject") void this.session.select({ subproject: n.sp.id });
       else if (n?.t === "component") void this.session.select({ subproject: this.parentSubproject(n), component: n.c.id });
     }));
   }
+
+  /** Nodes revealed by the tree itself, and when: their selection events are not the person's clicks. */
+  private readonly revealing = new Map<string, number>();
 
   private parentSubproject(n: Node): string | undefined {
     let p = this.parents.get(n.id);
@@ -237,7 +244,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     const id = sel.component ? `sp:${sel.subproject}/c:${sel.component}` : sel.subproject ? `sp:${sel.subproject}` : undefined;
     const node = id ? this.byId.get(id) : undefined;
     if (node && this.view.selection[0]?.id !== node.id) {
-      try { await this.view.reveal(node, { select: true, focus: false, expand: false }); } catch { /* not rendered yet */ }
+      if (node.id) this.revealing.set(node.id, Date.now());
+      try { await this.view.reveal(node, { select: true, focus: false, expand: false }); } catch { if (node.id) this.revealing.delete(node.id); /* not rendered yet */ }
     }
   }
 }

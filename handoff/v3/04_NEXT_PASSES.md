@@ -21,6 +21,10 @@ JSON exchange with an AI (copy, validated import with diff and backup, restore),
 providers, Google tools named and probed. Unit 234, desktop 151 (7 fixtures). Design and readiness:
 [06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
 
+## Done in 0.15.1
+
+AI exchange view in the secondary side bar, shown instead of Chat when a DataPass project opens (PR #23).
+
 ## Done in 0.16.0 (V3 pass 4)
 
 Board (`.datapass/board.json`: columns, sprints, milestones, cards; kanban view with drag-and-drop
@@ -31,6 +35,13 @@ profiles `github-actions`, `azure-pipelines`, `gitlab-ci` routed to the official
 host's runs page. Mongoku frozen (`modules.mongoku: false` in prepared manifests). Grafana's "Edit in
 Grafana" route. Unit 249, desktop 172 (8 fixtures, new `v3-devops`). Design and readiness:
 [06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
+
+## Done in 0.17.0 (windows and work views)
+
+Company workspace file (one window per company), work views (save / apply / manage, machine-local),
+the status-bar switcher, `datapass.startupView`, the Workbench in a floating window, and the Power
+Ops launcher list — on top of 0.16.0. Unit 268, desktop 200 (9 fixtures). Full detail and the launcher contract:
+[07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md).
 
 ## Acceptance with Julian (before 1.0.0)
 
@@ -76,6 +87,17 @@ repository and per CI pipeline (GitHub, Azure DevOps declared with the Clone add
 SSH, GitLab), the official CI extensions when installed, Mongoku frozen on a freshly initialized
 manifest, and, optionally, the real FOIL Azure DevOps repository's Clone address.
 
+### B4. Testlab project 7 — windows and work views, offline (20–25 minutes)
+
+`D:\PROJ\datapass-testlab\7-fenetres-vues\` — `setup.ps1` builds a small "GitHub" on disk and two
+companies (Research Co: `research-hub` + a cloned `research-pipeline`; Catalogue Co:
+`catalog-import`). Create the company workspace file (relative folders, a title colour), build two
+work views and switch between them from the status bar, a startup view applied on reopen, the
+Workbench in a floating window (drag to a second screen is the one physical check), a second
+company with its own colour, export the Power Ops list, then `simulate-power-ops.ps1` opens a
+company and applies one of its work views without installing Power Ops. Guide:
+`D:\PROJ\datapass-testlab\7-fenetres-vues\LISEZ-MOI.md`.
+
 ### C. Account qualification (V1 gate 16, extended)
 
 Databricks `bundle validate` (with the generated build), Azure Functions `func start` then a deploy to
@@ -84,15 +106,17 @@ recorded with *Record result*. Only the steps Julian can do on his accounts; not
 
 ## Next implementation passes
 
-0. **0.17.0 — windows and work views** (in progress in a parallel session): company workspace file,
-   work views (save / restore), status-bar switcher, `datapass.startupView`, floating Workbench, the
-   Power Ops launcher contract (06_VISION_AND_READINESS.md, section 2).
-1. **From acceptance feedback.** Fix what A/B/B2/C reveal; desktop tests for Restricted Mode
+1. **PowerToy_UI task (Power Ops launcher), separate repository.** Read the company-workspaces list
+   DataPass exports (contract: [07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md) section 7),
+   show companies (with their colour) and their work views in the Tool Launcher, open a company or a
+   view exactly as the contract says, refresh when the file changes. Never writes anything else in a
+   DataPass folder. Effort: high. A ready-to-paste prompt is in section 7.
+2. **From acceptance feedback.** Fix what A/B/B2/B3/B4/C reveal; desktop tests for Restricted Mode
    (launch without `--disable-workspace-trust`) and for the catalog quick pick.
-2. **Remote hosts.** Qualify the Project view in Remote-SSH and WSL windows (paths, Git, probes on the
+3. **Remote hosts.** Qualify the Project view in Remote-SSH and WSL windows (paths, Git, probes on the
    remote host); document what runs where.
-3. **Producer routes.** When FOIL decides (keep the forked FOIL Lab or extract a CLI), add a
+4. **Producer routes.** When FOIL decides (keep the forked FOIL Lab or extract a CLI), add a
    `generate` operation that routes to it with the snapshot/campaign inputs named (still run by Julian).
-4. **Diagram editing (optional).** Only if the tree+diagram prove insufficient: reorder or group, never
+5. **Diagram editing (optional).** Only if the tree+diagram prove insufficient: reorder or group, never
    a canvas that rewrites native pipelines.
-5. **Optional modules last.** DiagramCloud export of the V3 graph and Mongoku links per sub-project.
+6. **Optional modules last.** DiagramCloud export of the V3 graph and Mongoku links per sub-project.

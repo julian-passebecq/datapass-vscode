@@ -32,6 +32,7 @@ import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingComm
 import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
 import { observeLocalEnv } from "./envObserver";
+import type { DiagramMode, DiagramUi } from "../core/windows/workViews";
 
 /** V3 selection shared by the Project tree, the Workbench, the diagram and the detail view. */
 export interface Selection { subproject?: string; component?: string }
@@ -60,6 +61,7 @@ const KEYS = {
   root: "datapass.v3.root",
   selection: "datapass.v3.selection",
   preview: "datapass.v32.preview",
+  diagramUi: "datapass.v17.diagramUi",
   scope: "datapass.v22.scope",
   checklist: "datapass.v22.checklist",
   exchanges: "datapass.v22.exchanges",
@@ -513,6 +515,29 @@ export class WorkSession implements vscode.Disposable {
     this.selectionEmitter.fire(this.selection());
   }
 
+  /** The preview as requested (a work view saves this, not the computed architecture). */
+  previewRequest(): PreviewRequest | undefined {
+    const req = this.state<PreviewRequest>(KEYS.preview);
+    return req && (req.scenario || req.picks?.length) ? { ...(req.scenario ? { scenario: req.scenario } : {}), ...(req.picks?.length ? { picks: [...req.picks] } : {}) } : undefined;
+  }
+
+  // ------------------------------------------------------------ 0.17 diagram settings (per webview mode)
+
+  /**
+   * Orientation, lanes, folds, zoom (and the Workbench tab's view) of the Workbench tab ("full") and of
+   * the Architecture panel ("map"). Held here rather than only inside each webview so a work view can
+   * save and restore them, and a view applied before a webview exists reaches it when it loads.
+   */
+  diagramUi(mode: DiagramMode): DiagramUi | undefined {
+    return this.state<Partial<Record<DiagramMode, DiagramUi>>>(KEYS.diagramUi)?.[mode];
+  }
+
+  async setDiagramUi(mode: DiagramMode, ui: DiagramUi | undefined): Promise<void> {
+    const all = { ...(this.state<Partial<Record<DiagramMode, DiagramUi>>>(KEYS.diagramUi) ?? {}) };
+    if (ui) all[mode] = ui; else delete all[mode];
+    await this.context.workspaceState.update(KEYS.diagramUi, all);
+  }
+
   observedAt(): string | undefined { return this.projectObs?.observedAt; }
 
   /**
@@ -575,13 +600,7 @@ export class WorkSession implements vscode.Disposable {
 
   private async localBindings(): Promise<Record<string, string>> {
     const root = this.ctx.root ?? vscode.workspace.workspaceFolders?.[0]?.uri;
-    if (!root) return {};
-    try {
-      const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, ...LOCAL_DIR.split("/"), LOCAL_REPOSITORIES_FILE));
-      const doc = parseStrictJson(bytes, { maxBytes: 64 * 1024 }) as Record<string, unknown>;
-      const map = doc && typeof doc === "object" && !Array.isArray(doc) ? (doc.repositories as Record<string, unknown> | undefined) : undefined;
-      return Object.fromEntries(Object.entries(map ?? {}).filter((e): e is [string, string] => typeof e[1] === "string" && path.isAbsolute(e[1])));
-    } catch { return {}; }
+    return root ? readLocalBindings(root) : {};
   }
 
   /** Remember where a repository is cloned on this machine (.datapass/local, git-ignored). */
@@ -632,8 +651,18 @@ export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** Clone locations chosen with "Locate clone" for the project in `root` (its own `.datapass/local`). */
+export async function readLocalBindings(root: vscode.Uri): Promise<Record<string, string>> {
+  try {
+    const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, ...LOCAL_DIR.split("/"), LOCAL_REPOSITORIES_FILE));
+    const doc = parseStrictJson(bytes, { maxBytes: 64 * 1024 }) as Record<string, unknown>;
+    const map = doc && typeof doc === "object" && !Array.isArray(doc) ? (doc.repositories as Record<string, unknown> | undefined) : undefined;
+    return Object.fromEntries(Object.entries(map ?? {}).filter((e): e is [string, string] => typeof e[1] === "string" && path.isAbsolute(e[1])));
+  } catch { return {}; }
+}
+
 /** Parent folders where project clones live (user setting), besides the project folder's own parent. */
-function cloneParents(): string[] {
+export function cloneParents(): string[] {
   const v = vscode.workspace.getConfiguration("datapass").get<string[]>("projectsFolders") ?? [];
   return Array.isArray(v) ? v.filter(p => typeof p === "string" && path.isAbsolute(p)).slice(0, 10) : [];
 }

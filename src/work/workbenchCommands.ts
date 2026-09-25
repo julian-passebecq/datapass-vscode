@@ -169,10 +169,16 @@ async function openComponentFile(session: WorkSession, host: WorkbenchHost, comp
   await openFileBesideWorkbench(host, uri);
 }
 
-/** Beside the Workbench tab when it is the active tab, so the diagram stays visible. */
+/**
+ * Beside the Workbench tab when it is the active tab, so the diagram stays visible. With the
+ * Workbench in its own window (0.17), files go to the main window's first group instead: VS Code's
+ * "active group" may then be the floating window's (verified in desktop tests), and a file belongs
+ * next to the code, not on the second screen.
+ */
 async function openFileBesideWorkbench(host: WorkbenchHost, uri: vscode.Uri): Promise<void> {
+  const floating = await host.isFloating();
   const workbenchActive = vscode.window.tabGroups.activeTabGroup.activeTab?.input instanceof vscode.TabInputWebview && host.hasPanel();
-  await vscode.commands.executeCommand("vscode.open", uri, { viewColumn: workbenchActive ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active, preview: true });
+  await vscode.commands.executeCommand("vscode.open", uri, { viewColumn: floating ? vscode.ViewColumn.One : workbenchActive ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active, preview: true });
 }
 
 async function openEntry(session: WorkSession, host: WorkbenchHost, componentId?: string): Promise<void> {
@@ -586,7 +592,12 @@ async function selectProjectFolder(session: WorkSession): Promise<void> {
   if (pick) await session.chooseProjectRoot(pick.u);
 }
 
-async function switchProject(session: WorkSession): Promise<void> {
+/**
+ * DataPass projects this machine knows: entries of the catalogs (this project's, and the
+ * `datapass.catalogs` setting's) with their local clone found by Git origin, and recently opened
+ * projects. Used by Switch Project and by the company workspace file (0.17).
+ */
+export async function knownProjects(session: WorkSession): Promise<{ entries: ReturnType<typeof mergeCatalogs>; recent: ReturnType<WorkSession["recentProjects"]>; errors: string[] }> {
   const catalogs: Array<{ source: string; catalog: Catalog }> = [];
   const errors: string[] = [];
   const read = async (uri: vscode.Uri, source: string) => {
@@ -603,7 +614,11 @@ async function switchProject(session: WorkSession): Promise<void> {
       clones.push({ folder: r.folder, originUrl: o.ok ? o.stdout.trim() : undefined });
     }
   }
-  const entries = mergeCatalogs(catalogs, clones);
+  return { entries: mergeCatalogs(catalogs, clones), recent, errors };
+}
+
+async function switchProject(session: WorkSession): Promise<void> {
+  const { entries, recent, errors } = await knownProjects(session);
   type Item = vscode.QuickPickItem & { folder?: string; url?: string };
   const items: Item[] = [];
   if (entries.length) items.push({ label: "From your catalogs", kind: vscode.QuickPickItemKind.Separator });

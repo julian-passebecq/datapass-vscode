@@ -5,11 +5,16 @@
  *
  * Messages from the webviews are untrusted input: only select / openFile / command are accepted,
  * commands come from an allowlist, and every id is checked against the current project map.
+ *
+ * 0.17: the diagram settings of each mode (orientation, lanes, folds, zoom, and the Workbench tab's
+ * view) are reported by the webviews and held by the session, so work views can save and restore
+ * them; the Workbench tab can move into a floating window of its own.
  */
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
 import { workbenchState, type WorkbenchState } from "./workbenchState";
+import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
 
 /** Commands a webview may ask for (arguments are re-validated by each command). */
 const ALLOWED = new Set([
@@ -26,10 +31,33 @@ const ALLOWED = new Set([
   "datapass.clearPreview", "datapass.restoreBackup", "datapass.openSheetReference",
   // 0.16: the board, Git hosts' web pages, CI runs.
   "datapass.openBoard", "datapass.openBoardFile", "datapass.board.moveCard", "datapass.board.aiPack", "datapass.board.openFile", "datapass.board.openLink",
-  "datapass.openRepositoryWeb", "datapass.openCiRuns"
+  "datapass.openRepositoryWeb", "datapass.openCiRuns",
+  // 0.17: work views and windows.
+  "datapass.openSwitcher", "datapass.saveWorkView", "datapass.openWorkbenchFloating"
 ]);
 
 export type WorkbenchView = "architecture" | "options" | "sheet" | "board";
+
+/** VS Code's command that moves the active editor into a floating window (VS Code 1.85+). */
+export const MOVE_TO_NEW_WINDOW = "workbench.action.moveEditorToNewWindow";
+
+/**
+ * Leaves of the grid `vscode.getEditorLayout` reports. Verified in desktop VS Code (1.139): the
+ * command describes the window that has the focus — the main window, or a floating one.
+ */
+export function layoutLeaves(raw: unknown): number {
+  const groups = (raw as { groups?: unknown } | null)?.groups;
+  return Array.isArray(groups) && groups.length ? groups.reduce((n: number, g) => n + layoutLeaves(g), 0) : 1;
+}
+
+export async function waitUntil(probe: () => boolean | Promise<boolean>, timeoutMs: number): Promise<boolean> {
+  const end = Date.now() + timeoutMs;
+  for (;;) {
+    if (await probe()) return true;
+    if (Date.now() > end) return false;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
 
 export class WorkbenchHost implements vscode.Disposable {
   private readonly panels = new Set<vscode.WebviewPanel>();
@@ -65,16 +93,34 @@ export class WorkbenchHost implements vscode.Disposable {
 
   hasPanel(): boolean { return this.panels.size > 0; }
 
+  /** The Workbench tab, when one is open. */
+  panel(): vscode.WebviewPanel | undefined { return [...this.panels][0]; }
+
+  /** Whether the Architecture panel ("map") or the Details side bar ("detail") is visible. */
+  isVisible(mode: "map" | "detail"): boolean { return this.views.get(mode)?.visible ?? false; }
+
+  /**
+   * Whether the Workbench tab is in a floating window. Tab groups are numbered main window first,
+   * then floating windows; `vscode.getEditorLayout` describes the focused window. With the main
+   * window focused, a floating Workbench has a column beyond its grid; with the floating Workbench
+   * focused, its own one-group grid is reported and the column is still beyond it.
+   */
+  async isFloating(): Promise<boolean> {
+    const column = this.panel()?.viewColumn;
+    if (!column) return false;
+    return column > layoutLeaves(await vscode.commands.executeCommand("vscode.getEditorLayout"));
+  }
+
   /** Open (or reveal) the full Workbench in an editor tab, on one of its views. */
-  openPanel(column: vscode.ViewColumn = vscode.ViewColumn.Active, view?: WorkbenchView, focus?: string): vscode.WebviewPanel {
-    const existing = [...this.panels][0];
+  openPanel(column: vscode.ViewColumn = vscode.ViewColumn.Active, view?: WorkbenchView, focus?: string, preserveFocus = false): vscode.WebviewPanel {
+    const existing = this.panel();
     if (existing) {
-      existing.reveal(column);
+      existing.reveal(column, preserveFocus);
       if (view) void existing.webview.postMessage({ type: "show", view, focus });
       return existing;
     }
     this.pendingShow = view ? { view, focus } : undefined;
-    const panel = vscode.window.createWebviewPanel("datapass.workbench", "DataPass Workbench", column, {
+    const panel = vscode.window.createWebviewPanel("datapass.workbench", "DataPass Workbench", { viewColumn: column, preserveFocus }, {
       enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, "dist")]
     });
     panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, "resources", "datapass.svg");
@@ -82,6 +128,25 @@ export class WorkbenchHost implements vscode.Disposable {
     this.panels.add(panel);
     panel.onDidDispose(() => this.panels.delete(panel));
     return panel;
+  }
+
+  /**
+   * Move the Workbench tab into a floating window (a second screen). VS Code's command moves the
+   * active editor, so the Workbench is made active first; the result is checked, not assumed.
+   */
+  async openFloating(view?: WorkbenchView): Promise<"moved" | "already"> {
+    const current = this.panel();
+    if (current && await this.isFloating()) {
+      current.reveal(current.viewColumn, false);
+      if (view) void current.webview.postMessage({ type: "show", view });
+      return "already";
+    }
+    if (!(await vscode.commands.getCommands(true)).includes(MOVE_TO_NEW_WINDOW)) throw new Error("This VS Code has no floating editor windows (VS Code 1.85 or later).");
+    const panel = this.openPanel(vscode.ViewColumn.Active, view);
+    if (!(await waitUntil(() => panel.active, 3000))) throw new Error("The Workbench tab could not be made active. Right-click its tab → Move into New Window.");
+    await vscode.commands.executeCommand(MOVE_TO_NEW_WINDOW);
+    if (!(await waitUntil(() => this.isFloating(), 4000))) throw new Error("VS Code did not move the Workbench into its own window. Right-click its tab → Move into New Window.");
+    return "moved";
   }
 
   /** Provider for a WebviewView (Architecture panel = map, Details side bar = detail). */
@@ -97,26 +162,56 @@ export class WorkbenchHost implements vscode.Disposable {
     };
   }
 
+  /**
+   * Apply diagram settings (a work view): stored for each mode and sent to the webviews showing it.
+   * A webview that does not exist yet receives them when it loads.
+   */
+  async applyUi(ui: Partial<Record<DiagramMode, DiagramUi>>): Promise<void> {
+    for (const mode of ["full", "map"] as const) {
+      const value = ui[mode];
+      if (!value) continue;
+      await this.session.setDiagramUi(mode, value);
+      for (const webview of this.webviewsOf(mode)) await webview.postMessage({ type: "ui", ui: value });
+    }
+  }
+
+  private webviewsOf(mode: DiagramMode): vscode.Webview[] {
+    return mode === "full" ? [...this.panels].map(p => p.webview) : [this.views.get("map")?.webview].filter((w): w is vscode.Webview => !!w);
+  }
+
   private attach(webview: vscode.Webview, mode: WorkbenchMode): void {
     const nonce = makeNonce();
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, "dist", "workbench.js")).toString();
     webview.html = workbenchHtml({ cspSource: webview.cspSource, nonce, scriptUri, mode, title: mode === "map" ? "DataPass architecture" : mode === "detail" ? "DataPass details" : "DataPass Workbench" });
-    webview.onDidReceiveMessage(message => void this.onMessage(webview, message));
+    webview.onDidReceiveMessage(message => void this.onMessage(webview, mode, message));
   }
 
-  private async onMessage(webview: vscode.Webview, message: unknown): Promise<void> {
-    const m = message as { type?: unknown; subproject?: unknown; component?: unknown; componentId?: unknown; path?: unknown; command?: unknown; args?: unknown; scenario?: unknown; picks?: unknown } | null;
+  private async onMessage(webview: vscode.Webview, mode: WorkbenchMode, message: unknown): Promise<void> {
+    const m = message as { type?: unknown; subproject?: unknown; component?: unknown; componentId?: unknown; path?: unknown; command?: unknown; args?: unknown; scenario?: unknown; picks?: unknown; ui?: unknown } | null;
     if (!m || typeof m !== "object") return;
     const map = this.session.projectMap();
     const str = (v: unknown) => (typeof v === "string" && v.length <= 200 ? v : undefined);
     switch (m.type) {
-      case "ready":
+      case "ready": {
         await this.postTo(webview);
         if (this.pendingShow && [...this.panels].some(p => p.webview === webview)) {
           await webview.postMessage({ type: "show", ...this.pendingShow });
           this.pendingShow = undefined;
         }
+        if (mode === "detail") return;
+        // Settings held by the session win (a work view may have been applied before this webview
+        // loaded); otherwise the webview's own remembered settings become the session's.
+        const stored = this.session.diagramUi(mode);
+        if (stored) await webview.postMessage({ type: "ui", ui: stored });
+        else { const own = sanitizeDiagramUi(m.ui, mode); if (own) await this.session.setDiagramUi(mode, own); }
         return;
+      }
+      case "ui": {
+        if (mode === "detail") return;
+        const ui = sanitizeDiagramUi(m.ui, mode);
+        if (ui && !sameDiagramUi(ui, this.session.diagramUi(mode))) await this.session.setDiagramUi(mode, ui);
+        return;
+      }
       case "preview": {
         // Only scenarios and picks the options file declares; anything else clears the preview.
         const options = this.session.project.options;

@@ -73,6 +73,48 @@ async function gitState(git: GitRunner, folder: string): Promise<{ isGitRepo: bo
 }
 
 export async function observeProject(o: ObserveOptions): Promise<ProjectObservation> {
+  const { coordinationKey, repos, folders } = await locateRepositories(o);
+
+  // Expected files of every component, in the repository that holds them.
+  const files = new Map<string, FileObservation>();
+  const plan = artifactPlan([...componentRepositories(o.manifest, o.graph, coordinationKey), ...(o.extraItems ?? [])]);
+  const planned = new Set(plan.map(e => obsKey(e.repoKey, e.repoPath)));
+  for (const f of o.extraFiles ?? []) {
+    const repoPath = f.repoPath.replace(/\/+$/, "");
+    if (!repoPath || planned.has(obsKey(f.repoKey, repoPath))) continue;
+    planned.add(obsKey(f.repoKey, repoPath));
+    plan.push({ repoKey: f.repoKey, repoPath, kind: f.repoPath.endsWith("/") ? "dir" : "file", hash: false, tracked: false });
+  }
+  plan.splice(MAX_PLAN);
+  const tracked = new Map<string, string[]>();
+  await Promise.all(plan.map(async entry => {
+    const base = folders.get(entry.repoKey);
+    if (!base) return;
+    const k = obsKey(entry.repoKey, entry.repoPath);
+    files.set(k, await observeEntry(base, entry.repoPath, entry.kind, entry.hash));
+    if (entry.tracked && o.trusted) (tracked.get(entry.repoKey) ?? tracked.set(entry.repoKey, []).get(entry.repoKey)!).push(entry.repoPath);
+  }));
+  // Files that must never be committed: ask Git whether they are tracked.
+  for (const [key, paths] of tracked) {
+    const folder = folders.get(key)!.fsPath;
+    const r = await o.git(["ls-files", "--", ...paths], folder, 10000);
+    const listed = new Set(r.ok ? r.stdout.split(/\r?\n/).map(l => l.trim().replace(/\\/g, "/")).filter(Boolean) : []);
+    for (const p of paths) {
+      const k = obsKey(key, p);
+      files.set(k, { ...(files.get(k) ?? { state: "missing" }), tracked: listed.has(p) });
+    }
+  }
+  return { coordinationKey, repos, files, folders, observedAt: new Date().toISOString() };
+}
+
+export type LocateOptions = Pick<ObserveOptions, "root" | "manifest" | "trusted" | "git" | "localBindings" | "cloneParents">;
+
+/**
+ * Where each declared repository is cloned on this machine: the project folder itself, a folder the
+ * person located, a declared path, or an open / sibling folder whose Git origin is that repository.
+ * Also used for projects that are not open in this window (the company workspace file, 0.17).
+ */
+export async function locateRepositories(o: LocateOptions): Promise<Pick<ProjectObservation, "coordinationKey" | "repos" | "folders">> {
   const coordinationKey = coordinationKeyOf(o.manifest, o.root);
   const repos = new Map<string, RepoObservation>();
   const folders = new Map<string, vscode.Uri>();
@@ -117,37 +159,7 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
     const g = await gitState(o.git, folder);
     repos.set(key, { key, folder, source, exists: true, isGitRepo: g.isGitRepo, git: g.state });
   }
-
-  // Expected files of every component, in the repository that holds them.
-  const files = new Map<string, FileObservation>();
-  const plan = artifactPlan([...componentRepositories(o.manifest, o.graph, coordinationKey), ...(o.extraItems ?? [])]);
-  const planned = new Set(plan.map(e => obsKey(e.repoKey, e.repoPath)));
-  for (const f of o.extraFiles ?? []) {
-    const repoPath = f.repoPath.replace(/\/+$/, "");
-    if (!repoPath || planned.has(obsKey(f.repoKey, repoPath))) continue;
-    planned.add(obsKey(f.repoKey, repoPath));
-    plan.push({ repoKey: f.repoKey, repoPath, kind: f.repoPath.endsWith("/") ? "dir" : "file", hash: false, tracked: false });
-  }
-  plan.splice(MAX_PLAN);
-  const tracked = new Map<string, string[]>();
-  await Promise.all(plan.map(async entry => {
-    const base = folders.get(entry.repoKey);
-    if (!base) return;
-    const k = obsKey(entry.repoKey, entry.repoPath);
-    files.set(k, await observeEntry(base, entry.repoPath, entry.kind, entry.hash));
-    if (entry.tracked && o.trusted) (tracked.get(entry.repoKey) ?? tracked.set(entry.repoKey, []).get(entry.repoKey)!).push(entry.repoPath);
-  }));
-  // Files that must never be committed: ask Git whether they are tracked.
-  for (const [key, paths] of tracked) {
-    const folder = folders.get(key)!.fsPath;
-    const r = await o.git(["ls-files", "--", ...paths], folder, 10000);
-    const listed = new Set(r.ok ? r.stdout.split(/\r?\n/).map(l => l.trim().replace(/\\/g, "/")).filter(Boolean) : []);
-    for (const p of paths) {
-      const k = obsKey(key, p);
-      files.set(k, { ...(files.get(k) ?? { state: "missing" }), tracked: listed.has(p) });
-    }
-  }
-  return { coordinationKey, repos, files, folders, observedAt: new Date().toISOString() };
+  return { coordinationKey, repos, folders };
 }
 
 async function observeEntry(base: vscode.Uri, repoPath: string, kind: "file" | "dir" | "glob", hash: boolean): Promise<FileObservation> {

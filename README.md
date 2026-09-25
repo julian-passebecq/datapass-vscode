@@ -86,6 +86,30 @@ See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) sections 10–11,
 See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the full example in
 [examples/v3/research-library](examples/v3/research-library/).
 
+## Company windows and work views (0.17)
+
+Julian's mapping: **1 VS Code window = 1 company**. **DataPass: Create the Company Workspace File
+(one window per company)…** writes a multi-root `.code-workspace` from this window's DataPass
+projects: their repositories found on this computer (folders relative to the file whenever
+possible), a title-bar colour, and an optional startup work view.
+
+A **work view** is a named saved layout of the main window — selected sub-project/component,
+editor grid and open files per group, the Workbench tab (or floating), which DataPass views are
+shown, diagram settings, previewed architecture — kept in `.datapass/local/views.json` (machine-local,
+never committed). **Save Work View…** captures the current layout; **Apply Work View…** restores it
+in one call (closing only unmodified, unpinned tabs; a missing file or repository becomes a note,
+never an error). The status-bar switcher (`$(briefcase) <Company> · <Sub-project> ▾`) applies a
+work view in one click, switches sub-project or project, opens the Workbench in a floating window
+(for a second screen), and creates the company workspace file or exports it for Power Ops.
+
+A `.code-workspace` file can set `datapass.startupView`: DataPass applies that work view once the
+project has loaded (a launcher's request wins over it). **Export Company Workspaces for Power
+Ops** writes a machine-local, secret-free JSON of company workspace files and their work views to
+`%LOCALAPPDATA%\DataPass\company-workspaces.json` (or the platform equivalent), so a launcher such
+as Power Ops (PowerToy_UI) can open a company or a specific work view; see
+[handoff/v3/07_WINDOWS_AND_POWER_OPS.md](handoff/v3/07_WINDOWS_AND_POWER_OPS.md) for the full
+contract.
+
 ## Earlier surfaces (still available)
 
 - **Galaxy** — health-first control plane with readiness metrics, attention queue, grouped/collapsible platform cards, filters, persistent view state, and a sanitized environment snapshot for debugging/handoffs.
