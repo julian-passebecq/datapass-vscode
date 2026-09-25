@@ -47,6 +47,38 @@ it as a candidate or quarantines it. Nothing is applied automatically, and priva
 history stays in `.datapass/local/` (git-ignored). See `IMPLEMENTATION_STATUS.md` for what is
 implemented, documented-only and qualified.
 
+## Modules per project (v0.10)
+
+Each project chooses the parts of DataPass it uses. Run **DataPass: Choose Project Modules…** (or
+click the *modules* row in the Work view) and tick what the project needs; DataPass writes:
+
+```json
+{ "modules": { "fabric": true, "databricks": true, "powerbi": false, "grafana": false,
+               "infrastructure": true, "airflow": false, "mongoku": false, "diagramcloud": false } }
+```
+
+A module set to `false` disappears from Galaxy, the Work view and Links; unlisted modules stay on,
+and a manifest without `modules` shows everything as before. Fabric, Databricks, Infrastructure,
+Airflow, Power BI and Grafana are the cloud core; Mongoku and DiagramCloud are optional add-ons.
+
+## Shared resources (v0.10.1)
+
+Declare a machine once and say how each workload uses it. One VM can serve two scopes:
+
+```json
+{
+  "resources": [{ "id": "oracle-vm", "kind": "vm", "title": "Oracle VM", "provider": "oci", "ssh": { "host": "my-oracle" } }],
+  "bindings": [
+    { "id": "wind", "resource": "oracle-vm", "scopes": ["wind"], "folder": "/opt/foil/wind", "compose": "docker-compose.yml", "env": ["MQTT_URL"] },
+    { "id": "hydro", "resource": "oracle-vm", "scopes": ["hydro"], "folder": "/opt/foil/hydro" }
+  ]
+}
+```
+
+The Work view's **Resources** section shows the selected scope's binding and warns when the host is
+shared ("host-level changes affect all"). Click the folder to open it on the VM over Remote - SSH.
+`ssh.host` is an alias from your `~/.ssh/config`; env lists **names** only; no credentials anywhere.
+
 ## Links: Grafana, Mongoku and DiagramCloud (v0.9.3, all optional)
 
 When configured, the Work view shows a **Links** section for the selected scope:

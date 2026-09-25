@@ -4,6 +4,7 @@
  */
 import type { ProjectContext } from "./loader";
 import { hostLabel, safeAppUrl } from "../model/safeUrl";
+import { declaredResources } from "../resources/resources";
 
 /** Where each fact comes from in .datapass/project.json, so a preflight can name a field a person can edit. */
 export const FACT_MANIFEST_FIELDS: Readonly<Record<string, string>> = {
@@ -15,7 +16,7 @@ export const FACT_MANIFEST_FIELDS: Readonly<Record<string, string>> = {
   "grafana.repo": "platforms.grafana.watchPath (or generatorCommand)",
   "grafana.instance": "platforms.grafana.url",
   "infrastructure.root": "platforms.infrastructure.root",
-  "vm.sshHost": "platforms.oracle.sshHost",
+  "vm.sshHost": "resources[].ssh.host (or platforms.oracle.sshHost)",
   "powerbi.pbip": "platforms.powerbi.projectRoot",
   "powerbi.semanticModel": "platforms.powerbi.projectRoot",
   "powerbi.reportPbir": "platforms.powerbi.projectRoot",
@@ -41,7 +42,7 @@ export function projectFacts(ctx: Pick<ProjectContext, "manifest" | "root">): Ma
   const grafanaStack = safeAppUrl(p?.grafana?.url);
   facts.set("grafana.instance", grafanaStack ? hostLabel(grafanaStack) : undefined);
   facts.set("infrastructure.root", p?.infrastructure?.root || (ctx.root ? true : undefined));
-  facts.set("vm.sshHost", p?.oracle?.sshHost);
+  facts.set("vm.sshHost", declaredResources(m).find(r => r.ssh?.host)?.ssh?.host);
   facts.set("powerbi.pbip", p?.powerbi?.projectRoot ? true : undefined);
   facts.set("powerbi.semanticModel", p?.powerbi?.projectRoot ? true : undefined);
   facts.set("powerbi.reportPbir", p?.powerbi?.projectRoot ? true : undefined);

@@ -197,6 +197,69 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     await withUi([{ pick: "Weekly forecast refresh" }], () => run("datapass.selectScope"));
   }, ["v2-retail"]);
 
+  // ------------------------------------------------------------ shared resources (v2-retail)
+
+  test("resources: the scope shows its VM binding and warns that another scope shares the VM", async () => {
+    const rows = await api().renderWorkTree();
+    const ids = new Set(rows.map(r => r.id));
+    for (const id of ["resources", "res:retail-vm", "bind:vm-weekly", "bind:vm-weekly:compose", "bind:vm-weekly:env", "bind:vm-weekly:proc", "res:retail-vm:ssh", "res:retail-vm:shared"]) assert.ok(ids.has(id), `missing ${id}`);
+    assert.ok(!ids.has("bind:vm-ops"), "another scope's binding is not listed as this scope's");
+    assert.match(rows.find(r => r.id === "res:retail-vm:shared")?.label ?? "", /Shared with: Operations/);
+    assert.match(rows.find(r => r.id === "bind:vm-weekly:env")?.description ?? "", /names only/);
+    record("resourceRows", rows.filter(r => r.id?.startsWith("res") || r.id?.startsWith("bind")).map(r => `${r.label}${r.description ? ` — ${r.description}` : ""}`));
+  }, ["v2-retail"]);
+
+  test("resources: Open on its host goes straight to the SSH alias and the binding folder", async () => {
+    const direct = await withUi([], () => run("datapass.openResource", { resource: "retail-vm", binding: "vm-weekly" }));
+    assert.deepEqual(direct.openedFolders, ["vscode-remote://ssh-remote+retail-vm/srv/retail/weekly"]);
+    // The Galaxy "Remote SSH" action runs this with no argument: one binding in scope, no question.
+    const fromGalaxy = await withUi([], () => run("datapass.openResource"));
+    assert.deepEqual(fromGalaxy.openedFolders, ["vscode-remote://ssh-remote+retail-vm/srv/retail/weekly"]);
+    const copy = await withUi([], () => run("datapass.copySshCommand", "retail-vm"));
+    assert.equal(copy.clipboard, "ssh retail-vm");
+    const bad = await withUi([], () => run("datapass.openResource", { resource: "retail-vm", binding: "vm-unknown" }), { allowErrors: true });
+    assert.ok(bad.errors.some(e => /not declared/.test(e)) && !bad.openedFolders.length, bad.errors.join(" / "));
+  }, ["v2-retail"]);
+
+  test("resources: the whole project lists both bindings and no shared warning", async () => {
+    await withUi([{ pick: "Whole project" }], () => run("datapass.selectScope"));
+    const ids = new Set((await api().renderWorkTree()).map(r => r.id));
+    assert.ok(ids.has("bind:vm-weekly") && ids.has("bind:vm-ops") && !ids.has("res:retail-vm:shared"));
+    const ui = await withUi([{ pick: "/srv/retail/ops" }], () => run("datapass.openResource"));
+    assert.deepEqual(ui.openedFolders, ["vscode-remote://ssh-remote+retail-vm/srv/retail/ops"]);
+    await withUi([{ pick: "Weekly forecast refresh" }], () => run("datapass.selectScope"));
+  }, ["v2-retail"]);
+
+  // ------------------------------------------------------------ per-project modules (v2-retail)
+
+  test("modules: switching modules off hides their Galaxy card, operations and links; switching back restores them", async () => {
+    const core = ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Grafana"];
+    await withUi([{ pick: core }, { button: "Save" }], () => run("datapass.chooseModules"));
+    const saved = JSON.parse(await readText(".datapass/project.json"));
+    assert.deepEqual(saved.modules, { fabric: true, databricks: true, powerbi: false, grafana: true, infrastructure: true, airflow: true, mongoku: false, diagramcloud: false });
+    assert.equal(Object.keys(saved)[2], "modules", "the block is written right after project");
+    const state = await api().refresh();
+    assert.ok(!state.platforms.some(p => p.id === "powerbi"), state.platforms.map(p => p.id).join(","));
+    assert.ok(state.platforms.some(p => p.id === "fabric") && state.platforms.some(p => p.id === "observability"));
+    const ids = new Set((await api().renderWorkTree()).map(r => r.id));
+    assert.ok(ids.has("modules") && ids.has("links:grafana"));
+    assert.ok(!ids.has("links:mongoku") && !ids.has("links:diagramcloud"), [...ids].filter(i => i?.startsWith("links")).join(","));
+    const refused = await withUi([], () => run("datapass.diagramCloud.copySummary"), { allowErrors: true });
+    assert.ok(refused.errors.some(e => /DiagramCloud module is switched off/.test(e)), refused.errors.join(" / "));
+    record("modulesOff", { galaxy: state.platforms.map(p => p.id), workRows: [...ids].filter(i => i?.startsWith("links")) });
+
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    const restored = await api().refresh();
+    assert.equal(restored.platforms.length, 5);
+    assert.ok((await api().renderWorkTree()).some(r => r.id === "links:mongoku"));
+  }, ["v2-retail"]);
+
+  test("modules: declining the save changes nothing", async () => {
+    const before = await read(".datapass/project.json");
+    await withUi([{ pick: "Microsoft Fabric" }, { dismiss: true }], () => run("datapass.chooseModules"));
+    assert.deepEqual(await read(".datapass/project.json"), before);
+  }, ["v2-retail"]);
+
   // ------------------------------------------------------------ companions off / refusals
 
   test("companions off: no Links section and a clear message when nothing is configured", async () => {

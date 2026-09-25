@@ -8,7 +8,8 @@ import { registerWorkCommands } from "./work/commands";
 import { registerBridgeCommands } from "./work/bridgeCommands";
 import { registerCompanionCommands } from "./work/companionCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
-import { setExternalOpenerForTests, type ExternalOpener } from "./core/external";
+import { setExternalOpenerForTests, setFolderOpenerForTests, type ExternalOpener, type FolderOpener } from "./core/external";
+import { registerResourceCommands } from "./work/resourceCommands";
 import { platformOperations } from "./core/capabilities/platformOperations";
 
 /**
@@ -27,6 +28,8 @@ export interface DataPassTestApi {
   setClipboard(impl?: Clipboard): void;
   /** Replace how DataPass opens URLs outside VS Code (undefined restores the real browser). */
   setExternalOpener(impl?: ExternalOpener): void;
+  /** Replace how DataPass opens a remote folder (undefined restores Remote - SSH). */
+  setFolderOpener(impl?: FolderOpener): void;
   companions(): ReturnType<WorkSession["companions"]>;
   mongokuStatus(): ReturnType<WorkSession["mongokuStatus"]>;
   /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
@@ -57,6 +60,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerWorkCommands(context, session);
   registerBridgeCommands(context, session);
   const companionUri = registerCompanionCommands(context, session);
+  registerResourceCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -155,6 +159,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     workViewMessage: () => workView.message,
     setClipboard: setClipboardForTests,
     setExternalOpener: setExternalOpenerForTests,
+    setFolderOpener: setFolderOpenerForTests,
     companions: () => session.companions(),
     mongokuStatus: () => session.mongokuStatus(),
     handleUri: uri => companionUri.handleUri(uri),

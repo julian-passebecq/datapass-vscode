@@ -2,6 +2,7 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import { clipboard } from "./clipboard";
 import { openExternal } from "./external";
+import { declaredResources } from "./resources/resources";
 import {
   buildDatabricksBundleCommand,
   buildFabricAssessmentCommand,
@@ -873,6 +874,12 @@ async function copyIaC(operation: "validate" | "plan"): Promise<void> {
 }
 
 async function openRemoteSsh(): Promise<void> {
+  // A declared resource (or platforms.oracle.sshHost) opens that host directly, in its bound folder.
+  const manifest = (await readProjectManifest()).manifest;
+  if (declaredResources(manifest).some(r => r.ssh?.host) && manifest?.modules?.infrastructure !== false) {
+    await vscode.commands.executeCommand("datapass.openResource");
+    return;
+  }
   if (await commandAvailable("workbench.action.remote.showMenu")) {
     await vscode.commands.executeCommand("workbench.action.remote.showMenu");
     return;

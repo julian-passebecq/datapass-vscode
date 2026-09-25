@@ -24,6 +24,8 @@ export class ScriptedUi {
   readonly notices: string[] = [];
   /** URLs DataPass asked to open in the browser (through the Test-mode seam). */
   readonly opened: string[] = [];
+  /** Remote folders DataPass asked to open (Remote - SSH seam); no connection is made. */
+  readonly openedFolders: string[] = [];
   clipboard = "";
   private steps: Step[] = [];
   private saved: Array<[object, string, unknown]> = [];
@@ -88,17 +90,20 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
     this.setClipboard({ readText: async () => this.clipboard, writeText: async (value: string) => { this.clipboard = value; } });
     this.saved.push([{}, "clipboard", undefined]);
     this.setOpener(async uri => { this.opened.push(uri.toString(true)); return true; });
+    this.setFolderOpener(async uri => { this.openedFolders.push(uri.toString(true)); });
     return this;
   }
 
   constructor(
     private readonly setClipboard: (impl?: { readText(): Thenable<string>; writeText(v: string): Thenable<void> }) => void,
-    private readonly setOpener: (impl?: (uri: vscode.Uri) => Thenable<boolean>) => void
+    private readonly setOpener: (impl?: (uri: vscode.Uri) => Thenable<boolean>) => void,
+    private readonly setFolderOpener: (impl?: (uri: vscode.Uri) => Thenable<unknown>) => void
   ) {}
 
   restore(): void {
     this.setClipboard(undefined);
     this.setOpener(undefined);
+    this.setFolderOpener(undefined);
     for (const [target, key, value] of this.saved.reverse()) if (key !== "clipboard") (target as Record<string, unknown>)[key] = value;
     this.saved = [];
   }
@@ -113,15 +118,17 @@ ${opts.detail}` : text, options: buttons, modal: !!opts?.modal });
 /** Run `fn` with a scripted UI; fail if the command reported an error or left steps unused. */
 let setClipboard: ConstructorParameters<typeof ScriptedUi>[0] = () => { throw new Error("call bindUi() first"); };
 let setOpener: ConstructorParameters<typeof ScriptedUi>[1] = () => { throw new Error("call bindUi() first"); };
+let setFolderOpener: ConstructorParameters<typeof ScriptedUi>[2] = () => { throw new Error("call bindUi() first"); };
 
 /** Connect the scripted UI to the extension's Test-mode clipboard and browser seams. */
-export function bindUi(api: { setClipboard: ConstructorParameters<typeof ScriptedUi>[0]; setExternalOpener: ConstructorParameters<typeof ScriptedUi>[1] }): void {
+export function bindUi(api: { setClipboard: ConstructorParameters<typeof ScriptedUi>[0]; setExternalOpener: ConstructorParameters<typeof ScriptedUi>[1]; setFolderOpener: ConstructorParameters<typeof ScriptedUi>[2] }): void {
   setClipboard = impl => api.setClipboard(impl);
   setOpener = impl => api.setExternalOpener(impl);
+  setFolderOpener = impl => api.setFolderOpener(impl);
 }
 
 export async function withUi(steps: Step[], fn: (ui: ScriptedUi) => PromiseLike<unknown>, opts: { allowErrors?: boolean } = {}): Promise<ScriptedUi> {
-  const ui = new ScriptedUi(setClipboard, setOpener).script(...steps);
+  const ui = new ScriptedUi(setClipboard, setOpener, setFolderOpener).script(...steps);
   try {
     ui.install();
     await fn(ui);

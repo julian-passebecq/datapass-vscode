@@ -30,6 +30,12 @@ function v2Retail(): DataPassProjectManifest {
     grafana: { url: "https://metrics.example.com/grafana/", dashboards: [{ uid: "weekly-1", title: "Weekly metrics", scopes: ["weekly-forecast"], source: "grafana/weekly.json" }] }
   };
   m.companions = { mongoku: { entityId: "retail_bi" } };
+  // One synthetic VM shared by two scopes (Resources section, Remote-SSH seam; nothing is contacted).
+  m.resources = [{ id: "retail-vm", kind: "vm", title: "Retail VM", provider: "oci", ssh: { host: "retail-vm" } }];
+  m.bindings = [
+    { id: "vm-weekly", resource: "retail-vm", scopes: ["weekly-forecast"], folder: "/srv/retail/weekly", compose: "docker-compose.weekly.yml", env: ["WAREHOUSE_URL"], processes: ["forecast-worker"] },
+    { id: "vm-ops", resource: "retail-vm", scopes: ["ops"], folder: "/srv/retail/ops" }
+  ];
   m.repositories = { site: { remote: { url: "https://github.com/example/site", branch: "main" }, management: "remote-only" } };
   m.apps = [{ id: "forecast-app", appType: "streamlit", repoRef: "site", entrypoint: "app.py" }];
   m.domainPacks = ["builtin:sample.retail"];
@@ -40,7 +46,7 @@ function v2Retail(): DataPassProjectManifest {
       { id: "notebook", label: "Update the forecast notebook", capabilityRef: "fabric.notebook.edit-local-sync" },
       { id: "review", label: "Review the report" }
     ]
-  }];
+  }, { id: "ops", title: "Operations", objective: "Keep the shared VM healthy" }];
   return m;
 }
 

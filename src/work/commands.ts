@@ -39,6 +39,7 @@ import { migrateManifestToV2, validateProjectManifest, DATAPASS_MANIFEST_PATH } 
 import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { clipboard } from "../core/clipboard";
+import { MODULES, moduleEnabled, modulesBlock, type ModuleId } from "../core/modules";
 
 const now = () => new Date().toISOString();
 
@@ -62,6 +63,7 @@ export function registerWorkCommands(context: vscode.ExtensionContext, session: 
   reg("datapass.inspectPowerBiProject", async () => inspectPowerBi(session));
   reg("datapass.copyAiContext", async () => copyAiContext(session));
   reg("datapass.migrateManifestToV2", async () => migrateManifest(session));
+  reg("datapass.chooseModules", async () => chooseModules(session));
   reg("datapass.initGraph", async () => initGraph(session));
   reg("datapass.validateContract", async (uri?: vscode.Uri) => validateContract(session, uri));
   reg("datapass.openExchange", async (file: string) => openLocal(requireRoot(session.root), file));
@@ -573,6 +575,42 @@ export function workspaceJournalFs(root: vscode.Uri): JournalFs {
     write: async (p, bytes) => { const u = uri(p); await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(u, "..")); await vscode.workspace.fs.writeFile(u, bytes); },
     remove: async p => { await vscode.workspace.fs.delete(uri(p)); }
   };
+}
+
+/**
+ * Switch modules on or off for this project. Writes only the `modules` block (placed after
+ * `project`), through the journal, refusing the write if the file changed since it was read.
+ */
+async function chooseModules(session: WorkSession): Promise<void> {
+  const root = requireRoot(session.root);
+  const ctx = session.project;
+  if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
+  const base = ctx.manifestBytes;
+  const picks = await vscode.window.showQuickPick(
+    MODULES.map(m => ({ label: m.label, description: m.group === "core" ? "cloud core" : "optional add-on", picked: moduleEnabled(ctx.manifest, m.id), id: m.id as ModuleId })),
+    { title: "Modules for this project", placeHolder: "Tick the modules this project uses. Unticked modules disappear from Galaxy, Work and Links.", canPickMany: true, ignoreFocusOut: true }
+  );
+  if (!picks) return;
+  const enabled = new Set(picks.map(p => p.id));
+  const raw = parseStrictJson(base) as Record<string, unknown>;
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (key === "modules") continue;
+    next[key] = value;
+    if (key === "project") next.modules = modulesBlock(enabled);
+  }
+  next.modules ??= modulesBlock(enabled);
+  const errors = validateProjectManifest(next);
+  if (errors.length) throw new UserFacingError(`The manifest would become invalid: ${errors.join("; ")}`);
+  const on = MODULES.filter(m => enabled.has(m.id)).map(m => m.label);
+  const off = MODULES.filter(m => !enabled.has(m.id)).map(m => m.label);
+  if (!(await confirmModal("Save these modules in .datapass/project.json?", `On: ${on.join(", ") || "none"}\nOff: ${off.join(", ") || "none"}\n\nOnly the modules block changes (the file is written as two-space JSON). A backup goes to ${LOCAL_DIR}/journal. Nothing is installed or uninstalled.`, "Save"))) return;
+  const id = newLocalId("modules");
+  await applyWithJournal(workspaceJournalFs(root), `${LOCAL_DIR}/journal/${id}.json`, id, now(), [
+    { target: DATAPASS_MANIFEST_PATH, bytes: jsonBytes(next), expectedBaseHash: sha256Bytes(base).value }
+  ]);
+  await vscode.commands.executeCommand("datapass.refresh");
+  void vscode.window.showInformationMessage(`Modules saved. On: ${on.join(", ") || "none"}.`);
 }
 
 async function migrateManifest(session: WorkSession): Promise<void> {

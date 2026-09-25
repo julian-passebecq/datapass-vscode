@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana and infrastructure: work scopes, operation preflight, contracted app exchanges, impact analysis and publication briefs.",
-  "version": "0.9.3",
+  "version": "0.10.1",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -186,6 +186,19 @@
       {
         "command": "datapass.mongoku.setUrl",
         "title": "DataPass: Set Mongoku Address…"
+      },
+      {
+        "command": "datapass.chooseModules",
+        "title": "DataPass: Choose Project Modules…",
+        "icon": "$(extensions)"
+      },
+      {
+        "command": "datapass.openResource",
+        "title": "DataPass: Open Resource on its Host (Remote - SSH)…"
+      },
+      {
+        "command": "datapass.copySshCommand",
+        "title": "DataPass: Copy SSH Command for a Resource…"
       }
     ],
     "viewsContainers": {
@@ -317,6 +330,16 @@
           "command": "datapass.mongoku.importContext",
           "when": "view == datapass.work",
           "group": "7_companions@2"
+        },
+        {
+          "command": "datapass.chooseModules",
+          "when": "view == datapass.work",
+          "group": "5_project@0"
+        },
+        {
+          "command": "datapass.openResource",
+          "when": "view == datapass.work",
+          "group": "5_project@4"
         }
       ],
       "view/item/context": [

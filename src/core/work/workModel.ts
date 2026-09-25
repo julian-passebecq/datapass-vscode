@@ -16,6 +16,7 @@ import type { ToolObservation } from "../capabilities/tools";
 import { analyzeImpact, type ImpactEntry } from "../impact/facets";
 import { buildProgramme, type ProgrammeView } from "../programme/programme";
 import type { RemoteObservation } from "../workspace/gitBase";
+import { disabledProviders, moduleOfProvider } from "../modules";
 
 export const CHECKLIST_STATES = ["todo", "done", "blocked", "problem", "skipped"] as const;
 export type ChecklistState = typeof CHECKLIST_STATES[number];
@@ -100,10 +101,11 @@ export function relevantProviders(m: DataPassProjectManifest | undefined, graph:
   if (p.databricks || m?.repositories?.databricks) out.add("databricks");
   if (p.powerbi) out.add("powerbi");
   if (p.grafana) out.add("grafana");
-  if (p.infrastructure || p.oracle) out.add("infrastructure");
+  if (p.infrastructure || p.oracle || m?.resources?.length) out.add("infrastructure");
   if (p.airflow) out.add("airflow");
   if (m?.apps?.length) out.add("apps");
   if (graph?.items.length) out.add("diagram");
+  for (const off of disabledProviders(m)) out.delete(off);
   return out;
 }
 
@@ -130,10 +132,12 @@ export function buildWorkModel(input: WorkModelInput): WorkModel {
   let caps: CapabilityRecord[];
   if (refs.size) {
     caps = [];
+    const off = disabledProviders(m);
     for (const r of refs) {
       const cap = CAPABILITY_INDEX.get(r);
-      if (cap) caps.push(cap);
-      else problems.push(`Scope "${scope.id}" references unknown capability "${r}".`);
+      if (!cap) problems.push(`Scope "${scope.id}" references unknown capability "${r}".`);
+      else if (off.has(cap.provider)) problems.push(`Scope "${scope.id}" uses "${r}", but the ${moduleOfProvider(cap.provider)?.label ?? cap.provider} module is switched off for this project.`);
+      else caps.push(cap);
     }
   } else {
     const providers = relevantProviders(m, input.graph);

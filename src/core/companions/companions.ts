@@ -10,6 +10,7 @@
 import { baseOf, hostLabel, safeAppUrl } from "../model/safeUrl";
 import { vetRelativePath } from "../exchange/pathSafety";
 import type { DataPassProjectManifest } from "../projectManifestModel";
+import { moduleEnabled } from "../modules";
 
 /** Mongoku entity IDs are Mongo-side identifiers (e.g. `foil_it_dev`), not DataPass ids. */
 export const PORTABLE_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
@@ -50,7 +51,7 @@ const appliesTo = (scopes: readonly string[] | undefined, scopeId: string) => !s
 /** The Mongoku entity the selected scope maps to: scope override first, then the project entity. */
 export function mongokuEntityFor(manifest: DataPassProjectManifest | undefined, scopeId: string): { entityId: string; source: "scope" | "project" } | undefined {
   const mongoku = manifest?.companions?.mongoku;
-  if (!mongoku) return undefined;
+  if (!mongoku || !moduleEnabled(manifest, "mongoku")) return undefined;
   const scoped = mongoku.scopeEntities?.[scopeId];
   if (scoped) return { entityId: scoped, source: "scope" };
   return mongoku.entityId ? { entityId: mongoku.entityId, source: "project" } : undefined;
@@ -81,7 +82,7 @@ export function mongokuBaseFrom(pageUrl: unknown): string | undefined {
 export function resolveCompanions(input: CompanionInput): ResolvedCompanions {
   const out: ResolvedCompanions = {};
   const grafana = input.manifest?.platforms?.grafana;
-  const grafanaUrl = safeAppUrl(grafana?.url);
+  const grafanaUrl = moduleEnabled(input.manifest, "grafana") ? safeAppUrl(grafana?.url) : undefined;
   if (grafanaUrl) {
     const base = baseOf(grafanaUrl);
     const links: CompanionLink[] = [
@@ -118,7 +119,7 @@ export function companionLinks(resolved: ResolvedCompanions): CompanionLink[] {
  */
 export function scopesForEntity(manifest: DataPassProjectManifest | undefined, entityId: string): Array<{ id: string; title: string }> {
   const mongoku = manifest?.companions?.mongoku;
-  if (!manifest || !mongoku || !PORTABLE_ID.test(entityId)) return [];
+  if (!manifest || !mongoku || !moduleEnabled(manifest, "mongoku") || !PORTABLE_ID.test(entityId)) return [];
   const title = (id: string) => id === WHOLE_PROJECT ? `${manifest.project.title} (whole project)` : manifest.scopes?.find(s => s.id === id)?.title;
   const ids = new Set<string>();
   if (mongoku.entityId === entityId) ids.add(WHOLE_PROJECT);
