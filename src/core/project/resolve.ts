@@ -14,25 +14,20 @@ import { PHASES, type Phase } from "../capabilities/registry";
 import { defaultProfileFor, guessRole, pathKind, PROFILE_INDEX, requiredPhases, type ArtifactProfile, type FileRole } from "./profiles";
 import { vetRelativePath } from "../exchange/pathSafety";
 import { sha256Bytes } from "../model/ids";
+import { remoteIdentity, repositoryName } from "./gitHosts";
 
 /** Key of the repository holding the manifest when the manifest does not declare it. */
 export const COORDINATION_KEY = ".";
 
 // ------------------------------------------------------------------ remotes
 
-/** host/owner/repo, lowercased, without protocol, credentials or .git: the identity of a Git remote. */
+/**
+ * host/owner/repo, lowercased, without protocol, credentials or .git: the identity of a Git remote.
+ * The https and ssh forms of one Azure DevOps repository (and its legacy visualstudio.com forms)
+ * have the same identity (see gitHosts.ts).
+ */
 export function normalizeRemote(url: string | undefined): string | undefined {
-  if (!url) return undefined;
-  let u = url.trim();
-  const scp = /^[A-Za-z0-9._-]+@([A-Za-z0-9.-]+):(.+)$/.exec(u);
-  if (scp) u = `${scp[1]}/${scp[2]}`;
-  else {
-    const m = /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?([^/:]+)(?::\d+)?\/(.+)$/i.exec(u);
-    if (!m) return undefined;
-    u = `${m[1]}/${m[2]}`;
-  }
-  u = u.replace(/\/+$/, "").replace(/\.git$/i, "").replace(/\/+$/, "");
-  return /^[a-z0-9.-]+\/[^\s]+$/i.test(u) ? u.toLowerCase() : undefined;
+  return remoteIdentity(url);
 }
 
 export function sameRemote(a: string | undefined, b: string | undefined): boolean {
@@ -40,10 +35,29 @@ export function sameRemote(a: string | undefined, b: string | undefined): boolea
   return Boolean(x && y && x === y);
 }
 
-/** "owner/repo" or the last path segment: the folder name a clone usually gets. */
+/** The repository's name (last path segment, original case): the folder name a clone usually gets. */
 export function repoNameFromRemote(url: string | undefined): string | undefined {
-  const n = normalizeRemote(url);
-  return n ? n.split("/").pop() : undefined;
+  return repositoryName(url);
+}
+
+/**
+ * Matcher for the last segment of a profile path: `*` (any characters but "/"), `?` (one) and
+ * `{a,b}` (one of the alternatives, e.g. `*.{yml,yaml}`). Case-insensitive on Windows.
+ */
+export function globMatcher(pattern: string, caseInsensitive = process.platform === "win32"): RegExp {
+  let re = "";
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i]!;
+    if (c === "*") re += "[^/]*";
+    else if (c === "?") re += "[^/]";
+    else if (c === "{") {
+      const close = pattern.indexOf("}", i);
+      if (close < 0) { re += "\\{"; continue; }
+      re += `(?:${pattern.slice(i + 1, close).split(",").map(a => a.replace(/[.+^${}()|[\]\\*?]/g, "\\$&")).join("|")})`;
+      i = close;
+    } else re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}$`, caseInsensitive ? "i" : "");
 }
 
 // ------------------------------------------------------------------ repositories

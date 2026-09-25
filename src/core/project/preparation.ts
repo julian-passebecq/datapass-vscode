@@ -15,6 +15,7 @@ import type { RepoView } from "./resolve";
 import { readinessContextLines, type Readiness } from "../readiness/readiness";
 import { sheetFor, volumeLine, type ComponentSheet, type ProjectSheet } from "./sheet";
 import { concernedItems, type OptionsFile } from "./options";
+import { doneColumns, TYPE_LABELS, type Board } from "./board";
 
 export const PACK_QUESTIONS = {
   explain: {
@@ -53,6 +54,8 @@ export interface PackInput {
   /** 0.15: what the project sheet declares, and the architecture decisions (optional files). */
   sheet?: ProjectSheet;
   options?: OptionsFile;
+  /** 0.16: open cards of the board that concern these components or this sub-project. */
+  board?: Board;
 }
 
 export interface PackExport {
@@ -63,9 +66,9 @@ export interface PackExport {
   truncated: boolean;
 }
 
-const OMITTED = ["absolute local paths", "file contents", "credentials, tokens and connection strings", "notebook outputs and data", "user names"];
+export const OMITTED = ["absolute local paths", "file contents", "credentials, tokens and connection strings", "notebook outputs and data", "user names"];
 
-function repoLine(r: RepoView, revisions?: Record<string, string>): string {
+export function repoLine(r: RepoView, revisions?: Record<string, string>): string {
   const where = r.remote ?? (r.coordination ? "this repository" : "no remote declared");
   const rev = revisions?.[r.key];
   return `- \`${r.key}\` — ${r.label} (${where}): ${r.state === "local" ? `cloned here${rev ? `, ${rev}` : ""}` : r.detail}${r.description ? ` — ${r.description}` : ""}`;
@@ -83,7 +86,7 @@ function opLine(o: OperationView): string[] {
   return lines;
 }
 
-function componentSection(c: ComponentView, map: ProjectMap): string[] {
+export function componentSection(c: ComponentView, map: ProjectMap): string[] {
   const lines: string[] = [];
   const label = (id: string) => map.components.find(x => x.id === id)?.label ?? id;
   lines.push(`- Service: ${c.provider?.label ?? c.providerId ?? c.kind}${c.provider?.about ? ` — ${c.provider.about}` : ""}`);
@@ -135,7 +138,7 @@ function subprojectSection(s: SubprojectView, map: ProjectMap): string[] {
 const tick = (s: string) => "`" + s + "`";
 
 /** The project sheet's declarations for these components (datasets, formulas, runtimes), deduplicated. */
-function sheetLines(sheet: ProjectSheet | undefined, componentIds: readonly string[], map: ProjectMap): string[] {
+export function sheetLines(sheet: ProjectSheet | undefined, componentIds: readonly string[], map: ProjectMap): string[] {
   if (!sheet) return [];
   const merged: ComponentSheet = { datasets: [], formulas: [], runtimes: [] };
   const push = <T extends { id: string }>(list: T[], items: T[]) => { for (const x of items) if (!list.some(y => y.id === x.id)) list.push(x); };
@@ -160,7 +163,18 @@ function sheetLines(sheet: ProjectSheet | undefined, componentIds: readonly stri
 }
 
 /** Architecture decisions of options.json that concern these components or this sub-project. */
-function decisionLines(options: OptionsFile | undefined, componentIds: readonly string[], subprojectId: string | undefined): string[] {
+/** Open cards of the board that name these components or this sub-project (the board's own words). */
+export function boardLines(board: Board | undefined, componentIds: readonly string[], subprojectId: string | undefined): string[] {
+  if (!board) return [];
+  const done = doneColumns(board);
+  const title = (id: string) => board.columns.find(c => c.id === id)?.title ?? id;
+  return board.items
+    .filter(it => !done.has(it.status) && ((subprojectId && it.subproject === subprojectId) || (it.components ?? []).some(c => componentIds.includes(c))))
+    .slice(0, 15)
+    .map(it => `- ${TYPE_LABELS[it.type]} \`${it.id}\`: ${it.title} — ${title(it.status)}${it.priority ? `, ${it.priority}` : ""}${it.environment ? `, ${it.environment}` : ""}`);
+}
+
+export function decisionLines(options: OptionsFile | undefined, componentIds: readonly string[], subprojectId: string | undefined): string[] {
   if (!options) return [];
   return options.decisions.filter(d => (subprojectId && d.subproject === subprojectId) || concernedItems(d).some(id => componentIds.includes(id))).slice(0, 10).map(d => {
     const cur = d.options.find(o => o.id === d.current)?.label ?? d.current;
@@ -208,6 +222,8 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
   if (facts.length) { h("Project sheet (what the project declares)"); lines.push(...facts); }
   const decisions = decisionLines(input.options, focusIds, comp ? undefined : sub?.id);
   if (decisions.length) { h("Architecture decisions (options.json)"); lines.push(...decisions, "- Build for the current option unless I say otherwise; a decided option is applied in its own pull request."); }
+  const cards = boardLines(input.board, focusIds, comp ? undefined : sub?.id);
+  if (cards.length) { h("Open cards on the board (board.json)"); lines.push(...cards); }
   const relevant = map.problems.filter(p => !comp || p.where.endsWith(`.${comp.id}`) || p.severity === "error").slice(0, 10);
   if (relevant.length) { h("Problems DataPass found in the project files"); for (const p of relevant) lines.push(`- ${p.severity}: ${p.where} — ${p.message}`); }
 

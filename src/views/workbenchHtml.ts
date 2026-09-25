@@ -221,6 +221,45 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   code.formula.block { display: block; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); }
   .sheetbits, .optbits { display: grid; gap: 2px; }
 
+  /* 0.16: board (kanban) */
+  .shell.board { grid-template-columns: 190px minmax(420px, 1fr) 280px; }
+  /* With the side bars open the tab is narrow: the card panel goes under the kanban so the five columns fit. */
+  @media (max-width: 1300px) { .shell.board { grid-template-columns: 190px minmax(320px, 1fr); } .shell.board .side { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--border); } }
+  @media (max-width: 720px) { .shell.board { display: block; } }
+  .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 8px; overflow-x: auto; padding: 8px 0 10px; align-items: start; }
+  .kcol { border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 8px; display: grid; gap: 6px; align-content: start; min-height: 140px; }
+  .kcol.done { opacity: .9; }
+  .kcol.drop { outline: 2px dashed var(--vscode-focusBorder); outline-offset: -3px; }
+  .kcolhead { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+  .vbadge.over { background: var(--bad); color: var(--vscode-editor-background); }
+  .kcards { display: grid; gap: 6px; }
+  .kempty { padding: 8px 2px; }
+  .kcard { display: grid; gap: 3px; border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 6px; padding: 6px 8px; background: var(--vscode-editor-background); cursor: grab; }
+  .kcard:hover { border-color: var(--vscode-focusBorder); }
+  .kcard:focus-visible, .chipbtn:focus-visible, .sprintcard:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
+  .kcard.active { outline: 2px solid var(--vscode-focusBorder); outline-offset: 0; }
+  .kcard.t-bug { border-left-color: var(--bad); } .kcard.t-feature { border-left-color: var(--info); } .kcard.t-decision { border-left-color: var(--warn); }
+  .kcard.t-question { border-left-color: var(--vscode-charts-purple, #b180d7); }
+  .kcard.isdone .kcardtitle { color: var(--muted); text-decoration: line-through; }
+  .kcardtop, .kcardmeta { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+  .kcardtitle { font-weight: 600; font-size: 12.5px; line-height: 1.3; overflow-wrap: anywhere; }
+  .kchips { display: flex; flex-wrap: wrap; gap: 2px; }
+  .chip.warn { color: var(--warn); border-color: var(--warn); }
+  .filters { display: grid; gap: 8px; }
+  .filters label { display: grid; gap: 2px; font-size: 11.5px; color: var(--muted); }
+  .filters .sel { max-width: 100%; }
+  .chipbtn { border: 1px solid var(--border); background: transparent; border-radius: 999px; padding: 1px 9px; cursor: pointer; font-size: 11.5px; }
+  .chipbtn.on { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); border-color: transparent; }
+  .sprintcard { display: grid; gap: 2px; width: 100%; text-align: left; border: 1px solid var(--border); border-left: 4px solid var(--muted); border-radius: 6px; padding: 6px 8px; margin: 4px 0; background: var(--card); cursor: pointer; font-size: 12px; }
+  .sprintcard.current { border-left-color: var(--ok); }
+  .sprintcard.past { opacity: .75; }
+  .progress { height: 5px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .progress > span { display: block; height: 100%; background: var(--ok); }
+  .cardtext { white-space: pre-wrap; font-size: 12.5px; overflow-wrap: anywhere; }
+  .filerow.cardfile { grid-template-columns: minmax(0, 1fr) auto; }
+  .filerow.cardfile code { overflow-wrap: anywhere; }
+  .repoline { display: block; }
+
   /* map (bottom panel) */
   .map { padding: 6px 10px; display: grid; gap: 6px; }
   .map .diagram { margin: 0; }

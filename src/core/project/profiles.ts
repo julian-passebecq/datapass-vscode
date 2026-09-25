@@ -11,6 +11,7 @@
  *   "pipeline/"          a folder that contains at least one file
  *   ".foil-lab/build/**" same as a folder: at least one file somewhere below
  *   "*.sql", "db/*.sql"  at least one matching file in that folder (not recursive)
+ *   "*.{yml,yaml}"       one of several endings
  */
 import type { Phase } from "../capabilities/registry";
 import type { ComponentProvider } from "./providers";
@@ -159,6 +160,24 @@ export const PROFILES: readonly ArtifactProfile[] = [
   { id: "airflow.dags", label: "Airflow DAG folder", provider: "airflow",
     about: "DAG files. DataPass never imports them.",
     files: [{ path: "*.py", role: "code", requiredFor: ["read"], about: "DAG definitions." }], operations: ["generic.files.open"] },
+  // 0.16: CI/CD definitions. They run on the Git host when you push or open a pull request; DataPass never starts a run.
+  { id: "github-actions", label: "GitHub Actions workflows", provider: "github-actions",
+    about: "Workflow files in .github/workflows run on GitHub when you push or open a pull request. The GitHub Actions extension validates them as you edit and lists the runs.",
+    files: [{ path: ".github/workflows/*.{yml,yaml}", role: "config", requiredFor: ["read", "validate", "run"], about: "One YAML file per workflow." }],
+    operations: ["generic.files.open", "ci.github-actions.runs"],
+    docs: "https://docs.github.com/actions" },
+  { id: "azure-pipelines", label: "Azure Pipelines (YAML)", provider: "azure-pipelines",
+    about: "azure-pipelines.yml describes the pipeline Azure DevOps runs on push or pull request. The Azure Pipelines extension adds validation and completion; the runs are in the Azure DevOps portal.",
+    entry: "azure-pipelines.yml",
+    files: [{ path: "azure-pipelines.yml", role: "entry", about: "Pipeline definition (stages, jobs, steps)." }],
+    operations: ["generic.files.open", "ci.azure-pipelines.runs"],
+    docs: "https://learn.microsoft.com/azure/devops/pipelines/" },
+  { id: "gitlab-ci", label: "GitLab CI/CD", provider: "gitlab-ci",
+    about: ".gitlab-ci.yml describes the pipeline GitLab runs on push or merge request. The pipelines are on GitLab; the GitLab Workflow extension brings GitLab into VS Code.",
+    entry: ".gitlab-ci.yml",
+    files: [{ path: ".gitlab-ci.yml", role: "entry", about: "Pipeline definition (stages and jobs)." }],
+    operations: ["generic.files.open", "ci.gitlab.pipelines"],
+    docs: "https://docs.gitlab.com/ci/" },
   { id: "generic", label: "Files", provider: "other",
     about: "Files without a known convention.", files: [], operations: ["generic.files.open"] }
 ];
@@ -171,7 +190,8 @@ export function defaultProfileFor(provider: string | undefined): ArtifactProfile
   const byProvider: Record<string, string> = {
     "azure-functions": "azure-functions.python", "azure-data-factory": "adf.factory", "azure-storage": "azure-storage.container",
     "cosmos-nosql": "cosmos-nosql.container", "mongodb-atlas": "mongodb.database", postgres: "postgres.migrations", neon: "postgres.migrations",
-    databricks: "databricks.bundle", python: "python.script", jupyter: "jupyter.notebook", terraform: "terraform", bicep: "bicep", powerbi: "powerbi.pbip", airflow: "airflow.dags"
+    databricks: "databricks.bundle", python: "python.script", jupyter: "jupyter.notebook", terraform: "terraform", bicep: "bicep", powerbi: "powerbi.pbip", airflow: "airflow.dags",
+    "github-actions": "github-actions", "azure-pipelines": "azure-pipelines", "gitlab-ci": "gitlab-ci"
   };
   return PROFILE_INDEX.get(byProvider[provider ?? ""] ?? "generic")!;
 }

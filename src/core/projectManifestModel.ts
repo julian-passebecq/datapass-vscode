@@ -5,6 +5,7 @@ import { validateResources, type BindingDecl, type ResourceDecl } from "./resour
 import { unknownFields } from "./contracts/schemaKeys";
 import { vetRelativePath } from "./exchange/pathSafety";
 import { validateReadinessSections, type IdentifierDecl, type LocalEnvDecl } from "./readiness/readiness";
+import { AZURE_HTTPS_WITH_ORG, AZURE_LEGACY_SSH } from "./project/gitHosts";
 import manifestSchema from "../../schemas/datapass-project.schema.json";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
@@ -209,7 +210,7 @@ export function validateProjectManifest(raw: unknown): string[] {
           if (repo.remote !== undefined) {
             const remote = repo.remote as Record<string, unknown> | null;
             if (!remote || typeof remote !== "object" || typeof remote.url !== "string" || !isRemoteUrl(remote.url)) {
-              issues.push(`repositories.${key}.remote.url must be an https:// or git@host:path URL without credentials.`);
+              issues.push(`repositories.${key}.remote.url must be an https:// or git@host:path URL without credentials (Azure DevOps: https://<organization>@dev.azure.com/<organization>/… is accepted).`);
             }
             if (remote && remote.branch !== undefined && (typeof remote.branch !== "string" || !/^[A-Za-z0-9._/-]{1,200}$/.test(remote.branch) || remote.branch.includes(".."))) {
               issues.push(`repositories.${key}.remote.branch is not a valid branch name.`);
@@ -283,9 +284,16 @@ export function validateProjectManifest(raw: unknown): string[] {
 
 const ID_RE = /^[a-z][a-z0-9_.-]{0,79}$/;
 
+/**
+ * https (no user:pass@) or git@host:path. The one user name accepted is Azure DevOps' own: the
+ * organization, in the address its Clone button copies (https://{org}@dev.azure.com/{org}/…) and in
+ * its legacy SSH address. Kept in step with the remote.url pattern of datapass-project.schema.json.
+ */
 export function isRemoteUrl(url: string): boolean {
-  if (/^https:\/\/[^\s@/]+\/[^\s]+$/i.test(url)) return true;           // no user:pass@ in https URLs
-  return /^git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+$/.test(url);
+  if (/^https:\/\/[^\s@/]+\/[^\s]+$/i.test(url)) return true;
+  if (AZURE_HTTPS_WITH_ORG.test(url)) return true;
+  if (/^git@[A-Za-z0-9.-]+:[A-Za-z0-9._%/-]+$/.test(url)) return true;
+  return AZURE_LEGACY_SSH.test(url);
 }
 
 function validateV2Sections(doc: Record<string, unknown>): string[] {
@@ -422,6 +430,13 @@ export function migrateManifestToV2(v1: DataPassProjectManifest): DataPassProjec
   return next;
 }
 
+/**
+ * Modules of a manifest DataPass creates (0.16). Mongoku is frozen: it reads the project's files
+ * (board.json, project.json) from GitHub and has no link with DataPass, so a new project starts
+ * with its module off. Existing manifests keep their behaviour (an unlisted module stays on).
+ */
+export const NEW_MANIFEST_MODULES: ModuleSwitches = { mongoku: false };
+
 export function genericProjectManifest(folderName = "data-project"): DataPassProjectManifest {
   return {
     schemaVersion: 1,
@@ -429,6 +444,7 @@ export function genericProjectManifest(folderName = "data-project"): DataPassPro
       id: slug(folderName),
       title: folderName
     },
+    modules: { ...NEW_MANIFEST_MODULES },
     repositories: {},
     platforms: {},
     links: []
@@ -444,6 +460,7 @@ export function foilProjectManifest(): DataPassProjectManifest {
       profile: "foil",
       description: "Foil'O renewable-energy engineering/data project profile."
     },
+    modules: { ...NEW_MANIFEST_MODULES },
     repositories: {
       control: { path: "../foil-control-v1", label: "FOIL control" },
       databricks: { path: "../foil_databrick_dab", label: "FOIL Databricks" }

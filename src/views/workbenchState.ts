@@ -12,6 +12,11 @@ import type { LayoutEdgeInput } from "../core/project/layout";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
 import type { ArchitectureImpact, CriterionValue, DerivedArchitecture, OptionsAnalysis, OptionsFile } from "../core/project/options";
 import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../core/project/sheet";
+import type { BoardView } from "../core/project/board";
+import { gitHostOf, repositoryWebLinks, type WebLinkId } from "../core/project/gitHosts";
+
+/** 0.16: the board as the kanban shows it (built by the session; plain data). */
+export type WbBoard = BoardView;
 
 /** The previewed architecture as the session computed it. */
 export interface PreviewInput { key: string; title: string; impact: ArchitectureImpact; derived: DerivedArchitecture; map: ProjectMap }
@@ -39,6 +44,9 @@ export interface WbComponent {
 export interface WbRepository {
   key: string; label: string; state: string; coordination: boolean; remote?: string; branch?: string; folderName?: string; detail: string; nextStep?: string;
   behind?: number; ahead?: number; changes?: number; lastFetch?: string; usedBy: string[]; description?: string;
+  /** 0.16: the Git host (GitHub, Azure DevOps, GitLab) and the pages DataPass can open (the extension rebuilds each URL). */
+  host?: string;
+  links: Array<{ id: WebLinkId; label: string }>;
 }
 export interface WbSubproject {
   id: string; title: string; objective?: string; implicit: boolean; health: string; nextStep: string; repoKey?: string;
@@ -87,6 +95,9 @@ export interface WorkbenchState {
   sheetError?: string;
   /** 0.15: the architecture previewed on the diagram. */
   preview?: WbPreview;
+  /** 0.16: the project board (absent without .datapass/board.json). */
+  board?: WbBoard;
+  boardError?: string;
 }
 
 
@@ -206,6 +217,8 @@ export interface StateInput {
   sheet?: ProjectSheet;
   sheetError?: string;
   preview?: PreviewInput;
+  board?: BoardView;
+  boardError?: string;
 }
 
 function impact(i: ArchitectureImpact): WbImpact {
@@ -287,10 +300,15 @@ export function workbenchState(input: StateInput): WorkbenchState {
     trusted: input.trusted, observedAt: input.observedAt, multipleProjectFolders: input.multipleProjectFolders,
     project: map.project, summary: map.project ? map.summary : undefined, nextStep: map.nextStep,
     environments: map.environments.map(e => ({ id: e.id, title: e.title, production: e.production })),
-    repositories: map.repositories.map(r => ({
-      key: r.key, label: r.label, state: r.state, coordination: r.coordination, remote: r.remote, branch: r.branch, folderName: r.folderName, detail: r.detail, nextStep: r.nextStep,
-      behind: r.git?.behind, ahead: r.git?.ahead, changes: r.git?.changes, lastFetch: r.git?.lastFetch, usedBy: r.usedBy, description: r.description
-    })),
+    repositories: map.repositories.map(r => {
+      // A planned repository does not exist yet: it has no pages to open.
+      const url = r.state === "planned" ? undefined : r.remoteUrl ?? r.git?.originUrl;
+      return {
+        key: r.key, label: r.label, state: r.state, coordination: r.coordination, remote: r.remote, branch: r.branch, folderName: r.folderName, detail: r.detail, nextStep: r.nextStep,
+        behind: r.git?.behind, ahead: r.git?.ahead, changes: r.git?.changes, lastFetch: r.git?.lastFetch, usedBy: r.usedBy, description: r.description,
+        host: gitHostOf(url)?.label, links: repositoryWebLinks(url).map(l => ({ id: l.id, label: l.label }))
+      };
+    }),
     subprojects: map.subprojects.map(s => ({
       id: s.id, title: s.title, objective: s.objective, implicit: s.implicit, health: s.health, nextStep: s.nextStep, repoKey: s.repoKey, summary: s.summary,
       needs: { repositories: s.needs.repositories.map(r => ({ key: r.key, label: r.label, state: r.state, nextStep: r.nextStep })), tools: s.needs.tools.map(t => ({ label: t.label, extensionIds: t.extensionIds, neededFor: t.neededFor })), missingFiles: s.needs.missingFiles, generationNeeded: s.needs.generationNeeded },
@@ -306,6 +324,8 @@ export function workbenchState(input: StateInput): WorkbenchState {
     optionsError: input.optionsError,
     sheet: input.sheet ? { summary: input.sheet.summary, asOf: input.sheet.asOf, datasets: input.sheet.datasets ?? [], formulas: input.sheet.formulas ?? [], runtimes: input.sheet.runtimes ?? [], glossary: input.sheet.glossary ?? [] } : undefined,
     sheetError: input.sheetError,
-    preview: input.preview && input.preview.derived.picks.some(p => p.changed) ? previewState(input.preview, map, input.selection) : undefined
+    preview: input.preview && input.preview.derived.picks.some(p => p.changed) ? previewState(input.preview, map, input.selection) : undefined,
+    board: input.board,
+    boardError: input.boardError
   };
 }

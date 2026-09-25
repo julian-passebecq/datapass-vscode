@@ -12,7 +12,7 @@ import * as path from "node:path";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import type { GraphItem, ProjectGraph } from "../core/workspace/graph";
 import { componentRepositories } from "../core/project/projectMap";
-import { artifactPlan, COORDINATION_KEY, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type RepoObservation } from "../core/project/resolve";
+import { artifactPlan, COORDINATION_KEY, globMatcher, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type RepoObservation } from "../core/project/resolve";
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { sha256Bytes } from "../core/model/ids";
 import type { GitRunner } from "../core/workspace/gitBase";
@@ -39,6 +39,8 @@ export interface ObserveOptions {
   cloneParents: readonly string[];
   /** 0.15: components of architecture alternatives, observed too (their files may already exist). */
   extraItems?: ReadonlyArray<{ item: GraphItem; repoKey: string }>;
+  /** 0.16: files the board's cards name (repository-relative, vetted by the caller). */
+  extraFiles?: ReadonlyArray<{ repoKey: string; repoPath: string }>;
 }
 
 const MAX_HASH_BYTES = 2 * 1024 * 1024;
@@ -118,7 +120,15 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
 
   // Expected files of every component, in the repository that holds them.
   const files = new Map<string, FileObservation>();
-  const plan = artifactPlan([...componentRepositories(o.manifest, o.graph, coordinationKey), ...(o.extraItems ?? [])]).slice(0, MAX_PLAN);
+  const plan = artifactPlan([...componentRepositories(o.manifest, o.graph, coordinationKey), ...(o.extraItems ?? [])]);
+  const planned = new Set(plan.map(e => obsKey(e.repoKey, e.repoPath)));
+  for (const f of o.extraFiles ?? []) {
+    const repoPath = f.repoPath.replace(/\/+$/, "");
+    if (!repoPath || planned.has(obsKey(f.repoKey, repoPath))) continue;
+    planned.add(obsKey(f.repoKey, repoPath));
+    plan.push({ repoKey: f.repoKey, repoPath, kind: f.repoPath.endsWith("/") ? "dir" : "file", hash: false, tracked: false });
+  }
+  plan.splice(MAX_PLAN);
   const tracked = new Map<string, string[]>();
   await Promise.all(plan.map(async entry => {
     const base = folders.get(entry.repoKey);
@@ -140,18 +150,13 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
   return { coordinationKey, repos, files, folders, observedAt: new Date().toISOString() };
 }
 
-function wildcard(pattern: string): RegExp {
-  const esc = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^/]*").replace(/\?/g, "[^/]");
-  return new RegExp(`^${esc}$`, process.platform === "win32" ? "i" : "");
-}
-
 async function observeEntry(base: vscode.Uri, repoPath: string, kind: "file" | "dir" | "glob", hash: boolean): Promise<FileObservation> {
   const segs = repoPath.split("/").filter(Boolean);
   if (kind === "glob") {
     const pattern = segs.pop() ?? "*";
     const dir = segs.length ? vscode.Uri.joinPath(base, ...segs) : base;
     try {
-      const re = wildcard(pattern);
+      const re = globMatcher(pattern);
       const count = (await vscode.workspace.fs.readDirectory(dir)).filter(([n, t]) => t & vscode.FileType.File && re.test(n)).length;
       return count ? { state: "found", count } : { state: "missing" };
     } catch (e) {

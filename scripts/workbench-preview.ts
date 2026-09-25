@@ -13,6 +13,8 @@ import { workbenchState } from "../src/views/workbenchState";
 import { workbenchHtml, type WorkbenchMode } from "../src/views/workbenchHtml";
 import { fileObsA, inputA } from "../tests/fixtures/v3/research";
 import { optionsA, sheetA } from "../tests/fixtures/v3/researchOptions";
+import { boardA } from "../tests/fixtures/v3/researchBoard";
+import { boardView } from "../src/core/project/board";
 import { TOOLS, type ToolObservation } from "../src/core/capabilities/tools";
 
 const light = process.argv.includes("--light");
@@ -24,6 +26,7 @@ const map = buildProjectMap(input);
 const options = optionsA();
 const analysis = analyzeOptions({ base: input, options, baseMap: map });
 const google = { key: "scenario:google", title: "Archi 2 — Google for documents", ...evaluatePicks({ base: input, options, baseMap: map }, scenarioPicks(options, "google")!, "scenario:google") };
+const board = boardView(boardA(), { map, files: fileObsA(), options, today: "2026-09-25" });
 
 const THEME_DARK = `--vscode-foreground:#cccccc;--vscode-descriptionForeground:#9d9d9d;--vscode-editor-background:#1f1f1f;--vscode-sideBar-background:#181818;--vscode-panel-background:#181818;
 --vscode-widget-border:#3c3c3c;--vscode-editorWidget-background:#252526;--vscode-button-background:#0078d4;--vscode-button-foreground:#ffffff;--vscode-button-hoverBackground:#026ec1;
@@ -49,6 +52,8 @@ const pages: Page[] = [
   { name: "options", mode: "full", selection: { subproject: "papers" }, ui: { view: "options", optFocus: "processing", optOption: "bigquery" } },
   { name: "scenarios", mode: "full", selection: { subproject: "papers" }, ui: { view: "options", optFocus: "scenarios" }, preview: true },
   { name: "sheet", mode: "full", selection: {}, ui: { view: "sheet", sheetSection: "datasets", sheetFocus: "pages" } },
+  { name: "board", mode: "full", selection: {}, ui: { view: "board", boardFocus: "bug-3" } },
+  { name: "board-filtered", mode: "full", selection: {}, ui: { view: "board", boardSub: "papers", boardTypes: ["bug", "task"], boardFocus: "task-review-guide" } },
   { name: "map", mode: "map", selection: { subproject: "papers", component: "extract" } },
   { name: "map-vertical", mode: "map", selection: { subproject: "papers" }, ui: { dir: "TB", groupBy: "level" }, preview: true },
   { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } }
@@ -56,7 +61,7 @@ const pages: Page[] = [
 for (const p of pages) {
   const state = workbenchState({
     map, selection: p.selection, version: "preview", hasRoot: true, hasManifest: true, manifestErrors: [], trusted: true, observedAt: T, multipleProjectFolders: false,
-    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined
+    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board
   });
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.

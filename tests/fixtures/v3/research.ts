@@ -14,6 +14,8 @@ export function manifestA(): DataPassProjectManifest {
   return {
     schemaVersion: 3,
     project: { id: "research-library", title: "Research library", description: "Find answers in papers, cite the PDF and page." },
+    // As a new project would be prepared since 0.16: Mongoku reads this project's files from GitHub.
+    modules: { mongoku: false },
     repositories: {
       pipeline: { label: "Document pipeline", remote: { url: "https://github.com/example-org/research-pipeline", branch: "main" }, description: "ADF, Functions, Cosmos and Mongo definitions" },
       lab: { label: "Simulation lab", remote: { url: "git@github.com:example-org/research-lab.git" } },

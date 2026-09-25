@@ -131,7 +131,7 @@ export function registerOptionsFlows(getApi: () => DataPassTestApi): void {
     await run("datapass.showAiExchange", "options");
     assert.ok(view.resolved(), "the view is shown in the secondary side bar");
     const s = await view.state();
-    assert.deepEqual(s.files.map(f => f.kind), ["options", "sheet", "graph", "manifest", "catalog"]);
+    assert.deepEqual(s.files.map(f => f.kind), ["options", "sheet", "board", "graph", "manifest", "catalog"]);
     assert.ok(s.files.find(f => f.kind === "options")!.bytes! > 1000);
     assert.equal(s.files.find(f => f.kind === "catalog")!.exists, false);
     assert.ok(!JSON.stringify(s).includes(hub()) && !JSON.stringify(s).includes(os.homedir()), "no local path reaches the webview");

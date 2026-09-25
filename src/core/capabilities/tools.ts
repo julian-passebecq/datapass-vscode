@@ -66,7 +66,18 @@ export const TOOLS: ToolDefinition[] = [
     note: "Docker Desktop is free for personal use and small businesses; larger companies need a paid subscription." },
   { id: "ext.gcloud-data", label: "Google Cloud Data Agent Kit", kind: "extension", extensionIds: ["GoogleCloudTools.datacloud"], publisher: "vendor",
     note: "Browse BigQuery schemas and Cloud Storage files, query, build pipelines. Verified on the Marketplace on 2026-09-25." },
-  { id: "cli.gcloud", label: "Google Cloud CLI (gcloud)", kind: "cli", cli: { command: "gcloud", args: ["--version"] }, publisher: "vendor" }
+  { id: "cli.gcloud", label: "Google Cloud CLI (gcloud)", kind: "cli", cli: { command: "gcloud", args: ["--version"] }, publisher: "vendor" },
+  // 0.16: Git hosts and CI. IDs and view containers read from each extension's package.json on 2026-09-25.
+  { id: "ext.github-actions", label: "GitHub Actions", kind: "extension", extensionIds: ["github.vscode-github-actions"], publisher: "vendor",
+    note: "Validates workflow YAML and expressions; lists workflows and runs (view container \"github-actions\")." },
+  { id: "ext.github-prs", label: "GitHub Pull Requests", kind: "extension", extensionIds: ["GitHub.vscode-pull-request-github"], publisher: "vendor",
+    note: "Review and create pull requests and issues in VS Code (view container \"github-pull-requests\")." },
+  { id: "ext.azure-pipelines", label: "Azure Pipelines (YAML)", kind: "extension", extensionIds: ["ms-azure-devops.azure-pipelines"], publisher: "microsoft",
+    note: "Language support for azure-pipelines.yml; it has no view: runs are in the Azure DevOps portal. Microsoft's Azure Boards extension was archived in 2023: boards are on the web." },
+  { id: "ext.gitlab", label: "GitLab Workflow", kind: "extension", extensionIds: ["GitLab.gitlab-workflow"], publisher: "vendor",
+    note: "GitLab's official extension. Its manifest declares no pipeline view container, so DataPass opens pipelines on GitLab." },
+  { id: "ext.grafana", label: "Grafana (official)", kind: "extension", extensionIds: ["Grafana.grafana-vscode"], publisher: "vendor",
+    note: "Opens a dashboard JSON file in an editor connected to your Grafana (its own URL and service-account token settings; DataPass never reads them). No view container." }
 ];
 
 export const TOOL_INDEX: ReadonlyMap<string, ToolDefinition> = new Map(TOOLS.map(t => [t.id, t]));

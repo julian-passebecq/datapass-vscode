@@ -1,11 +1,11 @@
-# DataPass — global vision and readiness (2026-09-25, with 0.15.0)
+# DataPass — global vision and readiness (2026-09-25, with 0.16.0)
 
 Written after Julian's request to "have the global vision of the app", to compare architecture
 alternatives, and to check whether every step of a real project is ready (DevOps, GitHub, Grafana,
 Mongoku, DiagramCloud, windows and workspaces, AI exchange, backups, bugs). The repository wins over
-this document when they disagree. Version line: 0.14.0 (environment readiness, manifest v4) was built
-by a parallel session and merged first (PR #21); 0.15.0 (architecture options, project sheet) is this
-pass.
+this document when they disagree. Version line: 0.14.0 (environment readiness, manifest v4) and
+0.15.0 (architecture options, project sheet) are merged (PR #21, PR #22); 0.16.0 (work and DevOps:
+board, Git hosts, CI profiles, Mongoku frozen) is this pass.
 
 ## 1. What DataPass is, in one picture
 
@@ -32,7 +32,7 @@ alternative would change, and routes to the official tool; the person decides an
 
 ## 2. Julian's vocabulary and what VS Code really allows
 
-| Julian says | What VS Code allows | DataPass today (0.15) | Next |
+| Julian says | What VS Code allows | DataPass today (0.16) | Next |
 |---|---|---|---|
 | **Entreprise** (FOIL, DataPass, a client) | One **window** per workspace. A multi-root `.code-workspace` puts every repository of a company in that window. A **VS Code Profile** can give the window its own extensions and settings; `workbench.colorCustomizations` in the workspace file can colour its title bar. Opening another workspace in the same window reloads it (extensions restart). | *Switch Project* (catalogs, recent projects) opens another project in a new window. | 0.17: *Create the company workspace file* from the manifests (repositories found on this machine, relative paths, title colour). **1 window = 1 company** is the recommended mapping, as Julian suggested. |
 | **Projet / workspace** (FOIL STUDY, wind lab) | Folders of the window. | A DataPass project (coordination repository) and its **sub-projects** in the Project tree; *Select Project Folder* when a window holds several. | 0.17: switch sub-project / project from one status-bar button. |
@@ -40,7 +40,7 @@ alternative would change, and routes to the official tool; the person decides an
 | **Nouvelle fenêtre en restant dans la même** | **Floating windows** (VS Code ≥ 1.85): an editor tab — a file or the Workbench tab — moves to its own window that stays part of the same VS Code window and workspace (*Move Editor into New Window*). Side bar and panel views cannot float. | Works with the Workbench tab today (VS Code command). | 0.17: *Open the Workbench in a floating window* for a second screen. |
 | **Bouton en haut à gauche** pour changer d'entreprise | Extensions cannot add title-bar buttons. They can add **status-bar items** (bottom left) and view-title buttons. | "DataPass" status-bar item (opens Galaxy). | 0.17: "FOIL · STUDY ▾" status-bar switcher: work views, sub-projects, other companies. |
 | **Save state** reopened from **Power Ops** (PowerToy_UI) | Power Ops' Tool Launcher can run `code` with a `.code-workspace` file. `vscode://` links are routed to the last active window, not to a chosen workspace, so they are not reliable for this. | Since 0.14.0: *Open Power Ops* (secrets stay in its local vault; DataPass only checks which variable names are set) and *Copy Project ID* to find the project there. | 0.17: the workspace file carries `"datapass.startupView": "<work view>"`; DataPass applies it when the window opens. Power Ops only needs the list of workspace files (a small JSON DataPass exports) — its own task in PowerToy_UI. |
-| **Cliquer une tâche et aller au bon endroit** | Open a file in a group or a floating window, reveal a view, open a folder in a new window. | Components open their files; repositories and component folders open in a new window. | 0.16: board cards link to components, files and environments and open them the same way. |
+| **Cliquer une tâche et aller au bon endroit** | Open a file in a group or a floating window, reveal a view, open a folder in a new window. | Components open their files; repositories and component folders open in a new window; since 0.16.0, board cards link to their components, files and environments and open them the same way. | — |
 
 ## 3. A real project, with its round trips
 
@@ -85,24 +85,26 @@ alternative would change, and routes to the official tool; the person decides an
 | Project sheet (volumes, key columns, formulas, runtimes) | ✓ | sheet.json, Sheet view, Details, packs | — |
 | Diagram views | ✓ | horizontal / vertical, lanes (sub-project, repository, cloud, level), fold lanes and parents | manual reordering (only if needed) |
 | Backups | ✓ | named backups of every DataPass write, restore; Git for the rest | — |
-| GitHub repositories | ✓ | clone, locate, fetch, fast-forward | PR / Actions links and GitHub Pull Requests extension route (0.16) |
-| Azure DevOps (Azure Repos) | ◐ | Git works | an https address copied from Azure DevOps (`https://<org>@dev.azure.com/…`) is refused by the manifest check, and its https and ssh forms are not recognised as the same repository — fix and links in 0.16. Azure Pipelines YAML: official extension `ms-azure-devops.azure-pipelines` (profile in 0.16). Azure Boards: Microsoft's VS Code extension was archived in 2023 → the web portal plus the DataPass board. |
-| GitLab | ◐ | Git works | links and `GitLab.gitlab-workflow` route (0.16) |
+| GitHub repositories | ✓ | clone, locate, fetch, fast-forward; PR/Actions links and GitHub Pull Requests / GitHub Actions extension routes (0.16.0) | — |
+| Azure DevOps (Azure Repos) | ✓ | the https-with-organization address Clone copies and the SSH form are accepted and recognised as one repository identity (0.16.0); web links (repository, pull requests, pipelines, boards); Azure Pipelines YAML via the official extension `ms-azure-devops.azure-pipelines` (0.16.0 profile). Azure Boards: Microsoft's VS Code extension was archived in 2023 → the web portal, or the DataPass board for what the project itself tracks. | — |
+| GitLab | ✓ | Git works; web links (repository, merge requests, pipelines, issues); `gitlab-ci` profile (0.16.0). GitLab Workflow has no pipeline view: pipelines stay on GitLab. | — |
 | Databricks, Azure Functions, ADF, Storage, Cosmos DB, MongoDB, PostgreSQL/Neon, Fabric, Power BI | ✓ interface / ✗ accounts | operations by phase, routing, preflight | account qualification by Julian (V1 gate 16) |
 | Google Cloud (Storage, BigQuery) | ◐ | recognised; official tool named and probed (Data Agent Kit, gcloud) | no DataPass operations (only if a project adopts it) |
 | VMs | ✓ | `vm` provider: Remote - SSH from the graph's `sshHost`; Work-view SSH resources | Remote-SSH window qualification |
 | Docker on the PC | ◐ | `docker` provider, Container Tools view | compose run routes (if a project adopts it) |
-| Board / bugs / sprints (kanban) | ✗ | — | 0.16 (below) |
-| Grafana | ◐ | dashboard links per sub-project | official Grafana extension route; VM monitoring later (optional) |
+| Board / bugs / sprints (kanban) | ✓ | 0.16.0: `board.json`, kanban view, filters, card → component/file/link, AI pack per card, moving a card writes only its status | — |
+| Grafana | ◐ | dashboard links per sub-project; the "Edit in Grafana" route verified (0.16.0: `grafana-vscode.openUrl` on a dashboard file — its extension has no view container, so there is no side-bar route) | VM monitoring later (optional) |
 | DiagramCloud | ◐ | reviewed bridge for the graph; optional companion in Readiness | options/sheet export (optional, last) |
-| Mongoku | ⏸ | Mongoku Lite links (0.9.3); optional companion in Readiness (0.14.0) | nothing more in DataPass: Mongoku reads GitHub files |
+| Mongoku | ⏸ | off by default for new manifests since 0.16.0 (`modules.mongoku: false`); reads `board.json`/`project.json` from GitHub; optional companion in Readiness (0.14.0) | nothing more in DataPass |
 | Windows, work views, Power Ops launcher | ◐ | Switch Project, Workbench tab, *Open Power Ops* (0.14.0) | 0.17 (section 2) |
 | Restricted Mode, Remote-SSH/WSL desktop qualification | ✗ | policy implemented | qualification pass |
 
-## 5. The board contract planned for 0.16 (so AIs and Mongoku can prepare for it)
+## 5. The board contract, implemented in 0.16.0
 
 `.datapass/board.json` in the coordination repository, prepared by the AI and moved by the person;
-Mongoku (or any other viewer) can read it from GitHub without talking to DataPass.
+Mongoku (or any other viewer) can read it from GitHub without talking to DataPass. Full contract, what
+DataPass computes and what it writes: [docs/PREPARING_A_PROJECT.md](../../docs/PREPARING_A_PROJECT.md)
+section 10.
 
 ```json
 {
@@ -119,18 +121,18 @@ Mongoku (or any other viewer) can read it from GitHub without talking to DataPas
 }
 ```
 
-Types: task, bug, feature, decision, question. DataPass will show a kanban (columns, filters by
-sub-project, sprint and type), open a card's component or file, prepare an AI pack for a card, and
-write only the card's `status` (with a backup) when the person moves it.
+Types: task, bug, feature, decision, question. DataPass shows a kanban (columns, filters by
+sub-project, sprint and type), opens a card's component or file, prepares an AI pack for a card, and
+writes only the card's `status` (with a backup) when the person moves it.
 
 ## 6. Passes
 
 | Pass | Content | State |
 |---|---|---|
 | 0.14.0 | environment readiness: manifest v4 `localEnv` / `identifiers`, Local environment and Readiness, *Open Power Ops*, *Copy Project ID* (parallel session) | merged, PR #21 |
-| **0.15.0** | architecture options and scenarios, project sheet, diagram orientation / lanes / folding / preview, JSON exchange with backups, `vm` and `docker` providers, Google tools named | this pass |
-| **0.16.0 — work and DevOps** | board (kanban) + bug/task packs; Git hosts: Azure DevOps URL forms, GitHub/Azure DevOps/GitLab web links (repository, pull requests, pipelines, boards), CI profiles (`github-actions`, `azure-pipelines`, `gitlab-ci`); Mongoku frozen (module off by default, doc: it reads GitHub files); Grafana extension route | next |
-| **0.17.0 — windows and work views** | company workspace file, work views (save / restore), status-bar switcher, `datapass.startupView`, floating Workbench, the Power Ops launcher contract (PowerToy_UI in its own session) | after |
+| 0.15.0 | architecture options and scenarios, project sheet, diagram orientation / lanes / folding / preview, JSON exchange with backups, `vm` and `docker` providers, Google tools named | merged, PR #22 |
+| **0.16.0 — work and DevOps** | board (kanban) + bug/task packs; Git hosts: Azure DevOps URL forms, GitHub/Azure DevOps/GitLab web links (repository, pull requests, pipelines, boards), CI profiles (`github-actions`, `azure-pipelines`, `gitlab-ci`); Mongoku frozen (module off by default, doc: it reads GitHub files); Grafana extension route | this pass |
+| **0.17.0 — windows and work views** | company workspace file, work views (save / restore), status-bar switcher, `datapass.startupView`, floating Workbench, the Power Ops launcher contract (PowerToy_UI in its own session) | after, in progress in a parallel session |
 | Acceptance with Julian → **1.0.0** | testlab 4 and 5, FOIL on the real repositories, account qualification | — |
 | Later, optional | DiagramCloud export of scenarios, Grafana VM monitoring, a read-only DataPass MCP server | — |
 

@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -444,6 +444,43 @@
       {
         "command": "datapass.openSheetReference",
         "title": "DataPass: Open the File that Computes a Formula"
+      },
+      {
+        "command": "datapass.openBoard",
+        "title": "DataPass: Open the Board (tasks, bugs, sprints)",
+        "icon": "$(project)"
+      },
+      {
+        "command": "datapass.openBoardFile",
+        "title": "DataPass: Open board.json"
+      },
+      {
+        "command": "datapass.board.moveCard",
+        "title": "DataPass: Move a Card on the Board…",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "datapass.board.aiPack",
+        "title": "DataPass: Prepare an AI Pack for a Card…",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "datapass.board.openFile",
+        "title": "DataPass: Open a File Named by a Card"
+      },
+      {
+        "command": "datapass.board.openLink",
+        "title": "DataPass: Open a Link of a Card"
+      },
+      {
+        "command": "datapass.openRepositoryWeb",
+        "title": "DataPass: Open a Repository on the Web (GitHub, Azure DevOps, GitLab)…",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "datapass.openCiRuns",
+        "title": "DataPass: Open the Pipeline Runs of a Component…",
+        "icon": "$(link-external)"
       }
     ],
     "viewsContainers": {
@@ -777,6 +814,16 @@
           "command": "datapass.openPreparationGuide",
           "when": "view == datapass.aiExchange",
           "group": "1_exchange@2"
+        },
+        {
+          "command": "datapass.openBoard",
+          "when": "view == datapass.project",
+          "group": "1_workbench@4"
+        },
+        {
+          "command": "datapass.openRepositoryWeb",
+          "when": "view == datapass.project",
+          "group": "2_git@4"
         }
       ],
       "view/item/context": [
@@ -864,6 +911,26 @@
           "command": "datapass.env.openFile",
           "when": "view == datapass.project && viewItem == envFile",
           "group": "inline"
+        },
+        {
+          "command": "datapass.openRepositoryWeb",
+          "when": "view == datapass.project && viewItem =~ /^repo\\..*\\.web/",
+          "group": "inline@3"
+        },
+        {
+          "command": "datapass.board.aiPack",
+          "when": "view == datapass.project && viewItem == boardCard",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.board.moveCard",
+          "when": "view == datapass.project && viewItem == boardCard",
+          "group": "1_board@1"
+        },
+        {
+          "command": "datapass.openBoardFile",
+          "when": "view == datapass.project && viewItem == boardCard",
+          "group": "1_board@2"
         }
       ],
       "commandPalette": [
@@ -905,6 +972,14 @@
         },
         {
           "command": "datapass.openSheetReference",
+          "when": "false"
+        },
+        {
+          "command": "datapass.board.openFile",
+          "when": "false"
+        },
+        {
+          "command": "datapass.board.openLink",
           "when": "false"
         }
       ],
@@ -1042,6 +1117,12 @@
           "**/.datapass/sheet.json"
         ],
         "url": "./schemas/datapass-sheet.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/board.json"
+        ],
+        "url": "./schemas/datapass-board.schema.json"
       }
     ],
     "viewsWelcome": [

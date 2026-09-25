@@ -21,6 +21,8 @@ import { pathToFileURL } from "node:url";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
 import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
+import { boardAJson } from "../tests/fixtures/v3/researchBoard";
+import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from "../tests/fixtures/v3/devops";
 import { filesB } from "../tests/fixtures/v3/monorepo";
 
 const repo = path.resolve(__dirname, "..");
@@ -43,6 +45,8 @@ function v4Cloudflare(): DataPassProjectManifest {
 
 function v2Retail(): DataPassProjectManifest {
   const m = migrateManifestToV2(genericProjectManifest("retail-bi"));
+  // A project created before Mongoku was frozen (0.16): no modules block, so its Mongoku companion stays on.
+  delete m.modules;
   m.platforms = {
     fabric: { workspaceName: "Retail" }, powerbi: { projectRoot: "bi" }, databricks: { bundleRoot: "bundle" },
     // Synthetic stack; nothing is contacted (links only reach the Test-mode browser seam).
@@ -158,6 +162,7 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
     ".datapass/graph.json": JSON.stringify(graphAJson(), null, 2) + "\n",
     ".datapass/options.json": JSON.stringify(optionsAJson(), null, 2) + "\n",
     ".datapass/sheet.json": JSON.stringify(sheetAJson(), null, 2) + "\n",
+    ".datapass/board.json": JSON.stringify(boardAJson(), null, 2) + "\n",
     "README.md": "# Research library (coordination)\n\nSynthetic DataPass V3 fixture.\n"
   });
   commitAll(hub, "coordination");
@@ -181,10 +186,37 @@ function setupV3Monorepo(base: string): { workspace: string; env: Record<string,
   return { workspace: ws, env: {} };
 }
 
+/**
+ * 0.16: one repository per Git host. The coordination repository is the workspace; the GitHub and
+ * Azure DevOps repositories are cloned next to it with origins in their SSH form (the manifest
+ * declares https forms, the Azure one with "{org}@"), the GitLab one is not cloned. Offline: the
+ * origins are only read, never contacted.
+ */
+function setupV3Devops(base: string): { workspace: string; env: Record<string, string> } {
+  const parent = path.join(base, "projects");
+  const hub = path.join(parent, "platform-hub");
+  writeTree(hub, {
+    ".datapass/project.json": JSON.stringify(manifestDevops(), null, 2) + "\n",
+    ".datapass/graph.json": JSON.stringify(graphDevopsJson(), null, 2) + "\n",
+    "README.md": "# Shop platform (coordination)\n\nSynthetic DataPass 0.16 fixture.\n"
+  });
+  commitAll(hub, "coordination");
+  const web = path.join(parent, "shop-web");
+  writeTree(web, DEVOPS_FILES.web);
+  commitAll(web, "web");
+  gitIn(web, "remote", "add", "origin", DEVOPS_REMOTES.webOrigin);
+  const api = path.join(parent, "orders-api");
+  writeTree(api, DEVOPS_FILES.api);
+  commitAll(api, "api");
+  gitIn(api, "remote", "add", "origin", DEVOPS_REMOTES.apiOrigin);
+  return { workspace: hub, env: {} };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
-  "v3-monorepo": setupV3Monorepo
+  "v3-monorepo": setupV3Monorepo,
+  "v3-devops": setupV3Devops
 };
 
 async function vscodeExecutable(): Promise<string> {

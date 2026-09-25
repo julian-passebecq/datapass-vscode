@@ -5,6 +5,9 @@
     "title": "Research library",
     "description": "Find answers in papers, cite the PDF and page."
   },
+  "modules": {
+    "mongoku": false
+  },
   "repositories": {
     "pipeline": {
       "label": "Document pipeline",

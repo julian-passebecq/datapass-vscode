@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 4,
+  "project": {
+    "id": "shop-platform",
+    "title": "Shop platform",
+    "description": "Synthetic DataPass 0.16 example: one repository per Git host, CI on each."
+  },
+  "modules": {
+    "mongoku": false
+  },
+  "repositories": {
+    "web": {
+      "label": "Web app",
+      "remote": {
+        "url": "https://github.com/example-org/shop-web",
+        "branch": "main"
+      },
+      "description": "Front end, built by GitHub Actions"
+    },
+    "api": {
+      "label": "Orders API",
+      "remote": {
+        "url": "https://example-org@dev.azure.com/example-org/Shop%20Platform/_git/orders-api",
+        "branch": "main"
+      },
+      "description": "API, built by Azure Pipelines"
+    },
+    "data": {
+      "label": "Data jobs",
+      "remote": {
+        "url": "git@gitlab.com:example-group/data/shop-data-jobs.git",
+        "branch": "main"
+      },
+      "description": "Nightly jobs, built by GitLab CI/CD"
+    }
+  },
+  "environments": [
+    {
+      "id": "dev",
+      "title": "Development"
+    },
+    {
+      "id": "prod",
+      "title": "Production",
+      "production": true
+    }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "delivery",
+      "title": "Delivery",
+      "objective": "Every repository builds on its own host",
+      "itemRefs": [
+        "web-ci",
+        "api-ci",
+        "data-ci"
+      ]
+    }
+  ]
+}

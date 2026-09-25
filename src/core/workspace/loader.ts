@@ -11,6 +11,7 @@ import { vetRelativePath } from "../exchange/pathSafety";
 import { projectRoot } from "./root";
 import { OPTIONS_PATH, parseOptions, type OptionsFile } from "../project/options";
 import { SHEET_PATH, parseSheet, type ProjectSheet } from "../project/sheet";
+import { BOARD_PATH, parseBoard, type Board } from "../project/board";
 export { projectFacts } from "./facts";
 
 export interface ProjectContext {
@@ -32,6 +33,10 @@ export interface ProjectContext {
   sheet?: ProjectSheet;
   sheetBytes?: Uint8Array;
   sheetError?: string;
+  /** 0.16: the project board (.datapass/board.json). */
+  board?: Board;
+  boardBytes?: Uint8Array;
+  boardError?: string;
 }
 
 export const LOCAL_DIR = ".datapass/local";
@@ -64,6 +69,11 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   if (sheetBytes) {
     ctx.sheetBytes = sheetBytes;
     try { ctx.sheet = parseSheet(sheetBytes); } catch (error) { ctx.sheetError = message(error); }
+  }
+  const boardBytes = await readOptional(vscode.Uri.joinPath(root, ...BOARD_PATH.split("/")));
+  if (boardBytes) {
+    ctx.boardBytes = boardBytes;
+    try { ctx.board = parseBoard(boardBytes); } catch (error) { ctx.boardError = message(error); }
   }
 
   for (const ref of read.manifest?.domainPacks ?? []) {

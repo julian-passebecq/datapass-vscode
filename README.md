@@ -37,6 +37,30 @@ A project is described by `.datapass/project.json` (**manifest v4**, v3 still ac
                   { "capability": "azure-functions.deploy", "environment": "dev", "target": { "functionApp": "func-papers-dev" } } ] }
 ```
 
+## Board and DevOps (0.16.0)
+
+- **Board** view (Workbench tab): `.datapass/board.json` is a kanban of tasks, bugs, features,
+  decisions and questions, with sprints and milestones, that the AI keeps up to date and you move.
+  Drag a card to another column (or `Shift+←` / `Shift+→`); filter by sub-project, sprint or type; a card
+  panel links its components to the Architecture view, opens its files (or offers Clone/Locate), and
+  opens its links after a confirmation. Moving a card writes only that card's status — every other
+  byte of the file stays as it is — with a backup, and DataPass never commits or pushes it. **Prepare
+  AI pack for this card** builds a bounded context (fix/implement/decide/answer/explain/plan) with a
+  bug's error text scrubbed of credentials and local paths.
+- **Git hosts**: DataPass recognises a GitHub, Azure DevOps or GitLab repository from its remote,
+  including the address Azure DevOps' **Clone** button copies and its SSH form as the same
+  repository, and opens each host's own pages (repository, pull/merge requests, pipelines/Actions,
+  boards/issues) from **DataPass: Open a Repository on the Web…**.
+- **CI profiles**: `github-actions`, `azure-pipelines` and `gitlab-ci` components open their pipeline
+  files and, with "See the runs", the host's runs page (or the GitHub Actions extension's own view
+  when it is installed).
+- **Mongoku is frozen**: manifests DataPass prepares now set `"modules": { "mongoku": false }` —
+  Mongoku reads `board.json` and `project.json` from GitHub on its own; DataPass never talks to it.
+
+See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) sections 10–11, and the examples in
+[examples/v3/research-library](examples/v3/research-library/) (a board) and
+[examples/v3/shop-platform](examples/v3/shop-platform/) (one repository per Git host).
+
 ## Architecture options and project sheet (0.15.0)
 
 - **Options** view (Workbench tab): compares 2–3 alternatives per architecture decision (e.g. "Where

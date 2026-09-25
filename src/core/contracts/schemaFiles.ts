@@ -5,6 +5,7 @@ import { CLAIMS_REGISTER_SCHEMA } from "../publication/claimsRegister";
 import { CATALOG_SCHEMA } from "../project/catalog";
 import { OPTIONS_SCHEMA, VALUE_SCHEMA } from "../project/options";
 import { SHEET_SCHEMA } from "../project/sheet";
+import { BOARD_SCHEMA } from "../project/board";
 import type { Schema } from "./schemaDsl";
 
 const withMeta = (schema: Schema, id: string, title: string) =>
@@ -20,6 +21,7 @@ export function emittedSchemaFiles(): Record<string, unknown> {
   out["schemas/datapass-catalog.schema.json"] = withMeta(CATALOG_SCHEMA, "datapass-catalog.schema.json", "DataPass project catalog (1)");
   out["schemas/datapass-options.schema.json"] = withMeta(optionsEditorSchema(), "datapass-options.schema.json", "DataPass architecture options (1)");
   out["schemas/datapass-sheet.schema.json"] = withMeta(SHEET_SCHEMA, "datapass-sheet.schema.json", "DataPass project sheet (1)");
+  out["schemas/datapass-board.schema.json"] = withMeta(BOARD_SCHEMA, "datapass-board.schema.json", "DataPass project board (1)");
   return out;
 }
 

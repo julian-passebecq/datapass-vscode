@@ -48,7 +48,7 @@ export interface ConfigConstraint {
 export interface CapabilityRecord {
   id: string;
   provider: "fabric" | "databricks" | "powerbi" | "grafana" | "infrastructure" | "mongo" | "diagram" | "apps" | "airflow" | "adf"
-    | "azure-functions" | "azure-storage" | "cosmos" | "mongodb" | "postgres" | "python" | "generic";
+    | "azure-functions" | "azure-storage" | "cosmos" | "mongodb" | "postgres" | "python" | "generic" | "devops";
   nativeItemType: string;
   operation: string;
   authoringMode: string;
@@ -362,7 +362,26 @@ export const CAPABILITIES: CapabilityRecord[] = [
     reviews: [{ id: "target-confirmed", prompt: "Target workspace and job re-checked" }, { id: "cost-reviewed", prompt: "Compute and cost of this run reviewed" }],
     sideEffects: ["executes-code", "writes-remote", "billable", "credential-prompt"], actionMode: "manual-in-native-tool",
     warnings: ["Running uses what was deployed, not the files on your disk: deploy first after a change."],
-    fallback: "Run the job from the Databricks extension or the workspace UI.", sources: ["S08", "S30"], implementation: "documented-only", qualification: "documented" })
+    fallback: "Run the job from the Databricks extension or the workspace UI.", sources: ["S08", "S30"], implementation: "documented-only", qualification: "documented" }),
+  // ---- 0.16: CI/CD on the Git hosts. A run starts on the host (push, pull request); DataPass opens where to see it. ----
+  cap({ id: "ci.github-actions.runs", provider: "devops", nativeItemType: "github-workflow", operation: "view-runs", authoringMode: "git-host", phase: "read", localFiles: false,
+    label: "See the workflow runs (GitHub Actions)",
+    requirements: [{ anyOf: ["ext.github-actions"], need: "optional", why: "Lists workflows and runs in VS Code and validates the YAML; github.com works without it." }],
+    sideEffects: ["reads-remote", "credential-prompt"], actionMode: "open-native", datapassActionId: "datapass.openCiRuns",
+    warnings: ["Runs start on GitHub when you push or open a pull request; DataPass never starts, re-runs or cancels one.", "A green run is evidence for that commit only."],
+    fallback: "github.com → the repository → Actions.", sources: ["S32"], implementation: "implemented", qualification: "implemented" }),
+  cap({ id: "ci.azure-pipelines.runs", provider: "devops", nativeItemType: "azure-pipeline", operation: "view-runs", authoringMode: "git-host", phase: "read", localFiles: false,
+    label: "See the pipeline runs (Azure Pipelines)",
+    requirements: [{ anyOf: ["ext.azure-pipelines"], need: "optional", why: "Validation and completion of azure-pipelines.yml; the runs are in the Azure DevOps portal." }],
+    sideEffects: ["reads-remote", "credential-prompt"], actionMode: "open-native", datapassActionId: "datapass.openCiRuns",
+    warnings: ["The pipeline is created once in Azure DevOps from this YAML file; pushing changes the pipeline, DataPass never starts a run.", "A pipeline can build a GitHub repository: then its Azure DevOps project is not derived from the remote; name it in the component's docs."],
+    fallback: "dev.azure.com → organization → project → Pipelines.", sources: ["S33"], implementation: "implemented", qualification: "implemented" }),
+  cap({ id: "ci.gitlab.pipelines", provider: "devops", nativeItemType: "gitlab-pipeline", operation: "view-runs", authoringMode: "git-host", phase: "read", localFiles: false,
+    label: "See the pipelines (GitLab CI/CD)",
+    requirements: [{ anyOf: ["ext.gitlab"], need: "optional", why: "GitLab's official extension brings merge requests and pipeline status into VS Code; GitLab's web pages work without it." }],
+    sideEffects: ["reads-remote", "credential-prompt"], actionMode: "open-native", datapassActionId: "datapass.openCiRuns",
+    warnings: ["Pipelines start on GitLab when you push or open a merge request; DataPass never starts, retries or cancels one."],
+    fallback: "GitLab → the project → Build → Pipelines.", sources: ["S34"], implementation: "implemented", qualification: "implemented" })
 ];
 
 export const CAPABILITY_INDEX: ReadonlyMap<string, CapabilityRecord> = new Map(CAPABILITIES.map(c => [c.id, c]));
