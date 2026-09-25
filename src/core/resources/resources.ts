@@ -88,7 +88,7 @@ export function remoteTarget(resource: ResourceDecl, binding?: BindingDecl): { a
 
 export function validateResources(doc: Record<string, unknown>, declaredScopes: ReadonlySet<string>, repositoryKeys: ReadonlySet<string>): string[] {
   const issues: string[] = [];
-  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3;
+  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3 || doc.schemaVersion === 4;
   if (!v2) {
     for (const key of ["resources", "bindings"]) if (doc[key] !== undefined) issues.push(`${key} requires schemaVersion 2.`);
     return issues;

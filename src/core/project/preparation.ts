@@ -12,6 +12,7 @@ import { scrub } from "../exchange/aiContext";
 import { PHASE_LABELS } from "../capabilities/registry";
 import type { ComponentView, OperationView, ProjectMap, SubprojectView } from "./projectMap";
 import type { RepoView } from "./resolve";
+import { readinessContextLines, type Readiness } from "../readiness/readiness";
 
 export const PACK_QUESTIONS = {
   explain: {
@@ -28,7 +29,7 @@ export const PACK_QUESTIONS = {
   },
   "review-architecture": {
     label: "Review the architecture",
-    ask: "Review this architecture: gaps, wrong or missing links between steps, security and cost traps, and simpler alternatives. Propose precise changes to .datapass/project.json and .datapass/graph.json (DataPass manifest v3, graph 0.2) and to the native files."
+    ask: "Review this architecture: gaps, wrong or missing links between steps, security and cost traps, and simpler alternatives. Propose precise changes to .datapass/project.json and .datapass/graph.json (DataPass manifest v3 or v4, graph 0.2) and to the native files."
   }
 } as const;
 export type PackQuestion = keyof typeof PACK_QUESTIONS;
@@ -45,6 +46,8 @@ export interface PackInput {
   manifestDigest?: string;
   graphDigest?: string;
   guideUrl?: string;
+  /** Env files, variable names and checks (names and states only). */
+  readiness?: Readiness;
 }
 
 export interface PackExport {
@@ -155,6 +158,8 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
       lines.push(...componentSection(c, map));
     }
   }
+  const env = input.readiness ? readinessContextLines(input.readiness) : [];
+  if (env.length) { h("Local environment (names and states only)"); lines.push(...env); }
   const relevant = map.problems.filter(p => !comp || p.where.endsWith(`.${comp.id}`) || p.severity === "error").slice(0, 10);
   if (relevant.length) { h("Problems DataPass found in the project files"); for (const p of relevant) lines.push(`- ${p.severity}: ${p.where} — ${p.message}`); }
 
@@ -162,7 +167,7 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
   lines.push("- Files go in the repository and folder named above, in their native format (function_app.py, host.json, databricks.yml, ADF JSON, SQL…), delivered as a branch or pull request I review.");
   lines.push("- Never put secrets, keys or connection strings in files, in .datapass JSON or in your answer; name where they belong instead.");
   lines.push("- Do not claim anything is deployed or tested. Say which checks I should run and in which official tool.");
-  lines.push("- If you change the architecture, update .datapass/project.json (manifest v3) and .datapass/graph.json (graph 0.2) in the same pull request.");
+  lines.push(`- If you change the architecture, update .datapass/project.json (manifest v${Math.max(3, map.project?.schemaVersion ?? 3)}) and .datapass/graph.json (graph 0.2) in the same pull request.`);
   if (input.guideUrl) lines.push(`- DataPass project format: ${input.guideUrl}`);
 
   h("Base (what this pack was built from)");

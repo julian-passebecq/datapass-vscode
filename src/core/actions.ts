@@ -25,6 +25,7 @@ import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mc
 import { commandAvailable } from "./vscodeDetection";
 import { collectGalaxyState } from "./galaxyState";
 import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
+import type { Readiness } from "./readiness/readiness";
 import {
   buildCopilotMarketplaceCommand,
   buildCopilotPluginInstallCommand,
@@ -148,12 +149,16 @@ async function copyPowerBiPluginInstall(pluginId: string): Promise<void> {
   );
 }
 
+/** The Work session's readiness (names and states only), set on activation. */
+let readinessSource: (() => Readiness | undefined) | undefined;
+export function setReadinessSource(source: () => Readiness | undefined): void { readinessSource = source; }
+
 async function copyEnvironmentSnapshot(extensionUri: vscode.Uri): Promise<void> {
   const state = await collectGalaxyState(extensionUri);
-  const snapshot = buildSanitizedEnvironmentSnapshot(state);
+  const snapshot = buildSanitizedEnvironmentSnapshot(state, readinessSource?.());
   await clipboard.writeText(JSON.stringify(snapshot, null, 2));
   void vscode.window.showInformationMessage(
-    "DataPass: copied sanitized environment snapshot. Local paths, action payloads and credentials are omitted."
+    "DataPass: copied sanitized environment snapshot. Local paths, action payloads, env values and credentials are omitted."
   );
 }
 

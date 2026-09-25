@@ -26,6 +26,20 @@ const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
 const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length);
 
+function v4Cloudflare(): DataPassProjectManifest {
+  return {
+    schemaVersion: 4,
+    project: { id: "edge-shop", title: "Edge shop", description: "Cloudflare Worker with a MongoDB Atlas database (synthetic)." },
+    localEnv: {
+      files: [".env", { path: ".env.local", optional: true }],
+      requiredKeys: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "MONGODB_URI", "R2_SECRET_ACCESS_KEY"]
+    },
+    identifiers: [{ id: "cf-account", label: "Cloudflare account ID", value: "0123456789abcdef0123456789abcdef", provider: "cloudflare", envKey: "CLOUDFLARE_ACCOUNT_ID" }],
+    modules: { mongoku: false, diagramcloud: false },
+    companions: { mongoku: { entityId: "edge_shop" } }
+  };
+}
+
 function v2Retail(): DataPassProjectManifest {
   const m = migrateManifestToV2(genericProjectManifest("retail-bi"));
   m.platforms = {
@@ -80,8 +94,20 @@ const FIXTURES: Record<string, Record<string, string>> = {
     "incoming/mongoku-context.json": fixtureText("mongoku/portfolio-context.synthetic.json")
   },
   "v1-foil": { ".datapass/project.json": JSON.stringify(foilProjectManifest(), null, 2) + "\n" },
-  // Parses as JSON, but schemaVersion 4 does not exist (3 is DataPass V3): both the extension and the schema must say so.
-  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 4 }, null, 2) + "\n" }
+  // Parses as JSON, but schemaVersion 5 does not exist (4 is the latest): both the extension and the schema must say so.
+  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 5 }, null, 2) + "\n" },
+  // Manifest v4 environment readiness: a Cloudflare-backed project whose .env holds recognizable fake secrets
+  // (tests/integration/readinessFlows.ts checks that none reaches any output). Mongoku and DiagramCloud are
+  // switched off although mapped / present. .env and .env.local are git-ignored; the repository is real Git.
+  "v4-cloudflare": {
+    ".datapass/project.json": JSON.stringify(v4Cloudflare(), null, 2) + "\n",
+    ".datapass/diagramcloud.json": fixtureText("diagramcloud/total.sidecar.json"),
+    ".gitignore": ".env\n.env.local\n",
+    ".env": "# Local secrets (fake, for the desktop test)\nCLOUDFLARE_ACCOUNT_ID=0123456789abcdef0123456789abcdef\nexport CLOUDFLARE_API_TOKEN=\"DPFAKESECRET_7f3a9c1e5b2d_do_not_leak\"\nMONGODB_URI=\nUNDECLARED_PRIVATE_NAME=DPFAKE_UNDECLARED_VALUE_4410\n",
+    "wrangler.toml": "name = \"edge-shop\"\nmain = \"src/index.ts\"\n",
+    "src/index.ts": "export default { fetch: () => new Response(\"ok\") };\n",
+    "tools/PowerOps.exe": ""
+  }
 };
 
 // ---------------------------------------------------------------- V3 fixtures (real Git, offline)
@@ -196,8 +222,8 @@ async function main(): Promise<void> {
     } else {
       ({ workspace: ws, env } = SETUPS[name]!(path.join(scratch, "ws", name)));
     }
-    // v2-retail is a real Git repository so the Repositories section shows branch and commit.
-    if (name === "v2-retail") {
+    // v2-retail and v4-cloudflare are real Git repositories (branch and commit; .env is git-ignored).
+    if (name === "v2-retail" || name === "v4-cloudflare") {
       const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=DataPass test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: ws, stdio: "ignore" });
       git("init", "-q", "-b", "main");
       git("add", "-A");

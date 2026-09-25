@@ -150,6 +150,10 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .spcard.h-ok { border-left-color: var(--ok); } .spcard.h-attention, .spcard.h-blocked { border-left-color: var(--warn); } .spcard.h-planned { border-left-color: var(--muted); border-style: dashed; }
   .empty { padding: 28px; display: grid; gap: 10px; max-width: 720px; }
   .problems { margin: 0; padding-left: 18px; color: var(--bad); }
+  .envcard { display: grid; gap: 6px; border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; background: var(--card); }
+  .envcard h3 { margin: 0; font-size: 13px; }
+  .envrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
+  .envcard .checks { list-style: none; margin: 0; padding: 0; }
 
   /* map (bottom panel) */
   .map { padding: 6px 10px; display: grid; gap: 6px; }

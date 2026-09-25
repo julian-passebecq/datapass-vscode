@@ -17,6 +17,8 @@ export interface ContextInput {
   impact: ImpactEntry[];
   programme: ProgrammeView[];
   packs: Array<{ namespace: string; version: string; mappingStatus: string }>;
+  /** Pre-rendered "Local environment" lines (names and states only, see readinessContextLines). */
+  environment?: string[];
 }
 
 export interface ContextExport {
@@ -95,6 +97,10 @@ export function buildAiContext(preset: ContextPreset, input: ContextInput, maxBy
       for (const r of result.pendingReviews) lines.push(`  - needs review: ${r.label}`);
       if (preset === "current-task" && result.sideEffects.length) lines.push(`  - side effects: ${result.sideEffects.join(", ")}`);
     }
+  }
+  if ((preset === "current-task" || preset === "missing-prerequisites") && input.environment?.length) {
+    h("Local environment (names and states only)");
+    lines.push(...input.environment);
   }
   if (preset === "impact" || preset === "current-task") {
     const notCurrent = input.impact.filter(e => e.state !== "current");

@@ -1,4 +1,5 @@
 import type { GalaxyState } from "./types";
+import { readinessSnapshot, type Readiness, type ReadinessSnapshot } from "./readiness/readiness";
 
 export interface SanitizedEnvironmentSnapshot {
   schemaVersion: 1;
@@ -36,13 +37,15 @@ export interface SanitizedEnvironmentSnapshot {
       categories: string[];
     };
   }>;
+  /** Env files, variable names and checks: names and states only, never a value. */
+  environment?: ReadinessSnapshot;
 }
 
-export function buildSanitizedEnvironmentSnapshot(state: GalaxyState): SanitizedEnvironmentSnapshot {
+export function buildSanitizedEnvironmentSnapshot(state: GalaxyState, readiness?: Readiness): SanitizedEnvironmentSnapshot {
   return {
     schemaVersion: 1,
     generatedAt: state.generatedAt,
-    redaction: "Local binding values, filesystem paths, action payloads, tool/platform detail strings and credentials are omitted.",
+    redaction: "Local binding values, filesystem paths, action payloads, tool/platform detail strings, env values and credentials are omitted. Env files and variables appear as names and states only.",
     ...(state.health ? {
       health: {
         overall: state.health.overall,
@@ -82,6 +85,7 @@ export function buildSanitizedEnvironmentSnapshot(state: GalaxyState): Sanitized
           categories: [...new Set(platform.catalog.items.map(item => item.category))].sort()
         }
       } : {})
-    }))
+    })),
+    ...(readiness ? { environment: readinessSnapshot(readiness) } : {})
   };
 }

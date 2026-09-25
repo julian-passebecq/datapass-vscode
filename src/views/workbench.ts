@@ -18,6 +18,7 @@ const ALLOWED = new Set([
   "datapass.openComponentEntry", "datapass.openNativeTool", "datapass.showOperation", "datapass.copyComponentCommand", "datapass.openAdfStudio",
   "datapass.recordComponentResult", "datapass.setProjectChecklist", "datapass.openDoc", "datapass.installTool", "datapass.explainMissingFile",
   "datapass.initializeProjectManifest", "datapass.openProjectManifest", "datapass.openGraph", "datapass.openPreparationGuide", "datapass.switchProject",
+  "datapass.env.copyKeyName", "datapass.env.openFile", "datapass.env.copyIdentifier", "datapass.copyProjectId", "datapass.openPowerOps", "datapass.readinessReport",
   "vscode.openFolder"
 ]);
 
@@ -42,7 +43,8 @@ export class WorkbenchHost implements vscode.Disposable {
     this.lastState = workbenchState({
       map: this.session.projectMap(), selection: this.session.selection(), version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(ctx.root), hasManifest: ctx.manifestExists, manifestErrors: ctx.manifestErrors, graphError: ctx.graphError,
-      trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), multipleProjectFolders: this.session.projectRootCandidates().length > 1
+      trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), multipleProjectFolders: this.session.projectRootCandidates().length > 1,
+      readiness: ctx.manifest ? this.session.readiness() : undefined
     });
     return this.lastState;
   }

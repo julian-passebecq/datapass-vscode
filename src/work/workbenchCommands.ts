@@ -1,7 +1,7 @@
 /**
  * V3 Workbench commands: selection, opening files and folders, native tools, repositories
  * (clone, locate, check for updates, get updates), component operations, results, checklists,
- * AI preparation pack, project folder and project switching, manifest v3 upgrade.
+ * AI preparation pack, project folder and project switching, manifest upgrade (to v4).
  *
  * Every argument can come from a webview and is re-validated against the project map. Anything
  * that writes, contacts a remote or changes a working tree asks first; nothing pushes, deploys or
@@ -23,7 +23,7 @@ import { sameRemote } from "../core/project/resolve";
 import type { ComponentView, OperationView } from "../core/project/projectMap";
 import { cleanNote, MAX_NOTE, toolSnapshot, type QualificationResult } from "../core/qualification/qualification";
 import { CHECKLIST_STATES, type ChecklistState } from "../core/work/workModel";
-import { migrateManifestToV3, validateProjectManifest, DATAPASS_MANIFEST_PATH } from "../core/projectManifestModel";
+import { LATEST_MANIFEST_VERSION, migrateManifestToLatest, validateProjectManifest, DATAPASS_MANIFEST_PATH } from "../core/projectManifestModel";
 import { applyWithJournal } from "../core/exchange/journal";
 import { workspaceJournalFs } from "./commands";
 import { LOCAL_DIR } from "../core/workspace/loader";
@@ -75,7 +75,7 @@ export function registerWorkbenchCommands(context: vscode.ExtensionContext, sess
   reg("datapass.openDoc", async (doc?: unknown) => openDoc(session, doc));
   reg("datapass.openGraph", async () => openGraph(session));
   reg("datapass.openPreparationGuide", async () => openGuide(context));
-  reg("datapass.upgradeManifestToV3", async () => upgradeManifest(session));
+  reg("datapass.upgradeManifest", async () => upgradeManifest(session));
   reg("datapass.selectProjectFolder", async () => selectProjectFolder(session));
   reg("datapass.switchProject", async () => switchProject(session));
 }
@@ -454,7 +454,8 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
   for (const r of map.repositories) if (r.state === "local" && r.git?.head) revisions[r.key] = `${r.git.branch ?? "?"}@${r.git.head.slice(0, 7)}${r.git.changes ? " (+local changes)" : ""}`;
   const pack = buildPreparationPack({
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
-    manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined
+    manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
+    readiness: session.readiness()
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`
@@ -502,21 +503,21 @@ async function openGuide(context: vscode.ExtensionContext): Promise<void> {
   await vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.joinPath(context.extensionUri, "docs", "PREPARING_A_PROJECT.md"));
 }
 
-// ------------------------------------------------------------------ manifest v3, project folder, switching
+// ------------------------------------------------------------------ manifest upgrade, project folder, switching
 
 async function upgradeManifest(session: WorkSession): Promise<void> {
   const root = requireRoot(session.root);
   const ctx = session.project;
   if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("No valid manifest to upgrade.");
-  if (ctx.manifest.schemaVersion === 3) { void vscode.window.showInformationMessage("The manifest is already schemaVersion 3."); return; }
-  const next = migrateManifestToV3(ctx.manifest);
+  if (ctx.manifest.schemaVersion >= LATEST_MANIFEST_VERSION) { void vscode.window.showInformationMessage(`The manifest is already schemaVersion ${LATEST_MANIFEST_VERSION}.`); return; }
+  const next = migrateManifestToLatest(ctx.manifest);
   const errors = validateProjectManifest(next);
   if (errors.length) throw new UserFacingError(`The upgrade would produce an invalid manifest: ${errors.join("; ")}`);
   const fs = workspaceJournalFs(root);
   let backup = `.datapass/project.v${ctx.manifest.schemaVersion}.json`;
   if (await fs.read(backup)) backup = `.datapass/project.v${ctx.manifest.schemaVersion}.${Date.now().toString(36)}.json`;
-  if (!(await confirmModal("Upgrade .datapass/project.json to schemaVersion 3?", `A copy of the current file goes to ${backup}. Every field is kept; v3 adds environments, project docs, planned repositories and a default repository per sub-project. Older DataPass versions will refuse a v3 file.`, "Upgrade"))) return;
-  const id = newLocalId("migrate-v3");
+  if (!(await confirmModal(`Upgrade .datapass/project.json to schemaVersion ${LATEST_MANIFEST_VERSION}?`, `A copy of the current file goes to ${backup}. Every field is kept.${ctx.manifest.schemaVersion < 3 ? " v3 adds environments, project docs, planned repositories and a default repository per sub-project." : ""} v4 adds localEnv (the env files and variable names the project needs, never values) and identifiers (explicitly non-secret ids). Older DataPass versions will refuse a v${LATEST_MANIFEST_VERSION} file.`, "Upgrade"))) return;
+  const id = newLocalId(`migrate-v${LATEST_MANIFEST_VERSION}`);
   await applyWithJournal(fs, `${LOCAL_DIR}/journal/${id}.json`, id, new Date().toISOString(), [
     { target: backup, bytes: ctx.manifestBytes, expectedBaseHash: null },
     { target: DATAPASS_MANIFEST_PATH, bytes: jsonBytes(next), expectedBaseHash: sha256Bytes(ctx.manifestBytes).value }

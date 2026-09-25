@@ -5,10 +5,10 @@ writes the files in Git; DataPass reads them, checks them against the disk and r
 official tools. DataPass never generates your code, never deploys and never trusts a declaration it
 cannot observe.
 
-- Contract: **manifest `schemaVersion: 3`** (`.datapass/project.json`) and **graph `version: "0.2"`**
+- Contract: **manifest `schemaVersion: 4`** (`.datapass/project.json`) and **graph `version: "0.2"`**
   (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/).
-- Older manifests (v1, v2) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project Manifest
-  to v3* moves a manifest forward with a backup.
+- Older manifests (v1, v2, v3) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project
+  Manifest* moves a manifest forward with a backup copy and a journal.
 
 ## 1. What goes where
 
@@ -33,7 +33,7 @@ native repositories                the real code, in native formats: databricks.
   repository (or in the `datapass.projectsFolders` setting) and checks its Git origin; otherwise the
   person uses *Clone* or *Locate*. The choice is saved in `.datapass/local/` (never committed).
 
-## 2. `.datapass/project.json` (manifest v3)
+## 2. `.datapass/project.json` (manifest v4)
 
 ```json
 {
@@ -68,6 +68,44 @@ native repositories                the real code, in native formats: databricks.
 
 Unknown fields are errors (in the editor and at runtime): a field DataPass would ignore must not
 look like configuration.
+
+### `localEnv` and `identifiers` (v4): what a developer needs locally
+
+`schemaVersion: 4` adds two optional blocks so DataPass can tell a person which local env files and
+variable **names** a project needs, without ever touching a value.
+
+```json
+{
+  "schemaVersion": 4,
+  "localEnv": {
+    "files": [ ".env", { "path": ".env.local", "optional": true } ],
+    "requiredKeys": [ "CLOUDFLARE_ACCOUNT_ID", "MONGODB_URI" ]
+  },
+  "identifiers": [
+    { "id": "cf-account", "label": "Cloudflare account", "value": "0123456789abcdef0123456789abcdef",
+      "provider": "cloudflare", "envKey": "CLOUDFLARE_ACCOUNT_ID" }
+  ]
+}
+```
+
+- `localEnv.files` lists env files by name only: `.env`, `.env.<name>`, `<name>.env` or `.dev.vars[.<name>]`
+  (Cloudflare Wrangler), as a plain path (shorthand for `{ "path": ... }`) or as
+  `{ "path", "optional", "repoRef" }`. Paths are relative to a repository (default: the one holding the
+  manifest); `repoRef` points at another declared repository. Any other filename is rejected — DataPass
+  never reads an arbitrary file for this.
+- `localEnv.requiredKeys` lists the variable **names** the project expects, e.g. `CLOUDFLARE_ACCOUNT_ID`.
+  DataPass opens each declared env file only to record, per name, whether it is **set**, **empty** or
+  **missing**. It never reads, keeps, shows, logs, exports or snapshots a value, and it never reports a
+  name that is not declared — even if the file defines one.
+- `identifiers[]` declares values that are **explicitly not secrets**: account, subscription, workspace
+  or project ids a person can safely see and copy (like the Cloudflare account id above). `envKey` links
+  an identifier to a `requiredKeys` name it fills.
+- **Never put a secret in `identifiers`.** DataPass refuses a value that looks like a credential (a URL,
+  a long token, a connection string…), and refuses an `id`, `label` or `envKey` named like one (`token`,
+  `password`, `key`, `secret`, `uri`, `dsn`, `session`, `cookie`…). A `requiredKeys` name with no matching
+  identifier is treated as a secret: DataPass tells the person to fetch it from their local vault (Power
+  Ops) and never asks you, the AI, for it.
+- `localEnv` and `identifiers` require `schemaVersion: 4`; a v3 manifest (still accepted) cannot use them.
 
 ## 3. `.datapass/graph.json` (graph 0.2)
 
@@ -159,7 +197,10 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 2. Update `.datapass/graph.json` in the same pull request when you add, move or rename files.
 3. Never write secrets, keys, tokens, connection strings, SAS URLs or `user:password@` anywhere
    (files, JSON, commit messages). Name where they belong (Key Vault, app settings,
-   `local.settings.json` kept out of Git).
+   `local.settings.json` kept out of Git). This also covers `identifiers` (v4): declare only ids the
+   person can see safely (account, subscription, workspace ids), never a token or a URL, and list the
+   rest of the variable names your project needs in `localEnv.requiredKeys` without a value — the
+   person fills them from their local vault.
 4. Never mark something `prepared` to make it look done: DataPass shows the files that are really there.
 5. Declare generated outputs with their producer; do not commit a placeholder to hide a missing step.
 6. Every deploy, run or publish operation names an `environment` declared in `project.json`.
