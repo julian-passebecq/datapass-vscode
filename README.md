@@ -41,7 +41,7 @@ A project is described by `.datapass/project.json` (**manifest v4**, v3 still ac
 
 - **Board** view (Workbench tab): `.datapass/board.json` is a kanban of tasks, bugs, features,
   decisions and questions, with sprints and milestones, that the AI keeps up to date and you move.
-  Drag a card to another column (or `Alt+←` / `Alt+→`); filter by sub-project, sprint or type; a card
+  Drag a card to another column (or `Shift+←` / `Shift+→`); filter by sub-project, sprint or type; a card
   panel links its components to the Architecture view, opens its files (or offers Clone/Locate), and
   opens its links after a confirmation. Moving a card writes only that card's status — every other
   byte of the file stays as it is — with a backup, and DataPass never commits or pushes it. **Prepare

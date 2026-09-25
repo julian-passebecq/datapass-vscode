@@ -71,7 +71,7 @@ credential refused), a backup restored. Then the same views on the FOIL coordina
 new `shop-platform` example (one repository per Git host, with two neighbour clones whose origin uses
 a different address form than the manifest declares) into fresh Git repositories. Follow its own
 `LISEZ-MOI.md`: the Board view (kanban, filters, drag a card, AI pack for a bug with a scrubbed error,
-`Alt+←`/`Alt+→`, Project tree section), the Details side bar's board count, Git host links per
+`Shift+←`/`Shift+→`, Project tree section), the Details side bar's board count, Git host links per
 repository and per CI pipeline (GitHub, Azure DevOps declared with the Clone address but cloned over
 SSH, GitLab), the official CI extensions when installed, Mongoku frozen on a freshly initialized
 manifest, and, optionally, the real FOIL Azure DevOps repository's Clone address.

@@ -1026,7 +1026,7 @@ function moveCardTo(c: CardView, status: string): void {
   if (c.status !== status) command("datapass.board.moveCard", { item: c.id, status });
 }
 
-/** Alt+← / Alt+→: the previous or next column (keyboard alternative to dragging). */
+/** Shift+← / Shift+→: the previous or next column (keyboard alternative to dragging; Alt+arrows are VS Code's Go Back / Go Forward). */
 function stepCard(s: WorkbenchState, c: CardView, dir: -1 | 1): void {
   const cols = s.board!.columns;
   const next = cols[cols.findIndex(x => x.id === c.status) + dir];
@@ -1086,12 +1086,12 @@ function cardEl(s: WorkbenchState, c: CardView): HTMLElement {
   const on = ui.boardFocus === c.id;
   return h("div", {
     id: `card-${c.id}`, class: `kcard t-${c.type}${on ? " active" : ""}${c.done ? " isdone" : ""}`, role: "listitem", tabindex: "0", draggable: "true",
-    "aria-label": `${TYPE_TEXT[c.type]} ${c.title}`, title: `${c.id}: ${c.title}\nDrag it to another column, or Alt+← / Alt+→.`,
+    "aria-label": `${TYPE_TEXT[c.type]} ${c.title}`, title: `${c.id}: ${c.title}\nDrag it to another column, or Shift+← / Shift+→.`,
     onclick: () => focusCard(c.id),
     onkeydown: (e: Event) => {
       const k = e as KeyboardEvent;
       if (k.key === "Enter" || k.key === " ") { e.preventDefault(); focusCard(c.id); }
-      else if (k.altKey && (k.key === "ArrowRight" || k.key === "ArrowLeft")) { e.preventDefault(); stepCard(s, c, k.key === "ArrowRight" ? 1 : -1); }
+      else if (k.shiftKey && !k.altKey && !k.ctrlKey && !k.metaKey && (k.key === "ArrowRight" || k.key === "ArrowLeft")) { e.preventDefault(); stepCard(s, c, k.key === "ArrowRight" ? 1 : -1); }
     },
     ondragstart: (e: Event) => { const d = (e as DragEvent).dataTransfer; if (d) { d.setData("text/plain", c.id); d.effectAllowed = "move"; } }
   },
@@ -1134,7 +1134,7 @@ function boardSide(s: WorkbenchState): HTMLElement {
   const b = s.board!;
   const c = b.cards.find(x => x.id === ui.boardFocus);
   if (!c) return h("div", { class: "detail" }, eyebrow("Board"), h("h2", { text: "Select a card" }),
-    h("p", { class: "muted", text: "Click a card to see its components, files and links, to move it, or to prepare an AI pack for it. Drag a card to another column (or Alt+← / Alt+→) to change its status." }));
+    h("p", { class: "muted", text: "Click a card to see its components, files and links, to move it, or to prepare an AI pack for it. Drag a card to another column (or Shift+← / Shift+→) to change its status." }));
   const col = b.columns.find(x => x.id === c.status);
   const sp = (id: string) => s.subprojects.find(x => x.id === id)?.title ?? id;
   const sprint = c.sprint ? b.sprints.find(x => x.id === c.sprint!.id) : undefined;

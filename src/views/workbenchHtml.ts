@@ -222,10 +222,10 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .sheetbits, .optbits { display: grid; gap: 2px; }
 
   /* 0.16: board (kanban) */
-  .shell.board { grid-template-columns: 210px minmax(420px, 1fr) 300px; }
+  .shell.board { grid-template-columns: 190px minmax(420px, 1fr) 280px; }
   @media (max-width: 1100px) { .shell.board { grid-template-columns: 200px minmax(320px, 1fr); } }
   @media (max-width: 720px) { .shell.board { display: block; } }
-  .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(170px, 1fr); gap: 8px; overflow-x: auto; padding: 8px 0 10px; align-items: start; }
+  .kanban { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(150px, 1fr); gap: 8px; overflow-x: auto; padding: 8px 0 10px; align-items: start; }
   .kcol { border: 1px solid var(--border); border-radius: 8px; background: var(--card); padding: 8px; display: grid; gap: 6px; align-content: start; min-height: 140px; }
   .kcol.done { opacity: .9; }
   .kcol.drop { outline: 2px dashed var(--vscode-focusBorder); outline-offset: -3px; }

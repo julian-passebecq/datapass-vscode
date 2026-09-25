@@ -15,7 +15,7 @@ view, PR #23, on 0.15.0 architecture options, PR #22). Why and what next:
   dates must be real calendar dates, links refused if they carry a user name, password, or a
   token/signature parameter); cross-checks against the project as warnings (unknown sub-project,
   component, environment, repository, decisionRef).
-- **Board view of the Workbench**: kanban columns with drag-and-drop (and `Alt+←`/`Alt+→`), filters
+- **Board view of the Workbench**: kanban columns with drag-and-drop (and `Shift+←`/`Shift+→`), filters
   (sub-project, sprint, type, text search), sprint and milestone cards, a card panel (components link
   to the Architecture view, files open in the editor or offer Clone/Locate, links open after a
   confirmation, decisions link to the Options view). Project tree "Board" section (open cards, most
@@ -64,7 +64,7 @@ view, PR #23, on 0.15.0 architecture options, PR #22). Why and what next:
 | `npm run check` | clean |
 | `npm test` | 249 / 249 (15 new: board 8, git hosts / CI 6, modules 1; the examples test also covers board.json and the new example) |
 | `npm run test:desktop` (VS Code 1.139.1, Windows 11) | 172 / 172 on 8 fixtures — `empty` 12, `v2-retail` 48, `v1-foil` 15, `broken` 16, `v4-cloudflare` 19, `v3-research` 34 (6 new board flows), `v3-monorepo` 13, `v3-devops` 15 (new fixture, 4 DevOps flows). Tool probes on the isolated test profile correctly report the five new extensions "absent" |
-| Visual check | `scripts/workbench-preview.ts`, board and board-filtered pages, dark and light; drag & drop, `Alt+→` and search focus exercised in the browser preview |
+| Visual check | `scripts/workbench-preview.ts`, board and board-filtered pages, dark and light; drag & drop, `Shift+→` and search focus exercised in the browser preview |
 | New public example | `examples/v3/shop-platform` (project.json + graph.json + README: one repository per Git host, Azure DevOps declared with the `{org}@` Clone address) |
 
 ### Still needs a human

@@ -430,8 +430,8 @@ see rule 9 of section 4). Example: `examples/v3/research-library/.datapass/board
 
 What DataPass does with it:
 
-- **Board** view of the Workbench: kanban columns (drag a card to another column, or `Alt+←` /
-  `Alt+→`, or "Move to…" in the card panel); filters (sub-project, sprint including "no sprint", type
+- **Board** view of the Workbench: kanban columns (drag a card to another column, or `Shift+←` /
+  `Shift+→`, or "Move to…" in the card panel); filters (sub-project, sprint including "no sprint", type
   chips with open counts, text search on title/id); sprint cards with progress; milestones (overdue
   in red); a card panel (description, sub-project, sprint, milestone, due date, environment,
   assignee, labels — clicking a **component** selects it and shows it on the Architecture view;
