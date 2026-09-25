@@ -67,7 +67,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(this.session.root), hasManifest: c.manifestExists, projectTitle: c.manifest?.project.title, graphPath: c.manifest?.graph,
       kinds: KINDS, sizes: this.sizes,
-      problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError },
+      problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges()
     });
   }
@@ -79,7 +79,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
     const sizes: Partial<Record<ExchangeKind, number>> = {};
     if (root) {
       for (const kind of KINDS) {
-        const loaded = kind === "manifest" ? c.manifestBytes : kind === "options" ? c.optionsBytes : kind === "sheet" ? c.sheetBytes : undefined;
+        const loaded = kind === "manifest" ? c.manifestBytes : kind === "options" ? c.optionsBytes : kind === "sheet" ? c.sheetBytes : kind === "board" ? c.boardBytes : undefined;
         if (loaded) { sizes[kind] = loaded.byteLength; continue; }
         if (kind !== "graph" && kind !== "catalog") continue;
         const rel = kind === "graph" ? c.manifest?.graph ?? ".datapass/graph.json" : ".datapass/catalog.json";

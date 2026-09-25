@@ -17,16 +17,19 @@ import { validateProjectManifest, type DataPassProjectManifest } from "../projec
 import { parseCatalog } from "./catalog";
 import { OPTIONS_FORMAT, OPTIONS_PATH, optionsProblems, parseOptions } from "./options";
 import { SHEET_FORMAT, SHEET_PATH, parseSheet, sheetProblems } from "./sheet";
+import { BOARD_FORMAT, BOARD_PATH, boardProblems, parseBoard } from "./board";
+import type { OptionsFile } from "./options";
 import { scrub } from "../exchange/aiContext";
 
-export type ExchangeKind = "manifest" | "graph" | "options" | "sheet" | "catalog";
+export type ExchangeKind = "manifest" | "graph" | "options" | "sheet" | "catalog" | "board";
 
 export const EXCHANGE_FILES: Readonly<Record<ExchangeKind, { path: string; label: string }>> = {
   manifest: { path: ".datapass/project.json", label: "project manifest (project.json)" },
   graph: { path: ".datapass/graph.json", label: "architecture graph (graph.json)" },
   options: { path: OPTIONS_PATH, label: "architecture options (options.json)" },
   sheet: { path: SHEET_PATH, label: "project sheet (sheet.json)" },
-  catalog: { path: ".datapass/catalog.json", label: "project catalog (catalog.json)" }
+  catalog: { path: ".datapass/catalog.json", label: "project catalog (catalog.json)" },
+  board: { path: BOARD_PATH, label: "project board (board.json)" }
 };
 
 export const MAX_EXCHANGE_BYTES = 2 * 1024 * 1024;
@@ -49,6 +52,7 @@ export function detectKind(doc: unknown): ExchangeKind | undefined {
   if (d.format === OPTIONS_FORMAT) return "options";
   if (d.format === SHEET_FORMAT) return "sheet";
   if (d.format === "datapass.catalog") return "catalog";
+  if (d.format === BOARD_FORMAT) return "board";
   if (d.schemaVersion !== undefined && d.project !== undefined) return "manifest";
   return undefined;
 }
@@ -80,7 +84,7 @@ export interface IncomingFile {
   warnings: string[];
 }
 
-export interface ProjectContextForImport { manifest?: DataPassProjectManifest; graph?: ProjectGraph; graphPath?: string; decisionIds?: string[] }
+export interface ProjectContextForImport { manifest?: DataPassProjectManifest; graph?: ProjectGraph; graphPath?: string; decisionIds?: string[]; options?: OptionsFile }
 
 /**
  * Validate an AI answer as one DataPass file. Throws with a plain explanation when it cannot be
@@ -92,7 +96,7 @@ export function checkIncoming(raw: string, ctx: ProjectContextForImport, expecte
   const { json } = extractJson(raw);
   const doc = parseStrictJson(json, { maxBytes: MAX_EXCHANGE_BYTES, maxEntries: 200_000 });
   const kind = detectKind(doc);
-  if (!kind) throw new Error("This JSON is not a DataPass file (no \"format\": \"datapass.graph\" / \"datapass.options\" / \"datapass.sheet\" / \"datapass.catalog\", and not a project manifest).");
+  if (!kind) throw new Error("This JSON is not a DataPass file (no \"format\": \"datapass.graph\" / \"datapass.options\" / \"datapass.sheet\" / \"datapass.board\" / \"datapass.catalog\", and not a project manifest).");
   if (expected && kind !== expected) throw new Error(`Expected the ${EXCHANGE_FILES[expected].label}, got the ${EXCHANGE_FILES[kind].label}.`);
   const text = JSON.stringify(doc, null, 2) + "\n";
   const sensitive = sensitiveFindings(text);
@@ -124,6 +128,11 @@ export function checkIncoming(raw: string, ctx: ProjectContextForImport, expecte
     case "catalog":
       parseCatalog(json);
       break;
+    case "board": {
+      const b = parseBoard(json);
+      warnings.push(...boardProblems(b, ctx.manifest, ctx.graph, ctx.options).map(p => `${p.where}: ${p.message}`));
+      break;
+    }
   }
   if (typeof (doc as { $schema?: unknown }).$schema === "string" && /^https?:/i.test((doc as { $schema: string }).$schema)) warnings.push("The file has a web \"$schema\" line: VS Code will stop validating it with DataPass's schema. Remove that line.");
   return { kind, path: kind === "graph" ? graphPath : EXCHANGE_FILES[kind].path, text, warnings: warnings.slice(0, 30) };
@@ -178,6 +187,11 @@ export const AI_TASKS: Readonly<Record<ExchangeKind, readonly AiTask[]>> = {
   ],
   catalog: [
     { id: "free", label: "Update the catalog (I explain in the chat)", ask: "Update this catalog as I explain in the chat." }
+  ],
+  board: [
+    { id: "update", label: "Update the board from the project's work", ask: "Update this board from what you know of the project's repositories and our conversation: add cards for new bugs, tasks and questions (with the components and repository-relative files they concern), move cards whose pull request is merged to the done column, and link each card to its pull request, issue or work item. Keep every existing id; never delete a card; statuses are column ids." },
+    { id: "sprint", label: "Plan the next sprint", ask: "Plan the next sprint on this board: add it to \"sprints\" (id, title, start, end, goal), put in it the cards that fit two weeks of work for one person (field \"sprint\"), highest priority first, and say in the chat what you left out and why. Keep every existing id; never delete a card." },
+    { id: "free", label: "Something else (I explain in the chat)", ask: "Update this board as I explain in the chat. Keep every existing id; never delete a card." }
   ]
 };
 

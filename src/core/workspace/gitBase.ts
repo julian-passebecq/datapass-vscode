@@ -4,6 +4,7 @@
  * changes. Commands run with argv arrays (no shell) and never prompt for credentials.
  */
 import { sha256Bytes, type Sha256 } from "../model/ids";
+import { AZURE_HTTPS_WITH_ORG } from "../project/gitHosts";
 
 export type GitRunner = (args: string[], cwd: string, timeoutMs: number) => Promise<{ ok: boolean; stdout: string; stderr?: string }>;
 
@@ -71,7 +72,9 @@ export async function readRepoRevision(run: GitRunner, cwd: string, nonce: () =>
 export function safeRemoteUrl(url: string): string | undefined {
   const u = url.trim();
   if (/^https:\/\/[^\s/@:]+(:\d+)?\/[^\s]+$/.test(u)) return u;
-  if (/^git@[A-Za-z0-9.-]+:[A-Za-z0-9._\/-]+$/.test(u)) return u;
+  // Azure DevOps' own clone address names the organization as the user (never a password or token).
+  if (AZURE_HTTPS_WITH_ORG.test(u)) return u;
+  if (/^git@[A-Za-z0-9.-]+:[A-Za-z0-9._%\/-]+$/.test(u)) return u;
   if (/^ssh:\/\/git@[A-Za-z0-9.-]+(:\d+)?\/[A-Za-z0-9._\/-]+$/.test(u)) return u;
   return undefined;
 }

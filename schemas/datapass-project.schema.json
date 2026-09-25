@@ -66,7 +66,8 @@
           "type": "boolean"
         },
         "mongoku": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "Frozen: Mongoku reads this project's files (board.json, project.json) from GitHub and has no link with DataPass. New manifests set it to false."
         },
         "diagramcloud": {
           "type": "boolean"
@@ -103,8 +104,8 @@
             "properties": {
               "url": {
                 "type": "string",
-                "pattern": "^(https://[^\\s@/]+/[^\\s]+|git@[A-Za-z0-9.-]+:[A-Za-z0-9._/-]+)$",
-                "description": "https or git@host:path; never embed credentials."
+                "pattern": "^(https://[^\\s@/]+/[^\\s]+|https://([A-Za-z0-9][A-Za-z0-9._-]*)@dev\\.azure\\.com/\\2/[^\\s]+|git@[A-Za-z0-9.-]+:[A-Za-z0-9._%/-]+|([A-Za-z0-9][A-Za-z0-9._-]*)@vs-ssh\\.visualstudio\\.com:v3/\\3/[A-Za-z0-9._%/-]+)$",
+                "description": "https or git@host:path; never embed credentials. Azure DevOps: the address its Clone button copies (https://<organization>@dev.azure.com/<organization>/<project>/_git/<repo>) and its SSH address (git@ssh.dev.azure.com:v3/<organization>/<project>/<repo>) are accepted and name the same repository."
               },
               "branch": {
                 "type": "string",

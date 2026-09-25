@@ -23,11 +23,13 @@ const ALLOWED = new Set([
   // 0.15: architecture options, project sheet, AI exchange of DataPass files, backups.
   "datapass.openOptions", "datapass.openSheet", "datapass.recordDecision", "datapass.exportOptionsComparison", "datapass.optionsAiContext",
   "datapass.copyForAi", "datapass.importFromAi", "datapass.showAiExchange", "datapass.openOptionsFile", "datapass.openSheetFile", "datapass.openOptionSource",
-  "datapass.clearPreview", "datapass.restoreBackup", "datapass.openSheetReference"
+  "datapass.clearPreview", "datapass.restoreBackup", "datapass.openSheetReference",
+  // 0.16: the board, Git hosts' web pages, CI runs.
+  "datapass.openBoard", "datapass.openBoardFile", "datapass.board.moveCard", "datapass.board.aiPack", "datapass.board.openFile", "datapass.board.openLink",
+  "datapass.openRepositoryWeb", "datapass.openCiRuns"
 ]);
 
-export type WorkbenchView = "architecture" | "options" | "sheet";
-const VIEWS: ReadonlySet<string> = new Set(["architecture", "options", "sheet"]);
+export type WorkbenchView = "architecture" | "options" | "sheet" | "board";
 
 export class WorkbenchHost implements vscode.Disposable {
   private readonly panels = new Set<vscode.WebviewPanel>();
@@ -55,7 +57,8 @@ export class WorkbenchHost implements vscode.Disposable {
       trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), multipleProjectFolders: this.session.projectRootCandidates().length > 1,
       readiness: ctx.manifest ? this.session.readiness() : undefined,
       options: ctx.options, analysis: this.session.optionsAnalysis(), optionsError: ctx.optionsError,
-      sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview()
+      sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview(),
+      board: this.session.boardView(), boardError: ctx.boardError
     });
     return this.lastState;
   }

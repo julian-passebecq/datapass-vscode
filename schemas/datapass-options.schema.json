@@ -278,6 +278,9 @@
                                   "sql",
                                   "vm",
                                   "docker",
+                                  "github-actions",
+                                  "azure-pipelines",
+                                  "gitlab-ci",
                                   "google-cloud-storage",
                                   "google-drive",
                                   "bigquery",
@@ -336,6 +339,9 @@
                                       "docs",
                                       "powerbi.pbip",
                                       "airflow.dags",
+                                      "github-actions",
+                                      "azure-pipelines",
+                                      "gitlab-ci",
                                       "generic"
                                     ]
                                   },
@@ -710,6 +716,9 @@
                                   "sql",
                                   "vm",
                                   "docker",
+                                  "github-actions",
+                                  "azure-pipelines",
+                                  "gitlab-ci",
                                   "google-cloud-storage",
                                   "google-drive",
                                   "bigquery",
@@ -768,6 +777,9 @@
                                       "docs",
                                       "powerbi.pbip",
                                       "airflow.dags",
+                                      "github-actions",
+                                      "azure-pipelines",
+                                      "gitlab-ci",
                                       "generic"
                                     ]
                                   },

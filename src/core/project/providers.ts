@@ -14,7 +14,7 @@ import type { ModuleId } from "../modules";
 export const COMPONENT_PROVIDERS = [
   "azure-functions", "azure-data-factory", "azure-storage", "cosmos-nosql", "mongodb-atlas", "postgres", "neon",
   "databricks", "fabric", "powerbi", "airflow", "grafana", "python", "jupyter", "terraform", "bicep", "sql",
-  "vm", "docker",
+  "vm", "docker", "github-actions", "azure-pipelines", "gitlab-ci",
   "google-cloud-storage", "google-drive", "bigquery", "aws-s3", "manual", "other"
 ] as const;
 export type ComponentProvider = typeof COMPONENT_PROVIDERS[number];
@@ -64,8 +64,9 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     nativeTool: { label: "Power BI Desktop" }, docs: "https://learn.microsoft.com/power-bi/developer/projects/projects-overview" },
   { id: "airflow", label: "Apache Airflow", about: "DAG-based workflow scheduler.", support: "operations", capabilityProvider: "airflow", module: "airflow", icon: "type-hierarchy-sub", glyph: "⟳",
     docs: "https://airflow.apache.org/docs/" },
+  // Grafana's extension has no view container (checked in its package.json on 2026-09-25): DataPass opens a dashboard file with its "Edit in Grafana" command.
   { id: "grafana", label: "Grafana", about: "Dashboards and alerts.", support: "operations", capabilityProvider: "grafana", module: "grafana", icon: "pulse", glyph: "◔",
-    docs: "https://grafana.com/docs/" },
+    nativeTool: { label: "Grafana extension (dashboard files) or the Grafana web UI", extensionIds: ["Grafana.grafana-vscode"], toolIds: ["ext.grafana"] }, docs: "https://grafana.com/docs/" },
   { id: "python", label: "Python", about: "Python scripts or packages run locally, in CI or by another service.", support: "operations", capabilityProvider: "python", icon: "file-code", glyph: "py",
     nativeTool: { label: "Python extension", extensionIds: ["ms-python.python"], toolIds: ["ext.python", "cli.python"] }, docs: "https://docs.python.org/3/" },
   { id: "jupyter", label: "Jupyter notebook", about: "Notebooks (.ipynb) opened in VS Code's notebook editor.", support: "files", icon: "notebook", glyph: "nb",
@@ -79,6 +80,13 @@ export const PROVIDERS: readonly ProviderInfo[] = [
     nativeTool: { label: "Remote - SSH", extensionIds: ["ms-vscode-remote.remote-ssh"], toolIds: ["ext.remote-ssh", "cli.ssh"] }, docs: "https://code.visualstudio.com/docs/remote/ssh" },
   { id: "docker", label: "Docker containers", about: "Containers built from a Dockerfile or compose file, on your PC or on a VM.", support: "files", icon: "package", glyph: "dk",
     nativeTool: { label: "Container Tools + Docker", extensionIds: ["ms-azuretools.vscode-containers"], toolIds: ["ext.containers", "cli.docker"] }, docs: "https://code.visualstudio.com/docs/containers/overview" },
+  // 0.16: CI/CD on the three Git hosts. Runs happen on the host; DataPass opens the files and the runs page.
+  { id: "github-actions", label: "GitHub Actions", about: "CI/CD workflows that run on GitHub when you push or open a pull request.", support: "operations", capabilityProvider: "devops", capabilities: ["ci.github-actions.runs"], icon: "github-action", glyph: "gha",
+    nativeTool: { label: "GitHub Actions extension (or github.com)", extensionIds: ["github.vscode-github-actions"], toolIds: ["ext.github-actions"] }, docs: "https://docs.github.com/actions" },
+  { id: "azure-pipelines", label: "Azure Pipelines", about: "CI/CD pipelines of Azure DevOps, described in azure-pipelines.yml.", support: "operations", capabilityProvider: "devops", capabilities: ["ci.azure-pipelines.runs"], icon: "azure-devops", glyph: "azp",
+    nativeTool: { label: "Azure Pipelines extension (YAML) + the Azure DevOps portal", extensionIds: ["ms-azure-devops.azure-pipelines"], toolIds: ["ext.azure-pipelines"] }, docs: "https://learn.microsoft.com/azure/devops/pipelines/" },
+  { id: "gitlab-ci", label: "GitLab CI/CD", about: "Pipelines described in .gitlab-ci.yml that run on GitLab.", support: "operations", capabilityProvider: "devops", capabilities: ["ci.gitlab.pipelines"], icon: "rocket", glyph: "glci",
+    nativeTool: { label: "GitLab Workflow extension (or GitLab)", extensionIds: ["GitLab.gitlab-workflow"], toolIds: ["ext.gitlab"] }, docs: "https://docs.gitlab.com/ci/" },
   { id: "google-cloud-storage", label: "Google Cloud Storage", about: "Google's object storage (not Google Drive).", support: "unsupported", icon: "cloud", glyph: "gcs",
     nativeTool: { label: "Google Cloud Data Agent Kit + gcloud CLI", extensionIds: ["GoogleCloudTools.datacloud"], toolIds: ["ext.gcloud-data", "cli.gcloud"] }, docs: "https://cloud.google.com/storage/docs" },
   { id: "google-drive", label: "Google Drive", about: "Files in Google Drive (not Google Cloud Storage).", support: "unsupported", icon: "cloud", glyph: "gd",

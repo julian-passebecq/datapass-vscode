@@ -1,0 +1,37 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "web-ci",
+      "kind": "pipeline",
+      "label": "Web CI (GitHub Actions)",
+      "provider": "github-actions",
+      "artifacts": {
+        "repoRef": "web",
+        "profile": "github-actions"
+      }
+    },
+    {
+      "id": "api-ci",
+      "kind": "pipeline",
+      "label": "API pipeline (Azure Pipelines)",
+      "provider": "azure-pipelines",
+      "artifacts": {
+        "repoRef": "api",
+        "profile": "azure-pipelines"
+      }
+    },
+    {
+      "id": "data-ci",
+      "kind": "pipeline",
+      "label": "Data jobs pipeline (GitLab CI/CD)",
+      "provider": "gitlab-ci",
+      "artifacts": {
+        "repoRef": "data",
+        "profile": "gitlab-ci"
+      }
+    }
+  ],
+  "relations": []
+}

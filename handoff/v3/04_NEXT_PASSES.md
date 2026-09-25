@@ -21,6 +21,17 @@ JSON exchange with an AI (copy, validated import with diff and backup, restore),
 providers, Google tools named and probed. Unit 234, desktop 151 (7 fixtures). Design and readiness:
 [06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
 
+## Done in 0.16.0 (V3 pass 4)
+
+Board (`.datapass/board.json`: columns, sprints, milestones, cards; kanban view with drag-and-drop
+and filters; moving a card rewrites only its `status`; AI pack per card). Git hosts: Azure DevOps
+https-with-organization and SSH addresses recognised as one repository identity, web links for
+GitHub/Azure DevOps/GitLab (repository, pull/merge requests, pipelines/Actions, boards/issues). CI
+profiles `github-actions`, `azure-pipelines`, `gitlab-ci` routed to the official extensions or the
+host's runs page. Mongoku frozen (`modules.mongoku: false` in prepared manifests). Grafana's "Edit in
+Grafana" route. Unit 249, desktop 172 (8 fixtures, new `v3-devops`). Design and readiness:
+[06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
+
 ## Acceptance with Julian (before 1.0.0)
 
 Run by Julian, reported with *Export Qualification Report* and a short note per step.
@@ -54,6 +65,17 @@ example into a fresh Git repository. Scenarios table and preview, diagram toolba
 (only options.json changes, a backup is kept), the Project sheet, an AI answer imported (and one with a
 credential refused), a backup restored. Then the same views on the FOIL coordination repository.
 
+### B3. Testlab project 6 — board and DevOps, offline (25 minutes)
+
+`D:\PROJ\datapass-testlab\6-board-devops\` — `setup.ps1` copies the public `research-library` and a
+new `shop-platform` example (one repository per Git host, with two neighbour clones whose origin uses
+a different address form than the manifest declares) into fresh Git repositories. Follow its own
+`LISEZ-MOI.md`: the Board view (kanban, filters, drag a card, AI pack for a bug with a scrubbed error,
+`Alt+←`/`Alt+→`, Project tree section), the Details side bar's board count, Git host links per
+repository and per CI pipeline (GitHub, Azure DevOps declared with the Clone address but cloned over
+SSH, GitLab), the official CI extensions when installed, Mongoku frozen on a freshly initialized
+manifest, and, optionally, the real FOIL Azure DevOps repository's Clone address.
+
 ### C. Account qualification (V1 gate 16, extended)
 
 Databricks `bundle validate` (with the generated build), Azure Functions `func start` then a deploy to
@@ -62,14 +84,9 @@ recorded with *Record result*. Only the steps Julian can do on his accounts; not
 
 ## Next implementation passes
 
-0. **0.16.0 — work and DevOps.** `.datapass/board.json` (tasks, bugs, sprints, milestones; kanban view;
-   cards open their component, file or environment; AI pack per card; DataPass writes only a card's
-   status, with a backup). Git hosts: accept Azure DevOps https addresses with `<org>@`, recognise the
-   https and ssh forms of one Azure DevOps repository as the same, web links (repository, pull
-   requests, pipelines, boards) for GitHub, Azure DevOps and GitLab, CI profiles `github-actions`,
-   `azure-pipelines`, `gitlab-ci` routed to the official extensions. Mongoku frozen (module off by
-   default; doc: it reads board.json / project.json from GitHub). Grafana extension route.
-   Then **0.17.0 — windows and work views** (06_VISION_AND_READINESS.md, section 2).
+0. **0.17.0 — windows and work views** (in progress in a parallel session): company workspace file,
+   work views (save / restore), status-bar switcher, `datapass.startupView`, floating Workbench, the
+   Power Ops launcher contract (06_VISION_AND_READINESS.md, section 2).
 1. **From acceptance feedback.** Fix what A/B/B2/C reveal; desktop tests for Restricted Mode
    (launch without `--disable-workspace-trust`) and for the catalog quick pick.
 2. **Remote hosts.** Qualify the Project view in Remote-SSH and WSL windows (paths, Git, probes on the

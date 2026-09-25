@@ -27,6 +27,7 @@ import { coordinationKeyOf, observeProject, type ProjectObservation } from "./pr
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
 import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
 import { sheetProblems } from "../core/project/sheet";
+import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
 import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
@@ -109,6 +110,9 @@ export class WorkSession implements vscode.Disposable {
   private readinessCache?: Readiness;
   private analysisCache?: OptionsAnalysis;
   private previewCache?: Preview;
+  private boardCache?: BoardView;
+  /** The person accepted, in this window, that moving a card writes its status in board.json. */
+  boardMovesConfirmed = false;
   private rootCandidates: vscode.Uri[] = [];
   private readonly selectionEmitter = new vscode.EventEmitter<Selection>();
   /** Fires when the selection changes (tree, diagram, workbench); views follow it. */
@@ -132,10 +136,15 @@ export class WorkSession implements vscode.Disposable {
     this.ctx = ctx;
     this.tools = tools;
     this.factObs = await observeFileFacts(ctx.root, ctx.manifest);
+    const coordination = ctx.root ? coordinationKeyOf(ctx.manifest, ctx.root) : ".";
     this.projectObs = ctx.root ? await observeProject({
       root: ctx.root, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
       localBindings: await this.localBindings(), cloneParents: cloneParents(),
-      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordinationKeyOf(ctx.manifest, ctx.root))
+      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
+      // The files the board's cards name, so a card says whether each one is here.
+      extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
+        .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
+        .filter((f): f is { repoKey: string; repoPath: string } => !!f)
     }) : undefined;
     this.envObs = ctx.root ? await observeLocalEnv({
       root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map(),
@@ -410,6 +419,7 @@ export class WorkSession implements vscode.Disposable {
     this.readinessCache = undefined;
     this.analysisCache = undefined;
     this.previewCache = undefined;
+    this.boardCache = undefined;
     this.emitter.fire();
   }
 
@@ -446,8 +456,20 @@ export class WorkSession implements vscode.Disposable {
     if (c.sheetError) map.problems.push({ severity: "error", where: "sheet.json", message: c.sheetError });
     if (c.options) map.problems.push(...optionsProblems(c.options, c.manifest, c.graph).filter(p => p.severity !== "info"));
     if (c.sheet) map.problems.push(...sheetProblems(c.sheet, c.manifest, c.graph, c.options?.decisions.map(d => d.id) ?? []));
+    if (c.boardError) map.problems.push({ severity: "error", where: "board.json", message: c.boardError });
+    if (c.board) map.problems.push(...boardProblems(c.board, c.manifest, c.graph, c.options));
     this.mapCache = map;
     return this.mapCache;
+  }
+
+  // ------------------------------------------------------------ 0.16 board
+
+  /** The board as the kanban and the Project tree show it (undefined without a valid board.json). */
+  boardView(): BoardView | undefined {
+    const board = this.ctx.board;
+    if (!board) return undefined;
+    if (!this.boardCache) this.boardCache = boardView(board, { map: this.projectMap(), files: this.projectObs?.files ?? new Map(), options: this.ctx.options, today: localDate() });
+    return this.boardCache;
   }
 
   // ------------------------------------------------------------ 0.15 architecture options
@@ -603,6 +625,11 @@ export class WorkSession implements vscode.Disposable {
     const diff = before.ok ? await gitRunner(["diff", "--name-status", before.stdout.trim(), "HEAD"], folder.fsPath, 15000) : { ok: false, stdout: "" };
     return { ok: true, changed: diff.ok ? parseNameStatus(diff.stdout) : [] };
   }
+}
+
+/** Today on this machine, YYYY-MM-DD (sprints and due dates are calendar dates). */
+export function localDate(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 /** Parent folders where project clones live (user setting), besides the project folder's own parent. */

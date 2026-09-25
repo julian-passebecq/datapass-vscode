@@ -1,13 +1,14 @@
 /**
  * DataPass Workbench webview (browser side). Renders the state posted by the extension in one of
- * three modes: "full" (editor tab with three views: architecture, options, project sheet), "map"
- * (bottom panel: diagram of the selected sub-project) and "detail" (secondary side bar: the
- * selection's files, operations by phase, data and formulas, options and actions).
+ * three modes: "full" (editor tab with four views: architecture, options, project sheet, board),
+ * "map" (bottom panel: diagram of the selected sub-project) and "detail" (secondary side bar: the
+ * selection's files, operations by phase, data and formulas, options, cards and actions).
  *
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
  * select / openFile / preview / command, and the extension validates each against the project.
  */
 import type { WbComponent, WbDecision, WbImpact, WbOperation, WbOption, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import type { CardView } from "../core/project/board";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
@@ -18,8 +19,9 @@ const MODE = (document.body.dataset.mode ?? "full") as "full" | "map" | "detail"
 const root = document.getElementById("app")!;
 let state: WorkbenchState | undefined;
 
-type View = "architecture" | "options" | "sheet";
+type View = "architecture" | "options" | "sheet" | "board";
 type SheetSection = "datasets" | "formulas" | "runtimes" | "glossary";
+const CARD_TYPES = ["task", "bug", "feature", "decision", "question"] as const;
 interface Ui {
   collapsed: Record<string, boolean>;
   zoom: "fit" | "100";
@@ -36,6 +38,12 @@ interface Ui {
   custom: Record<string, string>;
   sheetSection: SheetSection;
   sheetFocus?: string;
+  /** Board view: the selected card and the filters (sub-project, sprint or "-" for none, types, text). */
+  boardFocus?: string;
+  boardSub?: string;
+  boardSprint?: string;
+  boardTypes: string[];
+  boardQuery?: string;
 }
 const ui = ((vscode.getState() as Partial<Ui> | undefined) ?? {}) as Ui;
 ui.collapsed ??= {};
@@ -46,6 +54,7 @@ ui.groupBy ??= "none";
 ui.folded ??= [];
 ui.custom ??= {};
 ui.sheetSection ??= "datasets";
+ui.boardTypes ??= [];
 const saveUi = () => vscode.setState(ui);
 
 type Attrs = Record<string, string | number | boolean | undefined | ((e: Event) => void)>;
@@ -135,7 +144,8 @@ function viewTabs(s: WorkbenchState): HTMLElement {
   return h("div", { class: "vtabs", role: "tablist", "aria-label": "Workbench views" },
     tab("architecture", "Architecture"),
     tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined),
-    tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined));
+    tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined),
+    tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined));
 }
 
 function header(s: WorkbenchState): HTMLElement {
@@ -210,6 +220,11 @@ function nav(s: WorkbenchState): HTMLElement {
   return h("nav", { class: "nav", "aria-label": "Project navigation" }, ...items);
 }
 
+const WEB_SHORT: Record<string, (host: string) => string> = {
+  repository: host => `${host} ↗`, "pull-requests": host => (host === "GitLab" ? "Merge requests" : "Pull requests"),
+  pipelines: host => (host === "GitHub" ? "Actions" : "Pipelines"), boards: host => (host === "Azure DevOps" ? "Boards" : "Issues")
+};
+
 function repoRow(r: WbRepository, compact: boolean): HTMLElement {
   const [text, tone] = REPO_STATE[r.state] ?? [r.state, "muted"];
   const actions: HTMLElement[] = [];
@@ -219,6 +234,11 @@ function repoRow(r: WbRepository, compact: boolean): HTMLElement {
   }
   if (r.state === "local" && !r.coordination) actions.push(btn("Open", () => command("datapass.openRepositoryWindow", r.key), { kind: "link", title: "Open this repository in a new window" }));
   if (r.state === "local" && (r.behind ?? 0) > 0) actions.push(btn(`Get ${r.behind}`, () => command("datapass.getUpdates", r.key), { kind: "link", title: "Fast-forward to the commits already fetched (you confirm first)" }));
+  // 0.16: the repository's pages on its Git host (the address is shown before the browser opens).
+  if (r.links.length && r.host) {
+    if (compact) actions.push(btn(`${r.host} ↗`, () => command("datapass.openRepositoryWeb", r.key), { kind: "link", title: "Repository, pull requests, pipelines, boards or issues on the web" }));
+    else for (const l of r.links) actions.push(btn(WEB_SHORT[l.id]?.(r.host) ?? l.label, () => command("datapass.openRepositoryWeb", r.key, l.id), { kind: "link", title: `${l.label} on ${r.host}` }));
+  }
   return h("div", { class: `repo ${compact ? "compact" : ""}` },
     h("div", { class: "repohead" }, h("span", { class: "label", text: r.label, title: r.remote ?? "" }), pill(text, tone)),
     h("div", { class: "muted small", text: r.state === "local" ? [r.branch ? `${r.branch}` : undefined, r.detail].filter(Boolean).join(" · ") : r.remote ?? r.detail }),
@@ -412,6 +432,7 @@ function operationRow(o: WbOperation, c: WbComponent): HTMLElement {
     if (o.capabilityId === "generic.files.open") actions.unshift(btn("Open", () => command("datapass.openComponentEntry", c.id), { kind: "link" }));
     else if (o.command) actions.unshift(btn("Copy command", () => command("datapass.copyComponentCommand", o.key), { kind: "link", title: `${o.command.text} (from ${o.command.cwd})` }));
     else if (o.capabilityId === "adf.studio.open") actions.unshift(btn("Open ADF Studio", () => command("datapass.openAdfStudio"), { kind: "link" }));
+    else if (o.capabilityId.startsWith("ci.")) actions.unshift(btn("Open runs", () => command("datapass.openCiRuns", c.id), { kind: "link", title: "The runs page of this pipeline on its Git host (or the official extension's view)" }));
     else if (o.native) actions.unshift(btn("Open tool", () => command("datapass.openNativeTool", c.id), { kind: "link", title: c.nativeTool }));
   }
   if (o.capabilityId !== "generic.files.open") actions.push(btn("Record result", () => command("datapass.recordComponentResult", o.key), { kind: "link", title: "Say whether it worked when you ran it in the native tool" }));
@@ -490,6 +511,7 @@ function componentDetail(c: WbComponent, s: WorkbenchState, withFiles: boolean):
       c.outgoing.length ? kv("Goes to", c.outgoing.map(r => r.label).join(", ")) : undefined),
     h("div", { class: `next h-${c.health}` }, h("b", { text: "Next: " }), h("span", { text: c.nextStep })),
     withFiles ? filesBlock(c) : undefined,
+    boardBlock(s, x => x.components.some(y => y.id === c.id)),
     sheetBlock(c, s),
     optionsBlock(c, s),
     c.operations.length && !preview ? h("section", { class: "ops" }, eyebrow("What you can do, step by step"), ...[...byPhase].map(([phase, ops]) => h("div", { class: "phase" }, h("div", { class: "phasehead", text: phase }), ...ops.map(o => operationRow(o, c))))) : undefined,
@@ -520,6 +542,7 @@ function subprojectDetail(sp: WbSubproject, s: WorkbenchState): HTMLElement {
         h("div", {}, h("b", { text: t.label }), h("div", { class: "muted small", text: `for ${t.neededFor.slice(0, 4).join(", ")}${t.neededFor.length > 4 ? "…" : ""}` })),
         t.extensionIds[0] ? btn("Show extension", () => command("datapass.installTool", t.extensionIds[0]), { kind: "link", title: "Opens the extension page; you decide whether to install" }) : undefined))) : h("div", { class: "ok small", text: "✓ The tools its operations need are installed (or optional)." }),
       needs.missingFiles || needs.generationNeeded ? h("div", { class: "warn small", text: `${needs.missingFiles} expected file(s) missing${needs.generationNeeded ? `, ${needs.generationNeeded} to generate` : ""}: select a component to see which.` }) : undefined),
+    boardBlock(s, x => x.subprojects.includes(sp.id)),
     decisions.length ? h("section", { class: "optbits" }, eyebrow("Architecture options for this sub-project"), ...decisions.map(d => h("button", { class: "comprow", type: "button", onclick: () => command("datapass.openOptions", d.id) },
       h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }), h("span", { class: "label", text: d.title }), h("span", { class: "muted small", text: `${d.options.length} options` })))) : undefined,
     checklistBlock("Checklist", sp.checklist),
@@ -531,9 +554,46 @@ function subprojectDetail(sp: WbSubproject, s: WorkbenchState): HTMLElement {
       ...sp.docs.map(d => btn(d.label, () => command("datapass.openDoc", d), { kind: "link", icon: "📄" }))));
 }
 
+/** Cards of the board that match (a component's, a sub-project's): open ones first; a click opens the card on the board. */
+function boardBlock(s: WorkbenchState, match: (c: CardView) => boolean): HTMLElement | undefined {
+  const b = s.board;
+  const cards = b?.cards.filter(match) ?? [];
+  if (!b || !cards.length) return undefined;
+  const open = cards.filter(x => !x.done);
+  const col = (id: string) => b.columns.find(x => x.id === id)?.title ?? id;
+  return h("section", { class: "optbits" }, eyebrow(`Board · ${open.length} open${cards.length > open.length ? ` · ${cards.length - open.length} done` : ""}`),
+    ...[...open, ...cards.filter(x => x.done)].slice(0, 8).map(x => h("button", { class: "comprow", type: "button", title: "Open this card on the board", onclick: () => openCard(x.id) },
+      pill(TYPE_TEXT[x.type] ?? x.type, TYPE_TONE[x.type] ?? "muted"),
+      h("span", { class: "label" }, h("b", { text: x.title }), h("span", { class: "muted small", text: `  ${col(x.status)}${x.priority ? ` · ${x.priority}` : ""}${x.overdue ? " · overdue" : ""}` })))));
+}
+
+/** Show a card on the board: this tab switches view; the side bar and the panel ask the extension. */
+function openCard(id: string): void {
+  if (MODE !== "full") { command("datapass.openBoard", id); return; }
+  ui.view = "board";
+  revealCard(id);
+  saveUi();
+  render();
+}
+
+/** Select a card, clear filters that would hide it, and scroll it into view after the next render. */
+let scrollToCard: string | undefined;
+function revealCard(id: string): void {
+  if (!id) return;
+  ui.boardFocus = id;
+  const card = state?.board?.cards.find(c => c.id === id);
+  if (card && state && !boardCards(state).includes(card)) { ui.boardSub = ui.boardSprint = ui.boardQuery = undefined; ui.boardTypes = []; }
+  scrollToCard = id;
+}
+
 function overview(s: WorkbenchState): HTMLElement {
+  const b = s.board;
+  const sprint = b?.sprints.find(x => x.state === "current");
   return h("div", { class: "overview" },
     h("div", { class: "next h-info" }, h("b", { text: "Next: " }), h("span", { text: s.nextStep })),
+    b ? h("div", { class: "banner" }, h("b", { text: "Board" }),
+      h("span", { class: "muted small", text: `${b.summary.open} open card(s)${b.summary.bugs ? ` · ${b.summary.bugs} bug(s)` : ""}${b.summary.overdue ? ` · ${b.summary.overdue} overdue` : ""}${sprint ? ` · sprint "${sprint.title}" until ${sprint.end}` : ""}` }),
+      h("span", { class: "grow" }), btn("Open the board", () => openCard(ui.boardFocus ?? ""), { kind: "link" })) : undefined,
     h("div", { class: "cards" }, ...s.subprojects.map(sp => h("button", { class: `spcard h-${sp.health}`, type: "button", onclick: () => select(sp.id, undefined) },
       h("div", { class: "bar" }, h("b", { text: sp.title }), pill(HEALTH_TEXT[sp.health] ?? sp.health, sp.health === "ok" ? "ok" : sp.health === "planned" ? "muted" : "warn")),
       sp.objective ? h("span", { class: "muted small", text: sp.objective }) : undefined,
@@ -944,10 +1004,205 @@ function sheetEmpty(s: WorkbenchState): HTMLElement {
       s.sheetError ? btn("Open sheet.json", () => command("datapass.openSheetFile")) : undefined));
 }
 
+// ------------------------------------------------------------------ board view (0.16)
+
+const TYPE_TEXT: Record<string, string> = { task: "task", bug: "bug", feature: "feature", decision: "decision", question: "question" };
+const TYPE_TONE: Record<string, string> = { task: "muted", bug: "bad", feature: "info", decision: "warn", question: "muted" };
+const PRIORITY_TONE: Record<string, string> = { P0: "bad", P1: "bad", P2: "warn", P3: "muted", P4: "muted" };
+const CARD_FILE: Record<string, [string, string]> = {
+  found: ["here", "ok"], missing: ["missing", "bad"], "not-cloned": ["not cloned", "warn"], planned: ["repo planned", "muted"], unknown: ["not checked", "muted"], refused: ["refused", "bad"]
+};
+
+function boardCards(s: WorkbenchState): CardView[] {
+  const q = (ui.boardQuery ?? "").trim().toLowerCase();
+  return (s.board?.cards ?? []).filter(c =>
+    (!ui.boardSub || c.subprojects.includes(ui.boardSub))
+    && (!ui.boardSprint || (ui.boardSprint === "-" ? !c.sprint : c.sprint?.id === ui.boardSprint))
+    && (!ui.boardTypes.length || ui.boardTypes.includes(c.type))
+    && (!q || c.title.toLowerCase().includes(q) || c.id.includes(q)));
+}
+
+function moveCardTo(c: CardView, status: string): void {
+  if (c.status !== status) command("datapass.board.moveCard", { item: c.id, status });
+}
+
+/** Alt+← / Alt+→: the previous or next column (keyboard alternative to dragging). */
+function stepCard(s: WorkbenchState, c: CardView, dir: -1 | 1): void {
+  const cols = s.board!.columns;
+  const next = cols[cols.findIndex(x => x.id === c.status) + dir];
+  if (next) moveCardTo(c, next.id);
+}
+
+function focusCard(id: string): void {
+  ui.boardFocus = id;
+  saveUi();
+  render();
+}
+
+function boardNav(s: WorkbenchState): HTMLElement {
+  const b = s.board!;
+  const setFilter = (k: "boardSub" | "boardSprint") => (e: Event) => { const v = (e.target as HTMLSelectElement).value; ui[k] = v || undefined; saveUi(); render(); };
+  const option = (value: string, text: string, selected: boolean) => { const o = h("option", { value, text }) as HTMLOptionElement; o.selected = selected; return o; };
+  const subs = s.subprojects.filter(x => !x.implicit);
+  const all = b.cards;
+  const typeChip = (t: string) => {
+    const on = ui.boardTypes.includes(t);
+    return h("button", { class: `chipbtn ${on ? "on" : ""}`, type: "button", "aria-pressed": String(on), onclick: () => { ui.boardTypes = on ? ui.boardTypes.filter(x => x !== t) : [...ui.boardTypes, t]; saveUi(); render(); } },
+      TYPE_TEXT[t] ?? t, h("span", { class: "muted", text: ` ${all.filter(c => c.type === t && !c.done).length}` }));
+  };
+  const sprints = [...b.sprints].sort((x, y) => (x.state === "current" ? -1 : 0) - (y.state === "current" ? -1 : 0) || x.start.localeCompare(y.start));
+  return h("nav", { class: "nav", "aria-label": "Board filters" },
+    eyebrow("Filter the cards"),
+    h("div", { class: "filters" },
+      h("label", {}, "Sub-project", h("select", { class: "sel", "aria-label": "Sub-project", onchange: setFilter("boardSub") }, option("", "All sub-projects", !ui.boardSub), ...subs.map(x => option(x.id, x.title, ui.boardSub === x.id)))),
+      h("label", {}, "Sprint", h("select", { class: "sel", "aria-label": "Sprint", onchange: setFilter("boardSprint") }, option("", "All sprints", !ui.boardSprint), option("-", "No sprint (backlog)", ui.boardSprint === "-"),
+        ...b.sprints.map(x => option(x.id, `${x.title}${x.state === "current" ? " (current)" : x.state === "past" ? " (past)" : ""}`, ui.boardSprint === x.id)))),
+      h("div", { class: "row", role: "group", "aria-label": "Card types" }, ...CARD_TYPES.map(typeChip)),
+      h("input", { id: "board-search", class: "sel", type: "search", placeholder: "Title or id…", "aria-label": "Filter by title or id", value: ui.boardQuery ?? "", oninput: (e: Event) => { ui.boardQuery = (e.target as HTMLInputElement).value || undefined; saveUi(); render(); } }),
+      ui.boardSub || ui.boardSprint || ui.boardTypes.length || ui.boardQuery ? btn("Clear filters", () => { ui.boardSub = ui.boardSprint = ui.boardQuery = undefined; ui.boardTypes = []; saveUi(); render(); }, { kind: "link" }) : undefined),
+    sprints.length ? h("div", { class: "divider" }) : undefined,
+    sprints.length ? eyebrow("Sprints") : undefined,
+    ...sprints.map(x => {
+      const total = x.open + x.done;
+      return h("button", { class: `sprintcard ${x.state}`, type: "button", title: "Show only this sprint", onclick: () => { ui.boardSprint = x.id; saveUi(); render(); } },
+        h("div", { class: "bar" }, h("b", { text: x.title }), h("span", { class: "muted small", text: x.state === "current" ? "current" : x.state })),
+        h("span", { class: "muted small", text: `${x.start} → ${x.end}` }),
+        x.goal ? h("span", { class: "small", text: x.goal }) : undefined,
+        h("div", { class: "progress", title: `${x.done} of ${total} done` }, h("span", { style: `width:${total ? Math.round((x.done / total) * 100) : 0}%` })),
+        h("span", { class: "muted small", text: `${x.done}/${total} done` }));
+    }),
+    b.milestones.length ? h("div", { class: "divider" }) : undefined,
+    b.milestones.length ? eyebrow("Milestones") : undefined,
+    ...b.milestones.map(m => h("div", { class: "kv" }, h("span", { text: m.title }), h("b", { class: m.overdue ? "bad" : "", text: `${m.due ?? "no date"} · ${m.open} open` }))),
+    h("div", { class: "divider" }),
+    h("div", { class: "actions-col" },
+      btn("Ask the AI to update the board", () => command("datapass.copyForAi", "board"), { icon: "✦", title: "board.json plus instructions: the AI returns the complete updated file" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "board"), { icon: "⇣", title: "Opens the AI exchange (right side bar): checked as you paste, shown as a diff, backed up; you confirm before it is written" }),
+      btn("Open board.json", () => command("datapass.openBoardFile"), { kind: "link" })),
+    h("p", { class: "muted small", text: "Moving a card writes only its status in board.json (a backup is kept); the AI keeps the rest. Other viewers, such as Mongoku, read this file from GitHub: DataPass never talks to them." }));
+}
+
+function cardEl(s: WorkbenchState, c: CardView): HTMLElement {
+  const on = ui.boardFocus === c.id;
+  return h("div", {
+    id: `card-${c.id}`, class: `kcard t-${c.type}${on ? " active" : ""}${c.done ? " isdone" : ""}`, role: "listitem", tabindex: "0", draggable: "true",
+    "aria-label": `${TYPE_TEXT[c.type]} ${c.title}`, title: `${c.id}: ${c.title}\nDrag it to another column, or Alt+← / Alt+→.`,
+    onclick: () => focusCard(c.id),
+    onkeydown: (e: Event) => {
+      const k = e as KeyboardEvent;
+      if (k.key === "Enter" || k.key === " ") { e.preventDefault(); focusCard(c.id); }
+      else if (k.altKey && (k.key === "ArrowRight" || k.key === "ArrowLeft")) { e.preventDefault(); stepCard(s, c, k.key === "ArrowRight" ? 1 : -1); }
+    },
+    ondragstart: (e: Event) => { const d = (e as DragEvent).dataTransfer; if (d) { d.setData("text/plain", c.id); d.effectAllowed = "move"; } }
+  },
+    h("div", { class: "kcardtop" }, pill(TYPE_TEXT[c.type] ?? c.type, TYPE_TONE[c.type] ?? "muted"), c.priority ? pill(c.priority, PRIORITY_TONE[c.priority] ?? "muted") : undefined,
+      c.environment?.production ? pill(c.environment.id, "bad", "Production environment") : undefined, h("span", { class: "grow" }), h("span", { class: "muted small", text: c.id })),
+    h("div", { class: "kcardtitle", text: c.title }),
+    c.sprint || c.due ? h("div", { class: "kcardmeta small" }, c.sprint ? h("span", { class: "muted", text: c.sprint.title }) : undefined, c.due ? h("span", { class: c.overdue ? "bad" : "muted", text: `${c.overdue ? "overdue · " : "due "}${c.due}` }) : undefined) : undefined,
+    c.components.length ? h("div", { class: "kchips" }, ...c.components.slice(0, 4).map(x => h("span", { class: `chip${x.known ? "" : " warn"}`, text: `${x.glyph ? `${x.glyph} ` : ""}${x.label}` }))) : undefined,
+    c.files.length || c.links.length ? h("div", { class: "muted small", text: [c.files.length ? `${c.files.length} file${c.files.length === 1 ? "" : "s"}${c.files.some(f => f.state === "missing") ? " (missing)" : ""}` : "", c.links.length ? `${c.links.length} link${c.links.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ") }) : undefined);
+}
+
+function boardCenter(s: WorkbenchState): HTMLElement {
+  const b = s.board!;
+  const cards = boardCards(s);
+  const filtered = cards.length !== b.cards.length;
+  const columns = b.columns.map(col => {
+    const inCol = cards.filter(c => c.status === col.id);
+    const el = h("section", {
+      class: `kcol${col.done ? " done" : ""}`, "aria-label": `${col.title}: ${inCol.length} card(s)`,
+      ondragover: (e: Event) => { e.preventDefault(); el.classList.add("drop"); },
+      ondragleave: () => el.classList.remove("drop"),
+      ondrop: (e: Event) => { e.preventDefault(); el.classList.remove("drop"); const id = (e as DragEvent).dataTransfer?.getData("text/plain"); const c = b.cards.find(x => x.id === id); if (c) moveCardTo(c, col.id); }
+    },
+      h("div", { class: "kcolhead" }, h("b", { text: col.title }),
+        h("span", { class: `vbadge${col.over ? " over" : ""}`, text: col.limit ? `${col.count}/${col.limit}` : String(col.count), title: col.limit ? `Limit of ${col.limit} card(s) in progress${col.over ? ": exceeded" : ""}` : `${col.count} card(s)` })),
+      col.description ? h("div", { class: "muted small", text: col.description }) : undefined,
+      h("div", { class: "kcards", role: "list" }, ...inCol.map(c => cardEl(s, c))),
+      !inCol.length ? h("div", { class: "muted small kempty", text: filtered ? "No card matches the filters." : "Drop a card here." }) : undefined);
+    return el;
+  });
+  return h("main", { class: "center" },
+    h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Board` }),
+    h("div", { class: "bar" }, h("div", {}, eyebrow("Board"), h("h2", { text: b.title ?? "Tasks, bugs and decisions" })),
+      h("span", { class: "muted small objective", text: `${b.summary.open} open · ${b.summary.bugs} bug(s)${b.summary.overdue ? ` · ${b.summary.overdue} overdue` : ""}${filtered ? ` · showing ${cards.length} of ${b.cards.length}` : ""}${b.updated ? ` · updated ${b.updated}` : ""}` })),
+    b.description ? h("p", { class: "muted small", text: b.description }) : undefined,
+    h("div", { class: "kanban" }, ...columns));
+}
+
+function boardSide(s: WorkbenchState): HTMLElement {
+  const b = s.board!;
+  const c = b.cards.find(x => x.id === ui.boardFocus);
+  if (!c) return h("div", { class: "detail" }, eyebrow("Board"), h("h2", { text: "Select a card" }),
+    h("p", { class: "muted", text: "Click a card to see its components, files and links, to move it, or to prepare an AI pack for it. Drag a card to another column (or Alt+← / Alt+→) to change its status." }));
+  const col = b.columns.find(x => x.id === c.status);
+  const sp = (id: string) => s.subprojects.find(x => x.id === id)?.title ?? id;
+  const sprint = c.sprint ? b.sprints.find(x => x.id === c.sprint!.id) : undefined;
+  const moveSel = h("select", { class: "sel", "aria-label": "Move to column", onchange: (e: Event) => moveCardTo(c, (e.target as HTMLSelectElement).value) },
+    ...b.columns.map(x => { const o = h("option", { value: x.id, text: x.title }) as HTMLOptionElement; o.selected = x.id === c.status; return o; }));
+  return h("div", { class: "detail" },
+    eyebrow(`${TYPE_TEXT[c.type] ?? c.type} · ${c.id}`),
+    h("h2", { text: c.title }),
+    h("div", { class: "row tight" }, pill(col?.title ?? c.status, c.done ? "ok" : "info"), c.priority ? pill(c.priority, PRIORITY_TONE[c.priority] ?? "muted") : undefined, c.overdue ? pill(`overdue (${c.due})`, "bad") : undefined),
+    c.description ? h("p", { class: "cardtext", text: c.description }) : undefined,
+    h("div", { class: "card" },
+      c.subprojects.length ? kv("Sub-project", c.subprojects.map(sp).join(", ")) : undefined,
+      sprint ? kv("Sprint", `${sprint.title} (${sprint.start} → ${sprint.end})`) : undefined,
+      c.milestone ? kv("Milestone", `${c.milestone.title}${c.milestone.due ? ` · ${c.milestone.due}` : ""}`) : undefined,
+      c.due ? kv("Due", c.due) : undefined,
+      c.environment ? kv("Environment", `${c.environment.title ?? c.environment.id}${c.environment.production ? " (production)" : ""}${c.environment.known ? "" : " — not declared"}`) : undefined,
+      c.assignee ? kv("Assignee", c.assignee) : undefined,
+      c.labels.length ? kv("Labels", c.labels.join(", ")) : undefined,
+      c.created ? kv("Created", c.created) : undefined,
+      c.closed ? kv("Closed", c.closed) : undefined),
+    c.components.length ? h("section", {}, eyebrow("Components"), ...c.components.map(x => x.known
+      ? h("button", { class: "comprow", type: "button", title: "Select it and show it in the architecture", onclick: () => { select(comp(x.id)?.subprojects[0], x.id); ui.view = "architecture"; saveUi(); render(); } },
+        h("span", { class: "glyph", text: x.glyph ?? "◻", "aria-hidden": "true" }), h("span", { class: "label", text: x.label }), h("span", { class: "muted small", text: comp(x.id)?.headline ?? "" }))
+      : h("div", { class: "problem warning", text: `${x.id}: not a component of graph.json` }))) : undefined,
+    c.files.length ? h("section", {}, eyebrow("Files"), h("div", { class: "filelist", role: "list" }, ...c.files.map(f => {
+      const [text, tone] = CARD_FILE[f.state] ?? [f.state, "muted"];
+      return h("button", { class: `filerow cardfile ${f.state === "found" ? "" : "absent"}`, type: "button", title: f.detail ?? `${f.repoLabel} / ${f.path}`, onclick: () => command("datapass.board.openFile", { item: c.id, index: f.index }) },
+        h("span", { class: "fname" }, h("code", { text: f.path }), f.line ? h("span", { class: "muted small", text: ` :${f.line}` }) : undefined, h("span", { class: "muted small repoline", text: f.repoLabel })), pill(text, tone));
+    }))) : undefined,
+    c.links.length ? h("section", {}, eyebrow("Links"), h("div", { class: "actions-col" }, ...c.links.map(l => btn(l.label, () => command("datapass.board.openLink", { item: c.id, index: l.index }), { kind: "link", icon: "↗", title: l.url })))) : undefined,
+    c.decision ? h("section", { class: "optbits" }, eyebrow("Architecture decision"), h("button", { class: "comprow", type: "button", title: "Compare the options", onclick: () => command("datapass.openOptions", c.decision!.id) },
+      h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: c.decision.title }), h("span", { class: "muted small", text: `  current: ${c.decision.current ?? "?"}${c.decision.chosen ? ` · decided: ${c.decision.chosen}` : ""}` })))) : undefined,
+    h("section", { class: "actions-col" }, eyebrow("Actions"),
+      btn("Prepare AI pack for this card", () => command("datapass.board.aiPack", { item: c.id }), { kind: "primary", icon: "✦", title: c.type === "bug" ? "With the error text you copied, credentials and local paths removed" : undefined }),
+      h("label", { class: "row" }, h("span", { class: "small muted", text: "Move to" }), moveSel),
+      btn("Open in board.json", () => command("datapass.openBoardFile", { item: c.id }), { kind: "link" })),
+    h("p", { class: "muted small evidence", text: "The card is what the project says (board.json). A file is checked on this machine; a link opens only after you see its address." }));
+}
+
+function boardEmpty(s: WorkbenchState): HTMLElement {
+  return h("div", { class: "empty" },
+    h("h2", { text: s.boardError ? "board.json has errors" : "No board yet" }),
+    s.boardError ? h("ul", { class: "problems" }, h("li", { text: s.boardError })) : undefined,
+    h("p", { class: "muted", text: "The board keeps the project's tasks, bugs, features, decisions and questions, its sprints and milestones, in .datapass/board.json. Each card can name the components and files it concerns, so a click takes you there, and an AI pack for the card gives ChatGPT or Claude exactly that context. The AI keeps the file up to date; you move cards." }),
+    h("div", { class: "row" },
+      btn("Ask the AI to prepare the board", () => command("datapass.copyForAi", "board"), { kind: "primary", icon: "✦" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "board"), { icon: "⇣" }),
+      s.boardError ? btn("Open board.json", () => command("datapass.openBoardFile")) : undefined,
+      btn("How the board works (guide)", () => command("datapass.openPreparationGuide"), { kind: "link" })));
+}
+
 // ------------------------------------------------------------------ modes
 
 function render(): void {
+  // Keep the keyboard focus (a card moved to another column, the search box) across re-renders.
+  const active = document.activeElement as HTMLElement | null;
+  const focusId = active?.id;
+  const caret = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] as const : undefined;
   renderInner();
+  if (focusId) {
+    const el = document.getElementById(focusId);
+    el?.focus();
+    if (caret && el instanceof HTMLInputElement && caret[0] !== null && caret[1] !== null) el.setSelectionRange(caret[0], caret[1]);
+  }
+  if (scrollToCard && ui.view === "board") {
+    document.getElementById(`card-${scrollToCard}`)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    scrollToCard = undefined;
+  }
   // The DOM is in place: lay out the diagrams for the width they got (reading it forces layout).
   drawDiagrams();
 }
@@ -976,6 +1231,10 @@ function renderInner(): void {
     root.append(header(s), s.sheet ? h("div", { class: "shell" }, sheetNav(s), sheetCenter(s), h("aside", { class: "side", "aria-label": "Row details" }, sheetSide(s))) : sheetEmpty(s));
     return;
   }
+  if (ui.view === "board") {
+    root.append(header(s), s.board ? h("div", { class: "shell wide board" }, boardNav(s), boardCenter(s), h("aside", { class: "side", "aria-label": "Card details" }, boardSide(s))) : boardEmpty(s));
+    return;
+  }
   const crumbs = [s.project?.title ?? "Project", sp && !sp.implicit ? sp.title : undefined, c?.label].filter(Boolean).join(" / ");
   const center = h("main", { class: "center" },
     h("div", { class: "breadcrumb", text: crumbs }),
@@ -993,9 +1252,10 @@ window.addEventListener("resize", () => { if (MODE === "map") { if (redrawTimer)
 window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string };
   if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
-  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet")) {
+  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board")) {
     ui.view = msg.view;
     if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
+    if (msg.view === "board" && typeof msg.focus === "string") revealCard(msg.focus);
     if (msg.view === "sheet" && typeof msg.focus === "string") {
       const [section, id] = msg.focus.split(":");
       if (section === "datasets" || section === "formulas" || section === "runtimes" || section === "glossary") { ui.sheetSection = section; ui.sheetFocus = id || undefined; }

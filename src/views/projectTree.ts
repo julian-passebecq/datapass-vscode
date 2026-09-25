@@ -14,6 +14,8 @@ import type { WorkSession } from "../work/session";
 import type { ComponentView, SubprojectView } from "../core/project/projectMap";
 import type { ExpectedFile, RepoView } from "../core/project/resolve";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
+import { openCardsByUrgency, TYPE_LABELS, type BoardItemType, type BoardView } from "../core/project/board";
+import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
@@ -158,8 +160,10 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         item.id = n.id;
         item.description = r.state === "local" ? r.detail : r.remote ? `${r.state === "unbound" ? "not cloned" : r.state} · ${r.remote}` : r.detail;
         item.iconPath = icon(REPO_ICON[r.state] ?? ["repo"]);
-        item.tooltip = `${r.label}${r.description ? ` — ${r.description}` : ""}\n${r.detail}${r.nextStep ? `\nNext: ${r.nextStep}` : ""}${r.usedBy.length ? `\nUsed by: ${r.usedBy.join(", ")}` : ""}`;
-        item.contextValue = `repo.${r.state}${(r.git?.behind ?? 0) > 0 ? ".behind" : ""}${r.coordination ? ".coordination" : ""}`;
+        const url = r.state === "planned" ? undefined : r.remoteUrl ?? r.git?.originUrl;
+        const host = gitHostOf(url)?.label;
+        item.tooltip = `${r.label}${r.description ? ` — ${r.description}` : ""}${host ? ` (${host})` : ""}\n${r.detail}${r.nextStep ? `\nNext: ${r.nextStep}` : ""}${r.usedBy.length ? `\nUsed by: ${r.usedBy.join(", ")}` : ""}`;
+        item.contextValue = `repo.${r.state}${(r.git?.behind ?? 0) > 0 ? ".behind" : ""}${r.coordination ? ".coordination" : ""}${repositoryWebLinks(url).length ? ".web" : ""}`;
         return item;
       }
     }
@@ -183,6 +187,9 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     if (ctx.graphError) nodes.push({ t: "info", id: "graphError", label: `graph.json: ${ctx.graphError}`, icon: ["error", "problemsErrorIcon.foreground"], command: { command: "datapass.openGraph", title: "Open" } });
     if (!map.components.length && !ctx.graphError) nodes.push({ t: "info", id: "nographs", label: "No components yet: describe them in .datapass/graph.json", icon: ["type-hierarchy"], command: { command: "datapass.openGraph", title: "Open" } });
     for (const sp of map.subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
+    // 0.16: the board (tasks, bugs, sprints), when the project has one.
+    const bv = s.boardView();
+    if (bv || ctx.boardError) nodes.push(boardSection(bv, ctx.boardError));
     // 0.15: architecture options and project sheet, when the project has them.
     const o = ctx.options;
     if (o || ctx.optionsError) nodes.push({
@@ -237,6 +244,32 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
 const WARN: [string, string] = ["warning", "problemsWarningIcon.foreground"];
 const ERR: [string, string] = ["error", "problemsErrorIcon.foreground"];
+
+const TYPE_ICON: Record<BoardItemType, [string, string?]> = {
+  bug: ["bug", "problemsErrorIcon.foreground"], task: ["tasklist"], feature: ["sparkle", "charts.blue"], decision: ["git-compare", "charts.yellow"], question: ["question", "charts.purple"]
+};
+
+/** "Board": open cards, most urgent first; each opens the board on that card. */
+function boardSection(bv: BoardView | undefined, error: string | undefined): Node {
+  if (!bv) return { t: "section", id: "board", label: "Board", icon: "project", description: "errors in board.json", kids: () => [{ t: "info", id: "board:error", label: error ?? "", icon: ERR, command: { command: "datapass.openBoardFile", title: "Open" } }] };
+  const current = bv.sprints.find(s => s.state === "current");
+  const column = (id: string) => bv.columns.find(c => c.id === id)?.title ?? id;
+  const open = openCardsByUrgency(bv);
+  return {
+    t: "section", id: "board", label: "Board", icon: "project", collapsed: open.length > 12,
+    description: [`${bv.summary.open} open`, bv.summary.bugs ? `${bv.summary.bugs} bug${bv.summary.bugs === 1 ? "" : "s"}` : undefined, bv.summary.overdue ? `${bv.summary.overdue} overdue` : undefined, current ? `${current.title} → ${current.end}` : undefined].filter(Boolean).join(" · "),
+    kids: () => [
+      { t: "info", id: "board:open", label: "Open the board", description: "kanban · filter by sub-project, sprint, type", icon: ["project"], command: { command: "datapass.openBoard", title: "Open" } },
+      ...open.slice(0, 40).map((c): Node => ({
+        t: "info", id: `board:card:${c.id}`, label: c.title,
+        description: [TYPE_LABELS[c.type].toLowerCase(), column(c.status), c.priority, c.overdue ? `overdue (${c.due})` : undefined].filter(Boolean).join(" · "),
+        icon: TYPE_ICON[c.type], contextValue: "boardCard",
+        tooltip: `${TYPE_LABELS[c.type]} ${c.id}: ${c.title}\n${column(c.status)}${c.sprint ? ` · ${c.sprint.title}` : ""}${c.components.length ? `\nComponents: ${c.components.map(x => x.label).join(", ")}` : ""}${c.files.length ? `\nFiles: ${c.files.map(f => f.path).join(", ")}` : ""}`,
+        command: { command: "datapass.openBoard", title: "Open", arguments: [c.id] }
+      }))
+    ]
+  };
+}
 const OK: [string, string] = ["pass", "testing.iconPassed"];
 const MUTED: [string, string] = ["circle-large-outline", "disabledForeground"];
 

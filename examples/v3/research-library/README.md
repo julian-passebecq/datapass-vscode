@@ -12,6 +12,9 @@ several repositories. Open this folder in VS Code with DataPass installed.
   prices (source + date), pros, cons and consequences, and two scenarios to compare with the current one.
 - `.datapass/sheet.json` — the project sheet: order of magnitude of each data set, the columns that
   matter, the page-coverage formula and where it is computed, where the extraction runs.
+- `.datapass/board.json` — the board: tasks, bugs, a decision and a question, two sprints and a
+  milestone; each card names the components and files it concerns. Moving a card in DataPass
+  changes only its status line.
 - `AGENTS.md` — what an AI assistant must respect when it prepares files for this project.
 
 Flow of the "Papers pipeline" sub-project:

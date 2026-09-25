@@ -594,7 +594,7 @@ async function chooseModules(session: WorkSession): Promise<void> {
   if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
   const base = ctx.manifestBytes;
   const picks = await vscode.window.showQuickPick(
-    MODULES.map(m => ({ label: m.label, description: m.group === "core" ? "cloud core" : "optional add-on", picked: moduleEnabled(ctx.manifest, m.id), id: m.id as ModuleId })),
+    MODULES.map(m => ({ label: m.label, description: m.group === "core" ? "cloud core" : "optional add-on", detail: m.note, picked: moduleEnabled(ctx.manifest, m.id), id: m.id as ModuleId })),
     { title: "Modules for this project", placeHolder: "Tick the modules this project uses. Unticked modules disappear from Galaxy, Work and Links.", canPickMany: true, ignoreFocusOut: true }
   );
   if (!picks) return;

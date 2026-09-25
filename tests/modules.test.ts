@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020";
 import { ALWAYS_ON_PROVIDERS, MODULES, MODULE_IDS, disabledProviders, galaxyCardEnabled, moduleEnabled, modulesBlock, validateModules } from "../src/core/modules";
-import { validateProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
+import { foilProjectManifest, genericProjectManifest, validateProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { buildWorkModel, IMPLICIT_SCOPE_ID } from "../src/core/work/workModel";
 import { resolveCompanions, scopesForEntity } from "../src/core/companions/companions";
 import { CAPABILITIES } from "../src/core/capabilities/registry";
@@ -34,6 +34,15 @@ test("modules: unlisted means on, only false switches off, no block keeps today'
     if (ALWAYS_ON_PROVIDERS.has(cap.provider)) { assert.equal(MODULES.filter(m => m.providers.includes(cap.provider)).length, 0, cap.id); continue; }
     assert.equal(MODULES.filter(m => m.providers.includes(cap.provider)).length, 1, cap.id);
   }
+});
+
+test("modules: Mongoku is frozen — off in the manifests DataPass creates, unchanged in existing ones", () => {
+  assert.equal(moduleEnabled(genericProjectManifest("x"), "mongoku"), false);
+  assert.equal(moduleEnabled(foilProjectManifest(), "mongoku"), false);
+  assert.deepEqual(validateProjectManifest(genericProjectManifest("x")), []);
+  assert.equal(moduleEnabled(manifest(), "mongoku"), true, "a manifest without a modules block keeps it");
+  assert.match(MODULES.find(m => m.id === "mongoku")!.note ?? "", /frozen.*GitHub/);
+  assert.ok(ALWAYS_ON_PROVIDERS.has("devops"), "a project's Git host and CI are core, never a switchable module");
 });
 
 test("modules: validation and editor schema agree", () => {

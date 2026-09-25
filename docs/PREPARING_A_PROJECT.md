@@ -6,9 +6,10 @@ official tools. DataPass never generates your code, never deploys and never trus
 cannot observe.
 
 - Contract: **manifest `schemaVersion: 4`** (`.datapass/project.json`) and **graph `version: "0.2"`**
-  (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/). Two optional files
-  (DataPass ≥ 0.15.0): **architecture options** (`.datapass/options.json`, section 7) and the
-  **project sheet** (`.datapass/sheet.json`, section 8).
+  (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/). Three optional files:
+  **architecture options** (`.datapass/options.json`, section 7, DataPass ≥ 0.15.0), the
+  **project sheet** (`.datapass/sheet.json`, section 8, DataPass ≥ 0.15.0) and the **board**
+  (`.datapass/board.json`, section 10, DataPass ≥ 0.16.0).
 - Older manifests (v1, v2, v3) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project
   Manifest* moves a manifest forward with a backup copy and a journal.
 
@@ -60,13 +61,13 @@ native repositories                the real code, in native formats: databricks.
 
 | Field | Meaning |
 |---|---|
-| `repositories.<key>.remote.url` | The identity of the repository (https or `git@host:path`, never credentials). |
+| `repositories.<key>.remote.url` | The identity of the repository (https or `git@host:path`, never credentials). For Azure DevOps, the address its **Clone** button copies — `https://<org>@dev.azure.com/<org>/<project>/_git/<repo>` (the user name before `@` must equal the organization; anything else is refused like a credential) — and its SSH form `<org>@vs-ssh.visualstudio.com:v3/<org>/<project>/<repo>` (or `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>`) are both accepted and name the same repository, so a clone made with one form is recognised when the manifest declares the other. |
 | `repositories.<key>.planned: true` | The repository does not exist yet. Components in it show "planned", never "missing". |
 | `repositories.<key>.path` | Only for legacy or monorepo layouts (relative to this repository). Prefer remotes. |
 | `environments[]` | Deployment environments. Every deploy/run/publish operation names one; a review confirmed for `dev` never applies to `prod`. |
 | `scopes[]` | Sub-projects (work areas). `itemRefs` lists their components (children via `contains` follow); `repoRef` is the default repository of their components. |
 | `docs[]` | Files (`path`, optional `repoRef`) or https pages opened from DataPass. |
-| `modules` | `false` hides a module (its operations and cards). `azure` = Data Factory, Functions, Storage, Cosmos DB; `databases` = MongoDB Atlas, PostgreSQL/Neon. |
+| `modules` | `false` hides a module (its operations and cards). `azure` = Data Factory, Functions, Storage, Cosmos DB; `databases` = MongoDB Atlas, PostgreSQL/Neon. Projects an AI prepares now set `"modules": { "mongoku": false }`: **Mongoku is frozen** — it reads `board.json` and `project.json` from GitHub on its own; DataPass never connects to it, so there is nothing to configure here beyond keeping those files well-formed. |
 
 Unknown fields are errors (in the editor and at runtime): a field DataPass would ignore must not
 look like configuration.
@@ -180,12 +181,24 @@ also need an environment and your explicit reviews for that exact target and tho
 | `postgres.migrations` | `*.sql` | open, `postgres.browse`, `postgres.migrations.apply` |
 | `python.script` / `python.package` | entry / `pyproject.toml`; optional `requirements.txt`, `tests/` | open, `python.tests.run` |
 | `jupyter.notebook`, `fabric.item`, `terraform`, `bicep`, `powerbi.pbip`, `airflow.dags`, `json-schema`, `docs`, `generic` | see the schema | open (+ native routes) |
+| `github-actions` | `.github/workflows/*.{yml,yaml}` (one file per workflow) | open, `ci.github-actions.runs` |
+| `azure-pipelines` | `azure-pipelines.yml` (entry) | open, `ci.azure-pipelines.runs` |
+| `gitlab-ci` | `.gitlab-ci.yml` (entry) | open, `ci.gitlab.pipelines` |
+
+CI definitions run on the Git host itself (on push or pull/merge request); DataPass never starts a
+run, it only opens the files and, with `ci.*.runs`, the host's runs page. Example CI component:
+
+```json
+{ "id": "api-ci", "kind": "pipeline", "label": "API pipeline", "provider": "azure-pipelines",
+  "artifacts": { "repoRef": "api", "profile": "azure-pipelines" } }
+```
 
 ### Providers
 
 | Provider id | DataPass does |
 |---|---|
 | `azure-functions`, `azure-data-factory`, `azure-storage`, `cosmos-nosql`, `mongodb-atlas`, `postgres`, `neon`, `databricks`, `fabric`, `powerbi`, `airflow`, `grafana`, `python`, `terraform` | operations with preflight, routing to the official tool |
+| `github-actions`, `azure-pipelines`, `gitlab-ci` | CI/CD pipelines (capability provider `devops`, always on): open the pipeline files and, with "See the runs", the host's runs page — the GitHub Actions extension's own view when it is installed |
 | `jupyter`, `bicep`, `sql`, `manual` | files (and native editors) |
 | `vm` | a machine reached over SSH (Oracle Cloud, Azure, any host): operation `infra.remote.ssh` with `target: { "sshHost": "<alias from ~/.ssh/config>", "folder": "/home/<user>/<project>" }` opens it with Remote - SSH |
 | `docker` | files (Dockerfile, compose) and the Container Tools view |
@@ -219,6 +232,10 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
     (section 7) until the person decides; applying a decision is its own pull request.
 11. Prices, volumes and formulas are declarations: give a source and a date (`asOf`) for every
     price, and never invent a number — leave the field out and say so in `notes`.
+12. If the project has `.datapass/board.json` (section 10), keep it up to date **in the same pull
+    request**: move the card you worked on to the review column (or the last open column if there is
+    none), add its pull request link, and add a card for every new bug you find. Never delete a
+    card and never change an existing card's `id`.
 
 ## 5. The loop with the AI
 
@@ -353,7 +370,147 @@ Two ways, both ending in a file the person reviews and commits:
    parser the extension uses, refuses credential-shaped text and local paths, shows a diff, asks, keeps
    the previous version in `.datapass/local/backups/` (git-ignored) and writes it. It never commits or
    pushes. *DataPass: Restore a Backup of a DataPass File…* brings a previous version back the same way.
+   `board.json` (section 10, format `datapass.board`) is a kind of file this round trip handles like
+   the others, with its own tasks ("Update the board from the project's work", "Plan the next sprint").
 
 DataPass writes project files only on an explicit action (upgrade the manifest, choose modules, record
 a decision, import an AI answer, restore a backup), always with a backup and a check that the file did
 not change since it was read.
+
+## 10. `.datapass/board.json` — the board (optional, DataPass ≥ 0.16.0)
+
+Tasks, bugs, features, decisions and questions, on a kanban, in one file the AI keeps up to date in
+the coordination repository and the person moves. Sprints and milestones are dated; a card's
+`status` is a column id.
+
+```json
+{
+  "format": "datapass.board",
+  "version": "1",
+  "title": "Research library — work",
+  "columns": [
+    { "id": "backlog", "title": "Backlog" },
+    { "id": "todo", "title": "To do" },
+    { "id": "doing", "title": "Doing", "limit": 2 },
+    { "id": "review", "title": "Review", "description": "A pull request is open, or a decision waits for you." },
+    { "id": "done", "title": "Done", "done": true }
+  ],
+  "sprints": [
+    { "id": "s1", "title": "First batch", "start": "2026-09-21", "end": "2026-10-04", "goal": "100 PDFs extracted with their page numbers" }
+  ],
+  "milestones": [ { "id": "pilot", "title": "Pilot batch reviewed", "due": "2026-10-31" } ],
+  "items": [
+    { "id": "bug-3", "type": "bug", "title": "Large PDFs time out when Data Factory calls the extraction", "status": "doing", "priority": "P1",
+      "description": "Scanned PDFs of more than about 200 pages take longer than the Azure Function activity allows over HTTP (about 230 s).",
+      "subproject": "papers", "components": ["extract", "adf"],
+      "files": [ { "repoRef": "pipeline", "path": "functions/extract/function_app.py" } ],
+      "environment": "dev", "sprint": "s1", "due": "2026-10-02", "created": "2026-09-23",
+      "links": [ "https://github.com/example-org/research-pipeline/issues/3" ] },
+    { "id": "question-rights", "type": "question", "title": "Which publishers allow text extraction?", "status": "todo", "priority": "P2",
+      "subproject": "papers", "components": ["pdf-archive"], "due": "2026-09-30" }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `columns[]` | The kanban columns, in order (1–12). `done: true` marks finished work; if no column says so, a column named `done` or `closed` counts. `limit` shows a work-in-progress cap (`n/limit`, red when exceeded). |
+| `sprints[]` | Dated iterations: `id`, `title`, `start`, `end` (`end` ≥ `start`), `goal`. The current sprint is the one whose dates include today. |
+| `milestones[]` | Dated targets: `id`, `title`, `due`, `description`. |
+| `items[]` (cards) | `id`, `type` (`task`, `bug`, `feature`, `decision`, `question`), `title` (≤ 200 chars), `status` (a column id), `priority?` (`P0`–`P4`), `description?`, `subproject?` (a scope id), `components?` (graph item ids), `files?` (`{ repoRef?, path, line? }` — `repoRef` omitted means the coordination repository, the one holding `board.json`), `environment?`, `sprint?`, `milestone?`, `due?`, `created?`, `closed?`, `assignee?`, `labels?` (≤ 20, ≤ 40 chars each), `links?` (https pages only — an Azure DevOps work item, a GitHub issue, a pull request), `decisionRef?` (a decision id of `options.json`). |
+
+Rules: unknown fields are errors; ids (columns, sprints, milestones, cards) must be unique; a card's
+`status` must be a declared column, its `sprint`/`milestone` must be declared; every date must be a
+real calendar date; `links` must be `https://` with no user name, password, or token/signature query
+parameter (`sig`, `token`, `access_token`, `code`, `key`, `password`, `secret`, `se`); file paths must
+be relative, inside the repository. Problems in project files warns (never blocks) on a `subproject`,
+`component`, `environment`, `repository` or `decisionRef` the rest of the project does not know.
+Editor schema: `schemas/datapass-board.schema.json` (validated as you type; no `$schema` line —
+see rule 9 of section 4). Example: `examples/v3/research-library/.datapass/board.json`.
+
+What DataPass does with it:
+
+- **Board** view of the Workbench: kanban columns (drag a card to another column, or `Alt+←` /
+  `Alt+→`, or "Move to…" in the card panel); filters (sub-project, sprint including "no sprint", type
+  chips with open counts, text search on title/id); sprint cards with progress; milestones (overdue
+  in red); a card panel (description, sub-project, sprint, milestone, due date, environment,
+  assignee, labels — clicking a **component** selects it and shows it on the Architecture view;
+  clicking a **file** opens it (a missing file is explained, never created; a repository that is not
+  cloned offers Clone/Locate); a **link** opens after its address is shown once per window; a
+  **decisionRef** opens the Options view; "Prepare AI pack for this card"; "Open in board.json" jumps
+  to the card in the editor).
+- Project tree: a **Board** section (open cards, most urgent first: priority, then the column
+  furthest along; overdue cards marked); clicking opens the board on that card. Details side bar of a
+  component or sub-project lists its cards. Preparation packs of a component list its open cards.
+- **Moving a card writes only that card's `"status"` value.** The value is replaced exactly where it
+  stands in the file; every other byte — formatting, key order, line endings, a byte-order mark — is
+  kept. DataPass re-parses the result and writes it only if it equals the board with that one change;
+  otherwise nothing is written. The usual base check (refused if the file changed since DataPass read
+  it), a backup in `.datapass/local/backups` and a journal entry apply, and the first move in a
+  window asks for confirmation. DataPass never commits or pushes the change.
+- **AI pack for a card** ("Prepare AI pack for this card"): a bounded Markdown context with questions
+  matched to the card's type — fix (bugs), implement (tasks/features), decide (decisions), answer
+  (questions), explain, or plan (asks for the complete updated `board.json`). For a bug, the error
+  message you paste or type is included with credentials, tokens and local paths removed, up to 4000
+  characters. The pack names the card, its sprint/milestone/environment, its files and whether they
+  are here, each component's files/operations/blockers, repositories (no local paths), and relevant
+  sheet/decisions; its rules ask the AI to deliver a pull request and, in that same pull request, move
+  the card to "review" (or the last open column) and add the pull request's link, keeping every id.
+  Never included: absolute local paths, file contents, credentials, notebook outputs, user names.
+- **JSON exchange with an AI** (section 9): `board.json` is one of the files of the AI exchange view
+  (right side bar) and of the commands "Copy a DataPass File for the AI" / "Import the AI's Answer",
+  with its own tasks ("Update the board from the project's work", "Plan the next sprint", or a free
+  task typed in chat).
+
+Other viewers read `board.json` (and `project.json`) straight from GitHub — for example **Mongoku**,
+frozen since 0.16.0 (section 2): DataPass never talks to it, it only has to keep the files
+well-formed.
+
+## 11. Git hosts and CI (GitHub, Azure DevOps, GitLab)
+
+DataPass recognises the repository behind a remote address whichever host it is on, and opens that
+host's own web pages — it never calls a host's API and sends it nothing.
+
+**Address forms and identity.** A Git remote is matched by host and path, lowercased, ignoring
+credentials, port and `.git`. Azure DevOps has five equivalent forms for one repository —
+`https://dev.azure.com/{org}/{project}/_git/{repo}`, the `https://{org}@dev.azure.com/…` address its
+**Clone** button copies, the SSH `git@ssh.dev.azure.com:v3/{org}/{project}/{repo}`, the legacy
+`https://{org}.visualstudio.com/[DefaultCollection/]{project}/_git/{repo}` and the legacy SSH
+`{org}@vs-ssh.visualstudio.com:v3/{org}/{project}/{repo}` — and DataPass maps all of them to the same
+identity, so a repository declared with one form and cloned with another is still recognised (never
+called "wrong clone"), and the repository's own name (not the coordination repository's) is used when
+DataPass looks for a sibling clone.
+
+**Web pages DataPass opens**, built from the declared `remote.url` or the clone's origin (a planned
+repository has none; an unrecognised host gets none; a self-managed GitLab is recognised when its
+host name starts with `gitlab.`):
+
+| Host | Repository | Pull/merge requests | Pipelines / Actions | Boards / issues |
+|---|---|---|---|---|
+| GitHub | repository page | `/pulls` | `/actions` | `/issues` |
+| Azure DevOps | `…/_git/{repo}` | `…/_git/{repo}/pullrequests` | `https://dev.azure.com/{org}/{project}/_build` | `…/_workitems` |
+| GitLab | repository page | `/-/merge_requests` | `/-/pipelines` | `/-/issues` |
+
+Command **DataPass: Open a Repository on the Web (GitHub, Azure DevOps, GitLab)…** (the repository
+row's inline globe icon in the Project tree, the view title menu, or a repository row of the
+Workbench). The exact address is shown once per window before it opens in the browser.
+
+**CI components and "See the runs".** Declare a `pipeline` component with `provider` `github-actions`
+(files `.github/workflows/*.{yml,yaml}`), `azure-pipelines` (`azure-pipelines.yml`) or `gitlab-ci`
+(`.gitlab-ci.yml`) — see section 3. "See the runs" opens the host's runs page (an Azure pipeline
+building a GitHub repository has no page DataPass can derive; add one to the component's `docs`
+instead). For GitHub, when installed, DataPass also offers the **GitHub Actions** extension's own
+view for the runs, and the **GitHub Pull Requests** extension's view for pull requests and issues.
+
+**Official extensions**, none required: GitHub Actions `github.vscode-github-actions` (view
+container `github-actions`), GitHub Pull Requests `GitHub.vscode-pull-request-github` (view container
+`github-pull-requests`), Azure Pipelines `ms-azure-devops.azure-pipelines` (YAML language support
+only, no view: runs stay in the Azure DevOps portal), GitLab Workflow `GitLab.gitlab-workflow` (no
+pipeline view either: pipelines stay on GitLab), Grafana `Grafana.grafana-vscode` (no view container:
+for a component with `provider` `grafana`, DataPass opens its dashboard JSON or YAML file with that
+extension's own "Edit in Grafana" command, which connects with the URL and token of the extension's
+settings — DataPass never reads them).
+
+**Azure Boards.** Microsoft's Azure Boards VS Code extension was archived in 2023: boards open on the
+web (`…/_workitems`) — or use the DataPass board (section 10) instead for what the project itself
+tracks.

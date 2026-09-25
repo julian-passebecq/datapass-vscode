@@ -16,6 +16,12 @@ S01–S18 are listed in [../v2.2/08_SOURCES_AND_EVIDENCE.md](../v2.2/08_SOURCES_
 | S29 | https://marketplace.visualstudio.com/items?itemName=databricks.neon-local-connect and https://github.com/neondatabase/neon_local_vs_code_extension | Neon extension ("Neon - Serverless Postgres", publisher databricks, container `neon-local-connect`) |
 | S30 | https://docs.databricks.com/dev-tools/bundles/ | `databricks bundle validate / deploy / run` are separate steps |
 | S31 | https://docs.pytest.org/ | `python -m pytest` |
+| S32 | https://docs.github.com/actions and the Marketplace listing of `github.vscode-github-actions` | GitHub Actions: manages workflows and runs, YAML validation |
+| S33 | https://learn.microsoft.com/azure/devops/pipelines/ and github.com/microsoft/azure-pipelines-vscode `package.json` | Azure Pipelines: `azure-pipelines.yml`; extension publisher `ms-azure-devops`, name `azure-pipelines`, language support only (no view) |
+| S34 | https://docs.gitlab.com/ci/ and gitlab.com/gitlab-org/gitlab-vscode-extension `package.json` | GitLab CI/CD: `.gitlab-ci.yml`; extension publisher GitLab, name `gitlab-workflow`, only a `gitlab-duo` view container (no pipeline view) |
+| S35 | https://learn.microsoft.com/azure/devops/extend/develop/work-with-urls | Azure DevOps URL forms: `dev.azure.com/{org}` and `{org}.visualstudio.com`; the `_workItems` hub |
+| S36 | github.com/microsoft/vscode-pull-request-github `package.json` | GitHub Pull Requests: view containers `github-pull-requests`, `github-pull-request` |
+| S37 | github.com/grafana/grafana-vs-code-extension `package.json` and `src/extension.ts` | Grafana extension: no view container; custom editor `grafana.dashboard`; command `grafana-vscode.openUrl(uri?)` → `vscode.openWith` |
 
 ## VS Code facts verified for V3
 
@@ -30,6 +36,12 @@ S01–S18 are listed in [../v2.2/08_SOURCES_AND_EVIDENCE.md](../v2.2/08_SOURCES_
   publishers; authoring is ADF Studio in the browser.
 - Windows process creation: libuv searches the child's working directory before PATH for a bare
   command, hence absolute executable paths (`src/core/exec.ts`).
+- Extension view containers checked on 2026-09-25, from each extension's own `package.json`: GitHub
+  Actions `github.vscode-github-actions` declares container `github-actions`; GitHub Pull Requests
+  `GitHub.vscode-pull-request-github` declares container `github-pull-requests`; Azure Pipelines
+  `ms-azure-devops.azure-pipelines` declares none (language support only); GitLab Workflow
+  `GitLab.gitlab-workflow` declares none for pipelines (only `gitlab-duo`); Grafana
+  `Grafana.grafana-vscode` declares none (its command opens a custom editor instead).
 
 ## Repositories inspected (read-only)
 

@@ -19,6 +19,8 @@ export interface ModuleInfo {
   galaxyCard?: string;
   /** Capability providers whose operations belong to this module. */
   providers: CapabilityRecord["provider"][];
+  /** Shown next to the module when projects choose their modules. */
+  note?: string;
 }
 
 export const MODULES: readonly ModuleInfo[] = [
@@ -31,7 +33,8 @@ export const MODULES: readonly ModuleInfo[] = [
   { id: "airflow", label: "Airflow", group: "core", providers: ["airflow"] },
   { id: "powerbi", label: "Power BI", group: "core", galaxyCard: "powerbi", providers: ["powerbi"] },
   { id: "grafana", label: "Grafana / observability", group: "core", galaxyCard: "observability", providers: ["grafana"] },
-  { id: "mongoku", label: "Mongoku and Mongo context", group: "add-on", providers: ["mongo"] },
+  { id: "mongoku", label: "Mongoku and Mongo context", group: "add-on", providers: ["mongo"],
+    note: "frozen: Mongoku reads board.json and project.json from GitHub; DataPass never connects to it. Off for new projects." },
   { id: "diagramcloud", label: "DiagramCloud", group: "add-on", providers: ["diagram"] }
 ];
 
@@ -51,8 +54,8 @@ export function galaxyCardEnabled(manifest: WithModules, cardId: string): boolea
   return !module || moduleEnabled(manifest, module.id);
 }
 
-/** Operations every project has (external apps, Python code, opening files): never switched off. */
-export const ALWAYS_ON_PROVIDERS: ReadonlySet<CapabilityRecord["provider"]> = new Set(["apps", "python", "generic"]);
+/** Operations every project has (external apps, Python code, opening files, its Git host's CI): never switched off. */
+export const ALWAYS_ON_PROVIDERS: ReadonlySet<CapabilityRecord["provider"]> = new Set(["apps", "python", "generic", "devops"]);
 
 /** Providers switched off by the project; ALWAYS_ON_PROVIDERS cannot be switched off. */
 export function disabledProviders(manifest: WithModules): Set<CapabilityRecord["provider"]> {

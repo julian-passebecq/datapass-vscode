@@ -1,3 +1,82 @@
+# Implementation Status — V3 pass 4 (0.16.0): work and DevOps
+
+Date: 2026-09-25
+Version: `0.16.0` — branch `claude/v016-work-devops`, rebased on main `c48bc81` (0.15.1 AI exchange
+view, PR #23, on 0.15.0 architecture options, PR #22). Why and what next:
+[handoff/v3/06_VISION_AND_READINESS.md](handoff/v3/06_VISION_AND_READINESS.md).
+
+### Implemented
+
+- **Board** (`.datapass/board.json`, format `datapass.board` 1): columns (1–12, work-in-progress
+  `limit`), sprints and milestones (dated), cards (task, bug, feature, decision, question) with
+  status, priority, sub-project, components, files, environment, sprint, milestone, due date, labels
+  and links (https only, no credential or token in the query). Strict parser (unknown fields are
+  errors, duplicate ids refused, status must be a declared column, sprint/milestone must be declared,
+  dates must be real calendar dates, links refused if they carry a user name, password, or a
+  token/signature parameter); cross-checks against the project as warnings (unknown sub-project,
+  component, environment, repository, decisionRef).
+- **Board view of the Workbench**: kanban columns with drag-and-drop (and `Alt+←`/`Alt+→`), filters
+  (sub-project, sprint, type, text search), sprint and milestone cards, a card panel (components link
+  to the Architecture view, files open in the editor or offer Clone/Locate, links open after a
+  confirmation, decisions link to the Options view). Project tree "Board" section (open cards, most
+  urgent first); Details side bar and preparation packs list a component's cards.
+- **Moving a card writes only that card's `"status"` value**: located and replaced in place, every
+  other byte kept, the result re-parsed and required to equal the board with that single change or
+  nothing is written. Base check, backup (`.datapass/local/backups`), journal; first move in a window
+  confirmed once. Never commits or pushes.
+- **AI pack for a card** (`datapass.board.aiPack`): fix / implement / decide / answer / explain / plan
+  questions matched to the card's type; a bug's error text (clipboard or typed) scrubbed of
+  credentials and local paths, up to 4000 characters; rules ask the AI to open a pull request and
+  move the card to review in that same PR, keeping every id. `board.json` joins the JSON exchange
+  (the 0.15.1 AI exchange view, and "Copy a DataPass File for the AI" / "Import the AI's Answer") with
+  its own tasks (update the board, plan the next sprint).
+- **Git hosts** (`core/project/gitHosts.ts`): Azure DevOps https-with-organization (`https://{org}@
+  dev.azure.com/{org}/{project}/_git/{repo}`, what its Clone button copies) and legacy SSH addresses
+  accepted by the manifest check and the editor schema; `remoteIdentity()` maps all five Azure DevOps
+  address forms (https, https-with-org, SSH, legacy https, legacy SSH) to one identity, so a clone
+  made with one form is recognised when the manifest declares another, and sibling auto-discovery
+  uses the repository's real name. Web pages per host (repository, pull/merge requests,
+  pipelines/Actions, boards/issues), command **DataPass: Open a Repository on the Web…**, address
+  shown once per window before it opens.
+- **CI profiles and providers**: `github-actions` (`.github/workflows/*.{yml,yaml}`),
+  `azure-pipelines` (`azure-pipelines.yml`), `gitlab-ci` (`.gitlab-ci.yml`); provider `devops`
+  (always on, not a switchable module). "See the runs" (`ci.github-actions.runs`,
+  `ci.azure-pipelines.runs`, `ci.gitlab.pipelines`) opens the host's runs page, or the GitHub Actions
+  extension's own view when it is installed; an Azure pipeline building a GitHub repository is
+  explained rather than guessed, with a component-doc link suggested. Tool probes for the five new
+  extensions (GitHub Actions, GitHub Pull Requests, Azure Pipelines, GitLab Workflow, Grafana),
+  verified against each extension's own `package.json` on 2026-09-25.
+- **Mongoku frozen**: manifests DataPass creates (Initialize, generic and FOIL templates) now set
+  `"modules": { "mongoku": false }`; existing manifests are unaffected. Modules picker, Problems and
+  the editor schema explain it reads `board.json`/`project.json` from GitHub and has no link with
+  DataPass.
+- **Grafana**: its extension has no view container, so DataPass opens a dashboard JSON/YAML file with
+  its own `grafana-vscode.openUrl` command (the dashboard editor `grafana.dashboard`) rather than
+  routing to a side-bar view; "Show extension" when it is missing.
+- Editor schema `schemas/datapass-board.schema.json` (jsonValidation), new public example
+  `examples/v3/shop-platform` (one repository per Git host, one CI pipeline each), the board added to
+  `examples/v3/research-library`; guide sections 10–11.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 249 / 249 (15 new: board 8, git hosts / CI 6, modules 1; the examples test also covers board.json and the new example) |
+| `npm run test:desktop` (VS Code 1.139.1, Windows 11) | 172 / 172 on 8 fixtures — `empty` 12, `v2-retail` 48, `v1-foil` 15, `broken` 16, `v4-cloudflare` 19, `v3-research` 34 (6 new board flows), `v3-monorepo` 13, `v3-devops` 15 (new fixture, 4 DevOps flows). Tool probes on the isolated test profile correctly report the five new extensions "absent" |
+| Visual check | `scripts/workbench-preview.ts`, board and board-filtered pages, dark and light; drag & drop, `Alt+→` and search focus exercised in the browser preview |
+| New public example | `examples/v3/shop-platform` (project.json + graph.json + README: one repository per Git host, Azure DevOps declared with the `{org}@` Clone address) |
+
+### Still needs a human
+
+- Testlab project 6 (`D:\PROJ\datapass-testlab\6-board-devops`): the board and kanban, Git host links
+  and CI runs, Mongoku frozen — offline, with the real FOIL Azure DevOps repository's Clone address
+  checked at the end (optional, real).
+- The V3 acceptance with Julian (testlab 4/5, FOIL on the real repositories) and account qualification
+  listed in earlier sections remain open.
+
+---
+
 # Implementation Status — 0.15.1: AI exchange view instead of Chat in the secondary side bar
 
 Date: 2026-09-25. Version `0.15.1` — branch `claude/ai-exchange-pane`, on main `90cd817` (0.15.0, PR #22).
@@ -20,6 +99,8 @@ Date: 2026-09-25. Version `0.15.1` — branch `claude/ai-exchange-pane`, on main
 - Tests: `tests/aiExchangeView.test.ts` (HTML/CSP/script, state, live review); desktop: the side bar
   shows DataPass at startup in DataPass projects and not in an empty workspace; the full copy → paste
   → check → write flow through the view's real message handler.
+
+---
 
 # Implementation Status — V3 pass 3 (0.15.0): architecture options and project sheet
 

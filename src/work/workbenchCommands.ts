@@ -20,7 +20,8 @@ import { vetRelativePath } from "../core/exchange/pathSafety";
 import { PACK_QUESTIONS, buildPreparationPack, type PackQuestion } from "../core/project/preparation";
 import { changedComponents, describeVerdict, syncVerdict } from "../core/project/gitSync";
 import { mergeCatalogs, parseCatalog, CATALOG_PATH, type Catalog } from "../core/project/catalog";
-import { sameRemote } from "../core/project/resolve";
+import { globMatcher, sameRemote } from "../core/project/resolve";
+import { CI_HOSTS } from "./gitHostCommands";
 import type { ComponentView, OperationView } from "../core/project/projectMap";
 import { cleanNote, MAX_NOTE, toolSnapshot, type QualificationResult } from "../core/qualification/qualification";
 import { CHECKLIST_STATES, type ChecklistState } from "../core/work/workModel";
@@ -147,13 +148,29 @@ async function openComponentFile(session: WorkSession, host: WorkbenchHost, comp
   const f = a?.files.find(x => x.repoPath === repoPath);
   if (!a || !f) throw new UserFacingError(`${repoPath ?? "This file"} is not one of the files expected for ${c.label}.`);
   if (f.state !== "found") return explainMissing(session, c.id, f.repoPath);
+  if (f.kind === "glob") {
+    // "*.sql", ".github/workflows/*.{yml,yaml}": open the matching file (or pick one of them).
+    const parts = f.repoPath.split("/");
+    const re = globMatcher(parts.pop() ?? "*");
+    const dir = repoUri(session, a.repoKey, parts.join("/"));
+    let names: string[] = [];
+    try { names = (await vscode.workspace.fs.readDirectory(dir)).filter(([n, t]) => t & vscode.FileType.File && re.test(n)).map(([n]) => n).sort(); } catch { /* listed below as none */ }
+    if (!names.length) return explainMissing(session, c.id, f.repoPath);
+    const name = names.length === 1 ? names[0] : (await vscode.window.showQuickPick(names, { title: `${c.label}: open which ${f.path}?` }));
+    if (!name) return;
+    return openFileBesideWorkbench(host, vscode.Uri.joinPath(dir, name));
+  }
   const uri = repoUri(session, a.repoKey, f.repoPath);
   if (f.kind !== "file") {
     if (isInsideWorkspace(uri)) { await vscode.commands.executeCommand("revealInExplorer", uri); return; }
     if (await confirmModal(`${f.path} is a folder outside this window.`, `Open ${a.root === "." ? "the repository" : a.root} in a new window?`, "Open in new window")) await openFolderWindow(uri);
     return;
   }
-  // Beside the Workbench tab when it is the active tab, so the diagram stays visible.
+  await openFileBesideWorkbench(host, uri);
+}
+
+/** Beside the Workbench tab when it is the active tab, so the diagram stays visible. */
+async function openFileBesideWorkbench(host: WorkbenchHost, uri: vscode.Uri): Promise<void> {
   const workbenchActive = vscode.window.tabGroups.activeTabGroup.activeTab?.input instanceof vscode.TabInputWebview && host.hasPanel();
   await vscode.commands.executeCommand("vscode.open", uri, { viewColumn: workbenchActive ? vscode.ViewColumn.Beside : vscode.ViewColumn.Active, preview: true });
 }
@@ -162,7 +179,7 @@ async function openEntry(session: WorkSession, host: WorkbenchHost, componentId?
   const c = selectedComponent(session, componentId);
   const a = c.artifacts;
   if (!a) throw new UserFacingError(`${c.label} declares no files (graph.json → artifacts).`);
-  const target = (a.entry?.state === "found" ? a.entry : undefined) ?? a.files.find(f => f.state === "found" && f.kind === "file");
+  const target = (a.entry?.state === "found" ? a.entry : undefined) ?? a.files.find(f => f.state === "found" && f.kind === "file") ?? a.files.find(f => f.state === "found" && !f.optional);
   if (!target) return explainMissing(session, c.id, a.entry?.repoPath ?? a.files[0]?.repoPath);
   await openComponentFile(session, host, c.id, target.repoPath);
 }
@@ -335,6 +352,9 @@ async function openNativeTool(session: WorkSession, componentId?: string): Promi
   const c = selectedComponent(session, componentId);
   const provider = c.providerId ?? "";
   if (provider === "azure-data-factory") { await openExternal(vscode.Uri.parse(ADF_STUDIO)); return; }
+  // CI runs live on the Git host (GitHub Actions can also be shown by its extension's view).
+  if (CI_HOSTS[provider]) { await vscode.commands.executeCommand("datapass.openCiRuns", c.id); return; }
+  if (provider === "grafana") return openGrafanaDashboard(session, c);
   if (provider === "fabric") { await executeGalaxyAction("fabric.open", session.extensionUri); return; }
   if (provider === "vm") {
     // A machine is reached over Remote - SSH with the alias the graph names; DataPass never holds an address or a key.
@@ -350,6 +370,25 @@ async function openNativeTool(session: WorkSession, componentId?: string): Promi
   if (registered.has(route.command)) { await vscode.commands.executeCommand(route.command); return; }
   const choice = await vscode.window.showInformationMessage(`${c.provider?.nativeTool?.label ?? "The official extension"} is not installed or not enabled.`, "Show extension");
   if (choice) await showExtension(route.extensionId);
+}
+
+/**
+ * Grafana's official extension (Grafana.grafana-vscode) has no view container; its "Edit in
+ * Grafana" command (grafana-vscode.openUrl, taking the file's URI) opens a dashboard JSON or YAML
+ * file in its editor, connected with the URL and token set in that extension's own settings.
+ */
+const GRAFANA_OPEN = "grafana-vscode.openUrl";
+async function openGrafanaDashboard(session: WorkSession, c: ComponentView): Promise<void> {
+  const a = c.artifacts;
+  const file = [a?.entry, ...(a?.files ?? [])].find(f => f && f.state === "found" && f.kind === "file" && /\.(json|ya?ml)$/i.test(f.repoPath));
+  if (!a || !file) throw new UserFacingError(`${c.label}: declare the dashboard file (JSON or YAML) in graph.json artifacts; the Grafana extension opens a dashboard from its file.`);
+  const registered = new Set(await vscode.commands.getCommands(true));
+  if (!registered.has(GRAFANA_OPEN)) {
+    const choice = await vscode.window.showInformationMessage("The Grafana extension (Grafana.grafana-vscode) is not installed or not enabled.", { detail: "It opens a dashboard file in an editor connected to your Grafana. Without it, open the dashboard in Grafana's web UI." }, "Show extension");
+    if (choice) await showExtension("Grafana.grafana-vscode");
+    return;
+  }
+  await vscode.commands.executeCommand(GRAFANA_OPEN, repoUri(session, a.repoKey, file.repoPath));
 }
 
 // ------------------------------------------------------------------ operations
@@ -374,6 +413,7 @@ async function showOperation(session: WorkSession, opKey?: string): Promise<void
     if (op.command) choices.push({ label: "$(terminal) Copy the command / open a terminal there", id: "command" });
     if (op.capability.id === "generic.files.open") choices.push({ label: "$(go-to-file) Open the entry file", id: "open" });
     if (op.capability.id === "adf.studio.open") choices.push({ label: "$(link-external) Open ADF Studio", id: "adf" });
+    if (op.capability.datapassActionId === "datapass.openCiRuns") choices.push({ label: "$(link-external) Open the runs", id: "ci" });
     if (!choices.length) return;
     const pick = await vscode.window.showQuickPick(choices, { title: `${op.label}: ${r.status}`, placeHolder: "Details are in the DataPass Work output" });
     if (!pick) return;
@@ -388,6 +428,7 @@ async function showOperation(session: WorkSession, opKey?: string): Promise<void
     if (pick.id === "command") return copyComponentCommand(session, op.key);
     if (pick.id === "open") { await vscode.commands.executeCommand("datapass.openComponentEntry", c.id); return; }
     if (pick.id === "adf") { await openExternal(vscode.Uri.parse(ADF_STUDIO)); return; }
+    if (pick.id === "ci") { await vscode.commands.executeCommand("datapass.openCiRuns", c.id); return; }
     return;
   }
 }
@@ -467,7 +508,7 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     readiness: session.readiness(),
-    sheet: session.project.sheet, options: session.project.options
+    sheet: session.project.sheet, options: session.project.options, board: session.project.board
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`

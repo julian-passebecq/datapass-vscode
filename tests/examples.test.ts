@@ -13,6 +13,7 @@ import { parseGraph } from "../src/core/workspace/graph";
 import { parseCatalog } from "../src/core/project/catalog";
 import { optionsProblems, parseOptions } from "../src/core/project/options";
 import { parseSheet, sheetProblems } from "../src/core/project/sheet";
+import { boardProblems, parseBoard } from "../src/core/project/board";
 
 const ROOT = join(__dirname, "..");
 const ajv = new Ajv2020({ strict: false, validateFormats: false });
@@ -27,7 +28,7 @@ test("examples: committed files match the fixtures (run npx tsx scripts/emit-exa
 
 test("examples: manifests, graphs and the catalog are valid for the runtime and the editor", () => {
   const project = schema("datapass-project.schema.json"), graph = schema("datapass-graph.schema.json"), catalog = schema("datapass-catalog.schema.json");
-  const options = schema("datapass-options.schema.json"), sheet = schema("datapass-sheet.schema.json");
+  const options = schema("datapass-options.schema.json"), sheet = schema("datapass-sheet.schema.json"), board = schema("datapass-board.schema.json");
   for (const [rel, content] of Object.entries(exampleFiles())) {
     if (rel.endsWith(".datapass/project.json")) {
       const doc = JSON.parse(content);
@@ -42,6 +43,9 @@ test("examples: manifests, graphs and the catalog are valid for the runtime and 
     } else if (rel.endsWith(".datapass/sheet.json")) {
       assert.ok(parseSheet(content), rel);
       assert.ok(sheet(JSON.parse(content)), `${rel}: ${JSON.stringify(sheet.errors)}`);
+    } else if (rel.endsWith(".datapass/board.json")) {
+      assert.ok(parseBoard(content), rel);
+      assert.ok(board(JSON.parse(content)), `${rel}: ${JSON.stringify(board.errors)}`);
     } else if (rel.endsWith(".datapass/catalog.json")) {
       assert.ok(parseCatalog(content), rel);
       assert.ok(catalog(JSON.parse(content)), `${rel}: ${JSON.stringify(catalog.errors)}`);
@@ -57,6 +61,7 @@ test("examples: the research library's options and sheet match its manifest and 
   const o = parseOptions(files[dir + "options.json"]!);
   assert.deepEqual(optionsProblems(o, manifest, graph).filter(p => p.severity !== "info"), []);
   assert.deepEqual(sheetProblems(parseSheet(files[dir + "sheet.json"]!), manifest, graph, o.decisions.map(d => d.id)), []);
+  assert.deepEqual(boardProblems(parseBoard(files[dir + "board.json"]!), manifest, graph, o), []);
 });
 
 test("examples: the editor schemas refuse what the runtime refuses (options and sheet)", () => {
