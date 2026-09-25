@@ -1,8 +1,17 @@
-# Implementation Status — V3 pass 1 (0.13.0): Project Workbench
+# Implementation Status — V3 pass 1 (0.13.1): Project Workbench
 
 Date: 2026-09-25
-Version: `0.13.0` — branch `claude/v3-workbench`, based on main `91a0850` (0.12.0, the base of the
-GPT audit of 2026-09-25). Handoff: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+Version: `0.13.1`. 0.13.0 merged as PR #18 (main `c68f853`), based on main `91a0850` (0.12.0, the
+base of the GPT audit of 2026-09-25). Handoff: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+
+### 0.13.1 — `$schema` fix (first use by Julian)
+
+A `"$schema"` web address in `.datapass/project.json` (as the 0.13.0 guide and examples wrote it)
+replaces the schema the extension attaches, and VS Code blocks domains outside
+`json.schemaDownload.trustedDomains` ("Schema download issue — Location untrusted"), so the editor
+showed a warning and did not validate the file. The guide (rule 9), the examples and the FOIL starter
+no longer write `$schema`; DataPass lists an existing web `$schema` under Problems (info) with the fix.
+`$schema` stays accepted by the manifest, graph and catalog schemas.
 
 ### Implemented
 

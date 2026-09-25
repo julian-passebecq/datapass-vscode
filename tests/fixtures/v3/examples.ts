@@ -5,7 +5,8 @@
 import { graphAJson, manifestA } from "./research";
 import { filesB } from "./monorepo";
 
-const SCHEMA_BASE = "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas";
+// No "$schema" line: the extension attaches the schema of the installed version to .datapass/*.json,
+// and a web $schema would replace it (VS Code blocks untrusted schema downloads).
 const json = (v: unknown) => JSON.stringify(v, null, 2) + "\n";
 
 const RESEARCH_README = `# Research library — coordination repository (example)
@@ -46,7 +47,6 @@ https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_P
 `;
 
 const CATALOG = {
-  $schema: `${SCHEMA_BASE}/datapass-catalog.schema.json`,
   format: "datapass.catalog",
   version: "1",
   title: "Example organisation — projects",
@@ -59,8 +59,8 @@ const CATALOG = {
 
 export function exampleFiles(): Record<string, string> {
   const out: Record<string, string> = {};
-  out["examples/v3/research-library/.datapass/project.json"] = json({ $schema: `${SCHEMA_BASE}/datapass-project.schema.json`, ...manifestA() });
-  out["examples/v3/research-library/.datapass/graph.json"] = json({ $schema: `${SCHEMA_BASE}/datapass-graph.schema.json`, ...graphAJson() });
+  out["examples/v3/research-library/.datapass/project.json"] = json(manifestA());
+  out["examples/v3/research-library/.datapass/graph.json"] = json(graphAJson());
   out["examples/v3/research-library/README.md"] = RESEARCH_README;
   out["examples/v3/research-library/AGENTS.md"] = RESEARCH_AGENTS;
   for (const [rel, content] of Object.entries(filesB())) out[`examples/v3/catalog-import/${rel}`] = content;

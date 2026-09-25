@@ -1,5 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/julian-passebecq/datapass-vscode/main/schemas/datapass-project.schema.json",
   "schemaVersion": 3,
   "project": {
     "id": "research-library",

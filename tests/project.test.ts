@@ -148,6 +148,16 @@ test("A: cross-document problems (F10) are reported precisely", () => {
   assert.match(text, /info graph\.json: 1 component\(s\) belong to no sub-project/);
 });
 
+test("A: a web $schema is explained (it replaces the bundled schema); a local one is not", () => {
+  const remote = buildProjectMap(inputA({ manifest: { $schema: "https://raw.githubusercontent.com/org/repo/main/p.schema.json", ...manifestA() } }));
+  const hint = remote.problems.filter(p => p.message.startsWith('"$schema" points to a web address'));
+  assert.deepEqual(hint.map(p => `${p.severity} ${p.where}`), ["info project.json"]);
+  assert.match(hint[0]!.message, /Remove the "\$schema" line/);
+  assert.equal(buildProjectMap(inputA()).problems.some(p => p.message.includes("$schema")), false);
+  const local = buildProjectMap(inputA({ manifest: { $schema: "../schemas/datapass-project.schema.json", ...manifestA() } }));
+  assert.equal(local.problems.some(p => p.message.includes("$schema")), false);
+});
+
 test("A: diagram layout follows the data flow left to right", () => {
   const map = buildProjectMap(inputA());
   const papers = map.subprojects.find(s => s.id === "papers")!;
