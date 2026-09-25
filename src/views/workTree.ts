@@ -9,6 +9,7 @@ import type { WorkChecklistEntry, WorkOperation, WorkApp, ExchangeRecord } from 
 import type { ImpactEntry } from "../core/impact/facets";
 import type { PreflightStatus } from "../core/capabilities/preflight";
 import type { ProgrammeView } from "../core/programme/programme";
+import { moduleEnabled, MODULES } from "../core/modules";
 import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
 
 type Node =
@@ -195,6 +196,12 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
       children: () => [
         ...(m.scope.objective ? [{ t: "info" as const, id: "objective", label: m.scope.objective, icon: "milestone", description: "objective" }] : []),
         { t: "info", id: "next", label: m.nextStep, icon: "arrow-right", description: "next", tooltip: m.nextStep },
+        ...(ctx.manifest ? [{
+          t: "info" as const, id: "modules", icon: "extensions", description: "modules · change…",
+          label: MODULES.filter(mod => moduleEnabled(ctx.manifest, mod.id)).map(mod => mod.label.split(" (")[0]).join(" · ") || "No module enabled",
+          tooltip: "Modules this project uses. Click to switch modules on or off (writes the modules block of .datapass/project.json).",
+          command: { command: "datapass.chooseModules", title: "Choose modules" }
+        }] : []),
         ...(ctx.manifest?.schemaVersion === 1 ? [{ t: "info" as const, id: "migrate", label: "Upgrade manifest to v2 (scopes, apps, packs)…", icon: "arrow-circle-up", command: { command: "datapass.migrateManifestToV2", title: "Migrate" } }] : [])
       ]
     });
@@ -217,12 +224,13 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
       nodes.push({ t: "section", id: "apps", label: "Apps", icon: "rocket", description: String(m.apps.length), children: () => m.apps.map(app => ({ t: "app", app })) });
     }
     const companions = s.companions();
-    if (companions.grafana || companions.mongoku || ctx.diagramCloudSidecar) {
-      const names = [companions.grafana && "Grafana", companions.mongoku && "Mongoku", ctx.diagramCloudSidecar && "DiagramCloud"].filter(Boolean).join(" · ");
+    const sidecar = Boolean(ctx.diagramCloudSidecar) && moduleEnabled(ctx.manifest, "diagramcloud");
+    if (companions.grafana || companions.mongoku || sidecar) {
+      const names = [companions.grafana && "Grafana", companions.mongoku && "Mongoku", sidecar && "DiagramCloud"].filter(Boolean).join(" · ");
       nodes.push({
         t: "section", id: "links", label: "Links", icon: "link-external", description: names,
         tooltip: "Companion apps for this scope. Links open your browser; they are navigation, not health or sign-in checks.",
-        children: () => linkNodes(companions, s.mongokuStatus(), Boolean(ctx.diagramCloudSidecar))
+        children: () => linkNodes(companions, s.mongokuStatus(), sidecar)
       });
     }
     nodes.push({

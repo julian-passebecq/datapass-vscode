@@ -39,6 +39,37 @@
         }
       }
     },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Modules this project uses. false switches a module off (hidden in Galaxy, Work and Links); unlisted modules stay on. Use \"DataPass: Choose Project Modules…\".",
+      "properties": {
+        "fabric": {
+          "type": "boolean"
+        },
+        "databricks": {
+          "type": "boolean"
+        },
+        "powerbi": {
+          "type": "boolean"
+        },
+        "grafana": {
+          "type": "boolean"
+        },
+        "infrastructure": {
+          "type": "boolean"
+        },
+        "airflow": {
+          "type": "boolean"
+        },
+        "mongoku": {
+          "type": "boolean"
+        },
+        "diagramcloud": {
+          "type": "boolean"
+        }
+      }
+    },
     "repositories": {
       "type": "object",
       "additionalProperties": {

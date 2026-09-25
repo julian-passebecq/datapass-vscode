@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import { validateCompanionSections } from "./companions/companions";
+import { validateModules, type ModuleSwitches } from "./modules";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 
@@ -90,6 +91,8 @@ export interface DataPassProjectManifest {
     label: string;
     url: string;
   }>;
+  /** Per-project modules: `false` switches a module off; unlisted modules stay on. */
+  modules?: ModuleSwitches;
   /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
   companions?: {
     mongoku?: {
@@ -195,6 +198,7 @@ export function validateProjectManifest(raw: unknown): string[] {
   if (v2) issues.push(...validateV2Sections(doc));
   const declaredScopes = new Set(v2 && Array.isArray(doc.scopes) ? doc.scopes.map(s => (s as { id?: unknown } | null)?.id).filter((id): id is string => typeof id === "string") : []);
   issues.push(...validateCompanionSections(doc, declaredScopes));
+  issues.push(...validateModules(doc.modules));
 
   if (doc.links !== undefined) {
     if (!Array.isArray(doc.links)) {

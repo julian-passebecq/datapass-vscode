@@ -197,6 +197,36 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     await withUi([{ pick: "Weekly forecast refresh" }], () => run("datapass.selectScope"));
   }, ["v2-retail"]);
 
+  // ------------------------------------------------------------ per-project modules (v2-retail)
+
+  test("modules: switching modules off hides their Galaxy card, operations and links; switching back restores them", async () => {
+    const core = ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Grafana"];
+    await withUi([{ pick: core }, { button: "Save" }], () => run("datapass.chooseModules"));
+    const saved = JSON.parse(await readText(".datapass/project.json"));
+    assert.deepEqual(saved.modules, { fabric: true, databricks: true, powerbi: false, grafana: true, infrastructure: true, airflow: true, mongoku: false, diagramcloud: false });
+    assert.equal(Object.keys(saved)[2], "modules", "the block is written right after project");
+    const state = await api().refresh();
+    assert.ok(!state.platforms.some(p => p.id === "powerbi"), state.platforms.map(p => p.id).join(","));
+    assert.ok(state.platforms.some(p => p.id === "fabric") && state.platforms.some(p => p.id === "observability"));
+    const ids = new Set((await api().renderWorkTree()).map(r => r.id));
+    assert.ok(ids.has("modules") && ids.has("links:grafana"));
+    assert.ok(!ids.has("links:mongoku") && !ids.has("links:diagramcloud"), [...ids].filter(i => i?.startsWith("links")).join(","));
+    const refused = await withUi([], () => run("datapass.diagramCloud.copySummary"), { allowErrors: true });
+    assert.ok(refused.errors.some(e => /DiagramCloud module is switched off/.test(e)), refused.errors.join(" / "));
+    record("modulesOff", { galaxy: state.platforms.map(p => p.id), workRows: [...ids].filter(i => i?.startsWith("links")) });
+
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    const restored = await api().refresh();
+    assert.equal(restored.platforms.length, 5);
+    assert.ok((await api().renderWorkTree()).some(r => r.id === "links:mongoku"));
+  }, ["v2-retail"]);
+
+  test("modules: declining the save changes nothing", async () => {
+    const before = await read(".datapass/project.json");
+    await withUi([{ pick: "Microsoft Fabric" }, { dismiss: true }], () => run("datapass.chooseModules"));
+    assert.deepEqual(await read(".datapass/project.json"), before);
+  }, ["v2-retail"]);
+
   // ------------------------------------------------------------ companions off / refusals
 
   test("companions off: no Links section and a clear message when nothing is configured", async () => {

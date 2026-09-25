@@ -1,3 +1,43 @@
+# Implementation Status — Pass 10a: per-project modules
+
+Date: 2026-09-25
+Version: `0.10.0` — branch `claude/pass-10a-modules`, based on main `83c41e0` (v0.9.3)
+
+### Implemented
+
+- `modules` in `.datapass/project.json` (v1 and v2): `fabric`, `databricks`, `powerbi`, `grafana`,
+  `infrastructure`, `airflow`, `mongoku`, `diagramcloud` → `true`/`false`. Only `false` switches a
+  module off; unlisted modules stay on; no block = previous behaviour. Validated at runtime and in
+  the editor schema (unknown ids and non-booleans rejected).
+- A switched-off module disappears everywhere DataPass shows it: its Galaxy card is not detected,
+  shown or counted in health; its operations leave the Work view (a scope that still references
+  one reports it as a problem instead of silently dropping it); its links (Grafana, Mongoku,
+  DiagramCloud) disappear; DiagramCloud bridge commands and Mongoku imports refuse with a clear
+  message; a Mongoku `vscode://` link cannot select a scope through it.
+- **DataPass: Choose Project Modules…** (Work view row "modules" and **…** menu): a checklist
+  grouped as *cloud core* / *optional add-on*, a confirmation listing on/off, then a journaled
+  write of only the `modules` block (placed after `project`), refused if the file changed since it
+  was read. Nothing is installed or uninstalled.
+- `D:\PROJ\datapass-testlab` (local, not in this repository): three mini projects (Fabric
+  notebook, Databricks bundle, Azure plan + Oracle VM) with French scopes/checklists, each enabling
+  only its module.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 155 / 155 (4 new module tests, including editor-schema/runtime agreement) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 84 / 84: switching Power BI, Mongoku and DiagramCloud off leaves 4 Galaxy cards and only Grafana under Links, the bridge refuses, switching back restores 5 cards; declining the save changes nothing |
+
+### Known gap (next pass)
+
+The Galaxy **Remote SSH** action opens VS Code's generic remote menu and ignores
+`platforms.oracle.sshHost`; direct connection to the declared host belongs to Pass 10b
+(resources and bindings).
+
+---
+
 # Implementation Status — V2.2 (Pass 9.3: DiagramCloud bridge on main, Grafana and Mongoku links)
 
 Date: 2026-09-25

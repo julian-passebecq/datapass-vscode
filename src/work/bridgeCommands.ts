@@ -16,6 +16,7 @@ import { confirmModal, guarded, readJsonInput, report, requireRoot, UserFacingEr
 import { clipboard } from "../core/clipboard";
 import { openExternal } from "../core/external";
 import { safeAppUrl } from "../core/model/safeUrl";
+import { moduleEnabled } from "../core/modules";
 import { workspaceJournalFs } from "./commands";
 import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import { readRepoRevision } from "../core/workspace/gitBase";
@@ -31,7 +32,10 @@ const now = () => new Date().toISOString();
 const URL_SETTING = "diagramCloud.url";
 
 export function registerBridgeCommands(context: vscode.ExtensionContext, session: WorkSession): void {
-  const reg = (id: string, fn: () => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(fn)));
+  const reg = (id: string, fn: () => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(async () => {
+    if (!moduleEnabled(session.project.manifest, "diagramcloud")) throw new UserFacingError("The DiagramCloud module is switched off for this project (DataPass: Choose Project Modules).");
+    await fn();
+  })));
   reg("datapass.diagramCloud.openArchitecture", async () => openArchitecture(session));
   reg("datapass.diagramCloud.copyAiContext", async () => copyContext(session));
   reg("datapass.diagramCloud.importAiPlan", async () => importPlan(session));

@@ -7,6 +7,8 @@ import { ObservabilityAdapter } from "../adapters/observability";
 import { InfrastructureAdapter } from "../adapters/infrastructure";
 import { detectActiveProject } from "./projectState";
 import { buildGalaxyHealth } from "./health";
+import { readProjectManifest } from "./projectManifest";
+import { galaxyCardEnabled } from "./modules";
 
 export function createAdapters(extensionUri: vscode.Uri): PlatformAdapter[] {
   return [
@@ -19,9 +21,12 @@ export function createAdapters(extensionUri: vscode.Uri): PlatformAdapter[] {
 }
 
 export async function collectGalaxyState(extensionUri: vscode.Uri): Promise<GalaxyState> {
+  // Cards of modules the project switched off are neither detected nor shown nor counted in health.
+  const manifest = (await readProjectManifest()).manifest;
+  const adapters = createAdapters(extensionUri).filter(adapter => galaxyCardEnabled(manifest, adapter.id));
   const [project, platforms] = await Promise.all([
     detectActiveProject(),
-    Promise.all(createAdapters(extensionUri).map(adapter => safeDetect(adapter)))
+    Promise.all(adapters.map(adapter => safeDetect(adapter)))
   ]);
   const projectWithActions = {
     ...project,
