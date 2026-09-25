@@ -235,6 +235,44 @@ Modules, with their sub-modules:
   cloud connection it cannot observe is shown as "declared, not checked", with the portal page
   where it can be verified. Secrets stay in Power Ops.
 
+### 5.4 Where it lives: the hub repository (Julian's direction, 2026-09-25)
+
+Julian wants ChatGPT to keep the tool knowledge up to date by itself, without a new build of the
+extension, and to be told when a change is too big for the files alone. So the catalogue and the
+recipes live in the **hub repository** (the optional repository that already holds
+`.datapass/catalog.json`, the list of projects), next to it:
+
+```text
+hub repository   .datapass/catalog.json            projects (exists)
+                 .datapass/toolkit/tools.json       catalogue (5.1)
+                 .datapass/toolkit/recipes/*.json   recipes (5.2)
+```
+
+Each file carries `"format": "datapass.toolkit"`, a format `version`, and optionally
+`"requires": { "datapass": ">=0.19.0" }`.
+
+- **Who updates it.** ChatGPT through the JSON exchange (*Copy a DataPass File for the AI* → answer →
+  *Import the AI's Answer*, validated, with a diff and a backup), or a coding agent through a pull
+  request. DataPass reads the files after *Get updates*. No extension release is involved.
+- **What the files can change on their own:** tools (descriptions, links, status, versions seen,
+  install commands shown to copy, modules, `useWhen` / `avoidWhen`), recipes and their routes,
+  recommended version ranges. That covers new tools, archived tools, new workflows, and corrections.
+- **What needs a new DataPass version:** anything DataPass would *do* rather than *show*: a new
+  automatic check (a probe runs a program on the PC, so the program and its arguments stay in the
+  reviewed extension, and a hub entry can only point to a probe id the extension knows), a new field
+  or format version, a new action, a new kind of connection check.
+- **How the AI says "DataPass must be updated".** Unknown fields are errors, so the AI never
+  invents one. When the format cannot express what a project needs, it adds an entry to
+  `datapassRequests` in the toolkit file: `{ "title", "why", "example" }`. DataPass lists these
+  requests in the toolkit view as "Needs a newer DataPass". A file that requires a newer DataPass or
+  a newer format version is shown as such, and its unsupported entries are skipped, never guessed.
+  The requests are the input of the next DataPass pass in this repository.
+- **Trust.** The hub's content is data from an AI: it is validated against the schema, never
+  executed, and its labels (publisher, "official", status) are shown as the hub's claims. Install
+  commands are only copied. The extension keeps a small built-in baseline (the probes and the
+  official tools), so DataPass works without a hub. An entry the hub overrides is marked as changed
+  by the hub.
+
 ## 6. The AI and coding agents
 
 - **Chat AI (ChatGPT, Claude) through the JSON exchange.** Packs gain the toolchain state, the ID
@@ -269,7 +307,7 @@ Modules, with their sub-modules:
 | Pass | Content |
 |---|---|
 | **0.18: toolchain, ID map, connections** | Manifest v5 (`toolchain`, per-environment `values`, `connections`) with an upgrade and a backup; Readiness sections *Tools & versions* and *Connections*; the read-only checks above; the `.vscode/extensions.json` comparison; new AI pack fields; a `PREPARING_A_PROJECT.md` section; negative tests (a secret-looking value in any environment, credential files never opened, unknown tools); the data-goblin plugin list refreshed to 11 |
-| **0.19: toolkit** | Catalogue and recipes as dated data (Fabric and Power BI first, then Databricks and Azure), shown in Details, board cards and Options; `recipe` on board items; an optional hub overlay (D1) |
+| **0.19: toolkit** | Catalogue and recipes as dated data (Fabric and Power BI first, then Databricks and Azure), read from the hub repository (section 5.4) over a built-in baseline, shown in Details, board cards and Options; `recipe` on board items; the "Needs a newer DataPass" list from `datapassRequests` |
 | Mini-projects (testlab) | 1. Copy Job bulk edit with a backup (Fabric trial workspace) · 2. PBIP and Git with the FabCon workshop · 3. fabric-cicd from dev to prod with `parameter.yml` and the ID map · 4. Databricks bundle validate → deploy → run · 5. FUAM on a trial tenant (optional, admin) |
 | Later | Recipes exported as skills for agents (D4); the read-only DataPass MCP server, already listed as later |
 
@@ -277,7 +315,7 @@ Modules, with their sub-modules:
 
 | # | Question | Recommendation |
 |---|---|---|
-| D1 | Where do the catalogue and recipes live? | Built into DataPass first (reviewed, tested, dated); a hub-repository overlay (`.datapass/toolkit/`) later, if other projects or people need their own |
+| D1 | Where do the catalogue and recipes live? | **Julian's direction (2026-09-25): the hub repository**, so ChatGPT updates them without an extension release, and says through `datapassRequests` when DataPass itself must change (section 5.4). The extension keeps a small built-in baseline of probes and official tools |
 | D2 | Name | A **Toolkit** module in DataPass, rather than a separate "DataPass Cloud" product |
 | D3 | First stack | Fabric and Power BI (the densest and most confusing community tooling, and the Copy Job case), then Databricks (whose official route of extension, CLI and bundles is already covered), then Azure |
 | D4 | Recipes as skills for Codex, Claude and Copilot | Later, after 0.19 |
