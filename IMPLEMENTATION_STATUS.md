@@ -1,3 +1,26 @@
+# Implementation Status — 0.15.1: AI exchange view instead of Chat in the secondary side bar
+
+Date: 2026-09-25. Version `0.15.1` — branch `claude/ai-exchange-pane`, on main `90cd817` (0.15.0, PR #22).
+0.16.0 (work and DevOps) and 0.17.0 (windows and work views) are being prepared in parallel sessions.
+
+- **AI exchange view** (`datapass.aiExchange`, first view of the secondary side bar container, now
+  titled "DataPass", above Details, about three quarters of the height by default): choose a DataPass file (options, sheet, graph, manifest,
+  catalog) and a task, copy the file with the AI's instructions, paste the answer (typing, the
+  clipboard button or a file), see it checked live with the same parser as every import (which file
+  it is, valid or the reason it is refused, about how many lines change, warnings), then write it
+  after the diff, the modal confirmation and a backup. The pasted answer lives in memory only (not in
+  webview state); webview messages are validated (known kinds, tasks and two footer commands).
+- The Workbench's "Import the AI's answer" buttons now open this view on the right file
+  ("Paste the AI's answer"); the palette commands keep the clipboard / file quick pick.
+- **Chat replaced by default**: the first time a DataPass project (`.datapass/project.json`) opens in
+  a workspace, DataPass focuses the AI exchange view, so the secondary side bar shows DataPass rather
+  than VS Code's Chat; VS Code remembers the active tab per workspace afterwards. Setting
+  `datapass.layout.showInSecondarySideBar` (default true). An extension cannot remove VS Code's Chat;
+  to hide it everywhere, use VS Code's own `chat.disableAIFeatures` setting.
+- Tests: `tests/aiExchangeView.test.ts` (HTML/CSP/script, state, live review); desktop: the side bar
+  shows DataPass at startup in DataPass projects and not in an empty workspace; the full copy → paste
+  → check → write flow through the view's real message handler.
+
 # Implementation Status — V3 pass 3 (0.15.0): architecture options and project sheet
 
 Date: 2026-09-25

@@ -14,7 +14,12 @@ merged work — without ever deploying, pushing or running project code.
   files, and (0.14.0) **Local environment** / **Readiness**: which declared env files and variable
   names are set on this machine — never a value, always from your local vault (Power Ops).
 - **Architecture** panel (bottom): the diagram of the selected sub-project; click a component.
-- **Details** (right, secondary side bar): the component's files, what each step needs (read, develop,
+- **AI exchange** (right, secondary side bar, 0.15.1): pick a DataPass file and what the AI should do,
+  **Copy the file and instructions**, paste the AI's answer back: it is checked as you paste (which
+  file, valid or not, about how many lines change, warnings), then **Show the diff and write**.
+  When a DataPass project opens, this side bar shows DataPass instead of VS Code's Chat (once per
+  workspace; Chat stays one click away; setting `datapass.layout.showInSecondarySideBar`).
+- **Details** (right, under AI exchange): the component's files, what each step needs (read, develop,
   test, validate, deploy, run, publish) per environment, checklist and actions.
 - **Workbench** tab: the overview of every sub-project and what it still needs on this machine.
 - **Check for updates** (`git fetch`) and **Get updates** (fast-forward only, after listing the commits).
@@ -49,9 +54,10 @@ A project is described by `.datapass/project.json` (**manifest v4**, v3 still ac
 - The architecture diagram toolbar adds orientation (horizontal/vertical), grouping into
   foldable lanes (sub-project, repository, cloud/service family, level), and a preview dropdown
   that marks components new/changed/removed for a scenario, without writing anything.
-- An API-free JSON round trip with an AI assistant: **Copy a DataPass File for the AI…** and
-  **Import the AI's Answer into a DataPass File…** validate, diff, back up (`.datapass/local/backups/`)
-  and refuse files containing credential-shaped text or local paths.
+- An API-free JSON round trip with an AI assistant, in the **AI exchange** view (0.15.1) or with the
+  commands **Copy a DataPass File for the AI…** and **Import the AI's Answer into a DataPass File…**:
+  validate, diff, back up (`.datapass/local/backups/`) and refuse files containing credential-shaped
+  text or local paths.
 
 See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the full example in
 [examples/v3/research-library](examples/v3/research-library/).

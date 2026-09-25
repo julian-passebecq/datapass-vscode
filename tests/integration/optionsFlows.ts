@@ -125,4 +125,50 @@ export function registerOptionsFlows(getApi: () => DataPassTestApi): void {
     assert.equal(gitStatus().split(/\r?\n/).filter(Boolean).sort().join(" | "), "M .datapass/sheet.json", "options.json is back to its committed content");
     await run("workbench.action.closeAllEditors");
   }, ["v3-research"]);
+
+  test("0.15.1: the AI exchange view copies a file, checks a pasted answer live and writes it after the diff", async () => {
+    const view = api().aiExchange;
+    await run("datapass.showAiExchange", "options");
+    assert.ok(view.resolved(), "the view is shown in the secondary side bar");
+    const s = await view.state();
+    assert.deepEqual(s.files.map(f => f.kind), ["options", "sheet", "graph", "manifest", "catalog"]);
+    assert.ok(s.files.find(f => f.kind === "options")!.bytes! > 1000);
+    assert.equal(s.files.find(f => f.kind === "catalog")!.exists, false);
+    assert.ok(!JSON.stringify(s).includes(hub()) && !JSON.stringify(s).includes(os.homedir()), "no local path reaches the webview");
+    // Step 1: copy with the task chosen in the view; nothing is asked.
+    let replies: Array<Record<string, unknown>> = [];
+    const copy = await withUi([], async () => { replies = await view.send({ type: "copy", kind: "options", task: "review" }); });
+    assert.equal(replies[0]?.path, ".datapass/options.json", JSON.stringify(replies));
+    assert.match(copy.clipboard, /## What I am asking\nReview these architecture options/);
+    assert.equal(copy.prompts.filter(p => p.kind === "pick").length, 0);
+    await waitFor("the copy is listed", async () => (await view.state()).recent.some(r => r.label.includes("options.json for the AI (review)")));
+    // Step 2: the answer is pasted (here through the clipboard button) and checked as it arrives.
+    const options = readJson(".datapass/options.json");
+    options.decisions[0].title = "Where are PDFs archived (reviewed by the AI)?";
+    const answer = "Corrected:\n```json\n" + JSON.stringify(options, null, 2) + "\n```";
+    await withUi([], async u => { u.clipboard = answer; replies = await view.send({ type: "paste" }); });
+    assert.equal(replies[0]?.text, answer);
+    replies = await view.send({ type: "check", seq: 7, text: answer });
+    const review = replies[0]?.review as { ok: boolean; kind?: string; added?: number; unchanged?: boolean };
+    assert.equal(replies[0]?.seq, 7);
+    assert.ok(review.ok && review.kind === "options" && review.added! >= 1 && !review.unchanged, JSON.stringify(review));
+    const leaky = structuredClone(options);
+    leaky.decisions[0].notes = "connect with AccountKey=abcdefghijklmnop";
+    replies = await view.send({ type: "check", seq: 8, text: JSON.stringify(leaky) });
+    assert.ok(!(replies[0]?.review as { ok: boolean }).ok, "a leaky answer cannot be written");
+    // Step 3: write after the diff and the confirmation; a backup is kept.
+    const before = backups().filter(b => b.endsWith("__.datapass~options.json")).length;
+    const ui = await withUi([{ button: "Replace the file" }, { dismiss: true }], async () => { replies = await view.send({ type: "write", text: answer }); });
+    assert.equal(replies[0]?.path, ".datapass/options.json", JSON.stringify(replies));
+    assert.ok(ui.prompts.some(p => p.modal && /current file \(left\) and the AI's proposal \(right\)/.test(p.text ?? "")), "the diff is explained before writing");
+    assert.equal(readJson(".datapass/options.json").decisions[0].title, "Where are PDFs archived (reviewed by the AI)?");
+    assert.equal(backups().filter(b => b.endsWith("__.datapass~options.json")).length, before + 1);
+    // A refused write explains itself in the view instead of a pop-up.
+    replies = await view.send({ type: "write", text: JSON.stringify(leaky) });
+    assert.match(String(replies[0]?.error), /Not imported: Refused/);
+    // Webview input is checked: an unknown kind or command does nothing.
+    assert.deepEqual(await view.send({ type: "copy", kind: "../../etc" }), []);
+    assert.deepEqual(await view.send({ type: "command", command: "workbench.action.terminal.new" }), []);
+    await run("workbench.action.closeAllEditors");
+  }, ["v3-research"]);
 }

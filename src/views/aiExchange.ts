@@ -1,0 +1,171 @@
+/**
+ * The AI exchange view (secondary side bar, beside Details): copy a DataPass file with the AI's
+ * instructions, paste the AI's answer, see it checked live, then write it after a diff, a modal
+ * confirmation and a backup. It replaces the clipboard-and-quick-pick round trip with one window.
+ *
+ * Messages from the webview are untrusted: kinds and tasks are checked against the known lists,
+ * the pasted text is bounded and validated by the same parser as every other import, and writing
+ * still goes through the diff and the modal. The answer is never stored.
+ */
+import * as vscode from "vscode";
+import type { WorkSession } from "../work/session";
+import { aiExchangeHtml } from "./aiExchangeHtml";
+import { aiExchangeState, type AiExchangeState } from "./aiExchangeState";
+import { AI_TASKS, MAX_EXCHANGE_BYTES, type ExchangeKind } from "../core/project/aiExchange";
+import { KINDS, copyForAi, importAnswer, openExchangeFile, reviewAnswer } from "../work/optionsCommands";
+import { clipboard } from "../core/clipboard";
+import { errorMessage, readBounded, UserFacingError } from "../work/io";
+import { readOptional } from "../core/workspace/loader";
+import { vetRelativePath } from "../core/exchange/pathSafety";
+
+/** Commands the view's footer may run (no arguments). */
+const ALLOWED = new Set(["datapass.restoreBackup", "datapass.openPreparationGuide"]);
+
+type Reply = (message: Record<string, unknown>) => void | Thenable<boolean>;
+
+export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Disposable {
+  static readonly viewType = "datapass.aiExchange";
+  private view?: vscode.WebviewView;
+  /** A reveal asked before the webview loaded: applied on its first "ready". */
+  private pendingFocus?: { kind?: ExchangeKind };
+  /** The webview's script has loaded (it said "ready"). */
+  private loaded = false;
+  private readonly subs: vscode.Disposable[] = [];
+  private sizes: Partial<Record<ExchangeKind, number>> = {};
+
+  constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
+    this.subs.push(session.onDidChange(() => void this.post()));
+  }
+
+  dispose(): void { for (const s of this.subs) s.dispose(); }
+
+  /** The view has been shown at least once in this window (desktop tests). */
+  resolved(): boolean { return Boolean(this.view); }
+
+  resolveWebviewView(view: vscode.WebviewView): void {
+    this.view = view;
+    this.loaded = false;
+    view.webview.options = { enableScripts: true, localResourceRoots: [] };
+    view.webview.html = aiExchangeHtml(view.webview.cspSource, makeNonce());
+    view.webview.onDidReceiveMessage(m => void this.handle(m, r => view.webview.postMessage(r)));
+    view.onDidChangeVisibility(() => { if (view.visible) void this.post(); });
+    view.onDidDispose(() => { if (this.view === view) this.view = undefined; });
+  }
+
+  /** Show the view in the secondary side bar, on one file when given. */
+  async reveal(kind?: ExchangeKind): Promise<void> {
+    if (kind && !KINDS.includes(kind)) kind = undefined;
+    this.pendingFocus = { kind };
+    await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
+    if (this.view && this.loaded) { await this.view.webview.postMessage({ type: "focus", kind }); this.pendingFocus = undefined; }
+  }
+
+  async state(): Promise<AiExchangeState> {
+    await this.measure();
+    const c = this.session.project;
+    return aiExchangeState({
+      version: String(this.context.extension.packageJSON.version ?? ""),
+      hasRoot: Boolean(this.session.root), hasManifest: c.manifestExists, projectTitle: c.manifest?.project.title, graphPath: c.manifest?.graph,
+      kinds: KINDS, sizes: this.sizes,
+      problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError },
+      exchanges: this.session.exchanges()
+    });
+  }
+
+  /** Sizes of the files on disk (the loaded ones are known; graph and catalog are read). */
+  private async measure(): Promise<void> {
+    const root = this.session.root;
+    const c = this.session.project;
+    const sizes: Partial<Record<ExchangeKind, number>> = {};
+    if (root) {
+      for (const kind of KINDS) {
+        const loaded = kind === "manifest" ? c.manifestBytes : kind === "options" ? c.optionsBytes : kind === "sheet" ? c.sheetBytes : undefined;
+        if (loaded) { sizes[kind] = loaded.byteLength; continue; }
+        if (kind !== "graph" && kind !== "catalog") continue;
+        const rel = kind === "graph" ? c.manifest?.graph ?? ".datapass/graph.json" : ".datapass/catalog.json";
+        const vet = vetRelativePath(rel);
+        if (!vet.ok) continue;
+        const bytes = await readOptional(vscode.Uri.joinPath(root, ...vet.relative.split("/")));
+        if (bytes) sizes[kind] = bytes.byteLength;
+      }
+    }
+    this.sizes = sizes;
+  }
+
+  private async post(): Promise<void> {
+    if (!this.view?.visible) return;
+    await this.view.webview.postMessage({ type: "state", state: await this.state() });
+  }
+
+  /** One message from the webview (also driven directly by the desktop tests). */
+  async handle(message: unknown, reply: Reply): Promise<void> {
+    const m = message as { type?: unknown; seq?: unknown; text?: unknown; kind?: unknown; task?: unknown; command?: unknown } | null;
+    if (!m || typeof m !== "object") return;
+    const kindOf = (v: unknown) => (typeof v === "string" && (KINDS as readonly string[]).includes(v) ? v as ExchangeKind : undefined);
+    const text = (v: unknown) => (typeof v === "string" && v.length <= MAX_EXCHANGE_BYTES ? v : undefined);
+    try {
+      switch (m.type) {
+        case "ready":
+          this.loaded = true;
+          await reply({ type: "state", state: await this.state() });
+          if (this.pendingFocus) { await reply({ type: "focus", kind: this.pendingFocus.kind }); this.pendingFocus = undefined; }
+          return;
+        case "check": {
+          const raw = text(m.text);
+          const review = raw === undefined ? { ok: false, error: "The pasted text is larger than 2 MiB." } : await reviewAnswer(this.session, raw);
+          await reply({ type: "checked", seq: m.seq, review });
+          return;
+        }
+        case "copy": {
+          const kind = kindOf(m.kind);
+          if (!kind) return;
+          const task = typeof m.task === "string" && AI_TASKS[kind].some(t => t.id === m.task) ? m.task : AI_TASKS[kind][0]!.id;
+          const path = await copyForAi(this.session, String(this.context.extension.packageJSON.version ?? "unknown"), kind, task, true);
+          await reply({ type: "copied", path, at: new Date().toISOString() });
+          return;
+        }
+        case "paste": {
+          const raw = await clipboard.readText();
+          if (!raw.trim()) throw new UserFacingError("The clipboard is empty.");
+          if (new TextEncoder().encode(raw).byteLength > MAX_EXCHANGE_BYTES) throw new UserFacingError("The clipboard holds more than 2 MiB.");
+          await reply({ type: "pasted", text: raw });
+          return;
+        }
+        case "fromFile": {
+          const picked = await vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: false, filters: { "JSON or Markdown": ["json", "md", "txt"] }, title: "The AI's answer" });
+          if (!picked?.[0]) return;
+          await reply({ type: "pasted", text: new TextDecoder().decode(await readBounded(picked[0], MAX_EXCHANGE_BYTES)) });
+          return;
+        }
+        case "write": {
+          const raw = text(m.text);
+          if (raw === undefined) throw new UserFacingError("The pasted text is larger than 2 MiB.");
+          const written = await importAnswer(this.session, raw);
+          await reply({ type: "written", path: written?.path, backup: written?.backup });
+          return;
+        }
+        case "open": {
+          const kind = kindOf(m.kind);
+          if (kind) await openExchangeFile(this.session, kind);
+          return;
+        }
+        case "command": {
+          if (typeof m.command === "string" && ALLOWED.has(m.command)) await vscode.commands.executeCommand(m.command);
+          return;
+        }
+      }
+    } catch (error) {
+      const msg = errorMessage(error);
+      if (m.type === "write") await reply({ type: "written", error: msg });
+      else if (m.type === "copy") await reply({ type: "copied", error: msg });
+      else void vscode.window.showErrorMessage(`DataPass: ${msg}`);
+    }
+  }
+}
+
+function makeNonce(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let value = "";
+  for (let i = 0; i < 32; i += 1) value += chars.charAt(Math.floor(Math.random() * chars.length));
+  return value;
+}

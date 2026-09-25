@@ -9,6 +9,7 @@
  *
  * The other way in stays Git: the AI opens a pull request, the person merges it, DataPass gets it
  * with Check for updates / Get updates. Both ways end in a file the person reviews and commits.
+ * The AI exchange view (secondary side bar, 0.15.1) runs the same checks live while an answer is pasted.
  */
 import { parseStrictJson } from "../model/strictJson";
 import { parseGraph, type ProjectGraph } from "../workspace/graph";
@@ -126,6 +127,33 @@ export function checkIncoming(raw: string, ctx: ProjectContextForImport, expecte
   }
   if (typeof (doc as { $schema?: unknown }).$schema === "string" && /^https?:/i.test((doc as { $schema: string }).$schema)) warnings.push("The file has a web \"$schema\" line: VS Code will stop validating it with DataPass's schema. Remove that line.");
   return { kind, path: kind === "graph" ? graphPath : EXCHANGE_FILES[kind].path, text, warnings: warnings.slice(0, 30) };
+}
+
+/** What the AI exchange view shows while the person pastes an answer (never throws). */
+export type IncomingReview =
+  | { ok: true; kind: ExchangeKind; path: string; label: string; warnings: string[]; isNew: boolean; unchanged: boolean; added: number; removed: number }
+  | { ok: false; error: string };
+
+/** Lines added and removed between two texts, counted as multisets (an order of magnitude for the diff). */
+export function lineChanges(before: string | undefined, after: string): { added: number; removed: number } {
+  const count = (t: string) => { const m = new Map<string, number>(); for (const l of t.split(/\r?\n/)) if (l.trim()) m.set(l, (m.get(l) ?? 0) + 1); return m; };
+  const a = count(before ?? ""), b = count(after);
+  let added = 0, removed = 0;
+  for (const [l, n] of b) added += Math.max(0, n - (a.get(l) ?? 0));
+  for (const [l, n] of a) removed += Math.max(0, n - (b.get(l) ?? 0));
+  return { added, removed };
+}
+
+/** checkIncoming, compared with the file currently in the project; errors become a message. */
+export async function reviewIncoming(raw: string, ctx: ProjectContextForImport, current: (kind: ExchangeKind) => string | undefined | Promise<string | undefined>): Promise<IncomingReview> {
+  if (!raw.trim()) return { ok: false, error: "Paste the AI's answer first." };
+  try {
+    const f = checkIncoming(raw, ctx);
+    const before = await current(f.kind);
+    return { ok: true, kind: f.kind, path: f.path, label: EXCHANGE_FILES[f.kind].label, warnings: f.warnings, isNew: before === undefined, unchanged: before === f.text, ...lineChanges(before, f.text) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 // ------------------------------------------------------------------ out: a file for the AI

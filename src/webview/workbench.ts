@@ -773,7 +773,7 @@ function optionsSide(s: WorkbenchState): HTMLElement {
     btn("Export the comparison (Markdown)", () => command("datapass.exportOptionsComparison"), { icon: "⇩" }),
     btn("Ask the AI to compare", () => command("datapass.optionsAiContext", { purpose: "compare", decision: focus === "scenarios" ? undefined : focus }), { icon: "✦" }),
     btn("Copy options.json for the AI", () => command("datapass.copyForAi", "options"), { icon: "⧉", title: "The file plus instructions: the AI returns the complete updated file" }),
-    btn("Import the AI's answer", () => command("datapass.importFromAi", "options"), { icon: "⇣", title: "Validated, shown as a diff, backed up; you confirm before it is written" }),
+    btn("Paste the AI's answer", () => command("datapass.showAiExchange", "options"), { icon: "⇣", title: "Opens the AI exchange (right side bar): checked as you paste, shown as a diff, backed up; you confirm before it is written" }),
     btn("Open options.json", () => command("datapass.openOptionsFile"), { kind: "link" })
   ];
   if (focus !== "scenarios") {
@@ -829,7 +829,7 @@ function optionsEmpty(s: WorkbenchState): HTMLElement {
     h("p", { class: "muted", text: "Options let you compare 2–3 alternatives per level of the architecture (storage, processing, databases, compute…) before building anything: what each one adds or removes, which official tools it needs, what DataPass supports, and the declared prices with their source and date. The AI prepares them in .datapass/options.json; DataPass computes the consequences; you decide." }),
     h("div", { class: "row" },
       btn("Ask the AI to propose options", () => command("datapass.copyForAi", "options"), { kind: "primary", icon: "✦" }),
-      btn("Import the AI's answer", () => command("datapass.importFromAi", "options"), { icon: "⇣" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "options"), { icon: "⇣" }),
       s.optionsError ? btn("Open options.json", () => command("datapass.openOptionsFile")) : undefined,
       btn("How options work (guide)", () => command("datapass.openPreparationGuide"), { kind: "link" })));
 }
@@ -848,7 +848,7 @@ function sheetNav(s: WorkbenchState): HTMLElement {
     h("p", { class: "muted small", text: `What the project declares${sh.asOf ? `, as of ${sh.asOf}` : ""}. DataPass never computes a formula, counts rows or connects to a database.` }),
     h("div", { class: "actions-col" },
       btn("Ask the AI to fill the sheet", () => command("datapass.copyForAi", "sheet"), { icon: "✦" }),
-      btn("Import the AI's answer", () => command("datapass.importFromAi", "sheet"), { icon: "⇣" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "sheet"), { icon: "⇣" }),
       btn("Open sheet.json", () => command("datapass.openSheetFile"), { kind: "link" })));
 }
 
@@ -940,7 +940,7 @@ function sheetEmpty(s: WorkbenchState): HTMLElement {
     h("p", { class: "muted", text: "The project sheet keeps what is specific to this project: order of magnitude of each table, collection or file set, the columns that matter, the project's formulas as its code computes them (with units and the file that computes them), and where code runs (VM, Docker, cluster). DataPass shows them next to each component and gives them to the AI." }),
     h("div", { class: "row" },
       btn("Ask the AI to fill the sheet", () => command("datapass.copyForAi", "sheet"), { kind: "primary", icon: "✦" }),
-      btn("Import the AI's answer", () => command("datapass.importFromAi", "sheet"), { icon: "⇣" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "sheet"), { icon: "⇣" }),
       s.sheetError ? btn("Open sheet.json", () => command("datapass.openSheetFile")) : undefined));
 }
 

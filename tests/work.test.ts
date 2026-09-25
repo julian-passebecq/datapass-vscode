@@ -230,13 +230,15 @@ test("package.json contributes every registered command and every datapass.* cap
   for (const cap of CAPABILITIES) {
     if (cap.datapassActionId?.startsWith("datapass.")) assert.ok(registered.includes(cap.datapassActionId), `${cap.id} → ${cap.datapassActionId}`);
   }
-  // V3 layout: Project tree first in the activity bar, Architecture in the bottom panel, Details in the secondary side bar.
+  // V3 layout: Project tree first in the activity bar, Architecture in the bottom panel, AI exchange and Details in the secondary side bar.
   const views = pkg.contributes.views.datapass.map((v: { id: string }) => v.id);
   assert.deepEqual(views, ["datapass.project", "datapass.work", "datapass.galaxy"]);
   assert.deepEqual(pkg.contributes.viewsContainers.panel.map((v: { id: string }) => v.id), ["datapass-architecture"]);
   assert.deepEqual(pkg.contributes.viewsContainers.secondarySidebar.map((v: { id: string }) => v.id), ["datapass-details"]);
   assert.deepEqual(pkg.contributes.views["datapass-architecture"].map((v: { id: string }) => v.id), ["datapass.architecture"]);
-  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.details"]);
+  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.aiExchange", "datapass.details"]);
+  assert.ok(pkg.activationEvents.includes("onView:datapass.aiExchange"));
+  assert.equal(pkg.contributes.configuration.properties["datapass.layout.showInSecondarySideBar"].default, true, "DataPass replaces Chat in the secondary side bar by default");
   // The secondary side bar contribution point exists from VS Code 1.106.
   assert.match(pkg.engines.vscode, /^\^1\.(10[6-9]|1[1-9]\d)\./);
   assert.equal(pkg.capabilities.untrustedWorkspaces.supported, "limited");
