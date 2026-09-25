@@ -32,6 +32,8 @@ export interface DataPassTestApi {
   setFolderOpener(impl?: FolderOpener): void;
   companions(): ReturnType<WorkSession["companions"]>;
   mongokuStatus(): ReturnType<WorkSession["mongokuStatus"]>;
+  inventory(): ReturnType<WorkSession["inventory"]>;
+  repositories(): ReturnType<WorkSession["repositories"]>;
   /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
   handleUri(uri: vscode.Uri): Promise<void>;
 }
@@ -163,6 +165,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     companions: () => session.companions(),
     mongokuStatus: () => session.mongokuStatus(),
     handleUri: uri => companionUri.handleUri(uri),
+    inventory: () => session.inventory(),
+    repositories: () => session.repositories(),
     renderWorkTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];
       const walk = async (node: Parameters<WorkTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

@@ -17,6 +17,11 @@ import { sha256Bytes, slugId } from "../core/model/ids";
 import type { BaseRef } from "../core/contracts/envelopes";
 import type { LocalApproval } from "../core/publication/brief";
 import { parseStrictJson } from "../core/model/strictJson";
+import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
+
+/** Inventory scans are cached this long unless the user refreshes the Work view. */
+const INVENTORY_TTL_MS = 60_000;
+const MAX_PY_FILES = 3000;
 import {
   MAX_MONGOKU_CONTEXT_BYTES, mongokuEntityFor, parseMongokuContext, resolveCompanions,
   type MongokuStatus, type ResolvedCompanions
@@ -55,6 +60,7 @@ export class WorkSession implements vscode.Disposable {
   private readonly confirmedLinks = new Set<string>();
   /** The selected scope's imported Mongoku context (read on refresh, scope change and import). */
   private mongokuSnapshot?: { scopeId: string; status: MongokuStatus };
+  private inv?: { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[] };
   private cached?: WorkModel;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
@@ -72,7 +78,65 @@ export class WorkSession implements vscode.Disposable {
     this.tools = tools;
     this.cached = undefined;
     await this.loadMongokuSnapshot();
+    if (forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString()) await this.scanInventory();
     this.changed();
+  }
+
+  /** Static assets found in the workspace (never executed) and whether the scan hit its cap. */
+  inventory(): { assets: Asset[]; truncated: boolean } { return { assets: this.inv?.assets ?? [], truncated: this.inv?.truncated ?? false }; }
+  /** Local Git state of the workspace and declared repositories; remote ones are never contacted. */
+  repositories(): RepoStatus[] { return this.inv?.repos ?? []; }
+
+  private async scanInventory(): Promise<void> {
+    const root = this.ctx.root;
+    if (!root) { this.inv = { at: Date.now(), assets: [], truncated: false, repos: [] }; return; }
+    const [named, py, platform, pipelines] = await Promise.all([
+      vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml}", INVENTORY_EXCLUDE, 2000),
+      vscode.workspace.findFiles("**/*.py", INVENTORY_EXCLUDE, MAX_PY_FILES),
+      vscode.workspace.findFiles("**/.platform", INVENTORY_EXCLUDE, 1000),
+      vscode.workspace.findFiles("**/pipeline/*.json", INVENTORY_EXCLUDE, 500)
+    ]);
+    // Windows drive letters can differ in case between the workspace URI and search results.
+    const norm = (p: string) => process.platform === "win32" ? p.replace(/^\/([A-Za-z]):/, (_m, d: string) => `/${d.toLowerCase()}:`) : p;
+    const rootPath = norm(root.path).replace(/\/+$/, "");
+    const rel = (uri: vscode.Uri) => { const p = norm(uri.path); return p.startsWith(`${rootPath}/`) ? p.slice(rootPath.length + 1) : `../${p}`; };
+    const needsHead = (p: string) => !/\.(ipynb|pbip)$/i.test(p);
+    const head = async (uri: vscode.Uri): Promise<string | undefined> => {
+      try {
+        const stat = await vscode.workspace.fs.stat(uri);
+        if (stat.type & vscode.FileType.SymbolicLink || stat.size > 4 * 1024 * 1024) return undefined;
+        return new TextDecoder("utf-8", { fatal: false }).decode((await vscode.workspace.fs.readFile(uri)).subarray(0, HEAD_BYTES));
+      } catch { return undefined; }
+    };
+    const uris = [...named, ...py, ...platform, ...pipelines].filter(u => !rel(u).startsWith(".."));
+    const assets: Asset[] = [];
+    for (let i = 0; i < uris.length; i += 50) {
+      const batch = await Promise.all(uris.slice(i, i + 50).map(async uri => {
+        const p = rel(uri);
+        return classifyAsset(p, needsHead(p) ? await head(uri) : undefined);
+      }));
+      for (const a of batch) if (a) assets.push(a);
+    }
+    assets.sort((a, b) => a.kind.localeCompare(b.kind) || a.path.localeCompare(b.path));
+    this.inv = { at: Date.now(), root: root.toString(), assets, truncated: py.length >= MAX_PY_FILES, repos: await this.readRepositories(root) };
+  }
+
+  private async readRepositories(root: vscode.Uri): Promise<RepoStatus[]> {
+    const m = this.ctx.manifest;
+    const targets: Array<{ key: string; label: string; fsPath?: string; remote?: string }> = [{ key: "workspace", label: "This folder", fsPath: root.fsPath }];
+    for (const [key, repo] of Object.entries(m?.repositories ?? {}).slice(0, 30)) {
+      const remote = repo.remote?.url.replace(/^https:\/\//, "").replace(/\.git$/, "");
+      if (!repo.path) { targets.push({ key, label: repo.label ?? key, remote }); continue; }
+      const abs = path.isAbsolute(repo.path) ? repo.path : path.join(root.fsPath, repo.path);
+      if (path.resolve(abs) === path.resolve(root.fsPath)) continue;
+      targets.push({ key, label: repo.label ?? key, fsPath: abs, remote });
+    }
+    return Promise.all(targets.map(async (t): Promise<RepoStatus> => {
+      if (!t.fsPath) return { key: t.key, label: t.label, state: "remote-only", remote: t.remote };
+      try { await vscode.workspace.fs.stat(vscode.Uri.file(t.fsPath)); } catch { return { key: t.key, label: t.label, state: "missing", remote: t.remote }; }
+      const r = await gitRunner(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], t.fsPath, 10000);
+      return r.ok ? { key: t.key, label: t.label, state: "ok", remote: t.remote, ...parseStatusV2(r.stdout) } : { key: t.key, label: t.label, state: "not-a-repo", remote: t.remote };
+    }));
   }
 
   model(): WorkModel {

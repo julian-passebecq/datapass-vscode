@@ -197,6 +197,39 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     await withUi([{ pick: "Weekly forecast refresh" }], () => run("datapass.selectScope"));
   }, ["v2-retail"]);
 
+  // ------------------------------------------------------------ static inventory (v2-retail)
+
+  test("inventory: Assets lists each native asset kind statically and Repositories shows local Git state", async () => {
+    await run("datapass.work.refresh");
+    const assets = api().inventory().assets;
+    const byKind = (k: string) => assets.filter(a => a.kind === k).map(a => a.name);
+    assert.deepEqual(byKind("notebook"), ["eda.ipynb"]);
+    assert.deepEqual(byKind("fabric-item"), ["Sales notebook"]);
+    assert.deepEqual(byKind("databricks-bundle"), ["retail"]);
+    assert.deepEqual(byKind("databricks-notebook"), ["job.py"]);
+    assert.deepEqual(byKind("airflow-dag"), ["weekly_refresh"]);
+    assert.deepEqual(byKind("adf-pipeline"), ["CopySales"]);
+    const repos = api().repositories();
+    const ws = repos.find(r => r.key === "workspace");
+    assert.equal(ws?.state, "ok", JSON.stringify(ws));
+    assert.equal(ws?.branch, "main");
+    assert.match(ws?.head ?? "", /^[0-9a-f]{40}$/);
+    assert.equal(repos.find(r => r.key === "site")?.state, "remote-only", "a remote-only repository is never contacted or cloned");
+    const rows = await api().renderWorkTree();
+    const ids = new Set(rows.map(r => r.id));
+    for (const id of ["repos", "repo:workspace", "repo:site", "assets", "assets:airflow-dag", "asset:airflow-dag:dags/weekly.py", "asset:fabric-item:fabric/Sales.Notebook/.platform"]) assert.ok(ids.has(id), `missing ${id}`);
+    assert.equal(rows.find(r => r.id === "asset:fabric-item:fabric/Sales.Notebook/.platform")?.command, "revealInExplorer");
+    assert.equal(rows.find(r => r.id === "asset:airflow-dag:dags/weekly.py")?.command, "vscode.open");
+    record("inventory", { assets: assets.map(a => `${a.kind}: ${a.name} (${a.path})`), repos: rows.filter(r => r.id?.startsWith("repo:")).map(r => `${r.label} — ${r.description}`) });
+  }, ["v2-retail"]);
+
+  test("inventory: switching a module off hides its assets", async () => {
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    const ids = new Set((await api().renderWorkTree()).map(r => r.id));
+    assert.ok(!ids.has("assets:airflow-dag") && ids.has("assets:databricks-bundle"), [...ids].filter(i => i?.startsWith("assets")).join(","));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+  }, ["v2-retail"]);
+
   // ------------------------------------------------------------ shared resources (v2-retail)
 
   test("resources: the scope shows its VM binding and warns that another scope shares the VM", async () => {

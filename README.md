@@ -61,6 +61,14 @@ A module set to `false` disappears from Galaxy, the Work view and Links; unliste
 and a manifest without `modules` shows everything as before. Fabric, Databricks, Infrastructure,
 Airflow, Power BI and Grafana are the cloud core; Mongoku and DiagramCloud are optional add-ons.
 
+## Assets and repositories (v0.11)
+
+The Work view lists what the project folder contains, without running anything: **Assets**
+(notebooks, Fabric items in Git format, Databricks bundles and notebooks, Airflow DAG files,
+Data Factory pipelines, Power BI projects), each opening in its native editor, and
+**Repositories** (branch, commit, uncommitted changes, ahead/behind as of your last fetch; remote-only
+repositories are never contacted or cloned).
+
 ## Shared resources (v0.10.1)
 
 Declare a machine once and say how each workload uses it. One VM can serve two scopes:

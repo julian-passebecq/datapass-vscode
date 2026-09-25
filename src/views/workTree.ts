@@ -11,6 +11,7 @@ import type { PreflightStatus } from "../core/capabilities/preflight";
 import type { ProgrammeView } from "../core/programme/programme";
 import { moduleEnabled, MODULES } from "../core/modules";
 import { resourcesForScope, scopeTitles, type ResourceView } from "../core/resources/resources";
+import { ASSET_GROUPS, describeRepo, type Asset } from "../core/inventory/inventory";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
 
@@ -233,6 +234,35 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
         children: () => resources.map(view => resourceNode(view, ctx.manifest!))
       });
     }
+    const repos = s.repositories();
+    if (repos.length) {
+      const attention = repos.filter(r => r.state === "missing" || r.state === "not-a-repo" || (r.changes ?? 0) > 0).length;
+      nodes.push({
+        t: "section", id: "repos", label: "Repositories", icon: "repo", collapsed: true,
+        description: attention ? `${repos.length} · ${attention} to look at` : String(repos.length),
+        tooltip: "Local Git state only (branch, commit, uncommitted changes, ahead/behind as of the last fetch). Nothing is fetched, pulled or cloned.",
+        children: () => repos.map((r): Node => ({
+          t: "info", id: `repo:${r.key}`, label: r.label, description: describeRepo(r),
+          icon: r.state === "ok" ? (r.changes ? ["git-commit", "problemsWarningIcon.foreground"] : "git-commit") : r.state === "remote-only" ? "cloud" : ["warning", "problemsWarningIcon.foreground"],
+          tooltip: `${r.label} (${r.key}) — ${describeRepo(r)}${r.remote ? `\n${r.remote}` : ""}`,
+          command: r.state === "ok" ? { command: "workbench.view.scm", title: "Source Control" } : undefined
+        }))
+      });
+    }
+    const inv = s.inventory();
+    const assets = inv.assets.filter(a => !a.module || moduleEnabled(ctx.manifest, a.module));
+    if (assets.length) {
+      nodes.push({
+        t: "section", id: "assets", label: "Assets", icon: "files", collapsed: true,
+        description: `${assets.length}${inv.truncated ? "+" : ""} · static, never run`,
+        tooltip: "Notebooks, Fabric items, Databricks bundles and notebooks, Airflow DAGs, Data Factory pipelines and Power BI projects found in this folder. Recognised from file names and headers only; nothing is executed or imported.",
+        children: () => ASSET_GROUPS.flatMap(g => {
+          const list = assets.filter(a => a.kind === g.kind);
+          if (!list.length) return [];
+          return [{ t: "section" as const, id: `assets:${g.kind}`, label: g.label, icon: g.icon, description: String(list.length), collapsed: true, children: () => list.slice(0, 200).map(assetNode) }];
+        })
+      });
+    }
     const companions = s.companions();
     const sidecar = Boolean(ctx.diagramCloudSidecar) && moduleEnabled(ctx.manifest, "diagramcloud");
     if (companions.grafana || companions.mongoku || sidecar) {
@@ -262,6 +292,17 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
       ...v.outputs.map((entry): Node => ({ t: "output", entry, parent: `prog:${v.id}` }))
     ];
   }
+}
+
+function assetNode(a: Asset): Node {
+  const uri = (p: string) => vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0]!.uri, ...p.split("/"));
+  return {
+    t: "info", id: `asset:${a.kind}:${a.path}`, label: a.name, description: [a.detail, a.path].filter(Boolean).join(" · "),
+    tooltip: `${a.path}\nRecognised statically; opening it hands it to its native editor.`,
+    command: a.open.type === "folder"
+      ? { command: "revealInExplorer", title: "Reveal", arguments: [uri(a.open.path)] }
+      : { command: "vscode.open", title: "Open", arguments: [uri(a.open.path)] }
+  };
 }
 
 function resourceNode(view: ResourceView, manifest: DataPassProjectManifest): Node {
