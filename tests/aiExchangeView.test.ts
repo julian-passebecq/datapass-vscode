@@ -31,11 +31,34 @@ test("AI exchange view: extension data is rendered as text, and the pasted answe
   const body = scripts(aiExchangeHtml("x", "n"))[0]!.body;
   assert.doesNotMatch(body, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
   const setState = [...body.matchAll(/vscode\.setState\(([^)]*)\)/g)].map(m => m[1]);
-  assert.deepEqual(setState, ["{ kind: kind, tasks: tasks }"], "only the chosen file and task are remembered");
+  assert.deepEqual(setState, ["{ kind: kind, tasks: tasks, tab: tab }"], "only the chosen file, task and tab are remembered (0.20: the tab)");
   // The messages the extension handles, and nothing that could run a command freely.
-  const types = new Set([...body.matchAll(/post\(\{ type: '([a-zA-Z]+)'/g)].map(m => m[1]));
-  assert.deepEqual([...types].sort(), ["check", "command", "copy", "fromFile", "open", "paste", "ready", "write"]);
-  assert.deepEqual([...body.matchAll(/command: '([^']+)'/g)].map(m => m[1]).sort(), ["datapass.openPreparationGuide", "datapass.restoreBackup"]);
+  const types = new Set([...body.matchAll(/post\(\{ type: '([a-zA-Z.]+)'/g)].map(m => m[1]));
+  assert.deepEqual([...types].sort(), ["check", "command", "copy", "fromFile", "open", "paste", "ready", "wo.cmd", "wo.preview", "wo.write", "write"]);
+  assert.deepEqual([...body.matchAll(/type: 'command', command: '([^']+)'/g)].map(m => m[1]).sort(), ["datapass.openPreparationGuide", "datapass.restoreBackup"]);
+  // 0.20: every command the Agent and Manual tabs name is in the extension's allowlist (AGENT_ALLOWED in src/views/aiExchange.ts).
+  const agentAllowed = new Set([
+    "datapass.workOrders.show", "datapass.workOrders.launch", "datapass.workOrders.resume", "datapass.workOrders.markDone", "datapass.workOrders.followUp",
+    "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openApp", "datapass.workOrders.enable",
+    "datapass.workOrders.copyForChat", "datapass.openProjectManifest", "workbench.trust.manage",
+    "datapass.project.focus", "datapass.git.focus", "datapass.readinessReport", "datapass.openWorkbench", "datapass.openNativeTool",
+    "datapass.checkForUpdates", "datapass.openPreparationGuide", "workbench.actions.view.problems", "datapass.restoreBackup"
+  ]);
+  const named = [...body.matchAll(/'((?:datapass|workbench)\.[A-Za-z.]+)'/g)].map(m => m[1]!);
+  assert.ok(named.length > 15);
+  assert.deepEqual(named.filter(n => !agentAllowed.has(n)), [], "a command the extension would refuse");
+});
+
+test("AI view (0.20): three tabs, DataPass-guided first and shown by default; Pilot only announced", () => {
+  const html = aiExchangeHtml("x", "n");
+  const tabs = [...html.matchAll(/<button id="t-([a-z]+)" class="tab[^"]*"[^>]*>([^<]+)/g)].map(m => [m[1], m[2]]);
+  assert.deepEqual(tabs, [["guided", "DataPass-guided"], ["agent", "Agent"], ["manual", "Manual"]]);
+  assert.match(html, /<section id="tab-guided" role="tabpanel" aria-labelledby="t-guided">/);
+  assert.match(html, /<section id="tab-agent" role="tabpanel" aria-labelledby="t-agent" hidden>/);
+  assert.match(html, /<section id="tab-manual" role="tabpanel" aria-labelledby="t-manual" hidden>/);
+  assert.match(scripts(html)[0]!.body, /let tab = saved\.tab === 'agent' \|\| saved\.tab === 'manual' \? saved\.tab : 'guided';/);
+  assert.match(html, /Pilot mode[^<]*later option/);
+  assert.doesNotMatch(html, /id="t-pilot"/);
 });
 
 // ------------------------------------------------------------------ state

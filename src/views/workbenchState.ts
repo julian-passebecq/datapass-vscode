@@ -106,7 +106,36 @@ export interface WorkbenchState {
   boardError?: string;
   /** 0.19: the one-line Git card (counts only; absent until the Git view has checked the repositories). */
   git?: WbGit;
+  /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
+  workOrders?: WbWorkOrders;
 }
+
+/** 0.20: one work order as the Workbench shows it (no local path, no goal text; the agent's words only as "the agent says"). */
+export interface WbOrder {
+  id: string;
+  short: string;
+  title: string;
+  kind: string;
+  createdAt: string;
+  status: string;
+  agent: string;
+  scope: string;
+  components: string[];
+  subproject?: string;
+  outputs: Array<{ ref: string; text: string; state: string; url?: string; ci?: string }>;
+  result: { state: "none" | "valid" | "refused"; status?: string; summary?: string; questions: string[]; followUps: Array<{ title: string; why?: string }>; checks: string[]; warnings: string[]; message?: string };
+  needs: string[];
+  next: string;
+  suggestDone: boolean;
+  canLaunch: boolean;
+  canResume: boolean;
+  closed: boolean;
+  changesCoordination: boolean;
+  proposed: string[];
+  timeline: Array<{ at?: string; what: string; detail?: string[]; tone?: string }>;
+  error?: string;
+}
+export interface WbWorkOrders { allowed: boolean; why: string; typeLine: string; orders: WbOrder[]; selected?: string; open: number; needs: number }
 
 /** 0.19: what the Workbench overview says about Git (no path, no branch content, only counts and one sentence). */
 export interface WbGit { needsYou: number; repositories: number; checked: number; openPrs: number; failing: number; oldestFetch?: string; top?: string; restricted: boolean }
@@ -237,6 +266,7 @@ export interface StateInput {
   board?: BoardView;
   boardError?: string;
   git?: WbGit;
+  workOrders?: WbWorkOrders;
 }
 
 function impact(i: ArchitectureImpact): WbImpact {
@@ -345,6 +375,7 @@ export function workbenchState(input: StateInput): WorkbenchState {
     preview: input.preview && input.preview.derived.picks.some(p => p.changed) ? previewState(input.preview, map, input.selection) : undefined,
     board: input.board,
     boardError: input.boardError,
-    git: input.git
+    git: input.git,
+    workOrders: input.workOrders
   };
 }

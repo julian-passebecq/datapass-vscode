@@ -32,6 +32,9 @@ import { output } from "./work/io";
 import { GitObserver, type GitObservation } from "./work/gitObserver";
 import { GitTreeProvider } from "./views/gitTree";
 import { registerGitCommands } from "./work/gitCommands";
+import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
+import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
+import type { AiViewState } from "./views/aiExchange";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -102,6 +105,15 @@ export interface DataPassTestApi {
     badge(): number | undefined;
     renderTree(expandOthers?: boolean): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string; commandArgs?: unknown[] }>>;
   };
+  /** 0.20: work orders — the service's list, a reload, the flows (write, launch…) and the AI view's Agent tab. */
+  workOrders: {
+    list(): readonly LoadedOrder[];
+    reload(): Promise<readonly LoadedOrder[]>;
+    write(draft: Draft): Promise<LoadedOrder>;
+    aiState(): Promise<AiViewState>;
+    lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined;
+    selected(): string | undefined;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -171,6 +183,21 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   );
   host.setGitSource(() => git.observation());
   registerGitCommands(context, session, git);
+
+  // 0.20 work orders (pass AI-2): the Agent tab of the AI view, the Workbench's Work orders view, Details, Needs you rule 8.
+  const workOrders = new WorkOrderService(context, session, git);
+  const flows = new WorkOrderFlows(context, session, workOrders, git);
+  aiExchange.attachWorkOrders(workOrders, flows, git);
+  host.setWorkOrderSource(() => workOrders.view(), workOrders.onDidChange);
+  context.subscriptions.push(workOrders);
+  registerWorkOrderCommands(context, session, workOrders, flows, git,
+    p => aiExchange.prefill(p),
+    async id => {
+      host.openPanel(vscode.ViewColumn.Active, "workOrders", id || undefined);
+      if (id) await vscode.commands.executeCommand("datapass.details.focus");
+      if (gitView.visible || id) void git.refresh();
+    });
+  void workOrders.reload();
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
   const visiblePanes = (): Pane[] => {
@@ -345,6 +372,14 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setExportFile: setExportFileForTests,
     startup: () => startup,
     setConnectionRunner: impl => { session.connectionRunner = impl; },
+    workOrders: {
+      list: () => workOrders.list(),
+      reload: async () => { await workOrders.reload(); return workOrders.list(); },
+      write: draft => flows.write(draft),
+      aiState: () => aiExchange.state(),
+      lastPrefill: () => aiExchange.lastPrefill(),
+      selected: () => workOrders.selected()?.id
+    },
     git: {
       observation: () => git.observation(),
       refresh: async force => { await git.refresh(force); return git.observation(); },

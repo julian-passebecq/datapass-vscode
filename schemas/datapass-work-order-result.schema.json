@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-work-order-result.schema.json",
+  "title": "DataPass work order result (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "format": {
+      "const": "datapass.work-order-result"
+    },
+    "version": {
+      "const": "1"
+    },
+    "orderId": {
+      "type": "string",
+      "minLength": 21,
+      "maxLength": 21,
+      "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+    },
+    "receipt": {
+      "type": "string",
+      "minLength": 9,
+      "maxLength": 9,
+      "pattern": "^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$"
+    },
+    "status": {
+      "enum": [
+        "done",
+        "partial",
+        "blocked",
+        "failed"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^(?!.*\\.\\.)(?!/)(?!.*/$)[A-Za-z0-9._/-]{1,200}$"
+          },
+          "commits": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 40,
+              "pattern": "^[0-9a-f]{7,40}$"
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "pullRequest": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "ref"
+        ]
+      },
+      "maxItems": 30,
+      "minItems": 0
+    },
+    "datapassFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "project",
+              "graph",
+              "options",
+              "sheet",
+              "board",
+              "catalog"
+            ]
+          },
+          "via": {
+            "enum": [
+              "pull-request",
+              "import"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "via"
+        ]
+      },
+      "maxItems": 6,
+      "minItems": 0
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "what": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "outcome": {
+            "enum": [
+              "passed",
+              "failed",
+              "not-run"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "what",
+          "outcome"
+        ]
+      },
+      "maxItems": 30,
+      "minItems": 0
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "maxItems": 20,
+      "minItems": 0
+    },
+    "followUps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "title"
+        ]
+      },
+      "maxItems": 10,
+      "minItems": 0
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        }
+      },
+      "required": []
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "orderId",
+    "receipt",
+    "status",
+    "summary"
+  ]
+}

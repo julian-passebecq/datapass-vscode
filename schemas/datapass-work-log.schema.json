@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-work-log.schema.json",
+  "title": "DataPass work log (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "format": {
+      "const": "datapass.work-log"
+    },
+    "version": {
+      "const": "1"
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "type": {
+          "enum": [
+            "dev",
+            "work",
+            "perso"
+          ]
+        },
+        "company": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ]
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 21,
+            "maxLength": 21,
+            "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "kind": {
+            "enum": [
+              "change",
+              "investigate",
+              "prepare-files",
+              "apply-decision",
+              "fix-card",
+              "datapass-files"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "enum": [
+              "written",
+              "launched",
+              "reported",
+              "done",
+              "abandoned"
+            ]
+          },
+          "agent": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tool": {
+                "enum": [
+                  "claude-code",
+                  "codex"
+                ]
+              },
+              "surface": {
+                "enum": [
+                  "desktop",
+                  "terminal"
+                ]
+              }
+            },
+            "required": [
+              "tool",
+              "surface"
+            ]
+          },
+          "scope": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "subproject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "components": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+                },
+                "maxItems": 30,
+                "minItems": 0
+              },
+              "boardCard": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "decision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              }
+            },
+            "required": []
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+                },
+                "remote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "pattern": "^(https://|git@|ssh://)[^\\s]+$"
+                },
+                "access": {
+                  "enum": [
+                    "change",
+                    "read"
+                  ]
+                },
+                "branch": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200,
+                  "pattern": "^[A-Za-z0-9._/-]{1,200}$"
+                },
+                "pullRequests": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "number": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 1000000000
+                      },
+                      "url": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 2000,
+                        "pattern": "^https://\\S+$"
+                      },
+                      "state": {
+                        "enum": [
+                          "open",
+                          "merged",
+                          "closed"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "number",
+                      "url",
+                      "state"
+                    ]
+                  },
+                  "maxItems": 10,
+                  "minItems": 0
+                }
+              },
+              "required": [
+                "ref",
+                "access"
+              ]
+            },
+            "maxItems": 30,
+            "minItems": 0
+          },
+          "result": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "status": {
+                    "enum": [
+                      "done",
+                      "partial",
+                      "blocked",
+                      "failed"
+                    ]
+                  },
+                  "questions": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20
+                  }
+                },
+                "required": [
+                  "status",
+                  "questions"
+                ]
+              }
+            ]
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "revises": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 21,
+                    "maxLength": 21,
+                    "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "followsUp": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 21,
+                    "maxLength": 21,
+                    "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "revises",
+              "followsUp"
+            ]
+          },
+          "closedAt": {
+            "anyOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "string",
+                "format": "date-time"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "createdAt",
+          "status",
+          "agent",
+          "repositories",
+          "result",
+          "links",
+          "closedAt"
+        ]
+      },
+      "maxItems": 500,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "project",
+    "updatedAt",
+    "entries"
+  ]
+}

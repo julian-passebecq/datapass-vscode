@@ -114,7 +114,16 @@ const STRUCTURAL: Array<[string, unknown, boolean]> = [
   ["doc path traversal", v3({ docs: [{ label: "a", path: "../secrets.md" }] }), false],
   ["doc absolute path", v3({ docs: [{ label: "a", path: "C:/x.md" }] }), false],
   ["doc http url", v3({ docs: [{ label: "a", url: "http://x.y/z" }] }), false],
-  ["resources in v1", { ...genericProjectManifest("x"), resources: [{ id: "vm", kind: "vm" }] }, false]
+  ["resources in v1", { ...genericProjectManifest("x"), resources: [{ id: "vm", kind: "vm" }] }, false],
+  // 0.20 (AI-2): project type and the work-order / pilot switches.
+  ["v5 project type work with work orders on", v5({ project: { id: "p", title: "P", type: "work" }, modules: { azure: true, workOrders: true, pilot: false } }), true],
+  ["v5 project type dev", v5({ project: { id: "p", title: "P", type: "dev" } }), true],
+  ["v5 project type perso, work orders off", v5({ project: { id: "p", title: "P", type: "perso" }, modules: { workOrders: false } }), true],
+  ["v3 project type (not version-gated)", v3({ project: { id: "p", title: "P", type: "perso" } }), true],
+  ["project type unknown", v5({ project: { id: "p", title: "P", type: "client" } }), false],
+  ["project type not a string", v5({ project: { id: "p", title: "P", type: 1 } }), false],
+  ["workOrders not a boolean", v5({ modules: { workOrders: "yes" } }), false],
+  ["unknown AI switch", v5({ modules: { agents: true } }), false]
 ];
 
 /** Rules only the runtime can check (cross-references between parts of the file). */

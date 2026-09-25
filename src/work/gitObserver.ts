@@ -163,8 +163,16 @@ export class GitObserver implements vscode.Disposable {
     return this.project.find(r => r.key === key) ?? this.others?.find(r => r.key === key);
   }
 
+  /** Needs you rule 8 (work orders without a PR), supplied by the work-order service (pass AI-2). */
+  private extraNeeds?: () => NeedsYou[];
+  setExtraNeeds(fn: () => NeedsYou[]): void { this.extraNeeds = fn; }
+  /** Something the extra needs depend on changed (a result, an order): views re-read the observation. */
+  notifyChanged(): void { this.emitter.fire(); }
+
   observation(): GitObservation {
-    const items = needsYou(this.project);
+    let extra: NeedsYou[] = [];
+    try { extra = this.extraNeeds?.() ?? []; } catch { extra = []; }
+    const items = [...needsYou(this.project), ...extra].sort((a, b) => a.rank - b.rank);
     return {
       restricted: !vscode.workspace.isTrusted,
       project: this.project, others: this.others,

@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-work-order-state.schema.json",
+  "title": "DataPass work order state (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.work-order-state"
+    },
+    "version": {
+      "const": "1"
+    },
+    "orderId": {
+      "type": "string",
+      "minLength": 21,
+      "maxLength": 21,
+      "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+    },
+    "digest": {
+      "type": "string",
+      "minLength": 71,
+      "maxLength": 71,
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "status": {
+      "enum": [
+        "written",
+        "launched",
+        "reported",
+        "done",
+        "abandoned"
+      ]
+    },
+    "launches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "tool": {
+            "enum": [
+              "claude-code",
+              "codex"
+            ]
+          },
+          "surface": {
+            "enum": [
+              "desktop",
+              "terminal"
+            ]
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+          },
+          "cwd": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 400,
+            "pattern": "^(?:[A-Za-z]:[\\\\/]|/)[^\\u0000-\\u001f\\u007f]*$"
+          },
+          "how": {
+            "enum": [
+              "launched",
+              "copied"
+            ]
+          }
+        },
+        "required": [
+          "at",
+          "tool",
+          "surface",
+          "how"
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 0
+    },
+    "seen": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pullRequests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "url": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000000000
+              },
+              "state": {
+                "enum": [
+                  "open",
+                  "merged",
+                  "closed"
+                ]
+              },
+              "ci": {
+                "enum": [
+                  "passing",
+                  "failing",
+                  "running",
+                  "none",
+                  "unknown"
+                ]
+              },
+              "headBranch": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "^(?!.*\\.\\.)(?!/)(?!.*/$)[A-Za-z0-9._/-]{1,200}$"
+              },
+              "checkedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "repoRef",
+              "url",
+              "number",
+              "state",
+              "headBranch",
+              "checkedAt"
+            ]
+          },
+          "maxItems": 60,
+          "minItems": 0
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "pullRequests"
+      ]
+    },
+    "imported": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "project",
+              "graph",
+              "options",
+              "sheet",
+              "board",
+              "catalog"
+            ]
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "backup": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "kind",
+          "at"
+        ]
+      },
+      "maxItems": 20,
+      "minItems": 0
+    },
+    "published": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "workLog": {
+          "type": "boolean"
+        },
+        "privateLog": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "at"
+      ]
+    },
+    "closed": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "how": {
+              "enum": [
+                "done",
+                "abandoned"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "at",
+            "how"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "orderId",
+    "digest",
+    "status",
+    "launches",
+    "seen",
+    "closed"
+  ]
+}

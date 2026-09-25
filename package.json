@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -605,6 +605,133 @@
         "command": "datapass.git.copyCleanupCommand",
         "title": "DataPass: Copy the Cleanup Command (you run it; DataPass never deletes)",
         "icon": "$(clippy)"
+      },
+      {
+        "command": "datapass.workOrders.new",
+        "title": "DataPass: New Work Order for Claude or Codex…",
+        "icon": "$(add)"
+      },
+      {
+        "command": "datapass.workOrders.show",
+        "title": "DataPass: Show Work Orders",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "datapass.workOrders.select",
+        "title": "DataPass: Select a Work Order"
+      },
+      {
+        "command": "datapass.workOrders.refresh",
+        "title": "DataPass: Re-read the Work Orders",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.workOrders.launch",
+        "title": "DataPass: Launch a Work Order…",
+        "icon": "$(play)"
+      },
+      {
+        "command": "datapass.workOrders.resume",
+        "title": "DataPass: Resume a Work Order's Claude Session in a Terminal…",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "datapass.workOrders.copyPrompt",
+        "title": "DataPass: Copy a Work Order's Prompt…",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "datapass.workOrders.copyForChat",
+        "title": "DataPass: Copy a Work Order for a Chat (claude.ai, ChatGPT)…",
+        "icon": "$(comment)"
+      },
+      {
+        "command": "datapass.workOrders.markDone",
+        "title": "DataPass: Mark a Work Order Done…",
+        "icon": "$(pass)"
+      },
+      {
+        "command": "datapass.workOrders.abandon",
+        "title": "DataPass: Abandon a Work Order…",
+        "icon": "$(circle-slash)"
+      },
+      {
+        "command": "datapass.workOrders.archive",
+        "title": "DataPass: Archive a Work Order (moved, never deleted)…",
+        "icon": "$(archive)"
+      },
+      {
+        "command": "datapass.workOrders.followUp",
+        "title": "DataPass: Follow-up Work Order…",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "datapass.workOrders.revise",
+        "title": "DataPass: Revise a Work Order (new order)…",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "datapass.workOrders.checkPrFiles",
+        "title": "DataPass: Check the DataPass Files of a Work Order's Pull Request…",
+        "icon": "$(check)"
+      },
+      {
+        "command": "datapass.workOrders.importProposed",
+        "title": "DataPass: Import a File a Work Order Proposes…",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.workOrders.publishSummary",
+        "title": "DataPass: Publish the Work-Order Summary (work-log.json)",
+        "icon": "$(repo-push)"
+      },
+      {
+        "command": "datapass.workOrders.exportProject",
+        "title": "DataPass: Export the Project as JSON for an Agent…",
+        "icon": "$(json)"
+      },
+      {
+        "command": "datapass.workOrders.openFolder",
+        "title": "DataPass: Reveal a Work Order's Folder…",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "datapass.workOrders.openFile",
+        "title": "DataPass: Open a Work Order File"
+      },
+      {
+        "command": "datapass.workOrders.openPr",
+        "title": "DataPass: Open a Work Order's Pull Request"
+      },
+      {
+        "command": "datapass.workOrders.openApp",
+        "title": "DataPass: Open the Claude or Codex App",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "datapass.workOrders.enable",
+        "title": "DataPass: Switch Work Orders On (machine setting)…",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "datapass.workOrders.newFromCard",
+        "title": "DataPass: Work Order for this Card",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.workOrders.newFromDecision",
+        "title": "DataPass: Apply this Decision as a Work Order",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.workOrders.newForMissingFiles",
+        "title": "DataPass: Prepare the Missing Files as a Work Order",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.workOrders.newFromFailingPr",
+        "title": "DataPass: Work Order to Fix this (failing CI)",
+        "icon": "$(tools)"
       }
     ],
     "viewsContainers": {
@@ -665,7 +792,7 @@
       "datapass-details": [
         {
           "id": "datapass.aiExchange",
-          "name": "AI exchange",
+          "name": "AI",
           "type": "webview",
           "initialSize": 3
         },
@@ -993,6 +1120,26 @@
           "command": "datapass.git.fetchAll",
           "when": "view == datapass.project",
           "group": "2_git@0"
+        },
+        {
+          "command": "datapass.workOrders.new",
+          "when": "view == datapass.aiExchange",
+          "group": "2_agent@1"
+        },
+        {
+          "command": "datapass.workOrders.show",
+          "when": "view == datapass.aiExchange",
+          "group": "2_agent@2"
+        },
+        {
+          "command": "datapass.workOrders.publishSummary",
+          "when": "view == datapass.aiExchange",
+          "group": "2_agent@3"
+        },
+        {
+          "command": "datapass.workOrders.exportProject",
+          "when": "view == datapass.aiExchange",
+          "group": "2_agent@4"
         }
       ],
       "view/item/context": [
@@ -1215,6 +1362,26 @@
           "command": "datapass.git.copyBranch",
           "when": "view == datapass.git && viewItem =~ /^gitPr/",
           "group": "2_copy@1"
+        },
+        {
+          "command": "datapass.workOrders.newFromFailingPr",
+          "when": "view == datapass.git && viewItem =~ /^gitPr\\.failing/",
+          "group": "2_workorder@1"
+        },
+        {
+          "command": "datapass.workOrders.newFromFailingPr",
+          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-ci\\.project/",
+          "group": "2_workorder@1"
+        },
+        {
+          "command": "datapass.workOrders.show",
+          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-work-order/",
+          "group": "inline@1"
+        },
+        {
+          "command": "datapass.workOrders.newForMissingFiles",
+          "when": "view == datapass.project && viewItem =~ /^component.*\\.missing/",
+          "group": "2_ai@1"
         }
       ],
       "commandPalette": [
@@ -1308,6 +1475,34 @@
         },
         {
           "command": "datapass.git.copyCleanupCommand",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.select",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.openFile",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.openPr",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.openApp",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.newFromCard",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.newFromDecision",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.newFromFailingPr",
           "when": "false"
         }
       ],
@@ -1423,6 +1618,107 @@
           "default": true,
           "scope": "application",
           "description": "Show an \"Other repositories\" section in the Git view: the Git repositories directly under datapass.projectsFolders (at most 60), read only when you open the section."
+        },
+        "datapass.ai.workOrders.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "markdownDescription": "**Work orders** (0.20): let DataPass prepare orders for Claude Code or Codex and hand them to the desktop apps or a terminal. They use your Claude or Codex plan. Machine-level user setting: a cloned repository can never switch this on. A project can still switch them off (`modules.workOrders: false`), and a **work** project needs `modules.workOrders: true`."
+        },
+        "datapass.ai.projectTypes": {
+          "type": "object",
+          "default": {},
+          "scope": "machine",
+          "additionalProperties": {
+            "enum": [
+              "dev",
+              "work",
+              "perso"
+            ]
+          },
+          "markdownDescription": "Project types on this computer, by project id (`{\"foil-v1\": \"work\"}`). Wins over `project.type` in the project's manifest. **dev** and **perso**: work orders on, the agent merges its PRs when CI is green. **work** (FOIL, clients): work orders off unless the project turns them on, and you merge."
+        },
+        "datapass.ai.defaultTool": {
+          "type": "string",
+          "enum": [
+            "claude-desktop",
+            "claude-terminal",
+            "codex-desktop",
+            "codex-terminal"
+          ],
+          "enumDescriptions": [
+            "Claude desktop app: DataPass copies the prompt and opens the app",
+            "Claude Code CLI in a VS Code terminal (exact session id)",
+            "ChatGPT desktop app (Codex): DataPass copies the prompt and opens the app",
+            "Codex CLI in a VS Code terminal (when installed)"
+          ],
+          "default": "claude-desktop",
+          "scope": "application",
+          "description": "Where a new work order goes by default."
+        },
+        "datapass.ai.defaultEffort": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "default": "high",
+          "scope": "application",
+          "description": "Default effort of a new work order."
+        },
+        "datapass.ai.defaultModel": {
+          "type": "string",
+          "default": "",
+          "scope": "application",
+          "description": "Default model of a new work order (letters, digits, dots and dashes); empty = your tool's own default."
+        },
+        "datapass.ai.branchPrefix": {
+          "type": "string",
+          "default": "dp/",
+          "scope": "application",
+          "description": "Planned branch of a work order: this prefix plus the order id (dp/wo-20260925-1830-k3f9)."
+        },
+        "datapass.ai.terminalLocation": {
+          "type": "string",
+          "enum": [
+            "editor",
+            "panel"
+          ],
+          "default": "editor",
+          "scope": "application",
+          "description": "Where a terminal launch opens: a tab in the editor area (the diagram below, the AI view on the right) or the panel."
+        },
+        "datapass.ai.exportScope": {
+          "type": "string",
+          "enum": [
+            "project",
+            "subproject",
+            "company"
+          ],
+          "default": "project",
+          "scope": "application",
+          "description": "What 'Attach an export JSON' and 'Export JSON…' cover: the whole project, the selected sub-project, or the company (every DataPass project of this window)."
+        },
+        "datapass.ai.claude.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path of the Claude Code CLI for terminal launches; empty = claude from an absolute PATH entry. A .js file runs with VS Code's own Node (a wrapper or a test stub). Machine-level: a workspace can never choose which program runs."
+        },
+        "datapass.ai.codex.path": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute path of the Codex CLI for terminal launches; empty = codex from an absolute PATH entry. Machine-level."
+        },
+        "datapass.ai.workLog.privateRepository": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "Absolute folder of a **private** Git clone that collects every project's work-order summary (`work-logs/<project id>.json`) when you *Publish summary*. Never this public repository or a repository of the project; on GitHub, `gh` must say it is private (else DataPass asks). DataPass writes the file; you commit and push."
         }
       }
     },
@@ -1475,6 +1771,30 @@
           "**/.datapass/board.json"
         ],
         "url": "./schemas/datapass-board.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/local/work-orders/*/order.json"
+        ],
+        "url": "./schemas/datapass-work-order.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/local/work-orders/*/state.json"
+        ],
+        "url": "./schemas/datapass-work-order-state.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/local/work-orders/*/result.json"
+        ],
+        "url": "./schemas/datapass-work-order-result.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/work-log.json"
+        ],
+        "url": "./schemas/datapass-work-log.schema.json"
       }
     ],
     "viewsWelcome": [

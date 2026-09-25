@@ -12,7 +12,8 @@
  *     that might be lost)
  *   6 a branch with commits and no upstream, or ahead of it for more than a day (unpushed work)
  *   7 detached HEAD in a main clone
- *   (8, work orders without a PR, comes with pass AI-2)
+ *   8 a work order whose result names no PR, or with no PR a day after its launch (pass AI-2,
+ *     computed in core/workOrders/status.ts and merged in by the observer)
  *
  * "Behind, with no local changes" is information, not "needs you". Nothing here deletes anything:
  * cleanup is a command the person copies and runs (Q7).
@@ -84,8 +85,8 @@ export interface GitRepoReport {
   checkedAt?: string;
 }
 
-export type NeedsYouKind = "ci-failed" | "pr-waiting" | "merged-not-pulled" | "dirty-default" | "worktree-cleanup" | "worktree-at-risk" | "unpushed" | "detached";
-export type NeedsYouAction = "open-ci" | "open-pr" | "check-updates" | "get-updates" | "source-control" | "copy-cleanup" | "open-worktree";
+export type NeedsYouKind = "ci-failed" | "pr-waiting" | "merged-not-pulled" | "dirty-default" | "worktree-cleanup" | "worktree-at-risk" | "unpushed" | "detached" | "work-order-no-pr";
+export type NeedsYouAction = "open-ci" | "open-pr" | "check-updates" | "get-updates" | "source-control" | "copy-cleanup" | "open-worktree" | "open-work-order";
 
 export interface NeedsYou {
   rank: number;
@@ -98,6 +99,8 @@ export interface NeedsYou {
   action: NeedsYouAction;
   pr?: number;
   worktree?: string;
+  /** Rule 8: the work order this item is about. */
+  order?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;

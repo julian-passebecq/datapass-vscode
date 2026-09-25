@@ -1,0 +1,550 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-work-order.schema.json",
+  "title": "DataPass work order (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.work-order"
+    },
+    "version": {
+      "const": "1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 21,
+      "maxLength": 21,
+      "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+    },
+    "receipt": {
+      "type": "string",
+      "minLength": 9,
+      "maxLength": 9,
+      "pattern": "^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdBy": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "kind": {
+      "enum": [
+        "change",
+        "investigate",
+        "prepare-files",
+        "apply-decision",
+        "fix-card",
+        "datapass-files"
+      ]
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "coordination": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "^(https://|git@|ssh://)[^\\s]+$"
+        },
+        "type": {
+          "enum": [
+            "dev",
+            "work",
+            "perso"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "type"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subproject": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+        },
+        "components": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+          },
+          "maxItems": 30,
+          "minItems": 0
+        },
+        "boardCard": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+        },
+        "decision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+        }
+      },
+      "required": []
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "repositories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+          },
+          "remote": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "^(https://|git@|ssh://)[^\\s]+$"
+          },
+          "localPath": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 400,
+            "pattern": "^(?:[A-Za-z]:[\\\\/]|/)[^\\u0000-\\u001f\\u007f]*$"
+          },
+          "access": {
+            "enum": [
+              "change",
+              "read"
+            ]
+          },
+          "base": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "branch": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "pattern": "^(?!.*\\.\\.)(?!/)(?!.*/$)[A-Za-z0-9._/-]{1,200}$"
+              },
+              "commit": {
+                "type": "string",
+                "minLength": 12,
+                "maxLength": 40,
+                "pattern": "^[0-9a-f]{12,40}$"
+              }
+            },
+            "required": [
+              "branch",
+              "commit"
+            ]
+          },
+          "branch": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^(?!.*\\.\\.)(?!/)(?!.*/$)[A-Za-z0-9._/-]{1,200}$"
+          },
+          "hadLocalChanges": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ref",
+          "localPath",
+          "access"
+        ]
+      },
+      "maxItems": 30,
+      "minItems": 1
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "datapassFiles": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "project",
+              "graph",
+              "options",
+              "sheet",
+              "board",
+              "catalog"
+            ]
+          },
+          "maxItems": 6,
+          "minItems": 0
+        },
+        "conventions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "pattern": "^(?![/\\\\~])(?![A-Za-z]:)(?!.*(^|[/\\\\])\\.\\.([/\\\\]|$))[^\\u0000-\\u001f\\u007f]+$"
+              }
+            },
+            "required": [
+              "repoRef",
+              "path"
+            ]
+          },
+          "maxItems": 30,
+          "minItems": 0
+        },
+        "handoffs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300,
+                "pattern": "^(?![/\\\\~])(?![A-Za-z]:)(?!.*(^|[/\\\\])\\.\\.([/\\\\]|$))[^\\u0000-\\u001f\\u007f]+$"
+              }
+            },
+            "required": [
+              "repoRef",
+              "path"
+            ]
+          },
+          "maxItems": 20,
+          "minItems": 0
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^(attachments|proposed)/[A-Za-z0-9._/-]*$"
+          },
+          "maxItems": 40,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "datapassFiles",
+        "conventions",
+        "handoffs",
+        "attachments"
+      ]
+    },
+    "expected": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pullRequests": {
+          "enum": [
+            "one-per-changed-repository",
+            "none"
+          ]
+        },
+        "datapassFiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "enum": [
+                  "project",
+                  "graph",
+                  "options",
+                  "sheet",
+                  "board",
+                  "catalog"
+                ]
+              },
+              "via": {
+                "enum": [
+                  "pull-request",
+                  "import"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "via"
+            ]
+          },
+          "maxItems": 6,
+          "minItems": 0
+        },
+        "boardMoves": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "card": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              }
+            },
+            "required": [
+              "card",
+              "to"
+            ]
+          },
+          "maxItems": 20,
+          "minItems": 0
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repoRef": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "text"
+            ]
+          },
+          "maxItems": 20,
+          "minItems": 0
+        },
+        "doneWhen": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "maxItems": 10,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "pullRequests",
+        "datapassFiles",
+        "boardMoves",
+        "checks",
+        "doneWhen"
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "merge": {
+          "enum": [
+            "person",
+            "agent-when-green"
+          ]
+        },
+        "cloud": {
+          "const": "none"
+        },
+        "secrets": {
+          "const": "never"
+        },
+        "stayInRepositories": {
+          "const": true
+        }
+      },
+      "required": [
+        "merge",
+        "cloud",
+        "secrets",
+        "stayInRepositories"
+      ]
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "enum": [
+            "claude-code",
+            "codex"
+          ]
+        },
+        "surface": {
+          "enum": [
+            "desktop",
+            "terminal"
+          ]
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[a-z0-9.-]{1,60}$"
+        },
+        "effort": {
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ]
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+        },
+        "permissions": {
+          "enum": [
+            "usual",
+            "ask"
+          ]
+        }
+      },
+      "required": [
+        "tool",
+        "surface",
+        "effort",
+        "permissions"
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 400,
+          "pattern": "^(?:[A-Za-z]:[\\\\/]|/)[^\\u0000-\\u001f\\u007f]*$"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "revises": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 21,
+              "maxLength": 21,
+              "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "followsUp": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 21,
+              "maxLength": 21,
+              "pattern": "^wo-\\d{8}-\\d{4}-[0-9a-z]{4}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "revises",
+        "followsUp"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "id",
+    "receipt",
+    "title",
+    "createdAt",
+    "createdBy",
+    "kind",
+    "project",
+    "scope",
+    "goal",
+    "repositories",
+    "context",
+    "expected",
+    "policy",
+    "agent",
+    "result",
+    "links"
+  ]
+}

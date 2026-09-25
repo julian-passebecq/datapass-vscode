@@ -13,7 +13,7 @@
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
-import { workbenchState, type WbGit, type WorkbenchState } from "./workbenchState";
+import { workbenchState, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
 
@@ -39,10 +39,17 @@ const ALLOWED = new Set([
   // 0.17: work views and windows.
   "datapass.openSwitcher", "datapass.saveWorkView", "datapass.openWorkbenchFloating",
   // 0.19: the Git view (the overview's Git card).
-  "datapass.git.focus", "datapass.git.fetchAll"
+  "datapass.git.focus", "datapass.git.fetchAll",
+  // 0.20: work orders (the Work orders view, Details, entry points).
+  "datapass.workOrders.new", "datapass.workOrders.select", "datapass.workOrders.show", "datapass.workOrders.launch", "datapass.workOrders.resume",
+  "datapass.workOrders.copyPrompt", "datapass.workOrders.copyForChat", "datapass.workOrders.markDone", "datapass.workOrders.abandon", "datapass.workOrders.archive",
+  "datapass.workOrders.followUp", "datapass.workOrders.revise", "datapass.workOrders.checkPrFiles", "datapass.workOrders.importProposed",
+  "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openFolder", "datapass.workOrders.openFile",
+  "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision",
+  "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr"
 ]);
 
-export type WorkbenchView = "architecture" | "options" | "sheet" | "board";
+export type WorkbenchView = "architecture" | "options" | "sheet" | "board" | "workOrders";
 
 /** VS Code's command that moves the active editor into a floating window (VS Code 1.85+). */
 export const MOVE_TO_NEW_WINDOW = "workbench.action.moveEditorToNewWindow";
@@ -74,6 +81,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private pendingShow?: { view: WorkbenchView; focus?: string };
   /** 0.19: the Git view's observation, for the overview's one-line Git card. */
   private gitSource?: () => GitObservation;
+  /** 0.20: the work orders of this project. */
+  private workOrderSource?: () => WbWorkOrders | undefined;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
@@ -95,12 +104,18 @@ export class WorkbenchHost implements vscode.Disposable {
       options: ctx.options, analysis: this.session.optionsAnalysis(), optionsError: ctx.optionsError,
       sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview(),
       board: this.session.boardView(), boardError: ctx.boardError,
-      git: this.gitCard()
+      git: this.gitCard(),
+      workOrders: this.workOrderSource?.()
     });
     return this.lastState;
   }
 
   setGitSource(source: () => GitObservation): void { this.gitSource = source; }
+  /** 0.20: where the Work orders view and the Details timeline read the orders; `changed` repaints every view. */
+  setWorkOrderSource(source: () => WbWorkOrders | undefined, changed: vscode.Event<void>): void {
+    this.workOrderSource = source;
+    this.subs.push(changed(() => void this.post()));
+  }
 
   private lastGitCard = "";
   /** The Git view checked the repositories again: repaint the overview when its Git card changed. */

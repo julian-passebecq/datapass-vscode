@@ -17,9 +17,23 @@ import { clipboard } from "../core/clipboard";
 import { errorMessage, readBounded, UserFacingError } from "../work/io";
 import { readOptional } from "../core/workspace/loader";
 import { vetRelativePath } from "../core/exchange/pathSafety";
+import { agentTabState, manualTabState, type AgentTabState, type ManualTabState } from "./agentState";
+import type { WorkOrderService } from "../work/workOrders";
+import { aiSettings, sanitizeDraft, type AgentPrefill, type Draft, type WorkOrderFlows } from "../work/workOrderCommands";
+import type { GitObserver } from "../work/gitObserver";
 
 /** Commands the view's footer may run (no arguments). */
 const ALLOWED = new Set(["datapass.restoreBackup", "datapass.openPreparationGuide"]);
+/** 0.20: commands the Agent and Manual tabs may run; arguments are short strings or numbers, re-checked by each command. */
+const AGENT_ALLOWED = new Set([
+  "datapass.workOrders.show", "datapass.workOrders.launch", "datapass.workOrders.resume", "datapass.workOrders.markDone", "datapass.workOrders.followUp",
+  "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openApp", "datapass.workOrders.enable",
+  "datapass.workOrders.copyForChat", "datapass.openProjectManifest", "workbench.trust.manage",
+  "datapass.project.focus", "datapass.git.focus", "datapass.readinessReport", "datapass.openWorkbench", "datapass.openNativeTool",
+  "datapass.checkForUpdates", "datapass.openPreparationGuide", "workbench.actions.view.problems"
+]);
+
+export type AiViewState = AiExchangeState & { agent?: AgentTabState; manual?: ManualTabState };
 
 type Reply = (message: Record<string, unknown>) => void | Thenable<boolean>;
 
@@ -32,9 +46,48 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   private loaded = false;
   private readonly subs: vscode.Disposable[] = [];
   private sizes: Partial<Record<ExchangeKind, number>> = {};
+  private work?: { service: WorkOrderService; flows: WorkOrderFlows; git: GitObserver };
+  /** Parts of a prefilled draft the webview never sees (a failing PR's checks, base branches, the order it follows). */
+  private hidden?: { token: string; draft: Partial<Draft> };
+  private lastVisible?: Partial<Draft>;
+  private pendingPrefill?: Record<string, unknown>;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => void this.post()));
+  }
+
+  /** 0.20: the work-order service behind the Agent tab. */
+  attachWorkOrders(service: WorkOrderService, flows: WorkOrderFlows, git: GitObserver): void {
+    this.work = { service, flows, git };
+    this.subs.push(service.onDidChange(() => void this.post()), git.onDidChange(() => void this.post()));
+  }
+
+  /** Open the Agent tab with a prefilled draft (entry points of §8.9). */
+  async prefill(p: AgentPrefill): Promise<void> {
+    const token = Math.random().toString(36).slice(2, 12);
+    const { extra, baseBranches, followsUp, revises, ...visible } = p.draft;
+    this.hidden = { token, draft: { extra, baseBranches, followsUp, revises } };
+    this.lastVisible = visible;
+    const message = { type: "prefill", draft: visible, note: p.note, token };
+    this.pendingPrefill = message;
+    await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
+    if (this.view && this.loaded) { await this.view.webview.postMessage(message); this.pendingPrefill = undefined; }
+  }
+
+  /** The last prefill the Agent tab received (desktop tests). */
+  lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined { return this.hidden ? { ...this.hidden, visible: this.lastVisible ?? {} } : undefined; }
+
+  /** Show one tab (desktop tests, commands). */
+  async showTab(tab: "guided" | "agent" | "manual"): Promise<void> {
+    await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
+    await this.view?.webview.postMessage({ type: "tab", tab });
+  }
+
+  /** A draft from the webview, with the hidden parts of the prefill it came from. */
+  private draftFrom(raw: unknown, token: unknown): Draft {
+    const d = sanitizeDraft(raw);
+    if (this.hidden && token === this.hidden.token) return { ...d, ...Object.fromEntries(Object.entries(this.hidden.draft).filter(([, v]) => v !== undefined)) };
+    return d;
   }
 
   dispose(): void { for (const s of this.subs) s.dispose(); }
@@ -62,16 +115,23 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
     if (this.view && this.loaded) { await this.view.webview.postMessage({ type: "focus", kind }); this.pendingFocus = undefined; }
   }
 
-  async state(): Promise<AiExchangeState> {
+  async state(): Promise<AiViewState> {
     await this.measure();
     const c = this.session.project;
-    return aiExchangeState({
+    const base = aiExchangeState({
       version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(this.session.root), hasManifest: c.manifestExists, projectTitle: c.manifest?.project.title, graphPath: c.manifest?.graph,
       kinds: KINDS, sizes: this.sizes,
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges()
     });
+    if (!this.work || !base.ready || !c.manifest) return base;
+    const s = aiSettings();
+    return {
+      ...base,
+      agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope }),
+      manual: manualTabState(this.session, this.work.git.observation().needsYou.length)
+    };
   }
 
   /** Sizes of the files on disk (the loaded ones are known; graph and catalog are read). */
@@ -111,6 +171,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
           this.loaded = true;
           await reply({ type: "state", state: await this.state() });
           if (this.pendingFocus) { await reply({ type: "focus", kind: this.pendingFocus.kind }); this.pendingFocus = undefined; }
+          if (this.pendingPrefill) { await reply(this.pendingPrefill); this.pendingPrefill = undefined; }
           return;
         case "check": {
           const raw = text(m.text);
@@ -155,11 +216,39 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
           if (typeof m.command === "string" && ALLOWED.has(m.command)) await vscode.commands.executeCommand(m.command);
           return;
         }
+        // 0.20: the Agent tab.
+        case "wo.preview": {
+          if (!this.work) return;
+          const mm = m as { draft?: unknown; token?: unknown };
+          await this.work.flows.preview(this.draftFrom(mm.draft, mm.token));
+          return;
+        }
+        case "wo.write": {
+          if (!this.work) return;
+          const mm = m as { draft?: unknown; token?: unknown; launch?: unknown };
+          const written = await this.work.flows.write(this.draftFrom(mm.draft, mm.token));
+          this.hidden = undefined;
+          await reply({ type: "wo.done", id: written.id, launched: false });
+          if (mm.launch === true) {
+            await this.work.flows.launch(written.id);
+            const launched = (this.work.service.get(written.id)?.state?.launches.length ?? 0) > 0;
+            await reply({ type: "wo.done", id: written.id, launched });
+          }
+          return;
+        }
+        case "wo.cmd": {
+          const mm = m as { command?: unknown; args?: unknown };
+          if (typeof mm.command !== "string" || !AGENT_ALLOWED.has(mm.command)) return;
+          const args = Array.isArray(mm.args) ? mm.args.slice(0, 3).filter(a => (typeof a === "string" && a.length <= 100) || (typeof a === "number" && Number.isFinite(a))) : [];
+          await vscode.commands.executeCommand(mm.command, ...args);
+          return;
+        }
       }
     } catch (error) {
       const msg = errorMessage(error);
       if (m.type === "write") await reply({ type: "written", error: msg });
       else if (m.type === "copy") await reply({ type: "copied", error: msg });
+      else if (m.type === "wo.write" || m.type === "wo.preview") await reply({ type: "wo.done", error: msg });
       else void vscode.window.showErrorMessage(`DataPass: ${msg}`);
     }
   }

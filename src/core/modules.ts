@@ -40,7 +40,15 @@ export const MODULES: readonly ModuleInfo[] = [
 
 export const MODULE_IDS: readonly ModuleId[] = MODULES.map(m => m.id);
 
-export type ModuleSwitches = Partial<Record<ModuleId, boolean>>;
+/**
+ * 0.20: switches that are not cloud modules. `workOrders` (AI agents working from a DataPass work
+ * order) and `pilot` (later). Their defaults depend on the project type (core/workOrders/projectType.ts),
+ * so they are not in MODULES and "Choose Project Modules" keeps them as they are.
+ */
+export type AiSwitchId = "workOrders" | "pilot";
+export const AI_SWITCH_IDS: readonly AiSwitchId[] = ["workOrders", "pilot"];
+
+export type ModuleSwitches = Partial<Record<ModuleId | AiSwitchId, boolean>>;
 
 /** Anything carrying an optional `modules` block (the manifest, or undefined without one). */
 type WithModules = { modules?: ModuleSwitches } | undefined;
@@ -71,7 +79,7 @@ export function validateModules(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return ["modules must be an object of module ids to true/false."];
   const issues: string[] = [];
   for (const [key, on] of Object.entries(value as Record<string, unknown>)) {
-    if (!(MODULE_IDS as readonly string[]).includes(key)) issues.push(`modules.${key} is not a known module (${MODULE_IDS.join(", ")}).`);
+    if (![...MODULE_IDS, ...AI_SWITCH_IDS].includes(key as ModuleId)) issues.push(`modules.${key} is not a known module (${[...MODULE_IDS, ...AI_SWITCH_IDS].join(", ")}).`);
     else if (typeof on !== "boolean") issues.push(`modules.${key} must be true or false.`);
   }
   return issues;
