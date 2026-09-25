@@ -1,0 +1,123 @@
+{
+  "format": "datapass.sheet",
+  "version": "1",
+  "summary": "Papers pipeline: about 1,200 PDFs, one row per page, a few thousand reviewed claims.",
+  "asOf": "2026-09-25",
+  "datasets": [
+    {
+      "id": "pdfs",
+      "label": "Original PDFs",
+      "componentId": "pdf-archive",
+      "kind": "files",
+      "files": "≈ 1,200",
+      "size": "≈ 3 GB",
+      "growth": "+50 per month",
+      "notes": "Reading rights checked per publisher."
+    },
+    {
+      "id": "pages",
+      "label": "Pages (staging)",
+      "componentId": "cosmos",
+      "kind": "collection",
+      "rows": "≈ 25,000",
+      "size": "≈ 400 MB",
+      "producedBy": [
+        "extract"
+      ],
+      "consumedBy": [
+        "review"
+      ],
+      "columns": [
+        {
+          "name": "sourceId",
+          "type": "string",
+          "role": "partition",
+          "meaning": "PDF identifier (hash of the file)"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "role": "key",
+          "meaning": "Physical page number"
+        },
+        {
+          "name": "printedPage",
+          "type": "string",
+          "meaning": "Page number printed on the page"
+        },
+        {
+          "name": "text",
+          "type": "string",
+          "role": "text"
+        }
+      ]
+    },
+    {
+      "id": "claims",
+      "label": "Published claims",
+      "componentId": "study-db",
+      "kind": "collection",
+      "rows": "≈ 5,000",
+      "columns": [
+        {
+          "name": "claimId",
+          "type": "string",
+          "role": "key"
+        },
+        {
+          "name": "citation",
+          "type": "object",
+          "role": "important",
+          "meaning": "PDF, page and section"
+        }
+      ]
+    }
+  ],
+  "formulas": [
+    {
+      "id": "coverage",
+      "label": "Page coverage",
+      "expression": "coverage = pages_extracted / pages_total",
+      "variables": [
+        {
+          "symbol": "pages_extracted",
+          "meaning": "pages with text",
+          "unit": "pages"
+        },
+        {
+          "symbol": "pages_total",
+          "meaning": "pages in the PDF",
+          "unit": "pages"
+        }
+      ],
+      "result": {
+        "symbol": "coverage",
+        "unit": "ratio"
+      },
+      "componentId": "extract",
+      "where": {
+        "repoRef": "pipeline",
+        "path": "functions/extract/function_app.py",
+        "symbol": "coverage"
+      },
+      "validation": "Checked on a sample of 20 PDFs by hand."
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "func",
+      "label": "Extraction function app",
+      "componentId": "extract",
+      "host": "Azure Functions Flex Consumption",
+      "region": "West Europe",
+      "access": "Azure Functions extension",
+      "decisionRef": "processing"
+    }
+  ],
+  "glossary": [
+    {
+      "term": "claim",
+      "meaning": "A statement taken from a paper, with its citation."
+    }
+  ]
+}

@@ -19,14 +19,23 @@ const ALLOWED = new Set([
   "datapass.recordComponentResult", "datapass.setProjectChecklist", "datapass.openDoc", "datapass.installTool", "datapass.explainMissingFile",
   "datapass.initializeProjectManifest", "datapass.openProjectManifest", "datapass.openGraph", "datapass.openPreparationGuide", "datapass.switchProject",
   "datapass.env.copyKeyName", "datapass.env.openFile", "datapass.env.copyIdentifier", "datapass.copyProjectId", "datapass.openPowerOps", "datapass.readinessReport",
-  "vscode.openFolder"
+  "vscode.openFolder",
+  // 0.15: architecture options, project sheet, AI exchange of DataPass files, backups.
+  "datapass.openOptions", "datapass.openSheet", "datapass.recordDecision", "datapass.exportOptionsComparison", "datapass.optionsAiContext",
+  "datapass.copyForAi", "datapass.importFromAi", "datapass.openOptionsFile", "datapass.openSheetFile", "datapass.openOptionSource",
+  "datapass.clearPreview", "datapass.restoreBackup", "datapass.openSheetReference"
 ]);
+
+export type WorkbenchView = "architecture" | "options" | "sheet";
+const VIEWS: ReadonlySet<string> = new Set(["architecture", "options", "sheet"]);
 
 export class WorkbenchHost implements vscode.Disposable {
   private readonly panels = new Set<vscode.WebviewPanel>();
   private readonly views = new Map<string, vscode.WebviewView>();
   private readonly subs: vscode.Disposable[] = [];
   private lastState?: WorkbenchState;
+  /** View to show once a new Workbench tab has loaded. */
+  private pendingShow?: { view: WorkbenchView; focus?: string };
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
@@ -44,17 +53,24 @@ export class WorkbenchHost implements vscode.Disposable {
       map: this.session.projectMap(), selection: this.session.selection(), version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(ctx.root), hasManifest: ctx.manifestExists, manifestErrors: ctx.manifestErrors, graphError: ctx.graphError,
       trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), multipleProjectFolders: this.session.projectRootCandidates().length > 1,
-      readiness: ctx.manifest ? this.session.readiness() : undefined
+      readiness: ctx.manifest ? this.session.readiness() : undefined,
+      options: ctx.options, analysis: this.session.optionsAnalysis(), optionsError: ctx.optionsError,
+      sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview()
     });
     return this.lastState;
   }
 
   hasPanel(): boolean { return this.panels.size > 0; }
 
-  /** Open (or reveal) the full Workbench in an editor tab. */
-  openPanel(column: vscode.ViewColumn = vscode.ViewColumn.Active): vscode.WebviewPanel {
+  /** Open (or reveal) the full Workbench in an editor tab, on one of its views. */
+  openPanel(column: vscode.ViewColumn = vscode.ViewColumn.Active, view?: WorkbenchView, focus?: string): vscode.WebviewPanel {
     const existing = [...this.panels][0];
-    if (existing) { existing.reveal(column); return existing; }
+    if (existing) {
+      existing.reveal(column);
+      if (view) void existing.webview.postMessage({ type: "show", view, focus });
+      return existing;
+    }
+    this.pendingShow = view ? { view, focus } : undefined;
     const panel = vscode.window.createWebviewPanel("datapass.workbench", "DataPass Workbench", column, {
       enableScripts: true, retainContextWhenHidden: true, localResourceRoots: [vscode.Uri.joinPath(this.context.extensionUri, "dist")]
     });
@@ -86,18 +102,37 @@ export class WorkbenchHost implements vscode.Disposable {
   }
 
   private async onMessage(webview: vscode.Webview, message: unknown): Promise<void> {
-    const m = message as { type?: unknown; subproject?: unknown; component?: unknown; componentId?: unknown; path?: unknown; command?: unknown; args?: unknown } | null;
+    const m = message as { type?: unknown; subproject?: unknown; component?: unknown; componentId?: unknown; path?: unknown; command?: unknown; args?: unknown; scenario?: unknown; picks?: unknown } | null;
     if (!m || typeof m !== "object") return;
     const map = this.session.projectMap();
     const str = (v: unknown) => (typeof v === "string" && v.length <= 200 ? v : undefined);
     switch (m.type) {
       case "ready":
         await this.postTo(webview);
+        if (this.pendingShow && [...this.panels].some(p => p.webview === webview)) {
+          await webview.postMessage({ type: "show", ...this.pendingShow });
+          this.pendingShow = undefined;
+        }
         return;
+      case "preview": {
+        // Only scenarios and picks the options file declares; anything else clears the preview.
+        const options = this.session.project.options;
+        if (!options) return;
+        const scenario = str(m.scenario);
+        if (scenario) {
+          if (scenario !== "current" && scenario !== "decided" && !options.scenarios?.some(s => s.id === scenario)) return;
+          await this.session.setPreview(scenario === "current" ? undefined : { scenario });
+          return;
+        }
+        const picks = Array.isArray(m.picks) ? m.picks.slice(0, 50).map(str).filter((p): p is string => !!p && /^[a-z][a-z0-9_.-]{0,79}=[a-z][a-z0-9_.-]{0,79}$/.test(p)) : [];
+        const valid = picks.filter(p => { const [d, o] = p.split("="); return options.decisions.some(x => x.id === d && x.options.some(y => y.id === o)); });
+        await this.session.setPreview(valid.length ? { picks: valid } : undefined);
+        return;
+      }
       case "select": {
         const subproject = str(m.subproject), component = str(m.component);
         if (subproject && !map.subprojects.some(s => s.id === subproject)) return;
-        if (component && !map.components.some(c => c.id === component)) return;
+        if (component && !map.components.some(c => c.id === component) && !this.session.preview()?.map.components.some(c => c.id === component)) return;
         await this.session.select({ subproject, component });
         return;
       }

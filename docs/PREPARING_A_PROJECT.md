@@ -6,7 +6,9 @@ official tools. DataPass never generates your code, never deploys and never trus
 cannot observe.
 
 - Contract: **manifest `schemaVersion: 4`** (`.datapass/project.json`) and **graph `version: "0.2"`**
-  (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/).
+  (`.datapass/graph.json`), with JSON Schemas in [`schemas/`](../schemas/). Two optional files
+  (DataPass ≥ 0.15.0): **architecture options** (`.datapass/options.json`, section 7) and the
+  **project sheet** (`.datapass/sheet.json`, section 8).
 - Older manifests (v1, v2, v3) and graphs (`0.1-draft`) keep working; *DataPass: Upgrade Project
   Manifest* moves a manifest forward with a backup copy and a journal.
 
@@ -185,7 +187,10 @@ also need an environment and your explicit reviews for that exact target and tho
 |---|---|
 | `azure-functions`, `azure-data-factory`, `azure-storage`, `cosmos-nosql`, `mongodb-atlas`, `postgres`, `neon`, `databricks`, `fabric`, `powerbi`, `airflow`, `grafana`, `python`, `terraform` | operations with preflight, routing to the official tool |
 | `jupyter`, `bicep`, `sql`, `manual` | files (and native editors) |
-| `google-cloud-storage`, `google-drive`, `bigquery`, `aws-s3`, `other` | recognised, **unsupported**: shown, never "ready" |
+| `vm` | a machine reached over SSH (Oracle Cloud, Azure, any host): operation `infra.remote.ssh` with `target: { "sshHost": "<alias from ~/.ssh/config>", "folder": "/home/<user>/<project>" }` opens it with Remote - SSH |
+| `docker` | files (Dockerfile, compose) and the Container Tools view |
+| `google-cloud-storage`, `bigquery` | recognised, **no DataPass operations**; the official tool is named (Google Cloud Data Agent Kit + gcloud CLI) so comparisons say what to install |
+| `google-drive`, `aws-s3`, `other` | recognised, **unsupported**: shown, never "ready" |
 
 Cosmos DB for NoSQL, Cosmos DB for MongoDB and MongoDB Atlas are three different services. Azure Data
 Factory and Fabric Data Factory are two different providers. Google Drive is not Google Cloud Storage.
@@ -210,6 +215,10 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 9. Do not add a `"$schema"` line to `.datapass/*.json`. The DataPass extension attaches the schema of
    the installed version; a `$schema` web address replaces it, and VS Code blocks the download
    ("Schema download issue") unless that domain is trusted.
+10. `graph.json` always describes the **current** architecture. Alternatives go in `options.json`
+    (section 7) until the person decides; applying a decision is its own pull request.
+11. Prices, volumes and formulas are declarations: give a source and a date (`asOf`) for every
+    price, and never invent a number — leave the field out and say so in `notes`.
 
 ## 5. The loop with the AI
 
@@ -229,3 +238,122 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 - The Project view lists **Problems in project files**: a repository that is not declared, a scope
   naming an unknown component, an environment that does not exist, an unknown operation.
 - `DataPass: Validate DataPass JSON` checks any DataPass file.
+
+## 7. `.datapass/options.json` — architecture options (optional, DataPass ≥ 0.15.0)
+
+Options let a person compare **two or three alternatives per level** of the architecture (where the
+data lives, what processes it, where it is staged, where code runs…) before anything is built. The
+AI prepares them; DataPass applies each option to a *copy* of the project and shows the
+consequences with its own model; the person decides; the AI applies the decision in a pull request.
+
+```json
+{
+  "format": "datapass.options",
+  "version": "1",
+  "title": "Research library — architecture options",
+  "currency": "USD",
+  "criteria": [
+    { "id": "cost", "label": "Monthly cost (declared)", "better": "lower", "unit": "USD/month" },
+    { "id": "setup", "label": "Setup effort", "description": "5 = quick to set up", "better": "higher" }
+  ],
+  "decisions": [
+    { "id": "archive", "title": "Where do the PDFs live?", "level": "storage", "subproject": "papers",
+      "concerns": ["pdf-archive"], "current": "blob",
+      "options": [
+        { "id": "blob", "label": "Azure Blob Storage",
+          "values": { "cost": "≈ 1", "setup": { "text": "portal or extension", "score": 4 } },
+          "costs": [ { "label": "Blob storage, Hot LRS, 50 GB", "price": "0.0196 USD per GB-month (West Europe)", "monthly": 0.98,
+                       "source": "https://azure.microsoft.com/pricing/details/storage/blobs/", "asOf": "2026-09-25" } ] },
+        { "id": "gcs", "label": "Google Cloud Storage",
+          "changes": { "replace": [ { "id": "pdf-archive", "kind": "storage", "label": "PDF archive (GCS)", "provider": "google-cloud-storage" } ] },
+          "pros": ["Natural input for BigQuery object tables"], "cons": ["The Azure Function reads across clouds: egress is billed"],
+          "costs": [ { "label": "Standard storage, 50 GB", "monthly": 1.1, "source": "https://cloud.google.com/storage/pricing", "asOf": "2026-09-25" } ] }
+      ] }
+  ],
+  "scenarios": [
+    { "id": "google", "title": "Archi 2 — Google for documents", "picks": ["archive=gcs", "processing=bigquery"] }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `decisions[].current` | The option `graph.json` implements today. Its `changes` stay empty: graph.json already is that option. |
+| `decisions[].level` | Groups decisions (`storage`, `processing`, `staging`, `compute`…) so one level can be swapped at a time. |
+| `decisions[].subproject` | The sub-project (scope) the decision belongs to; components an option adds join it. |
+| `decisions[].concerns` | Components of graph.json the decision is about (DataPass also counts what options remove or replace). |
+| `decisions[].chosen`, `decidedOn`, `decidedBy`, `rationale` | The person's decision, written by *Record an Architecture Decision* (or by hand). When `chosen` differs from `current`, the AI still has to apply it. |
+| `options[].changes` | How the option differs from graph.json: `add` (new components, graph 0.2 items), `replace` (a component with the same id, for example another provider), `remove` (component ids), `addRelations`, `removeRelations` (relation ids), `addRepositories` (`{ "key", "label", "remote": { "url" } }` or `"planned": true`). Links to a removed component disappear with it. |
+| `options[].values` | Criterion id → short text, a number, or `{ "text", "score": 1–5, "note" }`. Every key is declared in `criteria`. |
+| `options[].costs` | Pricing lines: `label`, `service`, `price` (the list price as text), `monthly` / `oneTime` (numbers used for totals), `currency`, `basis`, **`source` (https) and `asOf` (date)**, `note`. Orders of magnitude, not quotes. |
+| `options[].pros`, `cons`, `consequences` | Plain sentences. |
+| `options[].requires`, `excludes` | `"decision=option"`: combinations that need or exclude each other (BigQuery on documents requires them in Cloud Storage). DataPass warns on incompatible picks. |
+| `scenarios[].picks` | Named combinations (`"decision=option"`); unlisted decisions stay current. Ids `current`, `decided` and `custom` are reserved. |
+
+What DataPass computes for every option and scenario (never declared): components added, removed
+and changed; links; the official VS Code extensions and CLIs the architecture needs that the current
+one does not, and whether they are installed on this machine; DataPass support per service
+(operations / files only / not supported); repositories; operations; the sum of the declared monthly
+and one-time costs; conflicts (two decisions changing the same component) and `requires` /
+`excludes` violations. A preview on the diagram marks components *new*, *changed* or *removed*;
+nothing is written until the person records a decision.
+
+Rules for the AI: keep the current option as it is; propose at most two alternatives per decision
+(three when the person asks); make every alternative's `changes` complete enough to draw it; name
+official tools through providers rather than prose; one scenario per coherent combination.
+
+## 8. `.datapass/sheet.json` — project sheet (optional, DataPass ≥ 0.15.0)
+
+What is specific to the project and useful to everyone working on it: order of magnitude of the
+data, the columns that matter, the project's formulas, where code runs. DataPass shows these next to
+their components and adds them to preparation packs; it never evaluates a formula, never counts rows
+and never connects to a database.
+
+```json
+{
+  "format": "datapass.sheet",
+  "version": "1",
+  "summary": "About 1,200 PDFs, one row per page, a few thousand reviewed claims.",
+  "asOf": "2026-09-25",
+  "datasets": [
+    { "id": "pages", "label": "Pages (staging)", "componentId": "cosmos", "kind": "collection",
+      "rows": "≈ 25,000", "size": "≈ 400 MB", "producedBy": ["extract"], "consumedBy": ["review"],
+      "columns": [ { "name": "sourceId", "type": "string", "role": "partition", "meaning": "PDF identifier" },
+                   { "name": "page", "type": "int", "role": "key", "meaning": "Physical page number" } ] }
+  ],
+  "formulas": [
+    { "id": "coverage", "label": "Page coverage", "expression": "coverage = pages_extracted / pages_total",
+      "variables": [ { "symbol": "pages_extracted", "unit": "pages" }, { "symbol": "pages_total", "unit": "pages" } ],
+      "componentId": "extract", "where": { "repoRef": "pipeline", "path": "functions/extract/function_app.py", "symbol": "coverage" } }
+  ],
+  "runtimes": [
+    { "id": "func", "label": "Extraction function app", "componentId": "extract", "host": "Azure Functions Flex Consumption",
+      "region": "West Europe", "access": "Azure Functions extension", "decisionRef": "processing" }
+  ],
+  "glossary": [ { "term": "claim", "meaning": "A statement taken from a paper, with its citation." } ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `datasets[]` | A table, collection, file set, view, stream or index: `componentId` (where it lives), `kind`, `rows` / `files` / `size` / `growth` / `refresh` as **text orders of magnitude**, `asOf`, the `columns` that matter (`name`, `type`, `unit`, `role`: key, foreign-key, partition, time, measure, dimension, text, vector, important; `meaning`), `producedBy` / `consumedBy` component ids, `classification`. |
+| `formulas[]` | `expression` exactly as the project writes it (text or LaTeX), `variables` and `result` with units, `componentId` and `where` (repository, repository-relative path, function or symbol) of the code that computes it, `source`, `reference` (https), `validation`. |
+| `runtimes[]` | Where code runs: `host`, `specs`, `os`, `region`, `runs` (component ids), `access` (an SSH alias or a tool — never an address with credentials, a password or a key), `cost`, `decisionRef` (the decision of options.json that compares hosts). |
+
+## 9. Exchanging DataPass files with an AI, without an API
+
+Two ways, both ending in a file the person reviews and commits:
+
+1. **Git (preferred for native files).** The AI opens a pull request; the person merges it; DataPass
+   *Check for updates* → *Get updates* (fast-forward only).
+2. **Copy / paste (for `.datapass/*.json`).** *DataPass: Copy a DataPass File for the AI…* puts the
+   file, the task and the rules on the clipboard. The AI answers with **the complete file in one JSON
+   code block**. *DataPass: Import the AI's Answer into a DataPass File…* extracts that block,
+   recognises the file from its `format` (or `schemaVersion` for project.json), validates it with the
+   parser the extension uses, refuses credential-shaped text and local paths, shows a diff, asks, keeps
+   the previous version in `.datapass/local/backups/` (git-ignored) and writes it. It never commits or
+   pushes. *DataPass: Restore a Backup of a DataPass File…* brings a previous version back the same way.
+
+DataPass writes project files only on an explicit action (upgrade the manifest, choose modules, record
+a decision, import an AI answer, restore a backup), always with a backup and a check that the file did
+not change since it was read.

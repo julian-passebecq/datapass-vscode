@@ -10,6 +10,11 @@ import { PHASE_LABELS } from "../core/capabilities/registry";
 import type { ComponentView, MapChecklistEntry, OperationView, ProjectMap } from "../core/project/projectMap";
 import type { LayoutEdgeInput } from "../core/project/layout";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
+import type { ArchitectureImpact, CriterionValue, DerivedArchitecture, OptionsAnalysis, OptionsFile } from "../core/project/options";
+import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../core/project/sheet";
+
+/** The previewed architecture as the session computed it. */
+export interface PreviewInput { key: string; title: string; impact: ArchitectureImpact; derived: DerivedArchitecture; map: ProjectMap }
 
 export interface WbFile {
   path: string; repoPath: string; kind: "file" | "dir" | "glob"; role: string; requiredFor: string[]; optional: boolean;
@@ -23,7 +28,7 @@ export interface WbOperation {
 }
 export interface WbChecklist { key: string; id: string; label: string; state: string; note?: string }
 export interface WbComponent {
-  id: string; label: string; kind: string; providerLabel?: string; providerGlyph: string; providerAbout?: string; providerSupport?: string;
+  id: string; label: string; kind: string; providerId?: string; providerLabel?: string; providerGlyph: string; providerAbout?: string; providerSupport?: string;
   nativeTool?: string; status?: string; description?: string; health: string; headline: string; nextStep: string; subprojects: string[];
   repoKey?: string; parent?: string; children: string[];
   artifacts?: { repoKey: string; root: string; profileLabel: string; profileAbout: string; availability: string; summary: { expected: number; found: number; missing: number; generatedMissing: number; optionalMissing: number }; entry?: string; files: WbFile[]; mustNotCommit: Array<{ path: string; why: string; tracked: boolean }> };
@@ -74,7 +79,16 @@ export interface WorkbenchState {
   diagram: { nodeIds: string[]; edges: LayoutEdgeInput[] };
   docs: Array<{ label: string; path?: string; url?: string; repoKey?: string }>;
   readiness?: WbReadiness;
+  /** 0.15: architecture options with DataPass's analysis (absent without .datapass/options.json). */
+  options?: WbOptions;
+  optionsError?: string;
+  /** 0.15: project sheet (absent without .datapass/sheet.json). */
+  sheet?: WbSheet;
+  sheetError?: string;
+  /** 0.15: the architecture previewed on the diagram. */
+  preview?: WbPreview;
 }
+
 
 export function wbReadiness(r: Readiness): WbReadiness {
   return {
@@ -86,6 +100,57 @@ export function wbReadiness(r: Readiness): WbReadiness {
     checks: r.checks.slice(0, 30).map(c => ({ severity: c.severity, area: c.area, message: c.message, nextStep: c.nextStep })),
     summary: r.summary
   };
+}
+
+// ------------------------------------------------------------------ 0.15 options, sheet, preview
+
+export interface WbImpact {
+  key: string;
+  picks: Array<{ decision: string; option: string; changed: boolean }>;
+  components: { total: number; added: Array<{ id: string; label: string; provider?: string }>; removed: Array<{ id: string; label: string; provider?: string }>; replaced: Array<{ id: string; label: string; provider?: string; from?: string }> };
+  relations: { added: number; removed: number };
+  providers: Array<{ id: string; label: string; support: string; nativeTool?: string; moduleLabel?: string; moduleOff: boolean; count: number }>;
+  providersAdded: string[];
+  providersRemoved: string[];
+  tools: { newlyNeeded: Array<{ label: string; state: string; extensionId?: string; why: string[] }>; noLongerNeeded: string[]; missing: Array<{ label: string; extensionId?: string }> };
+  support: { operations: number; files: number; unsupported: number };
+  operations: { total: number; ready: number };
+  repositories: { used: string[]; planned: string[]; newlyUsed: string[] };
+  costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[] };
+  problems: Array<{ severity: string; message: string }>;
+}
+export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string }
+export interface WbOption {
+  id: string; label: string; summary?: string; current: boolean; chosen: boolean; rejected: boolean; note?: string;
+  values: Record<string, { text: string; score?: number; note?: string }>;
+  pros: string[]; cons: string[]; consequences: string[]; costs: WbCost[]; requires: string[]; excludes: string[];
+  docs: Array<{ label: string; url?: string; path?: string }>;
+  impact: WbImpact;
+}
+export interface WbDecision {
+  id: string; title: string; question?: string; level?: string; subproject?: string; concerns: string[];
+  current: string; chosen?: string; decidedOn?: string; decidedBy?: string; rationale?: string; notes?: string; options: WbOption[];
+}
+export interface WbScenario { id: string; title: string; description?: string; recommended: boolean; kind: string; impact: WbImpact }
+export interface WbOptions {
+  title?: string; description?: string; currency: string;
+  criteria: Array<{ id: string; label: string; description?: string; better?: string; unit?: string }>;
+  decisions: WbDecision[]; scenarios: WbScenario[];
+  problems: Array<{ severity: string; where: string; message: string }>;
+}
+export interface WbSheet {
+  summary?: string; asOf?: string;
+  datasets: SheetDataset[]; formulas: SheetFormula[]; runtimes: SheetRuntime[]; glossary: Array<{ term: string; meaning: string }>;
+}
+export interface WbPreview {
+  key: string; title: string;
+  /** Components that exist only in this architecture, or are different in it (drawn and detailed from here). */
+  components: WbComponent[];
+  /** Components this architecture removes (drawn faded). */
+  ghosts: Array<{ id: string; label: string; kind: string; providerId?: string; providerLabel?: string; providerGlyph: string; subprojects: string[]; repoKey?: string }>;
+  diff: Record<string, "added" | "replaced" | "removed">;
+  diagram: { nodeIds: string[]; edges: Array<LayoutEdgeInput & { diff?: "added" | "removed" }> };
+  impact: WbImpact;
 }
 
 const checklist = (c: MapChecklistEntry): WbChecklist => ({ key: c.key, id: c.id, label: c.label, state: c.state, note: c.note });
@@ -107,7 +172,7 @@ function component(c: ComponentView, map: ProjectMap): WbComponent {
   const label = (id: string) => map.components.find(x => x.id === id)?.label ?? id;
   const a = c.artifacts;
   return {
-    id: c.id, label: c.label, kind: c.kind, providerLabel: c.provider?.label ?? c.providerId, providerGlyph: c.provider?.glyph ?? "◻",
+    id: c.id, label: c.label, kind: c.kind, providerId: c.providerId, providerLabel: c.provider?.label ?? c.providerId, providerGlyph: c.provider?.glyph ?? "◻",
     providerAbout: c.provider?.about, providerSupport: c.provider?.support, nativeTool: c.provider?.nativeTool?.label,
     status: c.status, description: c.description, health: c.health, headline: c.headline, nextStep: c.nextStep, subprojects: c.subprojects,
     repoKey: c.repoKey, parent: c.parent, children: c.children,
@@ -135,6 +200,79 @@ export interface StateInput {
   observedAt?: string;
   multipleProjectFolders: boolean;
   readiness?: Readiness;
+  options?: OptionsFile;
+  analysis?: OptionsAnalysis;
+  optionsError?: string;
+  sheet?: ProjectSheet;
+  sheetError?: string;
+  preview?: PreviewInput;
+}
+
+function impact(i: ArchitectureImpact): WbImpact {
+  return {
+    key: i.key, picks: i.picks, components: i.components, relations: i.relations,
+    providers: i.providers.map(p => ({ id: p.id, label: p.label, support: p.support, nativeTool: p.nativeTool, moduleLabel: p.moduleLabel, moduleOff: p.moduleOff, count: p.components.length })),
+    providersAdded: i.providersAdded, providersRemoved: i.providersRemoved,
+    tools: {
+      newlyNeeded: i.tools.newlyNeeded.map(t => ({ label: t.label, state: t.state, extensionId: t.extensionId, why: t.why.slice(0, 4) })),
+      noLongerNeeded: i.tools.noLongerNeeded.map(t => t.label),
+      missing: i.tools.needed.filter(t => t.state === "absent").map(t => ({ label: t.label, extensionId: t.extensionId }))
+    },
+    support: i.support, operations: i.operations, repositories: i.repositories,
+    costs: { monthly: i.costs.monthly, oneTime: i.costs.oneTime, missing: i.costs.missing },
+    problems: i.problems.map(p => ({ severity: p.severity, message: p.message }))
+  };
+}
+
+const value = (v: CriterionValue): { text: string; score?: number; note?: string } =>
+  typeof v === "string" ? { text: v } : typeof v === "number" ? { text: String(v) } : { text: v.text ?? "", score: v.score, note: v.note };
+
+function optionsState(o: OptionsFile, a: OptionsAnalysis): WbOptions {
+  const currency = o.currency ?? "USD";
+  return {
+    title: o.title, description: o.description, currency,
+    criteria: (o.criteria ?? []).map(c => ({ id: c.id, label: c.label, description: c.description, better: c.better, unit: c.unit })),
+    decisions: o.decisions.map(d => ({
+      id: d.id, title: d.title, question: d.question, level: d.level, subproject: d.subproject,
+      concerns: [...new Set([...(d.concerns ?? []), ...d.options.filter(x => x.id !== d.current).flatMap(x => [...(x.changes?.remove ?? []), ...(x.changes?.replace ?? []).map(i => i.id)])])],
+      current: d.current, chosen: d.chosen, decidedOn: d.decidedOn, decidedBy: d.decidedBy, rationale: d.rationale, notes: d.notes,
+      options: d.options.map(x => ({
+        id: x.id, label: x.label, summary: x.summary, current: x.id === d.current, chosen: x.id === d.chosen, rejected: Boolean(x.rejected), note: x.note,
+        values: Object.fromEntries(Object.entries(x.values ?? {}).map(([k, v]) => [k, value(v)])),
+        pros: x.pros ?? [], cons: x.cons ?? [], consequences: x.consequences ?? [],
+        costs: (x.costs ?? []).map(c => ({ ...c, currency: c.currency ?? currency })),
+        requires: x.requires ?? [], excludes: x.excludes ?? [],
+        docs: (x.docs ?? []).map(doc => ({ label: doc.label, url: doc.url, path: doc.path })),
+        impact: impact(a.byOption[`${d.id}=${x.id}`] ?? a.current)
+      }))
+    })),
+    scenarios: a.scenarios.map(s => ({ id: s.id, title: s.title, description: s.description, recommended: Boolean(s.recommended), kind: s.kind, impact: impact(s.impact) })),
+    problems: a.problems.slice(0, 50).map(p => ({ severity: p.severity, where: p.where, message: p.message }))
+  };
+}
+
+function previewState(p: PreviewInput, base: ProjectMap, selection: { subproject?: string }): WbPreview {
+  const d = p.derived;
+  const diff: WbPreview["diff"] = {};
+  for (const id of d.diff.added) diff[id] = "added";
+  for (const id of d.diff.replaced) diff[id] = "replaced";
+  for (const id of d.diff.removed) diff[id] = "removed";
+  const sub = p.map.subprojects.find(s => s.id === selection.subproject);
+  const baseSub = base.subprojects.find(s => s.id === selection.subproject);
+  const ghostIds = d.ghosts.items.map(i => i.id).filter(id => !sub || baseSub?.componentIds.includes(id));
+  const ids = [...(sub ? sub.componentIds : p.map.components.map(c => c.id)), ...ghostIds];
+  const idSet = new Set(ids);
+  const added = new Set(d.diff.addedRelations);
+  const edges: WbPreview["diagram"]["edges"] = [
+    ...p.map.relations.filter(r => idSet.has(r.from) && idSet.has(r.to)).map(r => ({ id: r.id, from: r.from, to: r.to, flow: r.flow, diff: added.has(r.id) ? "added" as const : undefined })),
+    ...base.relations.filter(r => d.diff.removedRelations.includes(r.id) && idSet.has(r.from) && idSet.has(r.to)).map(r => ({ id: r.id, from: r.from, to: r.to, flow: r.flow, diff: "removed" as const }))
+  ];
+  return {
+    key: p.key, title: p.title,
+    components: p.map.components.filter(c => diff[c.id] === "added" || diff[c.id] === "replaced").map(c => component(c, p.map)),
+    ghosts: base.components.filter(c => diff[c.id] === "removed").map(c => ({ id: c.id, label: c.label, kind: c.kind, providerId: c.providerId, providerLabel: c.provider?.label ?? c.providerId, providerGlyph: c.provider?.glyph ?? "◻", subprojects: c.subprojects, repoKey: c.repoKey })),
+    diff, diagram: { nodeIds: ids, edges }, impact: impact(p.impact)
+  };
 }
 
 export function workbenchState(input: StateInput): WorkbenchState {
@@ -163,6 +301,11 @@ export function workbenchState(input: StateInput): WorkbenchState {
     selection: input.selection,
     diagram,
     docs: map.docs,
-    readiness: input.readiness ? wbReadiness(input.readiness) : undefined
+    readiness: input.readiness ? wbReadiness(input.readiness) : undefined,
+    options: input.options && input.analysis ? optionsState(input.options, input.analysis) : undefined,
+    optionsError: input.optionsError,
+    sheet: input.sheet ? { summary: input.sheet.summary, asOf: input.sheet.asOf, datasets: input.sheet.datasets ?? [], formulas: input.sheet.formulas ?? [], runtimes: input.sheet.runtimes ?? [], glossary: input.sheet.glossary ?? [] } : undefined,
+    sheetError: input.sheetError,
+    preview: input.preview && input.preview.derived.picks.some(p => p.changed) ? previewState(input.preview, map, input.selection) : undefined
   };
 }

@@ -3,6 +3,8 @@ import { GRAPH_SCHEMA, V02_ITEM_FIELDS } from "../workspace/graph";
 import { PACK_SCHEMA } from "../domainPacks/pack";
 import { CLAIMS_REGISTER_SCHEMA } from "../publication/claimsRegister";
 import { CATALOG_SCHEMA } from "../project/catalog";
+import { OPTIONS_SCHEMA, VALUE_SCHEMA } from "../project/options";
+import { SHEET_SCHEMA } from "../project/sheet";
 import type { Schema } from "./schemaDsl";
 
 const withMeta = (schema: Schema, id: string, title: string) =>
@@ -16,7 +18,22 @@ export function emittedSchemaFiles(): Record<string, unknown> {
   out["schemas/datapass-domain-pack.schema.json"] = withMeta(PACK_SCHEMA, "datapass-domain-pack.schema.json", "DataPass domain pack (0.1-draft)");
   out["schemas/datapass-claims-register.schema.json"] = withMeta(CLAIMS_REGISTER_SCHEMA, "datapass-claims-register.schema.json", "DataPass claims register (0.1-draft)");
   out["schemas/datapass-catalog.schema.json"] = withMeta(CATALOG_SCHEMA, "datapass-catalog.schema.json", "DataPass project catalog (1)");
+  out["schemas/datapass-options.schema.json"] = withMeta(optionsEditorSchema(), "datapass-options.schema.json", "DataPass architecture options (1)");
+  out["schemas/datapass-sheet.schema.json"] = withMeta(SHEET_SCHEMA, "datapass-sheet.schema.json", "DataPass project sheet (1)");
   return out;
+}
+
+const TARGET_MAP = {
+  type: "object", maxProperties: 50, description: "Resource names for this environment (function app, bundle target, database…). Never credentials.",
+  propertyNames: { pattern: "^[a-z][a-zA-Z0-9_.-]{0,79}$" },
+  additionalProperties: { type: "string", minLength: 1, maxLength: 120, pattern: "^[^\\s\"'`]+$" }
+};
+
+/** A graph item as editors see it: operation targets are string maps (checked by parseGraph at runtime). */
+function editorItem(item: any): any {
+  const i = structuredClone(item);
+  i.properties.operations.items.properties.target = TARGET_MAP;
+  return i;
 }
 
 /**
@@ -29,14 +46,21 @@ function graphEditorSchema(): Schema {
   const map = { type: "object", propertyNames: { pattern: "^[a-z][a-z0-9_.-]{0,79}$" }, additionalProperties: { type: "string", maxLength: 200 } };
   g.properties.roles = map;
   g.properties.outputs.items.properties.producedFrom = map;
-  g.properties.items.items.properties.operations.items.properties.target = {
-    type: "object", maxProperties: 50, description: "Resource names for this environment (function app, bundle target, database…). Never credentials.",
-    propertyNames: { pattern: "^[a-z][a-zA-Z0-9_.-]{0,79}$" },
-    additionalProperties: { type: "string", minLength: 1, maxLength: 120, pattern: "^[^\\s\"'`]+$" }
-  };
+  g.properties.items.items = editorItem(g.properties.items.items);
   g.allOf = [{
     if: { properties: { version: { const: "0.1-draft" } } },
     then: { properties: { items: { items: { not: { anyOf: V02_ITEM_FIELDS.map(f => ({ required: [f] })) } } } } }
   }];
   return g as unknown as Schema;
+}
+
+/** Options as editors see them: criterion values are a map; added components are graph items. */
+function optionsEditorSchema(): Schema {
+  const o = structuredClone(OPTIONS_SCHEMA) as unknown as { properties: Record<string, any> };
+  const option = o.properties.decisions.items.properties.options.items;
+  option.properties.values = { type: "object", maxProperties: 30, description: "Criterion id → value: short text, a number, or { text, score 1–5, note }.", propertyNames: { pattern: "^[a-z][a-z0-9_.-]{0,79}$" }, additionalProperties: VALUE_SCHEMA };
+  const changes = option.properties.changes.properties;
+  changes.add.items = editorItem(changes.add.items);
+  changes.replace.items = editorItem(changes.replace.items);
+  return o as unknown as Schema;
 }

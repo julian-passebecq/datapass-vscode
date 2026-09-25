@@ -53,13 +53,16 @@ const OPERATION: Schema = obj({
 const CHECK: Schema = obj({ id: ID, label: SHORT, capabilityRef: CAPABILITY_ID }, ["id", "label"]);
 const DOC: Schema = obj({ label: SHORT, path: REL_PATH, repoRef: ID, url: HTTPS }, ["label"]);
 
-const ITEM = obj({
+/** One component of the architecture; also the shape of the items an architecture option adds. */
+export const GRAPH_ITEM_SCHEMA = obj({
   id: ID, kind: enumOf(...ITEM_KINDS), label: SHORT, nativeType: SHORT,
   views: arr(ID, 20), tags: arr(ID, 30), authority: SHORT, repoRef: ID, path: REL_PATH,
   classification: enumOf("public", "internal", "confidential"), role: ID, description: TEXT,
   provider: OPEN_ID(COMPONENT_PROVIDERS), status: enumOf(...ITEM_STATUSES), artifacts: ARTIFACTS,
   operations: arr(OPERATION, 30), checklist: arr(CHECK, 50), docs: arr(DOC, 20), owner: SHORT
 }, ["id", "kind", "label"]);
+const ITEM = GRAPH_ITEM_SCHEMA;
+export const GRAPH_RELATION_SCHEMA = obj({ id: ID, source: ID, target: ID, relation: enumOf(...RELATIONS) });
 
 const OUTPUT = obj({
   id: ID, label: SHORT, itemRef: ID,
@@ -74,7 +77,7 @@ export const GRAPH_SCHEMA: Schema = obj({
   roles: { type: "object", additionalProperties: false, properties: {}, required: [] } as Schema,
   items: arr(ITEM, 2000),
   outputs: arr(OUTPUT, 1000),
-  relations: arr(obj({ id: ID, source: ID, target: ID, relation: enumOf(...RELATIONS) }), 5000)
+  relations: arr(GRAPH_RELATION_SCHEMA, 5000)
 }, ["format", "version", "items"]);
 
 export interface ArtifactFileDecl { path: string; role?: FileRole; requiredFor?: Phase[]; optional?: boolean; description?: string }
@@ -168,6 +171,14 @@ export function parseGraph(raw: string | Uint8Array): ProjectGraph {
     for (const d of item.docs ?? []) if (Boolean(d.path) === Boolean(d.url)) throw new GraphError(`Item ${item.id}: doc "${d.label}" needs exactly one of path or url`);
   }
   return graph;
+}
+
+/**
+ * Validate components that are not part of the graph file, such as those an architecture option
+ * would add, with exactly the rules of parseGraph (operation targets, credentials, docs, checklists).
+ */
+export function parseGraphItems(items: unknown[]): GraphItem[] {
+  return parseGraph(JSON.stringify({ format: "datapass.graph", version: "0.2", items, relations: [] })).items;
 }
 
 /** Navigation containment must be acyclic; data-flow relations may legitimately loop. */

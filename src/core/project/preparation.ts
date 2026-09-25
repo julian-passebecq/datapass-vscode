@@ -13,6 +13,8 @@ import { PHASE_LABELS } from "../capabilities/registry";
 import type { ComponentView, OperationView, ProjectMap, SubprojectView } from "./projectMap";
 import type { RepoView } from "./resolve";
 import { readinessContextLines, type Readiness } from "../readiness/readiness";
+import { sheetFor, volumeLine, type ComponentSheet, type ProjectSheet } from "./sheet";
+import { concernedItems, type OptionsFile } from "./options";
 
 export const PACK_QUESTIONS = {
   explain: {
@@ -48,6 +50,9 @@ export interface PackInput {
   guideUrl?: string;
   /** Env files, variable names and checks (names and states only). */
   readiness?: Readiness;
+  /** 0.15: what the project sheet declares, and the architecture decisions (optional files). */
+  sheet?: ProjectSheet;
+  options?: OptionsFile;
 }
 
 export interface PackExport {
@@ -127,6 +132,44 @@ function subprojectSection(s: SubprojectView, map: ProjectMap): string[] {
   return lines;
 }
 
+const tick = (s: string) => "`" + s + "`";
+
+/** The project sheet's declarations for these components (datasets, formulas, runtimes), deduplicated. */
+function sheetLines(sheet: ProjectSheet | undefined, componentIds: readonly string[], map: ProjectMap): string[] {
+  if (!sheet) return [];
+  const merged: ComponentSheet = { datasets: [], formulas: [], runtimes: [] };
+  const push = <T extends { id: string }>(list: T[], items: T[]) => { for (const x of items) if (!list.some(y => y.id === x.id)) list.push(x); };
+  for (const id of componentIds) {
+    const s = sheetFor(sheet, id);
+    push(merged.datasets, s.datasets);
+    push(merged.formulas, s.formulas);
+    push(merged.runtimes, s.runtimes);
+  }
+  const label = (id?: string) => (id ? map.components.find(c => c.id === id)?.label ?? id : "?");
+  const lines: string[] = [];
+  for (const d of merged.datasets.slice(0, 12)) {
+    const cols = (d.columns ?? []).slice(0, 12).map(c => `${c.name}${c.type ? `:${c.type}` : ""}${c.unit ? ` [${c.unit}]` : ""}${c.role ? ` (${c.role})` : ""}`).join(", ");
+    lines.push(`- Data "${d.label}" (${d.kind ?? "data"} in ${label(d.componentId)}): ${volumeLine(d) || "volume not declared"}${d.asOf ? `, as of ${d.asOf}` : ""}${cols ? `; columns that matter: ${cols}` : ""}`);
+  }
+  for (const f of merged.formulas.slice(0, 12)) {
+    const vars = (f.variables ?? []).slice(0, 12).map(v => `${v.symbol}${v.unit ? ` [${v.unit}]` : ""}${v.meaning ? ` = ${v.meaning}` : ""}`).join("; ");
+    lines.push(`- Formula "${f.label}": ${tick(f.expression)}${vars ? `; where ${vars}` : ""}${f.where ? `; computed in ${tick(f.where.path)}${f.where.symbol ? ` (${f.where.symbol})` : ""}` : ""}`);
+  }
+  for (const r of merged.runtimes.slice(0, 8)) lines.push(`- Runs on "${r.label}": ${[r.host, r.specs, r.os, r.region].filter(Boolean).join(", ") || "not described"}${r.access ? `; reached with ${r.access}` : ""}`);
+  return lines;
+}
+
+/** Architecture decisions of options.json that concern these components or this sub-project. */
+function decisionLines(options: OptionsFile | undefined, componentIds: readonly string[], subprojectId: string | undefined): string[] {
+  if (!options) return [];
+  return options.decisions.filter(d => (subprojectId && d.subproject === subprojectId) || concernedItems(d).some(id => componentIds.includes(id))).slice(0, 10).map(d => {
+    const cur = d.options.find(o => o.id === d.current)?.label ?? d.current;
+    const chosen = d.chosen && d.chosen !== d.current ? d.options.find(o => o.id === d.chosen)?.label : undefined;
+    const alts = d.options.filter(o => o.id !== d.current && o.id !== d.chosen).map(o => o.label);
+    return `- ${d.title}: current **${cur}**${chosen ? `; decided **${chosen}** (not applied yet)` : ""}${alts.length ? `; alternatives: ${alts.join(", ")}` : ""}`;
+  });
+}
+
 export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackExport {
   const { map } = input;
   const sections: string[] = [];
@@ -160,6 +203,11 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
   }
   const env = input.readiness ? readinessContextLines(input.readiness) : [];
   if (env.length) { h("Local environment (names and states only)"); lines.push(...env); }
+  const focusIds = comp ? [comp.id] : sub ? sub.componentIds : [];
+  const facts = sheetLines(input.sheet, focusIds, map);
+  if (facts.length) { h("Project sheet (what the project declares)"); lines.push(...facts); }
+  const decisions = decisionLines(input.options, focusIds, comp ? undefined : sub?.id);
+  if (decisions.length) { h("Architecture decisions (options.json)"); lines.push(...decisions, "- Build for the current option unless I say otherwise; a decided option is applied in its own pull request."); }
   const relevant = map.problems.filter(p => !comp || p.where.endsWith(`.${comp.id}`) || p.severity === "error").slice(0, 10);
   if (relevant.length) { h("Problems DataPass found in the project files"); for (const p of relevant) lines.push(`- ${p.severity}: ${p.where} — ${p.message}`); }
 

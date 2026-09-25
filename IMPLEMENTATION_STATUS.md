@@ -1,3 +1,66 @@
+# Implementation Status — V3 pass 3 (0.15.0): architecture options and project sheet
+
+Date: 2026-09-25
+Version: `0.15.0` — branch `claude/v3-options`, rebased on main `e48b4f2` (0.14.0 environment readiness, PR #21, from a
+parallel session). Why and what next:
+[handoff/v3/06_VISION_AND_READINESS.md](handoff/v3/06_VISION_AND_READINESS.md).
+
+### Implemented
+
+- **Architecture options** (`.datapass/options.json`, format `datapass.options` 1): criteria, decisions
+  per level with the `current` option (what graph.json implements) and alternatives whose `changes`
+  add, replace or remove components, links and repositories; declared values (text, number, score
+  1–5), pros, cons, consequences, pricing lines with `source` + `asOf`, `requires` / `excludes`;
+  scenarios. Strict parser (unknown fields are errors; option components go through the graph's own
+  rules, credential-shaped targets refused), cross-checks against the project (warnings).
+- **Consequences computed by DataPass** (`applyPicks`, `analyzeOptions`): each option and scenario is
+  applied to a *copy* of the manifest and graph and rebuilt with the same project model — components
+  added / removed / replaced, links, official tools newly needed and whether they are installed here,
+  DataPass support (operations / files / unsupported), module switches, repositories, operations,
+  sums of declared monthly and one-time costs, conflicts and `requires` / `excludes` violations. The
+  files of alternatives are observed too (unknown, never "missing", until seen).
+- **Workbench views**: Architecture | Options | Project sheet. Options: scenario comparison (preview per
+  column, custom combination per level), per-decision comparison (declared rows, DataPass rows,
+  pros/cons, pricing lines with their sources), consequences column with actions. Preview is session
+  state shared by every view; components that exist only in the preview can be selected; nothing is
+  written.
+- **Diagram**: left-to-right or top-to-bottom, lanes by sub-project / repository / cloud family /
+  level, fold a lane or a parent, preview marks (new, changed, removed) on nodes and links.
+- **Project sheet** (`.datapass/sheet.json`, `datapass.sheet` 1): datasets (volumes as text, key
+  columns), formulas (as written, variables and units, file and symbol that compute them — *Open the
+  file that computes it*), runtimes, glossary. Shown in the Sheet view, in the Details side bar of
+  each component, and in preparation packs. Never evaluated.
+- **Decisions**: *Record an Architecture Decision* writes `chosen`, `decidedOn`, `rationale` (backup,
+  journal, base check); the "Decided (to apply)" scenario appears; *Ask the AI to apply this decision*.
+- **JSON exchange with an AI, without an API**: *Copy a DataPass File for the AI* (task + rules + file);
+  *Import the AI's Answer* (extracts the JSON block, recognises the file, validates it with the runtime
+  parser, refuses credentials and local paths, diff, confirmation, named backup under
+  `.datapass/local/backups/`, 20 kept per file); *Restore a Backup*. Options exports: Markdown
+  comparison, AI context to compare or to apply a decision.
+- **Providers and tools**: `vm` (Remote - SSH from `target.sshHost`/`folder`), `docker` (Container
+  Tools view `containersView`); Google Cloud Storage and BigQuery name their official tool (Google
+  Cloud Data Agent Kit `GoogleCloudTools.datacloud`, gcloud CLI; probes added) and stay without
+  DataPass operations. Providers link to their tool probes (`nativeTool.toolIds`).
+- Editor schemas `datapass-options.schema.json`, `datapass-sheet.schema.json` (jsonValidation), public
+  example `examples/v3/research-library` with both files, guide sections 7–9.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 234 / 234 after the rebase on 0.14.0 (20 new in this pass: options parsing, application, conflicts, analysis, report, sheet, AI exchange, backups, vertical layout, lanes, diagram folding and preview marks, AI pack sections, example parity with the editor schemas) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 151 / 151 on 7 fixtures after the rebase on 0.14.0 (`empty` 12, `v2-retail` 48, `v1-foil` 15, `broken` 16, `v3-research` 28, `v3-monorepo` 13, `v4-cloudflare` 19). The 6 new `v3-research` flows: analysis and Project tree sections, a scenario preview that writes nothing, a decision recorded with a backup (only options.json changes in Git), AI contexts to apply and compare, an AI answer imported after validation / diff / backup (and refused with a credential or when invalid), a backup restored |
+| Visual check | `scripts/workbench-preview.ts`: options, scenarios, sheet, preview with lanes, vertical map, details |
+| FOIL | options and sheet written in the private coordination repository (PR #3, merged); zero problems with the 0.15 parsers |
+
+### Still needs a human
+
+- Testlab project 5 (`D:\PROJ\datapass-testlab\5-options-architecture`) and the FOIL options on the
+  real repositories; the V3 acceptance and account qualification listed below remain.
+
+---
+
 # Implementation Status — V3 pass 2 (0.14.0): environment readiness
 
 Date: 2026-09-25

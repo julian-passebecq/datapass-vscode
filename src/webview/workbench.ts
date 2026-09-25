@@ -1,14 +1,15 @@
 /**
  * DataPass Workbench webview (browser side). Renders the state posted by the extension in one of
- * three modes: "full" (editor tab: overview, diagram, files, details), "map" (bottom panel:
- * diagram of the selected sub-project) and "detail" (secondary side bar: the selection's files,
- * operations by phase, checklist and actions).
+ * three modes: "full" (editor tab with three views: architecture, options, project sheet), "map"
+ * (bottom panel: diagram of the selected sub-project) and "detail" (secondary side bar: the
+ * selection's files, operations by phase, data and formulas, options and actions).
  *
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
- * select / openFile / command, and the extension validates each against the project map.
+ * select / openFile / preview / command, and the extension validates each against the project.
  */
-import type { WbComponent, WbOperation, WbReadiness, WbRepository, WbSubproject, WorkbenchState } from "../views/workbenchState";
-import { layerCount, layoutGraph, sizeForWidth, type Layout } from "../core/project/layout";
+import type { WbComponent, WbDecision, WbImpact, WbOperation, WbOption, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
+import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void; getState(): unknown; setState(state: unknown): void };
 
@@ -16,9 +17,36 @@ const vscode = acquireVsCodeApi();
 const MODE = (document.body.dataset.mode ?? "full") as "full" | "map" | "detail";
 const root = document.getElementById("app")!;
 let state: WorkbenchState | undefined;
-const ui = ((vscode.getState() as { collapsed?: Record<string, boolean>; zoom?: "fit" | "100" } | undefined) ?? {}) as { collapsed: Record<string, boolean>; zoom?: "fit" | "100" };
+
+type View = "architecture" | "options" | "sheet";
+type SheetSection = "datasets" | "formulas" | "runtimes" | "glossary";
+interface Ui {
+  collapsed: Record<string, boolean>;
+  zoom: "fit" | "100";
+  view: View;
+  dir: Direction;
+  groupBy: GroupBy;
+  /** Folded diagram lanes ("lane:<id>") and parents ("parent:<id>"). */
+  folded: string[];
+  /** Options view: "scenarios" or a decision id. */
+  optFocus?: string;
+  /** Options view: the option whose consequences the side column shows. */
+  optOption?: string;
+  /** Options view: the custom combination being built (decision → option). */
+  custom: Record<string, string>;
+  sheetSection: SheetSection;
+  sheetFocus?: string;
+}
+const ui = ((vscode.getState() as Partial<Ui> | undefined) ?? {}) as Ui;
 ui.collapsed ??= {};
 ui.zoom ??= "fit";
+ui.view ??= "architecture";
+ui.dir ??= "LR";
+ui.groupBy ??= "none";
+ui.folded ??= [];
+ui.custom ??= {};
+ui.sheetSection ??= "datasets";
+const saveUi = () => vscode.setState(ui);
 
 type Attrs = Record<string, string | number | boolean | undefined | ((e: Event) => void)>;
 type Child = Node | string | undefined | null | false;
@@ -44,6 +72,8 @@ const svg = (tag: string, attrs: Record<string, string | number>) => {
 const send = (message: unknown) => vscode.postMessage(message);
 const command = (id: string, ...args: unknown[]) => send({ type: "command", command: id, args });
 const select = (subproject?: string, component?: string) => send({ type: "select", subproject, component });
+const previewScenario = (scenario: string) => send({ type: "preview", scenario });
+const previewPicks = (picks: string[]) => send({ type: "preview", picks });
 const btn = (label: string, onclick: () => void, opts: { kind?: "primary" | "secondary" | "link" | "danger"; title?: string; disabled?: boolean; icon?: string } = {}) =>
   h("button", { class: `btn ${opts.kind ?? "secondary"}`, title: opts.title, disabled: opts.disabled, onclick: () => onclick(), type: "button" }, opts.icon ? h("span", { class: "ico", "aria-hidden": "true", text: opts.icon }) : undefined, label);
 
@@ -56,9 +86,13 @@ const REPO_STATE: Record<string, [string, string]> = {
   local: ["cloned", "ok"], unbound: ["not cloned", "warn"], planned: ["planned", "muted"], missing: ["not found", "bad"],
   "wrong-remote": ["wrong clone", "bad"], "not-a-repo": ["no Git", "warn"], restricted: ["not inspected", "muted"]
 };
+const SUPPORT_TEXT: Record<string, [string, string]> = { operations: ["DataPass operations", "ok"], files: ["files only", "info"], unsupported: ["not supported yet", "warn"] };
+const DIFF_TEXT: Record<string, string> = { added: "new", replaced: "changed", removed: "removed" };
 const pill = (text: string, tone: string, title?: string) => h("span", { class: `pill ${tone}`, text, title });
 const eyebrow = (text: string) => h("div", { class: "eyebrow", text });
-const comp = (id: string | undefined) => state?.components.find(c => c.id === id);
+/** A component as the diagram shows it: the previewed architecture's version first (added or changed), else the project's. */
+const comp = (id: string | undefined) => state?.preview?.components.find(c => c.id === id) ?? state?.components.find(c => c.id === id);
+const inPreviewOnly = (id: string | undefined) => Boolean(id && !state?.components.some(c => c.id === id) && state?.preview?.components.some(c => c.id === id));
 const subp = (id: string | undefined) => state?.subprojects.find(s => s.id === id);
 const repoOf = (key: string | undefined) => state?.repositories.find(r => r.key === key);
 const ago = (iso?: string) => {
@@ -66,10 +100,11 @@ const ago = (iso?: string) => {
   const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
   return s < 90 ? "just now" : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`;
 };
+const money = (amounts: Record<string, number>, suffix: string) => Object.entries(amounts).map(([c, n]) => `≈ ${n >= 100 ? Math.round(n) : n} ${c}${suffix}`).join(" + ");
 
 function toggle(key: string) {
   ui.collapsed[key] = !ui.collapsed[key];
-  vscode.setState(ui);
+  saveUi();
   render();
 }
 
@@ -90,6 +125,19 @@ function emptyState(s: WorkbenchState): HTMLElement | undefined {
 
 // ------------------------------------------------------------------ header (full mode)
 
+function viewTabs(s: WorkbenchState): HTMLElement {
+  const tab = (id: View, label: string, badge?: string) => h("button", {
+    class: `vtab ${ui.view === id ? "active" : ""}`, role: "tab", type: "button", "aria-selected": String(ui.view === id),
+    onclick: () => { ui.view = id; saveUi(); render(); }
+  }, label, badge ? h("span", { class: "vbadge", text: badge }) : undefined);
+  const decisions = s.options?.decisions.length;
+  const sheetCount = s.sheet ? s.sheet.datasets.length + s.sheet.formulas.length + s.sheet.runtimes.length : undefined;
+  return h("div", { class: "vtabs", role: "tablist", "aria-label": "Workbench views" },
+    tab("architecture", "Architecture"),
+    tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined),
+    tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined));
+}
+
 function header(s: WorkbenchState): HTMLElement {
   const sum = s.summary;
   const behind = s.repositories.reduce((n, r) => n + (r.behind ?? 0), 0);
@@ -106,13 +154,33 @@ function header(s: WorkbenchState): HTMLElement {
       !s.trusted ? pill("Restricted Mode", "warn", "Git is not read in an untrusted workspace") : undefined,
       pill(`inspected ${ago(s.observedAt)}`, "muted")),
     h("div", { class: "row actions" },
+      viewTabs(s),
+      h("span", { class: "grow" }),
       btn("Re-inspect", () => command("datapass.refreshProject"), { icon: "⟳", title: "Read the files and Git state again (no network)" }),
       btn("Check for updates", () => command("datapass.checkForUpdates"), { icon: "⇣", title: "git fetch every cloned repository: see what the AI pushed, change nothing yet" }),
       btn("Prepare AI context", () => command("datapass.preparationPack", {}), { icon: "✦" }),
       btn("Layout", () => command("datapass.arrangeWorkbench"), { icon: "▦", title: "Show the Project tree, the architecture panel and the details side bar" })));
 }
 
-// ------------------------------------------------------------------ navigation (sub-projects, components, repositories)
+/** One line saying which architecture the diagram shows, when it is not the current one. */
+function previewBanner(s: WorkbenchState): HTMLElement | undefined {
+  const p = s.preview;
+  if (!p) return undefined;
+  const i = p.impact;
+  const parts = [
+    `${i.components.added.length ? `+${i.components.added.length} ` : ""}${i.components.removed.length ? `−${i.components.removed.length} ` : ""}${i.components.replaced.length ? `~${i.components.replaced.length} ` : ""}component(s)`,
+    i.tools.newlyNeeded.length ? `${i.tools.newlyNeeded.length} new official tool(s)${i.tools.newlyNeeded.some(t => t.state === "absent") ? ", some not installed" : ""}` : "no new tool",
+    money(i.costs.monthly, "/month") || undefined
+  ].filter(Boolean);
+  return h("div", { class: "banner preview", role: "status" },
+    h("b", { text: `Preview: ${p.title}` }),
+    h("span", { class: "muted small", text: ` · ${parts.join(" · ")} · a preview only: graph.json is unchanged` }),
+    h("span", { class: "grow" }),
+    btn("Compare", () => { ui.view = "options"; ui.optFocus = "scenarios"; saveUi(); if (MODE === "full") render(); else command("datapass.openOptions"); }, { kind: "link" }),
+    btn("Back to current", () => previewScenario("current"), { kind: "link" }));
+}
+
+// ------------------------------------------------------------------ navigation (architecture view)
 
 function nav(s: WorkbenchState): HTMLElement {
   const sel = s.selection;
@@ -159,17 +227,57 @@ function repoRow(r: WbRepository, compact: boolean): HTMLElement {
 
 // ------------------------------------------------------------------ diagram
 
+function diagramToolbar(s: WorkbenchState): HTMLElement {
+  const seg = (d: Direction, label: string, title: string) => h("button", {
+    class: `seg ${ui.dir === d ? "active" : ""}`, type: "button", "aria-pressed": String(ui.dir === d), title,
+    onclick: () => { ui.dir = d; saveUi(); render(); }
+  }, label);
+  const groupSel = h("select", { class: "sel", "aria-label": "Group components by", title: "Group components in lanes", onchange: (e: Event) => { ui.groupBy = (e.target as HTMLSelectElement).value as GroupBy; ui.folded = ui.folded.filter(f => f.startsWith("parent:")); saveUi(); render(); } },
+    ...GROUP_BY.map(g => { const o = h("option", { value: g, text: g === "none" ? "No grouping" : `Group: ${GROUP_BY_LABELS[g]}` }) as HTMLOptionElement; o.selected = ui.groupBy === g; return o; }));
+  const parts: HTMLElement[] = [
+    h("div", { class: "segs", role: "group", "aria-label": "Orientation" }, seg("LR", "⇄ Horizontal", "Left to right"), seg("TB", "⇅ Vertical", "Top to bottom")),
+    groupSel
+  ];
+  if (s.options) {
+    const current = s.preview ? (s.preview.key.startsWith("scenario:") ? s.preview.key.slice(9) : "custom") : "current";
+    const opts: Array<[string, string]> = [["current", "Architecture: current"], ...s.options.scenarios.filter(x => x.id !== "current").map(x => [x.id, `Preview: ${x.title}${x.recommended ? " ★" : ""}`] as [string, string])];
+    if (current === "custom") opts.push(["custom", `Preview: ${s.preview!.title}`]);
+    const previewSel = h("select", { class: "sel", "aria-label": "Architecture shown", title: "Show the consequences of an architecture option on the diagram (a preview: nothing is written)", onchange: (e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v !== "custom") previewScenario(v); } },
+      ...opts.map(([v, t]) => { const o = h("option", { value: v, text: t }) as HTMLOptionElement; o.selected = v === current; return o; }));
+    parts.push(previewSel);
+  }
+  if (ui.folded.length) parts.push(btn("Unfold all", () => { ui.folded = []; saveUi(); render(); }, { kind: "link" }));
+  parts.push(h("span", { class: "grow" }), btn(ui.zoom === "fit" ? "100%" : "Fit", () => { ui.zoom = ui.zoom === "fit" ? "100" : "fit"; saveUi(); render(); }, { kind: "link", title: ui.zoom === "fit" ? "Show at full size (scroll)" : "Fit the diagram to the view" }));
+  return h("div", { class: "dtoolbar" }, ...parts);
+}
+
 /** The diagram frame; the canvas is drawn by drawDiagrams() once the frame's width is known. */
 function diagram(s: WorkbenchState): HTMLElement {
-  if (!s.diagram.nodeIds.length) {
+  const ids = s.preview?.diagram.nodeIds ?? s.diagram.nodeIds;
+  if (!ids.length) {
     return h("div", { class: "diagram empty-diagram" }, h("p", { class: "muted", text: s.components.length ? "No component in this sub-project yet." : "No components yet: describe them in .datapass/graph.json (graph version 0.2), or ask your AI to prepare it." }),
       btn("Open graph.json", () => command("datapass.openGraph"), { kind: "link" }));
   }
   const legend = h("div", { class: "legend" },
     h("span", { class: "lg data", text: "data" }), h("span", { class: "lg control", text: "orchestration" }), h("span", { class: "lg dependency", text: "dependency" }),
-    h("span", { class: "muted small grow", text: "Click a component to select it; double-click opens its entry file. The diagram never runs anything." }),
-    btn(ui.zoom === "fit" ? "100%" : "Fit", () => { ui.zoom = ui.zoom === "fit" ? "100" : "fit"; vscode.setState(ui); render(); }, { kind: "link", title: ui.zoom === "fit" ? "Show at full size (scroll)" : "Fit the diagram to the view" }));
-  return h("div", { class: "diagram" }, h("div", { class: "scroller", "data-diagram": "1" }), legend);
+    s.preview ? h("span", { class: "lg-diff" }, h("span", { class: "tag added", text: "new" }), h("span", { class: "tag replaced", text: "changed" }), h("span", { class: "tag removed", text: "removed" })) : undefined,
+    h("span", { class: "muted small grow", text: "Click a component to select it; double-click opens its entry file. The diagram never runs anything." }));
+  return h("div", { class: "diagram" }, diagramToolbar(s), h("div", { class: "scroller", "data-diagram": "1" }), legend);
+}
+
+function diagramModel(s: WorkbenchState): DiagramModel {
+  const components = new Map<string, DiagramComponent>();
+  const add = (c: { id: string; label: string; kind: string; subprojects: string[]; repoKey?: string; parent?: string; children?: string[] }, providerId?: string) =>
+    components.set(c.id, { id: c.id, label: c.label, providerId, kind: c.kind, subprojects: c.subprojects, repoKey: c.repoKey, parent: c.parent, children: c.children ?? [] });
+  for (const c of s.components) add(c, c.providerId);
+  for (const g of s.preview?.ghosts ?? []) if (!components.has(g.id)) add(g, g.providerId);
+  for (const c of s.preview?.components ?? []) add(c, c.providerId);
+  const edges = s.preview?.diagram.edges ?? s.diagram.edges;
+  return buildDiagram({
+    components, nodeIds: s.preview?.diagram.nodeIds ?? s.diagram.nodeIds, edges, groupBy: ui.groupBy, collapsed: new Set(ui.folded),
+    labels: { subprojects: Object.fromEntries(s.subprojects.map(x => [x.id, x.title])), repositories: Object.fromEntries(s.repositories.map(r => [r.key, r.label])) },
+    diff: s.preview?.diff
+  });
 }
 
 /** Lay out and draw every diagram frame for the width (and, in the panel, the height) it has. */
@@ -179,10 +287,14 @@ function drawDiagrams(): void {
   for (const scroller of Array.from(document.querySelectorAll<HTMLElement>(".diagram .scroller[data-diagram]"))) {
     const availW = Math.max(200, scroller.clientWidth - 2);
     const availH = MODE === "map" ? Math.max(120, window.innerHeight - scroller.getBoundingClientRect().top - 44) : Infinity;
-    const ids = s.diagram.nodeIds, edgesIn = s.diagram.edges;
-    const L = layoutGraph(ids, edgesIn, ui.zoom === "100" ? {} : sizeForWidth(availW, layerCount(ids, edgesIn)));
+    const model = diagramModel(s);
+    const ids = model.nodes.map(n => n.id);
+    const edges: LayoutEdgeInput[] = model.edges;
+    const lanes = ui.groupBy === "none" ? undefined : { of: model.laneOf, order: model.laneOrder, labels: model.laneLabels };
+    const size = ui.zoom === "100" ? {} : ui.dir === "LR" ? sizeForWidth(availW, layerCount(ids, edges)) : sizeForWidthVertical(availW, crossCount(ids, edges, lanes));
+    const L = layoutGraph(ids, edges, { ...size, direction: ui.dir, lanes });
     const scale = ui.zoom === "100" ? 1 : Math.max(0.6, Math.min(1, availW / L.width, availH / L.height));
-    scroller.replaceChildren(h("div", { class: "sizer", style: `width:${Math.ceil(L.width * scale)}px;height:${Math.ceil(L.height * scale)}px` }, canvasFor(s, L, scale)));
+    scroller.replaceChildren(h("div", { class: "sizer", style: `width:${Math.ceil(L.width * scale)}px;height:${Math.ceil(L.height * scale)}px` }, canvasFor(s, model, L, scale)));
     scroller.dataset.drawnWidth = String(availW);
     frames.observe(scroller);
   }
@@ -197,35 +309,68 @@ const frames = new ResizeObserver(entries => {
   redrawTimer = window.setTimeout(drawDiagrams, 60);
 });
 
-function canvasFor(s: WorkbenchState, L: Layout, scale: number): HTMLElement {
+function fold(key: string): void {
+  ui.folded = ui.folded.includes(key) ? ui.folded.filter(k => k !== key) : [...ui.folded, key];
+  saveUi();
+  render();
+}
+
+function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: number): HTMLElement {
   const compact = (L.nodes[0]?.w ?? 184) < 170;
   const canvas = h("div", { class: `canvas${compact ? " compact" : ""}`, style: `width:${L.width}px;height:${L.height}px;${scale < 1 ? `transform:scale(${scale});` : ""}` });
-  const edges = svg("svg", { class: "edges", width: L.width, height: L.height, viewBox: `0 0 ${L.width} ${L.height}`, "aria-hidden": "true" });
+  for (const lane of L.lanes) {
+    const info = model.lanes.find(l => l.id === lane.id);
+    canvas.append(h("div", { class: `lane dir-${L.direction}`, style: `left:${lane.x}px;top:${lane.y}px;width:${lane.w}px;height:${lane.h}px` },
+      h("button", { class: "lanehead", type: "button", "aria-expanded": String(!info?.collapsed), title: info?.collapsed ? "Unfold this group" : "Fold this group into one box", onclick: () => fold(`lane:${lane.id}`) },
+        `${info?.collapsed ? "▸" : "▾"} ${lane.label}`, h("span", { class: "muted", text: ` · ${info?.count ?? 0}` }))));
+  }
+  const edgesEl = svg("svg", { class: "edges", width: L.width, height: L.height, viewBox: `0 0 ${L.width} ${L.height}`, "aria-hidden": "true" });
   const defs = svg("defs", {});
   for (const flow of ["data", "control", "dependency", "deployment"]) {
     const m = svg("marker", { id: `arrow-${flow}`, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 7, markerHeight: 7, orient: "auto-start-reverse" });
     m.append(svg("path", { d: "M0,0 L10,5 L0,10 z", class: `arrow ${flow}` }));
     defs.append(m);
   }
-  edges.append(defs);
+  edgesEl.append(defs);
+  const diffOf = new Map(model.edges.map(e => [e.id, e.diff]));
+  const node = (id: string) => model.nodes.find(n => n.id === id);
+  const label = (id: string) => node(id)?.label ?? id;
   for (const e of L.edges) {
-    const p = svg("path", { d: e.path, class: `edge ${e.flow}${s.selection.component && (e.from === s.selection.component || e.to === s.selection.component) ? " hot" : ""}`, "marker-end": `url(#arrow-${e.flow})` });
-    const t = svg("title", {}); t.textContent = `${comp(e.from)?.label ?? e.from} → ${comp(e.to)?.label ?? e.to} (${e.flow})`; p.append(t);
-    edges.append(p);
+    const d = diffOf.get(e.id);
+    const hot = s.selection.component && (e.from === s.selection.component || e.to === s.selection.component);
+    const p = svg("path", { d: e.path, class: `edge ${e.flow}${hot ? " hot" : ""}${d ? ` diff-${d}` : ""}`, "marker-end": `url(#arrow-${e.flow})` });
+    const t = svg("title", {}); t.textContent = `${label(e.from)} → ${label(e.to)} (${e.flow}${d ? `, ${d} in this preview` : ""})`; p.append(t);
+    edgesEl.append(p);
   }
-  canvas.append(edges);
+  canvas.append(edgesEl);
   for (const n of L.nodes) {
-    const c = comp(n.id);
-    if (!c) continue;
-    const on = s.selection.component === c.id;
-    canvas.append(h("button", {
-      class: `node h-${c.health} ${on ? "active" : ""}`, type: "button", style: `left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`,
-      "aria-pressed": String(on), title: `${c.label} — ${c.providerLabel ?? c.kind}\n${c.headline}\nNext: ${c.nextStep}`,
-      onclick: () => select(s.selection.subproject ?? c.subprojects[0], c.id), ondblclick: () => command("datapass.openComponentEntry", c.id)
-    },
-      h("span", { class: "nodetop" }, h("span", { class: "glyph", text: c.providerGlyph, "aria-hidden": "true" }), h("span", { class: "provider", text: c.providerLabel ?? c.kind })),
-      h("span", { class: "nodelabel", text: c.label }),
-      h("span", { class: "nodestatus" }, h("span", { class: `dot h-${c.health}`, "aria-hidden": "true" }), h("span", { text: c.headline }))));
+    const m = node(n.id);
+    if (!m) continue;
+    const pos = `left:${n.x}px;top:${n.y}px;width:${n.w}px;height:${n.h}px`;
+    if (m.kind === "lane-group") {
+      canvas.append(h("button", { class: `node group${m.diff ? ` diff-${m.diff}` : ""}`, type: "button", style: pos, title: `${m.label}: ${m.memberIds.length} components folded. Click to unfold.`, onclick: () => fold(n.id) },
+        h("span", { class: "nodetop", text: "folded group" }), h("span", { class: "nodelabel", text: m.label }), h("span", { class: "nodestatus", text: `${m.memberIds.length} components · click to unfold` })));
+      continue;
+    }
+    const c = comp(m.componentId);
+    const ghost = s.preview?.ghosts.find(g => g.id === m.componentId);
+    if (!c && !ghost) continue;
+    const on = s.selection.component === m.componentId;
+    const diff = m.diff;
+    const hasKids = Boolean(c?.children.some(k => s.diagram.nodeIds.includes(k) || s.preview?.diagram.nodeIds.includes(k)));
+    const folded = m.kind === "parent";
+    const el = h("div", { class: `nodewrap`, style: pos },
+      h("button", {
+        class: `node ${c ? `h-${c.health}` : "h-planned"} ${on ? "active" : ""}${diff ? ` diff-${diff}` : ""}${folded ? " parent" : ""}`, type: "button", style: "left:0;top:0;width:100%;height:100%",
+        "aria-pressed": String(on), title: c ? `${c.label} — ${c.providerLabel ?? c.kind}\n${c.headline}\nNext: ${c.nextStep}${diff ? `\nIn this preview: ${DIFF_TEXT[diff]}` : ""}` : `${ghost!.label}: removed in this preview`,
+        onclick: () => { if (c) select(s.selection.subproject ?? c.subprojects[0], c.id); },
+        ondblclick: () => { if (c && !inPreviewOnly(c.id)) command("datapass.openComponentEntry", c.id); }
+      },
+        h("span", { class: "nodetop" }, h("span", { class: "glyph", text: c?.providerGlyph ?? ghost!.providerGlyph, "aria-hidden": "true" }), h("span", { class: "provider", text: c?.providerLabel ?? ghost?.providerLabel ?? c?.kind ?? ghost!.kind }), diff ? h("span", { class: `tag ${diff}`, text: DIFF_TEXT[diff] }) : undefined),
+        h("span", { class: "nodelabel", text: `${c?.label ?? ghost!.label}${folded ? ` (+${m.memberIds.length - 1})` : ""}` }),
+        h("span", { class: "nodestatus" }, c ? h("span", { class: `dot h-${c.health}`, "aria-hidden": "true" }) : undefined, h("span", { text: c ? c.headline : "not in this architecture" }))),
+      hasKids || folded ? h("button", { class: "foldbtn", type: "button", title: folded ? "Show the components inside" : "Fold the components inside into this box", "aria-expanded": String(!folded), onclick: () => fold(`parent:${m.componentId}`), text: folded ? "▸" : "▾" }) : undefined);
+    canvas.append(el);
   }
   return canvas;
 }
@@ -236,14 +381,15 @@ function filesBlock(c: WbComponent): HTMLElement {
   const a = c.artifacts;
   if (!a) return h("section", { class: "files" }, eyebrow("Files"), h("p", { class: "muted", text: c.providerSupport === "unsupported" ? `${c.providerLabel}: DataPass has no operations for this service yet.` : "No files declared for this component (graph.json → artifacts)." }));
   const repo = repoOf(a.repoKey);
+  const preview = inPreviewOnly(c.id);
   const rows = a.files.map(f => {
     const generated = f.source === "generated";
     const [text, tone] = generated && f.state === "missing" ? ["to generate", "warn"] : f.optional && f.state === "missing" ? ["recommended", "muted"] : FILE_STATE[f.state] ?? [f.state, "muted"];
     const needed = f.optional ? "recommended" : f.requiredFor.length ? `needed to ${f.requiredFor.join(", ")}` : f.role;
-    const open = f.state === "found";
+    const open = f.state === "found" && !preview;
     return h("button", {
-      class: `filerow ${open ? "" : "absent"}`, type: "button", title: open ? `Open ${f.repoPath}` : `${f.repoPath}: ${text}`,
-      onclick: () => open ? send({ type: "openFile", componentId: c.id, path: f.repoPath }) : command("datapass.explainMissingFile", c.id, f.repoPath)
+      class: `filerow ${open ? "" : "absent"}`, type: "button", title: open ? `Open ${f.repoPath}` : `${f.repoPath}: ${text}`, disabled: preview && f.state !== "found",
+      onclick: () => open ? send({ type: "openFile", componentId: c.id, path: f.repoPath }) : preview ? undefined : command("datapass.explainMissingFile", c.id, f.repoPath)
     },
       h("span", { class: "fname" }, h("code", { text: f.path + (f.kind === "dir" && !f.path.endsWith("/") && !f.path.endsWith("**") ? "/" : "") }), f.count && f.kind !== "file" ? h("span", { class: "muted small", text: ` ${f.count} file(s)` }) : undefined),
       h("span", { class: "frole muted small", text: generated ? `generated by ${f.generatedBy}` : `${f.role} · ${needed}` }),
@@ -277,7 +423,7 @@ function operationRow(o: WbOperation, c: WbComponent): HTMLElement {
     h("div", { class: "row tight" }, ...actions));
 }
 
-function checklistBlock(title: string, list: WbState["checklist"], componentId?: string): HTMLElement | undefined {
+function checklistBlock(title: string, list: WbComponent["checklist"], componentId?: string): HTMLElement | undefined {
   if (!list.length) return undefined;
   const mark: Record<string, string> = { todo: "☐", done: "☑", blocked: "⛔", problem: "⚠", skipped: "↷" };
   return h("section", { class: "checklist" }, eyebrow(title), ...list.map(c => h("button", {
@@ -285,29 +431,70 @@ function checklistBlock(title: string, list: WbState["checklist"], componentId?:
     onclick: () => command("datapass.setProjectChecklist", c.key, componentId ?? "")
   }, h("span", { class: "mark", text: mark[c.state] ?? "☐", "aria-hidden": "true" }), h("span", { class: "label", text: c.label }), c.state !== "todo" ? h("span", { class: "muted small", text: c.state }) : undefined)));
 }
-type WbState = { checklist: WbComponent["checklist"] };
+
+/** What the project sheet says about this component: its data, the formulas computed there, where it runs. */
+function sheetBlock(c: WbComponent, s: WorkbenchState): HTMLElement | undefined {
+  const sh = s.sheet;
+  if (!sh) return undefined;
+  const ds = sh.datasets.filter(d => d.componentId === c.id || d.producedBy?.includes(c.id) || d.consumedBy?.includes(c.id));
+  const fs = sh.formulas.filter(f => f.componentId === c.id);
+  const rs = sh.runtimes.filter(r => r.componentId === c.id || r.runs?.includes(c.id));
+  if (!ds.length && !fs.length && !rs.length) return undefined;
+  const open = (section: string, id: string) => command("datapass.openSheet", { section, id });
+  return h("section", { class: "sheetbits" }, eyebrow("Project sheet"),
+    ...ds.map(d => h("button", { class: "comprow", type: "button", title: "Open in the project sheet", onclick: () => open("datasets", d.id) },
+      h("span", { class: "glyph", text: "▤", "aria-hidden": "true" }),
+      h("span", { class: "label" }, h("b", { text: d.label }), h("span", { class: "muted small", text: `  ${[d.componentId === c.id ? "held here" : d.producedBy?.includes(c.id) ? "produced here" : "read here", volume(d)].filter(Boolean).join(" · ")}` })),
+      h("span", { class: "muted small", text: (d.columns ?? []).filter(k => k.role && k.role !== "text").slice(0, 3).map(k => k.name).join(", ") }))),
+    ...fs.map(f => h("button", { class: "comprow", type: "button", title: "Open in the project sheet", onclick: () => open("formulas", f.id) },
+      h("span", { class: "glyph", text: "ƒx", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: f.label }), h("code", { class: "formula inline", text: `  ${f.expression}` })))),
+    ...rs.map(r => h("button", { class: "comprow", type: "button", title: "Open in the project sheet", onclick: () => open("runtimes", r.id) },
+      h("span", { class: "glyph", text: "⚙", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: r.label }), h("span", { class: "muted small", text: `  ${[r.host, r.specs].filter(Boolean).join(" · ")}` })))),
+    h("p", { class: "muted small", text: "What the project declares (sheet.json): DataPass never computes formulas or counts rows." }));
+}
+
+const volume = (d: { rows?: string; files?: string; size?: string; growth?: string }) => [d.rows ? `${d.rows} rows` : undefined, d.files ? `${d.files} files` : undefined, d.size, d.growth ? `growth ${d.growth}` : undefined].filter(Boolean).join(" · ");
+
+/** Decisions of options.json that can change this component. */
+function optionsBlock(c: WbComponent, s: WorkbenchState): HTMLElement | undefined {
+  const ds = s.options?.decisions.filter(d => d.concerns.includes(c.id)) ?? [];
+  if (!ds.length) return undefined;
+  return h("section", { class: "optbits" }, eyebrow("Architecture options"),
+    ...ds.map(d => {
+      const cur = d.options.find(o => o.current)!;
+      const chosen = d.options.find(o => o.chosen && !o.current);
+      return h("button", { class: "comprow", type: "button", title: "Compare the options", onclick: () => command("datapass.openOptions", d.id) },
+        h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }),
+        h("span", { class: "label" }, h("b", { text: d.title }), h("span", { class: "muted small", text: `  current: ${cur.label}${chosen ? ` · decided: ${chosen.label}` : ""} · ${d.options.length - 1} alternative(s)` })));
+    }));
+}
 
 function componentDetail(c: WbComponent, s: WorkbenchState, withFiles: boolean): HTMLElement {
   const byPhase = new Map<string, WbOperation[]>();
   for (const o of c.operations) (byPhase.get(o.phaseLabel) ?? byPhase.set(o.phaseLabel, []).get(o.phaseLabel)!).push(o);
   const repo = repoOf(c.repoKey);
+  const preview = inPreviewOnly(c.id);
+  const diff = s.preview?.diff[c.id];
   return h("div", { class: "detail" },
+    preview || diff ? h("div", { class: "banner preview small", text: preview ? `Only in the preview "${s.preview?.title}": this component is not in graph.json. Its files are shown as DataPass would check them.` : `In the preview "${s.preview?.title}": ${DIFF_TEXT[diff!] ?? diff}.` }) : undefined,
     eyebrow("Selected component"),
     h("h2", { text: c.label }),
     h("div", { class: "row tight" }, h("span", { class: "glyph big", text: c.providerGlyph, "aria-hidden": "true" }), h("span", { text: c.providerLabel ?? c.kind }), c.status ? pill(`declared: ${c.status}`, "muted", "What the project files say; DataPass checks the files itself") : undefined, pill(HEALTH_TEXT[c.health] ?? c.health, c.health === "ok" ? "ok" : c.health === "blocked" ? "bad" : c.health === "attention" ? "warn" : "muted")),
     c.providerAbout ? h("p", { class: "muted small", text: c.providerAbout }) : undefined,
     c.description ? h("p", { text: c.description }) : undefined,
     h("div", { class: "card" },
-      kv("Repository", repo ? `${repo.label} · ${REPO_STATE[repo.state]?.[0] ?? repo.state}` : "—"),
+      kv("Repository", repo ? `${repo.label} · ${REPO_STATE[repo.state]?.[0] ?? repo.state}` : c.repoKey ?? "—"),
       c.artifacts ? kv("Folder", c.artifacts.root === "." ? "(repository root)" : c.artifacts.root) : undefined,
       c.nativeTool ? kv("Official tool", c.nativeTool) : undefined,
       c.incoming.length ? kv("Comes from", c.incoming.map(r => r.label).join(", ")) : undefined,
       c.outgoing.length ? kv("Goes to", c.outgoing.map(r => r.label).join(", ")) : undefined),
     h("div", { class: `next h-${c.health}` }, h("b", { text: "Next: " }), h("span", { text: c.nextStep })),
     withFiles ? filesBlock(c) : undefined,
-    c.operations.length ? h("section", { class: "ops" }, eyebrow("What you can do, step by step"), ...[...byPhase].map(([phase, ops]) => h("div", { class: "phase" }, h("div", { class: "phasehead", text: phase }), ...ops.map(o => operationRow(o, c))))) : undefined,
-    checklistBlock("Checklist", c.checklist, c.id),
-    h("section", { class: "actions-col" }, eyebrow("Actions"),
+    sheetBlock(c, s),
+    optionsBlock(c, s),
+    c.operations.length && !preview ? h("section", { class: "ops" }, eyebrow("What you can do, step by step"), ...[...byPhase].map(([phase, ops]) => h("div", { class: "phase" }, h("div", { class: "phasehead", text: phase }), ...ops.map(o => operationRow(o, c))))) : undefined,
+    preview ? undefined : checklistBlock("Checklist", c.checklist, c.id),
+    preview ? undefined : h("section", { class: "actions-col" }, eyebrow("Actions"),
       c.artifacts?.entry ? btn(`Open ${c.artifacts.entry}`, () => command("datapass.openComponentEntry", c.id), { kind: "primary", icon: "↗" }) : undefined,
       c.artifacts && repo?.state === "local" ? btn("Open this folder in a new window", () => command("datapass.openComponentFolder", c.id), { icon: "⧉", title: "Some official extensions work best with the component folder as the window root" }) : undefined,
       c.nativeTool ? btn(`Open ${c.nativeTool}`, () => command("datapass.openNativeTool", c.id), { icon: "⚙" }) : undefined,
@@ -321,6 +508,7 @@ const kv = (k: string, v: string) => h("div", { class: "kv" }, h("span", { class
 
 function subprojectDetail(sp: WbSubproject, s: WorkbenchState): HTMLElement {
   const needs = sp.needs;
+  const decisions = s.options?.decisions.filter(d => d.subproject === sp.id) ?? [];
   return h("div", { class: "detail" },
     eyebrow(sp.implicit ? "Components" : "Selected sub-project"),
     h("h2", { text: sp.title }),
@@ -332,6 +520,8 @@ function subprojectDetail(sp: WbSubproject, s: WorkbenchState): HTMLElement {
         h("div", {}, h("b", { text: t.label }), h("div", { class: "muted small", text: `for ${t.neededFor.slice(0, 4).join(", ")}${t.neededFor.length > 4 ? "…" : ""}` })),
         t.extensionIds[0] ? btn("Show extension", () => command("datapass.installTool", t.extensionIds[0]), { kind: "link", title: "Opens the extension page; you decide whether to install" }) : undefined))) : h("div", { class: "ok small", text: "✓ The tools its operations need are installed (or optional)." }),
       needs.missingFiles || needs.generationNeeded ? h("div", { class: "warn small", text: `${needs.missingFiles} expected file(s) missing${needs.generationNeeded ? `, ${needs.generationNeeded} to generate` : ""}: select a component to see which.` }) : undefined),
+    decisions.length ? h("section", { class: "optbits" }, eyebrow("Architecture options for this sub-project"), ...decisions.map(d => h("button", { class: "comprow", type: "button", onclick: () => command("datapass.openOptions", d.id) },
+      h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }), h("span", { class: "label", text: d.title }), h("span", { class: "muted small", text: `${d.options.length} options` })))) : undefined,
     checklistBlock("Checklist", sp.checklist),
     h("section", {}, eyebrow("Components"), ...sp.componentIds.map(id => comp(id)).filter((c): c is WbComponent => !!c).map(c =>
       h("button", { class: "comprow", type: "button", onclick: () => select(sp.id, c.id) }, h("span", { class: "glyph", text: c.providerGlyph, "aria-hidden": "true" }), h("span", { class: "label", text: c.label }), h("span", { class: "muted small", text: c.headline }), h("span", { class: `dot h-${c.health}` })))),
@@ -394,6 +584,366 @@ function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {
   return h("div", { class: "detail" }, eyebrow("Selection"), h("h2", { text: "Nothing selected" }), h("p", { class: "muted", text: "Pick a sub-project or a component in the Project tree, the architecture diagram or the workbench. This panel then shows its files, what each step needs, and what to do next." }), overview(s));
 }
 
+// ------------------------------------------------------------------ options view
+
+const scoreDots = (score?: number) => (score ? h("span", { class: "dots", "aria-label": `${score} out of 5`, text: `${"●".repeat(score)}${"○".repeat(5 - score)}` }) : undefined);
+
+function impactCell(i: WbImpact, what: "components" | "tools" | "missing" | "support" | "repos" | "monthly" | "oneTime" | "problems"): HTMLElement {
+  switch (what) {
+    case "components": {
+      const parts = [
+        i.components.added.length ? `+${i.components.added.length} ${i.components.added.map(c => c.label).join(", ")}` : "",
+        i.components.removed.length ? `−${i.components.removed.length} ${i.components.removed.map(c => c.label).join(", ")}` : "",
+        i.components.replaced.length ? `~${i.components.replaced.length} ${i.components.replaced.map(c => `${c.label} (${c.from ?? "?"} → ${c.provider ?? "?"})`).join(", ")}` : ""
+      ].filter(Boolean);
+      return h("div", { class: "small" }, h("b", { text: `${i.components.total} components` }), ...parts.map(p => h("div", { class: "muted", text: p })));
+    }
+    case "tools":
+      return i.tools.newlyNeeded.length ? h("div", { class: "small" }, ...i.tools.newlyNeeded.map(t => h("div", {}, pill(t.state === "present" ? "installed" : t.state === "absent" ? "not installed" : "unknown", t.state === "present" ? "ok" : t.state === "absent" ? "warn" : "muted"), ` ${t.label}`)))
+        : h("div", { class: "muted small", text: i.tools.noLongerNeeded.length ? `none new · no longer needed: ${i.tools.noLongerNeeded.join(", ")}` : "none new" });
+    case "missing":
+      return h("div", { class: `small ${i.tools.missing.length ? "warn" : "ok"}`, text: i.tools.missing.length ? `${i.tools.missing.length} not installed here` : "all installed" });
+    case "support":
+      return h("div", { class: "small" }, h("div", { text: `${i.support.operations} with operations` }), i.support.files ? h("div", { class: "muted", text: `${i.support.files} files only` }) : undefined, i.support.unsupported ? h("div", { class: "warn", text: `${i.support.unsupported} not supported by DataPass` }) : undefined);
+    case "repos":
+      return h("div", { class: "small", text: [i.repositories.newlyUsed.length ? `new: ${i.repositories.newlyUsed.join(", ")}` : "", i.repositories.planned.length ? `planned: ${i.repositories.planned.join(", ")}` : ""].filter(Boolean).join(" · ") || `${i.repositories.used.length} used` });
+    case "monthly":
+      return h("div", { class: "small money", text: money(i.costs.monthly, "/month") || "—", title: i.costs.missing.length ? `No monthly figure declared for: ${i.costs.missing.join(", ")}` : "Sum of the monthly figures declared in options.json" });
+    case "oneTime":
+      return h("div", { class: "small money", text: money(i.costs.oneTime, "") || "—" });
+    case "problems":
+      return i.problems.length ? h("div", { class: "small" }, ...i.problems.slice(0, 3).map(p => h("div", { class: p.severity === "error" ? "bad" : "warn", text: p.message }))) : h("div", { class: "muted small", text: "none" });
+  }
+}
+
+function optionsNav(s: WorkbenchState): HTMLElement {
+  const o = s.options!;
+  const items: HTMLElement[] = [eyebrow("Compare")];
+  const active = (id: string) => (ui.optFocus ?? "scenarios") === id;
+  const go = (id: string) => { ui.optFocus = id; ui.optOption = undefined; saveUi(); render(); };
+  items.push(h("button", { class: `navrow ${active("scenarios") ? "active" : ""}`, type: "button", "aria-pressed": String(active("scenarios")), onclick: () => go("scenarios") }, h("span", { class: "label", text: "Scenarios (whole architecture)" }), h("span", { class: "meta", text: String(o.scenarios.length) })));
+  const levels: string[] = [];
+  for (const d of o.decisions) { const l = d.level ?? "other"; if (!levels.includes(l)) levels.push(l); }
+  for (const l of levels) {
+    items.push(h("div", { class: "levelhead", text: l === "other" ? "Decisions" : `Level: ${l}` }));
+    for (const d of o.decisions.filter(x => (x.level ?? "other") === l)) {
+      const chosen = d.options.find(x => x.chosen && !x.current);
+      items.push(h("button", { class: `navrow sub ${active(d.id) ? "active" : ""}`, type: "button", "aria-pressed": String(active(d.id)), title: d.question ?? d.title, onclick: () => go(d.id) },
+        h("span", { class: "glyph", text: chosen ? "★" : "⑂", "aria-hidden": "true" }), h("span", { class: "label", text: d.title }), h("span", { class: "meta", text: String(d.options.length) })));
+    }
+  }
+  if (o.problems.some(p => p.severity !== "info")) {
+    items.push(h("div", { class: "divider" }), eyebrow("Problems in options.json"));
+    for (const p of o.problems.filter(p => p.severity !== "info").slice(0, 8)) items.push(h("div", { class: `problem ${p.severity}` }, h("b", { text: p.where }), h("span", { text: p.message })));
+  }
+  items.push(h("div", { class: "divider" }), h("p", { class: "muted small", text: "Options are prepared by the AI in .datapass/options.json. DataPass computes the consequences; you decide; the AI applies the decision in a pull request." }));
+  return h("nav", { class: "nav", "aria-label": "Options navigation" }, ...items);
+}
+
+function scenariosTable(s: WorkbenchState): HTMLElement {
+  const o = s.options!;
+  const scen = o.scenarios;
+  const previewKey = s.preview?.key;
+  const head = h("tr", {}, h("th", { text: "" }), ...scen.map(x => h("th", { class: x.recommended ? "rec" : "" },
+    h("div", { class: "colhead" }, h("b", { text: x.title }), x.recommended ? pill("recommended", "ok") : undefined, x.kind === "decided" ? pill("decided", "info") : undefined),
+    x.description ? h("div", { class: "muted small", text: x.description }) : undefined,
+    x.id === "current" ? (previewKey ? btn("Show current", () => previewScenario("current"), { kind: "link" }) : pill("on the diagram", "muted"))
+      : previewKey === `scenario:${x.id}` ? pill("previewed", "info") : btn("Preview on diagram", () => previewScenario(x.id), { kind: "link" }))));
+  const picksRow = h("tr", {}, h("th", { text: "Choices" }), ...scen.map(x => h("td", {}, ...x.impact.picks.map(p => {
+    const d = o.decisions.find(y => y.id === p.decision);
+    const opt = d?.options.find(y => y.id === p.option);
+    return h("div", { class: `small ${p.changed ? "" : "muted"}`, text: `${d?.title ?? p.decision}: ${opt?.label ?? p.option}` });
+  }))));
+  const row = (label: string, what: Parameters<typeof impactCell>[1], title?: string) => h("tr", {}, h("th", { text: label, title }), ...scen.map(x => h("td", {}, impactCell(x.impact, what))));
+  const table = h("table", { class: "cmp" }, h("thead", {}, head), h("tbody", {},
+    picksRow,
+    row("Components", "components"),
+    row("New official tools", "tools", "Official VS Code extensions and CLIs this architecture needs that the current one does not"),
+    row("On this machine", "missing", "Tools this architecture needs that are not installed here"),
+    row("DataPass support", "support", "Components DataPass can route to operations, only show as files, or does not support yet"),
+    row("Repositories", "repos"),
+    row("Declared cost / month", "monthly", "Declared in options.json with source and date; not verified by DataPass"),
+    row("Declared one-time cost", "oneTime"),
+    row("Problems", "problems")));
+  return h("div", { class: "cmpwrap" }, table);
+}
+
+function customBuilder(s: WorkbenchState): HTMLElement {
+  const o = s.options!;
+  const picks = o.decisions.map(d => ({ d, value: ui.custom[d.id] && d.options.some(x => x.id === ui.custom[d.id]) ? ui.custom[d.id]! : d.current }));
+  return h("section", { class: "custom" }, eyebrow("Build your own combination"),
+    h("p", { class: "muted small", text: "Swap one level at a time (for example only the archive), then preview the whole architecture." }),
+    h("div", { class: "customgrid" }, ...picks.map(({ d, value }) => h("label", { class: "customrow" },
+      h("span", { class: "small", text: d.title }),
+      h("select", { class: "sel", "aria-label": d.title, onchange: (e: Event) => { ui.custom[d.id] = (e.target as HTMLSelectElement).value; saveUi(); } },
+        ...d.options.map(x => { const el = h("option", { value: x.id, text: `${x.label}${x.current ? " (current)" : ""}` }) as HTMLOptionElement; el.selected = x.id === value; return el; }))))),
+    h("div", { class: "row" },
+      btn("Preview this combination", () => previewPicks(o.decisions.map(d => `${d.id}=${ui.custom[d.id] ?? d.current}`)), { kind: "primary", icon: "◎" }),
+      btn("Reset", () => { ui.custom = {}; saveUi(); render(); }, { kind: "link" })));
+}
+
+function decisionTable(s: WorkbenchState, d: WbDecision): HTMLElement {
+  const o = s.options!;
+  const opts = d.options;
+  const previewKey = s.preview?.key;
+  const head = h("tr", {}, h("th", { text: "" }), ...opts.map(x => h("th", { class: `${x.current ? "cur" : ""} ${ui.optOption === x.id ? "focus" : ""}` },
+    h("div", { class: "colhead" }, h("b", { text: x.label }), x.current ? pill("current", "muted", "What graph.json describes today") : undefined, x.chosen && !x.current ? pill("decided", "info") : undefined, x.rejected ? pill("rejected", "bad") : undefined),
+    x.summary ? h("div", { class: "muted small", text: x.summary }) : undefined,
+    h("div", { class: "row tight" },
+      btn("Consequences", () => { ui.optOption = x.id; saveUi(); render(); }, { kind: "link", title: "Show the consequences in the side column" }),
+      x.current ? undefined : previewKey === `picks:${o.decisions.map(y => `${y.id}=${y.id === d.id ? x.id : y.current}`).join(",")}` ? pill("previewed", "info") : btn("Preview", () => previewPicks([`${d.id}=${x.id}`]), { kind: "link", title: "Show this option on the diagram (the other decisions stay current)" })))));
+  const declared = o.criteria.filter(c => opts.some(x => x.values[c.id])).map(c => h("tr", {}, h("th", { title: c.description ?? "" }, c.label, c.unit ? h("span", { class: "muted small", text: ` (${c.unit})` }) : undefined, c.better ? h("span", { class: "muted small", text: c.better === "lower" ? " ↓ better" : " ↑ better" }) : undefined),
+    ...opts.map(x => { const v = x.values[c.id]; return h("td", { title: v?.note ?? "" }, v ? h("div", { class: "small" }, v.text ? h("span", { text: v.text }) : undefined, v.text && v.score ? " " : undefined, scoreDots(v.score)) : h("span", { class: "muted", text: "—" })); })));
+  const row = (label: string, what: Parameters<typeof impactCell>[1], title?: string) => h("tr", { class: "computed" }, h("th", { text: label, title }), ...opts.map(x => h("td", {}, impactCell(x.impact, what))));
+  const list = (label: string, pick: (x: WbOption) => string[], tone = "") => opts.some(x => pick(x).length) ? h("tr", {}, h("th", { text: label }), ...opts.map(x => h("td", {}, pick(x).length ? h("ul", { class: `small bul ${tone}` }, ...pick(x).map(t => h("li", { text: t }))) : h("span", { class: "muted", text: "—" })))) : undefined;
+  const declaredCost = (x: WbOption) => {
+    const m = x.costs.filter(c => c.monthly !== undefined).reduce((n, c) => n + c.monthly!, 0);
+    const t = x.costs.filter(c => c.oneTime !== undefined).reduce((n, c) => n + c.oneTime!, 0);
+    return [x.costs.some(c => c.monthly !== undefined) ? `≈ ${Math.round(m * 100) / 100} ${o.currency}/month` : "", t ? `≈ ${Math.round(t * 100) / 100} ${o.currency} once` : ""].filter(Boolean).join(" · ") || "—";
+  };
+  const table = h("table", { class: "cmp" }, h("thead", {}, head), h("tbody", {},
+    ...declared,
+    h("tr", {}, h("th", { text: "Declared cost of this choice" }), ...opts.map(x => h("td", { class: "small money", text: declaredCost(x) }))),
+    h("tr", { class: "sep" }, h("th", { colspan: String(opts.length + 1), text: "Consequences computed by DataPass (whole project, other decisions current)" })),
+    row("Components", "components"),
+    row("New official tools", "tools"),
+    row("On this machine", "missing"),
+    row("DataPass support", "support"),
+    row("Repositories", "repos"),
+    h("tr", { class: "sep" }, h("th", { colspan: String(opts.length + 1), text: "Declared in options.json" })),
+    list("Pros", x => x.pros, "ok"), list("Cons", x => x.cons, "warn"), list("Consequences", x => x.consequences),
+    list("Requires", x => x.requires.map(p => pickLabel(s, p))), list("Does not work with", x => x.excludes.map(p => pickLabel(s, p)), "warn")));
+  return h("div", { class: "cmpwrap" }, table);
+}
+
+/** Host name of a declared source, for a short link label; never throws on an odd address. */
+function hostOf(url: string): string {
+  try { return new URL(url).host || url.slice(8, 48); } catch { return url.slice(8, 48); }
+}
+
+function pickLabel(s: WorkbenchState, p: string): string {
+  const [d, o] = p.split("=");
+  const dec = s.options?.decisions.find(x => x.id === d);
+  return `${dec?.title ?? d}: ${dec?.options.find(x => x.id === o)?.label ?? o}`;
+}
+
+function costList(s: WorkbenchState, d: WbDecision): HTMLElement | undefined {
+  const rows = d.options.flatMap(x => x.costs.map(c => ({ x, c })));
+  if (!rows.length) return undefined;
+  return h("section", { class: "costs" }, eyebrow("Pricing lines (declared, with source and date)"),
+    h("table", { class: "cmp costs" }, h("thead", {}, h("tr", {}, ...["Option", "Item", "Price", "Estimate", "Source", "As of"].map(t => h("th", { text: t })))),
+      h("tbody", {}, ...rows.map(({ x, c }) => h("tr", {},
+        h("td", { class: "small", text: x.label }),
+        h("td", { class: "small" }, h("div", { text: c.label }), c.note ? h("div", { class: "muted", text: c.note }) : undefined),
+        h("td", { class: "small", text: c.price ?? "—" }),
+        h("td", { class: "small money", text: [c.monthly !== undefined ? `≈ ${c.monthly} ${c.currency}/month` : "", c.oneTime !== undefined ? `≈ ${c.oneTime} ${c.currency} once` : ""].filter(Boolean).join(" · ") || "—" }),
+        h("td", { class: "small" }, c.source ? btn(hostOf(c.source), () => command("datapass.openOptionSource", c.source), { kind: "link", title: c.source }) : h("span", { class: "warn", text: "no source" })),
+        h("td", { class: `small ${c.asOf ? "" : "warn"}`, text: c.asOf ?? "no date" }))))),
+    h("p", { class: "muted small", text: "Orders of magnitude declared by the project (usually by the AI), not quotes. Check the official calculator before committing to a service; free tiers and regions change prices." }));
+}
+
+function impactSide(s: WorkbenchState, title: string, i: WbImpact, actions: HTMLElement[]): HTMLElement {
+  return h("div", { class: "detail" },
+    eyebrow("Consequences"),
+    h("h2", { text: title }),
+    h("div", { class: "card" },
+      kv("Components", `${i.components.total} (${[i.components.added.length ? `+${i.components.added.length}` : "", i.components.removed.length ? `−${i.components.removed.length}` : "", i.components.replaced.length ? `~${i.components.replaced.length}` : ""].filter(Boolean).join(" ") || "unchanged"})`),
+      kv("Links", `${i.relations.added ? `+${i.relations.added} ` : ""}${i.relations.removed ? `−${i.relations.removed}` : ""}`.trim() || "unchanged"),
+      kv("Operations DataPass can check", `${i.operations.total}`),
+      kv("Declared cost", [money(i.costs.monthly, "/month"), money(i.costs.oneTime, " once")].filter(Boolean).join(" · ") || "—")),
+    i.tools.newlyNeeded.length ? h("section", {}, eyebrow("Official tools it adds"), ...i.tools.newlyNeeded.map(t => h("div", { class: "tool" },
+      h("div", {}, h("b", { text: t.label }), h("div", { class: "muted small", text: `for ${t.why.join(", ")}` })),
+      t.state === "present" ? pill("installed", "ok") : t.extensionId ? btn("Show extension", () => command("datapass.installTool", t.extensionId), { kind: "link", title: "Opens the extension page; you decide whether to install" }) : pill(t.state === "absent" ? "not installed" : "unknown", t.state === "absent" ? "warn" : "muted")))) : undefined,
+    i.tools.noLongerNeeded.length ? h("p", { class: "muted small", text: `No longer needed: ${i.tools.noLongerNeeded.join(", ")}` }) : undefined,
+    h("section", {}, eyebrow("Services and DataPass support"), ...i.providers.map(p => {
+      const [text, tone] = SUPPORT_TEXT[p.support] ?? [p.support, "muted"];
+      return h("div", { class: "tool" }, h("div", {}, h("b", { text: p.label }), h("div", { class: "muted small", text: [`${p.count} component(s)`, p.nativeTool ? `official tool: ${p.nativeTool}` : undefined, p.moduleOff ? `module "${p.moduleLabel}" is switched off in project.json` : undefined].filter(Boolean).join(" · ") })),
+        pill(`${i.providersAdded.includes(p.id) ? "new · " : ""}${text}`, p.moduleOff ? "warn" : tone));
+    })),
+    i.providersRemoved.length ? h("p", { class: "muted small", text: `Services it removes: ${i.providersRemoved.join(", ")}` }) : undefined,
+    i.problems.length ? h("section", {}, eyebrow("Problems"), ...i.problems.map(p => h("div", { class: `problem ${p.severity}`, text: p.message }))) : undefined,
+    h("section", { class: "actions-col" }, eyebrow("Actions"), ...actions),
+    h("p", { class: "muted small evidence", text: "Consequences are computed by DataPass from options.json and this machine; prices, scores, pros and cons are declarations. Nothing is written until you record a decision." }));
+}
+
+function optionsSide(s: WorkbenchState): HTMLElement {
+  const o = s.options!;
+  const focus = ui.optFocus ?? "scenarios";
+  const common = [
+    btn("Export the comparison (Markdown)", () => command("datapass.exportOptionsComparison"), { icon: "⇩" }),
+    btn("Ask the AI to compare", () => command("datapass.optionsAiContext", { purpose: "compare", decision: focus === "scenarios" ? undefined : focus }), { icon: "✦" }),
+    btn("Copy options.json for the AI", () => command("datapass.copyForAi", "options"), { icon: "⧉", title: "The file plus instructions: the AI returns the complete updated file" }),
+    btn("Import the AI's answer", () => command("datapass.importFromAi", "options"), { icon: "⇣", title: "Validated, shown as a diff, backed up; you confirm before it is written" }),
+    btn("Open options.json", () => command("datapass.openOptionsFile"), { kind: "link" })
+  ];
+  if (focus !== "scenarios") {
+    const d = o.decisions.find(x => x.id === focus);
+    if (d) {
+      const x = d.options.find(y => y.id === ui.optOption) ?? d.options.find(y => y.chosen) ?? d.options.find(y => y.current)!;
+      const actions = [
+        x.current ? undefined : btn(`Preview "${x.label}"`, () => previewPicks([`${d.id}=${x.id}`]), { kind: "primary", icon: "◎" }),
+        btn(x.chosen ? `Decided: ${x.label}` : `Record decision: ${x.label}`, () => command("datapass.recordDecision", { decision: d.id, option: x.id }), { icon: "★", title: "Writes chosen/decidedOn/rationale in options.json (backup kept); the AI applies it later" }),
+        x.chosen && !x.current ? btn("Ask the AI to apply this decision", () => command("datapass.optionsAiContext", { purpose: "apply", decision: d.id, option: x.id }), { icon: "✦" }) : undefined,
+        ...common
+      ].filter((b): b is HTMLElement => !!b);
+      return impactSide(s, `${d.title}: ${x.label}`, x.impact, actions);
+    }
+  }
+  const p = s.preview;
+  const scenario = p ? undefined : o.scenarios.find(x => x.recommended) ?? o.scenarios[0];
+  return impactSide(s, p ? `Previewed: ${p.title}` : scenario?.title ?? "Current architecture", p?.impact ?? scenario!.impact, [
+    p ? btn("Back to the current architecture", () => previewScenario("current"), { kind: "primary" }) : undefined,
+    ...common
+  ].filter((b): b is HTMLElement => !!b));
+}
+
+function optionsCenter(s: WorkbenchState): HTMLElement {
+  const o = s.options!;
+  const focus = ui.optFocus ?? "scenarios";
+  const d = focus === "scenarios" ? undefined : o.decisions.find(x => x.id === focus);
+  if (!d) return h("main", { class: "center" },
+    h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Architecture options` }),
+    h("div", { class: "bar" }, h("div", {}, eyebrow("Scenarios"), h("h2", { text: o.title ?? "Architecture options" })), o.description ? h("span", { class: "muted small objective", text: o.description }) : undefined),
+    previewBanner(s),
+    scenariosTable(s),
+    customBuilder(s),
+    h("p", { class: "muted small", text: "Each column is a whole architecture. \"Preview on diagram\" shows it in the Architecture panel with what it adds, changes and removes; nothing is written." }));
+  const cur = d.options.find(x => x.current)!;
+  const chosen = d.options.find(x => x.chosen && !x.current);
+  return h("main", { class: "center" },
+    h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Architecture options / ${d.title}` }),
+    h("div", { class: "bar" }, h("div", {}, eyebrow(`Decision${d.level ? ` · level: ${d.level}` : ""}${d.subproject ? ` · ${subp(d.subproject)?.title ?? d.subproject}` : ""}`), h("h2", { text: d.title })),
+      d.question ? h("span", { class: "muted small objective", text: d.question }) : undefined),
+    h("div", { class: "next h-info" }, h("b", { text: "Current: " }), h("span", { text: cur.label }),
+      chosen ? h("span", { text: ` · Decided${d.decidedOn ? ` on ${d.decidedOn}` : ""}${d.decidedBy ? ` by ${d.decidedBy}` : ""}: ${chosen.label} (the AI still has to apply it)${d.rationale ? ` — ${d.rationale}` : ""}` }) : undefined),
+    previewBanner(s),
+    decisionTable(s, d),
+    costList(s, d),
+    d.notes ? h("p", { class: "muted small", text: d.notes }) : undefined);
+}
+
+function optionsEmpty(s: WorkbenchState): HTMLElement {
+  return h("div", { class: "empty" },
+    h("h2", { text: s.optionsError ? "options.json has errors" : "No architecture options yet" }),
+    s.optionsError ? h("ul", { class: "problems" }, h("li", { text: s.optionsError })) : undefined,
+    h("p", { class: "muted", text: "Options let you compare 2–3 alternatives per level of the architecture (storage, processing, databases, compute…) before building anything: what each one adds or removes, which official tools it needs, what DataPass supports, and the declared prices with their source and date. The AI prepares them in .datapass/options.json; DataPass computes the consequences; you decide." }),
+    h("div", { class: "row" },
+      btn("Ask the AI to propose options", () => command("datapass.copyForAi", "options"), { kind: "primary", icon: "✦" }),
+      btn("Import the AI's answer", () => command("datapass.importFromAi", "options"), { icon: "⇣" }),
+      s.optionsError ? btn("Open options.json", () => command("datapass.openOptionsFile")) : undefined,
+      btn("How options work (guide)", () => command("datapass.openPreparationGuide"), { kind: "link" })));
+}
+
+// ------------------------------------------------------------------ project sheet view
+
+function sheetNav(s: WorkbenchState): HTMLElement {
+  const sh = s.sheet!;
+  const counts: Record<SheetSection, number> = { datasets: sh.datasets.length, formulas: sh.formulas.length, runtimes: sh.runtimes.length, glossary: sh.glossary.length };
+  const labels: Record<SheetSection, string> = { datasets: "Data (tables, collections, files)", formulas: "Formulas", runtimes: "Where code runs", glossary: "Glossary" };
+  return h("nav", { class: "nav", "aria-label": "Project sheet sections" }, eyebrow("Project sheet"),
+    ...(Object.keys(labels) as SheetSection[]).map(k => h("button", { class: `navrow ${ui.sheetSection === k ? "active" : ""}`, type: "button", "aria-pressed": String(ui.sheetSection === k), onclick: () => { ui.sheetSection = k; ui.sheetFocus = undefined; saveUi(); render(); } },
+      h("span", { class: "label", text: labels[k] }), h("span", { class: "meta", text: String(counts[k]) }))),
+    h("div", { class: "divider" }),
+    sh.summary ? h("p", { class: "small", text: sh.summary }) : undefined,
+    h("p", { class: "muted small", text: `What the project declares${sh.asOf ? `, as of ${sh.asOf}` : ""}. DataPass never computes a formula, counts rows or connects to a database.` }),
+    h("div", { class: "actions-col" },
+      btn("Ask the AI to fill the sheet", () => command("datapass.copyForAi", "sheet"), { icon: "✦" }),
+      btn("Import the AI's answer", () => command("datapass.importFromAi", "sheet"), { icon: "⇣" }),
+      btn("Open sheet.json", () => command("datapass.openSheetFile"), { kind: "link" })));
+}
+
+function compLink(id: string | undefined): HTMLElement {
+  if (!id) return h("span", { class: "muted", text: "—" });
+  const c = comp(id);
+  return c ? btn(c.label, () => select(c.subprojects[0], c.id), { kind: "link", title: "Select this component" }) : h("span", { class: "warn", text: id, title: "Not a component of graph.json" });
+}
+
+function sheetCenter(s: WorkbenchState): HTMLElement {
+  const sh = s.sheet!;
+  const focusRow = (id: string) => { ui.sheetFocus = id; saveUi(); render(); };
+  const rowAttrs = (id: string) => ({ class: `clickrow ${ui.sheetFocus === id ? "focus" : ""}`, tabindex: "0", onclick: () => focusRow(id), onkeydown: (e: Event) => { if ((e as KeyboardEvent).key === "Enter") focusRow(id); } });
+  let table: HTMLElement;
+  switch (ui.sheetSection) {
+    case "datasets":
+      table = h("table", { class: "cmp sheet" }, h("thead", {}, h("tr", {}, ...["Data", "Where", "Kind", "Volume", "Key columns"].map(t => h("th", { text: t })))),
+        h("tbody", {}, ...sh.datasets.map(d => h("tr", rowAttrs(d.id),
+          h("td", {}, h("b", { text: d.label }), d.classification ? h("div", { class: "muted small", text: d.classification }) : undefined),
+          h("td", {}, compLink(d.componentId)),
+          h("td", { class: "small", text: d.kind ?? "—" }),
+          h("td", { class: "small", text: volume(d) || "—" }),
+          h("td", {}, ...(d.columns ?? []).filter(c => c.role && c.role !== "text").slice(0, 6).map(c => h("span", { class: "chip", title: c.meaning ?? "", text: `${c.name}${c.unit ? ` [${c.unit}]` : ""} · ${c.role}` })))))));
+      break;
+    case "formulas":
+      table = h("table", { class: "cmp sheet" }, h("thead", {}, h("tr", {}, ...["Formula", "Expression", "Result", "Computed in"].map(t => h("th", { text: t })))),
+        h("tbody", {}, ...sh.formulas.map(f => h("tr", rowAttrs(f.id),
+          h("td", {}, h("b", { text: f.label }), f.source ? h("div", { class: "muted small", text: f.source }) : undefined),
+          h("td", {}, h("code", { class: "formula", text: f.expression })),
+          h("td", { class: "small", text: [f.result?.symbol, f.result?.unit ? `[${f.result.unit}]` : undefined].filter(Boolean).join(" ") || "—" }),
+          h("td", {}, compLink(f.componentId), f.where ? h("div", { class: "muted small", text: `${f.where.path}${f.where.symbol ? ` · ${f.where.symbol}` : ""}` }) : undefined)))));
+      break;
+    case "runtimes":
+      table = h("table", { class: "cmp sheet" }, h("thead", {}, h("tr", {}, ...["Runtime", "Host", "Specs", "Access", "Runs"].map(t => h("th", { text: t })))),
+        h("tbody", {}, ...sh.runtimes.map(r => h("tr", rowAttrs(r.id),
+          h("td", {}, h("b", { text: r.label }), r.decisionRef ? h("div", {}, btn("Compare options", () => command("datapass.openOptions", r.decisionRef), { kind: "link" })) : undefined),
+          h("td", { class: "small", text: [r.host, r.region].filter(Boolean).join(" · ") || "—" }),
+          h("td", { class: "small", text: [r.specs, r.os].filter(Boolean).join(" · ") || "—" }),
+          h("td", { class: "small", text: r.access ?? "—" }),
+          h("td", {}, ...(r.runs ?? (r.componentId ? [r.componentId] : [])).map(id => compLink(id)))))));
+      break;
+    default:
+      table = h("table", { class: "cmp sheet" }, h("thead", {}, h("tr", {}, h("th", { text: "Term" }), h("th", { text: "Meaning" }))),
+        h("tbody", {}, ...sh.glossary.map(g => h("tr", {}, h("td", {}, h("b", { text: g.term })), h("td", { class: "small", text: g.meaning })))));
+  }
+  const empty = { datasets: sh.datasets.length, formulas: sh.formulas.length, runtimes: sh.runtimes.length, glossary: sh.glossary.length }[ui.sheetSection] === 0;
+  return h("main", { class: "center" },
+    h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Project sheet` }),
+    empty ? h("p", { class: "muted", text: "Nothing declared in this section yet." }) : h("div", { class: "cmpwrap" }, table));
+}
+
+function sheetSide(s: WorkbenchState): HTMLElement {
+  const sh = s.sheet!;
+  const id = ui.sheetFocus;
+  const d = ui.sheetSection === "datasets" ? sh.datasets.find(x => x.id === id) : undefined;
+  const f = ui.sheetSection === "formulas" ? sh.formulas.find(x => x.id === id) : undefined;
+  const r = ui.sheetSection === "runtimes" ? sh.runtimes.find(x => x.id === id) : undefined;
+  if (d) return h("div", { class: "detail" }, eyebrow("Data"), h("h2", { text: d.label }),
+    h("div", { class: "card" }, kv("Where", comp(d.componentId)?.label ?? d.componentId ?? "—"), kv("Kind", d.kind ?? "—"), kv("Volume", volume(d) || "—"), d.refresh ? kv("Refresh", d.refresh) : undefined, d.asOf ? kv("As of", d.asOf) : undefined,
+      d.producedBy?.length ? kv("Produced by", d.producedBy.map(x => comp(x)?.label ?? x).join(", ")) : undefined,
+      d.consumedBy?.length ? kv("Read by", d.consumedBy.map(x => comp(x)?.label ?? x).join(", ")) : undefined),
+    (d.columns ?? []).length ? h("table", { class: "cmp cols" }, h("thead", {}, h("tr", {}, ...["Column", "Type", "Role", "Meaning"].map(t => h("th", { text: t })))),
+      h("tbody", {}, ...(d.columns ?? []).map(c => h("tr", {}, h("td", {}, h("code", { text: c.name })), h("td", { class: "small", text: `${c.type ?? ""}${c.unit ? ` [${c.unit}]` : ""}` }), h("td", { class: "small", text: c.role ?? "" }), h("td", { class: "small", text: c.meaning ?? "" }))))) : undefined,
+    d.notes ? h("p", { class: "small", text: d.notes }) : undefined);
+  if (f) return h("div", { class: "detail" }, eyebrow("Formula"), h("h2", { text: f.label }),
+    h("code", { class: "formula block", text: f.expression }),
+    f.result ? h("p", { class: "small", text: `Result: ${[f.result.symbol, f.result.meaning, f.result.unit ? `[${f.result.unit}]` : undefined].filter(Boolean).join(" — ")}` }) : undefined,
+    (f.variables ?? []).length ? h("table", { class: "cmp cols" }, h("thead", {}, h("tr", {}, ...["Symbol", "Meaning", "Unit"].map(t => h("th", { text: t })))),
+      h("tbody", {}, ...(f.variables ?? []).map(v => h("tr", {}, h("td", {}, h("code", { text: v.symbol })), h("td", { class: "small", text: v.meaning ?? "" }), h("td", { class: "small", text: v.unit ?? "" }))))) : undefined,
+    h("div", { class: "card" }, kv("Computed in", comp(f.componentId)?.label ?? f.componentId ?? "—"), f.where ? kv("File", `${f.where.repoRef ? `${f.where.repoRef} / ` : ""}${f.where.path}`) : undefined, f.source ? kv("Source", f.source) : undefined),
+    f.validation ? h("p", { class: "small", text: `Validation: ${f.validation}` }) : undefined,
+    f.notes ? h("p", { class: "muted small", text: f.notes }) : undefined,
+    h("section", { class: "actions-col" },
+      f.where ? btn("Open the file that computes it", () => command("datapass.openSheetReference", f.id), { icon: "↗" }) : undefined,
+      f.reference ? btn("Open the reference", () => command("datapass.openOptionSource", f.reference), { kind: "link" }) : undefined),
+    h("p", { class: "muted small evidence", text: "Shown as the project writes it. DataPass never evaluates a formula: the project's own code and tools do." }));
+  if (r) return h("div", { class: "detail" }, eyebrow("Where code runs"), h("h2", { text: r.label }),
+    h("div", { class: "card" }, kv("Host", r.host ?? "—"), r.region ? kv("Region", r.region) : undefined, kv("Specs", r.specs ?? "—"), r.os ? kv("OS", r.os) : undefined, kv("Access", r.access ?? "—"), r.cost ? kv("Cost", r.cost) : undefined,
+      kv("Runs", (r.runs ?? []).map(x => comp(x)?.label ?? x).join(", ") || "—")),
+    r.notes ? h("p", { class: "small", text: r.notes }) : undefined,
+    r.decisionRef ? btn("Compare the alternatives", () => command("datapass.openOptions", r.decisionRef), { kind: "primary", icon: "⑂" }) : undefined);
+  return h("div", { class: "detail" }, eyebrow("Project sheet"), h("h2", { text: "Select a row" }), h("p", { class: "muted", text: "Pick a dataset, a formula or a runtime to see all its details: columns, variables and units, where it is computed, how it is reached." }));
+}
+
+function sheetEmpty(s: WorkbenchState): HTMLElement {
+  return h("div", { class: "empty" },
+    h("h2", { text: s.sheetError ? "sheet.json has errors" : "No project sheet yet" }),
+    s.sheetError ? h("ul", { class: "problems" }, h("li", { text: s.sheetError })) : undefined,
+    h("p", { class: "muted", text: "The project sheet keeps what is specific to this project: order of magnitude of each table, collection or file set, the columns that matter, the project's formulas as its code computes them (with units and the file that computes them), and where code runs (VM, Docker, cluster). DataPass shows them next to each component and gives them to the AI." }),
+    h("div", { class: "row" },
+      btn("Ask the AI to fill the sheet", () => command("datapass.copyForAi", "sheet"), { kind: "primary", icon: "✦" }),
+      btn("Import the AI's answer", () => command("datapass.importFromAi", "sheet"), { icon: "⇣" }),
+      s.sheetError ? btn("Open sheet.json", () => command("datapass.openSheetFile")) : undefined));
+}
+
 // ------------------------------------------------------------------ modes
 
 function render(): void {
@@ -415,7 +965,15 @@ function renderInner(): void {
     const tabs = h("div", { class: "tabs", role: "tablist" },
       h("button", { class: `tab ${!sp ? "active" : ""}`, role: "tab", "aria-selected": String(!sp), type: "button", onclick: () => select(undefined, undefined), text: "Whole project" }),
       ...s.subprojects.map(x => h("button", { class: `tab ${sp?.id === x.id ? "active" : ""}`, role: "tab", "aria-selected": String(sp?.id === x.id), type: "button", onclick: () => select(x.id, undefined) }, h("span", { class: `dot h-${x.health}` }), x.title)));
-    root.append(h("div", { class: "map" }, tabs, diagram(s), c ? h("div", { class: "strip" }, h("b", { text: c.label }), h("span", { class: "muted", text: ` · ${c.headline} · Next: ${c.nextStep}` })) : undefined));
+    root.append(h("div", { class: "map" }, tabs, previewBanner(s), diagram(s), c ? h("div", { class: "strip" }, h("b", { text: c.label }), h("span", { class: "muted", text: ` · ${c.headline} · Next: ${c.nextStep}` })) : undefined));
+    return;
+  }
+  if (ui.view === "options") {
+    root.append(header(s), s.options ? h("div", { class: "shell wide" }, optionsNav(s), optionsCenter(s), h("aside", { class: "side", "aria-label": "Consequences" }, optionsSide(s))) : optionsEmpty(s));
+    return;
+  }
+  if (ui.view === "sheet") {
+    root.append(header(s), s.sheet ? h("div", { class: "shell" }, sheetNav(s), sheetCenter(s), h("aside", { class: "side", "aria-label": "Row details" }, sheetSide(s))) : sheetEmpty(s));
     return;
   }
   const crumbs = [s.project?.title ?? "Project", sp && !sp.implicit ? sp.title : undefined, c?.label].filter(Boolean).join(" / ");
@@ -423,6 +981,7 @@ function renderInner(): void {
     h("div", { class: "breadcrumb", text: crumbs }),
     h("div", { class: "bar" }, h("div", {}, eyebrow(sp ? "Architecture of the sub-project" : "Architecture of the project"), h("h2", { text: sp?.title ?? "All components" })),
       sp?.objective ? h("span", { class: "muted small objective", text: sp.objective }) : undefined),
+    previewBanner(s),
     diagram(s),
     c ? filesBlock(c) : sp ? undefined : overview(s));
   root.append(header(s), h("div", { class: "shell" }, nav(s), center, h("aside", { class: "side", "aria-label": "Selection details" }, detailColumn(s, false))));
@@ -432,8 +991,18 @@ function renderInner(): void {
 window.addEventListener("resize", () => { if (MODE === "map") { if (redrawTimer) clearTimeout(redrawTimer); redrawTimer = window.setTimeout(drawDiagrams, 60); } });
 
 window.addEventListener("message", (event: MessageEvent) => {
-  const msg = event.data as { type?: string; state?: WorkbenchState };
-  if (msg?.type === "state" && msg.state) { state = msg.state; render(); }
+  const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string };
+  if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
+  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet")) {
+    ui.view = msg.view;
+    if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
+    if (msg.view === "sheet" && typeof msg.focus === "string") {
+      const [section, id] = msg.focus.split(":");
+      if (section === "datasets" || section === "formulas" || section === "runtimes" || section === "glossary") { ui.sheetSection = section; ui.sheetFocus = id || undefined; }
+    }
+    saveUi();
+    render();
+  }
 });
 render();
 send({ type: "ready" });

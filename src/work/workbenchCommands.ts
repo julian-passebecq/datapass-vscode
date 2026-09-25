@@ -14,7 +14,8 @@ import { gitRunner } from "./session";
 import type { WorkbenchHost } from "../views/workbench";
 import { confirmModal, guarded, jsonBytes, report, requireRoot, UserFacingError } from "./io";
 import { clipboard } from "../core/clipboard";
-import { openExternal, openFolderWindow } from "../core/external";
+import { openExternal, openFolderWindow, openRemoteFolder } from "../core/external";
+import { sshRemoteTarget } from "../core/resources/resources";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { PACK_QUESTIONS, buildPreparationPack, type PackQuestion } from "../core/project/preparation";
 import { changedComponents, describeVerdict, syncVerdict } from "../core/project/gitSync";
@@ -44,7 +45,9 @@ const NATIVE_VIEWS: Record<string, { command: string; extensionId: string }> = {
   neon: { command: "workbench.view.extension.neon-local-connect", extensionId: "databricks.neon-local-connect" },
   postgres: { command: "workbench.view.extension.pgObjectExplorer", extensionId: "ms-ossdata.vscode-pgsql" },
   terraform: { command: "workbench.view.extension.terraform", extensionId: "hashicorp.terraform" },
-  jupyter: { command: "workbench.view.extension.jupyter", extensionId: "ms-toolsai.jupyter" }
+  jupyter: { command: "workbench.view.extension.jupyter", extensionId: "ms-toolsai.jupyter" },
+  // Container Tools 2.5 (view container "containersView", read from its package.json on 2026-09-25).
+  docker: { command: "workbench.view.extension.containersView", extensionId: "ms-azuretools.vscode-containers" }
 };
 
 export function registerWorkbenchCommands(context: vscode.ExtensionContext, session: WorkSession, host: WorkbenchHost): void {
@@ -333,6 +336,14 @@ async function openNativeTool(session: WorkSession, componentId?: string): Promi
   const provider = c.providerId ?? "";
   if (provider === "azure-data-factory") { await openExternal(vscode.Uri.parse(ADF_STUDIO)); return; }
   if (provider === "fabric") { await executeGalaxyAction("fabric.open", session.extensionUri); return; }
+  if (provider === "vm") {
+    // A machine is reached over Remote - SSH with the alias the graph names; DataPass never holds an address or a key.
+    const op = c.operations.find(o => o.capability.id === "infra.remote.ssh" && o.target?.sshHost);
+    const t = sshRemoteTarget(op?.target?.sshHost, op?.target?.folder);
+    if (!t) throw new UserFacingError(`${c.label}: name the machine's SSH alias (from your ~/.ssh/config) in graph.json: an operation { "capability": "infra.remote.ssh", "target": { "sshHost": "<alias>", "folder": "/home/<user>/<project>" } }.`);
+    await openRemoteFolder(vscode.Uri.from({ scheme: "vscode-remote", authority: t.authority, path: t.path }));
+    return;
+  }
   const route = NATIVE_VIEWS[provider];
   if (!route) throw new UserFacingError(`${c.provider?.label ?? provider}: no official VS Code tool is known to DataPass. ${c.provider?.docs ? `Docs: ${c.provider.docs}` : ""}`);
   const registered = new Set(await vscode.commands.getCommands(true));
@@ -455,7 +466,8 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
   const pack = buildPreparationPack({
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
-    readiness: session.readiness()
+    readiness: session.readiness(),
+    sheet: session.project.sheet, options: session.project.options
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`
