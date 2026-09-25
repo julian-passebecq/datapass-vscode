@@ -1,3 +1,55 @@
+# Implementation Status — Pass 12 (tooling): qualification records and report
+
+Date: 2026-09-25
+Version: `0.12.0` — branch `claude/pass-12-qualification`, based on main `02e5242` (v0.11.0)
+
+Pass 12 is the signed-in qualification (v1 gate 16). Only Julian can sign in to Fabric,
+Databricks, Azure and the VM, so this part of the pass gives that session a structured way to
+record and report results; the results themselves come from Julian's run.
+
+### Implemented
+
+- **Record Operation Result** (inline button on every operation row, and **…** menu): Worked /
+  Failed / Not tried plus a short note. The record keeps the date, the project and scope, the
+  preflight status at that moment, the DataPass version and the versions of the tools the
+  operation depends on. It is stored per user (VS Code global storage), not in any repository, so
+  one report covers every project; recording again replaces the previous result for that
+  operation and project. The operation row shows "✓ worked" / "✗ failed".
+- **Export Qualification Report**: Markdown (results table, environment, every detected tool)
+  opened in an editor and copied, ready to paste to Claude. **Clear Qualification Results** asks
+  first.
+- Notes are shortened (500 characters) and scrubbed.
+
+### Bug found and fixed
+
+| Bug | Effect | Fix |
+|---|---|---|
+| `scrub` (used by *Copy AI Context* and the bridge) removed local paths and `user:pw@` in URLs only | A GitHub token, `password=…`, a connection string or a JWT pasted in a checklist note would have reached the AI context although it announces "credentials and tokens" as omitted | Connection strings, GitHub/OpenAI/AWS/Slack/Databricks tokens, JWTs and `secret=value` pairs are redacted |
+
+### Pre-qualification evidence (this PC, real extensions, read-only)
+
+`npm run test:desktop -- --real-extensions --fixture=v2-retail`: 48 / 48. Detected present:
+Jupyter 2025.9.1, Python extension 2026.4.0, Python 3.14.7, Java 22.0.2, Fabric Studio 2.25.2,
+OneLake explorer 0.4.0, Databricks extension 2.18.0, Container Tools 2.5.2, Remote - SSH 0.128.0,
+OpenSSH 9.6p1, Git 2.44. Absent: Microsoft Fabric and Fabric Data Engineering extensions, `fab`,
+`az`, `databricks`, `tofu`/`terraform`, `gcx`, TMDL, MongoDB. Power BI Desktop and Tabular Editor:
+unknown (desktop apps are never probed). No operation was run against an account.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 167 / 167 (4 new: tool snapshot, note scrubbing, report, credential shapes) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 90 / 90: record Failed then Worked on an operation (one record kept, tree shows it), export (no local path or user name), clear after confirmation |
+
+### Next (needs Julian)
+
+Run `D:\PROJ\datapass-testlab\LISEZ-MOI-TESTS.md`, record each operation, export the report and
+send it. Then fix what failed and release **1.0.0**.
+
+---
+
 # Implementation Status — Pass 11: static inventory and repository state
 
 Date: 2026-09-25

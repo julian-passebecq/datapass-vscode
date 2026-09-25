@@ -230,6 +230,31 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
   }, ["v2-retail"]);
 
+  // ------------------------------------------------------------ qualification (v2-retail)
+
+  test("qualification: record results on operations, see them in the tree, export one report", async () => {
+    const op = api().workModel().operations[0]!;
+    await withUi([{ pick: "Failed" }, { input: "fab not installed yet" }], () => run("datapass.recordQualification", op.capability.id));
+    const rec = api().qualification().find(q => q.capabilityId === op.capability.id);
+    assert.equal(rec?.result, "failed");
+    assert.equal(rec?.note, "fab not installed yet");
+    assert.equal(rec?.projectId, "retail-bi");
+    assert.match(rec?.dataPassVersion ?? "", /^\d+\.\d+\.\d+$/);
+    const row = (await api().renderWorkTree()).find(r => r.id === `op:${op.capability.id}`);
+    assert.match(row?.description ?? "", /✗ failed/);
+    // Recording again replaces the result for the same operation and project.
+    await withUi([{ pick: "Worked" }, { input: "" }], () => run("datapass.recordQualification", op.capability.id));
+    assert.equal(api().qualification().filter(q => q.capabilityId === op.capability.id).length, 1);
+    const report = await withUi([], () => run("datapass.exportQualificationReport"));
+    assert.match(report.clipboard, /# DataPass qualification report/);
+    assert.match(report.clipboard, new RegExp(`${op.capability.id}.*✅ worked`));
+    for (const leak of leaks()) assert.ok(!report.clipboard.includes(leak), `report leaked ${leak}`);
+    await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+    const cleared = await withUi([{ button: "Clear" }], () => run("datapass.clearQualificationResults"));
+    assert.ok(cleared.prompts.some(p => p.modal));
+    assert.deepEqual(api().qualification(), []);
+  }, ["v2-retail"]);
+
   // ------------------------------------------------------------ shared resources (v2-retail)
 
   test("resources: the scope shows its VM binding and warns that another scope shares the VM", async () => {

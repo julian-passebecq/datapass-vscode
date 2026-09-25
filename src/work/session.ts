@@ -17,11 +17,13 @@ import { sha256Bytes, slugId } from "../core/model/ids";
 import type { BaseRef } from "../core/contracts/envelopes";
 import type { LocalApproval } from "../core/publication/brief";
 import { parseStrictJson } from "../core/model/strictJson";
+import type { QualificationRecord } from "../core/qualification/qualification";
 import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
 
 /** Inventory scans are cached this long unless the user refreshes the Work view. */
 const INVENTORY_TTL_MS = 60_000;
 const MAX_PY_FILES = 3000;
+const QUALIFICATION_KEY = "datapass.qualification.v1";
 import {
   MAX_MONGOKU_CONTEXT_BYTES, mongokuEntityFor, parseMongokuContext, resolveCompanions,
   type MongokuStatus, type ResolvedCompanions
@@ -79,6 +81,21 @@ export class WorkSession implements vscode.Disposable {
     this.cached = undefined;
     await this.loadMongokuSnapshot();
     if (forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString()) await this.scanInventory();
+    this.changed();
+  }
+
+  // ------------------------------------------------------------ qualification (per user, all projects)
+
+  qualification(): QualificationRecord[] { return this.context.globalState.get<QualificationRecord[]>(QUALIFICATION_KEY) ?? []; }
+
+  async recordQualification(r: QualificationRecord): Promise<void> {
+    const rest = this.qualification().filter(x => !(x.capabilityId === r.capabilityId && x.projectId === r.projectId));
+    await this.context.globalState.update(QUALIFICATION_KEY, [r, ...rest].slice(0, 500));
+    this.changed();
+  }
+
+  async clearQualification(): Promise<void> {
+    await this.context.globalState.update(QUALIFICATION_KEY, undefined);
     this.changed();
   }
 

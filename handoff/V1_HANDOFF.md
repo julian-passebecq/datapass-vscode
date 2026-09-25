@@ -31,7 +31,8 @@ handoff's status notes, the claude.ai v0.9.0 notes, and the GPT 2026-09-25 hando
 | 0.9.3 | DiagramCloud bridge (PR #9 + #11) on main, Grafana links, Mongoku Lite, Open-in-DataPass link | PR #13, main `83c41e0` |
 | 0.10.0 | Pass 10a: per-project modules (Choose Project Modules) | PR #14 |
 | 0.10.1 | Pass 10b: shared resources and workload bindings, Remote-SSH to the declared host | PR #15 (with #14), main `1645df0` |
-| **0.11.0** | Pass 11: static inventory (Assets) and repository state (Repositories) | branch `claude/pass-11-inventory` |
+| 0.11.0 | Pass 11: static inventory (Assets) and repository state (Repositories) | PR #16, main `02e5242` |
+| **0.12.0** | Pass 12 tooling: record operation results, qualification report; credential scrubbing hardened | branch `claude/pass-12-qualification` |
 | 1.0.0 | When the gates in section 3 pass | — |
 
 ## 3. What "v1" means, and where we are
@@ -58,7 +59,7 @@ database or paid AI API, and equally usable for a non-FOIL project.
 | 13 | FOIL boundaries (no physics/LCOE/accounting in TypeScript; generated ≠ accepted) | Done | |
 | 14 | Non-FOIL portability | Done on fixtures | try one real non-FOIL project |
 | 15 | Delivery: VSIX, full source archive, status | Done for 0.9.3 | |
-| 16 | **Signed-in qualification**: Fabric browse/capture, Databricks `bundle validate`, Power BI Desktop with a PBIP, Grafana, Mongoku | **Open — needs Julian** | record each result as an observation per capability |
+| 16 | **Signed-in qualification**: Fabric browse/capture, Databricks `bundle validate`, Azure plan, VM over SSH (Power BI, Grafana, Mongoku optional) | **Open — needs Julian** | tooling ready in 0.12.0: Record Operation Result + Export Qualification Report; testlab guide in `D:\PROJ\datapass-testlab` |
 
 ## 4. Next passes, in order
 
@@ -69,8 +70,8 @@ database or paid AI API, and equally usable for a non-FOIL project.
 3. ~~Pass 10b — resources and bindings~~ — done in 0.10.1: `resources`/`bindings`, Work view
    Resources with shared-host warning, Remote-SSH straight to the declared alias and folder.
 4. ~~Pass 11 — static inventory~~ — done in 0.11.0: Assets and Repositories sections.
-5. **Pass 12 — qualification with Julian (gate 16).** Walk the signed-in checklist in
-   IMPLEMENTATION_STATUS, fix what breaks, record observations. Then **1.0.0**.
+5. **Pass 12 — qualification with Julian (gate 16).** Tooling done in 0.12.0. Julian runs the
+   testlab guide, records each operation and sends the exported report; fix what failed, then **1.0.0**.
 
 After 1.0 (P1): project chooser and onboarding; starter projects; Mongoku "Open in DataPass"
 button (Mongoku side); richer Grafana as-code routes; reviewed live read adapters.

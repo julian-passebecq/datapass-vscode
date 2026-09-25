@@ -10,6 +10,7 @@ import { registerCompanionCommands } from "./work/companionCommands";
 import { setClipboardForTests, type Clipboard } from "./core/clipboard";
 import { setExternalOpenerForTests, setFolderOpenerForTests, type ExternalOpener, type FolderOpener } from "./core/external";
 import { registerResourceCommands } from "./work/resourceCommands";
+import { registerQualificationCommands } from "./work/qualificationCommands";
 import { platformOperations } from "./core/capabilities/platformOperations";
 
 /**
@@ -33,6 +34,7 @@ export interface DataPassTestApi {
   companions(): ReturnType<WorkSession["companions"]>;
   mongokuStatus(): ReturnType<WorkSession["mongokuStatus"]>;
   inventory(): ReturnType<WorkSession["inventory"]>;
+  qualification(): ReturnType<WorkSession["qualification"]>;
   repositories(): ReturnType<WorkSession["repositories"]>;
   /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
   handleUri(uri: vscode.Uri): Promise<void>;
@@ -63,6 +65,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerBridgeCommands(context, session);
   const companionUri = registerCompanionCommands(context, session);
   registerResourceCommands(context, session);
+  registerQualificationCommands(context, session);
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -166,6 +169,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     mongokuStatus: () => session.mongokuStatus(),
     handleUri: uri => companionUri.handleUri(uri),
     inventory: () => session.inventory(),
+    qualification: () => session.qualification(),
     repositories: () => session.repositories(),
     renderWorkTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderWorkTree"]>> = [];

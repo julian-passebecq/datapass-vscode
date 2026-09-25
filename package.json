@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code control plane for Fabric, Databricks, Power BI, Grafana and infrastructure: work scopes, operation preflight, contracted app exchanges, impact analysis and publication briefs.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -199,6 +199,20 @@
       {
         "command": "datapass.copySshCommand",
         "title": "DataPass: Copy SSH Command for a Resource…"
+      },
+      {
+        "command": "datapass.recordQualification",
+        "title": "DataPass: Record Operation Result (Worked / Failed)…",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "datapass.exportQualificationReport",
+        "title": "DataPass: Export Qualification Report",
+        "icon": "$(report)"
+      },
+      {
+        "command": "datapass.clearQualificationResults",
+        "title": "DataPass: Clear Qualification Results"
       }
     ],
     "viewsContainers": {
@@ -340,6 +354,16 @@
           "command": "datapass.openResource",
           "when": "view == datapass.work",
           "group": "5_project@4"
+        },
+        {
+          "command": "datapass.exportQualificationReport",
+          "when": "view == datapass.work",
+          "group": "8_qualification@1"
+        },
+        {
+          "command": "datapass.recordQualification",
+          "when": "view == datapass.work",
+          "group": "8_qualification@0"
         }
       ],
       "view/item/context": [
@@ -356,6 +380,11 @@
         {
           "command": "datapass.approveBrief",
           "when": "view == datapass.work && viewItem == exchange.brief",
+          "group": "inline"
+        },
+        {
+          "command": "datapass.recordQualification",
+          "when": "view == datapass.work && viewItem =~ /^operation/",
           "group": "inline"
         }
       ],

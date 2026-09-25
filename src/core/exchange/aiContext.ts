@@ -29,8 +29,23 @@ export interface ContextExport {
 
 const PATHLIKE = /(?:[A-Za-z]:\\|\\\\|\/(?:home|Users|mnt|var|etc|tmp)\/)[^\s"'`]*/g;
 
+/** Credential-shaped text: tokens, keys, connection strings and `secret=value` pairs. */
+const SECRETS: Array<[RegExp, string]> = [
+  [/\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis|amqps?|mssql|sqlserver):\/\/[^\s"'`]+/gi, "<connection-string>"],
+  [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, "<token>"],
+  [/\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, "<token>"],
+  [/\bsk-[A-Za-z0-9_-]{16,}\b/g, "<token>"],
+  [/\bAKIA[0-9A-Z]{16}\b/g, "<token>"],
+  [/\bxox[abprs]-[A-Za-z0-9-]{10,}\b/g, "<token>"],
+  [/\bdapi[0-9a-f]{32}\b/g, "<token>"],
+  [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, "<token>"],
+  [/\b(password|passwd|pwd|secret|token|api[_-]?key|client[_-]?secret|access[_-]?key|sas|sig)(\s*[:=]\s*)[^\s,;"'`]+/gi, "$1$2<redacted>"]
+];
+
 export function scrub(text: string): string {
-  return text.replace(PATHLIKE, "<local-path>").replace(/(https?:\/\/)[^/\s:@]+:[^/\s@]+@/g, "$1<credentials>@");
+  let out = text.replace(PATHLIKE, "<local-path>").replace(/(https?:\/\/)[^/\s:@]+:[^/\s@]+@/g, "$1<credentials>@");
+  for (const [re, replacement] of SECRETS) out = out.replace(re, replacement);
+  return out;
 }
 
 export function buildAiContext(preset: ContextPreset, input: ContextInput, maxBytes = 16_000): ContextExport {
