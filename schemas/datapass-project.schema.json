@@ -291,8 +291,9 @@
           "additionalProperties": false,
           "properties": {
             "sshHost": {
-              "type": "string",
-              "description": "SSH config host alias only. Do not store credentials here."
+          "type": "string",
+          "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$",
+          "description": "SSH config host alias only (no user@, port or key). Do not store credentials here."
             }
           }
         },
