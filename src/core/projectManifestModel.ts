@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import { validateCompanionSections } from "./companions/companions";
 import { validateModules, type ModuleSwitches } from "./modules";
+import { validateResources, type BindingDecl, type ResourceDecl } from "./resources/resources";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 
@@ -91,6 +92,9 @@ export interface DataPassProjectManifest {
     label: string;
     url: string;
   }>;
+  /** v2: shared resources (declared once) and how each workload/scope uses them. */
+  resources?: ResourceDecl[];
+  bindings?: BindingDecl[];
   /** Per-project modules: `false` switches a module off; unlisted modules stay on. */
   modules?: ModuleSwitches;
   /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
@@ -199,6 +203,8 @@ export function validateProjectManifest(raw: unknown): string[] {
   const declaredScopes = new Set(v2 && Array.isArray(doc.scopes) ? doc.scopes.map(s => (s as { id?: unknown } | null)?.id).filter((id): id is string => typeof id === "string") : []);
   issues.push(...validateCompanionSections(doc, declaredScopes));
   issues.push(...validateModules(doc.modules));
+  const repositoryKeys = new Set(doc.repositories && typeof doc.repositories === "object" ? Object.keys(doc.repositories as object) : []);
+  issues.push(...validateResources(doc, declaredScopes, repositoryKeys));
 
   if (doc.links !== undefined) {
     if (!Array.isArray(doc.links)) {

@@ -1,3 +1,43 @@
+# Implementation Status — Pass 10b: shared resources and workload bindings
+
+Date: 2026-09-25
+Version: `0.10.1` — branch `claude/pass-10b-resources`, stacked on `claude/pass-10a-modules` (PR #14)
+
+### Implemented (V2.1 §7, v1 gate 4)
+
+- Manifest v2 `resources[]` (`id`, `kind`: vm / container-host / kubernetes-cluster / database /
+  workspace / other, `title`, `provider`, `ssh.host`) and `bindings[]` (`id`, `resource`, `scopes`,
+  `folder`, `repository`, `compose`, `env` names, `processes`). Declared once, bound per workload.
+- Never in the manifest: credentials, `user@host`, ports or keys (`ssh.host` is an alias from the
+  user's own `~/.ssh/config`), env **values** (`NAME=value` is rejected and the value is never echoed
+  back), relative or `..` folders. Runtime validation and the editor schema agree.
+- Work view **Resources** for the selected scope: each resource with this scope's binding (folder,
+  repository, Compose file, env names, processes), **Copy: ssh <alias>**, and **Shared with: …**
+  when other scopes use the same host ("host-level changes affect all": rebooting or upgrading the
+  VM affects every binding). The whole project lists every binding.
+- **Open Resource on its Host**: Remote - SSH straight to `ssh-remote+<alias>` in the binding's
+  folder (new window). The Galaxy **Remote SSH** action now does this when a resource is declared
+  (it used to open only VS Code's generic remote menu and ignore the declared host).
+- The legacy `platforms.oracle.sshHost` becomes an implicit "Oracle VM" resource, so existing
+  manifests get the same behaviour; the `vm.sshHost` preflight fact comes from the resources.
+- Resources belong to the Infrastructure module (hidden and refused when it is switched off).
+- Remote folders open through a Test-mode seam (`src/core/external.ts`), so desktop tests never
+  start an SSH connection or a window.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 160 / 160 (5 new resource tests: shared-VM views, SSH target, legacy alias, secret refusal, schema agreement) |
+| `npm run test:desktop` (VS Code 1.138.0, Windows 11) | 87 / 87: scope shows its binding and "Shared with: Operations"; Open on host → `vscode-remote://ssh-remote+retail-vm/srv/retail/weekly`; Galaxy path opens without a question; whole project lists both bindings; unknown binding refused |
+
+### Still needs a human
+
+Open a real VM with your own alias (testlab project 3, step 5).
+
+---
+
 # Implementation Status — Pass 10a: per-project modules
 
 Date: 2026-09-25

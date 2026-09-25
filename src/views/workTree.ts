@@ -10,6 +10,8 @@ import type { ImpactEntry } from "../core/impact/facets";
 import type { PreflightStatus } from "../core/capabilities/preflight";
 import type { ProgrammeView } from "../core/programme/programme";
 import { moduleEnabled, MODULES } from "../core/modules";
+import { resourcesForScope, scopeTitles, type ResourceView } from "../core/resources/resources";
+import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
 
 type Node =
@@ -223,6 +225,14 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
     if (m.apps.length) {
       nodes.push({ t: "section", id: "apps", label: "Apps", icon: "rocket", description: String(m.apps.length), children: () => m.apps.map(app => ({ t: "app", app })) });
     }
+    const resources = ctx.manifest && moduleEnabled(ctx.manifest, "infrastructure") ? resourcesForScope(ctx.manifest, m.scope.id) : [];
+    if (resources.length) {
+      nodes.push({
+        t: "section", id: "resources", label: "Resources", icon: "server", description: String(resources.length),
+        tooltip: "Shared machines and hosts this scope uses, and how (folder, repository, Compose file, env variable names).",
+        children: () => resources.map(view => resourceNode(view, ctx.manifest!))
+      });
+    }
     const companions = s.companions();
     const sidecar = Boolean(ctx.diagramCloudSidecar) && moduleEnabled(ctx.manifest, "diagramcloud");
     if (companions.grafana || companions.mongoku || sidecar) {
@@ -252,6 +262,34 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
       ...v.outputs.map((entry): Node => ({ t: "output", entry, parent: `prog:${v.id}` }))
     ];
   }
+}
+
+function resourceNode(view: ResourceView, manifest: DataPassProjectManifest): Node {
+  const r = view.resource;
+  const host = r.ssh?.host;
+  const open = (bindingId?: string): vscode.Command => ({ command: "datapass.openResource", title: "Open", arguments: [{ resource: r.id, binding: bindingId }] });
+  const children = (): Node[] => {
+    const rows: Node[] = [];
+    for (const b of view.bindings) {
+      rows.push({ t: "info", id: `bind:${b.id}`, label: b.folder ? `Folder: ${b.folder}` : `Binding ${b.id}`, description: host ? "open on the host" : b.id, icon: "folder-opened", tooltip: `Binding ${b.id}${b.scopes?.length ? ` · scopes: ${b.scopes.join(", ")}` : " · every scope"}`, command: host ? open(b.id) : undefined });
+      if (b.repository) rows.push({ t: "info", id: `bind:${b.id}:repo`, label: `Repository: ${b.repository}`, icon: "repo" });
+      if (b.compose) rows.push({ t: "info", id: `bind:${b.id}:compose`, label: `Compose: ${b.compose}`, icon: "package" });
+      if (b.env?.length) rows.push({ t: "info", id: `bind:${b.id}:env`, label: `Env: ${b.env.join(", ")}`, description: "names only; values stay on the host", icon: "symbol-variable" });
+      if (b.processes?.length) rows.push({ t: "info", id: `bind:${b.id}:proc`, label: `Processes: ${b.processes.join(", ")}`, icon: "pulse" });
+    }
+    if (host && !view.bindings.some(b => b.folder)) rows.push({ t: "info", id: `res:${r.id}:open`, label: `Open ${host} (Remote - SSH)`, icon: "remote", command: open() });
+    if (host) rows.push({ t: "info", id: `res:${r.id}:ssh`, label: `Copy: ssh ${host}`, description: "terminal", icon: "terminal", command: { command: "datapass.copySshCommand", title: "Copy", arguments: [r.id] } });
+    if (view.sharedWith.length) {
+      const others = scopeTitles(manifest, view.sharedWith);
+      rows.push({
+        t: "info", id: `res:${r.id}:shared`, label: `Shared with: ${others.join(", ")}`, description: "host-level changes affect all",
+        icon: ["warning", "problemsWarningIcon.foreground"],
+        tooltip: `Rebooting, upgrading or reconfiguring ${r.title ?? r.id} also affects: ${view.sharedWith.map(b => `${b.id}${b.folder ? ` (${b.folder})` : ""}`).join(", ")}.`
+      });
+    }
+    return rows;
+  };
+  return { t: "section", id: `res:${r.id}`, label: r.title ?? r.id, description: [r.kind, host].filter(Boolean).join(" · "), icon: r.kind === "vm" ? "vm" : "server", children };
 }
 
 const openLink = (link: CompanionLink): vscode.Command => ({ command: "datapass.openCompanionLink", title: "Open", arguments: [link.id] });

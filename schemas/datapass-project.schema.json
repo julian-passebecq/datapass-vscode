@@ -491,6 +491,115 @@
     "graph": {
       "type": "string",
       "description": "v2: workspace-relative path of the project graph (default .datapass/graph.json)."
+    },
+    "resources": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "v2: shared resources, declared once (a VM, container host, cluster). Never credentials.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "kind": {
+            "enum": [
+              "vm",
+              "container-host",
+              "kubernetes-cluster",
+              "database",
+              "workspace",
+              "other"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "provider": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9 ._-]{1,40}$"
+          },
+          "ssh": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "host"
+            ],
+            "properties": {
+              "host": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$",
+                "description": "Alias from your ~/.ssh/config. No user@, port or key."
+              }
+            }
+          }
+        }
+      }
+    },
+    "bindings": {
+      "type": "array",
+      "maxItems": 200,
+      "description": "v2: how a workload/scope uses a resource. Env lists variable NAMES only.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "resource"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "resource": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "folder": {
+            "type": "string",
+            "pattern": "^/[A-Za-z0-9._/@+-]{0,299}$",
+            "description": "Absolute folder on the host."
+          },
+          "repository": {
+            "type": "string"
+          },
+          "compose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "env": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+            }
+          },
+          "processes": {
+            "type": "array",
+            "maxItems": 50,
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@-]{0,59}$"
+            }
+          }
+        }
+      }
     }
   },
   "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; schemaVersion 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories. Never put secrets in this file.",

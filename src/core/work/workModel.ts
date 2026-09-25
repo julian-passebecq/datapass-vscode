@@ -101,7 +101,7 @@ export function relevantProviders(m: DataPassProjectManifest | undefined, graph:
   if (p.databricks || m?.repositories?.databricks) out.add("databricks");
   if (p.powerbi) out.add("powerbi");
   if (p.grafana) out.add("grafana");
-  if (p.infrastructure || p.oracle) out.add("infrastructure");
+  if (p.infrastructure || p.oracle || m?.resources?.length) out.add("infrastructure");
   if (p.airflow) out.add("airflow");
   if (m?.apps?.length) out.add("apps");
   if (graph?.items.length) out.add("diagram");

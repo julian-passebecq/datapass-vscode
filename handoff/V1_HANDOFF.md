@@ -29,7 +29,8 @@ handoff's status notes, the claude.ai v0.9.0 notes, and the GPT 2026-09-25 hando
 | "0.91" | Requested in a chat after 0.9.2 already existed | superseded, nothing to build |
 | GPT "0.9.3 review kit" | Overlay proposal (Mongoku/Grafana companions) | reviewed; ideas kept, design corrected (see IMPLEMENTATION_STATUS) |
 | 0.9.3 | DiagramCloud bridge (PR #9 + #11) on main, Grafana links, Mongoku Lite, Open-in-DataPass link | PR #13, main `83c41e0` |
-| **0.10.0** | Pass 10a: per-project modules (Choose Project Modules) | branch `claude/pass-10a-modules` |
+| 0.10.0 | Pass 10a: per-project modules (Choose Project Modules) | PR #14 |
+| **0.10.1** | Pass 10b: shared resources and workload bindings, Remote-SSH to the declared host | branch `claude/pass-10b-resources` (stacked on #14) |
 | 1.0.0 | When the gates in section 3 pass | — |
 
 ## 3. What "v1" means, and where we are
@@ -44,7 +45,7 @@ database or paid AI API, and equally usable for a non-FOIL project.
 | 1 | One VSIX on current main, consistent versions, old tests kept | Done | 0.9.3; 151 unit and 82 desktop tests |
 | 2 | Work and Galaxy coherent; whole project selectable; empty/invalid workspaces useful | Done | desktop fixtures `empty`, `broken`, `v1-foil`, `v2-retail` |
 | 3 | Manifest v1/v2, scopes, graph, declarative packs, journaled migration | Done | |
-| 4 | **Shared resource vs workload binding** (one Oracle VM serving Wind and Hydro with different repos, Compose files, env names, SSH folders) | **Open** | not modeled yet: each platform holds one binding. Design: [v2.1/02 §7](v2.1/02_ITEMS_ARTIFACTS_AND_CATALOG.md) |
+| 4 | Shared resource vs workload binding (one Oracle VM serving Wind and Hydro with different repos, Compose files, env names, SSH folders) | Done in code (0.10.1) | open your real VM once (testlab project 3) |
 | 5 | Repositories: local/remote-only, branch, base, dirty; unknown stays unknown; no auto-clone | Partial | base capture and remote observation exist; no per-repository status rows in the Work view |
 | 6 | Readiness per operation, identical in Work and Galaxy | Done | 21 registry operations; desktop suite asserts equality |
 | 7 | Native assets routed, never executed (notebooks, pipelines/DAGs, PBIP, bundles) | Partial | PBIP/PBIR/TMDL graph, bundle detection, Fabric deploy config exist; **no static notebook or Airflow DAG inventory yet** |
@@ -64,14 +65,8 @@ database or paid AI API, and equally usable for a non-FOIL project.
 2. ~~Pass 10a — per-project modules~~ — done in 0.10.0: `modules` block + *Choose Project
    Modules*; Galaxy, Work, Links and health follow it. The cloud core (Fabric, Databricks, Azure,
    notebooks) comes first; Mongoku and DiagramCloud are optional add-ons.
-3. **Pass 10b — resources and bindings (gate 4).** Manifest v2 `resources` (e.g. an Oracle VM:
-   SSH host alias, OS, owner) and `bindings` (resource × workload/scope: repository, working
-   folder, Compose file, *names* of required env variables, processes). Work view "Resources"
-   rows; the Remote-SSH hand-off opens the right host and folder (today the Galaxy "Remote SSH"
-   action only opens VS Code's generic remote menu and ignores `platforms.oracle.sshHost`);
-   preflight facts per binding;
-   a host-level operation (reboot, upgrade) shows its impact on every binding of that resource.
-   Never store secrets or env values.
+3. ~~Pass 10b — resources and bindings~~ — done in 0.10.1: `resources`/`bindings`, Work view
+   Resources with shared-host warning, Remote-SSH straight to the declared alias and folder.
 4. **Pass 11 — static inventory (gates 5, 7).** Per-repository status rows (branch, HEAD, dirty,
    remote-only); a static list of notebooks (`.ipynb`, Fabric `*.Notebook/`), Airflow DAG files
    (file names and ids only; Python is never imported or run), Fabric/ADF pipelines and bundle
