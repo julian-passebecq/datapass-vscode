@@ -399,7 +399,8 @@ export class GitObserver implements vscode.Disposable {
         const open = ghPrListArgs(h, "open"), closed = ghPrListArgs(h, "closed");
         if (!open || !closed) return { data: { kind: "links", reason: "unsupported", tool: "gh" } };
         // Signed in? Only the exit code is used; the token is never read.
-        const auth = await this.run("gh", ["auth", "status", "--hostname", "github.com"], cwd, AUTH_TTL_MS);
+        // One check per window, not per repository (no folder: 60 other repositories share it).
+        const auth = await this.run("gh", ["auth", "status", "--hostname", "github.com"], "", AUTH_TTL_MS);
         if (auth.missing) return { data: { kind: "links", reason: "not-installed", tool: "gh" } };
         if (!auth.ok) return auth.timedOut ? failed("gh", auth) : { data: { kind: "links", reason: "not-signed-in", tool: "gh" } };
         const [o, c] = await Promise.all([this.run("gh", open, cwd, HOST_TTL_MS), this.run("gh", closed, cwd, HOST_TTL_MS)]);
