@@ -1,6 +1,138 @@
+# Implementation Status — 0.20.0 (pass AI-2): work orders
+
+Date: 2026-09-25. Version `0.20.0` — branch `claude/work-orders-ai2`, on 0.19.0 (PR #29). Design and
+Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
+sections 3.2, 4, 5, 8.1–8.5, 8.9, 9, 11, 12 and **13.1** (which wins). Galaxy contracts
+`datapass.work-order/1`, `datapass.work-order-result/1`, `datapass.work-order-marker/1` and
+`datapass.work-log/1` (format designed here) were sent to the App Galaxy keeper session, with the
+manifest note (`project.type`, `modules.workOrders` / `modules.pilot`).
+
+### What's new
+
+- **The AI view has three tabs** (right side bar, renamed "AI"), Julian's modes: **DataPass-guided**
+  (the 0.15 JSON import/export, still the default tab), **Agent** (work orders; the Claude app and
+  Codex app buttons; what the agents did last on this project; *Export JSON* of the project, the
+  selected sub-project or the company — `datapass.ai.exportScope`; *Publish summary*) and **Manual**
+  (where things stand, and the route to the Project view, the Git view, readiness, the Workbench, the
+  official tool, Check for updates). Pilot is announced as a later option, no tab.
+- **Work orders** (`src/core/workOrders/`): `order.json` (`datapass.work-order` 1), `order.md` (first
+  line = the marker `DataPass work order <id>: read <path>\order.md and follow it.`), `attachments/`
+  (result format, the schemas, preparation packs, card / decision packs, the optional export JSON,
+  the previous order for a follow-up, a failing PR's checks), `state.json` (`datapass.work-order-state`
+  1, DataPass only), `result.json` (`datapass.work-order-result` 1, the agent) and `proposed/<kind>.json`,
+  in `<coordination repository>/.datapass/local/work-orders/<id>/` (git-ignored). Strict parsers from
+  one schema source (`schemas/datapass-work-order*.schema.json`, editor validation through
+  `jsonValidation`). Ids `wo-YYYYMMDD-HHMM-xxxx`, receipts `XXXX-XXXX` without 0/O/1/I.
+- **Kinds**: change, investigate (report, no PR), prepare-files, apply-decision, fix-card,
+  datapass-files — which can return files **for import only** (no repository changed, no PR: the
+  testlab 7b path). Repositories default to: the component's repository and the coordination
+  repository change, the others are left out; planned or not-cloned ones cannot change; the code
+  repository comes first (the agent starts there, so its `CLAUDE.md` / `AGENTS.md` load).
+- **Project types** `dev` / `work` / `perso` (`project.type` in the manifest — v5 stays v5, schema and
+  parity corpus updated together — or `datapass.ai.projectTypes`, machine, which wins; default dev):
+  dev and perso → orders on once the machine setting is on, the agent merges on green CI; work →
+  off unless `modules.workOrders: true`, the person merges. `modules.workOrders: false` switches any
+  project off. The per-order merge switch stays.
+- **Launch, desktop apps first (Q5)**: after one modal, *Claude app* copies the marker prompt and
+  opens `claude://code/new` (the app's own new-session route; the person picks the folder and
+  pastes); *Codex app* the same with `codex:`; *Claude Code · terminal* is a VS Code terminal whose
+  process is `claude` (arguments as an array: `--session-id`, `--name`, `--effort`, `--model`,
+  `--permission-mode default` when asked, `--add-dir` per other repository, the marker), with
+  *Resume in terminal*; *Codex CLI · terminal* when a Codex CLI is configured. A `.cmd` shim goes
+  through `cmd.exe` only with double-quoted tokens of a strict set, else the command is copied.
+  Pre-launch: trust, the machine setting, the type and switch, **the order was written by DataPass on
+  this computer and is unchanged** (a digest recorded at writing), every repository is the clone
+  DataPass resolves (same folder, verified origin), the base commits still on `origin/<base>` after a
+  plain fetch (else *Write a new revision*), a warning when another open order changes the same
+  repository, the executable found.
+- **Results**: a watcher (and, for 48 h after a launch without result, a 15 s poll) reads
+  `result.json`; the receipt and order id must match, unknown fields and credential-shaped text refuse
+  it, PR addresses are kept only when they are PRs of the declared repository (rebuilt from its
+  address). The order becomes *reported*; a notification offers to open it. **PRs are found by the
+  planned branch** through the 0.19 Git observer (a PR the result names is adopted only when its head
+  is the planned branch or the branch the result says it used); *pulled* is a `git merge-base
+  --is-ancestor` check of the merge commit in the clone's default branch. Axes stay separate (order,
+  output, result); "done" is the person's, suggested when every PR is merged and pulled.
+- **Needs you rule 8** (Git view): a work order whose result names no PR, or with neither result nor
+  PR a day after its launch; the row opens the order.
+- **Work orders view** (fifth Workbench view: All / Open / Needs you / Done) and the **Details
+  timeline** (written, launched, the result as "the agent says", checks, questions, follow-ups, each
+  PR with its CI, imports, published, closed) with *Launch*, *Resume*, *Import the proposed file*,
+  *Check the PR's DataPass files* (fetch, then `git show` of each changed `.datapass/*.json` through
+  the import parsers), *Mark done*, *Follow-up order*, *Copy for a chat* (local paths scrubbed),
+  *Copy the prompt*, *Revise*, *Abandon*, *Archive* (moved to `work-orders/archive/`, never deleted).
+- **Entry points (8.9)**: board card → *Work order for this card*; Options → *Apply this decision as
+  a work order*; a component with missing files → *Prepare the missing files as a work order*
+  (Details and the Project tree); Git view, failing PR → *Work order to fix this* (its branch as the
+  base, its failing checks attached); a result's follow-up → *Follow-up order*. Each opens the Agent
+  tab prefilled; hidden parts (base branch, attachments, the order followed) stay in the extension.
+- **The committed summary (Q2)**: *Publish summary* writes `.datapass/work-log.json`
+  (`datapass.work-log` 1, backup and journal like every project file) and, when
+  `datapass.ai.workLog.privateRepository` is set, `work-logs/<project id>.json` in that private clone
+  — refused for this public repository or a repository of the project; on GitHub `gh repo view
+  --json visibility` must say private (else DataPass asks). Ids, titles, dates, statuses, planned
+  branches and PR links only: never the goal, the agent's words, a local path, a receipt or a secret;
+  remotes are written as the host's canonical https address (no user, token or port). DataPass never
+  commits or pushes either file.
+- No MCP server (Q6: kept as a later option).
+
+### Settings
+
+Machine (a workspace can never set them): `datapass.ai.workOrders.enabled` (false),
+`datapass.ai.projectTypes`, `datapass.ai.claude.path`, `datapass.ai.codex.path`,
+`datapass.ai.workLog.privateRepository`. Application: `datapass.ai.defaultTool` (`claude-desktop`),
+`datapass.ai.defaultEffort` (high), `datapass.ai.defaultModel`, `datapass.ai.branchPrefix` (`dp/`),
+`datapass.ai.terminalLocation` (editor), `datapass.ai.exportScope` (project).
+
+### Files
+
+`src/core/workOrders/{format,builder,launch,projectType,status,workLog,export}.ts` (pure),
+`src/work/workOrders.ts` (the service: listing, watcher, state writes one at a time, the registry of
+orders written here, PR discovery, rule 8), `src/work/workOrderCommands.ts` (flows and commands),
+`src/views/agentState.ts`, the AI view (`aiExchange.ts`, `aiExchangeHtml.ts`), the Workbench
+(`workbenchState.ts`, `workbench.ts`, `src/webview/workbench.ts`), `gitReport.ts` / `gitObserver.ts` /
+`gitTree.ts` (rule 8), `modules.ts` and `projectManifestModel.ts` (`project.type`, AI switches kept by
+*Choose Project Modules*). Test stubs: `tests/fixtures/agents/claude-stub.cjs` (does what an order
+asks: worktree, commit, push, a PR in the stub gh's answers, proposed files, result.json; modes good /
+no-pr / wrong-receipt / silent) and `tests/fixtures/git/gh-stub.cjs` (now also `repo view` visibility).
+
+### Review
+
+The launch and parsing code had a `/code-review` at xhigh before merge: 15 findings, all fixed —
+among them launching only orders written here and unchanged (a repository could ship an order
+folder), clones re-derived from the project instead of the order file, token-free remotes in the
+committed log, state writes serialized, no Git in Restricted Mode for the PR check, a PR adopted only
+on its branch, *pulled* from a real Git check, PR discovery not tied to the Git view's visibility,
+the launch text for orders without PRs, repaints only on change, digest caching, a bounded poll.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 329 / 329 on top of 0.19.0 (new `tests/workOrders.test.ts`: ids, receipts and the marker; the builder with hostile titles, goals and paths, unknown ids, missing bases, import-only orders; order.md rendering; strict parsers for order, state and result — unknown fields, wrong receipt, another order, oversized, duplicate keys, credential-shaped text, foreign and rebuilt PR addresses for GitHub, Azure DevOps and GitLab; launch arguments, the `.cmd` line and its strict set, copied commands; project types and verdicts; the work log without goal, path, receipt, session id or token-bearing remote; the private-repository rules; PR discovery by branch, claims adopted only on their branch, *pulled* from a Git check; the summary axes; Needs you rule 8 and its order; committed schemas up to date. Manifest parity corpus: `project.type`, `modules.workOrders` / `pilot`. AI view: three tabs, allowlisted commands) |
+| `npm run test:desktop` (installed VS Code, Windows 11) | 260 / 260 on 12 fixtures (`empty` 13, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 21, `v3-research` 46, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13, `v18-toolchain` 16, `v19-git` 20, `v20-work-orders` 23). New fixture `v20-work-orders`: two repositories with GitHub origins fetched from local bare remotes, a stub `claude` and a stub gh — off until the machine setting; an order written from the Agent tab (files, marker first, attachments, a clean clone); a terminal launch after the modal with the arguments the stub logs; the result checked by receipt; PRs found by branch; rule 8 (also from the Git view's node); a refused result; the Claude-app hand-off (prompt copied, `claude://code/new` opened, nothing run); the Work orders view and the Details timeline; entry points (card, failing PR, follow-up); the PR's DataPass files; a proposed sheet imported through the review; the summary published with the private log after gh says private; the base-moved revision; a copied or edited order refused; a work project |
+| Visual check | `scripts/workbench-preview.ts` now renders the Work orders view, the order in Details and the AI view's Agent tab (dark theme) |
+
+### Known limits
+
+The Claude app's `claude://code/new` route and the Codex app's `codex:` link come from the apps'
+own bundles on this PC; neither accepts a folder or a prompt, so the person picks the folder and
+pastes (testlab 7b checks it for real). Conversations are not linked to orders yet: that is Claude
+Control's part (pass C-1, the marker regex) and the Claude & Codex panel (AI-3); tokens are not shown.
+No Codex CLI on this PC, so *Codex CLI · terminal* is unit-tested only. The full form of design 8.2
+is folded into the Agent tab ("More options"); there is no separate Workbench form. Azure DevOps and
+GitLab PRs are found the same way through `az` / `glab` when installed (not on this PC).
+
+### Still needs a human
+
+Testlab 7b (`D:\PROJ\datapass-testlab\7b-ordre-de-travail`, 20–30 minutes): switch
+`datapass.ai.workOrders.enabled` on, then one real order in the Claude app (a few hundred k tokens)
+that returns `sheet.json` for import.
+
 # Implementation Status — 0.19.0 (pass AI-1): the Git module
 
-Date: 2026-09-25. Version `0.19.0` — branch `claude/ai1-git-module`. Design and Julian's answers:
+Date: 2026-09-25. Version `0.19.0` — merged as PR #29 (main `da0e168`). Design and Julian's answers:
 [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md) sections 6,
 8.6, 9 and 13.1 (merged as PR #27). Julian chose this order (Q1): the toolkit's toolchain / ID map /
 connections pass is 0.18.0 (PR #28, [handoff/v3/08](handoff/v3/08_TOOLKIT_AND_AGENTS.md)), and the

@@ -1325,7 +1325,7 @@ function woCenter(s: WorkbenchState): HTMLElement {
       h("td", { class: "muted small", text: o.createdAt ? o.createdAt.slice(5, 16).replace("T", " ") : "" }),
       h("td", {}, h("div", {}, pill(o.status, ORDER_TONE[o.status] ?? "muted"), " ", h("b", { text: `${o.short} ${o.title}` })), h("div", { class: "muted small", text: o.error ?? o.scope })),
       h("td", { class: "small", text: o.agent }),
-      h("td", {}, ...(o.outputs.length ? o.outputs.map(x => h("div", { class: `small ${x.ci === "failing" ? "bad" : ""}`, text: x.text })) : [h("span", { class: "muted small", text: "no PR expected (report)" })])),
+      h("td", {}, ...(o.outputs.length ? o.outputs.map(x => h("div", { class: `small ${x.ci === "failing" ? "bad" : ""}`, text: x.text })) : [h("span", { class: "muted small", text: o.kind === "investigate" ? "no pull request (a report)" : "no pull request (files to import)" })])),
       h("td", { class: "small" }, o.result.state === "valid" ? h("span", { text: `${o.result.status} (the agent says)${o.result.questions.length ? ` · ${o.result.questions.length} ?` : ""}` })
         : o.result.state === "refused" ? h("span", { class: "bad", text: "refused" }) : h("span", { class: "muted", text: "—" }))))));
   const needs = w.orders.filter(o => !o.closed && o.needs.length).map(o => `${o.short}: ${o.needs[0]}`);

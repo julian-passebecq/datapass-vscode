@@ -20,6 +20,8 @@ import { buildReadiness } from "../src/core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../src/core/projectManifestModel";
 import { parseExtensionsJson } from "../src/core/toolchain/extensionsJson";
 import { manifestSales, SALES_EXTENSIONS_JSON, SALES_IDS } from "../tests/fixtures/v3/salesBi";
+import type { WbOrder, WbWorkOrders } from "../src/views/workbenchState";
+import { aiExchangeHtml } from "../src/views/aiExchangeHtml";
 
 const light = process.argv.includes("--light");
 const T = new Date().toISOString();
@@ -57,7 +59,33 @@ const salesReadiness = buildReadiness({
   connectionProbes: new Map([["cli.az", { tool: "cli.az", ranAt: T, outcome: "ok", signedIn: true, tenantId: SALES_IDS.tenant, subscriptionId: SALES_IDS.subDev }], ["cli.fab", { tool: "cli.fab", ranAt: T, outcome: "ok", signedIn: false }]])
 });
 
-interface Page { name: string; mode: WorkbenchMode; selection: { subproject?: string; component?: string }; ui?: Record<string, unknown>; preview?: boolean; readiness?: boolean }
+// 0.20: work orders as the service shows them (synthetic).
+const order = (o: Partial<WbOrder> & Pick<WbOrder, "id" | "title" | "status">): WbOrder => ({
+  short: o.id.slice(-4), kind: "change", createdAt: "2026-09-25T18:30:12+02:00", agent: "Claude app", scope: "papers › extract", components: ["extract"], subproject: "papers",
+  outputs: [], result: { state: "none", questions: [], followUps: [], checks: [], warnings: [] }, needs: [], next: "", suggestDone: false, canLaunch: true, canResume: false,
+  closed: false, changesCoordination: true, proposed: [], timeline: [], ...o
+});
+const workOrders: WbWorkOrders = {
+  allowed: true, why: "", typeLine: "dev project (project.json)", open: 2, needs: 3, selected: "wo-20260925-1830-k3f9",
+  orders: [
+    order({ id: "wo-20260925-1830-k3f9", title: "Retry PDF pages that time out", status: "reported", agent: "Claude Code · terminal", canResume: true,
+      outputs: [{ ref: "pipeline", text: "pipeline #41 open · CI ✓", state: "open", url: "https://github.com/example-org/research-pipeline/pull/41", ci: "passing" }, { ref: "coordination", text: "coordination #12 open · CI ●", state: "open", url: "https://github.com/example-org/research-library/pull/12", ci: "running" }],
+      result: { state: "valid", status: "done", summary: "extract now splits PDFs into 50-page batches and retries a failed batch once.", questions: ["The ADF activity timeout is 230 s. Raise it, or keep batches under it?"], followUps: [{ title: "Raise the ADF activity timeout to 600 s", why: "Batches of 50 pages can take 240 s." }], checks: ["pytest -q in functions/: passed (38 passed)"], warnings: [] },
+      needs: ["1 question from the agent"], next: "The agent merges its pull requests when CI is green; then Get updates.",
+      timeline: [
+        { at: "2026-09-25T18:30:12+02:00", what: "written · change · 2 repositories to change, 1 to read", detail: ["papers › extract", "attachments: attachments/result-format.md, attachments/preparation-pack-extract.md"] },
+        { at: "2026-09-25T18:31:04+02:00", what: "launched · Claude Code · terminal", detail: ["effort high · session 5f1c2a9e…"] },
+        { at: "2026-09-25T18:52:40+02:00", what: "result: done (the agent says)", detail: ["extract now splits PDFs into 50-page batches and retries a failed batch once.", "check: pytest -q in functions/ passed (38 passed) — the agent says", "question: The ADF activity timeout is 230 s. Raise it, or keep batches under it?"], tone: "ok" },
+        { what: "pipeline #41 open · CI ✓" }, { what: "coordination #12 open · CI ●" }
+      ] }),
+    order({ id: "wo-20260925-1602-a1b2", title: "Fill the project sheet", kind: "datapass-files", status: "reported", agent: "Claude app", changesCoordination: false, proposed: ["sheet"],
+      result: { state: "valid", status: "done", summary: "Volumes and key columns proposed.", questions: [], followUps: [], checks: [], warnings: [] }, suggestDone: true, next: "The agent says it is done: import the proposed files, then mark it done and publish the summary." }),
+    order({ id: "wo-20260924-2140-x9y8", title: "Add a retry counter", status: "launched", agent: "Codex app", outputs: [{ ref: "pipeline", text: "pipeline: no PR for dp/wo-20260924-2140-x9y8", state: "no-pr" }], needs: ["no pull request yet"], next: "The agent is working, or has not written its result yet." }),
+    order({ id: "wo-20260923-1000-c3d4", title: "Review the options (storage)", kind: "investigate", status: "done", closed: true, outputs: [], canLaunch: false })
+  ]
+};
+
+interface Page { name: string; mode: WorkbenchMode; selection: { subproject?: string; component?: string }; ui?: Record<string, unknown>; preview?: boolean; readiness?: boolean; orders?: boolean }
 const pages: Page[] = [
   { name: "full", mode: "full", selection: { subproject: "papers", component: "extract" } },
   { name: "full-preview", mode: "full", selection: { subproject: "papers" }, ui: { groupBy: "cloud" }, preview: true },
@@ -69,12 +97,15 @@ const pages: Page[] = [
   { name: "map", mode: "map", selection: { subproject: "papers", component: "extract" } },
   { name: "map-vertical", mode: "map", selection: { subproject: "papers" }, ui: { dir: "TB", groupBy: "level" }, preview: true },
   { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } },
-  { name: "readiness", mode: "full", selection: {}, readiness: true }
+  { name: "readiness", mode: "full", selection: {}, readiness: true },
+  { name: "work-orders", mode: "full", selection: { subproject: "papers", component: "extract" }, ui: { view: "workOrders" }, orders: true },
+  { name: "detail-order", mode: "detail", selection: { subproject: "papers", component: "extract" }, orders: true }
 ];
 for (const p of pages) {
   const state = workbenchState({
     map, selection: p.selection, version: "preview", hasRoot: true, hasManifest: true, manifestErrors: [], trusted: true, observedAt: T, multipleProjectFolders: false,
-    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board, readiness: p.readiness ? salesReadiness : undefined
+    options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board, readiness: p.readiness ? salesReadiness : undefined,
+    workOrders: p.orders ? workOrders : undefined
   });
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.
@@ -88,3 +119,27 @@ for (const p of pages) {
   writeFileSync(file, html);
   console.log(`wrote ${file}`);
 }
+
+// 0.20: the AI view's Agent tab (the webview script is inline; a fake API replays the state).
+const aiState = {
+  ready: true, files: [], recent: [],
+  agent: {
+    verdict: { allowed: true, why: "" }, projectType: { type: "dev", source: "project.json", explain: "development project: work orders on, the agent merges its PRs when CI is green" },
+    defaults: { choice: "claude-desktop", effort: "high", merge: "agent-when-green", exportScope: "project" },
+    choices: [{ id: "claude-desktop", label: "Claude app" }, { id: "claude-terminal", label: "Claude Code · terminal" }, { id: "codex-desktop", label: "Codex app (ChatGPT)" }, { id: "codex-terminal", label: "Codex CLI · terminal" }],
+    kinds: [{ id: "change", label: "Change files" }, { id: "investigate", label: "Investigate and report (no pull request)" }, { id: "datapass-files", label: "DataPass files only (.datapass/*.json)" }],
+    efforts: ["low", "medium", "high", "xhigh", "max"],
+    subprojects: [{ id: "papers", title: "Papers pipeline" }], components: [{ id: "extract", label: "PDF extraction", subproject: "papers", repoKey: "pipeline" }],
+    cards: [{ id: "bug-3", title: "Large PDFs time out" }], decisions: [], columns: [],
+    repos: [{ key: ".", label: "Coordination repository", coordination: true, usable: true, note: "this folder" }, { key: "pipeline", label: "Document pipeline", coordination: false, usable: true, note: "2 uncommitted files here (not part of the base)" }, { key: "infra", label: "Archive infrastructure", coordination: false, usable: false, note: "planned" }],
+    coordinationKey: ".", selection: { subproject: "papers", component: "extract" },
+    recent: workOrders.orders.slice(0, 3).map(o => ({ id: o.id, short: o.short, title: o.title, status: o.status, agent: o.agent, createdAt: o.createdAt, outputs: o.outputs.map(x => x.text), result: o.result.state === "valid" ? `${o.result.status} (the agent says)` : undefined, needs: o.needs, next: o.next, suggestDone: o.suggestDone, canResume: o.canResume })),
+    counts: { total: 4, open: 3, needs: 3 }
+  },
+  manual: { gitNeeds: 2, problems: 0, filesMissing: 3, opsReady: "4/9", behind: 1 }
+};
+let ai = aiExchangeHtml("'self'", "preview").replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "").replace("<style>", `<style>:root{${light ? THEME_LIGHT : THEME_DARK}}\n`)
+  .replace('<script nonce="preview">', `<script>window.acquireVsCodeApi=()=>({postMessage:m=>{console.log("to extension",JSON.stringify(m));if(m.type==="ready")setTimeout(()=>window.postMessage({type:"state",state:${JSON.stringify(aiState).replace(/</g, "\\u003c")}},"*"))},getState:()=>({tab:"agent"}),setState:()=>{}});</script><script>`);
+const aiFile = join(out, "ai-agent.html");
+writeFileSync(aiFile, ai);
+console.log(`wrote ${aiFile}`);

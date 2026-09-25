@@ -382,10 +382,13 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       $('merge').value = a.defaults.merge;
       if (a.defaults.model) $('model').value = a.defaults.model;
     }
-    fillSelect('sub', a.subprojects.map(x => ({ id: x.id, label: x.title })), undefined, 'Whole project');
+    const first = !$('sub').options.length;
+    fillSelect('sub', a.subprojects.map(x => ({ id: x.id, label: x.title })), first ? (a.selection.subproject || '') : undefined, 'Whole project');
+    if (first && a.selection.component) $('comp').dataset.initial = a.selection.component;
     const compItems = a.components.filter(c => !$('sub').value || c.subproject === $('sub').value).map(c => ({ id: c.id, label: c.label }));
     const multi = $('comp').value && $('comp').value.includes(',') ? [{ id: $('comp').value, label: $('comp').value.split(',').join(' + ') }] : [];
-    fillSelect('comp', multi.concat(compItems), undefined, 'None');
+    fillSelect('comp', multi.concat(compItems), $('comp').dataset.initial, 'None');
+    delete $('comp').dataset.initial;
     fillSelect('card', a.cards.map(c => ({ id: c.id, label: c.id + ' · ' + c.title })), undefined, 'None');
     fillSelect('dec', a.decisions.map(d => ({ id: d.id, label: d.title })), undefined, 'None');
     $('expscope').textContent = a.defaults.exportScope === 'subproject' ? 'sub-project' : a.defaults.exportScope;
