@@ -7,7 +7,7 @@
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
  * select / openFile / preview / command, and the extension validates each against the project.
  */
-import type { WbComponent, WbDecision, WbImpact, WbOperation, WbOption, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import type { CardView } from "../core/project/board";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
@@ -627,8 +627,26 @@ function overview(s: WorkbenchState): HTMLElement {
       sp.needs.tools.length ? h("span", { class: "warn small", text: `tools missing: ${sp.needs.tools.map(t => t.label).slice(0, 3).join("; ")}` }) : undefined,
       h("span", { class: "muted small", text: `Next: ${sp.nextStep}` })))),
     s.environments.length ? h("p", { class: "muted small", text: `Environments: ${s.environments.map(e => `${e.id}${e.production ? " (production)" : ""}`).join(", ")}` }) : undefined,
+    s.git ? gitCard(s.git) : undefined,
     s.readiness ? readinessCard(s.readiness) : undefined,
     s.docs.length ? h("div", { class: "row" }, ...s.docs.map(d => btn(d.label, () => command("datapass.openDoc", d), { kind: "link", icon: "📄" }))) : undefined);
+}
+
+/** 0.19: one line about Git, from the Git view's last check (counts only). */
+function gitCard(g: WbGit): HTMLElement {
+  const text = g.restricted ? "not inspected in Restricted Mode"
+    : `${g.needsYou ? `${g.needsYou} need${g.needsYou === 1 ? "s" : ""} you` : "nothing needs you"} · ${g.checked}/${g.repositories} repositories · ${g.openPrs} open PR${g.openPrs === 1 ? "" : "s"}${g.failing ? ` (${g.failing} failing)` : ""}${g.oldestFetch ? ` · oldest fetch ${agoText(g.oldestFetch)}` : ""}`;
+  return h("div", { class: "banner gitcard", "aria-label": "Git" }, h("b", { text: "Git" }),
+    pill(g.needsYou ? `${g.needsYou}` : "✓", g.failing ? "bad" : g.needsYou ? "warn" : "ok", "Items in the Git view's Needs you list"),
+    h("span", { class: "muted small", text: g.top && g.needsYou ? `${text} — ${g.top}` : text }),
+    h("span", { class: "grow" }),
+    btn("Open the Git view", () => command("datapass.git.focus"), { kind: "link" }),
+    g.restricted ? undefined : btn("Fetch all", () => command("datapass.git.fetchAll"), { kind: "link", title: "Plain git fetch of every cloned repository: nothing is merged" }));
+}
+
+function agoText(iso: string): string {
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
+  return !Number.isFinite(s) ? "?" : s < 60 ? "just now" : s < 3600 ? `${Math.round(s / 60)} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 }
 
 const KEY_TONE: Record<string, string> = { set: "ok", empty: "warn", missing: "warn", "not-checked": "muted" };

@@ -14,6 +14,7 @@ import type { GraphItem, ProjectGraph } from "../core/workspace/graph";
 import { componentRepositories } from "../core/project/projectMap";
 import { artifactPlan, COORDINATION_KEY, globMatcher, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type RepoObservation } from "../core/project/resolve";
 import { parseStatusV2 } from "../core/inventory/inventory";
+import { statusCounts } from "../core/git/porcelain";
 import { sha256Bytes } from "../core/model/ids";
 import type { GitRunner } from "../core/workspace/gitBase";
 import { resolveDeclared, statKind } from "./observe";
@@ -69,7 +70,7 @@ async function gitState(git: GitRunner, folder: string): Promise<{ isGitRepo: bo
       lastFetch = new Date(s.mtime).toISOString();
     } catch { /* never fetched */ }
   }
-  return { isGitRepo: true, state: { ...parsed, originUrl: origin.ok ? origin.stdout.trim() || undefined : undefined, lastFetch } };
+  return { isGitRepo: true, state: { ...parsed, counts: statusCounts(status.stdout), originUrl: origin.ok ? origin.stdout.trim() || undefined : undefined, lastFetch } };
 }
 
 export async function observeProject(o: ObserveOptions): Promise<ProjectObservation> {

@@ -254,13 +254,117 @@ function setupV18Toolchain(base: string): { workspace: string; env: Record<strin
   return { workspace: ws, env: {} };
 }
 
+/**
+ * 0.19 Git module: two repositories with local bare remotes (their origins are GitHub addresses,
+ * fetched from the bare repositories through url.<bare>.insteadOf), two worktrees, a repository in
+ * detached HEAD beside them, and a stub gh. Offline; the stub answers from a JSON file.
+ *
+ *   research-hub       coordination, one uncommitted file on main (rule 4)
+ *   research-pipeline  PR #38 CI failed (1), PR #41 green (2); PR #36 squash-merged on the remote
+ *                      after this clone's last fetch (3); worktree fix-a: PR #36's branch, clean (5);
+ *                      worktree wip: a commit never pushed (6)
+ *   side-project       not in the project, detached HEAD (Other repositories, rule 7)
+ */
+function setupV19Git(base: string): { workspace: string; env: Record<string, string> } {
+  const remotes = path.join(base, "remotes");
+  const parent = path.join(base, "projects");
+  const bareOf = (name: string, files: Record<string, string>) => {
+    const seed = path.join(remotes, `seed-${name}`);
+    writeTree(seed, files);
+    commitAll(seed, `seed ${name}`);
+    const bare = path.join(remotes, `${name}.git`);
+    execFileSync("git", ["clone", "-q", "--bare", seed, bare], { stdio: "ignore" });
+    return bare;
+  };
+  const cloneAs = (bare: string, name: string) => {
+    const dir = path.join(parent, name);
+    const url = `https://github.com/example-org/${name}`;
+    execFileSync("git", ["clone", "-q", bare, dir], { stdio: "ignore" });
+    gitIn(dir, "remote", "set-url", "origin", url);
+    gitIn(dir, "config", `url.${pathToFileURL(bare).href}.insteadOf`, url);
+    gitIn(dir, "fetch", "-q", "origin");
+    gitIn(dir, "branch", "-q", "--set-upstream-to=origin/main", "main");
+    gitIn(dir, "remote", "set-head", "origin", "main");
+    return dir;
+  };
+  const manifest = {
+    schemaVersion: 4,
+    project: { id: "git-orientation", title: "Git orientation", description: "Synthetic 0.19 fixture: two repositories, worktrees, pull requests." },
+    modules: { mongoku: false, diagramcloud: false },
+    repositories: {
+      pipeline: { label: "research-pipeline", remote: { url: "https://github.com/example-org/research-pipeline", branch: "main" } },
+      infra: { label: "research-infra", planned: true, remote: { url: "https://github.com/example-org/research-infra" } }
+    }
+  };
+  const hubBare = bareOf("research-hub", { ".datapass/project.json": JSON.stringify(manifest, null, 2) + "\n", "README.md": "# Git orientation (coordination)\n" });
+  const hub = cloneAs(hubBare, "research-hub");
+  writeTree(hub, { "notes.md": "uncommitted notes on main\n" });
+
+  const pipeBare = bareOf("research-pipeline", { "functions/extract/function_app.py": "import azure.functions as func\n", "README.md": "# pipeline\n" });
+  const pipe = cloneAs(pipeBare, "research-pipeline");
+  // As Claude Code does: its worktrees folder is excluded locally, so the main clone stays clean.
+  fs.appendFileSync(path.join(pipe, ".git", "info", "exclude"), "\n.claude/worktrees/\n");
+  // Worktree fix-a: its branch is pushed, then "squash-merged" on the remote (a new commit on main).
+  const fixA = path.join(pipe, ".claude", "worktrees", "fix-a");
+  gitIn(pipe, "worktree", "add", "-q", "-b", "claude/fix-a", fixA);
+  writeTree(fixA, { "functions/extract/retry.py": "RETRIES = 3\n" });
+  gitIn(fixA, "add", "-A");
+  gitIn(fixA, "commit", "-q", "-m", "retry the extraction");
+  gitIn(fixA, "push", "-q", "-u", "origin", "claude/fix-a");
+  const ai = path.join(remotes, "ai-clone");
+  execFileSync("git", ["clone", "-q", pipeBare, ai], { stdio: "ignore" });
+  writeTree(ai, { "functions/extract/retry.py": "RETRIES = 3\n" });
+  gitIn(ai, "add", "-A");
+  gitIn(ai, "commit", "-q", "-m", "Retry the extraction (#36)");
+  gitIn(ai, "push", "-q", "origin", "main");
+  const squash = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ai, encoding: "utf8" }).trim();
+  // Worktree wip: a commit on a branch that was never pushed, and an untracked file.
+  const wip = path.join(pipe, ".claude", "worktrees", "wip");
+  gitIn(pipe, "worktree", "add", "-q", "-b", "claude/wip", wip);
+  writeTree(wip, { "functions/extract/draft.py": "# draft\n" });
+  gitIn(wip, "add", "-A");
+  gitIn(wip, "commit", "-q", "-m", "draft");
+  writeTree(wip, { "scratch.txt": "untracked\n" });
+
+  const side = path.join(parent, "side-project");
+  writeTree(side, { "README.md": "# side project\n" });
+  commitAll(side, "one");
+  writeTree(side, { "README.md": "# side project\n\nmore\n" });
+  commitAll(side, "two", false);
+  gitIn(side, "checkout", "-q", "--detach", "HEAD~1");
+
+  // The stub gh and its answers.
+  const stub = path.join(base, "tools", "gh-stub.cjs");
+  fs.mkdirSync(path.dirname(stub), { recursive: true });
+  fs.copyFileSync(path.join(repo, "tests", "fixtures", "git", "gh-stub.cjs"), stub);
+  const web = "https://github.com/example-org/research-pipeline";
+  fs.writeFileSync(stub + ".json", JSON.stringify({
+    signedIn: true,
+    repos: {
+      "example-org/research-pipeline": {
+        open: [
+          { number: 41, title: "Green change", headRefName: "claude/green", isDraft: false, reviewDecision: "REVIEW_REQUIRED", mergeStateStatus: "BLOCKED", updatedAt: "2026-09-25T16:00:00Z", statusCheckRollup: [{ __typename: "CheckRun", name: "build", status: "COMPLETED", conclusion: "SUCCESS", detailsUrl: `${web}/actions/runs/7/job/8` }] },
+          { number: 38, title: "Fix lint", headRefName: "claude/fix-lint", isDraft: false, reviewDecision: "", mergeStateStatus: "UNSTABLE", updatedAt: "2026-09-25T15:00:00Z", url: "https://evil.example/not-this", statusCheckRollup: [{ __typename: "CheckRun", name: "lint", status: "COMPLETED", conclusion: "FAILURE", detailsUrl: `${web}/actions/runs/1/job/2` }, { __typename: "CheckRun", name: "test", status: "COMPLETED", conclusion: "SUCCESS" }] }
+        ],
+        closed: [
+          { number: 36, title: "Retry the extraction", headRefName: "claude/fix-a", state: "MERGED", mergedAt: "2026-09-25T17:00:00Z", mergeCommit: { oid: squash } },
+          { number: 30, title: "Abandoned idea", headRefName: "claude/old", state: "CLOSED", mergedAt: null }
+        ]
+      },
+      "example-org/research-hub": { open: [], closed: [] }
+    }
+  }, null, 2));
+  return { workspace: hub, env: { DATAPASS_IT_V19: JSON.stringify({ ghStub: stub, projects: parent, pipeline: pipe, fixA, wip, side, squash }) } };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,
   "v3-devops": setupV3Devops,
   "v17-company": setupV17Company,
-  "v18-toolchain": setupV18Toolchain
+  "v18-toolchain": setupV18Toolchain,
+  "v19-git": setupV19Git
 };
 
 async function vscodeExecutable(): Promise<string> {

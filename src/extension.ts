@@ -29,6 +29,9 @@ import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";
 import { output } from "./work/io";
+import { GitObserver, type GitObservation } from "./work/gitObserver";
+import { GitTreeProvider } from "./views/gitTree";
+import { registerGitCommands } from "./work/gitCommands";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -91,6 +94,14 @@ export interface DataPassTestApi {
   startup(): Promise<string | undefined>;
   /** 0.18: replace the runner of the read-only sign-in checks (fake CLIs; undefined restores the real one). */
   setConnectionRunner(impl?: ConnectionRunner): void;
+  /** 0.19: the Git view's observation, a refresh through the real observer, and the tree as rendered. */
+  git: {
+    observation(): GitObservation;
+    refresh(force?: boolean): Promise<GitObservation>;
+    loadOthers(): Promise<GitObservation>;
+    badge(): number | undefined;
+    renderTree(expandOthers?: boolean): Promise<Array<{ depth: number; id?: string; label: string; description?: string; contextValue?: string; command?: string; commandArgs?: unknown[] }>>;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
@@ -141,6 +152,25 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
   registerGitHostCommands(context, session);
+
+  // 0.19 Git module: read-only observation of the project's repositories, worktrees and PRs (left side bar, under Project).
+  const git = new GitObserver(session);
+  const gitTree = new GitTreeProvider(git);
+  const gitView = vscode.window.createTreeView(GitTreeProvider.viewType, { treeDataProvider: gitTree, showCollapseAll: true });
+  const gitBadge = () => {
+    const n = git.observation().needsYou.length;
+    gitView.badge = n ? { value: n, tooltip: `${n} Git item(s) need you` } : undefined;
+  };
+  // Refreshed only while visible (cached results are reused): on showing, on window focus, after the project changes.
+  const gitIfVisible = () => { if (gitView.visible) void git.refresh(); };
+  context.subscriptions.push(
+    git, gitTree, gitView, git.onDidChange(gitBadge), git.onDidChange(() => host.refreshGit()),
+    gitView.onDidChangeVisibility(e => { if (e.visible) void git.refresh(); }),
+    vscode.window.onDidChangeWindowState(e => { if (e.focused) gitIfVisible(); }),
+    session.onDidChange(gitIfVisible)
+  );
+  host.setGitSource(() => git.observation());
+  registerGitCommands(context, session, git);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
   const visiblePanes = (): Pane[] => {
@@ -315,6 +345,25 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setExportFile: setExportFileForTests,
     startup: () => startup,
     setConnectionRunner: impl => { session.connectionRunner = impl; },
+    git: {
+      observation: () => git.observation(),
+      refresh: async force => { await git.refresh(force); return git.observation(); },
+      loadOthers: async () => { await git.loadOthers(true); return git.observation(); },
+      badge: () => gitView.badge?.value,
+      renderTree: async expandOthers => {
+        const rows: Awaited<ReturnType<DataPassTestApi["git"]["renderTree"]>> = [];
+        const walk = async (node: Parameters<GitTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {
+          for (const child of await gitTree.getChildren(node)) {
+            const item = gitTree.getTreeItem(child);
+            const label = typeof item.label === "string" ? item.label : item.label?.label ?? "";
+            rows.push({ depth, id: item.id, label, description: typeof item.description === "string" ? item.description : undefined, contextValue: item.contextValue, command: item.command?.command, commandArgs: item.command?.arguments });
+            if (depth < 5 && (child.t !== "others" || expandOthers)) await walk(child, depth + 1);
+          }
+        };
+        await walk(undefined, 0);
+        return rows;
+      }
+    },
     renderProjectTree: async () => {
       const rows: Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>> = [];
       const walk = async (node: Parameters<ProjectTreeProvider["getTreeItem"]>[0] | undefined, depth: number): Promise<void> => {

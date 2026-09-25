@@ -12,6 +12,7 @@ import type { DataPassProjectManifest, RepositoryBinding } from "../projectManif
 import type { ArtifactsDecl, GraphItem, ProjectGraph } from "../workspace/graph";
 import { PHASES, type Phase } from "../capabilities/registry";
 import { defaultProfileFor, guessRole, pathKind, PROFILE_INDEX, requiredPhases, type ArtifactProfile, type FileRole } from "./profiles";
+import type { StatusCounts } from "../git/porcelain";
 import { vetRelativePath } from "../exchange/pathSafety";
 import { sha256Bytes } from "../model/ids";
 import { remoteIdentity, repositoryName } from "./gitHosts";
@@ -89,6 +90,8 @@ export interface RepoGitState {
   originUrl?: string;
   /** When the remote was last fetched (FETCH_HEAD), ISO time. */
   lastFetch?: string;
+  /** 0.19: the same status split for the Git view (staged, unstaged, untracked, conflicted). */
+  counts?: StatusCounts;
 }
 
 export interface RepoView {

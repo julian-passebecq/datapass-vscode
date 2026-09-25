@@ -104,7 +104,12 @@ export interface WorkbenchState {
   /** 0.16: the project board (absent without .datapass/board.json). */
   board?: WbBoard;
   boardError?: string;
+  /** 0.19: the one-line Git card (counts only; absent until the Git view has checked the repositories). */
+  git?: WbGit;
 }
+
+/** 0.19: what the Workbench overview says about Git (no path, no branch content, only counts and one sentence). */
+export interface WbGit { needsYou: number; repositories: number; checked: number; openPrs: number; failing: number; oldestFetch?: string; top?: string; restricted: boolean }
 
 
 export function wbReadiness(r: Readiness): WbReadiness {
@@ -231,6 +236,7 @@ export interface StateInput {
   preview?: PreviewInput;
   board?: BoardView;
   boardError?: string;
+  git?: WbGit;
 }
 
 function impact(i: ArchitectureImpact): WbImpact {
@@ -338,6 +344,7 @@ export function workbenchState(input: StateInput): WorkbenchState {
     sheetError: input.sheetError,
     preview: input.preview && input.preview.derived.picks.some(p => p.changed) ? previewState(input.preview, map, input.selection) : undefined,
     board: input.board,
-    boardError: input.boardError
+    boardError: input.boardError,
+    git: input.git
   };
 }

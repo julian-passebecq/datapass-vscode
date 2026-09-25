@@ -607,6 +607,8 @@ export class WorkSession implements vscode.Disposable {
 
   /** Local folder of a repository (session-private: never exported to AI context or files). */
   repoFolder(key: string): vscode.Uri | undefined { return this.projectObs?.folders.get(key); }
+  /** 0.19: the last observation of the project's repositories (the Git view reuses its status when fresh). */
+  projectObservation(): ProjectObservation | undefined { return this.projectObs; }
 
   selection(): Selection {
     const sel = this.state<Selection>(KEYS.selection) ?? {};

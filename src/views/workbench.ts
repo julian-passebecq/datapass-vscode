@@ -13,7 +13,8 @@
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
-import { workbenchState, type WorkbenchState } from "./workbenchState";
+import { workbenchState, type WbGit, type WorkbenchState } from "./workbenchState";
+import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
 
 /** Commands a webview may ask for (arguments are re-validated by each command). */
@@ -36,7 +37,9 @@ const ALLOWED = new Set([
   "datapass.openBoard", "datapass.openBoardFile", "datapass.board.moveCard", "datapass.board.aiPack", "datapass.board.openFile", "datapass.board.openLink",
   "datapass.openRepositoryWeb", "datapass.openCiRuns",
   // 0.17: work views and windows.
-  "datapass.openSwitcher", "datapass.saveWorkView", "datapass.openWorkbenchFloating"
+  "datapass.openSwitcher", "datapass.saveWorkView", "datapass.openWorkbenchFloating",
+  // 0.19: the Git view (the overview's Git card).
+  "datapass.git.focus", "datapass.git.fetchAll"
 ]);
 
 export type WorkbenchView = "architecture" | "options" | "sheet" | "board";
@@ -69,6 +72,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private lastState?: WorkbenchState;
   /** View to show once a new Workbench tab has loaded. */
   private pendingShow?: { view: WorkbenchView; focus?: string };
+  /** 0.19: the Git view's observation, for the overview's one-line Git card. */
+  private gitSource?: () => GitObservation;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
@@ -89,9 +94,28 @@ export class WorkbenchHost implements vscode.Disposable {
       readiness: ctx.manifest ? this.session.readiness() : undefined,
       options: ctx.options, analysis: this.session.optionsAnalysis(), optionsError: ctx.optionsError,
       sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview(),
-      board: this.session.boardView(), boardError: ctx.boardError
+      board: this.session.boardView(), boardError: ctx.boardError,
+      git: this.gitCard()
     });
     return this.lastState;
+  }
+
+  setGitSource(source: () => GitObservation): void { this.gitSource = source; }
+
+  private lastGitCard = "";
+  /** The Git view checked the repositories again: repaint the overview when its Git card changed. */
+  refreshGit(): void {
+    const card = JSON.stringify(this.gitCard() ?? null);
+    if (card === this.lastGitCard) return;
+    this.lastGitCard = card;
+    void this.post();
+  }
+
+  private gitCard(): WbGit | undefined {
+    const o = this.gitSource?.();
+    if (!o || (!o.checkedAt && !o.restricted)) return undefined;
+    const s = o.summary;
+    return { needsYou: s.needsYou, repositories: s.repositories, checked: s.checked, openPrs: s.openPrs, failing: s.failing, oldestFetch: s.oldestFetch, top: s.top, restricted: o.restricted };
   }
 
   hasPanel(): boolean { return this.panels.size > 0; }

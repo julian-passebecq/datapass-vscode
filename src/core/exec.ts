@@ -58,6 +58,23 @@ export function resolveExecutable(command: string, env: NodeJS.ProcessEnv = proc
   return undefined;
 }
 
+/**
+ * A tool that may be a batch script on Windows (the Azure CLI is `az.cmd`): the executable if there
+ * is one, else the `.cmd` from an absolute PATH entry. A script can only run through cmd.exe, so the
+ * caller must pass it only arguments that stay literal there (see runViaCmd in the Git observer).
+ */
+export function resolveCommandOrScript(command: string, env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform, isFile?: IsFile): { path: string; script: boolean } | undefined {
+  const exe = resolveExecutable(command, env, platform, isFile);
+  if (exe) return { path: exe, script: false };
+  if (platform !== "win32" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(command) || path.win32.extname(command)) return undefined;
+  const check = isFile ?? defaultIsFile;
+  for (const dir of absolutePathEntries(env, platform)) {
+    const candidate = path.win32.join(dir, `${command}.cmd`);
+    if (check(candidate)) return { path: candidate, script: true };
+  }
+  return undefined;
+}
+
 const cache = new Map<string, string | null>();
 
 /** Cached resolution for the running process (PATH does not change under a running extension host). */

@@ -1,7 +1,8 @@
 # AI work modes, work orders, Git module, Claude & Codex panel: design (2026-09-25)
 
 > **Status: validated on 2026-09-25 with Julian's answers in section 13.1, which win where they
-> differ from the text below.** AI-1 (Git module) is being built as 0.19. Brief: Claude Control's phase 4 plan
+> differ from the text below.** AI-1 (Git module) is built in 0.19.0 (see IMPLEMENTATION_STATUS.md);
+> AI-2 to AI-4 are not built yet. Brief: Claude Control's phase 4 plan
 > (`D:\PROJ\claude-control\docs\integrations\datapass-vscode.md`) and its decision **D8**: no MCP
 > server and no VS Code agent mode for DataPass; DataPass hands a prepared work order to Codex or
 > Claude Code and tracks what comes out.
