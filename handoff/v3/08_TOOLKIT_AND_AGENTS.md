@@ -9,6 +9,14 @@
 > and 0.17.0 (branch `claude/v017-windows-views`, which adds `07_WINDOWS_AND_POWER_OPS.md`) are in
 > flight. To keep those branches free of conflicts, this file is not linked from the other handoff
 > documents yet: the first pass that implements it adds the links.
+>
+> **Update (0.18.0):** 0.16.0 and 0.17.0 are merged (PR #24, #25) and this proposal is merged (PR #26),
+> now linked from `V3_HANDOFF.md` and `06_VISION_AND_READINESS.md`. The 0.18 pass of section 8
+> (toolchain, ID map, connections) is implemented; its contract is `docs/PREPARING_A_PROJECT.md`
+> section 12. Sections 5.1, 5.2 and 5.4 (catalogue, recipes, hub repository) are the later **toolkit
+> catalogue** pass: Julian's order in `09_AI_MODES_WORK_ORDERS_GIT.md` §13.1 makes 0.19.0 the Git
+> module, then AI-2 work orders, then this catalogue (with each tool's free tier and pricing). The
+> "0.19" of section 8 below is superseded by that order.
 
 ## 1. Short answer
 
@@ -249,7 +257,7 @@ hub repository   .datapass/catalog.json            projects (exists)
 ```
 
 Each file carries `"format": "datapass.toolkit"`, a format `version`, and optionally
-`"requires": { "datapass": ">=0.19.0" }`.
+`"requires": { "datapass": ">=<the version that ships the catalogue>" }`.
 
 - **Who updates it.** ChatGPT through the JSON exchange (*Copy a DataPass File for the AI* → answer →
   *Import the AI's Answer*, validated, with a diff and a backup), or a coding agent through a pull
@@ -306,8 +314,8 @@ Each file carries `"format": "datapass.toolkit"`, a format `version`, and option
 
 | Pass | Content |
 |---|---|
-| **0.18: toolchain, ID map, connections** | Manifest v5 (`toolchain`, per-environment `values`, `connections`) with an upgrade and a backup; Readiness sections *Tools & versions* and *Connections*; the read-only checks above; the `.vscode/extensions.json` comparison; new AI pack fields; a `PREPARING_A_PROJECT.md` section; negative tests (a secret-looking value in any environment, credential files never opened, unknown tools); the data-goblin plugin list refreshed to 11 |
-| **0.19: toolkit** | Catalogue and recipes as dated data (Fabric and Power BI first, then Databricks and Azure), read from the hub repository (section 5.4) over a built-in baseline, shown in Details, board cards and Options; `recipe` on board items; the "Needs a newer DataPass" list from `datapassRequests` |
+| **0.18: toolchain, ID map, connections** (implemented in 0.18.0) | Manifest v5 (`toolchain`, per-environment `values`, `connections`) with an upgrade and a backup; Readiness sections *Tools & versions* and *Connections*; the read-only checks above; the `.vscode/extensions.json` comparison; new AI pack fields; a `PREPARING_A_PROJECT.md` section; negative tests (a secret-looking value in any environment, credential files never opened, unknown tools); the data-goblin plugin list refreshed to 11 |
+| **Toolkit catalogue** (planned as "0.19" here; now after AI-2, see 09 §13.1) | Catalogue and recipes as dated data (Fabric and Power BI first, then Databricks and Azure), read from the hub repository (section 5.4) over a built-in baseline, shown in Details, board cards and Options; `recipe` on board items; the "Needs a newer DataPass" list from `datapassRequests` |
 | Mini-projects (testlab) | 1. Copy Job bulk edit with a backup (Fabric trial workspace) · 2. PBIP and Git with the FabCon workshop · 3. fabric-cicd from dev to prod with `parameter.yml` and the ID map · 4. Databricks bundle validate → deploy → run · 5. FUAM on a trial tenant (optional, admin) |
 | Later | Recipes exported as skills for agents (D4); the read-only DataPass MCP server, already listed as later |
 
@@ -318,7 +326,7 @@ Each file carries `"format": "datapass.toolkit"`, a format `version`, and option
 | D1 | Where do the catalogue and recipes live? | **Julian's direction (2026-09-25): the hub repository**, so ChatGPT updates them without an extension release, and says through `datapassRequests` when DataPass itself must change (section 5.4). The extension keeps a small built-in baseline of probes and official tools |
 | D2 | Name | A **Toolkit** module in DataPass, rather than a separate "DataPass Cloud" product |
 | D3 | First stack | Fabric and Power BI (the densest and most confusing community tooling, and the Copy Job case), then Databricks (whose official route of extension, CLI and bundles is already covered), then Azure |
-| D4 | Recipes as skills for Codex, Claude and Copilot | Later, after 0.19 |
+| D4 | Recipes as skills for Codex, Claude and Copilot | Later, after the toolkit catalogue pass |
 
 ## 10. Sources (checked on 2026-09-25)
 

@@ -1,12 +1,15 @@
-# DataPass — global vision and readiness (2026-09-25, with 0.17.0)
+# DataPass — global vision and readiness (2026-09-25, with 0.18.0)
 
 Written after Julian's request to "have the global vision of the app", to compare architecture
 alternatives, and to check whether every step of a real project is ready (DevOps, GitHub, Grafana,
 Mongoku, DiagramCloud, windows and workspaces, AI exchange, backups, bugs). The repository wins over
 this document when they disagree. Version line: 0.14.0 (environment readiness, manifest v4, PR #21),
 0.15.0 (architecture options, project sheet, PR #22), 0.15.1 (AI exchange view, PR #23) and 0.16.0
-(work and DevOps: board, Git hosts, CI profiles, Mongoku frozen, PR #24) are merged; **0.17.0
-(windows and work views) is this pass**.
+(work and DevOps: board, Git hosts, CI profiles, Mongoku frozen, PR #24) and 0.17.0 (windows and work
+views, PR #25) are merged; **0.18.0 (toolchain, ID map, connections) is this pass**. The toolkit,
+toolchain and agents design behind 0.18.0 is [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md); the order of
+the next passes (0.19.0 Git module, AI-2 work orders, then the toolkit catalogue) is Julian's, in
+[09_AI_MODES_WORK_ORDERS_GIT.md](09_AI_MODES_WORK_ORDERS_GIT.md) §13.1.
 
 ## 1. What DataPass is, in one picture
 
@@ -82,6 +85,7 @@ alternative would change, and routes to the official tool; the person decides an
 | Getting the AI's work | ✓ | Check / Get updates (fast-forward only) | — |
 | AI exchange without an API ("cheap MCP") | ✓ | packs; options compare/apply packs; copy a DataPass file + import the answer (validated, diff, backup) | real MCP server: optional, later |
 | Local environment (env files, variable names, non-secret ids) | ✓ | 0.14.0: manifest v4 `localEnv` / `identifiers`, Local environment and Readiness sections, names and states only, *Open Power Ops* | — |
+| Tools, versions, ID map, connections | ✓ | 0.18.0: manifest v5 `toolchain` / identifier `values` per environment / `connections`; Tools & versions and Connections sections; read-only `az account show`, `databricks auth profiles`, `fab auth status`; `.vscode/extensions.json` comparison; names and states in AI packs ([08](08_TOOLKIT_AND_AGENTS.md)) | community tools catalogue and recipes from the hub repository (toolkit catalogue pass, after AI-2) |
 | Architecture options and scenarios | ✓ | options.json, comparison, preview, decision record | DiagramCloud export of scenarios (later) |
 | Project sheet (volumes, key columns, formulas, runtimes) | ✓ | sheet.json, Sheet view, Details, packs | — |
 | Diagram views | ✓ | horizontal / vertical, lanes (sub-project, repository, cloud, level), fold lanes and parents | manual reordering (only if needed) |
@@ -134,7 +138,10 @@ writes only the card's `status` (with a backup) when the person moves it.
 | 0.15.0 | architecture options and scenarios, project sheet, diagram orientation / lanes / folding / preview, JSON exchange with backups, `vm` and `docker` providers, Google tools named | merged, PR #22 |
 | 0.15.1 | AI exchange view in the secondary side bar, shown instead of Chat (parallel session) | merged, PR #23 |
 | 0.16.0 — work and DevOps | board (kanban) + bug/task packs; Git hosts: Azure DevOps URL forms, GitHub/Azure DevOps/GitLab web links (repository, pull requests, pipelines, boards), CI profiles (`github-actions`, `azure-pipelines`, `gitlab-ci`); Mongoku frozen (module off by default, doc: it reads GitHub files); Grafana extension route (parallel session) | merged, PR #24 |
-| **0.17.0 — windows and work views** | company workspace file, work views (save / apply), status-bar switcher, `datapass.startupView`, floating Workbench, the Power Ops launcher contract (PowerToy_UI in its own session) | this pass |
+| 0.17.0 — windows and work views | company workspace file, work views (save / apply), status-bar switcher, `datapass.startupView`, floating Workbench, the Power Ops launcher contract (PowerToy_UI in its own session) | merged, PR #25 |
+| **0.18.0 — toolchain, ID map, connections** | manifest v5, Tools & versions and Connections in Readiness, read-only sign-in checks, extensions.json comparison, AI pack fields, 11 data-goblin plugins ([08](08_TOOLKIT_AND_AGENTS.md) section 8) | this pass |
+| 0.19.0 — Git module (AI-1) | [09](09_AI_MODES_WORK_ORDERS_GIT.md) — its own session | next |
+| Toolkit catalogue | catalogue and recipes as dated data from the hub repository, free tier and pricing per tool, `recipe` on board items, "Needs a newer DataPass" ([08](08_TOOLKIT_AND_AGENTS.md) section 5.4) | after AI-2 work orders ([09](09_AI_MODES_WORK_ORDERS_GIT.md) §13.1) |
 | Acceptance with Julian → **1.0.0** | testlab 4 to 7, FOIL on the real repositories, account qualification | — |
 | Later, optional | DiagramCloud export of scenarios, Grafana VM monitoring, a read-only DataPass MCP server | — |
 

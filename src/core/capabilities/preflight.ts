@@ -69,6 +69,11 @@ export interface PreflightContext {
   /** Why a fact is absent although something was declared, or why it could not be checked. */
   factNotes?: ReadonlyMap<string, FactNote>;
   subject?: OperationSubject;
+  /**
+   * v5: tool id → why its version is outside the project's declared range. A warning on the phases
+   * that use the tool, never a blocker, and never on reading (see toolchain/toolchain.ts).
+   */
+  toolRangeWarnings?: ReadonlyMap<string, string>;
 }
 
 const label = (toolId: string) => TOOL_INDEX.get(toolId)?.label ?? toolId;
@@ -97,6 +102,7 @@ export function reviewKey(cap: CapabilityRecord, reviewId: string, ctx: Pick<Pre
 export function preflight(cap: CapabilityRecord, ctx: PreflightContext): PreflightResult {
   const blockers: PreflightItem[] = [], unknowns: PreflightItem[] = [], pendingReviews: PreflightItem[] = [];
   const configIssues: PreflightItem[] = [], optionalMissing: PreflightItem[] = [], satisfied: PreflightItem[] = [];
+  const rangeWarnings: string[] = [];
 
   for (const req of ctx.subject?.requirements ?? []) {
     const item: PreflightItem = { kind: req.kind, id: req.id, label: req.label, detail: req.detail };
@@ -108,7 +114,11 @@ export function preflight(cap: CapabilityRecord, ctx: PreflightContext): Preflig
     const states = req.anyOf.map(id => ctx.tools.get(id)?.state ?? "unknown");
     const present = req.anyOf.find((_, i) => states[i] === "present");
     const item: PreflightItem = { kind: "tool", id: req.anyOf.join("|"), label: req.anyOf.map(label).join(" or "), detail: req.why };
-    if (present) satisfied.push({ ...item, label: label(present) });
+    if (present) {
+      satisfied.push({ ...item, label: label(present) });
+      const outside = cap.phase !== "read" ? ctx.toolRangeWarnings?.get(present) : undefined;
+      if (outside && !rangeWarnings.includes(outside)) rangeWarnings.push(outside);
+    }
     else if (req.need === "optional") optionalMissing.push(item);
     else if (states.some(s => s === "unknown")) unknowns.push(item);
     else blockers.push(item);
@@ -155,7 +165,7 @@ export function preflight(cap: CapabilityRecord, ctx: PreflightContext): Preflig
 
   return {
     capabilityId: cap.id, status, blockers, unknowns, pendingReviews, configIssues, optionalMissing, satisfied,
-    warnings: [...cap.warnings, ...(cap.doesNotCover?.length ? [`Not covered by this route: ${cap.doesNotCover.join(", ")}.`] : [])],
+    warnings: [...rangeWarnings, ...cap.warnings, ...(cap.doesNotCover?.length ? [`Not covered by this route: ${cap.doesNotCover.join(", ")}.`] : [])],
     sideEffects: cap.sideEffects,
     nextStep,
     fallback: cap.fallback,

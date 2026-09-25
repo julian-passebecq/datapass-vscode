@@ -27,9 +27,12 @@ import { collectGalaxyState } from "./galaxyState";
 import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
 import type { Readiness } from "./readiness/readiness";
 import {
+  buildClaudeMarketplaceCommand,
+  buildClaudePluginInstallCommand,
   buildCopilotMarketplaceCommand,
   buildCopilotPluginInstallCommand,
-  type PowerBiAgenticPlugin
+  isPowerBiAgenticPlugin,
+  WINDOWS_LONG_PATHS_NOTE
 } from "./powerbiAgentic";
 import { getFoilBinding } from "../profiles/foil";
 import {
@@ -64,8 +67,12 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     await executeFabricCatalogAction(action, extensionUri);
     return;
   }
+  if (action.startsWith("powerbi.installPluginClaude::")) {
+    await copyPowerBiPluginInstall(action.slice("powerbi.installPluginClaude::".length), "claude");
+    return;
+  }
   if (action.startsWith("powerbi.installPlugin::")) {
-    await copyPowerBiPluginInstall(action.slice("powerbi.installPlugin::".length));
+    await copyPowerBiPluginInstall(action.slice("powerbi.installPlugin::".length), "copilot");
     return;
   }
   if (action.startsWith("project.openRepo::")) {
@@ -100,7 +107,8 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "databricks.open": await openDatabricks(); return;
     case "databricks.copyValidate": await copyDatabricks("validate"); return;
     case "databricks.copyDeploy": await copyDatabricks("deploy"); return;
-    case "powerbi.addMarketplace": await copyPowerBiMarketplaceAdd(); return;
+    case "powerbi.addMarketplace": await copyPowerBiMarketplaceAdd("copilot"); return;
+    case "powerbi.addMarketplaceClaude": await copyPowerBiMarketplaceAdd("claude"); return;
     case "powerbi.openAgentic": await openUrl(URLS["powerbi.agentic"]!); return;
     case "powerbi.openMacguyver": await openUrl(URLS["powerbi.macguyver"]!); return;
     case "powerbi.openPbiBench": await openUrl(URLS["powerbi.pbibench"]!); return;
@@ -121,31 +129,25 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
   }
 }
 
-async function copyPowerBiMarketplaceAdd(): Promise<void> {
-  const command = buildCopilotMarketplaceCommand();
+const AGENT_CLI = { copilot: "Copilot CLI", claude: "Claude Code" } as const;
+
+async function copyPowerBiMarketplaceAdd(cli: keyof typeof AGENT_CLI): Promise<void> {
+  const command = cli === "claude" ? buildClaudeMarketplaceCommand() : buildCopilotMarketplaceCommand();
   await clipboard.writeText(command);
   void vscode.window.showInformationMessage(
-    "DataPass: copied Copilot CLI marketplace registration command. Nothing was installed."
+    `DataPass: copied the ${AGENT_CLI[cli]} marketplace registration command. Nothing was installed.${process.platform === "win32" ? ` ${WINDOWS_LONG_PATHS_NOTE}` : ""}`
   );
 }
 
-async function copyPowerBiPluginInstall(pluginId: string): Promise<void> {
-  const allowed: PowerBiAgenticPlugin[] = [
-    "pbip",
-    "semantic-models",
-    "reports",
-    "pbi-desktop",
-    "tabular-editor",
-    "fabric-cli"
-  ];
-  if (!allowed.includes(pluginId as PowerBiAgenticPlugin)) {
+async function copyPowerBiPluginInstall(pluginId: string, cli: keyof typeof AGENT_CLI): Promise<void> {
+  if (!isPowerBiAgenticPlugin(pluginId)) {
     void vscode.window.showWarningMessage(`DataPass: unsupported Power BI agentic plugin "${pluginId}".`);
     return;
   }
-  const command = buildCopilotPluginInstallCommand(pluginId as PowerBiAgenticPlugin);
+  const command = cli === "claude" ? buildClaudePluginInstallCommand(pluginId) : buildCopilotPluginInstallCommand(pluginId);
   await clipboard.writeText(command);
   void vscode.window.showInformationMessage(
-    `DataPass: copied Copilot CLI install command for ${pluginId}. Nothing was installed.`
+    `DataPass: copied the ${AGENT_CLI[cli]} install command for ${pluginId} (register the marketplace first). Nothing was installed.`
   );
 }
 

@@ -46,6 +46,8 @@ export interface WorkModelInput {
   /** Declared-but-not-found and uncheckable file-backed facts (see workspace/facts.ts). */
   factNotes?: ReadonlyMap<string, FactNote>;
   reviewsConfirmed: ReadonlySet<string>;
+  /** v5: tools present here whose version is outside the project's range (preflight warnings). */
+  toolRangeWarnings?: ReadonlyMap<string, string>;
   selectedScopeId?: string;
   checklist: Readonly<Record<string, ChecklistRecord>>;
   impact?: ImpactEntry[];
@@ -126,7 +128,7 @@ export function buildWorkModel(input: WorkModelInput): WorkModel {
     objective: m?.project.description
   };
 
-  const ctx = { tools: input.tools, facts: input.facts, factNotes: input.factNotes, reviewsConfirmed: input.reviewsConfirmed };
+  const ctx = { tools: input.tools, facts: input.facts, factNotes: input.factNotes, reviewsConfirmed: input.reviewsConfirmed, toolRangeWarnings: input.toolRangeWarnings };
 
   // Operations: declared capabilityRefs first, then those referenced by checklist items.
   const refs = new Set<string>(scope.capabilityRefs ?? []);

@@ -31,6 +31,8 @@ export interface ProjectMapInput {
   reviewsConfirmed: ReadonlySet<string>;
   checklist: Readonly<Record<string, ChecklistRecord>>;
   qualification: readonly QualificationRecord[];
+  /** v5: tools present here whose version is outside the project's range (preflight warnings). */
+  toolRangeWarnings?: ReadonlyMap<string, string>;
 }
 
 export type Health = "ok" | "attention" | "blocked" | "planned" | "info";
@@ -285,7 +287,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
       if (cap.id === "infra.remote.ssh" && target?.sshHost) { facts.set("vm.sshHost", target.sshHost); notes.delete("vm.sshHost"); }
       const key = operationKey(item.id, cap.id, want.environment);
       const result = preflight(cap, {
-        tools: input.tools, facts, factNotes: notes, reviewsConfirmed: input.reviewsConfirmed,
+        tools: input.tools, facts, factNotes: notes, reviewsConfirmed: input.reviewsConfirmed, toolRangeWarnings: input.toolRangeWarnings,
         subject: { key, environment: want.environment, target, artifactDigest: artifacts?.digest, requirements }
       });
       // The result for exactly this target and these files; otherwise the latest one for this operation, shown as stale.

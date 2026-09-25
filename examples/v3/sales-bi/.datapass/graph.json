@@ -1,0 +1,79 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "lakehouse",
+      "kind": "storage",
+      "label": "Sales lakehouse",
+      "provider": "fabric",
+      "description": "Raw and cleaned sales tables (Delta).",
+      "artifacts": {
+        "profile": "fabric.item",
+        "root": "fabric/Sales.Lakehouse"
+      }
+    },
+    {
+      "id": "load",
+      "kind": "notebook",
+      "label": "Load sales (notebook)",
+      "provider": "fabric",
+      "description": "Reads the daily CSV drop and writes the sales table.",
+      "artifacts": {
+        "profile": "fabric.item",
+        "root": "fabric/LoadSales.Notebook",
+        "files": [
+          "notebook-content.py"
+        ]
+      }
+    },
+    {
+      "id": "model",
+      "kind": "dataset",
+      "label": "Sales semantic model",
+      "provider": "powerbi",
+      "description": "Direct Lake model over the sales table.",
+      "artifacts": {
+        "profile": "powerbi.pbip",
+        "root": "powerbi"
+      }
+    },
+    {
+      "id": "deploy",
+      "kind": "pipeline",
+      "label": "Deploy to prod (fabric-cicd)",
+      "provider": "github-actions",
+      "description": "Deploys the fabric/ folder to the prod workspace; parameter.yml swaps the dev ids.",
+      "artifacts": {
+        "profile": "github-actions",
+        "files": [
+          {
+            "path": "fabric/parameter.yml",
+            "role": "config",
+            "description": "fabric-cicd: dev ids replaced per environment"
+          }
+        ]
+      }
+    }
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "source": "load",
+      "target": "lakehouse",
+      "relation": "produces"
+    },
+    {
+      "id": "r2",
+      "source": "model",
+      "target": "lakehouse",
+      "relation": "consumes"
+    },
+    {
+      "id": "r3",
+      "source": "lakehouse",
+      "target": "deploy",
+      "relation": "deployedFrom"
+    }
+  ]
+}

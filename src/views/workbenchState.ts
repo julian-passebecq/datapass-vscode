@@ -10,6 +10,9 @@ import { PHASE_LABELS } from "../core/capabilities/registry";
 import type { ComponentView, MapChecklistEntry, OperationView, ProjectMap } from "../core/project/projectMap";
 import type { LayoutEdgeInput } from "../core/project/layout";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
+import { toolStateText } from "../core/toolchain/toolchain";
+import { extensionsJsonText } from "../core/toolchain/extensionsJson";
+import { CONNECTION_STATE_TEXT } from "../core/toolchain/connections";
 import type { ArchitectureImpact, CriterionValue, DerivedArchitecture, OptionsAnalysis, OptionsFile } from "../core/project/options";
 import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../core/project/sheet";
 import type { BoardView } from "../core/project/board";
@@ -59,8 +62,11 @@ export interface WbReadiness {
   declared: boolean;
   files: Array<{ id: string; path: string; repoLabel?: string; optional: boolean; state: string; stateText: string; git: string }>;
   keys: Array<{ name: string; state: string; stateText: string; source: string; sourceText: string }>;
-  identifiers: Array<{ id: string; label: string; provider?: string; envKey?: string }>;
+  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments: string[] }>;
   companions: Array<{ module: string; label: string; state: string; detail: string }>;
+  /** 0.18 (manifest v5): names, versions and states only; install commands carry no project value. */
+  tools?: { entries: Array<{ tool: string; label: string; state: string; stateText: string; detail: string; optional: boolean; extensionId?: string; install?: "command" | "docs" }>; summary: { ok: number; attention: number; notChecked: number; total: number }; extensionsText: string; extensionsAttention: boolean };
+  connections: Array<{ id: string; label: string; kind: string; environment?: string; state: string; stateText: string; detail: string; nextStep?: string; signIn: boolean; hasPortal: boolean; tool?: string }>;
   checks: Array<{ severity: string; area: string; message: string; nextStep?: string }>;
   summary: Readiness["summary"];
 }
@@ -106,8 +112,14 @@ export function wbReadiness(r: Readiness): WbReadiness {
     declared: r.declared,
     files: r.files.map(f => ({ id: f.id, path: f.path, repoLabel: f.repoLabel, optional: f.optional, state: f.state, stateText: fileStateText(f), git: f.git })),
     keys: r.keys.map(k => ({ name: k.name, state: k.state, stateText: keyStateText(k), source: k.source, sourceText: keySourceText(k) })),
-    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, envKey: d.envKey })),
+    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: [...d.environments] })),
     companions: r.companions.map(c => ({ module: c.module, label: c.label, state: c.state, detail: c.detail })),
+    tools: r.toolchain.declared ? {
+      entries: r.toolchain.entries.map(e => ({ tool: e.tool, label: e.label, state: e.state, stateText: toolStateText(e), detail: e.detail, optional: e.optional, extensionId: e.extensionId, install: e.install?.command ? "command" as const : e.install?.docs ? "docs" as const : undefined })),
+      summary: r.toolchain.summary, extensionsText: extensionsJsonText(r.extensions),
+      extensionsAttention: r.extensions.state === "invalid" || r.extensions.expected.some(x => (!x.recommended && !x.optional) || x.unwanted)
+    } : undefined,
+    connections: r.connections.map(c => ({ id: c.id, label: c.label, kind: c.kind, environment: c.environment, state: c.state, stateText: CONNECTION_STATE_TEXT[c.state], detail: c.detail, nextStep: c.nextStep, signIn: Boolean(c.signIn), hasPortal: Boolean(c.hasPortal), tool: c.tool })),
     checks: r.checks.slice(0, 30).map(c => ({ severity: c.severity, area: c.area, message: c.message, nextStep: c.nextStep })),
     summary: r.summary
   };

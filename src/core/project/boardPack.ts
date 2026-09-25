@@ -14,6 +14,7 @@ import type { ProjectSheet } from "./sheet";
 import type { OptionsFile } from "./options";
 import { reviewColumn, TYPE_LABELS, type Board, type BoardItemType, type CardView } from "./board";
 import { componentSection, decisionLines, OMITTED, repoLine, sheetLines, type PackExport } from "./preparation";
+import { toolchainContextLines, type Readiness } from "../readiness/readiness";
 
 export const CARD_QUESTIONS = {
   fix: {
@@ -63,6 +64,8 @@ export interface CardPackInput {
   guideUrl?: string;
   sheet?: ProjectSheet;
   options?: OptionsFile;
+  /** 0.18: the toolchain, ID map and connection states (names and states only). */
+  readiness?: Readiness;
 }
 
 /** The pasted error, without credentials or local paths, at most MAX_ERROR_CHARS characters. */
@@ -140,6 +143,8 @@ export function buildCardPack(input: CardPackInput, maxBytes = 24_000): PackExpo
   if (facts2.length) { h("Project sheet (what the project declares)"); lines.push(...facts2); }
   const decisions = card.decision ? [] : decisionLines(input.options, ids, undefined);
   if (decisions.length) { h("Architecture decisions (options.json)"); lines.push(...decisions); }
+  const tools = input.readiness ? toolchainContextLines(input.readiness) : [];
+  if (tools.length) { h("Tools, ID map and connections (names and states only)"); lines.push(...tools); }
 
   h("Rules for your answer");
   const review = reviewColumn(board);

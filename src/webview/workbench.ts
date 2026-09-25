@@ -651,14 +651,52 @@ function readinessCard(r: WbReadiness): HTMLElement {
       h("code", { text: k.name }), pill(k.stateText, KEY_TONE[k.state] ?? "muted"), h("span", { class: "muted small", text: k.sourceText }),
       btn("Copy name", () => command("datapass.env.copyKeyName", k.name), { kind: "link", title: "Copies the variable name, never its value" }))),
     ...r.identifiers.map(d => h("div", { class: "envrow" },
-      h("span", { text: d.label }), h("span", { class: "muted small", text: ["non-secret id", d.provider, d.envKey ? `→ ${d.envKey}` : undefined].filter(Boolean).join(" · ") }),
-      btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
+      h("span", { text: d.label }), h("span", { class: "muted small", text: ["non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined].filter(Boolean).join(" · ") }),
+      d.environments.length > 1
+        ? h("span", { class: "row" }, ...d.environments.map(env => btn(`Copy ${env}`, () => command("datapass.env.copyIdentifier", d.id, env), { kind: "link", title: `Copies the ${env} id declared in the manifest` })))
+        : btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
+    r.tools ? toolsBlock(r.tools) : undefined,
+    r.connections.length ? connectionsBlock(r.connections) : undefined,
     h("div", { class: "row" },
       btn("Copy project ID", () => command("datapass.copyProjectId"), { icon: "⧉" }),
       btn("Open Power Ops", () => command("datapass.openPowerOps"), { icon: "⚿", title: "Secrets live in your local vault; DataPass never reads their values" }),
       btn("Readiness report", () => command("datapass.readinessReport"), { icon: "☰" })),
     serious.length ? h("div", { class: "checks" }, ...serious.slice(0, 10).map(c => h("div", { class: `problem ${c.severity}` }, h("b", { text: c.area }), h("span", { text: c.nextStep ? `${c.message} Next: ${c.nextStep}` : c.message })))) : undefined,
     h("p", { class: "muted small", text: `Optional companions: ${r.companions.map(c => `${c.label} — ${c.detail}`).join(" · ")}` }));
+}
+
+const TOOL_TONE: Record<string, string> = { "ok": "ok", "outside-range": "warn", "missing": "warn", "unknown-tool": "bad", "version-unknown": "muted", "not-checked": "muted" };
+const CONNECTION_TONE: Record<string, string> = { "ok": "ok", "declared": "muted", "not-checked-yet": "muted" };
+
+/** Tools & versions (manifest v5): the version against the declared range; install commands are copied, never run. */
+function toolsBlock(t: NonNullable<WbReadiness["tools"]>): HTMLElement {
+  return h("div", { class: "envsub", "aria-label": "Tools and versions" },
+    h("div", { class: "bar" }, h("b", { text: "Tools & versions" }),
+      pill(`${t.summary.ok}/${t.summary.total} ok`, t.summary.attention ? "warn" : "ok"),
+      t.summary.attention ? pill(`${t.summary.attention} to fix`, "warn") : undefined),
+    ...t.entries.map(e => h("div", { class: "envrow" },
+      h("span", { text: e.label }), pill(e.stateText, e.optional && TOOL_TONE[e.state] === "warn" ? "muted" : TOOL_TONE[e.state] ?? "muted", e.detail),
+      (e.state === "missing" || e.state === "outside-range") && e.extensionId
+        ? btn("Show extension", () => command("datapass.installTool", e.extensionId), { kind: "link", title: "Opens the extension page; you decide whether to install" })
+        : (e.state === "missing" || e.state === "outside-range" || e.state === "not-checked") && e.install
+          ? btn(e.install === "command" ? "Copy install" : "Install page", () => command("datapass.toolchain.copyInstall", e.tool), { kind: "link", title: e.install === "command" ? "Copies the install command; DataPass installs nothing" : "Opens the vendor's download page" })
+          : undefined)),
+    h("div", { class: "envrow" }, h("code", { text: ".vscode/extensions.json" }), pill(t.extensionsText, t.extensionsAttention ? "warn" : "muted"),
+      btn("Show recommended extensions", () => command("datapass.showRecommendedExtensions"), { kind: "link", title: "VS Code's own list; it never installs anything by itself" })));
+}
+
+/** Connections (manifest v5): sign-ins checked read-only on request; bindings declared, not checked. */
+function connectionsBlock(list: WbReadiness["connections"]): HTMLElement {
+  const signIns = list.filter(c => c.kind === "sign-in");
+  return h("div", { class: "envsub", "aria-label": "Connections" },
+    h("div", { class: "bar" }, h("b", { text: "Connections" }), pill(`${list.filter(c => c.state === "ok").length}/${list.length} ok`, list.some(c => !CONNECTION_TONE[c.state]) ? "warn" : "muted"),
+      signIns.length ? btn("Check connections", () => command("datapass.checkConnections"), { icon: "⇄", title: "az account show, databricks auth profiles, fab auth status: read-only, no prompt" }) : undefined),
+    ...list.map(c => h("div", { class: "envrow" },
+      h("span", { text: c.label }), h("span", { class: "muted small", text: `${c.kind}${c.environment ? ` · ${c.environment}` : ""}` }),
+      pill(c.stateText, CONNECTION_TONE[c.state] ?? "warn", c.nextStep ? `${c.detail}. Next: ${c.nextStep}` : c.detail),
+      c.signIn ? btn("Copy sign-in command", () => command("datapass.connections.copySignIn", c.id), { kind: "link", title: "You run it; DataPass never signs in" })
+        : c.hasPortal ? btn("Open portal page", () => command("datapass.connections.openPortal", c.id), { kind: "link", title: "Where to verify it: DataPass cannot see this binding" })
+        : undefined)));
 }
 
 function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {

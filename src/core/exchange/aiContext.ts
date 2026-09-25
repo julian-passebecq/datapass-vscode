@@ -19,6 +19,8 @@ export interface ContextInput {
   packs: Array<{ namespace: string; version: string; mappingStatus: string }>;
   /** Pre-rendered "Local environment" lines (names and states only, see readinessContextLines). */
   environment?: string[];
+  /** Pre-rendered v5 lines: tools & versions, ID map, connections (names and states only, see toolchainContextLines). */
+  toolchain?: string[];
 }
 
 export interface ContextExport {
@@ -101,6 +103,10 @@ export function buildAiContext(preset: ContextPreset, input: ContextInput, maxBy
   if ((preset === "current-task" || preset === "missing-prerequisites") && input.environment?.length) {
     h("Local environment (names and states only)");
     lines.push(...input.environment);
+  }
+  if ((preset === "current-task" || preset === "missing-prerequisites") && input.toolchain?.length) {
+    h("Tools, ID map and connections (names and states only)");
+    lines.push(...input.toolchain);
   }
   if (preset === "impact" || preset === "current-task") {
     const notCurrent = input.impact.filter(e => e.state !== "current");

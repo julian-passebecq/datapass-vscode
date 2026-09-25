@@ -243,7 +243,7 @@ async function cardAiPack(session: WorkSession, version: string, itemId: string 
     board, card: c, map, question: pick.id, errorText, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     boardDigest: session.project.boardBytes ? sha256Bytes(session.project.boardBytes).value : undefined,
-    sheet: session.project.sheet, options: session.project.options
+    sheet: session.project.sheet, options: session.project.options, readiness: session.readiness()
   });
   const choice = await vscode.window.showInformationMessage(`AI pack for "${c.title}": ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`

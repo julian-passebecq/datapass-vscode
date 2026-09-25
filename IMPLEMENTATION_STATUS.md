@@ -1,3 +1,94 @@
+# Implementation Status — 0.18.0: toolchain, ID map, connections
+
+Date: 2026-09-25. Version `0.18.0` — branch `claude/v018-toolchain`, on 0.17.0 (PR #25) and the
+toolkit proposal (PR #26). Design: [handoff/v3/08_TOOLKIT_AND_AGENTS.md](handoff/v3/08_TOOLKIT_AND_AGENTS.md)
+sections 2, 5.3, 5.4 and 8. Contract: [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) section 12.
+
+### What's new
+
+- **Manifest v5** (`LATEST_MANIFEST_VERSION = 5`, schema and runtime together):
+  `toolchain.tools[]` (`tool` id, `version` range, `optional`, `where`: local | ci | fabric);
+  identifiers with `values` (one non-secret id per declared environment) and `kind`;
+  `connections[]` (`sign-in` with `tool` / `identifier` / `subscription` / `profile`, `git-binding`
+  with `provider` / `identifier` / `repoRef` / `folder` / `branch`, `cloud-connection` with
+  `provider` / `name`; all with `environment`, `label`, `portal`). v1–v4 upgrade to v5 with *Upgrade
+  Project Manifest* (backup `.datapass/project.v<N>.json`, journal); a v4 file only changes version.
+- **Version ranges** (`src/core/toolchain/versions.ts`): `>=`, `>`, `<=`, `<`, `=`/`==` (a release
+  line), `!=`, `x`/`*` wildcards, `^`, `~`, pip's `~=`, AND by spaces or commas, OR by `||`; no
+  pre-release tags. Probes now keep the version number (`cliVersion`), so `az version`'s JSON is
+  "2.64.0", not "{".
+- **Tools & versions** (Project view section, Workbench card, report, snapshot): each local tool is
+  compared with this computer's probe — ok, outside the range, missing, version not read — and CI,
+  Fabric-notebook, desktop-app and Python-library tools are "not checked here". A click copies the
+  install command for this platform (winget ids checked with `winget show`; Homebrew; `pip`;
+  `code --install-extension <id>`) or opens the extension page / vendor page. Unknown ids run nothing
+  and get a "did you mean" (`cli.databrick` → `cli.databricks`). Preflight: a version outside its
+  range adds a warning to the operations that use the tool (never a blocker, never on read).
+- **`.vscode/extensions.json`**: read as JSON with comments (never written), compared with the
+  toolchain's local extensions (recommended / not / unwanted, others); *DataPass: Show Recommended
+  Extensions* runs VS Code's `workbench.extensions.action.showRecommendedExtensions`.
+- **ID map**: *Copy Identifier* asks the environment (or takes it as an argument); a hover provider
+  shows which declared identifier and environment an id in any file is (plain text, never trusted
+  Markdown); *DataPass: Look Up an Id in the Project's ID Map…* accepts a GUID or a pasted portal
+  address. Every per-environment value is validated like a v4 value; errors name
+  `identifiers[i].values.<env>`, never the value.
+- **Connections** (section, Workbench block, report, snapshot): *DataPass: Check Connections* runs
+  `az account show --output json`, `databricks auth profiles --output json` and `fab auth status`
+  (fixed arguments, from the home folder, stdin closed, 30 s timeout, only when asked; results kept
+  in memory). Parsers keep: signed in, tenant id, subscription id, profile names and validity — the
+  account, subscription name, hosts and `fab`'s masked token prefixes are dropped. States: ok,
+  signed in elsewhere, signed out, profile missing / invalid, tool missing, check failed, not
+  checked yet, declared (not checked). *Copy Sign-in Command* builds `az login --tenant …`,
+  `az account set --subscription …`, `databricks auth login --profile …` or `fab auth login` from the
+  manifest at click time (never stored in a view). *Open the Connection's Portal Page*: a Fabric
+  workspace from its id, Fabric's connections documentation, the Azure portal, or the declared
+  `portal` (confirmed once per window). Git-binding folders are checked in the local clone.
+- **AI packs**: preparation pack, Copy AI context and card packs get a "Tools, ID map and
+  connections (names and states only)" section; the environment snapshot gets `tools` and
+  `connections`; identifiers carry `kind` and their environments, never values.
+- **Tool registry**: `ext.powerbi-studio`, `pack.powerbi-gbrueckl`, `ext.powerbi-modeling-mcp` added
+  (Marketplace ids checked); install hints for every CLI; toolchain-only ids `py.fabric-cicd`,
+  `py.semantic-link-labs`, `plugin.power-bi-agentic-development`.
+- **Power BI agentic plugins**: the 11 plugins of `data-goblin/power-bi-agentic-development`
+  (marketplace.json, version 26.31.5), with *Copy install* for Copilot CLI and for Claude Code, and
+  the Windows long-paths note.
+- **Example** `examples/v3/sales-bi` (Fabric lakehouse and notebook, PBIP model, fabric-cicd
+  workflow, `parameter.yml`, `.vscode/extensions.json`); added to the example hub catalog.
+
+### Files
+
+`src/core/toolchain/versions.ts`, `toolchain.ts`, `extensionsJson.ts`, `connections.ts`, `idMap.ts`
+(pure); `src/work/connectionChecks.ts` (the runner), `toolchainObserver.ts` (extensions.json, binding
+folders), `toolchainCommands.ts` (commands and the hover); changes in `readiness/readiness.ts`,
+`projectManifestModel.ts`, `capabilities/{tools,probe,preflight}.ts`, `projectMap.ts`, `workModel.ts`,
+`session.ts`, the Project tree, the Workbench state and card, `preparation.ts`, `boardPack.ts`,
+`aiContext.ts`, `powerbiAgentic.ts`, `actions.ts`, `adapters/powerbi.ts`; schema
+`schemas/datapass-project.schema.json`; `CHANGELOG.md` (new).
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 292 / 292 (24 new: `tests/toolchain.test.ts` 23 — ranges good and bad, CLI version outputs, toolchain states and install commands, unknown ids, extensions.json, a secret-looking value in any environment, ID-map lookups, connection validation, parsers dropping account names and masked tokens, sign-in commands built at click time, the real runner run against a fake CLI on PATH (home folder, stdin closed, timeout, not found), credential files never opened (source scan and a spy on every file read), readiness and every AI output holding no value, v4 → v5 migration, non-FOIL Databricks and Azure examples, the guide listing every tool id; plus the 11 data-goblin plugins; 22 new v5 editor/runtime parity cases and 16 runtime-only ones in `tests/manifestV3.test.ts`) |
+| `npm run test:desktop` (VS Code 1.139.1, Windows 11) | 217 / 217 on 10 fixtures (`empty` 13, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 21, `v3-research` 46, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13, `v18-toolchain` 16). New fixture `v18-toolchain` (the public Sales BI example as a real Git repository): Tools & versions and Connections rows against this machine's own probes, no value anywhere in the tree; Check connections through the Test-mode runner with fake `az` / `fab` output (only the two fixed commands run; account names and masked tokens never reach a notice, the tree, the snapshot, the preparation pack, the AI context, the report or the Workbench state); Copy Sign-in Command; Copy Identifier asking the environment; the ID-map hover on `parameter.yml`; Look Up an Id; portal pages; install commands copied; VS Code's Show Recommended Extensions; nothing installed. `v4-cloudflare`: Upgrade Project Manifest v4 → v5 with an exact backup. `broken` now uses schemaVersion 6 |
+| Workbench preview (`scripts/workbench-preview.ts`, page `readiness`) | the Tools & versions and Connections blocks render in the overview card (dark theme checked in a browser) |
+
+### Known limits
+
+Connection checks never run by themselves (`databricks auth profiles` contacts every workspace):
+the person clicks *Check connections*, and a new window checks again. `az account show` reads the
+Azure CLI's current account; it does not prove the token is still valid. Git bindings and cloud
+connections cannot be observed without calling the services' APIs, so they stay "declared, not
+checked". Python libraries are never probed. The catalogue of community tools and the recipes are
+the later toolkit catalogue pass (hub repository, 08 section 5.4), after the Git module (0.19.0) and
+AI-2 work orders — Julian's order in `handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md` §13.1.
+
+### Still needs a human
+
+- Testlab project 8 (`D:\PROJ\datapass-testlab\8-outils-connexions`, ≈ 20 min): the real `az`,
+  `fab` and `databricks` checks, and the install commands on a real machine.
+
 # Implementation Status — 0.17.0: windows and work views
 
 Date: 2026-09-25. Version `0.17.0` — branch `claude/v017-windows-views`, on 0.16.0 (work and DevOps,

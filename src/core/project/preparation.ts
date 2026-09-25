@@ -12,7 +12,7 @@ import { scrub } from "../exchange/aiContext";
 import { PHASE_LABELS } from "../capabilities/registry";
 import type { ComponentView, OperationView, ProjectMap, SubprojectView } from "./projectMap";
 import type { RepoView } from "./resolve";
-import { readinessContextLines, type Readiness } from "../readiness/readiness";
+import { readinessContextLines, toolchainContextLines, type Readiness } from "../readiness/readiness";
 import { sheetFor, volumeLine, type ComponentSheet, type ProjectSheet } from "./sheet";
 import { concernedItems, type OptionsFile } from "./options";
 import { doneColumns, TYPE_LABELS, type Board } from "./board";
@@ -217,6 +217,8 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
   }
   const env = input.readiness ? readinessContextLines(input.readiness) : [];
   if (env.length) { h("Local environment (names and states only)"); lines.push(...env); }
+  const tools = input.readiness ? toolchainContextLines(input.readiness) : [];
+  if (tools.length) { h("Tools, ID map and connections (names and states only)"); lines.push(...tools); }
   const focusIds = comp ? [comp.id] : sub ? sub.componentIds : [];
   const facts = sheetLines(input.sheet, focusIds, map);
   if (facts.length) { h("Project sheet (what the project declares)"); lines.push(...facts); }

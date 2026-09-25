@@ -24,6 +24,7 @@ import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
 import { boardAJson } from "../tests/fixtures/v3/researchBoard";
 import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from "../tests/fixtures/v3/devops";
 import { filesB } from "../tests/fixtures/v3/monorepo";
+import { filesSales } from "../tests/fixtures/v3/salesBi";
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
@@ -100,8 +101,8 @@ const FIXTURES: Record<string, Record<string, string>> = {
     "incoming/mongoku-context.json": fixtureText("mongoku/portfolio-context.synthetic.json")
   },
   "v1-foil": { ".datapass/project.json": JSON.stringify(foilProjectManifest(), null, 2) + "\n" },
-  // Parses as JSON, but schemaVersion 5 does not exist (4 is the latest): both the extension and the schema must say so.
-  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 5 }, null, 2) + "\n" },
+  // Parses as JSON, but schemaVersion 6 does not exist (5 is the latest): both the extension and the schema must say so.
+  "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 6 }, null, 2) + "\n" },
   // Manifest v4 environment readiness: a Cloudflare-backed project whose .env holds recognizable fake secrets
   // (tests/integration/readinessFlows.ts checks that none reaches any output). Mongoku and DiagramCloud are
   // switched off although mapped / present. .env and .env.local are git-ignored; the repository is real Git.
@@ -245,12 +246,21 @@ function setupV3Devops(base: string): { workspace: string; env: Record<string, s
   return { workspace: hub, env: {} };
 }
 
+/** 0.18: the public "Sales BI" example (manifest v5: toolchain, ID map, connections) as a real Git repository. */
+function setupV18Toolchain(base: string): { workspace: string; env: Record<string, string> } {
+  const ws = path.join(base, "sales-bi");
+  writeTree(ws, filesSales());
+  commitAll(ws, "sales bi");
+  return { workspace: ws, env: {} };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,
   "v3-devops": setupV3Devops,
-  "v17-company": setupV17Company
+  "v17-company": setupV17Company,
+  "v18-toolchain": setupV18Toolchain
 };
 
 async function vscodeExecutable(): Promise<string> {

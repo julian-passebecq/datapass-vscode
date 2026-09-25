@@ -92,7 +92,7 @@ export function sshRemoteTarget(host: string | undefined, folder?: string): { au
 
 export function validateResources(doc: Record<string, unknown>, declaredScopes: ReadonlySet<string>, repositoryKeys: ReadonlySet<string>): string[] {
   const issues: string[] = [];
-  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3 || doc.schemaVersion === 4;
+  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3 || doc.schemaVersion === 4 || doc.schemaVersion === 5;
   if (!v2) {
     for (const key of ["resources", "bindings"]) if (doc[key] !== undefined) issues.push(`${key} requires schemaVersion 2.`);
     return issues;

@@ -32,6 +32,11 @@ import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingComm
 import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
 import { observeLocalEnv } from "./envObserver";
+import { observeBindingFolders, observeExtensionsJson } from "./toolchainObserver";
+import { defaultConnectionRunner, runConnectionChecks, type ConnectionRunner } from "./connectionChecks";
+import { toolsToCheck, type ConnectionProbe } from "../core/toolchain/connections";
+import { buildToolchain, toolRangeWarnings } from "../core/toolchain/toolchain";
+import type { ExtensionsJsonObservation } from "../core/toolchain/extensionsJson";
 import type { DiagramMode, DiagramUi } from "../core/windows/workViews";
 
 /** V3 selection shared by the Project tree, the Workbench, the diagram and the detail view. */
@@ -109,6 +114,16 @@ export class WorkSession implements vscode.Disposable {
   private mapCache?: ProjectMap;
   /** Env files as observed (names' presence only, never values). */
   private envObs: Map<string, EnvFileObservation> = new Map();
+  /** v5: .vscode/extensions.json and git-binding folders as observed. */
+  private extensionsObs?: ExtensionsJsonObservation;
+  private bindingObs: Map<string, "found" | "missing" | "not-cloned"> = new Map();
+  /**
+   * v5: the last read-only sign-in checks, by tool. Memory only (a new window checks again) and
+   * only run when the person asks: `databricks auth profiles` contacts each workspace.
+   */
+  private connectionProbes: Map<string, ConnectionProbe> = new Map();
+  /** Replaceable by the desktop tests (fake CLIs); undefined = the real, read-only runner. */
+  connectionRunner?: ConnectionRunner;
   private readinessCache?: Readiness;
   private analysisCache?: OptionsAnalysis;
   private previewCache?: Preview;
@@ -152,6 +167,8 @@ export class WorkSession implements vscode.Disposable {
       root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map(),
       trusted: vscode.workspace.isTrusted, git: gitRunner
     }) : new Map();
+    this.extensionsObs = ctx.root && ctx.manifest?.toolchain ? await observeExtensionsJson(ctx.root) : undefined;
+    this.bindingObs = ctx.root ? await observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map() }) : new Map();
     this.cached = undefined;
     await this.rememberProject();
     await this.loadMongokuSnapshot();
@@ -242,6 +259,7 @@ export class WorkSession implements vscode.Disposable {
       facts: projectFacts(this.ctx, this.factObs),
       factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews,
+      toolRangeWarnings: this.rangeWarnings(),
       selectedScopeId: this.state<string>(KEYS.scope),
       checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
       impact: this.state<ImpactEntry[]>(KEYS.impact),
@@ -255,7 +273,29 @@ export class WorkSession implements vscode.Disposable {
 
   /** The context every preflight in this window uses (Work view, preflight command, Galaxy cards). */
   preflightContext(): PreflightContext {
-    return { tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs), reviewsConfirmed: this.reviews };
+    return {
+      tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs), reviewsConfirmed: this.reviews,
+      toolRangeWarnings: this.rangeWarnings()
+    };
+  }
+
+  /** v5: tools present here whose version is outside the project's declared range. */
+  private rangeWarnings(): ReadonlyMap<string, string> | undefined {
+    const toolchain = this.ctx.manifest?.toolchain;
+    return toolchain ? toolRangeWarnings(buildToolchain({ toolchain, tools: this.tools, platform: process.platform })) : undefined;
+  }
+
+  /**
+   * v5: run the read-only sign-in checks for the declared connections (az account show, databricks
+   * auth profiles, fab auth status). Returns the tools checked. Never prompts, never signs in.
+   */
+  async checkConnections(): Promise<string[]> {
+    const tools = toolsToCheck(this.ctx.manifest?.connections);
+    if (!tools.length) return [];
+    const results = await runConnectionChecks(tools, this.connectionRunner ?? defaultConnectionRunner);
+    for (const [tool, probe] of results) this.connectionProbes.set(tool, probe);
+    this.changed();
+    return tools;
   }
 
   async selectScope(id: string): Promise<void> {
@@ -444,7 +484,7 @@ export class WorkSession implements vscode.Disposable {
       repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
       tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
-      qualification: this.qualification()
+      qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings()
     };
   }
 
@@ -551,7 +591,8 @@ export class WorkSession implements vscode.Disposable {
     this.readinessCache = buildReadiness({
       manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: map.repositories, problems: map.problems,
       settings: { mongokuUrl: config.get<string>("mongoku.url") ?? "", diagramCloudUrl: config.get<string>("diagramCloud.url") ?? "" },
-      diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION
+      diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION,
+      tools: this.tools, platform: process.platform, connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs
     });
     return this.readinessCache;
   }

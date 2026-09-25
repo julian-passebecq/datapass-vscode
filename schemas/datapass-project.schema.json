@@ -14,9 +14,10 @@
         1,
         2,
         3,
-        4
+        4,
+        5
       ],
-      "description": "1: V2.1 format. 2: scopes, apps, packs, graph, remote-only repositories. 3 (DataPass V3): environments, project docs, planned repositories and a default repository per scope; pairs with graph version 0.2. 4: adds localEnv (env files and required variable names) and identifiers (explicitly non-secret ids)."
+      "description": "1: V2.1 format. 2: scopes, apps, packs, graph, remote-only repositories. 3 (DataPass V3): environments, project docs, planned repositories and a default repository per scope; pairs with graph version 0.2. 4: adds localEnv (env files and required variable names) and identifiers (explicitly non-secret ids). 5: adds toolchain (tools, version ranges, where they run), identifier kind and values per environment (the ID map), and connections (sign-ins, Git bindings, cloud connections)."
     },
     "project": {
       "type": "object",
@@ -865,14 +866,13 @@
     "identifiers": {
       "type": "array",
       "maxItems": 50,
-      "description": "v4: explicitly non-secret identifiers (account, subscription, workspace or project ids) DataPass may show and copy. Never secrets, tokens, passwords, keys or URLs: those stay in your local vault (Power Ops).",
+      "description": "v4: explicitly non-secret identifiers (account, subscription, workspace or project ids) DataPass may show and copy. v5: one value per environment (values) and a kind, which make the project's ID map. Never secrets, tokens, passwords, keys or URLs: those stay in your local vault (Power Ops).",
       "items": {
         "type": "object",
         "additionalProperties": false,
         "required": [
           "id",
-          "label",
-          "value"
+          "label"
         ],
         "properties": {
           "id": {
@@ -887,7 +887,7 @@
           "value": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
-            "description": "The non-secret id itself."
+            "description": "The non-secret id itself (use values instead for one id per environment)."
           },
           "provider": {
             "type": "string",
@@ -898,12 +898,305 @@
             "type": "string",
             "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,127}$",
             "description": "The env variable this id fills, when there is one."
+          },
+          "values": {
+            "type": "object",
+            "minProperties": 1,
+            "maxProperties": 20,
+            "description": "v5: one non-secret id per declared environment, e.g. { \"dev\": \"…\", \"prod\": \"…\" }. Each key must be an environment id.",
+            "propertyNames": {
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "v5: what the id is: tenant, subscription, resource-group, workspace, capacity, lakehouse, warehouse, item, account, project… An Azure CLI or Fabric CLI sign-in compares its tenant (and az its subscription) with identifiers of kind tenant and subscription."
+          }
+        },
+        "oneOf": [
+          {
+            "required": [
+              "value"
+            ]
+          },
+          {
+            "required": [
+              "values"
+            ]
+          }
+        ]
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tools"
+      ],
+      "description": "v5: the tools the project needs, by DataPass tool id (see docs/PREPARING_A_PROJECT.md), with an optional version range and where each runs. DataPass compares them with what it finds on this computer and shows install commands to copy; it never installs anything.",
+      "properties": {
+        "tools": {
+          "type": "array",
+          "maxItems": 60,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "tool"
+            ],
+            "properties": {
+              "tool": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$",
+                "description": "Tool id: cli.az, cli.databricks, cli.fab, ext.fabric, ext.databricks, py.fabric-cicd, pack.powerbi-gbrueckl…"
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 80,
+                "pattern": "^[0-9xX*.,<>=!^~|\\s]+$",
+                "description": "Accepted versions: >=1.0, ^2.3, ~1.4, 1.x, >=1.0 <2.0, >=0.1.20,<1, ^1.4 || ^2.0."
+              },
+              "optional": {
+                "type": "boolean",
+                "description": "Missing is a note, never a warning."
+              },
+              "where": {
+                "enum": [
+                  "local",
+                  "ci",
+                  "fabric"
+                ],
+                "description": "local (default): this computer. ci: the CI pipeline. fabric: Fabric notebooks. Only local tools are checked here."
+              }
+            }
           }
         }
       }
+    },
+    "connections": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "v5: what must be signed in or bound. sign-in: a CLI (cli.az, cli.databricks, cli.fab are checked read-only on request). git-binding and cloud-connection: declared, not checked; DataPass shows the portal page where they are verified. Names only, never credentials.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "kind": {
+            "enum": [
+              "sign-in",
+              "git-binding",
+              "cloud-connection"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "tool": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$",
+            "description": "sign-in: the tool signed in (cli.az, cli.databricks, cli.fab…)."
+          },
+          "identifier": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "An identifiers[].id: the tenant for an az / fab sign-in, the workspace for a git-binding."
+          },
+          "subscription": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "az sign-in: the identifiers[].id of the subscription az account show should be set to."
+          },
+          "profile": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+            "description": "databricks sign-in: the Databricks CLI profile name (never a path)."
+          },
+          "environment": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "The environment this connection is for (an environments[].id)."
+          },
+          "provider": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
+            "description": "git-binding / cloud-connection: fabric, databricks, azure, powerbi…"
+          },
+          "repoRef": {
+            "type": "string",
+            "description": "git-binding: the repository key."
+          },
+          "folder": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "git-binding: the folder in the repository (omit for its root)."
+          },
+          "branch": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._/-]{1,200}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "cloud-connection: its display name in the service, never a connection string."
+          },
+          "portal": {
+            "type": "string",
+            "pattern": "^https://\\S+$",
+            "description": "A page where the person verifies it."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "sign-in"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "tool"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "provider"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "repoRef"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "folder"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "branch"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "git-binding"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "provider"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "tool"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "profile"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "subscription"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "name"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "cloud-connection"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "provider",
+                "name"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "tool"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "profile"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "subscription"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "repoRef"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "folder"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "branch"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
     }
   },
-  "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories; 3 (DataPass V3) adds environments, project docs, planned repositories and a default repository per scope. Never put secrets in this file.",
+  "description": "DataPass project manifest. schemaVersion 1 is the V2.1 format; 2 adds work scopes, apps, domain packs, the project graph path and remote-only repositories; 3 (DataPass V3) adds environments, project docs, planned repositories and a default repository per scope; 4 adds localEnv and identifiers; 5 adds toolchain, identifiers with one value per environment (the ID map) and connections. Never put secrets in this file.",
   "allOf": [
     {
       "if": {
@@ -998,6 +1291,16 @@
               "required": [
                 "identifiers"
               ]
+            },
+            {
+              "required": [
+                "toolchain"
+              ]
+            },
+            {
+              "required": [
+                "connections"
+              ]
             }
           ]
         }
@@ -1032,6 +1335,16 @@
             {
               "required": [
                 "identifiers"
+              ]
+            },
+            {
+              "required": [
+                "toolchain"
+              ]
+            },
+            {
+              "required": [
+                "connections"
               ]
             }
           ]
@@ -1096,8 +1409,63 @@
               "required": [
                 "identifiers"
               ]
+            },
+            {
+              "required": [
+                "toolchain"
+              ]
+            },
+            {
+              "required": [
+                "connections"
+              ]
             }
           ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 4
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "toolchain"
+              ]
+            },
+            {
+              "required": [
+                "connections"
+              ]
+            }
+          ]
+        },
+        "properties": {
+          "identifiers": {
+            "items": {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "values"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "kind"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

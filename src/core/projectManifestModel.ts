@@ -5,12 +5,14 @@ import { validateResources, type BindingDecl, type ResourceDecl } from "./resour
 import { unknownFields } from "./contracts/schemaKeys";
 import { vetRelativePath } from "./exchange/pathSafety";
 import { validateReadinessSections, type IdentifierDecl, type LocalEnvDecl } from "./readiness/readiness";
+import type { ToolchainDecl } from "./toolchain/toolchain";
+import type { ConnectionDecl } from "./toolchain/connections";
 import { AZURE_HTTPS_WITH_ORG, AZURE_LEGACY_SSH } from "./project/gitHosts";
 import manifestSchema from "../../schemas/datapass-project.schema.json";
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 /** The newest manifest version this DataPass writes and reads. */
-export const LATEST_MANIFEST_VERSION = 4;
+export const LATEST_MANIFEST_VERSION = 5;
 
 export type RepositoryBinding = {
   /** Local clone, relative to the workspace or absolute. Optional for remote-only repos (v2). */
@@ -70,7 +72,7 @@ export interface WorkScope {
 export interface DataPassProjectManifest {
   /** Optional URL of the JSON Schema (for editors and AI tools). */
   $schema?: string;
-  schemaVersion: 1 | 2 | 3 | 4;
+  schemaVersion: 1 | 2 | 3 | 4 | 5;
   project: {
     id: string;
     title: string;
@@ -137,8 +139,12 @@ export interface DataPassProjectManifest {
   docs?: DocRef[];
   /** v4: local env files and the variable NAMES the project needs (values are never declared or read). */
   localEnv?: LocalEnvDecl;
-  /** v4: explicitly non-secret ids (account, subscription, workspace ids) the person may copy. Never secrets. */
+  /** v4: explicitly non-secret ids (account, subscription, workspace ids) the person may copy. Never secrets. v5: one value per environment (the ID map). */
   identifiers?: IdentifierDecl[];
+  /** v5: the tools (by id), version ranges and where they run. DataPass compares them with what it probes; it installs nothing. */
+  toolchain?: ToolchainDecl;
+  /** v5: sign-ins and bindings the project needs; sign-ins are checked read-only on request, bindings are declared. */
+  connections?: ConnectionDecl[];
   /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
   companions?: {
     mongoku?: {
@@ -160,9 +166,9 @@ export function validateProjectManifest(raw: unknown): string[] {
   const issues: string[] = [];
   if (!raw || typeof raw !== "object") return ["Project manifest must be an object."];
   const doc = raw as Record<string, unknown>;
-  if (![1, 2, 3, 4].includes(doc.schemaVersion as number)) issues.push("schemaVersion must be 1, 2, 3 or 4.");
-  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3 || doc.schemaVersion === 4;
-  const v3 = doc.schemaVersion === 3 || doc.schemaVersion === 4;
+  if (![1, 2, 3, 4, 5].includes(doc.schemaVersion as number)) issues.push(`schemaVersion must be 1, 2, 3, 4 or 5${typeof doc.schemaVersion === "number" && doc.schemaVersion > LATEST_MANIFEST_VERSION ? ` (this DataPass reads up to ${LATEST_MANIFEST_VERSION}; a newer DataPass may be needed)` : ""}.`);
+  const v2 = doc.schemaVersion === 2 || doc.schemaVersion === 3 || doc.schemaVersion === 4 || doc.schemaVersion === 5;
+  const v3 = doc.schemaVersion === 3 || doc.schemaVersion === 4 || doc.schemaVersion === 5;
   if (!v2) {
     for (const key of ["scopes", "apps", "domainPacks", "graph"]) {
       if (doc[key] !== undefined) issues.push(`${key} requires schemaVersion 2.`);
@@ -317,7 +323,7 @@ function validateV2Sections(doc: Record<string, unknown>): string[] {
         if (s.objective !== undefined && typeof s.objective !== "string") issues.push(`scopes[${i}].objective must be a string.`);
         checkIdList(s.itemRefs, `scopes[${i}].itemRefs`);
         if (s.capabilityRefs !== undefined && (!Array.isArray(s.capabilityRefs) || s.capabilityRefs.some(c => typeof c !== "string"))) issues.push(`scopes[${i}].capabilityRefs must be strings.`);
-        if (doc.schemaVersion !== 3 && doc.schemaVersion !== 4 && (s.repoRef !== undefined || s.docs !== undefined)) issues.push(`scopes[${i}].repoRef and .docs require schemaVersion 3.`);
+        if (doc.schemaVersion !== 3 && doc.schemaVersion !== 4 && doc.schemaVersion !== 5 && (s.repoRef !== undefined || s.docs !== undefined)) issues.push(`scopes[${i}].repoRef and .docs require schemaVersion 3.`);
         if (s.repoRef !== undefined && (typeof s.repoRef !== "string" || !repoKeys.has(s.repoRef))) issues.push(`scopes[${i}].repoRef must name a declared repository.`);
         if (s.docs !== undefined) issues.push(...validateDocs(s.docs, `scopes[${i}].docs`, repoKeys, 20));
         if (s.checklist !== undefined) {
@@ -395,9 +401,10 @@ function validateV3Sections(doc: Record<string, unknown>): string[] {
 }
 
 /**
- * In-memory migration to the latest version (v4). Pure: v4 is a superset of v3 (it adds localEnv
- * and identifiers), so this only moves the version. Writing it is a separate, explicit, journaled
- * action that keeps a backup copy.
+ * In-memory migration to the latest version (v5). Pure: v4 is a superset of v3 (it adds localEnv
+ * and identifiers) and v5 a superset of v4 (toolchain, connections, identifier kinds and values per
+ * environment; a v4 identifier's single value stays valid), so this only moves the version. Writing
+ * it is a separate, explicit, journaled action that keeps a backup copy.
  */
 export function migrateManifestToLatest(m: DataPassProjectManifest): DataPassProjectManifest {
   const next = m.schemaVersion < 3 ? migrateManifestToV3(m) : structuredClone(m);

@@ -43,6 +43,16 @@ the status-bar switcher, `datapass.startupView`, the Workbench in a floating win
 Ops launcher list — on top of 0.16.0. Unit 268, desktop 200 (9 fixtures). Full detail and the launcher contract:
 [07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md).
 
+## Done in 0.18.0 (toolchain, ID map, connections)
+
+Manifest v5: `toolchain` (tools, version ranges, where they run), identifiers with a value per
+environment and a kind (the ID map), `connections` (sign-ins checked read-only on request with
+`az account show`, `databricks auth profiles`, `fab auth status`; Git bindings and cloud connections
+declared, not checked). Tools & versions and Connections in the Project view and the Workbench,
+`.vscode/extensions.json` comparison, AI pack fields, the 11 data-goblin plugins, example
+`examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
+contract: `docs/PREPARING_A_PROJECT.md` section 12.
+
 ## Acceptance with Julian (before 1.0.0)
 
 Run by Julian, reported with *Export Qualification Report* and a short note per step.
@@ -98,20 +108,39 @@ company with its own colour, export the Power Ops list, then `simulate-power-ops
 company and applies one of its work views without installing Power Ops. Guide:
 `D:\PROJ\datapass-testlab\7-fenetres-vues\LISEZ-MOI.md`.
 
+### B5. Testlab project 8 — tools, ID map and connections (≈ 20 minutes)
+
+`D:\PROJ\datapass-testlab\8-outils-connexions\` — `setup.ps1` copies the public `sales-bi` example
+into a fresh Git repository. Tools & versions before installing anything (`az` and `fab` missing,
+install commands copied), `.vscode/extensions.json` and VS Code's Recommended list, the ID map (copy
+per environment, hover on a GUID in `parameter.yml`, Look Up an Id), Connections before and after
+installing `az` / `fab` and signing in (another tenant first, then the real tenant and subscription
+ids put in the lab's ID map), a secret pasted as an identifier refused without being echoed, the AI
+pack's names-and-states section, and optionally a Databricks CLI profile. Guide:
+`D:\PROJ\datapass-testlab\8-outils-connexions\LISEZ-MOI.md`.
+
 ### C. Account qualification (V1 gate 16, extended)
 
 Databricks `bundle validate` (with the generated build), Azure Functions `func start` then a deploy to
 a dev Function App, ADF Studio open with Git integration, Cosmos DB browse, MongoDB browse — each
-recorded with *Record result*. Only the steps Julian can do on his accounts; nothing is inferred.
+recorded with *Record result*. Only the steps Julian can do on their accounts; nothing is inferred.
 
 ## Next implementation passes
 
+0. **Order (Julian, [09](09_AI_MODES_WORK_ORDERS_GIT.md) §13.1):** 0.19.0 the Git module (AI-1, its
+   own session), AI-2 work orders, then the **toolkit catalogue**
+   ([08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) sections 5.1, 5.2, 5.4): the catalogue and
+   recipes as dated data in the hub repository (`.datapass/toolkit/tools.json`, `recipes/*.json`)
+   over the built-in baseline of 0.18, with each tool's free tier and pricing (`freeTier`,
+   `pricingUrl`, `tiers[]`, `checkedAt`), shown in Details, board cards and Options; `recipe` on
+   board items (a board contract change); the "Needs a newer DataPass" list from `datapassRequests`.
+   The toolchain of 0.18 already names tools by the ids the catalogue will describe.
 1. **PowerToy_UI task (Power Ops launcher), separate repository.** Read the company-workspaces list
    DataPass exports (contract: [07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md) section 7),
    show companies (with their colour) and their work views in the Tool Launcher, open a company or a
    view exactly as the contract says, refresh when the file changes. Never writes anything else in a
    DataPass folder. Effort: high. A ready-to-paste prompt is in section 7.
-2. **From acceptance feedback.** Fix what A/B/B2/B3/B4/C reveal; desktop tests for Restricted Mode
+2. **From acceptance feedback.** Fix what A/B/B2/B3/B4/B5/C reveal; desktop tests for Restricted Mode
    (launch without `--disable-workspace-trust`) and for the catalog quick pick.
 3. **Remote hosts.** Qualify the Project view in Remote-SSH and WSL windows (paths, Git, probes on the
    remote host); document what runs where.

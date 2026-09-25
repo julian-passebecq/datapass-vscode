@@ -86,6 +86,37 @@ See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) sections 10–11,
 See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the full example in
 [examples/v3/research-library](examples/v3/research-library/).
 
+## Tools, versions, the ID map and connections (0.18)
+
+Manifest **v5** (`schemaVersion: 5`) lets a project say what it needs on a computer, and DataPass
+compares it with the real one — without ever installing, signing in or deploying:
+
+- **Tools & versions** (Project view, Workbench): `toolchain.tools[]` names each tool by id
+  (`cli.fab`, `cli.az`, `ext.fabric`, `py.fabric-cicd`…) with an optional version range (`>=1.0`,
+  `^2.60`, `>=0.1.20,<1`) and where it runs (`local`, `ci`, `fabric`). Each local tool shows *ok*,
+  *outside the range*, *missing* or *version not read*; a click copies the install command for this
+  platform (winget, Homebrew, pip, `code --install-extension`) or opens the extension's page. A
+  version outside its range is a warning on the operations that use the tool, never on reading.
+- **`.vscode/extensions.json`** is compared with the toolchain's extensions; *Show Recommended
+  Extensions* opens VS Code's own list. DataPass never writes the file.
+- **The ID map**: `identifiers[]` can hold one id per environment (`values: { dev, prod }`) and a
+  `kind` (tenant, subscription, workspace…). Copying asks which environment; hovering a GUID in any
+  file, or *DataPass: Look Up an Id…*, says which identifier and environment it is. A secret-looking
+  value is refused in every environment.
+- **Connections**: sign-ins (`cli.az`, `cli.databricks`, `cli.fab`) are checked read-only on
+  request — **Check connections** runs `az account show`, `databricks auth profiles` and
+  `fab auth status` from your home folder, with no prompt, and compares tenant and subscription with
+  the ID map; DataPass never opens credential files and never passes a manifest value to a CLI.
+  Git bindings and cloud connections are "declared, not checked", with the portal page where you
+  verify them. The sign-in command is copied for you to run.
+- AI packs (preparation pack, Copy AI context, card packs) carry the toolchain state, the ID map as
+  logical ids and the connection states — names and states only.
+
+*DataPass: Upgrade Project Manifest* moves a v4 file to v5 with a backup. Contract:
+[docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) section 12; example:
+[examples/v3/sales-bi](examples/v3/sales-bi/); design:
+[handoff/v3/08_TOOLKIT_AND_AGENTS.md](handoff/v3/08_TOOLKIT_AND_AGENTS.md).
+
 ## Company windows and work views (0.17)
 
 Julian's mapping: **1 VS Code window = 1 company**. **DataPass: Create the Company Workspace File
@@ -508,16 +539,15 @@ It contains no deployment step. This keeps CI readiness separate from cloud muta
 
 The Power BI card detects PBIP, TMDL and PBIR source plus GitHub Copilot CLI.
 
-DataPass exposes focused modules from `data-goblin/power-bi-agentic-development`:
+DataPass lists the 11 plugins of the `data-goblin/power-bi-agentic-development` marketplace (read
+from its `marketplace.json` on 2026-09-25), which serves both **Claude Code** and **GitHub Copilot
+CLI**: goblin-mode, tabular-editor, pbi-desktop, pbip, semantic-models, reports, paginated-reports,
+fabric-cli, fabric-admin, custom-visuals and etl.
 
-- PBIP
-- Semantic models
-- Reports
-- Power BI Desktop
-- Tabular Editor
-- Fabric CLI
-
-**Copy marketplace add** and each module's **Copy install** action only place the documented Copilot CLI command on the clipboard. DataPass does not install plugins automatically because Copilot CLI plugin scope is user-wide.
+**Copy marketplace add** and each plugin's **Copy install** actions (one for Copilot CLI, one for
+Claude Code) only place the documented command on the clipboard (`copilot plugin …` /
+`claude plugin …`). DataPass does not install plugins because their scope is user-wide. On Windows,
+enable long paths first: some TMDL paths in that repository are longer than 260 characters.
 
 The MacGyver toolbox remains a visual/reference resource; Power BI Desktop, Tabular Editor and other specialized tools remain external peer applications.
 
