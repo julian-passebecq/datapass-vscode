@@ -11,7 +11,7 @@ import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
-  defaultBranchRef, fileLogArgs, lastUpdateFromReflog, LOG_LIMIT, parseFileLog, parseRevQuery, REFLOG_ARGS, repoRelative,
+  defaultBranchRef, fileLogArgs, lastUpdateFromReflog, LOG_LIMIT, parseFileLog, parseRevQuery, REFLOG_ARGS, relativeFromPrefix,
   revisionLabel, revUriParts, vetRevRequest
 } from "../src/core/git/fileVersions";
 
@@ -65,13 +65,19 @@ test("file versions: a file with no history, an empty output and noise give no r
   } finally { s.done(); }
 });
 
-test("file versions: repository-relative paths; a file outside the repository is refused", () => {
-  assert.equal(repoRelative("D:/work/repo", "D:\\work\\repo\\src\\new name.py", true), "src/new name.py");
-  assert.equal(repoRelative("d:/Work/Repo", "D:\\work\\repo\\a.txt", true), "a.txt");
-  assert.equal(repoRelative("/home/u/repo", "/home/u/repo/a.txt", false), "a.txt");
-  assert.equal(repoRelative("/home/u/repo", "/home/u/repo-other/a.txt", false), undefined);
-  assert.equal(repoRelative("/home/u/repo", "/home/u/elsewhere/a.txt", false), undefined);
-  assert.equal(repoRelative("/home/u/repo", "/home/u/repo", false), undefined);
+test("file versions: repository-relative paths come from git's own prefix; unsafe results are refused", () => {
+  const s = scratch();
+  try {
+    // Git answers from the folder, whatever form of its path the editor holds (8.3 names, drive case).
+    const [top, prefix] = run(path.join(s.dir, "src"), "rev-parse", "--show-toplevel", "--show-prefix").split(/\r?\n/);
+    assert.ok(top);
+    assert.equal(relativeFromPrefix(prefix!, "new name.py"), "src/new name.py");
+    assert.equal(relativeFromPrefix(run(s.dir, "rev-parse", "--show-prefix"), "untouched.txt"), "untouched.txt");
+  } finally { s.done(); }
+  assert.equal(relativeFromPrefix("a/b/", "c.txt"), "a/b/c.txt");
+  assert.equal(relativeFromPrefix("../", "c.txt"), undefined);
+  assert.equal(relativeFromPrefix("", "../c.txt"), undefined);
+  assert.equal(relativeFromPrefix("", ""), undefined);
 });
 
 test("file versions: the latest version needs origin/<default>; without it DataPass says so and fetches nothing", () => {

@@ -20,7 +20,7 @@ import { guarded, UserFacingError } from "./io";
 import { changedComponents } from "../core/project/gitSync";
 import {
   DEFAULT_BRANCH_CANDIDATES, defaultBranchRef, fileLogArgs, lastUpdateFromReflog, parseFileLog, parseRevQuery, REFLOG_ARGS,
-  repoRelative, REV_SCHEME, revisionLabel, revUriParts, shortTime, type FileRevision, type RevRequest
+  relativeFromPrefix, REV_SCHEME, revisionLabel, revUriParts, shortTime, type FileRevision, type RevRequest
 } from "../core/git/fileVersions";
 
 const git = async (args: string[], cwd: string, timeoutMs = 15000) => gitRunner(args, cwd, timeoutMs);
@@ -45,10 +45,12 @@ function fileArg(session: WorkSession, arg: unknown): vscode.Uri {
 /** The repository holding a file, and the file's repository-relative path. */
 async function locate(file: vscode.Uri): Promise<{ repo: string; rel: string }> {
   if (file.scheme !== "file") throw new UserFacingError("Versions are available for files on this computer only.");
-  const top = await git(["rev-parse", "--show-toplevel"], path.dirname(file.fsPath), 5000);
-  if (!top.ok || !top.stdout.trim()) throw new UserFacingError(`${path.basename(file.fsPath)} is not in a Git repository.`);
-  const repo = path.normalize(top.stdout.trim());
-  const rel = repoRelative(repo, file.fsPath);
+  // Git gives the folder's own prefix: a short (8.3) or differently-cased path cannot put the file "outside".
+  const r = await git(["rev-parse", "--show-toplevel", "--show-prefix"], path.dirname(file.fsPath), 5000);
+  const [top, prefix = ""] = r.stdout.split(/\r?\n/);
+  if (!r.ok || !top?.trim()) throw new UserFacingError(`${path.basename(file.fsPath)} is not in a Git repository.`);
+  const repo = path.normalize(top.trim());
+  const rel = relativeFromPrefix(prefix, path.basename(file.fsPath));
   if (!rel) throw new UserFacingError(`${path.basename(file.fsPath)} is outside its repository.`);
   return { repo, rel };
 }
@@ -131,7 +133,9 @@ const STATUS: Record<string, string> = { A: "added", M: "modified", D: "deleted"
 
 export function registerFileVersionCommands(context: vscode.ExtensionContext, session: WorkSession): void {
   const allowed = (repo: string) => {
-    const norm = (p: string) => path.normalize(p).replace(/[\\/]+$/, "").toLowerCase();
+    // Real paths on both sides: Git reports long paths where VS Code may hold a short (8.3) one.
+    const real = (p: string) => { try { return fs.realpathSync.native(p); } catch { return p; } };
+    const norm = (p: string) => path.normalize(real(p)).replace(/[\\/]+$/, "").toLowerCase();
     const known = [...(vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath), ...session.projectMap().repositories.map(r => session.repoFolder(r.key)?.fsPath).filter((p): p is string => !!p)];
     // A repository is allowed when it is (or contains) an open folder or a project repository.
     return known.some(k => norm(k) === norm(repo) || norm(k).startsWith(`${norm(repo)}${path.sep}`.toLowerCase()) || norm(repo).startsWith(`${norm(k)}${path.sep}`.toLowerCase()));

@@ -57,16 +57,15 @@ export function revisionLabel(r: FileRevision): { label: string; description: st
 }
 
 /**
- * Repository-relative path of a file, or undefined when it is outside the repository. Both paths are
- * absolute file-system paths; comparison ignores case on Windows drive letters and separators.
+ * Repository-relative path of a file from `git rev-parse --show-prefix` run in its folder (the folder's
+ * path inside the repository, "" at the root) and the file name. Git computes the prefix itself, so
+ * short (8.3) Windows paths, symlinks or drive-letter case cannot make a file look outside its
+ * repository. Undefined when the result is not a safe relative path.
  */
-export function repoRelative(repoRoot: string, filePath: string, caseInsensitive = process.platform === "win32"): string | undefined {
-  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
-  const root = norm(repoRoot), file = norm(filePath);
-  const a = caseInsensitive ? root.toLowerCase() : root, b = caseInsensitive ? file.toLowerCase() : file;
-  if (!b.startsWith(`${a}/`)) return undefined;
-  const rel = file.slice(root.length + 1);
-  const vet = vetRelativePath(rel);
+export function relativeFromPrefix(prefix: string, fileName: string): string | undefined {
+  const p = prefix.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  if (!fileName || /[\\/]/.test(fileName)) return undefined;
+  const vet = vetRelativePath(p ? `${p}/${fileName}` : fileName);
   return vet.ok ? vet.relative : undefined;
 }
 
