@@ -1,0 +1,17 @@
+bundle:
+  compute_id: none
+
+include:
+  - resources/*.yml
+  - missing/*.yml
+
+variables:
+  catalog:
+    default: dev_catalog
+
+targets:
+  dev:
+    mode: develop
+    default: true
+  prod:
+    default: true

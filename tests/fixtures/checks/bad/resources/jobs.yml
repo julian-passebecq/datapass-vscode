@@ -1,0 +1,13 @@
+resources:
+  jobs:
+    daily_sales:
+      name: daily-sales-${var.schema}
+      tasks:
+        - task_key: ingest
+          notebook_task:
+            notebook_path: ../src/missing_notebook
+        - task_key: wheel
+          python_wheel_task:
+            package_name: sales
+          libraries:
+            - whl: ../dist/*.whl

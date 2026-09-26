@@ -22,7 +22,11 @@
     "onView:datapass.aiExchange",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
-    "onUri"
+    "onUri",
+    "workspaceContains:**/databricks.yml",
+    "workspaceContains:**/databricks.yaml",
+    "onLanguage:dockerfile",
+    "onLanguage:dockercompose"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -737,6 +741,18 @@
         "command": "datapass.workOrders.newFromFailingPr",
         "title": "DataPass: Work Order to Fix this (failing CI)",
         "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.checkThisFile",
+        "title": "DataPass: Check This File"
+      },
+      {
+        "command": "datapass.checkThisRepository",
+        "title": "DataPass: Check This Repository"
+      },
+      {
+        "command": "datapass.checks.copyBundleValidate",
+        "title": "DataPass: Copy Bundle Validate Command"
       }
     ],
     "viewsContainers": {
@@ -1509,6 +1525,10 @@
         {
           "command": "datapass.workOrders.newFromFailingPr",
           "when": "false"
+        },
+        {
+          "command": "datapass.checks.copyBundleValidate",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -1520,6 +1540,16 @@
         {
           "command": "datapass.copyFileContext",
           "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.checkThisFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.checkThisRepository",
+          "when": "explorerResourceIsRoot",
           "group": "7_datapass"
         }
       ],
@@ -1743,6 +1773,26 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Absolute folder of a **private** Git clone that collects every project's work-order summary (`work-logs/<project id>.json`) when you *Publish summary*. Never this public repository or a repository of the project; on GitHub, `gh` must say it is private (else DataPass asks). DataPass writes the file; you commit and push."
+        },
+        "datapass.checks.onSave": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "Check JSON, YAML, databricks.yml, Dockerfiles and compose files when they are saved. Parse-only: nothing is ever run."
+        },
+        "datapass.checks.maxFiles": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 1,
+          "scope": "window",
+          "description": "Files a repository check looks at before it stops and reports itself incomplete."
+        },
+        "datapass.checks.maxFileBytes": {
+          "type": "number",
+          "default": 1048576,
+          "minimum": 1,
+          "scope": "window",
+          "description": "Files larger than this (bytes) are skipped by the format checks, never read."
         }
       }
     },
@@ -1859,6 +1909,7 @@
     "esbuild": "^0.25.9",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
+    "yaml": "^2.9.1",
     "zod": "^3.25.76"
   },
   "repository": {
