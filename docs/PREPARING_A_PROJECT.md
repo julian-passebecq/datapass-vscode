@@ -330,6 +330,10 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 - The Project view lists **Problems in project files**: a repository that is not declared, a scope
   naming an unknown component, an environment that does not exist, an unknown operation.
 - `DataPass: Validate DataPass JSON` checks any DataPass file.
+- Size bound: `project.json`, `graph.json`, `options.json`, `sheet.json` and `board.json` are read only
+  up to **1 MiB** each, domain packs up to **512 KiB**. A file that is larger, unreadable (permission
+  denied, I/O error) or a folder in place of a file is reported as an error ("cannot read …"), never
+  treated as absent; only a file that does not exist counts as absent.
 
 ## 7. `.datapass/options.json` — architecture options (optional, DataPass ≥ 0.15.0)
 
