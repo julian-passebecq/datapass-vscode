@@ -95,7 +95,7 @@ export function agentTabState(session: WorkSession, service: WorkOrderService, s
     defaults: { choice: settings.choice, effort: settings.effort, merge: defaultMergePolicy(type.type), exportScope: settings.exportScope, model: settings.model },
     choices: AGENT_CHOICES.map(id => ({ id, label: CHOICE_LABELS[id] })),
     // 0.26: pilot orders are written from the Pilot tab.
-    kinds: ORDER_KINDS.filter(id => id !== "pilot-read").map(id => ({ id, label: KIND_LABELS[id] })),
+    kinds: ORDER_KINDS.filter(id => id !== "pilot-read" && id !== "qa-run").map(id => ({ id, label: KIND_LABELS[id] })),
     efforts: EFFORTS,
     subprojects: map.subprojects.filter(s => !s.implicit).map(s => ({ id: s.id, title: s.title })),
     components: map.components.map(c => ({ id: c.id, label: c.label, subproject: c.subprojects[0], repoKey: c.repoKey })),

@@ -55,7 +55,9 @@ export const SURFACES: readonly Surface[] = [
   { id: "status.selectedVariant", kind: "statusBar", label: "Status bar: selected variant", detail: "The variant previewed on this machine; click to switch (the tree, Details, the diagram and the packs follow). Not a decision, not a deployment" },
   { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" },
   // 0.26 (AI-4a): pilot stage 1.
-  { id: "ai.pilot", kind: "aiTab", label: "AI view: Pilot tab", detail: "Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)" }
+  { id: "ai.pilot", kind: "aiTab", label: "AI view: Pilot tab", detail: "Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)" },
+  // QA-2: the Codex tests mode (handoff/v3/12 §4.5).
+  { id: "ai.codexTests", kind: "workbenchView", label: "Work orders: Codex tests", detail: "The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

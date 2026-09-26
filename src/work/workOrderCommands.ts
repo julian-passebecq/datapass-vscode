@@ -94,7 +94,7 @@ const strList = (v: unknown, maxItems: number, max = 200) => (Array.isArray(v) ?
 /** A draft from a webview: every field type-checked and bounded; ids are checked against the project later. */
 export function sanitizeDraft(raw: unknown): Draft {
   const d = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const kind = oneOf(d.kind, ORDER_KINDS) ?? "change";
+  const kind = oneOf(d.kind, ORDER_KINDS.filter(k => k !== "qa-run")) ?? "change"; // QA-2: a qa-run order is written only by the Codex tests section
   const repos: Record<string, RepoAccess> = {};
   if (d.repos && typeof d.repos === "object" && !Array.isArray(d.repos)) {
     for (const [k, v] of Object.entries(d.repos as Record<string, unknown>).slice(0, 40)) {
@@ -659,6 +659,27 @@ export class WorkOrderFlows {
     const found = resolveCommandOrScript(tool === "claude-code" ? "claude" : "codex");
     if (!found) return undefined;
     return found.script ? { file: found.path, prefix: [], env: {}, cmd: true, display: found.path } : { file: found.path, prefix: [], env: {}, display: found.path };
+  }
+
+  /**
+   * QA-2: hand a qa-run order to the Codex desktop app (the AI-3 hand-off, 12 §4.5). Only the app can
+   * drive VS Code (QA-0), so there is no terminal route: the marker line is copied, and
+   * `codex app <run root>` opens the run folder (else the app is brought to the front).
+   */
+  async handToCodexApp(id: unknown): Promise<{ cwd: string; prompt: string }> {
+    const o = this.requireOrder(id);
+    const order = o.order!;
+    if (order.kind !== "qa-run" || !order.qa) throw new UserFacingError(`Work order ${shortId(o.id)} is not a Codex test run.`);
+    if (o.state?.status === "done" || o.state?.status === "abandoned") throw new UserFacingError(`Work order ${shortId(o.id)} is closed (${o.state.status}).`);
+    await this.requireOwn(o);
+    const cwd = order.qa.runRoot;
+    const prompt = markerLine(order, path.join(o.folder.fsPath, "order.md"));
+    await clipboard.writeText(prompt);
+    const codex = this.executable("codex");
+    const opened = codex ? this.runHidden(o, codex, codexAppArgs(cwd), cwd) : false;
+    if (!opened) await openExternal(vscode.Uri.parse(APP_URI.codex));
+    await this.recordLaunch(o, { how: "copied", cwd });
+    return { cwd, prompt };
   }
 
   /** 0.24: whether a Codex CLI is configured or on an absolute PATH entry (the panel says which Codex route applies). */

@@ -41,6 +41,8 @@ import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
 import { PilotService, type PilotCard } from "./work/pilot";
 import { registerPilotCommands } from "./work/pilotCommands";
+import { CodexTestsService, registerCodexTestsCommands } from "./work/codexTests";
+import type { WbCodexTests } from "./views/workbenchState";
 import { ControlService, type ControlSnapshot } from "./work/controlService";
 import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
 import type { AgentPanelState } from "./views/agentPanelState";
@@ -135,6 +137,12 @@ export interface DataPassTestApi {
     decline(orderId: string, n: number): Promise<void>;
     /** One message as the AI view's webview would send it; the replies it got. */
     aiSend(message: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+  };
+  /** QA-2: the Codex tests section; Hand to Codex with a stub launcher that records the order ids (tests never open the Codex app). */
+  codexTests: {
+    state(): WbCodexTests;
+    reload(): Promise<WbCodexTests>;
+    handToCodex(launched: string[]): Promise<LoadedOrder>;
   };
   /** 0.24: Claude Control as DataPass read it, a refresh, and the Claude & Codex panel's state. */
   control: {
@@ -256,6 +264,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(pilot);
   aiExchange.attachPilot(pilot);
   registerPilotCommands(context, pilot, () => aiExchange.showTab("pilot"));
+  // QA-2: the Codex tests section of the Work orders view (qa-run orders for the Codex app).
+  const codexTests = new CodexTestsService(context, session, workOrders, id => flows.handToCodexApp(id));
+  context.subscriptions.push(codexTests);
+  host.setCodexTestsSource(() => codexTests.view(), codexTests.onDidChange);
+  registerCodexTestsCommands(context, codexTests, async () => { host.openPanel(vscode.ViewColumn.Active, "workOrders"); });
+  void codexTests.reload();
 
   // 0.24 (pass AI-3): the Claude & Codex panel and Claude Control's data in the Work orders view (read only while someone looks).
   const control = new ControlService(session);
@@ -459,6 +473,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       aiState: () => aiExchange.state(),
       lastPrefill: () => aiExchange.lastPrefill(),
       selected: () => workOrders.selected()?.id
+    },
+    codexTests: {
+      state: () => codexTests.view(),
+      reload: async () => { await codexTests.reload(); return codexTests.view(); },
+      handToCodex: async launched => {
+        const real = codexTests.launcher;
+        codexTests.launcher = async id => { launched.push(id); };
+        try { return await codexTests.handToCodex(); } finally { codexTests.launcher = real; }
+      }
     },
     pilot: {
       cards: () => pilot.list(),

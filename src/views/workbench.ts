@@ -14,7 +14,7 @@ import { toolkitState } from "./toolkitState";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
-import { workbenchState, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
+import { workbenchState, type WbCodexTests, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
 import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState } from "../core/project/variants";
@@ -50,7 +50,9 @@ const ALLOWED = new Set([
   "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision", "datapass.control.openConversation",
   "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr",
   // 0.23: the toolkit catalogue.
-  "datapass.openToolkit", "datapass.toolkit.openLink", "datapass.toolkit.copyInstall", "datapass.toolkit.copyStep", "datapass.toolkit.openStep", "datapass.toolkit.openFile"
+  "datapass.openToolkit", "datapass.toolkit.openLink", "datapass.toolkit.copyInstall", "datapass.toolkit.copyStep", "datapass.toolkit.openStep", "datapass.toolkit.openFile",
+  // QA-2: the Codex tests section.
+  "datapass.codexTests.handToCodex", "datapass.codexTests.openLastReport", "datapass.codexTests.openRunPr", "datapass.codexTests.chooseRepository", "datapass.codexTests.refresh"
 ]);
 
 export type WorkbenchView = "architecture" | "options" | "sheet" | "board" | "workOrders" | "toolkit";
@@ -87,6 +89,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private gitSource?: () => GitObservation;
   /** 0.20: the work orders of this project. */
   private workOrderSource?: () => WbWorkOrders | undefined;
+  /** QA-2: the Codex tests section of the Work orders view. */
+  private codexTestsSource?: () => WbCodexTests;
   /** 0.22 modes: which Workbench views and markers the current mode shows (all until a mode is attached). */
   private shows: (surface: string) => boolean = () => true;
 
@@ -118,6 +122,8 @@ export class WorkbenchHost implements vscode.Disposable {
       hiddenViews: (["options", "sheet", "board", "workOrders", "toolkit"] as const).filter(v => !this.shows(`workbench.${v}`)),
       alternatives: this.shows("badge.alternatives")
     };
+    // QA-2: the Codex tests section, only in the modes that show it (DataPass, Advanced).
+    if (this.codexTestsSource && this.shows("ai.codexTests") && this.lastState.workOrders) this.lastState.codexTests = this.codexTestsSource();
     // 0.23: coding state badges (derived from the files; nothing to maintain).
     const v = this.shows("badge.codingState") ? this.session.variants() : undefined;
     if (v && ctx.options) {
@@ -136,6 +142,11 @@ export class WorkbenchHost implements vscode.Disposable {
   /** 0.22 modes: gate the Workbench views and the "alternatives exist" marker; repaint on a mode change. */
   setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
     this.shows = shows;
+    this.subs.push(changed(() => void this.post()));
+  }
+  /** QA-2: where the Codex tests section reads its state; `changed` repaints every view. */
+  setCodexTestsSource(source: () => WbCodexTests, changed: vscode.Event<void>): void {
+    this.codexTestsSource = source;
     this.subs.push(changed(() => void this.post()));
   }
   /** 0.20: where the Work orders view and the Details timeline read the orders; `changed` repaints every view. */

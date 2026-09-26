@@ -83,7 +83,8 @@
               "apply-decision",
               "fix-card",
               "datapass-files",
-              "pilot-read"
+              "pilot-read",
+              "qa-run"
             ]
           },
           "createdAt": {
