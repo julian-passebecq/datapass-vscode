@@ -18,18 +18,7 @@ rien et n'exécute jamais le code du projet.**
 
 ## 2. Ouvrir un projet client
 
-**À partir de 0.27** : commande **DataPass: Open a Client Project…** (aussi sur la page d'accueil).
-
-1. Coller l'URL Git du **dépôt pont** du client (GitHub, Azure DevOps ou GitLab, https ou SSH).
-2. Choisir un dossier parent.
-3. DataPass clone le dépôt pont, lit son manifeste et liste les dépôts natifs déclarés avec leur
-   rôle. Cocher ceux à cloner (par défaut : tous sauf les dépôts *planned*). Un clone déjà présent
-   sur la machine est retrouvé au lieu d'être recloné.
-4. DataPass écrit le fichier d'espace de travail de l'entreprise et l'ouvre ; en mode Standard, le
-   panneau **Architecture** s'affiche.
-
-Relancer la commande ne reclone rien (« tout est présent »). Si l'authentification échoue, DataPass
-s'arrête avec le message de l'hébergeur et propose *Retry*.
+**À partir de 0.27** : commande **DataPass: Open a Client Project…** (aussi dans l'Explorateur d'une fenêtre vide, la vue Project et le parcours *Get started with DataPass*). Coller l'adresse Git du **dépôt pont** (GitHub, Azure DevOps ou GitLab, https ou SSH, telle que le bouton *Clone* l'affiche), puis choisir le dossier parent des dépôts du client. DataPass clone le dépôt pont (ou reprend un clone existant), lit son `.datapass/project.json` et propose, dans une liste à cocher avec leur rôle, les dépôts déclarés absents de la machine (cochés par défaut, sauf les *remote-only*). Un dépôt *planned* n'est jamais cloné ; un clone déjà présent est retrouvé par l'identité de son remote (https ou SSH, toutes les formes Azure DevOps), quel que soit le nom de son dossier ; un dossier qui contient autre chose n'est jamais écrasé. DataPass écrit ensuite `<dossier parent>/<titre du projet>.code-workspace` (dépôt pont + dépôts présents) et l'ouvre (dans la fenêtre si elle est vide, sinon dans une nouvelle) ; en mode Standard, le panneau **Architecture** s'affiche. Relancer la commande ne clone rien et laisse le fichier inchangé. Au premier clonage qui échoue, DataPass s'arrête avec le message de l'hébergeur et propose *Retry* ; l'authentification passe par le gestionnaire d'identifiants habituel de Git (Git Credential Manager, clé SSH), DataPass ne lit ni ne stocke aucun identifiant.
 
 **Avant 0.27** : cloner le dépôt pont à la main, puis **File → Open Folder…** sur ce clone ; les
 dépôts natifs manquants apparaissent dans la vue Project avec **Clone** et **Locate** (*DataPass: Clone a Project Repository…*, *DataPass: Locate an Existing Clone…*).
