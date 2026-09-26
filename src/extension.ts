@@ -37,6 +37,7 @@ import { registerGitCommands } from "./work/gitCommands";
 import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
 import type { AiViewState } from "./views/aiExchange";
+import { registerFileVersionCommands } from "./work/fileVersionCommands";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -187,6 +188,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   );
   host.setGitSource(() => git.observation());
   registerGitCommands(context, session, git);
+  // 0.22 file versions (package F): read-only revisions of any file through native Git.
+  registerFileVersionCommands(context, session);
 
   // 0.20 work orders (pass AI-2): the Agent tab of the AI view, the Workbench's Work orders view, Details, Needs you rule 8.
   const workOrders = new WorkOrderService(context, session, git);
