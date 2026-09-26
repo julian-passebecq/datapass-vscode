@@ -14,7 +14,7 @@
  * offers to copy the command instead.
  */
 import { markerLine, type WorkOrder } from "./format";
-import type { PackStamp } from "../project/packStamp";
+import type { PackStamp } from "../exchange/stamp";
 
 export type AgentChoice = "claude-desktop" | "claude-terminal" | "codex-desktop" | "codex-terminal";
 export const AGENT_CHOICES: readonly AgentChoice[] = ["claude-desktop", "claude-terminal", "codex-desktop", "codex-terminal"];

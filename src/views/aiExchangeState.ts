@@ -5,7 +5,7 @@
  */
 import { AI_TASKS, EXCHANGE_FILES, type ExchangeKind } from "../core/project/aiExchange";
 import type { ExchangeRecord } from "../core/work/workModel";
-import { staleReason, type PackStamp } from "../core/project/packStamp";
+import { staleReason, type PackStamp } from "../core/exchange/stamp";
 
 export interface AiExchangeFile {
   kind: ExchangeKind;

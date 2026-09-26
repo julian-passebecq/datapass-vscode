@@ -3,7 +3,7 @@
  * context an AI gets to compare options or to apply a decision. Pure; built from the options file
  * (declarations) and DataPass's own analysis (consequences), never from file contents or paths.
  */
-import { stampLine, type PackStamp } from "./packStamp";
+import { stampLine, type PackStamp } from "../exchange/stamp";
 import { scrub } from "../exchange/aiContext";
 import { formatCostLine, formatCostTotal, sumCostLines } from "./costs";
 import { type ArchitectureImpact, type ArchOption, type CriterionValue, type Decision, type OptionsAnalysis, type OptionsFile } from "./options";

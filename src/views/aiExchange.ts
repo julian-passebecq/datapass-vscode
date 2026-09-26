@@ -7,7 +7,7 @@
  * the pasted text is bounded and validated by the same parser as every other import, and writing
  * still goes through the diff and the modal. The answer is never stored.
  */
-import { selectionStamp } from "../work/packStamps";
+import { packStamp } from "../work/packStamps";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { aiExchangeHtml } from "./aiExchangeHtml";
@@ -146,7 +146,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       kinds: KINDS, sizes: this.sizes,
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges(),
-      selection: c.manifest ? selectionStamp(this.session) : undefined
+      selection: c.manifest ? await packStamp(this.session) : undefined
     });
     const hiddenTabs = (["agent", "manual", "pilot"] as const).filter(t => !this.shows(`ai.${t}`));
     if (!this.work || !base.ready || !c.manifest) return { ...base, hiddenTabs };

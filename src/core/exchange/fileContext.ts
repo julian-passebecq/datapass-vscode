@@ -12,7 +12,7 @@
  */
 import { scrub } from "./aiContext";
 import { normalizeRemote } from "../project/resolve";
-import { stampLine, type PackStamp } from "../project/packStamp";
+import { stampLine, type PackStamp } from "./stamp";
 
 // ------------------------------------------------------------------ locating the file
 

@@ -5,8 +5,9 @@
  * of the coordination repository). A pack built for B must not silently run as C (finding R-06).
  *
  * Pure: the options file, the preview and the manifest in, a stamp and its comparisons out.
+ * The pack builders (fileContext, optionsReport) and the order builder render it with stampLine.
  */
-import type { OptionsFile } from "./options";
+import type { OptionsFile } from "../project/options";
 import type { EnvironmentDecl } from "../projectManifestModel";
 
 export interface VariantStamp {
@@ -67,15 +68,16 @@ export function stampLine(s: PackStamp): string {
 }
 
 /**
- * Why a pack stamped `then` no longer matches the selection `now`; undefined while it still does.
- * The variant and the environment count; a newer bridge revision alone does not make a pack stale
- * (the architecture the AI was told about has not changed).
+ * Why a pack stamped `then` no longer matches `now`; undefined while it still does. The variant,
+ * the environment and the bridge revision count (a new commit on the bridge may change the files the
+ * pack described); a side whose revision is unknown is not judged on it.
  */
 export function staleReason(then: PackStamp | undefined, now: PackStamp): string | undefined {
   if (!then) return undefined;
   const why: string[] = [];
   if (then.variant.key !== now.variant.key) why.push(`built for ${then.variant.title}; the selected variant is now ${now.variant.title}`);
   if ((then.environment ?? "") !== (now.environment ?? "")) why.push(`built for environment ${then.environment ?? "none"}; now ${now.environment ?? "none"}`);
+  if (then.bridge && now.bridge && then.bridge !== now.bridge) why.push(`the bridge moved from ${then.bridge.slice(0, 12)} to ${now.bridge.slice(0, 12)}`);
   return why.length ? why.join("; ") : undefined;
 }
 

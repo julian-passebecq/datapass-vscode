@@ -14,7 +14,7 @@ import {
   type AgentTool, type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type OrderRepository, type ProjectType,
   type PilotOrderCli, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
 } from "./format";
-import { stampLine, type PackStamp } from "../project/packStamp";
+import { stampLine, type PackStamp } from "../exchange/stamp";
 
 export const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const DEFAULT_BRANCH_PREFIX = "dp/";

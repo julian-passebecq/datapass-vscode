@@ -15,7 +15,7 @@ import { anyOf, arr, constOf, enumOf, obj, validateSchema, type Schema, type Sch
 import { parseStrictJson } from "../model/strictJson";
 import { gitHostOf } from "../project/gitHosts";
 import { sensitiveFindings } from "../project/aiExchange";
-import type { PackStamp } from "../project/packStamp";
+import type { PackStamp } from "../exchange/stamp";
 
 export const ORDER_FORMAT = "datapass.work-order";
 export const STATE_FORMAT = "datapass.work-order-state";

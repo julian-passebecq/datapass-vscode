@@ -15,7 +15,7 @@ import {
 } from "../src/core/workOrders/format";
 import { buildOrder, cleanGoal, keyOfRef, refOfKey, renderOrderMd, resultFormatMd, type OrderInput } from "../src/core/workOrders/builder";
 import { agentCmdLine, agentWorkspace, claudeArgs, codexArgs, copyableCommand, resumeArgs, sessionName, stampLabel, stampVerdict } from "../src/core/workOrders/launch";
-import { CURRENT_VARIANT, environmentOf, readStamp, staleReason, stampLine, variantStamp, type PackStamp } from "../src/core/project/packStamp";
+import { CURRENT_VARIANT, environmentOf, readStamp, staleReason, stampLine, variantStamp, type PackStamp } from "../src/core/exchange/stamp";
 import type { OptionsFile } from "../src/core/project/options";
 import { defaultMergePolicy, resolveProjectType, workOrdersVerdict } from "../src/core/workOrders/projectType";
 import { mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, publicText, serializeWorkLog, workLogEntry } from "../src/core/workOrders/workLog";
@@ -438,8 +438,10 @@ test("stamps: the selected variant by its changed picks, the environment, the br
   assert.deepEqual(readStamp(JSON.parse(JSON.stringify(STAMP_B))), STAMP_B);
 });
 
-test("stamps: a pack goes stale when the variant or the environment changes, not when the bridge moves", () => {
-  assert.equal(staleReason(STAMP_B, { ...STAMP_B, bridge: "0123456789ab" }), undefined);
+test("stamps: a pack goes stale when the variant, the environment or the bridge revision changes", () => {
+  assert.equal(staleReason(STAMP_B, { ...STAMP_B }), undefined);
+  assert.equal(staleReason(STAMP_B, { ...STAMP_B, bridge: "0123456789abcdef0123456789abcdef01234567" }), "the bridge moved from 4e1a9c2f0b7d to 0123456789ab");
+  assert.equal(staleReason(STAMP_B, { variant: STAMP_B.variant, environment: "dev" }), undefined, "an unknown revision is not judged");
   assert.equal(staleReason(undefined, STAMP_C), undefined, "packs copied before 0.27 are not judged");
   assert.equal(staleReason(STAMP_B, STAMP_C), "built for B — Blob event + Function; the selected variant is now C — Data Factory");
   assert.match(staleReason(STAMP_B, { ...STAMP_B, environment: "test" }) ?? "", /environment dev; now test/);

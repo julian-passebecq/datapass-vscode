@@ -6,7 +6,7 @@
  *
  * Checklist states are user-reported notes, never execution evidence.
  */
-import type { PackStamp } from "../project/packStamp";
+import type { PackStamp } from "../exchange/stamp";
 import type { AppDescriptor, DataPassProjectManifest, RepositoryBinding, WorkScope } from "../projectManifestModel";
 import type { ProjectGraph } from "../workspace/graph";
 import { resolveOutputs } from "../workspace/graph";
