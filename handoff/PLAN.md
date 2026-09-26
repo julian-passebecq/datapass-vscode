@@ -12,7 +12,7 @@ Kept by ASSISTANT ARCHI DataPass 2 (decisions: ARCHI DataPass 2). Released: **0.
 1. HUB-1, including "Working with a client" in the hub OPERATING_MANUAL and the generic page in common — todo
 2. BR-T (template, EXPECTATIONS.md, FOIL bridge + DATAPASS_EXPECTS.md, codex-datapass-bridge aligned) — ✓ (common #6, foil-v1-vscode-datapass #7, codex-datapass-bridge #2)
 3. Codex test mode end to end: QA-1 ✓ (#79, #83), QA-2 ✓ (#87), QA-3 ✓ (common #2–#5, #78, #82), `qa:prepare --launch` opens an isolated VS Code with the local VSIX — ✓ in code; the in-app Codex run still needs Julian's approvals (todo.md)
-4. V1-STAB ✓ (#81, #84), V1-PERF harness (#88), V1-REF progressive refresh, V1-FLAKE (`windowFlows`), no known open bug on journeys J01–J10 — todo
+4. V1-STAB ✓ (#81, #84), V1-PERF harness (#88), V1-REF progressive refresh and V1-FLAKE (`windowFlows`, incl. `--disable-workspace-trust` in the qa:prepare launch line) merged, no known open DataPass bug — todo. J01–J10 are out of the gate: they run once the client AI fills its repositories (ARCHI 2, 2026-09-26)
 5. Release ≥ 0.27.0 containing all of this, `common/VERSION` updated — todo
 6. Final review of `~/.claude/effort-board/foil-ai-handoff-2026-09-26.md` by a low TAMPON (every link resolves; points to DATAPASS_EXPECTS.md and the operating manual) — todo, after 0.27.0
 
