@@ -1,8 +1,8 @@
-# Implementation Status — 0.26.0: pilot without sign-in, MCP and cost repairs, Mongoku removed
+# Implementation Status — 0.26.0: pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed
 
 Date: 2026-09-26. Version `0.26.0` — packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61)
-and X1 (PR #63), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
-(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`) are folded
+and X1 (PR #63), plus the first V1 items E1 (PR #67), V1-ON (PR #68), V1-DOC (PR #64) and V1-T10 (PR #69), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
+(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`, `0.27-e1.md`, `v1-on.md`, `v1-t10.md`) are folded
 into this section. Inputs: the FOIL MCP review ([handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md),
 decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
 
@@ -39,8 +39,25 @@ decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
   the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
   load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
   `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
-- Also on main when 0.26.0 was cut: 0.27 E1 (PR #67), V1-ON (PR #68), V1-DOC (PR #64) and V1-T10
-  (PR #69); their notes stay in `handoff/v3/night/` (`0.27-e1.md`, `v1-on.md`, `v1-t10.md`).
+- **First V1 items** (on main when 0.26.0 was cut, so they ship in it):
+  - **DataPass: Open a Client Project…** (V1-ON, PR #68): from the bridge repository's Git address
+    (GitHub, Azure DevOps, GitLab; https or SSH) to a company window in one command — clones what is
+    missing, finds clones already here by remote identity, never clones planned repositories, writes
+    the company workspace file and opens it; idempotent, with Retry on a failed clone. Also in the
+    empty Explorer and Project view, and a walkthrough **Get started with DataPass** (Help → Welcome →
+    Walkthroughs).
+  - **Integration evidence chain** (E1, PR #67, D-22): for az, databricks, fab and the known MCP
+    servers, Readiness, its report and the Workbench show each link — known → installed → registered
+    → connected → authenticated → authorized → operation verified — as observed, unknown (with why)
+    or not applicable; nothing is inferred, a registration file never means connected. Work-order
+    result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
+    Details shows each result field on its own.
+  - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
+    [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
+    `handoff/archive/`, README top rewritten.
+  - **Testlab 10, acceptance journeys** (V1-T10, PR #69, D-28): outside the repository
+    (`datapass-testlab/10-parcours-client`), 10/10 journeys replayed by Claude; section B7 in
+    `handoff/v3/04_NEXT_PASSES.md`.
 
 ### Per package (folded night notes)
 
@@ -205,6 +222,112 @@ Mongoku is a separate project-management app with no link to DataPass. It was fr
 - A user who had set `datapass.mongoku.url` keeps the orphan value in their settings (VS Code shows it as unknown); harmless.
 - Mongoku links pointing at `vscode://…/open?entity=` now get VS Code's own "no handler" behaviour; galaxy.json updated and a line added under "À vérifier" for Mongoku.
 
+#### V1-ON — Open a Client Project (PR #68)
+
+ROADMAP §1.3 package V1-ON. Coder: TAMPON 20, effort medium.
+
+##### What landed
+
+- **DataPass: Open a Client Project…** (`datapass.openClientProject`, `src/work/openClientProject.ts`): paste the bridge's Git address (GitHub, Azure DevOps, GitLab; https or SSH) → choose a parent folder → the bridge is cloned (or its existing clone reused) → its `.datapass/project.json` is read → the declared repositories that are missing are offered in a checkbox list with their role (description), ticked by default except `remote-only` → cloned one at a time → the company workspace file (0.17 format, `buildCompanyWorkspace`) `<parent>/<project title>.code-workspace` is written → opened. Standard mode then lands on the Architecture panel (0.22 landing, unchanged).
+- **Clone plan** (`src/core/project/cloneplan.ts`, pure): present / clone / planned / no-remote / conflict. A clone is located by remote identity (`remoteIdentity`: https ≡ SSH, the five Azure DevOps forms) among the parent's sub-folders and the expected folders, whatever its folder name. Planned repositories are never cloned; a folder holding another repository or plain files is never cloned over; a declared path outside the chosen folder is not cloned (clone it yourself); one clone is never claimed by two declarations.
+- **Idempotent**: a re-run finds everything present, asks nothing, leaves the workspace file byte-identical (keeps company name, colour, startup view, other settings of an existing file).
+- **Failures**: the first failed clone stops the run with Git's / the host's own message (progress lines stripped) and a **Retry** (modal); a sign-in refusal adds how to sign in. An empty folder left by a failed clone is removed so Retry can clone again.
+- **Welcome**: "Open a Client Project…" in the empty Explorer (`workbench.explorer.emptyView`) and in the Project view of an empty window.
+- **Walkthrough** "Get started with DataPass" (`datapass.getStarted`, `resources/walkthrough/*.md`): open a client project, the architecture, a file → context for my AI, Get updates, switch mode.
+
+##### Choices (logged in effort-board/questions.md)
+
+- `git clone` runs through the resolved Git executable (`executablePath`, as the Git module does) with `GIT_TERMINAL_PROMPT=0` but **without** `GCM_INTERACTIVE=never` (the observer's setting), so Git Credential Manager can show its own sign-in window on a first clone. DataPass reads and stores no credential.
+- `remote-only` repositories are listed but unticked (the manifest says they are never cloned automatically; ticking them is the person's choice).
+- A clone found under another folder name is used as is (the company workspace lists it as a root, so the project observer finds it as a workspace folder).
+- From an empty window the workspace opens in that window; otherwise a new window (the Test-mode folder seam records it).
+
+##### Tests
+
+- Unit `tests/cloneplan.test.ts` (12): planned skipped, SSH/https equivalence, Azure DevOps `dev.azure.com/org/project/_git/repo` ≡ `org@vs-ssh.visualstudio.com:v3/org/project/repo` (and the other forms, both directions), conflicts, declared paths, bridge declared among repositories, re-run, address parsing, auth failure detection.
+- Desktop fixtures `v26-open-client` and `v26-open-client-window` (`scripts/desktop-test.ts`), flows `tests/integration/openClientProjectFlows.ts`: "GitHub on disk" = bare repositories in a temp folder, real addresses rewritten by `url.<base>.insteadOf` (GIT_CONFIG_* env of the test host), so clones keep `https://github.com/...` / `https://dev.azure.com/...` origins. One command → bridge + pipeline cloned, lab found in `my-lab` (SSH origin), portal (planned) never cloned, workspace file with 3 roots, opened; second run (SSH address of the bridge) clones nothing and leaves the file unchanged; a failing clone shows Git's message and Retry; the opened workspace has the 3 roots and lands on Architecture in Standard. 4/4 pass locally.
+
+##### Release notes (for the release coder)
+
+- New: **DataPass: Open a Client Project…** — from the bridge repository's Git address to a company window in one command (clones what is missing, finds what is already here, never clones planned repositories).
+- New: walkthrough **Get started with DataPass** (Help → Welcome → Walkthroughs).
+
+##### Left
+
+- V1-T10 testlab journey "open from bridge" can now use the command.
+- Not done (out of scope): choosing a title-bar colour or startup view during the command (the company workspace command still does that).
+
+#### 0.27 E1 — Integration evidence chain (D-22, FOIL review R-03) (PR #67)
+
+##### What changed
+- **Evidence chain**, new pure module `src/core/evidence/`:
+  - `chain.ts`: `known → installed → registered in a host → connected → authenticated identity → authorized target → operation verified`. Each link is `observed` (holds or not, source, time), `unknown` (the default, always with a reason) or `not-applicable` (a CLI is not registered in a host). `buildChain` fills only what the caller observed; nothing is inferred from an earlier or a later link. `chainSummary` gives one line ("installed / not registered", "signed in / authorized on the target unknown").
+  - `integrations.ts`: the chains Readiness shows. The three CLIs with a read-only sign-in check (az, databricks, fab), the known MCP servers (Fabric Toolbox: Fabric Management `fabric-mgmt`, Semantic Model, DAX Performance Tuner; Power BI Modeling from its extension), then any other server `.vscode/mcp.json` names. "Connected", "authenticated" and "authorized" of an MCP server are always unknown: DataPass cannot see a host's live connection and never reads a server's credentials.
+  - `registration.ts`: what DataPass reads of `.vscode/mcp.json`: the server names only. A file that is not plain JSON leaves "registered" unknown (never "not registered").
+  - `receipts.ts`: result fields and receipts (below).
+- Probes: the `ws.mcp` observation carries `entries` (server names only) — `src/core/capabilities/{tools,probe}.ts`. The two capability requirements satisfied by `ws.mcp` now say a registration file never means connected or signed in (`registry.ts`).
+- Sign-ins: `signInEvidence()` in `src/core/toolchain/connections.ts` maps the read-only check the person ran (`az account show`, `databricks auth profiles`, `fab auth status`) to the "authenticated identity" link. No check → unknown, with why (no sign-in declared, or not checked yet). Credential files are still never opened.
+- Readiness: `Readiness.evidence` (built in `buildReadiness`), a section *Integration evidence* in the Readiness report (one line per link), and in the Workbench's Local environment card a collapsed *Integration evidence* block: the summary pill (tooltip = every link) and the seven links marked ✓ / ✗ / ? / –.
+- **Receipts** (work-order contract, additive): result.json `checks[]` items accept optional `field` (`cli-exit` · `ci` · `deployed` · `runtime` · `scientific-validity`), `tool`, `scope`, `input`. A check naming tool, scope and input is *the agent's receipt*; without them it stays *asserted, not verified*. `OrderSummary.resultFields` gives one entry per field (observed · receipted · asserted · unknown); CI read from the Git host for the order's open PRs is the only *observed* one and wins over the agent's word. The Details timeline gains *result fields (each on its own)* and each check line says receipt or asserted. The new strings go through the credential check. Schema regenerated (`schemas/datapass-work-order-result.schema.json`).
+
+##### Tests
+- Unit `tests/evidence.test.ts` (13): every link unknown by default; installed + no registration = "installed / not registered", never connected; no inference from a later link; az and the Fabric MCP server unknown past "known" with no observation; a registration file present is not a connection; an unreadable file leaves "registered" unknown; az signed in observed from the check, authorized unknown, no tenant id in the evidence; known server names equal what "Add to MCP" writes; only server names are read from mcp.json; `src/core/evidence/**` imports no fs/os/child_process/vscode, never reaches the home folder and names no credential path; agent assertion alone → "asserted, not verified"; receipt vs assertion, fields separate, observed CI wins; old results load, unknown fields/values still refused.
+- `tests/readiness.test.ts` (+1: az and Fabric MCP chains, report section, Workbench links), `tests/capabilities.test.ts` (+1: ws.mcp wording).
+- Desktop: `tests/integration/evidenceFlows.ts` on fixture `v25-doc-pipeline` (examples/v3/doc-pipeline): az and the Fabric MCP entry with their unknown states and reasons, carried to the Workbench state.
+
+##### Limits
+- The order prompt (`builder.ts`, P1's file) does not yet tell agents about `field / tool / scope / input`: until it does, results carry none and every field shows "unknown" or "asserted". One table row to add after P1 merges.
+- "Operation verified" is never observed yet: no DataPass read-only check runs an operation. A later package can fill it from a DataPass-run check.
+- Hosts other than the workspace `.vscode/mcp.json` (user settings, Claude Code, Copilot CLI, an extension's own provider) are not read: their "registered" is unknown, or "not registered in this workspace" when the workspace file is the source.
+- Toolchain tools other than az / databricks / fab have no chain row (the Tools & versions block already shows installed + version).
+
+#### V1-T10 — Testlab 10 = acceptance journeys (D-28) (PR #69)
+
+##### What was built (outside the repository)
+- `D:\PROJ\datapass-testlab\10-parcours-client\`: `setup.ps1` / `reset.ps1` (fixture from scratch:
+  offline "GitHub" of bare repositories; bridge `doc-pipeline` with only `.datapass/`; native
+  `doc-orchestration` and `doc-processing` cloned next to it; C's `factory` planned; one Google Drive
+  component as the unsupported tool), `ouvre-depuis-bridge.ps1` (manual equivalent of V1-ON, idempotent),
+  `LISEZ-MOI.md` in French (steps 0–10, each with what Julian should see), `verification-claude/`
+  (`lab-suite.ts`, `run.ts`, `report.json`).
+- One row in `D:\PROJ\datapass-testlab\LISEZ-MOI-TESTS.md`; section B7 in `04_NEXT_PASSES.md`.
+
+##### Verification
+- `setup.ps1` twice from scratch (setup, then reset): no error. `ouvre-depuis-bridge.ps1` twice: clones
+  3 then "deja la" 3 times; `factory` never cloned.
+- Desktop VS Code, throwaway profile, **10/10** journeys green twice: on the installed
+  `datapass-vscode-0.25.0.vsix` (unzipped, `DATAPASS_EXT_DIR`, harness from the release branch) and on
+  main `0d52423` (0.24.0 + 0.25 V-A). `git status` of the three repositories unchanged at the end.
+  Evidence in `report.json` (last run: 0.25.0). The suite accepts both vocabularies ("active variant /
+  coded" and "selected variant / files present").
+- Marked 0.27+ because not on main yet: *Open a Client Project…* (V1-ON, PR #68) and the MCP evidence
+  card (E1, PR #67). When they merge, V1-STAB should run LISEZ-MOI steps 3.1 and 10.4 and add them to
+  `lab-suite.ts`. M1 (relabel "MCP registration file present") is in 0.25.0 and checked.
+
+##### Findings for V1-STAB (no source was changed)
+1. **Copy Context ignores the selected variant for the component line.** With B selected, the pack
+   of `orchestration/blob-function/function_app.py` says `Component: none — the bridge declares this
+   repository, but no component's files include this path` (`src/core/exchange/fileContext.ts:258`);
+   `src/work/fileContextCommands.ts:99` passes `session.projectMap()` (the current architecture), not
+   the previewed map. D-19 says packs follow the preview. Small fix, needs a desktop assertion.
+2. **A present folder without origin reads "not cloned".** Sibling auto-discovery requires a matching
+   origin (`locateRepositories`, `src/work/projectObserver.ts`), so `doc-orchestration` without origin is
+   `unbound`: "not cloned on this machine (or not found next to this repository)". Correct on safety,
+   misleading in words; suggest "a folder named doc-orchestration is here but has no Git origin:
+   Locate it". Wording only.
+3. ~~R-04 wording~~: fixed by the 0.25.0 release ("files present", "not a decision, not a deployment",
+   "Live route: not observed"); main before the release still said "coded". Findings 1, 2 and 4 are
+   still present in 0.25.0.
+4. **Tool probes refresh only on "Refresh Work View (re-probe tools)"**: after creating
+   `.vscode/mcp.json`, *Re-inspect Project* leaves `Workspace MCP configuration` absent. Minor; the
+   two refresh commands are easy to confuse.
+
+##### Left for Julian (todo.md, ≈ 20 min)
+The visual steps of LISEZ-MOI: 2 (DataPass disabled, nothing missing; quiet when enabled on a plain
+repository), 3.4 (diagram), 4.5 (does anything read as "it runs"?), 9.2 (the "not built, tested or deployed" tooltip), 6.1 (the "not cloned" wording), 8
+(visibility of "not supported yet"), 10.1–10.2 (can the MCP line be found without help), and whether
+Julian sees findings 1, 2 and 4.
+
 ### Release checks
 
 - `npm run verify` and the full desktop suite (`npm run test:desktop`) green on the release branch;
@@ -213,7 +336,7 @@ Mongoku is a separate project-management app with no link to DataPass. It was fr
 ### Not checked here (Julian)
 
 - Install 0.26.0: switch on `datapass.pilot.enabled`, write a pilot order from the AI view's Pilot tab
-  and look at its guard-rail files; check that no Mongoku command, setting or row is left (≈ 10 min).
+  and look at its guard-rail files; run *DataPass: Open a Client Project…* on a bridge address; check that no Mongoku command, setting or row is left (≈ 10 min).
 - The pilot's one-time qualification after a read-only Azure sign-in (already in todo.md).
 
 ## 0.25.0 — previewing variants and repository layout

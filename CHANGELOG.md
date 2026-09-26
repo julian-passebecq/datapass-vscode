@@ -3,9 +3,9 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
-## 0.26.0 — Pilot without sign-in, MCP and cost repairs, Mongoku removed (2026-09-26)
+## 0.26.0 — Pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed (2026-09-26)
 
-Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3 (FOIL MCP review
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3, E1, V1-ON, V1-DOC, V1-T10 (FOIL MCP review
 [handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md), decisions D-19 to D-28). One new order kind (`pilot-read`), two new
 optional options.json cost fields; no manifest version change.
 
@@ -40,11 +40,25 @@ optional options.json cost fields; no manifest version change.
   the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
   load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
   `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
-- Also on main when 0.26.0 was cut: package 0.27 E1 (PR #67, integration evidence chain and receipt
-  result fields), V1-ON (PR #68, *DataPass: Open a Client Project…* and the *Get started with
-  DataPass* walkthrough), V1-DOC (PR #64, DEMARRER.md, handoff/CURRENT.md) and V1-T10 (PR #69, testlab
-  10 acceptance journeys, outside the repository). Their notes stay in `handoff/v3/night/` for their
-  own release.
+- **First V1 items** (on main when 0.26.0 was cut, so they ship in it):
+  - **DataPass: Open a Client Project…** (V1-ON, PR #68): from the bridge repository's Git address
+    (GitHub, Azure DevOps, GitLab; https or SSH) to a company window in one command — clones what is
+    missing, finds clones already here by remote identity, never clones planned repositories, writes
+    the company workspace file and opens it; idempotent, with Retry on a failed clone. Also in the
+    empty Explorer and Project view, and a walkthrough **Get started with DataPass** (Help → Welcome →
+    Walkthroughs).
+  - **Integration evidence chain** (E1, PR #67, D-22): for az, databricks, fab and the known MCP
+    servers, Readiness, its report and the Workbench show each link — known → installed → registered
+    → connected → authenticated → authorized → operation verified — as observed, unknown (with why)
+    or not applicable; nothing is inferred, a registration file never means connected. Work-order
+    result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
+    Details shows each result field on its own.
+  - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
+    [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
+    `handoff/archive/`, README top rewritten.
+  - **Testlab 10, acceptance journeys** (V1-T10, PR #69, D-28): outside the repository
+    (`datapass-testlab/10-parcours-client`), 10/10 journeys replayed by Claude; section B7 in
+    `handoff/v3/04_NEXT_PASSES.md`.
 
 ## 0.25.0 — Previewing variants and repository layout (2026-09-26)
 

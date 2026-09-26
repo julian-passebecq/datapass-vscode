@@ -60,8 +60,9 @@ review (11, D-19 to D-28): pilot stage 1 read-only without Azure sign-in (order 
 guard rails only in the order folder, Pilot tab with request cards and responses); lossless
 `.vscode/mcp.json` edits through the reviewed write path; toolkit refresh for the Fabric and Power BI
 MCP servers and the official agentic route; options.json cost lines `shared` / `use` (DataPass ≥ 0.26);
-Mongoku removed from everything DataPass shows (old manifests still load). Also on main: E1, V1-ON,
-V1-DOC, V1-T10. Unit and desktop suites green. See IMPLEMENTATION_STATUS.md.
+Mongoku removed from everything DataPass shows (old manifests still load). First V1 items: Open a
+Client Project + Get started walkthrough (V1-ON), integration evidence chain (E1), DEMARRER / CURRENT
+docs (V1-DOC), testlab 10 (V1-T10). Unit and desktop suites green. See IMPLEMENTATION_STATUS.md.
 
 ## Done in 0.25.0 (2026-09-26)
 
@@ -204,7 +205,7 @@ present", never connected; the MCP evidence card (E1, PR #67) and the *Open a Cl
 (V1-ON, PR #68) are marked 0.27+. Every non-visual step ran in a desktop VS Code on a throwaway profile
 (`verification-claude/run.ts`; 10/10 on the installed 0.25.0 VSIX and on main 2026-09-26; set
 `DATAPASS_EXT_DIR` to an unzipped VSIX to test a published build) and is marked "vérifié par Claude";
-findings for V1-STAB are listed at the end of the guide and in `handoff/v3/night/v1-t10.md`.
+findings for V1-STAB are listed at the end of the guide and in IMPLEMENTATION_STATUS.md (0.26.0, V1-T10).
 Guide: `D:\PROJ\datapass-testlab\10-parcours-client\LISEZ-MOI.md`.
 
 ### C. Account qualification (V1 gate 16, extended)
