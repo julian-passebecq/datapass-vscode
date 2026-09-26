@@ -43,8 +43,17 @@ export const MODULE_LABELS: Readonly<Record<Module, string>> = {
   develop: "Develop", data: "Data and storage", pipelines: "Pipelines and orchestration", cicd: "CI/CD and deployment",
   monitoring: "Monitoring and cost", governance: "Governance, quality and security", admin: "Administration", ai: "AI and agents"
 };
-export const SIDE_EFFECTS = ["reads-remote", "writes-remote", "credential-prompt", "installs-software", "runs-code", "billable"] as const;
+/** `sends-to-model` (K2): what the tool returns reaches the AI host's model provider (a local MCP server does not keep data local). */
+export const SIDE_EFFECTS = ["reads-remote", "writes-remote", "credential-prompt", "installs-software", "runs-code", "billable", "sends-to-model"] as const;
 export const PRICE_MODELS = ["free", "freemium", "paid", "included", "unknown"] as const;
+/** MCP transports (K2: additive optional fields; the format stays 1). */
+export const MCP_TRANSPORTS = ["stdio", "streamable-http", "sse"] as const;
+/** Agent hosts an MCP entry may name as documented; "any" = any host that supports the transport and the sign-in. */
+export const MCP_HOSTS = ["vscode-copilot", "copilot-cli", "visual-studio", "claude-code", "claude-desktop", "codex", "cursor", "windsurf", "jetbrains", "eclipse", "cline", "any"] as const;
+export const MCP_HOST_LABELS: Readonly<Record<typeof MCP_HOSTS[number], string>> = {
+  "vscode-copilot": "VS Code with GitHub Copilot", "copilot-cli": "GitHub Copilot CLI", "visual-studio": "Visual Studio", "claude-code": "Claude Code", "claude-desktop": "Claude Desktop",
+  codex: "Codex", cursor: "Cursor", windsurf: "Windsurf", jetbrains: "JetBrains IDEs", eclipse: "Eclipse", cline: "Cline", any: "any host with this transport and sign-in"
+};
 export const INSTALL_METHODS = ["marketplace", "extension-pack", "winget", "brew", "pip", "npm", "command", "download"] as const;
 /** Facts a route's `if` may name that DataPass can evaluate; any other fact is shown, not checked. */
 export const KNOWN_FACTS = ["fabric.gitBinding", "databricks.bundle", "git.repository"] as const;
@@ -73,11 +82,13 @@ export const TOOL_SCHEMA: Schema = obj({
   links: obj({ repo: LINK, marketplace: LINK, docs: LINK, home: LINK, pypi: LINK }, []),
   verified: obj({ on: DATE, version: { type: "string", minLength: 1, maxLength: 40 } }, ["on"]),
   status: enumOf(...TOOL_STATUS), replacedBy: TOOL_REF, upstream: TOOL_REF,
-  install: arr(INSTALL, 10), modules: arr(enumOf(...MODULES), 8), complements: arr(TOOL_REF, 20), sideEffects: arr(enumOf(...SIDE_EFFECTS), 6),
+  install: arr(INSTALL, 10), modules: arr(enumOf(...MODULES), 8), complements: arr(TOOL_REF, 20), sideEffects: arr(enumOf(...SIDE_EFFECTS), SIDE_EFFECTS.length),
   useWhen: TEXT, avoidWhen: TEXT, note: TEXT,
   /** A new tool may reuse one of the extension's probes (a tool id of its registry); any other id refuses the entry. */
   probe: TOOL_REF,
-  priceModel: enumOf(...PRICE_MODELS), freeTier: { type: "string", minLength: 1, maxLength: 400 }, pricingUrl: LINK, tiers: arr(TIER, 8), checkedAt: DATE
+  priceModel: enumOf(...PRICE_MODELS), freeTier: { type: "string", minLength: 1, maxLength: 400 }, pricingUrl: LINK, tiers: arr(TIER, 8), checkedAt: DATE,
+  /** MCP servers: how a host reaches it and the remote endpoint (streamable-http / sse); MCP servers and agent plugins: the hosts the publisher documents. */
+  transport: enumOf(...MCP_TRANSPORTS), endpoint: LINK, hosts: arr(enumOf(...MCP_HOSTS), MCP_HOSTS.length)
 }, ["id"]);
 
 const STEP: Schema = anyOf(
@@ -111,6 +122,7 @@ export interface ToolkitTool {
   install?: InstallStep[]; modules?: Module[]; complements?: string[]; sideEffects?: SideEffect[];
   useWhen?: string; avoidWhen?: string; note?: string; probe?: string;
   priceModel?: PriceModel; freeTier?: string; pricingUrl?: string; tiers?: Tier[]; checkedAt?: string;
+  transport?: typeof MCP_TRANSPORTS[number]; endpoint?: string; hosts?: Array<typeof MCP_HOSTS[number]>;
 }
 export type RecipeStep = string | { text: string; copy?: string; capability?: string; open?: string; tool?: string };
 export interface RecipeRoute { id: string; title?: string; if?: { fact: string } | { tool: string }; tools?: string[]; steps: RecipeStep[]; note?: string }
@@ -150,12 +162,15 @@ export function toolProblems(t: ToolkitTool): string[] {
   for (const d of [t.checkedAt, t.verified?.on]) if (d && !isCalendar(d)) out.push(`"${d}" is not a calendar date`);
   if (t.status === "superseded" && !t.replacedBy) out.push("is superseded without replacedBy");
   if (t.status === "fork" && !t.upstream) out.push("is a fork without upstream");
+  if (t.endpoint && t.transport === "stdio") out.push("has an endpoint with transport stdio (a stdio server is a local process, not an address)");
+  if ((t.transport || t.endpoint) && t.kind && t.kind !== "mcp-server") out.push(`gives transport or endpoint but is a ${t.kind}, not an mcp-server`);
+  if (t.hosts && t.kind && t.kind !== "mcp-server" && t.kind !== "agent-plugin") out.push(`names hosts but is a ${t.kind} (hosts are for MCP servers and agent plugins)`);
   for (const i of t.install ?? []) {
     if ((i.method === "marketplace" || i.method === "winget" || i.method === "pip" || i.method === "npm" || i.method === "brew") && !i.id && !i.command) out.push(`install ${i.method} needs an id or a command`);
     if (i.method === "extension-pack" && !i.tool) out.push("install extension-pack needs the pack's tool id");
     if (i.method === "marketplace" && i.id && !/^[A-Za-z0-9][A-Za-z0-9-]*\.[A-Za-z0-9][A-Za-z0-9._-]*$/.test(i.id)) out.push(`install marketplace id "${i.id}" is not publisher.name`);
   }
-  for (const l of [...Object.values(t.links ?? {}), t.pricingUrl]) if (l && linkIssue(l)) out.push(`link ${linkIssue(l)}`);
+  for (const l of [...Object.values(t.links ?? {}), t.pricingUrl, t.endpoint]) if (l && linkIssue(l)) out.push(`link ${linkIssue(l)}`);
   return out;
 }
 
@@ -279,7 +294,7 @@ const PROBE_IDS: ReadonlySet<string> = new Set(TOOLS.filter(t => t.kind === "ext
 const CAPABILITY_IDS: ReadonlySet<string> = new Set(CAPABILITIES.map(c => c.id));
 
 const KIND_OF: Readonly<Record<ToolchainTool["kind"], ToolKind>> = {
-  extension: "vscode-extension", cli: "cli", "desktop-app": "desktop-app", "workspace-file": "workspace-file", "python-library": "python-library", "agent-plugin": "agent-plugin"
+  extension: "vscode-extension", cli: "cli", "desktop-app": "desktop-app", "workspace-file": "workspace-file", "python-library": "python-library", "agent-plugin": "agent-plugin", "mcp-server": "mcp-server"
 };
 
 /** The built-in baseline file, validated like a hub file (a test keeps it valid). */
@@ -356,7 +371,7 @@ export function hubToolchainTools(c: Catalogue): Map<string, ToolchainTool> {
   for (const t of c.tools.values()) {
     if (t.source !== "hub") continue;
     const cmd = t.install?.find(i => i.command)?.command;
-    out.set(t.id, { id: t.id, label: t.label, kind: t.kind === "python-library" ? "python-library" : t.kind === "agent-plugin" ? "agent-plugin" : "desktop-app", publisher: t.publisher ?? "community", probe: false, note: t.note,
+    out.set(t.id, { id: t.id, label: t.label, kind: t.kind === "python-library" || t.kind === "agent-plugin" || t.kind === "mcp-server" ? t.kind : "desktop-app", publisher: t.publisher ?? "community", probe: false, note: t.note,
       extensionIds: t.extensionIds.length ? t.extensionIds : undefined, install: cmd || t.links?.docs ? { all: cmd, docs: t.links?.docs ?? t.links?.home } : undefined });
   }
   return out;

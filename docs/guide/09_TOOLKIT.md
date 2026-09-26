@@ -3,7 +3,7 @@
 For the AI that maintains a client's **hub repository**, and for the person who reads it in DataPass.
 Field-by-field reference: [PREPARING_A_PROJECT.md section 14](../PREPARING_A_PROJECT.md). Complete,
 test-validated example: [`examples/v3/hub/.datapass/toolkit/`](../../examples/v3/hub/.datapass/toolkit/)
-(`tools.json`, `recipes/fabric.json`, with the MCP servers and the read-only MCP recipe) and the Sales BI board whose cards name those recipes
+(`tools.json`, `recipes/fabric.json`, with the read-only MCP recipe) and the Sales BI board whose cards name those recipes
 ([`examples/v3/sales-bi/.datapass/board.json`](../../examples/v3/sales-bi/.datapass/board.json)).
 
 ## What it is
@@ -69,17 +69,18 @@ what DataPass probes on the computer stays the extension's.
 An MCP server gives an agent host (GitHub Copilot, Copilot CLI, Claude Code, Codex…) tools that act
 on a platform. The toolkit describes them like any other tool (`"kind": "mcp-server"`); DataPass
 never installs one, never registers one in `mcp.json` and never builds an allowlist from toolkit data.
-The example hub carries these entries, each read on its official page on 2026-09-26:
+DataPass's **built-in baseline** carries these entries (no hub needed), each read on its official page
+on 2026-09-26; every one of them also has the side effect `sends-to-model`:
 
-| Id | What it is | Where it runs · transport | Side effects |
+| Id | What it is | `transport` · where it runs | Side effects (besides `sends-to-model`) |
 |---|---|---|---|
-| `mcp.fabric-core` | Fabric Core MCP Server: workspaces, items, folders, workspace roles (preview) | Microsoft-hosted · Streamable HTTP | reads-remote, writes-remote, credential-prompt |
-| `mcp.fabric-local` | Fabric MCP Server (local): offline API docs, OneLake, items, Fabric Data Factory | your machine, started by the host · stdio | reads-remote, writes-remote, credential-prompt |
-| `mcp.fabric-iq` | Fabric IQ MCP: find Power BI reports and models, read metadata, run DAX; read-only (GA) | Microsoft-hosted · Streamable HTTP | reads-remote, credential-prompt |
-| `ext.powerbi-modeling-mcp` (built-in) | Power BI Authoring MCP, formerly Modeling: the local option (preview) | your machine · stdio | reads-remote, writes-remote, credential-prompt |
-| `mcp.powerbi-authoring-hosted` | Power BI Authoring MCP, hosted option (preview) | Microsoft-hosted · Streamable HTTP | reads-remote, writes-remote, credential-prompt |
+| `mcp.fabric-core` | Fabric Core MCP Server: workspaces, items, folders, workspace roles (preview) | `streamable-http` · Microsoft-hosted | reads-remote, writes-remote, credential-prompt |
+| `mcp.fabric-local` | Fabric MCP Server (local): offline API docs, OneLake, items, Fabric Data Factory | `stdio` · your machine, started by the host | reads-remote, writes-remote, credential-prompt |
+| `mcp.fabric-iq` | Fabric IQ MCP: find Power BI reports and models, read metadata, run DAX; read-only (GA) | `streamable-http` · Microsoft-hosted | reads-remote, credential-prompt |
+| `ext.powerbi-modeling-mcp` | Power BI Authoring MCP, formerly Modeling: the local option (preview) | `stdio` · your machine | reads-remote, writes-remote, credential-prompt |
+| `mcp.powerbi-authoring-hosted` | Power BI Authoring MCP, hosted option (preview) | `streamable-http` · Microsoft-hosted | reads-remote, writes-remote, credential-prompt |
 | `plugin.powerbi-authoring` | Microsoft's `powerbi-authoring` plugin (Skills for Fabric): skills plus the local Authoring MCP | GitHub Copilot CLI, with compatibility files for other hosts | installs-software, reads-remote, writes-remote, credential-prompt |
-| `mcp.azure` | Azure MCP Server: Azure resources, not Fabric items | your machine, started by the host | reads-remote, writes-remote, credential-prompt |
+| `mcp.azure` | Azure MCP Server: Azure resources, not Fabric items | `stdio` · your machine, started by the host | reads-remote, writes-remote, credential-prompt |
 
 Things people confuse, and the entries that say so:
 
@@ -96,10 +97,22 @@ Things people confuse, and the entries that say so:
   then to its model provider. Read-only still exposes them.
 
 Rules for an MCP entry: `verified.on` with the date the official page was read; `sideEffects`
-(`reads-remote`, `writes-remote`, `credential-prompt`); `useWhen` / `avoidWhen`; the hosts, the
-transport, the endpoint and the data risk in `note`. The format has no transport, endpoint or hosts
-fields and no "sends data to the model" side effect yet: the example asks for them in
-`datapassRequests`, so do not invent fields for them.
+(`reads-remote`, `writes-remote`, `credential-prompt`, and `sends-to-model` whenever results reach
+the agent's model, which is always the case for an MCP server); `useWhen` / `avoidWhen`; and the
+fields for MCP servers:
+
+```text
+{ "id": "mcp.fabric-core", "transport": "streamable-http",
+  "endpoint": "https://api.fabric.microsoft.com/v1/mcp/core", "hosts": ["vscode-copilot", "any"] }
+```
+
+`transport` is `stdio`, `streamable-http` or `sse`; `endpoint` only for a remote server (never with
+`stdio`); `hosts` from `vscode-copilot`, `copilot-cli`, `visual-studio`, `claude-code`,
+`claude-desktop`, `codex`, `cursor`, `windsurf`, `jetbrains`, `eclipse`, `cline`, `any` (an agent
+plugin may name `hosts` too). Any other value makes the entry invalid. These fields are optional and
+the format stays `1`; a DataPass from before them skips an entry that uses them, with the reason.
+The Toolkit view shows them under *MCP server* (where it runs, the endpoint as text, the hosts), and
+component Details show an *MCP · local/remote* and a *sends data to the model* badge.
 
 The recipe `mcp.fabric-sample.inspect-readonly` ("Inspect a Fabric sample's metadata through an MCP
 server (read-only)") walks one evidence chain per route (Fabric IQ, Fabric Core list-only, local

@@ -1466,10 +1466,19 @@ function openToolkitAt(focus: string): void {
   render();
 }
 
+const TRANSPORT_TEXT: Readonly<Record<string, string>> = { stdio: "local process (stdio)", "streamable-http": "remote (Streamable HTTP)", sse: "remote (SSE)" };
+const SENDS_TO_MODEL = "What it returns (metadata, schemas, query rows) goes to the agent host and its AI model provider, even when the server runs on this computer.";
+
+/** An MCP server's transport and the "sends data to the model" warning, as pills. */
+function mcpPills(t: WbTool): Array<HTMLElement | undefined> {
+  return [t.mcp?.transport ? pill(`MCP · ${t.mcp.transport === "stdio" ? "local" : "remote"}`, "muted", TRANSPORT_TEXT[t.mcp.transport]) : undefined,
+    t.sendsToModel ? pill("sends data to the model", "warn", SENDS_TO_MODEL) : undefined];
+}
+
 function toolLine(t: WbTool, why?: string): HTMLElement {
   return h("button", { class: "comprow", type: "button", title: "Show it in the Toolkit", onclick: () => openToolkitAt(`tool:${t.id}`) },
     h("span", { class: "label" }, h("b", { text: t.label }), why ? h("span", { class: "muted small", text: `  ${why}` }) : undefined),
-    t.state === "present" ? pill("installed", "ok") : undefined, pricePill(t));
+    ...mcpPills(t), t.state === "present" ? pill("installed", "ok") : undefined, pricePill(t));
 }
 
 /** Details: the catalogue tools of the component's official tool, with prices, and the recipes that use them. */
@@ -1614,6 +1623,12 @@ function tkSide(s: WorkbenchState): HTMLElement {
     t.useWhen ? h("p", { class: "small", text: `Use when: ${t.useWhen}` }) : undefined,
     t.avoidWhen ? h("p", { class: "small", text: `Avoid when: ${t.avoidWhen}` }) : undefined,
     t.note ? h("p", { class: "muted small", text: t.note }) : undefined,
+    t.mcp || t.sendsToModel ? h("section", {}, eyebrow("MCP server"), h("div", { class: "row tight" }, ...mcpPills(t)),
+      t.mcp?.transport ? h("p", { class: "small", text: `Runs: ${TRANSPORT_TEXT[t.mcp.transport] ?? t.mcp.transport}${t.mcp.transport === "stdio" ? ", started by the agent host" : ""}.` }) : undefined,
+      t.mcp?.endpoint ? h("p", { class: "small" }, "Endpoint: ", h("code", { class: "small", text: t.mcp.endpoint })) : undefined,
+      t.mcp?.hosts.length ? h("p", { class: "small", text: `Hosts documented by the publisher: ${t.mcp.hosts.join(", ")}.` }) : undefined,
+      t.sendsToModel ? h("p", { class: "muted small", text: SENDS_TO_MODEL }) : undefined,
+      h("p", { class: "muted small", text: "DataPass never registers, starts or signs in to an MCP server; add it in the host yourself." })) : undefined,
     t.replacedBy ? h("p", { class: "small" }, "Replaced by ", btn(toolById(t.replacedBy)?.label ?? t.replacedBy, () => openToolkitAt(`tool:${t.replacedBy}`), { kind: "link" })) : undefined,
     h("section", {}, eyebrow("Free tier and prices"),
       t.freeTier ? h("p", { class: "small", text: t.freeTier }) : h("p", { class: "muted small", text: t.priceModel === undefined ? "No price recorded for this tool." : "No free tier described." }),
