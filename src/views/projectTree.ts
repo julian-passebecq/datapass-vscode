@@ -420,6 +420,10 @@ function readinessNodes(r: Readiness): Node[] {
   if (r.declared || r.identifiers.length) {
     const kids = (): Node[] => {
       const rows: Node[] = [];
+      if (r.variant) rows.push({
+        t: "info", id: "env:variant", label: `Variant: ${r.variant.title}`, description: `${r.variant.hidden} row${r.variant.hidden === 1 ? "" : "s"} of other variants hidden`, icon: ["versions"],
+        tooltip: "Readiness follows the selected variant (a preview on this machine): env files and repositories that only other variants use are hidden. Switch to Current architecture to see them."
+      });
       for (const f of r.files) rows.push({
         t: "info", id: `env:file:${f.id}`, label: f.repoLabel ? `${f.path} · ${f.repoLabel}` : f.path, description: fileStateText(f),
         icon: f.git === "tracked" ? ERR : f.state === "found" ? (f.git === "not-ignored" ? WARN : ["file", "testing.iconPassed"]) : f.state === "missing" ? (f.optional ? MUTED : WARN) : f.state === "not-cloned" ? ["cloud", "disabledForeground"] : WARN,

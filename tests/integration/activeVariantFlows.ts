@@ -50,6 +50,7 @@ export function registerActiveVariantFlows(getApi: () => DataPassTestApi): void 
     const file = vscode.Uri.file(path.join(ws(), "processing", "process.py"));
     const ui = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", file, [file]));
     assert.match(ui.clipboard, /Selected variant \(preview on this machine — not a decision, not a deployment\): \*\*B — Blob event \+ Function\*\* · files: some files present .*Live route: not observed by DataPass\./);
+    assert.ok(!api().readiness().repositories.some(x => x.key === "factory"), "B: no factory row in Readiness");
     // V1-STAB: a file of B's Function is owned by B's component, not the current architecture's.
     const fn = vscode.Uri.file(path.join(ws(), "orchestration", "blob-function", "function_app.py"));
     const own = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", fn, [fn]));
@@ -58,6 +59,8 @@ export function registerActiveVariantFlows(getApi: () => DataPassTestApi): void 
     // C — not coded (planned repository).
     await run("datapass.setSelectedVariant", "c-adf");
     assert.match(api().selectedVariant.statusText(), /Variant: C — Data Factory · preview/);
+    // V1-STAB: Readiness follows the variant — C brings its planned factory repository, B does not.
+    assert.ok(api().readiness().repositories.some(x => x.key === "factory"), "C's planned repository is in Readiness");
     record("activeVariant.c", { status: api().selectedVariant.statusText() });
 
     await run("datapass.setSelectedVariant", "current");

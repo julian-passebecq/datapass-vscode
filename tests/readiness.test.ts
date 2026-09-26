@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { envKeyPresence, isEnvFileName } from "../src/core/readiness/envFile";
 import {
-  buildReadiness, readinessContextLines, readinessReport, readinessSnapshot, validateReadinessSections,
-  type EnvFileObservation, type ReadinessInput
+  buildReadiness, readinessContextLines, readinessReport, readinessSnapshot, validateReadinessSections, readinessForVariant,
+  type EnvFileObservation, type ReadinessInput, type Readiness
 } from "../src/core/readiness/readiness";
 import {
   LATEST_MANIFEST_VERSION, foilProjectManifest, genericProjectManifest, migrateManifestToLatest, validateProjectManifest, type DataPassProjectManifest
@@ -271,4 +271,29 @@ test("readiness: the evidence chain for az and the Fabric MCP server, unknown wi
   const wb = wbReadiness(r);
   assert.equal(wb.evidence.find(e => e.id === "cli.az")!.links.length, 7);
   assert.ok(!JSON.stringify(wb).includes(FAKE_SECRET));
+});
+
+test("V1-STAB: readiness for the selected variant hides rows and checks of repositories only other variants use", () => {
+  const file = (id: string, repoKey: string | undefined) => ({ id, path: ".env", repoKey, optional: false, state: "missing" as const, git: "unknown" as const, keysDefined: 0 });
+  const repoRow = (key: string) => ({ key, label: key, state: "missing" as RepoView["state"], upstream: false });
+  const r = {
+    declared: true, files: [file("bridge:.env", "bridge"), file("factory:.env", "factory")], keys: [], identifiers: [], companions: [],
+    repositories: [repoRow("bridge"), repoRow("factory")],
+    checks: [
+      { id: "env.file.missing:factory:.env", severity: "warning" as const, area: "environment" as const, message: "m" },
+      { id: "env.file.missing:bridge:.env", severity: "warning" as const, area: "environment" as const, message: "m" },
+      { id: "repo.notcloned:factory", severity: "info" as const, area: "repository" as const, message: "m" },
+      { id: "tools.missing:cli.az", severity: "warning" as const, area: "tools" as const, message: "m" }
+    ],
+    summary: { keysSet: 0, keysTotal: 0, filesFound: 0, filesRequired: 2, errors: 0, warnings: 3, infos: 1 }
+  } as unknown as Readiness;
+  assert.equal(readinessForVariant(r, new Set(), "B"), r, "nothing to hide: unchanged");
+  const b = readinessForVariant(r, new Set(["factory"]), "B — Blob event");
+  assert.deepEqual(b.files.map(f => f.id), ["bridge:.env"]);
+  assert.deepEqual(b.repositories.map(x => x.key), ["bridge"]);
+  assert.deepEqual(b.checks.map(c => c.id), ["env.file.missing:bridge:.env", "tools.missing:cli.az"]);
+  assert.deepEqual(b.variant, { title: "B — Blob event", hidden: 2 });
+  assert.equal(b.summary.filesRequired, 1);
+  assert.equal(b.summary.warnings, 2);
+  assert.equal(b.summary.infos, 0);
 });

@@ -238,6 +238,8 @@ export interface Readiness {
   /** D-22: the evidence chain of each CLI and MCP server (known → … → operation verified), unknown by default. */
   evidence: IntegrationEvidence[];
   checks: ReadinessCheck[];
+  /** V1-STAB: set when rows of other variants are hidden (the selected variant's title, how many rows). */
+  variant?: { title: string; hidden: number };
   summary: { keysSet: number; keysTotal: number; filesFound: number; filesRequired: number; errors: number; warnings: number; infos: number };
 }
 
@@ -396,6 +398,34 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     declared: Boolean(decl), schemaVersion: m?.schemaVersion, files, keys, identifiers, companions, repositories, toolchain, extensions, connections, evidence, checks,
     summary: {
       keysSet: keys.filter(k => k.state === "set").length, keysTotal: keys.length,
+      filesFound: files.filter(f => f.state === "found").length, filesRequired: files.filter(f => !f.optional).length,
+      errors: checks.filter(c => c.severity === "error").length, warnings: checks.filter(c => c.severity === "warning").length, infos: checks.filter(c => c.severity === "info").length
+    }
+  };
+}
+
+/**
+ * V1-STAB: Readiness for the selected variant. Env files and repositories that only other variants
+ * use (`hide`: repositories the current architecture or an option uses, minus the ones the selected
+ * variant uses) leave the view with their checks; everything else stays. Pure; `hidden` counts them.
+ */
+export function readinessForVariant(r: Readiness, hide: ReadonlySet<string>, title: string): Readiness {
+  if (!hide.size) return r;
+  const files = r.files.filter(f => !f.repoKey || !hide.has(f.repoKey));
+  const repositories = r.repositories.filter(x => !hide.has(x.key));
+  const goneFiles = new Set(r.files.filter(f => !files.includes(f)).map(f => f.id));
+  const hidden = r.files.length - files.length + r.repositories.length - repositories.length;
+  if (!hidden) return r;
+  const checks = r.checks.filter(c => {
+    const [kind, subject] = [c.id.slice(0, c.id.indexOf(":")), c.id.slice(c.id.indexOf(":") + 1)];
+    if (kind.startsWith("env.file.")) return !goneFiles.has(subject);
+    if (kind.startsWith("repo.")) return !hide.has(subject);
+    return true;
+  });
+  return {
+    ...r, files, repositories, checks, variant: { title, hidden },
+    summary: {
+      ...r.summary,
       filesFound: files.filter(f => f.state === "found").length, filesRequired: files.filter(f => !f.optional).length,
       errors: checks.filter(c => c.severity === "error").length, warnings: checks.filter(c => c.severity === "warning").length, infos: checks.filter(c => c.severity === "info").length
     }
