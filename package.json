@@ -2472,6 +2472,7 @@
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && node esbuild.mjs",
     "check": "tsc --noEmit",
+    "sync:common": "tsx scripts/sync-common.ts",
     "test": "tsx --test tests/*.test.ts",
     "verify": "npm run check && npm test && npm run build",
     "package": "npm run verify && vsce package",
