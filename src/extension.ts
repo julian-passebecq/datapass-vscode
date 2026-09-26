@@ -44,6 +44,7 @@ import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
 import type { AgentPanelState } from "./views/agentPanelState";
 import type { AiViewState } from "./views/aiExchange";
 import { ExperienceService, landOnArchitecture, registerExperienceCommands } from "./work/experienceCommands";
+import { registerOpenClientProject } from "./work/openClientProject";
 import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
 
@@ -151,6 +152,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const experience = new ExperienceService(context);
   context.subscriptions.push(experience);
   registerExperienceCommands(context, experience);
+  registerOpenClientProject(context);
   // Galaxy cards show the same operation readiness as the Work view.
   const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()));
   context.subscriptions.push(

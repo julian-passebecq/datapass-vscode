@@ -154,6 +154,11 @@
         "icon": "$(copy)"
       },
       {
+        "command": "datapass.openClientProject",
+        "title": "DataPass: Open a Client Project…",
+        "icon": "$(repo-clone)"
+      },
+      {
         "command": "datapass.copyFileContext",
         "title": "DataPass: Copy Context for My AI…",
         "icon": "$(sparkle)"
@@ -2313,7 +2318,82 @@
         "url": "./schemas/datapass-work-log.schema.json"
       }
     ],
+    "walkthroughs": [
+      {
+        "id": "datapass.getStarted",
+        "title": "Get started with DataPass",
+        "description": "Open a client project, read its architecture, give your AI the right context, stay up to date, choose how much DataPass shows.",
+        "steps": [
+          {
+            "id": "openClientProject",
+            "title": "Open a client project",
+            "description": "Paste the bridge repository's Git address (GitHub, Azure DevOps or GitLab), choose a folder: DataPass clones the bridge and the client's repositories, finds the ones already here, and opens one window for the client.\n[Open a Client Project…](command:datapass.openClientProject)",
+            "media": {
+              "markdown": "resources/walkthrough/open-client-project.md"
+            },
+            "completionEvents": [
+              "onCommand:datapass.openClientProject"
+            ]
+          },
+          {
+            "id": "architecture",
+            "title": "The architecture",
+            "description": "The Architecture panel draws the client's components, where each one lives and how they connect. Click one to see it in Details.\n[Show the Architecture](command:datapass.architecture.focus)",
+            "media": {
+              "markdown": "resources/walkthrough/architecture.md"
+            },
+            "completionEvents": [
+              "onCommand:datapass.architecture.focus",
+              "onView:datapass.architecture"
+            ]
+          },
+          {
+            "id": "fileContext",
+            "title": "A file → context for my AI",
+            "description": "Right-click a file → Copy Context for My AI: its component, repository and architecture, ready to paste into your AI.\n[Copy Context for My AI…](command:datapass.copyFileContext)",
+            "media": {
+              "markdown": "resources/walkthrough/file-context.md"
+            },
+            "completionEvents": [
+              "onCommand:datapass.copyFileContext"
+            ]
+          },
+          {
+            "id": "getUpdates",
+            "title": "Get updates",
+            "description": "Fetch every repository of the project and fast-forward the ones that can be; nothing is merged or pushed for you.\n[Get Updates…](command:datapass.getUpdates)",
+            "media": {
+              "markdown": "resources/walkthrough/get-updates.md"
+            },
+            "completionEvents": [
+              "onCommand:datapass.getUpdates"
+            ]
+          },
+          {
+            "id": "switchMode",
+            "title": "Switch mode",
+            "description": "Vanilla, Standard, DataPass or Advanced: modes change what is shown, never your files or the safety checks.\n[Switch Mode…](command:datapass.experience.switchMode)",
+            "media": {
+              "markdown": "resources/walkthrough/switch-mode.md"
+            },
+            "completionEvents": [
+              "onCommand:datapass.experience.switchMode"
+            ]
+          }
+        ]
+      }
+    ],
     "viewsWelcome": [
+      {
+        "view": "workbench.explorer.emptyView",
+        "contents": "Working on a client's data project? Clone its bridge and repositories and open them in one window.\n[Open a Client Project…](command:datapass.openClientProject)",
+        "when": "workbenchState == empty"
+      },
+      {
+        "view": "datapass.project",
+        "contents": "Starting from a client's Git address?\n[Open a Client Project…](command:datapass.openClientProject)",
+        "when": "workbenchState == empty"
+      },
       {
         "view": "datapass.project",
         "contents": "Open the folder (or repository) that holds your project's .datapass/project.json.\n[Open Folder](command:vscode.openFolder)\n[Switch Project…](command:datapass.switchProject)\n[How to prepare a project](command:datapass.openPreparationGuide)",

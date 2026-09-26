@@ -28,6 +28,7 @@ import { registerFileContextFlows } from "./fileContextFlows";
 import { registerCheckFlows } from "./checkFlows";
 import { registerVariantFlows } from "./variantFlows";
 import { registerActiveVariantFlows } from "./activeVariantFlows";
+import { registerOpenClientProjectFlows } from "./openClientProjectFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -55,6 +56,8 @@ test("extension activates in desktop VS Code and exposes the Test-mode hooks", a
 
 // 0.22 modes: right after activation (a new install's first start), before other tests change the layout.
 registerExperienceFlows(() => api);
+// V1-ON: the company window it opens is checked before other tests change the layout.
+registerOpenClientProjectFlows(() => api);
 
 // Before any test opens the secondary side bar: only the startup switch can have shown the view there.
 test("0.15.1: a DataPass project opens with DataPass, not Chat, in the secondary side bar", async () => {
