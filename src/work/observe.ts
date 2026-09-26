@@ -5,6 +5,7 @@
  */
 import * as vscode from "vscode";
 import * as path from "node:path";
+import { promises as fsp } from "node:fs";
 import { dirHas, fileFactPlan, type FactObservation, type FileCheck } from "../core/workspace/facts";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
 
@@ -15,6 +16,15 @@ export function resolveDeclared(root: vscode.Uri, declared: string): vscode.Uri 
 }
 
 export async function statKind(uri: vscode.Uri): Promise<"file" | "dir" | "symlink" | "missing" | "error"> {
+  // V1-REF: on disk, node's lstat (a round trip through vscode.workspace.fs costs far more per call).
+  if (uri.scheme === "file") {
+    try {
+      const s = await fsp.lstat(uri.fsPath);
+      return s.isSymbolicLink() ? "symlink" : s.isDirectory() ? "dir" : "file";
+    } catch (error) {
+      return (error as NodeJS.ErrnoException).code === "ENOENT" ? "missing" : "error";
+    }
+  }
   try {
     const s = await vscode.workspace.fs.stat(uri);
     if (s.type & vscode.FileType.SymbolicLink) return "symlink";
@@ -24,13 +34,34 @@ export async function statKind(uri: vscode.Uri): Promise<"file" | "dir" | "symli
   }
 }
 
+/**
+ * vscode.workspace.fs.readDirectory, through node's readdir on disk (V1-REF). Same answer: a
+ * symbolic link carries SymbolicLink plus its target's type; a missing folder throws FileNotFound.
+ */
+export async function readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
+  if (uri.scheme !== "file") return vscode.workspace.fs.readDirectory(uri);
+  let entries: import("node:fs").Dirent[];
+  try { entries = await fsp.readdir(uri.fsPath, { withFileTypes: true }); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") throw vscode.FileSystemError.FileNotFound(uri);
+    throw error;
+  }
+  return Promise.all(entries.map(async (d): Promise<[string, vscode.FileType]> => {
+    if (d.isSymbolicLink()) {
+      const target = await fsp.stat(path.join(uri.fsPath, d.name)).catch(() => undefined);
+      return [d.name, vscode.FileType.SymbolicLink | (target?.isDirectory() ? vscode.FileType.Directory : target?.isFile() ? vscode.FileType.File : vscode.FileType.Unknown)];
+    }
+    return [d.name, d.isDirectory() ? vscode.FileType.Directory : d.isFile() ? vscode.FileType.File : vscode.FileType.Unknown];
+  }));
+}
+
 async function listing(uri: vscode.Uri, withChildren: (name: string) => boolean): Promise<Array<{ name: string; dir: boolean; children?: string[] }> | undefined> {
   try {
-    const entries = (await vscode.workspace.fs.readDirectory(uri)).slice(0, 2000);
+    const entries = (await readDirectory(uri)).slice(0, 2000);
     return Promise.all(entries.map(async ([name, type]) => {
       const dir = Boolean(type & vscode.FileType.Directory);
       if (!dir || !withChildren(name)) return { name, dir };
-      try { return { name, dir, children: (await vscode.workspace.fs.readDirectory(vscode.Uri.joinPath(uri, name))).slice(0, 200).map(([n]) => n) }; } catch { return { name, dir }; }
+      try { return { name, dir, children: (await readDirectory(vscode.Uri.joinPath(uri, name))).slice(0, 200).map(([n]) => n) }; } catch { return { name, dir }; }
     }));
   } catch { return undefined; }
 }

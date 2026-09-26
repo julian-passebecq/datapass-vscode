@@ -5,6 +5,8 @@
  * `workspaceFolders[0]`.
  */
 import * as vscode from "vscode";
+import * as path from "node:path";
+import { promises as fsp } from "node:fs";
 
 let current: vscode.Uri | undefined;
 
@@ -19,6 +21,8 @@ export function setProjectRoot(uri: vscode.Uri | undefined): void {
 }
 
 async function hasManifest(folder: vscode.Uri): Promise<boolean> {
+  // V1-REF: on disk through node (vscode.workspace.fs is slow while the window is still starting).
+  if (folder.scheme === "file") return fsp.stat(path.join(folder.fsPath, ".datapass", "project.json")).then(s => s.isFile(), () => false);
   try { return (await vscode.workspace.fs.stat(vscode.Uri.joinPath(folder, ".datapass", "project.json"))).type === vscode.FileType.File; } catch { return false; }
 }
 
@@ -28,8 +32,9 @@ async function hasManifest(folder: vscode.Uri): Promise<boolean> {
  */
 export async function detectProjectRoot(stored: string | undefined): Promise<{ root?: vscode.Uri; candidates: vscode.Uri[] }> {
   const folders = vscode.workspace.workspaceFolders?.map(f => f.uri) ?? [];
-  const candidates: vscode.Uri[] = [];
-  for (const f of folders.slice(0, 20)) if (await hasManifest(f)) candidates.push(f);
+  const listed = folders.slice(0, 20);
+  const has = await Promise.all(listed.map(hasManifest));
+  const candidates = listed.filter((_, i) => has[i]);
   const chosen = candidates.find(c => c.toString() === stored) ?? candidates[0] ?? folders[0];
   return { root: chosen, candidates };
 }

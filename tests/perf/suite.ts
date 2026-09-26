@@ -36,7 +36,8 @@ export async function run(): Promise<void> {
     const after = api.perf();
     fs.writeFileSync(reportFile, JSON.stringify({
       ok: true,
-      loadMs: start.loadMs, activateMs: start.activateMs, firstRefreshMs: start.firstRefreshMs, warmRefreshMs,
+      loadMs: start.loadMs, activateMs: start.activateMs, firstRefreshMs: start.firstRefreshMs, fullRefreshMs: start.fullRefreshMs,
+      sessionFirstPaintMs: start.sessionFirstPaintMs, sessionSettledMs: start.sessionSettledMs, sessionSteps: start.sessionSteps, warmRefreshMs,
       components: map?.components.length ?? 0, repositories: map?.repositories.length ?? 0,
       fetch: {
         repositories: clones.length,

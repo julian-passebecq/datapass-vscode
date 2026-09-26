@@ -66,8 +66,8 @@ jobs:
           if-no-files-found: warn
 
   perf:
-    # V1-PERF: activation, first refresh and refreshes after `git fetch` on a FOIL-sized fixture
-    # (scripts/perf.ts); fails when activation or the fetch storm is above twice its budget (the first refresh is report-only until V1-REF).
+    # V1-PERF / V1-REF: activation, first paint, full refresh and refreshes after `git fetch` on a
+    # FOIL-sized fixture (scripts/perf.ts); fails when a median is above twice its budget.
     strategy:
       fail-fast: false
       matrix:

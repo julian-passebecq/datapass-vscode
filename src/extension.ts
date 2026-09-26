@@ -159,19 +159,35 @@ export interface DataPassTestApi {
     status(): { text: string; tooltip: string; visible: boolean };
     landed(): Promise<boolean>;
   };
-  /** V1-PERF: this activation's timings (ms) and how many refreshes ran since (scripts/perf.ts). */
+  /** V1-PERF: this activation's timings (ms) and how many refreshes ran since (scripts/perf.ts). V1-REF: first paint and full refresh. */
   perf(): PerfCounters;
 }
 
-export interface PerfCounters { loadMs: number; activateMs: number; firstRefreshMs: number; sessionRefreshes: number; sessionChanges: number; gitChanges: number }
+export interface PerfCounters {
+  loadMs: number; activateMs: number;
+  /** V1-REF: until the project, its architecture and the tree are painted (the gated number). */
+  firstRefreshMs: number;
+  /** V1-REF: until everything of the first refresh is in (probes, readiness, inventory, Galaxy). */
+  fullRefreshMs: number;
+  /** The session's own split of its first refresh (ms since that refresh started). */
+  sessionFirstPaintMs: number; sessionSettledMs: number; sessionSteps: Record<string, number>;
+  sessionRefreshes: number; sessionChanges: number; gitChanges: number;
+}
 
 // V1-PERF: esbuild's banner stamps the moment the bundle starts evaluating (esbuild.mjs).
 const loadedAt = performance.now();
 const loadStart = (globalThis as { __datapassLoadStart?: number }).__datapassLoadStart ?? loadedAt;
 
+/** V1-REF: resolves when the session next paints the project (the first step of a refresh). */
+function nextPaint(session: WorkSession): Promise<void> {
+  return new Promise(resolve => {
+    const sub = session.onDidPaint(step => { if (step === "first-paint") { sub.dispose(); resolve(); } });
+  });
+}
+
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
   const activateStart = performance.now();
-  const perf: PerfCounters = { loadMs: loadedAt - loadStart, activateMs: 0, firstRefreshMs: 0, sessionRefreshes: 0, sessionChanges: 0, gitChanges: 0 };
+  const perf: PerfCounters = { loadMs: loadedAt - loadStart, activateMs: 0, firstRefreshMs: 0, fullRefreshMs: 0, sessionFirstPaintMs: 0, sessionSettledMs: 0, sessionSteps: {}, sessionRefreshes: 0, sessionChanges: 0, gitChanges: 0 };
   // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
   const session = new WorkSession(context);
   if (context.extensionMode === vscode.ExtensionMode.Test) {
@@ -312,9 +328,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(status, experience.onDidChange(showStatus));
 
   const refreshState = async (): Promise<GalaxyState> => {
-    // The session probes tools first so the Galaxy cards' operation readiness is current.
-    await session.refresh();
-    const state = await galaxy.refresh();
+    // V1-REF: the session paints the project first; the Galaxy cards are gathered while it finishes
+    // (probes, readiness, inventory). Operation readiness reaches the cards when the session settles.
+    const done = session.refresh();
+    await Promise.race([nextPaint(session), done]);
+    const [state] = await Promise.all([galaxy.refresh(), done]);
+    await galaxy.refreshOperations();
     updateStatusBar(status, state);
     return state;
   };
@@ -415,8 +434,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
   const firstRefreshStart = performance.now();
+  void nextPaint(session).then(() => { perf.firstRefreshMs ||= performance.now() - firstRefreshStart; });
   const startup = refreshState()
-    .then(() => { perf.firstRefreshMs = performance.now() - firstRefreshStart; })
+    .then(() => {
+      perf.fullRefreshMs = performance.now() - firstRefreshStart;
+      perf.firstRefreshMs ||= perf.fullRefreshMs;
+      perf.sessionFirstPaintMs = session.lastRefreshTimings.firstPaintMs ?? 0;
+      perf.sessionSettledMs = session.lastRefreshTimings.settledMs ?? 0;
+      perf.sessionSteps = { ...session.lastRefreshTimings.steps };
+    })
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
     .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied).catch(() => false); await landed; experience.introduce(); return applied; })

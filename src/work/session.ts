@@ -7,6 +7,7 @@ import { environmentOf, variantStamp, type PackStamp } from "../core/exchange/st
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { promises as fsp } from "node:fs";
 import { executablePath } from "../core/exec";
 import { loadProjectContext, projectFacts, writeLocal, LOCAL_DIR, type ProjectContext } from "../core/workspace/loader";
 import { factNotes, type FactObservation } from "../core/workspace/facts";
@@ -57,6 +58,20 @@ export interface Preview { key: string; title: string; picks: Map<string, string
 
 /** Machine-local repository locations chosen with "Locate clone" (git-ignored, never shared). */
 export const LOCAL_REPOSITORIES_FILE = "repositories.json";
+
+interface Inventory { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[] }
+
+/** The first `bytes` of a file as text; undefined for a symbolic link or a file above `maxSize`. */
+async function readHead(fsPath: string, bytes: number, maxSize: number): Promise<string | undefined> {
+  const s = await fsp.lstat(fsPath);
+  if (s.isSymbolicLink() || s.size > maxSize) return undefined;
+  const handle = await fsp.open(fsPath, "r");
+  try {
+    const buf = Buffer.alloc(Math.min(bytes, s.size));
+    const { bytesRead } = await handle.read(buf, 0, buf.length, 0);
+    return new TextDecoder("utf-8", { fatal: false }).decode(buf.subarray(0, bytesRead));
+  } finally { await handle.close(); }
+}
 
 /** Inventory scans are cached this long unless the user refreshes the Work view. */
 const INVENTORY_TTL_MS = 60_000;
@@ -111,7 +126,7 @@ export class WorkSession implements vscode.Disposable {
   private readonly reviews = new Set<string>();
   /** Companion URLs the user confirmed in this window; a changed URL is a new URL and asks again. */
   private readonly confirmedLinks = new Set<string>();
-  private inv?: { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[] };
+  private inv?: Inventory;
   private cached?: WorkModel;
   /** V3: repositories and component files as observed on this machine. */
   private projectObs?: ProjectObservation;
@@ -142,43 +157,99 @@ export class WorkSession implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
-  dispose(): void { this.emitter.dispose(); this.selectionEmitter.dispose(); }
+  dispose(): void { this.emitter.dispose(); this.selectionEmitter.dispose(); this.paintEmitter.dispose(); }
 
   get project(): ProjectContext { return this.ctx; }
   get extensionUri(): vscode.Uri { return this.context.extensionUri; }
   get root(): vscode.Uri | undefined { return this.ctx.root; }
 
+  /**
+   * V1-REF: a refresh paints in two steps. First the project, its architecture and the tree (the
+   * manifest, the repositories and the component files), then — while the views already show that —
+   * the tool probes, readiness (env files, extensions.json, binding folders) and the inventory. Each
+   * step fires onDidChange; the promise resolves when both are done. A newer refresh supersedes an
+   * older one: the older one stops writing and resolves with the newer one.
+   */
   async refresh(forceProbe = false): Promise<void> {
+    const generation = ++this.generation;
+    const run = this.runRefresh(generation, forceProbe);
+    this.latest = run;
+    return run;
+  }
+
+  private generation = 0;
+  private latest?: Promise<void>;
+  /** The timings of the last refresh that painted (ms since it started): firstPaint and settled. */
+  lastRefreshTimings: { firstPaintMs?: number; settledMs?: number; steps?: Record<string, number> } = {};
+  private readonly paintEmitter = new vscode.EventEmitter<"first-paint" | "settled">();
+  /** Fires when a refresh has painted the project ("first-paint") and when it is complete ("settled"). */
+  readonly onDidPaint = this.paintEmitter.event;
+
+  private async runRefresh(generation: number, forceProbe: boolean): Promise<void> {
+    const started = performance.now();
+    const steps: Record<string, number> = {};
+    const mark = (name: string) => { steps[name] = Math.round(performance.now() - started); };
+    const step = <T>(name: string, p: Promise<T>): Promise<T> => p.then(v => { mark(name); return v; });
+    const superseded = () => generation !== this.generation;
     if (forceProbe) invalidateToolProbes();
     // F02: the project is the folder holding .datapass/project.json (or the one chosen), not simply the first folder.
-    const { root, candidates } = await detectProjectRoot(this.context.workspaceState.get<string>(KEYS.root));
+    const { root, candidates } = await step("root", detectProjectRoot(this.context.workspaceState.get<string>(KEYS.root)));
+    if (superseded()) return this.latest;
     setProjectRoot(root);
     this.rootCandidates = candidates;
-    const [ctx, tools] = await Promise.all([loadProjectContext(this.context.extensionUri), probeTools(forceProbe)]);
-    this.ctx = ctx;
-    this.tools = tools;
-    this.toolkitFiles = await loadToolkitFiles(ctx.root, this.version);
-    this.factObs = await observeFileFacts(ctx.root, ctx.manifest);
+    const ctx = await step("context", loadProjectContext(this.context.extensionUri));
     const coordination = ctx.root ? coordinationKeyOf(ctx.manifest, ctx.root) : ".";
-    this.projectObs = ctx.root ? await observeProject({
-      root: ctx.root, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
-      localBindings: await this.localBindings(), cloneParents: cloneParents(),
-      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
-      // The files the board's cards name, so a card says whether each one is here.
-      extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
-        .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
-        .filter((f): f is { repoKey: string; repoPath: string } => !!f)
-    }) : undefined;
-    this.envObs = ctx.root ? await observeLocalEnv({
-      root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map(),
-      trusted: vscode.workspace.isTrusted, git: gitRunner
-    }) : new Map();
-    this.extensionsObs = ctx.root && ctx.manifest?.toolchain ? await observeExtensionsJson(ctx.root) : undefined;
-    this.bindingObs = ctx.root ? await observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey: this.projectObs?.coordinationKey ?? ".", folders: this.projectObs?.folders ?? new Map() }) : new Map();
-    this.cached = undefined;
-    await this.rememberProject();
-    if (forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString()) await this.scanInventory();
+    const [toolkitFiles, factObs, projectObs] = await Promise.all([
+      step("toolkit", loadToolkitFiles(ctx.root, this.version)),
+      step("facts", observeFileFacts(ctx.root, ctx.manifest)),
+      ctx.root ? this.localBindings(ctx.root).then(localBindings => observeProject({
+        root: ctx.root!, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
+        localBindings, cloneParents: cloneParents(), mark,
+        extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
+        // The files the board's cards name, so a card says whether each one is here.
+        extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
+          .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
+          .filter((f): f is { repoKey: string; repoPath: string } => !!f)
+      })) : Promise.resolve(undefined)
+    ]);
+    if (superseded()) return this.latest;
+    const rootChanged = this.ctx.root?.toString() !== ctx.root?.toString();
+    this.ctx = ctx;
+    this.toolkitFiles = toolkitFiles;
+    this.factObs = factObs;
+    this.projectObs = projectObs;
+    if (rootChanged) {
+      // Another project: what was observed for the previous one no longer applies.
+      this.envObs = new Map();
+      this.extensionsObs = undefined;
+      this.bindingObs = new Map();
+    }
+    this.lastRefreshTimings = { firstPaintMs: performance.now() - started, steps };
     this.changed();
+    this.paintEmitter.fire("first-paint");
+
+    const folders = projectObs?.folders ?? new Map<string, vscode.Uri>();
+    const coordinationKey = projectObs?.coordinationKey ?? ".";
+    const inventoryDue = forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString();
+    // The probes start only now: on Windows each process start holds the extension host's thread,
+    // which would slow the first paint's own Git reads.
+    const [tools, envObs, extensionsObs, bindingObs, inv] = await Promise.all([
+      step("probes", probeTools(forceProbe)),
+      ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()),
+      ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined),
+      ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()),
+      step("inventory", inventoryDue ? this.scanInventory(ctx) : Promise.resolve(this.inv)),
+      this.rememberProject()
+    ]);
+    if (superseded()) return this.latest;
+    this.tools = tools;
+    this.envObs = envObs;
+    this.extensionsObs = extensionsObs;
+    this.bindingObs = bindingObs;
+    this.inv = inv;
+    this.lastRefreshTimings.settledMs = performance.now() - started;
+    this.changed();
+    this.paintEmitter.fire("settled");
   }
 
   // ------------------------------------------------------------ qualification (per user, all projects)
@@ -200,9 +271,10 @@ export class WorkSession implements vscode.Disposable {
   /** Local Git state of the workspace and declared repositories; remote ones are never contacted. */
   repositories(): RepoStatus[] { return this.inv?.repos ?? []; }
 
-  private async scanInventory(): Promise<void> {
-    const root = this.ctx.root;
-    if (!root) { this.inv = { at: Date.now(), assets: [], truncated: false, repos: [] }; return; }
+  private async scanInventory(ctx: ProjectContext): Promise<Inventory> {
+    const root = ctx.root;
+    if (!root) return { at: Date.now(), assets: [], truncated: false, repos: [] };
+    const repos = this.readRepositories(ctx);
     const [named, py, platform, pipelines] = await Promise.all([
       vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}", INVENTORY_EXCLUDE, 2000),
       vscode.workspace.findFiles("**/*.py", INVENTORY_EXCLUDE, MAX_PY_FILES),
@@ -216,6 +288,8 @@ export class WorkSession implements vscode.Disposable {
     const needsHead = (p: string) => !/\.(ipynb|pbip)$/i.test(p);
     const head = async (uri: vscode.Uri): Promise<string | undefined> => {
       try {
+        // V1-REF: on disk, only the first bytes are read, through node (one open, one read).
+        if (uri.scheme === "file") return await readHead(uri.fsPath, HEAD_BYTES, 4 * 1024 * 1024);
         const stat = await vscode.workspace.fs.stat(uri);
         if (stat.type & vscode.FileType.SymbolicLink || stat.size > 4 * 1024 * 1024) return undefined;
         return new TextDecoder("utf-8", { fatal: false }).decode((await vscode.workspace.fs.readFile(uri)).subarray(0, HEAD_BYTES));
@@ -231,11 +305,12 @@ export class WorkSession implements vscode.Disposable {
       for (const a of batch) if (a) assets.push(a);
     }
     assets.sort((a, b) => a.kind.localeCompare(b.kind) || a.path.localeCompare(b.path));
-    this.inv = { at: Date.now(), root: root.toString(), assets, truncated: py.length >= MAX_PY_FILES, repos: await this.readRepositories(root) };
+    return { at: Date.now(), root: root.toString(), assets, truncated: py.length >= MAX_PY_FILES, repos: await repos };
   }
 
-  private async readRepositories(root: vscode.Uri): Promise<RepoStatus[]> {
-    const m = this.ctx.manifest;
+  private async readRepositories(ctx: ProjectContext): Promise<RepoStatus[]> {
+    const root = ctx.root!;
+    const m = ctx.manifest;
     const targets: Array<{ key: string; label: string; fsPath?: string; remote?: string }> = [{ key: "workspace", label: "This folder", fsPath: root.fsPath }];
     for (const [key, repo] of Object.entries(m?.repositories ?? {}).slice(0, 30)) {
       const remote = repo.remote?.url.replace(/^https:\/\//, "").replace(/\.git$/, "");
@@ -468,7 +543,7 @@ export class WorkSession implements vscode.Disposable {
     return {
       manifest: this.ctx.manifest, graph: this.ctx.graph, coordinationKey: obs?.coordinationKey ?? ".",
       repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
-      tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
+      tools: this.tools, toolsPending: !this.tools.size, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
       qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings(),
       observationIncomplete: obs?.incomplete ? incompleteText(obs.incomplete) : undefined
@@ -682,8 +757,8 @@ export class WorkSession implements vscode.Disposable {
     this.selectionEmitter.fire(next);
   }
 
-  private async localBindings(): Promise<Record<string, string>> {
-    const root = this.ctx.root ?? vscode.workspace.workspaceFolders?.[0]?.uri;
+  private async localBindings(of?: vscode.Uri): Promise<Record<string, string>> {
+    const root = of ?? this.ctx.root ?? vscode.workspace.workspaceFolders?.[0]?.uri;
     return root ? readLocalBindings(root) : {};
   }
 
