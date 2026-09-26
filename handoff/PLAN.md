@@ -78,7 +78,6 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
 | PM ASSISTANT DataPass 1 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate | 2026-09-26 | PM |
-| TAMPON DATAPASSVSCODE - M 3 | coder (medium) | Release 0.27.0 (#97), then stops | 2026-09-26 | PM |
 | COORD DataPass 1 | coordinator (low) | V1 coders flow, routine merges, context watch | 2026-09-26 · V2 | PM |
 
 Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
