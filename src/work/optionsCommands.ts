@@ -84,7 +84,7 @@ async function pruneBackups(root: vscode.Uri, target: string): Promise<void> {
  * Write one project file: refuse if it changed since DataPass read it, keep a named backup of the
  * previous content under .datapass/local/backups, then write through the journal (read-back check).
  */
-export async function writeProjectFile(session: WorkSession, rel: string, next: Uint8Array, base: Uint8Array | undefined): Promise<string | undefined> {
+export async function writeProjectFile(session: Pick<WorkSession, "root">, rel: string, next: Uint8Array, base: Uint8Array | undefined): Promise<string | undefined> {
   const root = requireRoot(session.root);
   const fs = workspaceJournalFs(root);
   const current = await fs.read(rel);
@@ -102,7 +102,7 @@ export async function writeProjectFile(session: WorkSession, rel: string, next: 
   return backup;
 }
 
-async function showDiff(root: vscode.Uri, rel: string, proposed: string, title: string): Promise<void> {
+export async function showProposalDiff(root: vscode.Uri, rel: string, proposed: string, title: string): Promise<void> {
   const key = newLocalId("proposal");
   proposals.set(key, proposed);
   if (proposals.size > 20) proposals.delete(proposals.keys().next().value!);
@@ -371,7 +371,7 @@ export async function importAnswer(session: WorkSession, raw: string, preset?: E
   if (!vet.ok) throw new UserFacingError(`Refusing ${incoming.path}: ${vet.reason}`);
   const base = await currentBytes(session, incoming.kind);
   if (base && new TextDecoder().decode(base) === incoming.text) { void vscode.window.showInformationMessage(`${incoming.path} already has exactly this content.`); return undefined; }
-  await showDiff(root, incoming.path, incoming.text, `${incoming.path}: current ↔ AI proposal`);
+  await showProposalDiff(root, incoming.path, incoming.text, `${incoming.path}: current ↔ AI proposal`);
   const detail = [
     `The diff shows the current file (left) and the AI's proposal (right).`,
     incoming.warnings.length ? `Warnings (the file is still valid):\n${incoming.warnings.slice(0, 8).map(w => `• ${w}`).join("\n")}` : "",
@@ -399,7 +399,7 @@ async function restoreBackup(session: WorkSession): Promise<void> {
   if (!vetRelativePath(target).ok || !/^\.datapass\/[a-z.-]+\.json$/.test(target)) throw new UserFacingError(`Refusing to restore ${target}.`);
   const bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(dir, pick.x.n));
   const current = await readOptional(projectUri(root, target));
-  await showDiff(root, target, new TextDecoder().decode(bytes), `${target}: current ↔ backup of ${pick.description}`);
+  await showProposalDiff(root, target, new TextDecoder().decode(bytes), `${target}: current ↔ backup of ${pick.description}`);
   if (!(await confirmModal(`Restore ${target} from ${pick.description}?`, "The current version is backed up first. Commit the result yourself.", "Restore"))) return;
   await writeProjectFile(session, target, bytes, current);
   await session.refresh();
