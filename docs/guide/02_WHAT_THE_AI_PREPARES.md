@@ -374,6 +374,57 @@ project says so.
 Keep the current option as it is (no `changes`); at most two alternatives per decision; give every
 price a `source` (https) and an `asOf` date, never invent a number. Applying a decision is its own PR.
 
+### Declaring variants (versions, proposals, alternatives)
+
+A variant needs no new file and no new field. **A variant is an option** of a decision, and a named
+combination of options is a **scenario**. What makes it a variant DataPass can follow is what the
+option already says:
+
+- `changes.add` / `changes.replace`: the components this variant adds or replaces, each with its
+  `artifacts` (`repoRef`, `root`, `entry`, `files`) exactly as in `graph.json`. That is the
+  variant → files map: DataPass looks for those files in that repository.
+- `changes.remove`: the baseline components it drops (nothing to code).
+- `changes.addRepositories`: a repository the variant needs. When nobody has created it yet, declare
+  it `"planned": true` (no remote): the variant is still declared, compared and shown.
+
+A variant nobody has coded yet is declared the same way: its components name a planned repository,
+or no files yet. Do not mark anything "coded" or "prepared": DataPass derives the **coding state**
+of every option and scenario from the files it finds, and it cannot go stale:
+
+| State | When |
+|---|---|
+| coded | every required file of its components is here; an option that only removes components is coded |
+| partly coded | some files are here and some are missing, or its components are in different states |
+| not coded | no file yet, no files declared, or only planned repositories |
+| not checked here | the files cannot be seen on this machine (repository not cloned, Restricted Mode, unverified clone) |
+
+A scenario combines its picked options (the decisions it does not change count with their current
+option); a file two options share is shown with both. In V1 a variant lives in its own folder or its
+own repository; files on another branch or tag are not followed (plan J5, V2).
+
+<!-- fragment: minimal options -->
+```json
+{
+  "format": "datapass.options",
+  "version": "1",
+  "decisions": [
+    { "id": "extraction", "title": "What extracts the pages?", "concerns": ["extract"], "current": "function",
+      "options": [
+        { "id": "function", "label": "Azure Function (current)" },
+        { "id": "script", "label": "A Python script, run by hand",
+          "changes": { "replace": [ { "id": "extract", "kind": "script", "label": "PDF extraction (script)", "provider": "python",
+            "artifacts": { "profile": "python.script", "root": "scripts/extract", "entry": "extract.py", "files": ["tests/test_extract.py"] } } ] } },
+        { "id": "service", "label": "A container service in a new repository (not coded yet)",
+          "changes": {
+            "addRepositories": [ { "key": "extract-service", "label": "Extraction service", "planned": true } ],
+            "replace": [ { "id": "extract", "kind": "application", "label": "PDF extraction (service)", "provider": "python", "status": "planned",
+              "artifacts": { "repoRef": "extract-service", "root": ".", "entry": "main.py" } } ] } }
+      ] }
+  ],
+  "scenarios": [ { "id": "by-hand", "title": "First batch by hand", "picks": ["extraction=script"] } ]
+}
+```
+
 ## 2.6 `.datapass/sheet.json` — project sheet (optional)
 
 <!-- example: minimal sheet -->
