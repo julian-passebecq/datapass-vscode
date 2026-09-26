@@ -22,6 +22,7 @@ import { registerWorkbenchCommands } from "./work/workbenchCommands";
 import { registerOptionsCommands } from "./work/optionsCommands";
 import { registerBoardCommands } from "./work/boardCommands";
 import { registerGitHostCommands } from "./work/gitHostCommands";
+import { registerCheckCommands } from "./work/checkCommands";
 import type { WorkbenchState } from "./views/workbenchState";
 import { AiExchangeView } from "./views/aiExchange";
 import type { AiExchangeState } from "./views/aiExchangeState";
@@ -166,6 +167,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
   registerGitHostCommands(context, session);
+  registerCheckCommands(context);
 
   // 0.19 Git module: read-only observation of the project's repositories, worktrees and PRs (left side bar, under Project).
   const git = new GitObserver(session);

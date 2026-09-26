@@ -80,8 +80,24 @@ function fixtureText(rel: string): string {
   return fs.readFileSync(path.join(repo, "tests", "fixtures", ...rel.split("/")), "utf8");
 }
 
+/** Every file of a tests/fixtures folder, byte-exact, by relative path. */
+function fixtureDir(rel: string): Record<string, string> {
+  const base = path.join(repo, "tests", "fixtures", ...rel.split("/"));
+  const out: Record<string, string> = {};
+  const walk = (d: string) => {
+    for (const e of fs.readdirSync(path.join(base, d), { withFileTypes: true })) {
+      const r = d ? `${d}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(r); else out[r] = fs.readFileSync(path.join(base, r), "utf8");
+    }
+  };
+  walk("");
+  return out;
+}
+
 const FIXTURES: Record<string, Record<string, string>> = {
   "empty": { "README.md": "# empty workspace\n" },
+  // 0.22 package D: a native repository (no .datapass) with a broken databricks.yml, Dockerfile, compose file and JSON.
+  "v22-checks": fixtureDir("checks/bad"),
   "v2-retail": {
     ".datapass/project.json": JSON.stringify(v2Retail(), null, 2) + "\n",
     "bundle/databricks.yml": "bundle:\n  name: retail\n",

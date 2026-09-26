@@ -13,6 +13,7 @@ uses it (page 3 in French).
 | 5 | [The loops](05_THE_LOOPS.md) — DataPass-guided JSON exchange, work orders, pull requests and Check / Get updates, the Git view | both |
 | 6 | [Ready-to-paste prompt for the client's AI](06_PROMPT_FOR_THE_CLIENT_AI.md) | the person |
 | 7 | [Known limits and open bugs](07_KNOWN_LIMITS.md) | both |
+| 8 | [What DataPass checks without running anything](08_FORMAT_CHECKS.md) — JSON, YAML, Databricks bundles, Dockerfiles and compose files in Problems; rule ids; what the client AI can pre-check before a PR | both |
 
 Field-by-field reference: [../PREPARING_A_PROJECT.md](../PREPARING_A_PROJECT.md). Schemas:
 [`schemas/`](../../schemas/). Complete example projects: [`examples/v3`](../../examples/v3/).
