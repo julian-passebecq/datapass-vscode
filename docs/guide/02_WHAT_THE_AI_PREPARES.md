@@ -17,7 +17,7 @@ Prepare the files in this order: each step only names things the previous steps 
 
 | Step | File | Why this order |
 |---|---|---|
-| 1 | The coordination repository, `AGENTS.md`, `README.md`, `docs/ARCHITECTURE.md` | Everything else lives in it. |
+| 1 | The bridge repository (older name: coordination repository), `AGENTS.md`, `README.md`, `docs/ARCHITECTURE.md` | Everything else lives in it. |
 | 2 | `.datapass/project.json` — identity, `project.type`, `modules` | Decides which parts of DataPass are on. |
 | 3 | … `repositories` | Components, docs, bindings and connections name repository **keys**. |
 | 4 | … `environments` | Operations, identifiers' `values` and connections name environment ids. |
@@ -28,13 +28,20 @@ Prepare the files in this order: each step only names things the previous steps 
 | 9 | … `connections` | Names tools, identifiers, environments and repositories. |
 | 10 | … `resources` and `bindings` (VMs, container hosts) | Names scopes and repositories ([04](04_CUSTOMIZATION.md)). |
 | 11 | Optional: `.datapass/board.json`, `options.json`, `sheet.json` | Name scopes, components, environments, decisions. |
-| 12 | Native files in the native repositories (one PR per repository) | The graph says where. |
+| 12 | Native files in the native repositories (one PR per repository, plus a bridge PR when `.datapass` changes: see 2.1) | The graph says where. |
 
 Never create `.datapass/local/` (machine-local, git-ignored, written by DataPass), a
 `.code-workspace` file (DataPass creates it per computer) or `.datapass/work-log.json` by hand
 (DataPass writes it on *Publish summary*; section 2.9).
 
-## 2.1 The coordination repository and AGENTS.md
+## 2.1 The bridge repository (coordination repository) and AGENTS.md
+
+The **bridge repository** is the one that holds `.datapass/*.json`; earlier versions of this guide
+call it the coordination repository, and both names mean the same thing. Native repositories never
+contain DataPass files. A change that touches native code **and** the architecture is a
+**coordinated change set**: one pull request per native repository, plus one bridge pull request
+for `.datapass/*.json`, each linking the others. They land separately; until every one is merged,
+the bridge describes an architecture that is only partly in place.
 
 One small Git repository per client project (for example `<client>-coordination`), private when
 the client's work is private. It holds:
@@ -67,8 +74,11 @@ hold each component and which files it needs. Contract:
 https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/guide/02_WHAT_THE_AI_PREPARES.md
 
 - Put native files in the repository and folder the graph names. Deliver a branch and a pull
-  request per repository; <person> reviews and merges.
-- Update `.datapass/graph.json` (and `board.json`) in the same pull request.
+  request per repository; <person> reviews and merges. A pull request never spans repositories.
+- When the work changes the architecture or the board, update `.datapass/graph.json` (and
+  `board.json`) in a separate pull request in this bridge repository, and link the native and
+  bridge pull requests to each other (a coordinated change set). When the work is in the bridge
+  repository itself, one pull request holds both.
 - Never write a secret, key, token, password, connection string or SAS URL anywhere. Say where it
   belongs (Key Vault, app settings, a local file kept out of Git).
 - Do not mark anything "prepared" or claim it is deployed or tested; say which check the person
@@ -310,8 +320,11 @@ Full:
 
 Rules: ids unique; a card's `status` is a declared column; `sprint`/`milestone` declared; real
 dates; `links` https only, no credentials or signature parameters. Keep it up to date **in the
-same pull request** as the work: move the card to `review`, add the PR link, add a card per new
-bug; never delete a card or change an `id`.
+bridge pull request** that goes with the work (the same pull request only when the work is in the
+bridge repository): move the card to `review`, add the PR links, add a card per new bug; never
+delete a card or change an `id`. A merged PR is evidence that the work was implemented, not that
+the card is done: a card moves to a done column when its own acceptance is met or a rule of the
+project says so.
 
 ## 2.5 `.datapass/options.json` — architecture alternatives (optional)
 
@@ -360,6 +373,57 @@ bug; never delete a card or change an `id`.
 
 Keep the current option as it is (no `changes`); at most two alternatives per decision; give every
 price a `source` (https) and an `asOf` date, never invent a number. Applying a decision is its own PR.
+
+### Declaring variants (versions, proposals, alternatives)
+
+A variant needs no new file and no new field. **A variant is an option** of a decision, and a named
+combination of options is a **scenario**. What makes it a variant DataPass can follow is what the
+option already says:
+
+- `changes.add` / `changes.replace`: the components this variant adds or replaces, each with its
+  `artifacts` (`repoRef`, `root`, `entry`, `files`) exactly as in `graph.json`. That is the
+  variant → files map: DataPass looks for those files in that repository.
+- `changes.remove`: the baseline components it drops (nothing to code).
+- `changes.addRepositories`: a repository the variant needs. When nobody has created it yet, declare
+  it `"planned": true` (no remote): the variant is still declared, compared and shown.
+
+A variant nobody has coded yet is declared the same way: its components name a planned repository,
+or no files yet. Do not mark anything "coded" or "prepared": DataPass derives the **coding state**
+of every option and scenario from the files it finds, and it cannot go stale:
+
+| State | When |
+|---|---|
+| coded | every required file of its components is here; an option that only removes components is coded |
+| partly coded | some files are here and some are missing, or its components are in different states |
+| not coded | no file yet, no files declared, or only planned repositories |
+| not checked here | the files cannot be seen on this machine (repository not cloned, Restricted Mode, unverified clone) |
+
+A scenario combines its picked options (the decisions it does not change count with their current
+option); a file two options share is shown with both. In V1 a variant lives in its own folder or its
+own repository; files on another branch or tag are not followed (plan J5, V2).
+
+<!-- fragment: minimal options -->
+```json
+{
+  "format": "datapass.options",
+  "version": "1",
+  "decisions": [
+    { "id": "extraction", "title": "What extracts the pages?", "concerns": ["extract"], "current": "function",
+      "options": [
+        { "id": "function", "label": "Azure Function (current)" },
+        { "id": "script", "label": "A Python script, run by hand",
+          "changes": { "replace": [ { "id": "extract", "kind": "script", "label": "PDF extraction (script)", "provider": "python",
+            "artifacts": { "profile": "python.script", "root": "scripts/extract", "entry": "extract.py", "files": ["tests/test_extract.py"] } } ] } },
+        { "id": "service", "label": "A container service in a new repository (not coded yet)",
+          "changes": {
+            "addRepositories": [ { "key": "extract-service", "label": "Extraction service", "planned": true } ],
+            "replace": [ { "id": "extract", "kind": "application", "label": "PDF extraction (service)", "provider": "python", "status": "planned",
+              "artifacts": { "repoRef": "extract-service", "root": ".", "entry": "main.py" } } ] } }
+      ] }
+  ],
+  "scenarios": [ { "id": "by-hand", "title": "First batch by hand", "picks": ["extraction=script"] } ]
+}
+```
 
 ## 2.6 `.datapass/sheet.json` — project sheet (optional)
 
@@ -438,7 +502,7 @@ the person adds its path to the `datapass.catalogs` setting and uses *Switch Pro
 }
 ```
 
-### The toolkit (optional, in the hub, DataPass ≥ 0.21.0)
+### The toolkit (optional, in the hub, DataPass ≥ 0.23.0)
 
 A hub can also carry `.datapass/toolkit/tools.json` and `.datapass/toolkit/recipes/*.json`: real
 tools, prices and step-by-step recipes DataPass shows instead of the AI guessing. Same envelope as

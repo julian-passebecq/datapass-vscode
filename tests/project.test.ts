@@ -76,7 +76,7 @@ test("A: each operation has its own prerequisites (read ≠ test ≠ deploy)", (
   assert.equal(deploy.result.status, "blocked");
   assert.ok(deploy.result.satisfied.some(s => s.kind === "target" && /Development/.test(s.label)));
   // Once the AI's file is in the repository, testing is ready; deploying still needs the tool and the reviews.
-  const updated = buildProjectMap(inputA({ tools: tools("cli.python", "cli.func", "ext.azure-functions"), fileObservations: fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", sha256: "r1" } }) }));
+  const updated = buildProjectMap(inputA({ tools: tools("cli.python", "cli.func", "ext.azure-functions"), fileObservations: fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "r1" } } }) }));
   const ops2 = Object.fromEntries(updated.components.find(c => c.id === "extract")!.operations.map(o => [o.capability.id, o]));
   assert.equal(ops2["python.tests.run"]!.result.status, "ready");
   assert.deepEqual(ops2["python.tests.run"]!.command, { text: "python -m pytest", cwd: "functions/extract" });
@@ -89,12 +89,12 @@ test("A: each operation has its own prerequisites (read ≠ test ≠ deploy)", (
 });
 
 test("A: reviews are bound to the component's files and target (a new file version asks again)", () => {
-  const withReq = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", sha256: "r1" } });
+  const withReq = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "r1" } } });
   const base = inputA({ tools: tools("cli.python", "cli.func", "ext.azure-functions"), fileObservations: withReq });
   const deploy = buildProjectMap(base).components.find(c => c.id === "extract")!.operations.find(o => o.capability.id === "azure-functions.deploy")!;
   const confirmed = new Set(Object.values(deploy.result.reviewKeys));
   assert.equal(buildProjectMap({ ...base, reviewsConfirmed: confirmed }).components.find(c => c.id === "extract")!.operations.find(o => o.capability.id === "azure-functions.deploy")!.result.status, "ready");
-  const changed = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", sha256: "r2" } });
+  const changed = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "r2" } } });
   const after = buildProjectMap({ ...base, reviewsConfirmed: confirmed, fileObservations: changed }).components.find(c => c.id === "extract")!.operations.find(o => o.capability.id === "azure-functions.deploy")!;
   assert.equal(after.result.status, "needs-review", "the reviewed files changed");
 });
@@ -109,7 +109,7 @@ test("A: remote-only operations do not need the clone; generated outputs need th
   repos.set("lab", { key: "lab", folder: "/work/research-lab", source: "sibling-folder", exists: true, isGitRepo: true, git: { branch: "main", head: "c".repeat(40), upstream: "origin/main", ahead: 0, behind: 0, changes: 0, originUrl: "git@github.com:example-org/research-lab.git" } });
   const files = fileObsA();
   files.set(obsKey("lab", ""), { state: "found", kind: "dir" });
-  files.set(obsKey("lab", "databricks.yml"), { state: "found", kind: "file", sha256: "d1" });
+  files.set(obsKey("lab", "databricks.yml"), { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "d1" } });
   files.set(obsKey("lab", ".lab/build"), { state: "missing" });
   const lab = buildProjectMap(inputA({ tools: tools("cli.databricks"), repoObservations: repos, fileObservations: files })).components.find(c => c.id === "lab-bundle")!;
   assert.equal(lab.artifacts!.availability, "generation-needed");
@@ -194,13 +194,13 @@ test("A: the preparation pack names repos, paths and blockers, never local paths
 });
 
 test("A: last results are per operation and target, and go stale when the files change", () => {
-  const withReq = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", sha256: "r1" } });
+  const withReq = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "r1" } } });
   const base = inputA({ fileObservations: withReq });
   const op = buildProjectMap(base).components.find(c => c.id === "extract")!.operations.find(o => o.capability.id === "azure-functions.deploy")!;
   const artifactDigest = buildProjectMap(base).components.find(c => c.id === "extract")!.artifacts!.digest;
   const records = upsertQualification([], { capabilityId: op.capability.id, label: op.label, result: "worked", projectId: "research-library", scopeId: "project", operationKey: op.key, targetDigest: op.result.targetDigest, artifactDigest, preflight: "ready", at: T, dataPassVersion: "0.13.0", tools: {} });
   assert.equal(buildProjectMap({ ...base, qualification: records }).components.find(c => c.id === "extract")!.operations.find(o => o.key === op.key)!.lastResult?.stale, false);
-  const changed = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", sha256: "r2" } });
+  const changed = fileObsA({ "functions/extract/requirements.txt": { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "r2" } } });
   const later = buildProjectMap({ ...base, qualification: records, fileObservations: changed }).components.find(c => c.id === "extract")!.operations.find(o => o.capability.id === "azure-functions.deploy")!;
   assert.equal(later.lastResult?.result, "worked");
   assert.equal(later.lastResult?.stale, true, "the result describes the previous files, not these");
@@ -226,8 +226,8 @@ test("B: a Python → PostgreSQL/Neon monorepo works without Azure, Mongo or FOI
     relations: [{ id: "load", source: "clean", target: "db", relation: "feeds" }]
   }));
   const files = new Map<string, FileObservation>([
-    [obsKey(".", "etl"), { state: "found", kind: "dir" }], [obsKey(".", "etl/clean.py"), { state: "found", kind: "file", sha256: "c" }],
-    [obsKey(".", "etl/tests/test_clean.py"), { state: "found", kind: "file", sha256: "t" }], [obsKey(".", "etl/tests"), { state: "found", kind: "dir" }],
+    [obsKey(".", "etl"), { state: "found", kind: "dir" }], [obsKey(".", "etl/clean.py"), { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "c" } }],
+    [obsKey(".", "etl/tests/test_clean.py"), { state: "found", kind: "file", fingerprint: { kind: "sha256", value: "t" } }], [obsKey(".", "etl/tests"), { state: "found", kind: "dir" }],
     [obsKey(".", "etl/requirements.txt"), { state: "missing" }],
     [obsKey(".", "db"), { state: "found", kind: "dir" }], [obsKey(".", "db/*.sql"), { state: "found", count: 2 }]
   ]);

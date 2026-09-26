@@ -9,7 +9,7 @@
  *     milestones  dated targets
  *     items       the cards: type, title, status, priority, the components and files they
  *                 concern, environment, sprint, milestone, due date, links (an Azure DevOps work
- *                 item, a GitHub issue, a pull request), and (0.21) the toolkit recipe and route
+ *                 item, a GitHub issue, a pull request), and (0.23) the toolkit recipe and route
  *                 the work follows
  *
  * Other viewers (Mongoku, a web page) read the same file from GitHub; DataPass never talks to them.
@@ -66,7 +66,7 @@ export interface BoardItem {
   id: string; type: BoardItemType; title: string; status: string; priority?: Priority; description?: string;
   subproject?: string; components?: string[]; files?: BoardFileRef[]; environment?: string; sprint?: string; milestone?: string;
   due?: string; created?: string; closed?: string; assignee?: string; labels?: string[]; links?: string[]; decisionRef?: string;
-  /** 0.21: the toolkit recipe the work follows (.datapass/toolkit), and optionally which of its routes. */
+  /** 0.23: the toolkit recipe the work follows (.datapass/toolkit), and optionally which of its routes. */
   recipe?: string; route?: string;
 }
 export interface Board {
@@ -190,7 +190,7 @@ export interface CardView {
   due?: string; overdue: boolean; created?: string; closed?: string; assignee?: string; labels: string[];
   links: Array<{ index: number; url: string; label: string }>;
   decision?: { id: string; title: string; current?: string; chosen?: string };
-  /** 0.21: the toolkit recipe (resolved against the catalogue by the Workbench). */
+  /** 0.23: the toolkit recipe (resolved against the catalogue by the Workbench). */
   recipe?: { id: string; route?: string };
 }
 export interface BoardView {

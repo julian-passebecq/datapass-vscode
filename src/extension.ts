@@ -11,6 +11,8 @@ import { setClipboardForTests, type Clipboard } from "./core/clipboard";
 import { setAppLauncherForTests, setExternalOpenerForTests, setFolderOpenerForTests, type AppLauncher, type ExternalOpener, type FolderOpener } from "./core/external";
 import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
+import { registerFileContextCommands } from "./work/fileContextCommands";
+import { registerVariantCommands } from "./work/variantCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
@@ -22,6 +24,7 @@ import { registerOptionsCommands } from "./work/optionsCommands";
 import { registerBoardCommands } from "./work/boardCommands";
 import { registerToolkitCommands } from "./work/toolkitCommands";
 import { registerGitHostCommands } from "./work/gitHostCommands";
+import { registerCheckCommands } from "./work/checkCommands";
 import type { WorkbenchState } from "./views/workbenchState";
 import { AiExchangeView } from "./views/aiExchange";
 import type { AiExchangeState } from "./views/aiExchangeState";
@@ -36,6 +39,9 @@ import { registerGitCommands } from "./work/gitCommands";
 import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
 import type { AiViewState } from "./views/aiExchange";
+import { ExperienceService, landOnArchitecture, registerExperienceCommands } from "./work/experienceCommands";
+import type { Experience } from "./core/experience/presets";
+import { registerFileVersionCommands } from "./work/fileVersionCommands";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -115,11 +121,22 @@ export interface DataPassTestApi {
     lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined;
     selected(): string | undefined;
   };
+  /** 0.22 modes: the effective mode, its status item, and whether startup landed on the architecture. */
+  experience: {
+    current(): Experience;
+    ready(): Promise<void>;
+    status(): { text: string; tooltip: string; visible: boolean };
+    landed(): Promise<boolean>;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
   // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
   const session = new WorkSession(context);
+  // 0.22 modes: the context keys are set before the views render (`when` clauses read them).
+  const experience = new ExperienceService(context);
+  context.subscriptions.push(experience);
+  registerExperienceCommands(context, experience);
   // Galaxy cards show the same operation readiness as the Work view.
   const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()));
   context.subscriptions.push(
@@ -145,6 +162,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerQualificationCommands(context, session);
   registerReadinessCommands(context, session);
   registerToolchainCommands(context, session);
+  registerFileContextCommands(context, session);
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.
@@ -153,6 +171,10 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const projectTree = new ProjectTreeProvider(session);
   const projectView = vscode.window.createTreeView(ProjectTreeProvider.viewType, { treeDataProvider: projectTree, showCollapseAll: true });
   projectTree.attach(projectView);
+  projectTree.setSurfaces(experience.shows, experience.onDidChange);
+  registerVariantCommands(context, session, projectTree);
+  host.setSurfaces(experience.shows, experience.onDidChange);
+  aiExchange.setSurfaces(experience.shows, experience.onDidChange);
   context.subscriptions.push(
     host, projectTree, projectView,
     vscode.window.registerWebviewViewProvider("datapass.architecture", host.viewProvider("map"), { webviewOptions: { retainContextWhenHidden: true } }),
@@ -166,6 +188,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerBoardCommands(context, session, host);
   registerToolkitCommands(context, session, host);
   registerGitHostCommands(context, session);
+  registerCheckCommands(context);
 
   // 0.19 Git module: read-only observation of the project's repositories, worktrees and PRs (left side bar, under Project).
   const git = new GitObserver(session);
@@ -185,6 +208,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   );
   host.setGitSource(() => git.observation());
   registerGitCommands(context, session, git);
+  // 0.22 file versions (package F): read-only revisions of any file through native Git.
+  registerFileVersionCommands(context, session);
 
   // 0.20 work orders (pass AI-2): the Agent tab of the AI view, the Workbench's Work orders view, Details, Needs you rule 8.
   const workOrders = new WorkOrderService(context, session, git);
@@ -214,8 +239,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   status.text = "$(dashboard) DataPass";
   status.tooltip = "Open DataPass Galaxy";
   status.command = "datapass.openGalaxy";
-  status.show();
-  context.subscriptions.push(status);
+  const showStatus = () => { if (experience.shows("status.health")) status.show(); else status.hide(); };
+  showStatus();
+  context.subscriptions.push(status, experience.onDidChange(showStatus));
 
   const refreshState = async (): Promise<GalaxyState> => {
     // The session probes tools first so the Galaxy cards' operation readiness is current.
@@ -317,11 +343,13 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
   );
 
+  let landed: Promise<boolean> = Promise.resolve(false);
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
   const startup = refreshState()
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
+    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied).catch(() => false); await landed; experience.introduce(); return applied; })
     .catch(error => {
       output().appendLine(`[startup] ${error instanceof Error ? error.message : String(error)}`);
       return undefined;
@@ -373,6 +401,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setDiagramUi: ui => host.applyUi(ui),
     setExportFile: setExportFileForTests,
     startup: () => startup,
+    experience: {
+      current: () => experience.experience(),
+      ready: () => experience.ready,
+      status: () => ({ text: experience.statusText(), tooltip: experience.statusTooltip(), visible: experience.statusVisible() }),
+      landed: async () => { await startup; return landed; }
+    },
     setConnectionRunner: impl => { session.connectionRunner = impl; },
     workOrders: {
       list: () => workOrders.list(),

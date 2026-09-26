@@ -144,7 +144,7 @@ export interface ToolchainInput {
   toolchain?: ToolchainDecl;
   tools: ReadonlyMap<string, ToolObservation>;
   platform: NodeJS.Platform | string;
-  /** 0.21: tools the hub's toolkit describes (known, never probed). The extension's registry wins. */
+  /** 0.23: tools the hub's toolkit describes (known, never probed). The extension's registry wins. */
   hubTools?: ReadonlyMap<string, ToolchainTool>;
 }
 

@@ -144,7 +144,7 @@ jobs:
       - run: python -c "print('fabric-cicd deploy of fabric/ to the prod workspace (synthetic example)')"
 `;
 
-/** 0.21: a board whose cards name the hub's toolkit recipes (examples/v3/hub/.datapass/toolkit). */
+/** 0.23: a board whose cards name the hub's toolkit recipes (examples/v3/hub/.datapass/toolkit). */
 export function boardSalesJson(): Record<string, unknown> {
   return {
     format: "datapass.board", version: "1", title: "Sales BI work", updated: "2026-09-26",

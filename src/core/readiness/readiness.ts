@@ -251,7 +251,7 @@ export interface ReadinessInput {
   /** v5: this computer's tool probes, and the platform (for install commands). */
   tools?: ReadonlyMap<string, ToolObservation>;
   platform?: NodeJS.Platform | string;
-  /** 0.21: tools the hub's toolkit describes, so a toolchain may name them (never probed). */
+  /** 0.23: tools the hub's toolkit describes, so a toolchain may name them (never probed). */
   hubTools?: ReadonlyMap<string, ToolchainTool>;
   /** v5: the last read-only sign-in checks (only run when the person asks), by tool id. */
   connectionProbes?: ReadonlyMap<string, ConnectionProbe>;
@@ -380,6 +380,7 @@ export function buildReadiness(input: ReadinessInput): Readiness {
   for (const r of repositories) {
     const id = (what: string) => `repo.${what}:${r.key}`;
     if (r.state === "missing" || r.state === "wrong-remote") add({ id: id(r.state), severity: "error", area: "repository", message: `${r.label}: ${r.state === "missing" ? "not found where the manifest says" : "the folder is a clone of another repository"}.` });
+    else if (r.state === "unverified") add({ id: id("unverified"), severity: "warning", area: "repository", message: `${r.label}: the clone's origin could not be compared with the declared remote (unverified): browse it, but locate the right clone or retry before getting updates.` });
     else if (r.state === "unbound") add({ id: id("unbound"), severity: "info", area: "repository", message: `${r.label} is not cloned on this machine.` });
     else if (r.state === "not-a-repo") add({ id: id("nogit"), severity: "warning", area: "repository", message: `${r.label}: the folder is not a Git repository.` });
     else if (r.state === "restricted") add({ id: id("restricted"), severity: "info", area: "repository", message: `${r.label}: Git state not read (Restricted Mode).` });

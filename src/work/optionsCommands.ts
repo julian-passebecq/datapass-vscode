@@ -6,7 +6,7 @@
  *
  * Arguments can come from webviews and are re-validated against the loaded files. DataPass writes
  * only .datapass/options.json, sheet.json, board.json, graph.json, project.json, catalog.json or
- * (0.21, when this folder is the hub) toolkit/tools.json, and
+ * (0.23, when this folder is the hub) toolkit/tools.json, and
  * only after the person confirmed a diff; it keeps a backup and never commits or pushes.
  */
 import * as vscode from "vscode";
@@ -316,7 +316,8 @@ export async function copyForAi(session: WorkSession, version: string, preset?: 
   const task = tasks.find(t => t.id === taskId) ?? (tasks.length === 1 ? tasks[0]! : (await vscode.window.showQuickPick(tasks.map(t => ({ label: t.label, detail: t.ask.slice(0, 150) + (t.ask.length > 150 ? "…" : ""), t })), { title: `What should the AI do with ${EXCHANGE_FILES[kind].path}?` }))?.t);
   if (!task) return undefined;
   const bytes = await currentBytes(session, kind);
-  const text = exportForAi(kind, bytes ? new TextDecoder().decode(bytes) : undefined, task, { projectTitle: session.project.manifest?.project.title, guideUrl: GUIDE_URL, dataPassVersion: version });
+  const recipes = kind === "board" ? [...session.catalogue().recipes.values()].map(r => ({ id: r.id, title: r.title, routes: r.routes.map(x => x.id) })) : undefined;
+  const text = exportForAi(kind, bytes ? new TextDecoder().decode(bytes) : undefined, task, { projectTitle: session.project.manifest?.project.title, guideUrl: GUIDE_URL, dataPassVersion: version, recipes });
   await clipboard.writeText(text);
   await session.recordExchange({ id: newLocalId("ai-file"), kind: "ai-context", label: `${EXCHANGE_FILES[kind].path} for the AI (${task.id})`, status: "copied", digest: sha256Bytes(text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
   if (!quiet) void vscode.window.showInformationMessage(`Copied ${EXCHANGE_FILES[kind].path} with instructions. Paste it into ChatGPT or Claude, then paste its complete answer in the AI exchange view (right side bar).`, "Open the AI exchange").then(c => { if (c) void vscode.commands.executeCommand("datapass.showAiExchange", kind); });

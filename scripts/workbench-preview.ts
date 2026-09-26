@@ -103,15 +103,15 @@ const pages: Page[] = [
   { name: "readiness", mode: "full", selection: {}, readiness: true },
   { name: "work-orders", mode: "full", selection: { subproject: "papers", component: "extract" }, ui: { view: "workOrders" }, orders: true },
   { name: "detail-order", mode: "detail", selection: { subproject: "papers", component: "extract" }, orders: true },
-  // 0.21: the toolkit (baseline + the example hub), a card that names a recipe, a component's tools.
+  // 0.23: the toolkit (baseline + the example hub), a card that names a recipe, a component's tools.
   { name: "toolkit", mode: "full", selection: {}, ui: { view: "toolkit", tkFocus: "tool:cli.copilot" } },
   { name: "toolkit-recipe", mode: "full", selection: {}, ui: { view: "toolkit", tkSection: "recipes", tkFocus: "recipe:fabric.item-definition.bulk-edit" } },
   { name: "toolkit-requests", mode: "full", selection: {}, ui: { view: "toolkit", tkSection: "requests" } },
   { name: "board-recipe", mode: "full", selection: {}, ui: { view: "board", boardFocus: "bug-3" } },
   { name: "detail-tools", mode: "detail", selection: { subproject: "papers", component: "extract" } }
 ];
-const hubFiles = [parseToolkitFile(JSON.stringify(hubToolsJson()), "hub/.datapass/toolkit/tools.json", "0.21.0"), parseToolkitFile(JSON.stringify(hubRecipesJson()), "hub/.datapass/toolkit/recipes/fabric.json", "0.21.0")];
-const toolkit = toolkitState(buildCatalogue(hubFiles, "0.21.0"), hubFiles, { facts: new Map([["fabric.gitBinding", true]]), tools: new Map([["cli.git", "present"], ["cli.fab", "absent"]]) }, map, "win32");
+const hubFiles = [parseToolkitFile(JSON.stringify(hubToolsJson()), "hub/.datapass/toolkit/tools.json", "0.23.0"), parseToolkitFile(JSON.stringify(hubRecipesJson()), "hub/.datapass/toolkit/recipes/fabric.json", "0.23.0")];
+const toolkit = toolkitState(buildCatalogue(hubFiles, "0.23.0"), hubFiles, { facts: new Map([["fabric.gitBinding", true]]), tools: new Map([["cli.git", "present"], ["cli.fab", "absent"]]) }, map, "win32");
 for (const c of board.cards) if (c.id === "bug-3") c.recipe = { id: "fabric.item-definition.bulk-edit", route: "git" };
 for (const p of pages) {
   const state = workbenchState({

@@ -6,6 +6,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import Ajv2020 from "ajv/dist/2020";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   baselineFile, baselineTools, buildCatalogue, hubToolchainTools, installLines, parseToolkitFile, priceText, recipeView, recipesUsing, toolsFor, TOOLKIT_SCHEMA,
   type RecipeFacts
@@ -22,7 +24,7 @@ import { boardSalesJson } from "./fixtures/v3/salesBi";
 import { fileObsA, inputA } from "./fixtures/v3/research";
 import { boardAJson } from "./fixtures/v3/researchBoard";
 
-const V = "0.21.0";
+const V = "0.23.0";
 const text = (v: unknown) => JSON.stringify(v, null, 2);
 const hubFiles = () => [parseToolkitFile(text(hubToolsJson()), "hub/.datapass/toolkit/tools.json", V), parseToolkitFile(text(hubRecipesJson()), "hub/.datapass/toolkit/recipes/fabric.json", V)];
 const facts = (f: Record<string, boolean> = {}, t: Record<string, "present" | "absent"> = {}): RecipeFacts => ({ facts: new Map(Object.entries(f)), tools: new Map(Object.entries(t)) });
@@ -120,11 +122,11 @@ test("toolkit: a file for a newer DataPass or a newer format says so", () => {
   assert.equal(newerFormat.tools.length, 0);
   const newerApp = parseToolkitFile(file({ requires: { datapass: ">=0.30.0" }, tools: [{ id: "cli.a", label: "A", kind: "cli" }, { id: "cli.b", label: "B", kind: "cli", futureField: 1 }] }), "t.json", V);
   assert.equal(newerApp.newer?.what, "datapass");
-  assert.match(newerApp.newer!.text, /0\.30\.0/);
-  assert.deepEqual(newerApp.tools.map(t => t.id), ["cli.a"]);
-  assert.equal(newerApp.skipped.length, 1);
+  assert.match(newerApp.newer!.text, /needs DataPass >=0\.30\.0/);
+  assert.deepEqual(newerApp.tools, [], "every entry of a file for a newer DataPass is skipped, never guessed");
+  assert.deepEqual(newerApp.skipped, ["2 tool(s): the file needs a newer DataPass"]);
   assert.throws(() => parseToolkitFile(file({ requires: { datapass: ">=0.30.0" } }), "t.json", V, true), /requires DataPass/);
-  assert.equal(parseToolkitFile(file({ requires: { datapass: ">=0.21.0" } }), "t.json", V).newer, undefined);
+  assert.equal(parseToolkitFile(file({ requires: { datapass: ">=0.23.0" } }), "t.json", V).newer, undefined);
   const s = toolkitState(buildCatalogue([newerApp], V), [newerApp], facts(), undefined, "win32");
   assert.equal(s.newerFiles, 1);
 });
@@ -223,6 +225,9 @@ test("toolkit: the AI exchange copies and imports tools.json strictly", () => {
   secret.tools[1]!.note = "AccountKey=abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJ==";
   assert.throws(() => checkIncoming(text(secret), { dataPassVersion: V }), /sensitive/);
   assert.throws(() => checkIncoming(text({ ...hubToolsJson(), requires: { datapass: ">=9.0.0" } }), { dataPassVersion: V }), /requires DataPass/);
+  const withRecipes = exportForAi("board", "{}", AI_TASKS.board[0]!, { dataPassVersion: V, recipes: [{ id: "powerbi.pbip-git", title: "PBIP", routes: ["desktop"] }] });
+  assert.match(withRecipes, /`powerbi\.pbip-git` — PBIP \(routes: desktop\)/);
+  assert.doesNotMatch(exportForAi("board", "{}", AI_TASKS.board[0]!, { dataPassVersion: V, recipes: [] }), /toolkit recipes/, "no recipe line when the toolkit has none");
   const out = exportForAi("toolkit", text(hubToolsJson()), AI_TASKS.toolkit[0]!, { dataPassVersion: V });
   assert.match(out, /Never invent a price/);
   assert.match(out, /toolkit\/tools\.json/);
@@ -239,4 +244,45 @@ test("toolkit: the Workbench state names tools per component and keeps links on 
   assert.equal(s.requests.length, 1);
   assert.equal(s.files.length, 2);
   assert.ok(Object.keys(s.components).length > 0, "the research library's Azure components have catalogue tools");
+});
+
+test("toolkit: a hub tool may reuse a known probe only; recipe operations are checked; nothing in src/core/toolkit runs a program", () => {
+  const f = parseToolkitFile(file({
+    tools: [
+      { id: "cli.az2", label: "Azure CLI (again)", kind: "cli", probe: "cli.az" },
+      { id: "cli.mine", label: "Mine", kind: "cli", probe: "cli.nothing" },
+      { id: "cli.fab", probe: "cli.az" }
+    ],
+    recipes: [{ id: "r.ops", module: "cicd", title: "Ops", routes: [{ id: "a", steps: [{ text: "Deploy", capability: "fabric.items.deploy" }, { text: "Launch", capability: "rocket.launch" }] }] }]
+  }), "t.json", V);
+  const c = buildCatalogue([f], V);
+  assert.equal(c.tools.get("cli.az2")!.probe, true);
+  assert.equal(c.tools.get("cli.az2")!.probeId, "cli.az");
+  assert.equal(c.tools.has("cli.mine"), false, "an unknown probe id refuses the entry");
+  assert.ok(c.problems.some(p => p.includes("cli.mine") && p.includes("not a probe")));
+  assert.ok(c.problems.some(p => p.includes("cli.fab") && p.includes("keeps its own probe")));
+  assert.ok(c.problems.some(p => p.includes("rocket.launch")));
+  assert.ok(!c.problems.some(p => p.includes("fabric.items.deploy")));
+  const s = toolkitState(c, [f], facts({}, { "cli.az": "present" }), undefined, "win32");
+  assert.equal(s.tools.find(t => t.id === "cli.az2")!.state, "present");
+  const dir = join(__dirname, "..", "src", "core", "toolkit");
+  for (const name of readdirSync(dir)) {
+    const code = readFileSync(join(dir, name), "utf8");
+    assert.doesNotMatch(code, /child_process|exec(File)?(Sync)?\(|from "(\.\.\/)+exec"|node:vm|spawn\(/, `${name} runs nothing`);
+  }
+});
+
+test("toolkit: the example hub files validate with the runtime and the editor schema, and name known tools", () => {
+  const root = join(__dirname, "..", "examples", "v3", "hub", ".datapass", "toolkit");
+  const files = [join(root, "tools.json"), ...readdirSync(join(root, "recipes")).map(n => join(root, "recipes", n))];
+  const ajv = new Ajv2020({ strict: false, validateFormats: false }).compile(JSON.parse(readFileSync(join(__dirname, "..", "schemas", "datapass-toolkit.schema.json"), "utf8")));
+  const parsed = files.map(f => {
+    const raw = readFileSync(f, "utf8");
+    assert.ok(ajv(JSON.parse(raw)), `${f}: ${JSON.stringify(ajv.errors)}`);
+    const r = parseToolkitFile(raw, f, V);
+    assert.deepEqual(r.skipped, [], f);
+    return r;
+  });
+  assert.deepEqual(buildCatalogue(parsed, V).problems, []);
+  for (const t of parsed[0]!.tools) assert.ok(t.verified?.on, `${t.id} is dated`);
 });

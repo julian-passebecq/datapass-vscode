@@ -21,6 +21,11 @@ import { registerToolchainFlows } from "./toolchainFlows";
 import { registerToolkitFlows } from "./toolkitFlows";
 import { registerGitFlows } from "./gitFlows";
 import { registerWorkOrderFlows } from "./workOrderFlows";
+import { registerExperienceFlows } from "./experienceFlows";
+import { registerFileVersionFlows } from "./fileVersionFlows";
+import { registerFileContextFlows } from "./fileContextFlows";
+import { registerCheckFlows } from "./checkFlows";
+import { registerVariantFlows } from "./variantFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -45,6 +50,9 @@ test("extension activates in desktop VS Code and exposes the Test-mode hooks", a
   await api.refresh();
   record("host", { vscodeVersion: vscode.version, platform: process.platform, arch: process.arch, uiKind: vscode.env.uiKind === vscode.UIKind.Desktop ? "desktop" : "web", remoteName: vscode.env.remoteName ?? null, extensionVersion: ext.packageJSON.version });
 });
+
+// 0.22 modes: right after activation (a new install's first start), before other tests change the layout.
+registerExperienceFlows(() => api);
 
 // Before any test opens the secondary side bar: only the startup switch can have shown the view there.
 test("0.15.1: a DataPass project opens with DataPass, not Chat, in the secondary side bar", async () => {
@@ -224,6 +232,8 @@ registerFlows(() => api);
 registerBridgeAndCompanionFlows(() => api);
 registerV3Flows(() => api);
 registerReadinessFlows(() => api);
+// 0.23: before the options flows, which record and apply decisions.
+registerVariantFlows(() => api);
 registerOptionsFlows(() => api);
 registerBoardFlows(() => api);
 registerDevopsFlows(() => api);
@@ -232,6 +242,9 @@ registerToolchainFlows(() => api);
 registerToolkitFlows(() => api);
 registerGitFlows(() => api);
 registerWorkOrderFlows(() => api);
+registerFileVersionFlows(() => api);
+registerFileContextFlows(() => api);
+registerCheckFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

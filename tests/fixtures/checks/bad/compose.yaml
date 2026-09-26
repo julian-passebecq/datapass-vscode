@@ -1,0 +1,8 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.prod
+    env_file: api/secrets.env
+  worker:
+    build: ./worker

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-experience.schema.json",
+  "title": "DataPass experience presets (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "format": {
+      "const": "datapass.experience"
+    },
+    "version": {
+      "const": 1
+    },
+    "default": {
+      "enum": [
+        "vanilla",
+        "standard",
+        "datapass",
+        "advanced"
+      ]
+    },
+    "presets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "enum": [
+              "vanilla",
+              "standard",
+              "datapass",
+              "advanced"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "show": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "view.project",
+                "view.git",
+                "view.work",
+                "view.galaxy",
+                "view.architecture",
+                "view.aiExchange",
+                "view.details",
+                "ai.agent",
+                "ai.manual",
+                "project.subprojects",
+                "project.repositories",
+                "project.options",
+                "project.sheet",
+                "project.board",
+                "project.readiness",
+                "project.problems",
+                "workbench.options",
+                "workbench.sheet",
+                "workbench.board",
+                "workbench.workOrders",
+                "status.mode",
+                "status.health",
+                "landing.architecture",
+                "badge.alternatives",
+                "project.variantFilter",
+                "badge.codingState",
+                "workbench.toolkit",
+                "project.toolkit",
+                "badge.hubChanged"
+              ]
+            },
+            "maxItems": 29,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "description",
+          "show"
+        ]
+      },
+      "maxItems": 4,
+      "minItems": 4
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "default",
+    "presets"
+  ]
+}

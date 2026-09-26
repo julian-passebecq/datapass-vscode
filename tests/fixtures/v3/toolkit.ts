@@ -1,5 +1,5 @@
 /**
- * Synthetic toolkit of a hub repository (0.21): `.datapass/toolkit/tools.json` (tools the hub adds
+ * Synthetic toolkit of a hub repository (0.23): `.datapass/toolkit/tools.json` (tools the hub adds
  * or corrects, and one "Needs a newer DataPass" request) and `.datapass/toolkit/recipes/fabric.json`
  * (the Copy Job bulk edit of 08_TOOLKIT_AND_AGENTS.md section 4, a fabric-cicd deployment and PBIP
  * with Git). Shared by the public example (examples/v3/hub), the unit tests and the desktop fixture.
@@ -8,26 +8,25 @@
 export function hubToolsJson(): Record<string, unknown> {
   return {
     format: "datapass.toolkit", version: "1", title: "Example Org toolkit", updated: "2026-09-26",
-    requires: { datapass: ">=0.21.0" },
     tools: [
-      { id: "ext.fabric-studio", verified: { on: "2026-09-25", version: "2.25.2" }, maintainer: "Gerhard Brueckl",
+      { id: "ext.fabric-studio", verified: { on: "2026-09-26", version: "2.25.2" }, maintainer: "Gerhard Brueckl",
         links: { repo: "https://github.com/gbrueckl/FabricStudio", marketplace: "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.fabricstudio" },
         install: [{ method: "marketplace", id: "GerhardBrueckl.fabricstudio" }, { method: "extension-pack", tool: "pack.powerbi-gbrueckl" }],
         modules: ["develop", "pipelines", "cicd", "admin"], complements: ["ext.fabric", "ext.fabric-data-engineering", "cli.fab"],
         sideEffects: ["reads-remote", "writes-remote", "credential-prompt"],
         useWhen: "Edit an item definition without Git, run REST calls, manage deployment pipelines from VS Code.",
         avoidWhen: "The workspace is connected to Git: edit the files in the repository instead." },
-      { id: "acc.fabric-toolbox", label: "Fabric Toolbox (Fabric CAT)", kind: "accelerator", publisher: "microsoft", status: "active",
+      { id: "acc.fabric-toolbox", label: "Fabric Toolbox (Fabric CAT)", kind: "accelerator", publisher: "microsoft", status: "active", verified: { on: "2026-09-26" },
         links: { repo: "https://github.com/microsoft/fabric-toolbox" }, modules: ["monitoring", "cicd", "governance"],
         sideEffects: ["reads-remote", "writes-remote"],
         useWhen: "Monitoring and cost (FUAM, FCA), CI/CD accelerators, Semantic Model Audit, once a real tenant or capacity exists.",
         avoidWhen: "No Fabric administrator rights or no capacity yet.",
         priceModel: "included", freeTier: "The repository's content is free to use; it runs on a Fabric capacity, billed separately.",
         pricingUrl: "https://azure.microsoft.com/pricing/details/microsoft-fabric/", checkedAt: "2026-09-26" },
-      { id: "learn.fabcon-prodev", label: "FabCon Atlanta Pro Dev workshop", kind: "learning", publisher: "community",
+      { id: "learn.fabcon-prodev", label: "FabCon Atlanta Pro Dev workshop", kind: "learning", publisher: "community", verified: { on: "2026-09-26" },
         links: { repo: "https://github.com/slammini/FabConAtlantaProDev" }, modules: ["develop", "cicd"],
         useWhen: "The first Power BI mini-project: PBIP, TMDL, PBIR, AI and DevOps labs." },
-      { id: "cli.pbi-tools", label: "pbi-tools", kind: "cli", publisher: "community", status: "superseded", replacedBy: "py.fabric-cicd",
+      { id: "cli.pbi-tools", label: "pbi-tools", kind: "cli", publisher: "community", status: "superseded", replacedBy: "py.fabric-cicd", verified: { on: "2026-09-26" },
         links: { home: "https://pbi.tools/" }, modules: ["cicd"],
         avoidWhen: "New projects: PBIP in Power BI Desktop, Git integration and fabric-cicd cover it. Keep it only for a legacy .pbix-only project." }
     ],
@@ -65,7 +64,7 @@ export function hubRecipesJson(): Record<string, unknown> {
           { id: "ci", title: "In the CI pipeline", tools: ["py.fabric-cicd"],
             steps: [
               "List the ids that differ per environment in the ID map (identifiers with values per environment)",
-              { text: "Write parameter.yml: each dev id and its prod value", open: "https://microsoft.github.io/fabric-cicd/" },
+              { text: "Write parameter.yml: each dev id and its prod value", open: "https://github.com/microsoft/fabric-cicd" },
               { text: "Pin the library in the pipeline", copy: "pip install \"fabric-cicd>=0.1.20,<1\"" },
               "Run the pipeline for prod after the pull request is merged",
               "Check the items in the prod workspace"

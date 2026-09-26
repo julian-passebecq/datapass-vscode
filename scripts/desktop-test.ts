@@ -81,8 +81,24 @@ function fixtureText(rel: string): string {
   return fs.readFileSync(path.join(repo, "tests", "fixtures", ...rel.split("/")), "utf8");
 }
 
+/** Every file of a tests/fixtures folder, byte-exact, by relative path. */
+function fixtureDir(rel: string): Record<string, string> {
+  const base = path.join(repo, "tests", "fixtures", ...rel.split("/"));
+  const out: Record<string, string> = {};
+  const walk = (d: string) => {
+    for (const e of fs.readdirSync(path.join(base, d), { withFileTypes: true })) {
+      const r = d ? `${d}/${e.name}` : e.name;
+      if (e.isDirectory()) walk(r); else out[r] = fs.readFileSync(path.join(base, r), "utf8");
+    }
+  };
+  walk("");
+  return out;
+}
+
 const FIXTURES: Record<string, Record<string, string>> = {
   "empty": { "README.md": "# empty workspace\n" },
+  // 0.22 package D: a native repository (no .datapass) with a broken databricks.yml, Dockerfile, compose file and JSON.
+  "v22-checks": fixtureDir("checks/bad"),
   "v2-retail": {
     ".datapass/project.json": JSON.stringify(v2Retail(), null, 2) + "\n",
     "bundle/databricks.yml": "bundle:\n  name: retail\n",
@@ -182,6 +198,16 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
   return { workspace: hub, env: { DATAPASS_IT_V3: JSON.stringify({ aiClone: ai, labClone: lab, wrongClone: wrong, pipelineClone: clone }) } };
 }
 
+/** 0.22 file versions (package F): the research project plus a file with exactly three commits in the coordination repository. */
+function setupV22Versions(base: string): { workspace: string; env: Record<string, string> } {
+  const r = setupV3Research(base);
+  for (const n of ["first", "second", "third"]) {
+    writeTree(r.workspace, { "notes/decisions.md": `# Decisions\n\n${n}\n` });
+    commitAll(r.workspace, `${n} decisions`, false);
+  }
+  return r;
+}
+
 /**
  * 0.17: the research project as a company window — a `.code-workspace` file next to its two
  * repositories (relative folders) naming the company and the work view to open with, and that work
@@ -252,7 +278,7 @@ function setupV18Toolchain(base: string): { workspace: string; env: Record<strin
   const ws = path.join(base, "sales-bi");
   writeTree(ws, filesSales());
   commitAll(ws, "sales bi");
-  // 0.21: a hub repository beside it (catalog + toolkit), found through the datapass.catalogs setting the flow sets.
+  // 0.23: a hub repository beside it (catalog + toolkit), found through the datapass.catalogs setting the flow sets.
   const hub = path.join(base, "hub");
   writeTree(hub, { ".datapass/catalog.json": JSON.stringify({ format: "datapass.catalog", version: "1", projects: [] }, null, 2) + "\n", ...hubToolkitFiles() });
   return { workspace: ws, env: { DATAPASS_IT_HUB: path.join(hub, ".datapass", "catalog.json") } };
@@ -447,7 +473,10 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v17-company": setupV17Company,
   "v18-toolchain": setupV18Toolchain,
   "v19-git": setupV19Git,
-  "v20-work-orders": setupV20WorkOrders
+  "v20-work-orders": setupV20WorkOrders,
+  // 0.22 modes: the research project opened as a new install (no DataPass settings: Standard).
+  "v22-modes": setupV3Research,
+  "v22-versions": setupV22Versions
 };
 
 async function vscodeExecutable(): Promise<string> {
@@ -495,6 +524,8 @@ async function main(): Promise<void> {
       git("add", "-A");
       git("commit", "-q", "-m", "fixture");
     }
+    // 0.22 modes: the earlier suites check 0.20's surfaces (Advanced, no landing); v22-modes starts as a new install.
+    if (name !== "v22-modes") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }, null, 2) });
     const reportFile = path.join(out, `report-${name}.json`);
     const launchArgs = [
       ws,

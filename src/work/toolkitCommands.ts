@@ -1,5 +1,5 @@
 /**
- * 0.21 toolkit commands: open the Toolkit view, open a tool's page, copy an install command or a
+ * 0.23 toolkit commands: open the Toolkit view, open a tool's page, copy an install command or a
  * recipe step, open a toolkit file. Arguments come from the Workbench webview and name a tool or a
  * recipe by id and an index; the address or the command is rebuilt from the catalogue and checked
  * again here. DataPass installs nothing and runs nothing from the toolkit: commands are copied.

@@ -1,5 +1,5 @@
 /**
- * The toolkit catalogue as the Workbench shows it (0.21): tools with their dated prices, recipes
+ * The toolkit catalogue as the Workbench shows it (0.23): tools with their dated prices, recipes
  * with their routes resolved against this project and this computer, the files read and the
  * "Needs a newer DataPass" list. Plain data; links and install commands stay on the extension side
  * (the webview names them by tool id and index, the extension rebuilds and checks them).
@@ -33,15 +33,17 @@ export interface WbToolkit {
   components: Record<string, { tools: string[]; recipes: string[] }>;
   /** Files written for a newer DataPass or a newer format. */
   newerFiles: number;
+  /** The mode shows "changed by the hub" on built-in tools (surface badge.hubChanged). */
+  hubBadge: boolean;
 }
 
-export function toolkitState(c: Catalogue, files: readonly ToolkitFileResult[], facts: RecipeFacts, map: ProjectMap | undefined, platform: string): WbToolkit {
+export function toolkitState(c: Catalogue, files: readonly ToolkitFileResult[], facts: RecipeFacts, map: ProjectMap | undefined, platform: string, hubBadge = true): WbToolkit {
   const tools: WbTool[] = [...c.tools.values()].map(t => {
     const links: WbTool["links"] = (Object.keys(t.links ?? {}) as ToolLinkId[]).filter(k => t.links?.[k as keyof NonNullable<typeof t.links>]).map(id => ({ id, label: LINK_LABELS[id] }));
     if (t.pricingUrl) links.push({ id: "pricing", label: LINK_LABELS.pricing });
     return {
       id: t.id, label: t.label, kind: t.kind, publisher: t.publisher, maintainer: t.maintainer, status: t.status, replacedBy: t.replacedBy, upstream: t.upstream,
-      source: t.source, changed: t.changed, file: t.file, probe: t.probe, state: facts.tools.get(t.id),
+      source: t.source, changed: t.changed, file: t.file, probe: t.probe, state: t.probeId ? facts.tools.get(t.probeId) : undefined,
       modules: t.modules ?? [], extensionIds: t.extensionIds, complements: t.complements ?? [], sideEffects: t.sideEffects ?? [],
       useWhen: t.useWhen, avoidWhen: t.avoidWhen, note: t.note, verified: t.verified ? `${t.verified.on}${t.verified.version ? ` · version ${t.verified.version}` : ""}` : undefined,
       price: priceText(t), priceModel: t.priceModel, freeTier: t.freeTier, tiers: t.tiers ?? [], checkedAt: t.checkedAt,
@@ -52,7 +54,10 @@ export function toolkitState(c: Catalogue, files: readonly ToolkitFileResult[], 
   const components: WbToolkit["components"] = {};
   for (const comp of map?.components ?? []) {
     const n = comp.provider?.nativeTool;
-    const ids = toolsFor(c, { toolIds: n?.toolIds, extensionIds: n?.extensionIds }).map(t => t.id);
+    const own = toolsFor(c, { toolIds: n?.toolIds, extensionIds: n?.extensionIds }).map(t => t.id);
+    // Plus the tools the catalogue says complement them (Fabric Studio beside the Fabric extension), unless retired.
+    const extra = [...c.tools.values()].filter(t => !own.includes(t.id) && (t.status === undefined || t.status === "active" || t.status === "maintenance") && (t.complements ?? []).some(x => own.includes(x))).map(t => t.id);
+    const ids = [...own, ...extra];
     if (ids.length) components[comp.id] = { tools: ids, recipes: recipesUsing(c, ids) };
   }
   return {
@@ -64,6 +69,7 @@ export function toolkitState(c: Catalogue, files: readonly ToolkitFileResult[], 
     problems: c.problems,
     modules: Object.entries(MODULE_LABELS).map(([id, label]) => ({ id, label })),
     components,
-    newerFiles: files.filter(f => f.newer).length
+    newerFiles: files.filter(f => f.newer).length,
+    hubBadge
   };
 }

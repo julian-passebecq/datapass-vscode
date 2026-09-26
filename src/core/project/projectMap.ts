@@ -33,6 +33,8 @@ export interface ProjectMapInput {
   qualification: readonly QualificationRecord[];
   /** v5: tools present here whose version is outside the project's range (preflight warnings). */
   toolRangeWarnings?: ReadonlyMap<string, string>;
+  /** 0.22 (F05): the observation was bounded; this text says what was left out. */
+  observationIncomplete?: string;
 }
 
 export type Health = "ok" | "attention" | "blocked" | "planned" | "info";
@@ -253,7 +255,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
         const rname = repo?.label ?? artifacts.repoKey;
         if (!repo || repo.state === "planned") requirements.push({ kind: "repository", id: artifacts.repoKey, label: `Repository ${rname}`, state: "missing", detail: `Repository "${rname}" is planned and does not exist yet: create it, then clone it here.` });
         else if (repo.state === "restricted") requirements.push({ kind: "repository", id: repo.key, label: `Repository ${rname}`, state: "unknown", detail: "Restricted Mode: trust this workspace so DataPass can read the repository." });
-        else if (repo.state === "unbound" || repo.state === "missing" || repo.state === "wrong-remote") requirements.push({ kind: "repository", id: repo.key, label: `Repository ${rname}`, state: "missing", detail: repo.nextStep ?? repo.detail });
+        else if (repo.state === "unbound" || repo.state === "missing" || repo.state === "wrong-remote" || repo.state === "unverified") requirements.push({ kind: "repository", id: repo.key, label: `Repository ${rname}`, state: "missing", detail: repo.nextStep ?? repo.detail });
         else {
           requirements.push({ kind: "repository", id: repo.key, label: `Repository ${rname}`, state: "ok", detail: repo.detail });
           for (const f of artifacts.files) {
@@ -288,10 +290,11 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
       const key = operationKey(item.id, cap.id, want.environment);
       const result = preflight(cap, {
         tools: input.tools, facts, factNotes: notes, reviewsConfirmed: input.reviewsConfirmed, toolRangeWarnings: input.toolRangeWarnings,
-        subject: { key, environment: want.environment, target, artifactDigest: artifacts?.digest, requirements }
+        subject: { key, environment: want.environment, target, artifactDigest: artifacts?.digest && artifacts.digestStrength === "weak" ? `weak:${artifacts.digest}` : artifacts?.digest, requirements }
       });
       // The result for exactly this target and these files; otherwise the latest one for this operation, shown as stale.
-      const exact = findQualification(input.qualification, { projectId, scopeId: "project", capabilityId: cap.id, operationKey: key, targetDigest: result.targetDigest });
+      // A weak digest (size + time only) cannot prove the files are the ones a result was recorded for (F02).
+      const exact = artifacts?.digestStrength === "weak" ? undefined : findQualification(input.qualification, { projectId, scopeId: "project", capabilityId: cap.id, operationKey: key, targetDigest: result.targetDigest });
       const q = exact ?? input.qualification.find(r => r.projectId === projectId && r.operationKey === key);
       operations.push({
         key, componentId: item.id, capability: cap, phase: cap.phase, label: want.label ?? cap.label, source: want.source,
@@ -319,7 +322,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
       problems: cproblems, health, headline, nextStep
     };
   });
-  for (const c of components) for (const p of c.problems) problems.push({ severity: /not known|not declared|does not declare|is committed|not a relative path|belongs to/.test(p) ? "warning" : "info", where: `graph.json items.${c.id}`, message: p });
+  for (const c of components) for (const p of c.problems) problems.push({ severity: /not known|not declared|does not declare|is committed|could not check Git tracking|not a relative path|belongs to/.test(p) ? "warning" : "info", where: `graph.json items.${c.id}`, message: p });
   const byId = new Map(components.map(c => [c.id, c]));
 
   // ---- sub-projects
@@ -367,6 +370,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
   const subprojects = scopes.map(s => sub(s, items.filter(i => scopesOf.get(i.id)?.has(s.id)).map(i => i.id)));
   const orphans = items.filter(i => !scopesOf.has(i.id)).map(i => i.id);
   if (orphans.length || !scopes.length) subprojects.push(sub(undefined, orphans.length ? orphans : items.map(i => i.id)));
+  if (input.observationIncomplete) problems.push({ severity: "warning", where: "this machine", message: `Project files: ${input.observationIncomplete}.` });
   if (scopes.length && orphans.length) problems.push({ severity: "info", where: "graph.json", message: `${orphans.length} component(s) belong to no sub-project (scope itemRefs): ${orphans.slice(0, 8).join(", ")}${orphans.length > 8 ? "…" : ""}.` });
   if (scopes.some(s => s.itemRefs?.length) && !g) problems.push({ severity: "warning", where: "project.json", message: "Scopes list components (itemRefs) but no graph was loaded (.datapass/graph.json)." });
   // A "$schema" web address replaces the schema DataPass ships for the file, and VS Code blocks it
@@ -410,7 +414,7 @@ function summarizeComponent(item: GraphItem, a: ArtifactView | undefined, ops: O
   if (a?.availability === "planned-repo") return { health: "planned", headline: "repository planned", nextStep: repo?.nextStep ?? "Create the repository, then clone it." };
   if (a?.availability === "unbound") return { health: "attention", headline: "repository not cloned here", nextStep: repo?.nextStep ?? "Clone or locate the repository." };
   if (a?.availability === "restricted") return { health: "info", headline: "not inspected (Restricted Mode)", nextStep: "Trust this workspace to inspect its files." };
-  if (repo && (repo.state === "missing" || repo.state === "wrong-remote")) return { health: "attention", headline: repo.detail, nextStep: repo.nextStep ?? repo.detail };
+  if (repo && (repo.state === "missing" || repo.state === "wrong-remote" || repo.state === "unverified")) return { health: "attention", headline: repo.detail, nextStep: repo.nextStep ?? repo.detail };
   if (a && a.summary.missing) {
     const missing = a.files.filter(f => !f.optional && f.state === "missing" && f.source !== "generated").map(f => f.path);
     return { health: "blocked", headline: `${files} · missing ${missing.slice(0, 2).join(", ")}${missing.length > 2 ? "…" : ""}`, nextStep: `Missing: ${missing.slice(0, 4).join(", ")}${missing.length > 4 ? "…" : ""}. Ask the AI to prepare ${missing.length === 1 ? "it" : "them"} in the repository, then get the update.` };

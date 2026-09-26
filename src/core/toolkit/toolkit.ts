@@ -22,7 +22,9 @@ import { anyOf, arr, constOf, enumOf, ID, obj, TEXT, validateSchema, type Schema
 import { parseStrictJson } from "../model/strictJson";
 import { isRangeError, parseRange, satisfies, extractVersion } from "../toolchain/versions";
 import { TOOL_ID, knownTools, type ToolchainTool } from "../toolchain/toolchain";
-import baselineData from "./baseline.json";
+import { CAPABILITIES } from "../capabilities/registry";
+import { TOOLS } from "../capabilities/tools";
+import baselineData from "../../../resources/toolkit/baseline.json";
 
 export const TOOLKIT_FORMAT = "datapass.toolkit";
 export const TOOLKIT_VERSION = "1";
@@ -30,7 +32,7 @@ export const TOOLKIT_DIR = ".datapass/toolkit";
 export const TOOLKIT_TOOLS_PATH = ".datapass/toolkit/tools.json";
 export const TOOLKIT_RECIPES_DIR = ".datapass/toolkit/recipes";
 /** The DataPass version that ships the catalogue (what `requires.datapass` is compared with). */
-export const TOOLKIT_SINCE = "0.21.0";
+export const TOOLKIT_SINCE = "0.23.0";
 
 export const TOOL_KINDS = ["vscode-extension", "extension-pack", "cli", "python-library", "powershell-module", "desktop-app", "notebook-collection",
   "accelerator", "report-template", "agent-plugin", "mcp-server", "learning", "workspace-file", "cloud-service"] as const;
@@ -73,6 +75,8 @@ export const TOOL_SCHEMA: Schema = obj({
   status: enumOf(...TOOL_STATUS), replacedBy: TOOL_REF, upstream: TOOL_REF,
   install: arr(INSTALL, 10), modules: arr(enumOf(...MODULES), 8), complements: arr(TOOL_REF, 20), sideEffects: arr(enumOf(...SIDE_EFFECTS), 6),
   useWhen: TEXT, avoidWhen: TEXT, note: TEXT,
+  /** A new tool may reuse one of the extension's probes (a tool id of its registry); any other id refuses the entry. */
+  probe: TOOL_REF,
   priceModel: enumOf(...PRICE_MODELS), freeTier: { type: "string", minLength: 1, maxLength: 400 }, pricingUrl: LINK, tiers: arr(TIER, 8), checkedAt: DATE
 }, ["id"]);
 
@@ -105,7 +109,7 @@ export interface ToolkitTool {
   links?: { repo?: string; marketplace?: string; docs?: string; home?: string; pypi?: string };
   verified?: { on: string; version?: string }; status?: ToolStatus; replacedBy?: string; upstream?: string;
   install?: InstallStep[]; modules?: Module[]; complements?: string[]; sideEffects?: SideEffect[];
-  useWhen?: string; avoidWhen?: string; note?: string;
+  useWhen?: string; avoidWhen?: string; note?: string; probe?: string;
   priceModel?: PriceModel; freeTier?: string; pricingUrl?: string; tiers?: Tier[]; checkedAt?: string;
 }
 export type RecipeStep = string | { text: string; copy?: string; capability?: string; open?: string; tool?: string };
@@ -210,8 +214,16 @@ export function parseToolkitFile(raw: string | Uint8Array, path: string, dataPas
       result.newer = { what: "datapass", text: `requires.datapass "${req}" is not a version range this DataPass reads` };
     } else if (v && !satisfies(v, range)) {
       if (strict) throw new ToolkitError(`This file requires DataPass ${req}; this is ${dataPassVersion}`);
-      result.newer = { what: "datapass", text: `written for DataPass ${req} (this is ${dataPassVersion}): the entries this DataPass understands are used, the others are skipped` };
+      result.newer = { what: "datapass", text: `needs DataPass ${req} (this is ${dataPassVersion}): its entries are skipped, never guessed` };
     }
+  }
+  // A file written for a newer DataPass may mean something this version cannot tell: none of it is used.
+  if (result.newer) {
+    for (const [k, what] of [["tools", "tool"], ["recipes", "recipe"], ["datapassRequests", "datapassRequest"]] as const) {
+      const n = Array.isArray(doc[k]) ? (doc[k] as unknown[]).length : 0;
+      if (n) result.skipped.push(`${n} ${what}(s): the file needs a newer DataPass`);
+    }
+    return result;
   }
   const take = <T>(list: unknown, schema: Schema, what: string, idOf: (x: T) => string, extra: (x: T) => string[], push: (x: T) => void) => {
     const seen = new Set<string>();
@@ -238,7 +250,7 @@ export function parseToolkitFile(raw: string | Uint8Array, path: string, dataPas
 // ------------------------------------------------------------------ the catalogue: baseline + hub
 
 export type ToolSource = "built-in" | "hub" | "built-in, changed by the hub";
-export interface CatalogueTool extends ToolkitTool {
+export interface CatalogueTool extends Omit<ToolkitTool, "probe"> {
   label: string;
   kind: ToolKind;
   source: ToolSource;
@@ -246,6 +258,8 @@ export interface CatalogueTool extends ToolkitTool {
   changed: string[];
   /** DataPass has a probe for it on this computer (only the extension's own registry). */
   probe: boolean;
+  /** The probe whose observation this tool shows (its own id, or the one a hub tool names). */
+  probeId?: string;
   /** Marketplace ids (the probe registry's, else the hub's marketplace install ids). */
   extensionIds: string[];
   /** The toolkit file it came from (hub tools). */
@@ -260,6 +274,9 @@ export interface Catalogue {
   problems: string[];
   hub: boolean;
 }
+
+const PROBE_IDS: ReadonlySet<string> = new Set(TOOLS.filter(t => t.kind === "extension" || t.kind === "cli" || t.kind === "workspace-file").map(t => t.id));
+const CAPABILITY_IDS: ReadonlySet<string> = new Set(CAPABILITIES.map(c => c.id));
 
 const KIND_OF: Readonly<Record<ToolchainTool["kind"], ToolKind>> = {
   extension: "vscode-extension", cli: "cli", "desktop-app": "desktop-app", "workspace-file": "workspace-file", "python-library": "python-library", "agent-plugin": "agent-plugin"
@@ -279,7 +296,7 @@ export function baselineTools(dataPassVersion: string): Map<string, CatalogueToo
     const pack = t.id.startsWith("pack.") && t.kind === "extension";
     out.set(t.id, {
       ...d, id: t.id, label: t.label, kind: pack ? "extension-pack" : KIND_OF[t.kind], publisher: d.publisher ?? t.publisher,
-      note: d.note ?? t.note, source: "built-in", changed: [], probe: t.probe, extensionIds: t.extensionIds ?? []
+      note: d.note ?? t.note, source: "built-in", changed: [], probe: t.probe, probeId: t.probe ? t.id : undefined, extensionIds: t.extensionIds ?? []
     });
   }
   return out;
@@ -300,6 +317,10 @@ export function buildCatalogue(files: readonly ToolkitFileResult[], dataPassVers
       if (fromHub.has(t.id)) { problems.push(`${f.path}: tool ${t.id} is already described by an earlier toolkit file; this one is ignored.`); continue; }
       fromHub.add(t.id);
       const base = tools.get(t.id);
+      if (t.probe !== undefined && (base ? t.probe !== t.id : !PROBE_IDS.has(t.probe))) {
+        problems.push(`${f.path}: tool ${t.id} names probe "${t.probe}", ${base ? "but a built-in tool keeps its own probe" : "which is not a probe of this DataPass"}; the entry is ignored.`);
+        continue;
+      }
       if (base) {
         const changed = Object.keys(t).filter(k => k !== "id" && JSON.stringify((t as unknown as Record<string, unknown>)[k]) !== JSON.stringify((base as unknown as Record<string, unknown>)[k]));
         // The kind and the probe of a built-in tool stay the extension's: they decide what DataPass runs.
@@ -308,7 +329,8 @@ export function buildCatalogue(files: readonly ToolkitFileResult[], dataPassVers
       } else {
         if (!t.label || !t.kind) { problems.push(`${f.path}: tool ${t.id} is new, so it needs a label and a kind; it is ignored.`); continue; }
         const extensionIds = (t.install ?? []).filter(i => i.method === "marketplace" && i.id).map(i => i.id!);
-        tools.set(t.id, { ...t, label: t.label, kind: t.kind, source: "hub", changed: [], probe: false, extensionIds, file: f.path });
+        const probed = t.probe ? TOOLS.find(x => x.id === t.probe) : undefined;
+        tools.set(t.id, { ...t, label: t.label, kind: t.kind, source: "hub", changed: [], probe: Boolean(probed), probeId: probed?.id, extensionIds: extensionIds.length ? extensionIds : probed?.extensionIds ?? [], file: f.path });
       }
     }
     for (const r of f.recipes) {
@@ -320,6 +342,7 @@ export function buildCatalogue(files: readonly ToolkitFileResult[], dataPassVers
   for (const r of recipes.values()) {
     const refs = new Set([...(r.tools ?? []), ...r.routes.flatMap(x => [...(x.tools ?? []), ...(x.if && "tool" in x.if ? [x.if.tool] : []), ...x.steps.flatMap(s => typeof s !== "string" && s.tool ? [s.tool] : [])])]);
     for (const id of refs) if (!tools.has(id)) problems.push(`${r.file}: recipe ${r.id} names tool ${id}, which the catalogue does not describe.`);
+    for (const route of r.routes) for (const st of route.steps) if (typeof st !== "string" && st.capability && !CAPABILITY_IDS.has(st.capability)) problems.push(`${r.file}: recipe ${r.id} route ${route.id} names operation "${st.capability}", which this DataPass does not have (shown as text).`);
   }
   for (const t of tools.values()) {
     for (const id of [...(t.complements ?? []), t.replacedBy, t.upstream].filter((x): x is string => !!x)) if (!tools.has(id)) problems.push(`${t.file ?? "built-in baseline"}: tool ${t.id} names ${id}, which the catalogue does not describe.`);
@@ -388,7 +411,7 @@ const FACT_TEXT: Readonly<Record<string, string>> = {
 export function recipeView(r: Recipe & { file: string }, c: Catalogue, facts: RecipeFacts): RecipeView {
   const toolView = (id: string) => {
     const t = c.tools.get(id);
-    const probed = facts.tools.get(id);
+    const probed = facts.tools.get(t?.probeId ?? id);
     return { id, label: t?.label ?? id, known: Boolean(t), state: probed ?? "not-checked" as const, price: t ? priceText(t).text : "not in the catalogue" };
   };
   const routes = r.routes.map((x): RecipeRouteView => {

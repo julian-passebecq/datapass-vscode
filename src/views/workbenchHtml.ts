@@ -192,6 +192,7 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .tag.added { background: var(--ok); color: var(--vscode-editor-background); }
   .tag.replaced { background: var(--info); color: var(--vscode-editor-background); }
   .tag.removed { background: var(--muted); color: var(--vscode-editor-background); }
+  .tag.alt { border: 1px solid var(--info); color: var(--info); }
   .lg-diff { display: inline-flex; gap: 4px; }
   .edge.diff-added { stroke: var(--ok); stroke-width: 2; opacity: 1; }
   .edge.diff-removed { stroke-dasharray: 3 3; opacity: .35; }

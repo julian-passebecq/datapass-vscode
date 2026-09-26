@@ -18,7 +18,7 @@
 > module, then AI-2 work orders, then this catalogue (with each tool's free tier and pricing). The
 > "0.19" of section 8 below is superseded by that order.
 
-> **Update (0.21.0):** sections 5.1, 5.2 and 5.4 are implemented (the toolkit catalogue pass): format
+> **Update (0.23.0):** sections 5.1, 5.2 and 5.4 are implemented (the toolkit catalogue pass): format
 > `datapass.toolkit` 1, a built-in baseline with dated prices, the hub layer, recipes resolved per
 > project, `recipe` / `route` on board items, "Needs a newer DataPass". Contract:
 > `docs/PREPARING_A_PROJECT.md`; what was built: IMPLEMENTATION_STATUS.md. Two small differences

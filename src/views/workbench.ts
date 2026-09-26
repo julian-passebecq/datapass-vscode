@@ -17,6 +17,7 @@ import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
 import { workbenchState, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
+import { CODING_LABELS, codingOfPicks, type CodingState } from "../core/project/variants";
 
 /** Commands a webview may ask for (arguments are re-validated by each command). */
 const ALLOWED = new Set([
@@ -48,7 +49,7 @@ const ALLOWED = new Set([
   "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openFolder", "datapass.workOrders.openFile",
   "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision",
   "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr",
-  // 0.21: the toolkit catalogue.
+  // 0.23: the toolkit catalogue.
   "datapass.openToolkit", "datapass.toolkit.openLink", "datapass.toolkit.copyInstall", "datapass.toolkit.copyStep", "datapass.toolkit.openStep", "datapass.toolkit.openFile"
 ]);
 
@@ -86,6 +87,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private gitSource?: () => GitObservation;
   /** 0.20: the work orders of this project. */
   private workOrderSource?: () => WbWorkOrders | undefined;
+  /** 0.22 modes: which Workbench views and markers the current mode shows (all until a mode is attached). */
+  private shows: (surface: string) => boolean = () => true;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
@@ -109,12 +112,32 @@ export class WorkbenchHost implements vscode.Disposable {
       board: this.session.boardView(), boardError: ctx.boardError,
       git: this.gitCard(),
       workOrders: this.workOrderSource?.(),
-      toolkit: toolkitState(this.session.catalogue(), this.session.toolkitFileResults(), this.session.recipeFacts(), ctx.root ? this.session.projectMap() : undefined, process.platform)
+      toolkit: toolkitState(this.session.catalogue(), this.session.toolkitFileResults(), this.session.recipeFacts(), ctx.root ? this.session.projectMap() : undefined, process.platform, this.shows("badge.hubChanged"))
     });
+    this.lastState.experience = {
+      hiddenViews: (["options", "sheet", "board", "workOrders", "toolkit"] as const).filter(v => !this.shows(`workbench.${v}`)),
+      alternatives: this.shows("badge.alternatives")
+    };
+    // 0.23: coding state badges (derived from the files; nothing to maintain).
+    const v = this.shows("badge.codingState") ? this.session.variants() : undefined;
+    if (v && ctx.options) {
+      const wb = (c: { state: CodingState; reason: string }) => ({ state: c.state, label: CODING_LABELS[c.state], reason: c.reason });
+      const p = this.session.preview();
+      this.lastState.coding = {
+        options: Object.fromEntries(Object.entries(v.options).map(([k, c]) => [k, wb(c)])),
+        scenarios: Object.fromEntries(v.scenarios.map(sc => [sc.id, wb(sc)])),
+        preview: p ? wb(codingOfPicks(ctx.options, v, p.picks)) : undefined
+      };
+    }
     return this.lastState;
   }
 
   setGitSource(source: () => GitObservation): void { this.gitSource = source; }
+  /** 0.22 modes: gate the Workbench views and the "alternatives exist" marker; repaint on a mode change. */
+  setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
+    this.shows = shows;
+    this.subs.push(changed(() => void this.post()));
+  }
   /** 0.20: where the Work orders view and the Details timeline read the orders; `changed` repaints every view. */
   setWorkOrderSource(source: () => WbWorkOrders | undefined, changed: vscode.Event<void>): void {
     this.workOrderSource = source;

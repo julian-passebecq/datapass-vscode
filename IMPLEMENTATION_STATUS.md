@@ -1,3 +1,104 @@
+# Implementation Status — 0.22.0: trust repairs, modes, context from any file, format checks, file versions
+
+Date: 2026-09-26. Version `0.22.0` — released from main after five packages built in parallel on the
+night of 26 September: A trust repairs (PR #36), B modes (#37), C context from any file (#34), D
+format checks (#35), F file versions (#38). Plan and decisions D-01 to D-18:
+[handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md). There is no
+0.21.0: the toolkit catalogue planned under that number moves to 0.23 with package G (variants).
+The packages' night notes (`handoff/v3/night/0.22-*.md`) are folded into this section.
+
+### What's new
+
+**A — Trust repairs (FOIL review F01–F08).**
+- Costs: `src/core/project/costs.ts`, one aggregation for the option subtotal, the scenario table,
+  the compact line, each declared line and the Workbench: per currency, never converted, monthly and
+  one-time apart; a line without a figure is unpriced, an option without lines or with one unpriced
+  line makes its decision unpriced; totals say "partial: n of m lines/decisions priced", "not priced"
+  when nothing is. `ArchitectureImpact.costs.total` carries priced/total.
+- File identity: `FileObservation.fingerprint` is `{ kind: "sha256" }` or `{ kind: "stat", size, mtimeMs }`
+  (streamed hashing up to 64 MiB per file, 256 MiB per refresh); a failed read is `hashError` and no
+  longer drops the file from the digest. `ArtifactView.digestStrength` exact / weak; a weak digest
+  never matches a recorded qualification result and is not recorded with one.
+- Git tracking of must-not-commit files: `tracking` tracked / untracked / unknown with a reason
+  (`git ls-files -z` in batches; failure or output without the final NUL → unknown), shown as
+  "could not check Git tracking" (warning), never clean.
+- New repository state **unverified** (remote declared, Git repository, origin absent via `git remote`
+  or its lookup failed): files browsable; *Get updates* (command and `session.fastForward`), work
+  orders and operations refuse it; Locate / Retry in the Workbench, icon in the Project tree,
+  readiness warning, Git view state.
+- Bounded observation (`src/core/project/observation.ts`): 16 reads in flight, 2,000 expected files,
+  byte budget; `ProjectObservation.incomplete` → "Project files: inspection incomplete (n skipped)".
+- Prompts: a merged PR moves a card to `review` (done only per acceptance or a project rule); sprint
+  planning asks for dates and capacity; no "beginner" phrasing. Packs and guide: `COORDINATED_CHANGE_RULE`
+  (one PR per repository plus a cross-linked bridge PR); "bridge repository (coordination repository)";
+  guide 07 "Trust limits (0.22)".
+
+**B — Modes (experience presets).**
+- 24 surface ids in `src/core/experience/surfaces.ts` (views, AI tabs, Project tree sections,
+  Workbench views, status items, landing, badges) — a contract: add, never rename.
+- `resources/experience/presets.json` (format `datapass.experience` 1): Vanilla ⊂ Standard ⊂ DataPass
+  ⊂ Advanced; pure resolver preset → overrides → effective surfaces with origins; machine-scope
+  settings `datapass.experience.preset` (default `standard`) and `datapass.experience.overrides`.
+- Context keys `datapass.hidden.<surface>` on every view (`when`) and on menus that open a hidden
+  surface; nothing hidden from the palette. *Switch Mode…*, *Customize DataPass Mode…*, *Reset Mode
+  Customization*; status item `$(layers) DataPass: Standard` (`*` when customized); the 0.9 tool-health
+  item only in Advanced. Standard+ lands on the Architecture panel (a workspace `datapass.startupView`
+  wins). "Alternatives exist" on components an options.json decision can change.
+- Blockers in every mode (D-03): Restricted Mode, manifest/graph errors, readiness errors, errors in
+  project files, a refused secret.
+
+**C — Copy Context for My AI from any file.** `datapass.copyFileContext` on the Explorer, the editor
+tab and the editor (selection); pure builder `src/core/exchange/fileContext.ts`: question, repository
+(bridge or native, remote identity, branch, HEAD, the file's Git state; "not in the bridge"; another
+worktree of the same remote resolved by `--show-toplevel` + origin), owning components and scope,
+their repositories' revisions, a folder excerpt, the file or selection (24 KB, 48 KB per pack, unsaved
+and untitled buffers flagged, binary omitted), its diagnostics, and the answer rules. Local folders
+replaced by `<local-path>`, then the shared `scrub()`; preview before copying; nothing written.
+
+**D — Format checks without execution.** `src/core/checks/` (pure, no process): rules `json.syntax`,
+`yaml.syntax` (bundled `yaml` 2.x), `dab.bundle-name|targets|include|path|var`, `docker.from|copy-source`,
+`compose.build-context|env-file`, `checks.incomplete`; bounded scan (`datapass.checks.maxFiles` 2,000,
+`maxFileBytes` 1 MB, depth 12). DiagnosticCollection `datapass-checks`, on save
+(`datapass.checks.onSave`), *Check This File* / *Check This Repository*, quick fix copying
+`databricks bundle validate` (never run); Restricted Mode safe. Guide page
+[docs/guide/08_FORMAT_CHECKS.md](docs/guide/08_FORMAT_CHECKS.md).
+
+**F — File versions.** *Open Latest Version* (origin's default branch as of the last fetch),
+*Open Version…* (last 50 commits, `--follow`, "from PR #n"), *Compare with Version…*, *Changed by the
+Last Update…* (the reflog's last fast-forward, files by component). Read-only `datapass-rev:` provider
+(`git show`), vetted requests (hex revision, repository-relative path, known repository), trusted
+workspaces only, `core.fsmonitor=false`; nothing fetches, checks out or writes.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run check` | clean |
+| `npm test` | 389 / 389 on main (new: `trustRepairs` 15, `experience` 9, `fileContext` 12, `checks` 13, `fileVersions` 6) |
+| `npm run test:desktop` (installed VS Code, Windows 11) | 314 / 314 on 15 fixtures (`empty` 13, `v22-checks` 15, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 21, `v3-research` 51, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13, `v18-toolchain` 16, `v19-git` 20, `v20-work-orders` 23, `v22-modes` 19, `v22-versions` 15). One run had the 0.17 "Power Ops list" flow fail in `v3-research` (a machine-level file other desktop runs write at the same time, already seen by package C); it passed on the rerun of that fixture (51/51). New fixtures `v22-modes`, `v22-checks`, `v22-versions`; new flows `experienceFlows`, `fileContextFlows`, `checkFlows`, `fileVersionFlows`) |
+| CI | validate + desktop on ubuntu-latest and windows-latest green for every package PR |
+
+### Known limits
+
+- A: the Git view does not inspect an unverified repository (state and detail only); coordinated
+  change sets are described, not shown linked (V2).
+- B: the desktop harness runs with `--disable-workspace-trust` (the untrusted blocker in Vanilla is
+  covered by the code path); before activation every view is visible (the keys are "hidden" keys);
+  contributed icons cannot be recoloured; the company switcher is not a surface.
+- C: Explorer multi-select copies the clicked file only; diagnostics are what VS Code has at that
+  moment; revisions of other repositories come from the last observation.
+- D: build context = the Dockerfile's folder, `.dockerignore` not applied; `include` globs without
+  `{a,b}`; only `${var.x}` checked; Python syntax, notebooks, Terraform/Bicep, CI and Kubernetes
+  schemas are V2 or later.
+- F: "from PR #n" only for squash-merge subjects; the reflog is per clone; *Changed by the last
+  update* is a quick pick, not yet a Details section.
+
+### Still needs a human
+
+Julian's morning confirmations (plan §6): J1 default mode (Standard), J2 FOIL's bridge repository,
+J3 bridge-recommended mode (V2), J4 "bridge repository" wording. Then the FOIL AI prepares the bridge
+(plan §8) and Julian runs the three FOIL stories in Standard mode.
+
 # Implementation Status — 0.20.0 (pass AI-2): work orders
 
 Date: 2026-09-25. Version `0.20.0` — merged, PR #30 (main `538a3d3`), on 0.19.0 (PR #29). The guide

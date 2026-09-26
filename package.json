@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.20.0",
+  "version": "0.22.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -22,7 +22,11 @@
     "onView:datapass.aiExchange",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
-    "onUri"
+    "onUri",
+    "workspaceContains:**/databricks.yml",
+    "workspaceContains:**/databricks.yaml",
+    "onLanguage:dockerfile",
+    "onLanguage:dockercompose"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -149,6 +153,11 @@
         "icon": "$(copy)"
       },
       {
+        "command": "datapass.copyFileContext",
+        "title": "DataPass: Copy Context for My AI…",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "datapass.diagramCloud.openArchitecture",
         "title": "DataPass: Open Architecture in DiagramCloud"
       },
@@ -234,6 +243,20 @@
         "command": "datapass.refreshProject",
         "title": "DataPass: Re-inspect Project (files and Git state, no network)",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.showAllVariants",
+        "title": "DataPass: Show All Variants in the Project Tree",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "datapass.showSelectedArchitecture",
+        "title": "DataPass: Show Only the Selected Architecture",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "datapass.openVariantFile",
+        "title": "DataPass: Open a Variant's File"
       },
       {
         "command": "datapass.checkForUpdates",
@@ -518,6 +541,31 @@
         "title": "DataPass: Open a Link of a Card"
       },
       {
+        "command": "datapass.openToolkit",
+        "title": "DataPass: Open the Toolkit (tools, prices, recipes)",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.toolkit.openLink",
+        "title": "DataPass: Open a Tool's Page"
+      },
+      {
+        "command": "datapass.toolkit.copyInstall",
+        "title": "DataPass: Copy a Tool's Install Command"
+      },
+      {
+        "command": "datapass.toolkit.copyStep",
+        "title": "DataPass: Copy a Recipe Step"
+      },
+      {
+        "command": "datapass.toolkit.openStep",
+        "title": "DataPass: Open a Recipe Step's Page"
+      },
+      {
+        "command": "datapass.toolkit.openFile",
+        "title": "DataPass: Open a Toolkit File"
+      },
+      {
         "command": "datapass.openRepositoryWeb",
         "title": "DataPass: Open a Repository on the Web (GitHub, Azure DevOps, GitLab)…",
         "icon": "$(globe)"
@@ -732,6 +780,51 @@
         "command": "datapass.workOrders.newFromFailingPr",
         "title": "DataPass: Work Order to Fix this (failing CI)",
         "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.checkThisFile",
+        "title": "DataPass: Check This File"
+      },
+      {
+        "command": "datapass.checkThisRepository",
+        "title": "DataPass: Check This Repository"
+      },
+      {
+        "command": "datapass.checks.copyBundleValidate",
+        "title": "DataPass: Copy Bundle Validate Command"
+      },
+      {
+        "command": "datapass.fileVersions.openLatest",
+        "title": "DataPass: Open Latest Version",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.fileVersions.openVersion",
+        "title": "DataPass: Open Version…",
+        "icon": "$(history)"
+      },
+      {
+        "command": "datapass.fileVersions.compare",
+        "title": "DataPass: Compare with Version…",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "datapass.fileVersions.lastUpdate",
+        "title": "DataPass: Changed by the Last Update…",
+        "icon": "$(git-compare)"
+      },
+      {
+        "command": "datapass.experience.switchMode",
+        "title": "DataPass: Switch Mode…",
+        "icon": "$(layers)"
+      },
+      {
+        "command": "datapass.experience.customize",
+        "title": "DataPass: Customize DataPass Mode…"
+      },
+      {
+        "command": "datapass.experience.resetOverrides",
+        "title": "DataPass: Reset Mode Customization"
       }
     ],
     "viewsContainers": {
@@ -762,31 +855,36 @@
         {
           "id": "datapass.project",
           "name": "Project",
-          "type": "tree"
+          "type": "tree",
+          "when": "!datapass.hidden.view.project"
         },
         {
           "id": "datapass.git",
           "name": "Git",
-          "type": "tree"
+          "type": "tree",
+          "when": "!datapass.hidden.view.git"
         },
         {
           "id": "datapass.work",
           "name": "Work",
           "type": "tree",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "when": "!datapass.hidden.view.work"
         },
         {
           "id": "datapass.galaxy",
           "name": "Galaxy",
           "type": "webview",
-          "visibility": "collapsed"
+          "visibility": "collapsed",
+          "when": "!datapass.hidden.view.galaxy"
         }
       ],
       "datapass-architecture": [
         {
           "id": "datapass.architecture",
           "name": "Architecture",
-          "type": "webview"
+          "type": "webview",
+          "when": "!datapass.hidden.view.architecture"
         }
       ],
       "datapass-details": [
@@ -794,13 +892,15 @@
           "id": "datapass.aiExchange",
           "name": "AI",
           "type": "webview",
-          "initialSize": 3
+          "initialSize": 3,
+          "when": "!datapass.hidden.view.aiExchange"
         },
         {
           "id": "datapass.details",
           "name": "Details",
           "type": "webview",
-          "initialSize": 1
+          "initialSize": 1,
+          "when": "!datapass.hidden.view.details"
         }
       ]
     },
@@ -810,6 +910,16 @@
           "command": "datapass.refreshProject",
           "when": "view == datapass.project",
           "group": "navigation@1"
+        },
+        {
+          "command": "datapass.showAllVariants",
+          "when": "view == datapass.project && !datapass.allVariants && !datapass.hidden.project.variantFilter",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datapass.showSelectedArchitecture",
+          "when": "view == datapass.project && datapass.allVariants && !datapass.hidden.project.variantFilter",
+          "group": "navigation@3"
         },
         {
           "command": "datapass.checkForUpdates",
@@ -1023,12 +1133,12 @@
         },
         {
           "command": "datapass.openOptions",
-          "when": "view == datapass.project",
+          "when": "view == datapass.project && !datapass.hidden.workbench.options",
           "group": "1_workbench@2"
         },
         {
           "command": "datapass.openSheet",
-          "when": "view == datapass.project",
+          "when": "view == datapass.project && !datapass.hidden.workbench.sheet",
           "group": "1_workbench@3"
         },
         {
@@ -1073,7 +1183,7 @@
         },
         {
           "command": "datapass.openBoard",
-          "when": "view == datapass.project",
+          "when": "view == datapass.project && !datapass.hidden.workbench.board",
           "group": "1_workbench@4"
         },
         {
@@ -1123,23 +1233,38 @@
         },
         {
           "command": "datapass.workOrders.new",
-          "when": "view == datapass.aiExchange",
+          "when": "view == datapass.aiExchange && !datapass.hidden.ai.agent",
           "group": "2_agent@1"
         },
         {
           "command": "datapass.workOrders.show",
-          "when": "view == datapass.aiExchange",
+          "when": "view == datapass.aiExchange && !datapass.hidden.ai.agent",
           "group": "2_agent@2"
         },
         {
           "command": "datapass.workOrders.publishSummary",
-          "when": "view == datapass.aiExchange",
+          "when": "view == datapass.aiExchange && !datapass.hidden.ai.agent",
           "group": "2_agent@3"
         },
         {
           "command": "datapass.workOrders.exportProject",
-          "when": "view == datapass.aiExchange",
+          "when": "view == datapass.aiExchange && !datapass.hidden.ai.agent",
           "group": "2_agent@4"
+        },
+        {
+          "command": "datapass.fileVersions.lastUpdate",
+          "when": "view == datapass.project",
+          "group": "3_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.lastUpdate",
+          "when": "view == datapass.git",
+          "group": "3_versions@1"
+        },
+        {
+          "command": "datapass.experience.switchMode",
+          "when": "view == datapass.git || view == datapass.project",
+          "group": "9_mode@1"
         }
       ],
       "view/item/context": [
@@ -1235,17 +1360,17 @@
         },
         {
           "command": "datapass.board.aiPack",
-          "when": "view == datapass.project && viewItem == boardCard",
+          "when": "view == datapass.project && viewItem == boardCard && !datapass.hidden.project.board",
           "group": "inline@1"
         },
         {
           "command": "datapass.board.moveCard",
-          "when": "view == datapass.project && viewItem == boardCard",
+          "when": "view == datapass.project && viewItem == boardCard && !datapass.hidden.project.board",
           "group": "1_board@1"
         },
         {
           "command": "datapass.openBoardFile",
-          "when": "view == datapass.project && viewItem == boardCard",
+          "when": "view == datapass.project && viewItem == boardCard && !datapass.hidden.project.board",
           "group": "1_board@2"
         },
         {
@@ -1365,28 +1490,47 @@
         },
         {
           "command": "datapass.workOrders.newFromFailingPr",
-          "when": "view == datapass.git && viewItem =~ /^gitPr\\.failing/",
+          "when": "view == datapass.git && viewItem =~ /^gitPr\\.failing/ && !datapass.hidden.ai.agent",
           "group": "2_workorder@1"
         },
         {
           "command": "datapass.workOrders.newFromFailingPr",
-          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-ci\\.project/",
+          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-ci\\.project/ && !datapass.hidden.ai.agent",
           "group": "2_workorder@1"
         },
         {
           "command": "datapass.workOrders.show",
-          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-work-order/",
+          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-work-order/ && !datapass.hidden.ai.agent",
           "group": "inline@1"
         },
         {
           "command": "datapass.workOrders.newForMissingFiles",
-          "when": "view == datapass.project && viewItem =~ /^component.*\\.missing/",
+          "when": "view == datapass.project && viewItem =~ /^component.*\\.missing/ && !datapass.hidden.ai.agent",
           "group": "2_ai@1"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@3"
         }
       ],
       "commandPalette": [
         {
           "command": "datapass.setChecklistState",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openVariantFile",
           "when": "false"
         },
         {
@@ -1431,6 +1575,26 @@
         },
         {
           "command": "datapass.board.openLink",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.openLink",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.copyInstall",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.copyStep",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.openStep",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.openFile",
           "when": "false"
         },
         {
@@ -1504,12 +1668,75 @@
         {
           "command": "datapass.workOrders.newFromFailingPr",
           "when": "false"
+        },
+        {
+          "command": "datapass.checks.copyBundleValidate",
+          "when": "false"
         }
       ],
       "explorer/context": [
         {
           "command": "datapass.validateContract",
           "when": "resourceExtname == .json && resourcePath =~ /\\.datapass/",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.copyFileContext",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.checkThisFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.checkThisRepository",
+          "when": "explorerResourceIsRoot",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@3"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
           "group": "7_datapass"
         }
       ]
@@ -1719,6 +1946,175 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Absolute folder of a **private** Git clone that collects every project's work-order summary (`work-logs/<project id>.json`) when you *Publish summary*. Never this public repository or a repository of the project; on GitHub, `gh` must say it is private (else DataPass asks). DataPass writes the file; you commit and push."
+        },
+        "datapass.checks.onSave": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "Check JSON, YAML, databricks.yml, Dockerfiles and compose files when they are saved. Parse-only: nothing is ever run."
+        },
+        "datapass.checks.maxFiles": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 1,
+          "scope": "window",
+          "description": "Files a repository check looks at before it stops and reports itself incomplete."
+        },
+        "datapass.checks.maxFileBytes": {
+          "type": "number",
+          "default": 1048576,
+          "minimum": 1,
+          "scope": "window",
+          "description": "Files larger than this (bytes) are skipped by the format checks, never read."
+        },
+        "datapass.experience.preset": {
+          "type": "string",
+          "enum": [
+            "vanilla",
+            "standard",
+            "datapass",
+            "advanced"
+          ],
+          "enumItemLabels": [
+            "Vanilla",
+            "Standard",
+            "DataPass",
+            "Advanced"
+          ],
+          "enumDescriptions": [
+            "Native Explorer, DataPass's Git view and the AI exchange (guided tab). Third-party extensions are untouched.",
+            "Vanilla plus the architecture diagram (opened with the project) and Details.",
+            "Standard plus the Project tree, options, project sheet, readiness, the Agent and Manual tabs.",
+            "Everything, as in 0.20 (board, Work and Galaxy views, tool-health status item)."
+          ],
+          "default": "standard",
+          "scope": "machine",
+          "markdownDescription": "DataPass mode: which DataPass views, tabs and sections are shown. Modes change presentation only: the same project files in every mode, commands stay in the Command Palette, and safety blockers always show. Switch with **DataPass: Switch Mode** (status bar)."
+        },
+        "datapass.experience.overrides": {
+          "type": "object",
+          "default": {},
+          "scope": "machine",
+          "additionalProperties": false,
+          "properties": {
+            "view.project": {
+              "type": "boolean",
+              "description": "Project tree: Sub-projects, components, repositories and readiness (left side bar)"
+            },
+            "view.git": {
+              "type": "boolean",
+              "description": "Git view: Repositories, worktrees, pull requests with CI, Needs you"
+            },
+            "view.work": {
+              "type": "boolean",
+              "description": "Work view: Module cards and capability operations (V2)"
+            },
+            "view.galaxy": {
+              "type": "boolean",
+              "description": "Galaxy view: Platform cards and qualification (V1)"
+            },
+            "view.architecture": {
+              "type": "boolean",
+              "description": "Architecture panel: The project diagram (bottom panel)"
+            },
+            "view.aiExchange": {
+              "type": "boolean",
+              "description": "AI view: Copy a DataPass file for your AI, paste its answer (secondary side bar)"
+            },
+            "view.details": {
+              "type": "boolean",
+              "description": "Details: The selected component or sub-project (secondary side bar)"
+            },
+            "ai.agent": {
+              "type": "boolean",
+              "description": "AI view: Agent tab: Work orders for Claude Code or Codex (still opt-in per machine and project type)"
+            },
+            "ai.manual": {
+              "type": "boolean",
+              "description": "AI view: Manual tab: Where things stand and the route to each official tool"
+            },
+            "project.subprojects": {
+              "type": "boolean",
+              "description": "Project tree: sub-projects and components: The architecture as a tree"
+            },
+            "project.repositories": {
+              "type": "boolean",
+              "description": "Project tree: Repositories: Cloned, not cloned, planned; commits to get"
+            },
+            "project.options": {
+              "type": "boolean",
+              "description": "Project tree: Architecture options: Decisions and scenarios from options.json"
+            },
+            "project.sheet": {
+              "type": "boolean",
+              "description": "Project tree: Project sheet: Datasets, formulas, runtimes"
+            },
+            "project.board": {
+              "type": "boolean",
+              "description": "Project tree: Board: Tasks, bugs and sprints from board.json"
+            },
+            "project.readiness": {
+              "type": "boolean",
+              "description": "Project tree: Readiness and local environment: Full sections (blockers show in every mode)"
+            },
+            "project.problems": {
+              "type": "boolean",
+              "description": "Project tree: Problems in project files: What DataPass found wrong in .datapass files"
+            },
+            "workbench.options": {
+              "type": "boolean",
+              "description": "Workbench: Options: Compare scenarios, preview, record a decision"
+            },
+            "workbench.sheet": {
+              "type": "boolean",
+              "description": "Workbench: Project sheet: The project sheet as tables"
+            },
+            "workbench.board": {
+              "type": "boolean",
+              "description": "Workbench: Board: Kanban and sprints"
+            },
+            "workbench.workOrders": {
+              "type": "boolean",
+              "description": "Workbench: Work orders: Orders handed to Claude Code or Codex"
+            },
+            "status.mode": {
+              "type": "boolean",
+              "description": "Status bar: DataPass mode: Shows the mode; click to switch"
+            },
+            "status.health": {
+              "type": "boolean",
+              "description": "Status bar: tool health: Tools and bindings ready (opens the Galaxy view)"
+            },
+            "landing.architecture": {
+              "type": "boolean",
+              "description": "Open on the architecture: Focus the Architecture panel when a project opens (a workspace's startup view wins)"
+            },
+            "badge.alternatives": {
+              "type": "boolean",
+              "description": "\"Alternatives exist\" on components: Marks components an options.json decision can change"
+            },
+            "project.variantFilter": {
+              "type": "boolean",
+              "description": "Project tree: selected architecture and All variants: The tree follows the previewed scenario; a toggle lists every option's components and files"
+            },
+            "badge.codingState": {
+              "type": "boolean",
+              "description": "Coding state of options and scenarios: coded / partly coded / not coded, derived from the files DataPass finds"
+            },
+            "workbench.toolkit": {
+              "type": "boolean",
+              "description": "Workbench: Toolkit: Tools with their free tier and prices, recipes, what needs a newer DataPass"
+            },
+            "project.toolkit": {
+              "type": "boolean",
+              "description": "Project tree: Toolkit: Hub toolkit files read, entries skipped, Needs a newer DataPass"
+            },
+            "badge.hubChanged": {
+              "type": "boolean",
+              "description": "\"Changed by the hub\" on catalogue entries: Marks built-in tools a hub toolkit file changed"
+            }
+          },
+          "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
         }
       }
     },
@@ -1753,6 +2149,13 @@
           "**/.datapass/catalog.json"
         ],
         "url": "./schemas/datapass-catalog.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/toolkit/tools.json",
+          "**/.datapass/toolkit/recipes/*.json"
+        ],
+        "url": "./schemas/datapass-toolkit.schema.json"
       },
       {
         "fileMatch": [
@@ -1835,6 +2238,7 @@
     "esbuild": "^0.25.9",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
+    "yaml": "^2.9.1",
     "zod": "^3.25.76"
   },
   "repository": {

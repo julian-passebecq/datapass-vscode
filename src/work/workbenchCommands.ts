@@ -313,6 +313,13 @@ async function getUpdates(session: WorkSession, repoKey?: string): Promise<void>
   const before = session.projectMap();
   const r = before.repositories.find(x => x.key === key);
   if (!r) return;
+  // 0.22 (F04): only a clone whose origin matches the declared remote is updated.
+  if (r.state !== "local") {
+    const go = await vscode.window.showWarningMessage(`${r.label}: not updated — ${r.detail}.`, ...(r.state === "unverified" ? ["Locate clone", "Retry"] : []));
+    if (go === "Locate clone") await vscode.commands.executeCommand("datapass.locateRepository", r.key);
+    else if (go === "Retry") await vscode.commands.executeCommand("datapass.refreshProject");
+    return;
+  }
   const verdict = syncVerdict(r.git);
   if (verdict.kind !== "can-fast-forward") {
     const go = await vscode.window.showWarningMessage(`${r.label}: ${describeVerdict(verdict)}.`, "Open Source Control");
@@ -473,7 +480,7 @@ async function recordComponentResult(session: WorkSession, version: string, opKe
     capabilityId: op.capability.id, label: `${c.label}: ${op.label}`, result: choice.result, note: cleanNote(note),
     projectId: manifest.project.id, scopeId: "project", preflight: op.result.status, at: new Date().toISOString(), dataPassVersion: version,
     tools: toolSnapshot([...new Set(op.capability.requirements.flatMap(r => r.anyOf))], session.toolObservations()),
-    operationKey: op.key, componentId: c.id, environment: op.environmentId, targetDigest: op.result.targetDigest, artifactDigest: c.artifacts?.digest
+    operationKey: op.key, componentId: c.id, environment: op.environmentId, targetDigest: op.result.targetDigest, artifactDigest: c.artifacts?.digestStrength === "exact" ? c.artifacts.digest : undefined
   });
   void vscode.window.showInformationMessage(`Recorded: ${c.label} · ${op.label} — ${choice.result}. It stays valid for these files and this target only.`);
 }

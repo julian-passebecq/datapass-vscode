@@ -17,10 +17,13 @@ import { sheetFor, volumeLine, type ComponentSheet, type ProjectSheet } from "./
 import { concernedItems, type OptionsFile } from "./options";
 import { doneColumns, TYPE_LABELS, type Board } from "./board";
 
+/** 0.22 (F07): a pull request never spans repositories; native work and .datapass files are cross-linked PRs. */
+export const COORDINATED_CHANGE_RULE = "One pull request per repository: a pull request never spans repositories. When the work is in a native repository, update the .datapass files in a separate bridge pull request (bridge repository, also called the coordination repository) and link the two pull requests to each other (a coordinated change set).";
+
 export const PACK_QUESTIONS = {
   explain: {
     label: "Explain it to me step by step",
-    ask: "Explain this to me step by step as to a beginner in cloud engineering: what each service does here, what is already in place, what is missing, and the next concrete step with the official tool to use (VS Code extension, CLI or portal). Do not assume anything is deployed."
+    ask: "Explain this to me step by step, in plain language: what each service does here, what is already in place, what is missing, and the next concrete step with the official tool to use (VS Code extension, CLI or portal). Do not assume anything is deployed."
   },
   "prepare-missing": {
     label: "Prepare the missing files (as a pull request)",
@@ -106,7 +109,7 @@ export function componentSection(c: ComponentView, map: ProjectMap): string[] {
       const needed = f.requiredFor.length && !f.optional ? ` — needed to ${f.requiredFor.map(p => PHASE_LABELS[p].toLowerCase()).join(", ")}` : "";
       lines.push(`  - [${tag}] \`${f.path}\` (${f.role})${needed}${f.about ? ` — ${f.about}` : ""}`);
     }
-    for (const m of a.mustNotCommit) lines.push(`  - must never be committed: \`${m.path}\` (${m.why})${m.tracked ? " — **currently committed: fix this first**" : ""}`);
+    for (const m of a.mustNotCommit) lines.push(`  - must never be committed: \`${m.path}\` (${m.why})${m.tracked ? " — **currently committed: fix this first**" : m.tracking === "unknown" ? ` — Git tracking could not be checked (${m.trackingReason ?? "not checked"})` : ""}`);
   } else {
     lines.push("- Files: none declared yet (graph.json has no `artifacts` for this component).");
   }
@@ -233,7 +236,8 @@ export function buildPreparationPack(input: PackInput, maxBytes = 24_000): PackE
   lines.push("- Files go in the repository and folder named above, in their native format (function_app.py, host.json, databricks.yml, ADF JSON, SQL…), delivered as a branch or pull request I review.");
   lines.push("- Never put secrets, keys or connection strings in files, in .datapass JSON or in your answer; name where they belong instead.");
   lines.push("- Do not claim anything is deployed or tested. Say which checks I should run and in which official tool.");
-  lines.push(`- If you change the architecture, update .datapass/project.json (manifest v${Math.max(3, map.project?.schemaVersion ?? 3)}) and .datapass/graph.json (graph 0.2) in the same pull request.`);
+  lines.push(`- ${COORDINATED_CHANGE_RULE}`);
+  lines.push(`- If you change the architecture, update .datapass/project.json (manifest v${Math.max(3, map.project?.schemaVersion ?? 3)}) and .datapass/graph.json (graph 0.2) in the bridge pull request.`);
   if (input.guideUrl) lines.push(`- DataPass project format: ${input.guideUrl}`);
 
   h("Base (what this pack was built from)");

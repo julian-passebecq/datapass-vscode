@@ -1,5 +1,5 @@
 /**
- * Reads the toolkit files of the hub repositories this window knows (0.21): the project folder's own
+ * Reads the toolkit files of the hub repositories this window knows (0.23): the project folder's own
  * `.datapass/toolkit/` (when the coordination repository is also the hub) and the `toolkit/` folder
  * beside each catalog of the `datapass.catalogs` setting (`<hub>/.datapass/catalog.json` →
  * `<hub>/.datapass/toolkit/`). tools.json first, then recipes/*.json by name. Nothing is run; a file

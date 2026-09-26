@@ -18,6 +18,7 @@ import type { ArchitectureImpact, CriterionValue, DerivedArchitecture, OptionsAn
 import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../core/project/sheet";
 import type { BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks, type WebLinkId } from "../core/project/gitHosts";
+import type { CostTotal } from "../core/project/costs";
 
 /** 0.16: the board as the kanban shows it (built by the session; plain data). */
 export type WbBoard = BoardView;
@@ -40,7 +41,7 @@ export interface WbComponent {
   id: string; label: string; kind: string; providerId?: string; providerLabel?: string; providerGlyph: string; providerAbout?: string; providerSupport?: string;
   nativeTool?: string; status?: string; description?: string; health: string; headline: string; nextStep: string; subprojects: string[];
   repoKey?: string; parent?: string; children: string[];
-  artifacts?: { repoKey: string; root: string; profileLabel: string; profileAbout: string; availability: string; summary: { expected: number; found: number; missing: number; generatedMissing: number; optionalMissing: number }; entry?: string; files: WbFile[]; mustNotCommit: Array<{ path: string; why: string; tracked: boolean }> };
+  artifacts?: { repoKey: string; root: string; profileLabel: string; profileAbout: string; availability: string; summary: { expected: number; found: number; missing: number; generatedMissing: number; optionalMissing: number }; entry?: string; files: WbFile[]; mustNotCommit: Array<{ path: string; why: string; tracked: boolean; tracking: "tracked" | "untracked" | "unknown"; trackingReason?: string }> };
   operations: WbOperation[]; checklist: WbChecklist[]; docs: Array<{ label: string; path?: string; url?: string; repoKey?: string }>;
   incoming: Array<{ id: string; label: string; relation: string }>; outgoing: Array<{ id: string; label: string; relation: string }>;
   problems: string[];
@@ -109,8 +110,12 @@ export interface WorkbenchState {
   git?: WbGit;
   /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
   workOrders?: WbWorkOrders;
-  /** 0.21: the toolkit catalogue (built-in baseline + the hub's files). */
+  /** 0.23: the toolkit catalogue (built-in baseline + the hub's files). */
   toolkit?: WbToolkit;
+  /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
+  experience?: { hiddenViews: string[]; alternatives: boolean };
+  /** 0.23 (package G): coding state per option ("decision=option"), per scenario and for the preview; absent when the mode hides the badge. */
+  coding?: { options: Record<string, WbCoding>; scenarios: Record<string, WbCoding>; preview?: WbCoding };
 }
 
 /** 0.20: one work order as the Workbench shows it (no local path, no goal text; the agent's words only as "the agent says"). */
@@ -176,7 +181,7 @@ export interface WbImpact {
   support: { operations: number; files: number; unsupported: number };
   operations: { total: number; ready: number };
   repositories: { used: string[]; planned: string[]; newlyUsed: string[] };
-  costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[] };
+  costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[]; total: CostTotal };
   problems: Array<{ severity: string; message: string }>;
 }
 export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string }
@@ -191,6 +196,7 @@ export interface WbDecision {
   id: string; title: string; question?: string; level?: string; subproject?: string; concerns: string[];
   current: string; chosen?: string; decidedOn?: string; decidedBy?: string; rationale?: string; notes?: string; options: WbOption[];
 }
+export interface WbCoding { state: "coded" | "partly-coded" | "not-coded" | "unknown"; label: string; reason: string }
 export interface WbScenario { id: string; title: string; description?: string; recommended: boolean; kind: string; impact: WbImpact }
 export interface WbOptions {
   title?: string; description?: string; currency: string;
@@ -239,7 +245,7 @@ function component(c: ComponentView, map: ProjectMap): WbComponent {
     artifacts: a ? {
       repoKey: a.repoKey, root: a.root, profileLabel: a.profile.label, profileAbout: a.profile.about, availability: a.availability, summary: a.summary, entry: a.entry?.path,
       files: a.files.map(f => ({ path: f.path, repoPath: f.repoPath, kind: f.kind, role: f.role, requiredFor: f.requiredFor, optional: f.optional, source: f.source, about: f.about, generatedBy: f.generated?.producer, generatedHow: f.generated?.how, state: f.state, count: f.count })),
-      mustNotCommit: a.mustNotCommit.map(m => ({ path: m.path, why: m.why, tracked: m.tracked }))
+      mustNotCommit: a.mustNotCommit.map(m => ({ path: m.path, why: m.why, tracked: m.tracked, tracking: m.tracking, trackingReason: m.trackingReason }))
     } : undefined,
     operations: c.operations.map(operation), checklist: c.checklist.map(checklist), docs: c.docs,
     incoming: c.incoming.map(r => ({ id: r.from, label: label(r.from), relation: r.relation })),
@@ -284,7 +290,7 @@ function impact(i: ArchitectureImpact): WbImpact {
       missing: i.tools.needed.filter(t => t.state === "absent").map(t => ({ label: t.label, extensionId: t.extensionId }))
     },
     support: i.support, operations: i.operations, repositories: i.repositories,
-    costs: { monthly: i.costs.monthly, oneTime: i.costs.oneTime, missing: i.costs.missing },
+    costs: { monthly: i.costs.monthly, oneTime: i.costs.oneTime, missing: i.costs.missing, total: i.costs.total },
     problems: i.problems.map(p => ({ severity: p.severity, message: p.message }))
   };
 }

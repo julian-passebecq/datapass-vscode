@@ -25,6 +25,8 @@ import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset
 import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
 import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
+import { incompleteText } from "../core/project/observation";
+import { deriveVariants, type VariantsAnalysis } from "../core/project/variants";
 import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
@@ -102,7 +104,7 @@ export class WorkSession implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private ctx: ProjectContext = { manifestErrors: [], manifestExists: false, packs: [], packErrors: [] };
   private tools: Map<string, ToolObservation> = new Map();
-  /** 0.21: the toolkit files of the hub repositories this window knows. */
+  /** 0.23: the toolkit files of the hub repositories this window knows. */
   private toolkitFiles: ToolkitFileResult[] = [];
   private catalogueCache?: Catalogue;
   /** File-backed facts as observed on disk (a declared path counts only once it was seen). */
@@ -132,6 +134,7 @@ export class WorkSession implements vscode.Disposable {
   connectionRunner?: ConnectionRunner;
   private readinessCache?: Readiness;
   private analysisCache?: OptionsAnalysis;
+  private variantsCache?: VariantsAnalysis;
   private previewCache?: Preview;
   private boardCache?: BoardView;
   /** The person accepted, in this window, that moving a card writes its status in board.json. */
@@ -467,6 +470,7 @@ export class WorkSession implements vscode.Disposable {
     this.mapCache = undefined;
     this.readinessCache = undefined;
     this.analysisCache = undefined;
+    this.variantsCache = undefined;
     this.previewCache = undefined;
     this.boardCache = undefined;
     this.catalogueCache = undefined;
@@ -492,7 +496,8 @@ export class WorkSession implements vscode.Disposable {
       repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
       tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
-      qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings()
+      qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings(),
+      observationIncomplete: obs?.incomplete ? incompleteText(obs.incomplete) : undefined
     };
   }
 
@@ -512,7 +517,7 @@ export class WorkSession implements vscode.Disposable {
     return this.mapCache;
   }
 
-  // ------------------------------------------------------------ 0.21 toolkit catalogue
+  // ------------------------------------------------------------ 0.23 toolkit catalogue
 
   /** This extension's version (what a toolkit file's requires.datapass is compared with). */
   get version(): string { return String(this.context.extension?.packageJSON?.version ?? "0.0.0"); }
@@ -559,6 +564,17 @@ export class WorkSession implements vscode.Disposable {
     if (!options) return undefined;
     if (!this.analysisCache) this.analysisCache = analyzeOptions({ base: this.mapInput(), options, baseMap: this.projectMap() });
     return this.analysisCache;
+  }
+
+  /** 0.23: coding state of every option and scenario, and the files each variant needs (undefined without options). */
+  variants(): VariantsAnalysis | undefined {
+    const options = this.ctx.options;
+    if (!options) return undefined;
+    if (!this.variantsCache) {
+      const input = this.mapInput();
+      this.variantsCache = deriveVariants({ options, manifest: input.manifest, graph: input.graph, coordinationKey: input.coordinationKey, repositories: this.projectMap().repositories, fileObservations: input.fileObservations });
+    }
+    return this.variantsCache;
   }
 
   /** The architecture previewed on the diagram, when one is selected and still valid. */
@@ -718,6 +734,8 @@ export class WorkSession implements vscode.Disposable {
     const folder = this.repoFolder(key);
     if (!folder) return { ok: false, changed: [], detail: "not cloned here" };
     if (!vscode.workspace.isTrusted) return { ok: false, changed: [], detail: "Restricted Mode" };
+    const view = this.projectMap().repositories.find(r => r.key === key);
+    if (view && view.state !== "local") return { ok: false, changed: [], detail: view.detail };
     const before = await gitRunner(["rev-parse", "HEAD"], folder.fsPath, 5000);
     const r = await gitRunner(["merge", "--ff-only", "@{u}"], folder.fsPath, 60000);
     if (!r.ok) return { ok: false, changed: [], detail: (r.stderr ?? "").split(/\r?\n/).find(l => l.trim())?.slice(0, 300) ?? "fast-forward refused" };
