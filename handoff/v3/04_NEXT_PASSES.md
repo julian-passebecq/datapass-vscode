@@ -179,12 +179,13 @@ disabled, no DataPass file in native repositories; (3) open from the bridge, bot
 planned repository, nothing written; (5) missing clone → `unbound`, files never `missing`; (6) a clone
 without origin, *Locate an Existing Clone* → `unverified`, still browsable; (7) a modified file → the
 repository counts one change and the pack says "modified, not committed"; (8) unsupported tool → "not
-supported yet", no operation; (9) B with every file present → must read "files present / not built,
-tested or deployed" from 0.25.0 (R-04; main still says "coded"); (10) `.vscode/mcp.json` → "present",
-never connected; the MCP evidence card is marked 0.27+ (E1), the relabel 0.26+ (M1). Every non-visual
-step ran in a desktop VS Code on a throwaway profile (`verification-claude/run.ts`, 10/10 on main
-2026-09-26) and is marked "vérifié par Claude"; findings for V1-STAB are listed at the end of the guide
-and in `handoff/v3/night/v1-t10.md`.
+supported yet", no operation; (9) B with every file present → "files present", "not a decision, not a
+deployment", "Live route: not observed" (0.25.0, R-04); (10) `.vscode/mcp.json` → "MCP registration file
+present", never connected; the MCP evidence card (E1, PR #67) and the *Open a Client Project…* command
+(V1-ON, PR #68) are marked 0.27+. Every non-visual step ran in a desktop VS Code on a throwaway profile
+(`verification-claude/run.ts`; 10/10 on the installed 0.25.0 VSIX and on main 2026-09-26; set
+`DATAPASS_EXT_DIR` to an unzipped VSIX to test a published build) and is marked "vérifié par Claude";
+findings for V1-STAB are listed at the end of the guide and in `handoff/v3/night/v1-t10.md`.
 Guide: `D:\PROJ\datapass-testlab\10-parcours-client\LISEZ-MOI.md`.
 
 ### C. Account qualification (V1 gate 16, extended)
