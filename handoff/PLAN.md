@@ -66,6 +66,7 @@ Goal: a user finds their way in. Files: `package.json` menus.commandPalette, `sr
 Goal: never show a broken file as missing. Acceptance: unit tests for unreadable, oversized, invalid-JSON and permission-denied files → typed error surfaced in Problems/Details; size bound documented; no behaviour change for valid projects (desktop suite green).
 ### § V1-FRESH
 Goal: what you see and what you copy are from the same state. Acceptance: a variant switch during a refresh never mixes states (race test); stale badge on packs/orders after HEAD or variant change; freshness time shown; tests for timeout and cancelled refresh.
+Added by PM (2026-09-27): the late-write race in `src/work/activeVariantCommands.ts` (a late save of the remembered variant after the switch back to "current"; desktop "back to current forgets the entry" flaky) is in scope: fixed in #103, unit test + desktop test 5× in a row.
 ### § V1-TEST
 Goal: *Test* on a component runs the client's own test. Acceptance: task found in the native repo (or recipe) → run on click → receipt with commit, time and exit code; no task → honest "no test declared"; tool states never claim "verified" without a probe; desktop flow on `examples/v3/doc-pipeline`.
 

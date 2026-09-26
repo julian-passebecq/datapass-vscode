@@ -12,7 +12,7 @@
 import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { activeVariantHeader } from "./activeVariantCommands";
-import { packStamp } from "./packStamps";
+import { contextGuard, packStamp } from "./packStamps";
 import type { WorkbenchHost } from "../views/workbench";
 import { confirmModal, guarded, jsonBytes, readBounded, report, requireRoot, UserFacingError } from "./io";
 import { workspaceJournalFs } from "./commands";
@@ -221,6 +221,7 @@ async function exportComparison(session: WorkSession, version: string): Promise<
 }
 
 async function optionsAiContext(session: WorkSession, version: string, arg?: unknown): Promise<void> {
+  const unchanged = contextGuard(session);
   const o = requireOptions(session);
   const a = arg as { purpose?: unknown; decision?: unknown; option?: unknown } | undefined;
   const purpose = a?.purpose === "apply" ? "apply" : "compare";
@@ -230,17 +231,19 @@ async function optionsAiContext(session: WorkSession, version: string, arg?: unk
   const optionId = str(a?.option, 80);
   if (purpose === "apply" && (!decision || !(optionId ?? decision.chosen))) throw new UserFacingError("Record a decision first: the AI applies the chosen option.");
   if (optionId && !decision?.options.some(x => x.id === optionId)) throw new UserFacingError(`Unknown option "${optionId}".`);
+  const stamp = await packStamp(session);
   const md = optionsMarkdown({
     options: o, analysis: session.optionsAnalysis()!, project: session.projectMap().project, purpose, decisionId, optionId,
-    generatedAt: new Date().toISOString(), dataPassVersion: version, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(session), stamp: await packStamp(session)
+    generatedAt: new Date().toISOString(), dataPassVersion: version, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(session), stamp
   });
   const choice = await vscode.window.showInformationMessage(`AI context (${purpose === "apply" ? "apply a decision" : "compare options"}): ${md.bytes} bytes${md.truncated ? ", truncated" : ""}.`, {
     modal: true, detail: "It contains the options (with their declared prices and sources) and DataPass's analysis of the consequences. Never included: local paths, file contents, credentials. Paste it into ChatGPT or Claude yourself."
   }, "Copy", "Preview");
   if (choice === "Preview") { await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ content: md.text, language: "markdown" }), { preview: true }); return; }
   if (choice !== "Copy") return;
+  unchanged();
   await clipboard.writeText(md.text);
-  await session.recordExchange({ id: newLocalId("options"), kind: "ai-context", label: `Options (${purpose}): ${decision?.title ?? "all decisions"}`, status: "copied", digest: sha256Bytes(md.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
+  await session.recordExchange({ id: newLocalId("options"), kind: "ai-context", label: `Options (${purpose}): ${decision?.title ?? "all decisions"}`, status: "copied", digest: sha256Bytes(md.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString(), stamp });
   void vscode.window.showInformationMessage(purpose === "apply" ? "Copied. When the AI's pull request is merged, use Check for updates." : "Copied. If the AI returns a corrected options.json, use \"Import the AI's answer\".");
 }
 

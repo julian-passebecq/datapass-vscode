@@ -117,22 +117,30 @@ export function desktopSteps(app: "claude" | "codex", folder: string): string[] 
 }
 
 /**
- * 0.27 (P1, D-23): launching an order stamped for another variant asks first. "same" and
- * "not-stamped" (orders written before 0.27) launch without a question.
+ * 0.27 (P1, D-23): launching an order stamped for another variant asks first. V1-FRESH (A04): so does
+ * one stamped for another environment, and an unstamped order (written before 0.27) asks for a review
+ * because what it was built for is unknown. Only "same" launches without a question.
  */
 export type StampVerdict =
   | { kind: "same" }
-  | { kind: "not-stamped" }
+  | { kind: "not-stamped"; message: string; detail: string }
   | { kind: "other-variant"; message: string; detail: string };
 
 export function stampVerdict(order: Pick<WorkOrder, "id" | "stamp">, now: PackStamp): StampVerdict {
   const s = order.stamp;
-  if (!s) return { kind: "not-stamped" };
-  if (s.variant.key === now.variant.key) return { kind: "same" };
+  if (!s) return {
+    kind: "not-stamped",
+    message: `Work order ${order.id.slice(-4)} is not stamped: what it was built for is unknown.`,
+    detail: `It was written before DataPass 0.27 recorded the variant and environment of an order. The selected variant is now ${now.variant.title}${now.environment ? ` (environment ${now.environment})` : ""}.
+
+Keep: launch it as written after reviewing order.md. Rebuild: write a new revision for the selected variant. Cancel: do nothing.`
+  };
+  const sameEnv = (s.environment ?? "") === (now.environment ?? "");
+  if (s.variant.key === now.variant.key && sameEnv) return { kind: "same" };
   return {
     kind: "other-variant",
-    message: `Work order ${order.id.slice(-4)} was built for another variant.`,
-    detail: `It was written for ${s.variant.title}${s.environment ? ` (environment ${s.environment})` : ""}; the selected variant is now ${now.variant.title}.
+    message: `Work order ${order.id.slice(-4)} was built for another ${s.variant.key === now.variant.key ? "environment" : "variant"}.`,
+    detail: `It was written for ${s.variant.title}${s.environment ? ` (environment ${s.environment})` : ""}; the selected variant is now ${now.variant.title}${sameEnv || !now.environment ? "" : ` (environment ${now.environment})`}.
 
 `
       + "Keep: launch it as written (the agent works on the variant in the order). Rebuild: write a new revision for the selected variant. Cancel: do nothing."

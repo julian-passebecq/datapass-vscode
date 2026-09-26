@@ -85,6 +85,8 @@ export interface WorkbenchState {
   graphError?: string;
   trusted: boolean;
   observedAt?: string;
+  /** V1-FRESH: the refresh phase and freshness as one pill (refreshing, pending, failed, incomplete, inspected). */
+  refresh?: { text: string; tone: "ok" | "info" | "warn" | "bad"; detail: string };
   multipleProjectFolders: boolean;
   project?: { id: string; title: string; description?: string; schemaVersion: number; graphVersion?: string };
   summary?: ProjectMap["summary"];
@@ -298,6 +300,8 @@ export interface StateInput {
   graphError?: string;
   trusted: boolean;
   observedAt?: string;
+  /** V1-FRESH: the refresh phase and freshness as one pill (refreshing, pending, failed, incomplete, inspected). */
+  refresh?: { text: string; tone: "ok" | "info" | "warn" | "bad"; detail: string };
   multipleProjectFolders: boolean;
   readiness?: Readiness;
   options?: OptionsFile;
@@ -389,7 +393,7 @@ export function workbenchState(input: StateInput): WorkbenchState {
   const diagram = { nodeIds: ids, edges: map.relations.filter(r => idSet.has(r.from) && idSet.has(r.to)).map(r => ({ id: r.id, from: r.from, to: r.to, flow: r.flow })) };
   return {
     version: input.version, hasRoot: input.hasRoot, hasManifest: input.hasManifest, manifestErrors: input.manifestErrors.slice(0, 20), graphError: input.graphError,
-    trusted: input.trusted, observedAt: input.observedAt, multipleProjectFolders: input.multipleProjectFolders,
+    trusted: input.trusted, observedAt: input.observedAt, refresh: input.refresh, multipleProjectFolders: input.multipleProjectFolders,
     project: map.project, summary: map.project ? map.summary : undefined, nextStep: map.nextStep,
     environments: map.environments.map(e => ({ id: e.id, title: e.title, production: e.production })),
     repositories: map.repositories.map(r => {

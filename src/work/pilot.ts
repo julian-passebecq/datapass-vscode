@@ -82,6 +82,8 @@ export interface PilotCard {
   outcome?: "done" | "declined" | "failed";
   /** 0.27 (P1, D-23): why the order behind this card no longer matches the selected variant or the bridge revision. */
   stale?: string;
+  /** V1-FRESH (A04): why the freshness of that order cannot be judged (unstamped, bridge revision unknown). */
+  unknown?: string;
 }
 
 interface OrderRequests { order: LoadedOrder; cards: PilotCard[]; valid: Map<number, PilotRequest> }

@@ -13,6 +13,7 @@ import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
 import type { WorkbenchHost } from "../views/workbench";
 import { confirmModal, guarded, jsonBytes, report, requireRoot, UserFacingError } from "./io";
+import { contextGuard } from "./packStamps";
 import { clipboard } from "../core/clipboard";
 import { openExternal, openFolderWindow, openRemoteFolder } from "../core/external";
 import { sshRemoteTarget } from "../core/resources/resources";
@@ -516,21 +517,24 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
     question = (await vscode.window.showQuickPick(Object.entries(PACK_QUESTIONS).map(([id, q]) => ({ label: q.label, detail: q.ask.slice(0, 140) + "…", id: id as PackQuestion })), { title: "What should ChatGPT / Claude do with this context?" }))?.id;
     if (!question) return;
   }
+  const unchanged = contextGuard(session);
+  const stamp = await session.packStamp();
   const revisions: Record<string, string> = {};
   for (const r of map.repositories) if (r.state === "local" && r.git?.head) revisions[r.key] = `${r.git.branch ?? "?"}@${r.git.head.slice(0, 7)}${r.git.changes ? " (+local changes)" : ""}`;
   const pack = buildPreparationPack({
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     readiness: session.readiness(),
-    sheet: session.project.sheet, options: session.project.options, board: session.project.board, stamp: await session.packStamp()
+    sheet: session.project.sheet, options: session.project.options, board: session.project.board, stamp
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`
   }, "Copy", "Preview");
   if (choice === "Preview") { await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ content: pack.text, language: "markdown" }), { preview: true }); return; }
   if (choice !== "Copy") return;
+  unchanged();
   await clipboard.writeText(pack.text);
-  await session.recordExchange({ id: newLocalId("pack"), kind: "ai-context", label: `AI pack (${question}): ${componentId ?? subprojectId ?? "project"}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
+  await session.recordExchange({ id: newLocalId("pack"), kind: "ai-context", label: `AI pack (${question}): ${componentId ?? subprojectId ?? "project"}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString(), stamp });
   void vscode.window.showInformationMessage("Copied. Paste it into ChatGPT or Claude; when the AI's pull request is merged, use Check for updates.");
 }
 

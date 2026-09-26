@@ -46,7 +46,7 @@ import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
 import { activeVariantHeader } from "./activeVariantCommands";
-import { packStamp, selectionStamp } from "./packStamps";
+import { contextGuard, packStamp, selectionStamp } from "./packStamps";
 import type { GitObserver } from "./gitObserver";
 import { machineSetting, orderDigest, type LoadedOrder, type WorkOrderService } from "./workOrders";
 import { importAnswer, importContext, writeProjectFile } from "./optionsCommands";
@@ -405,7 +405,9 @@ export class WorkOrderFlows {
       if (!pilotEnabled()) throw new UserFacingError("Pilot mode is off on this computer (setting datapass.pilot.enabled).");
       if (draft.choice === "codex-desktop" && !codexAppQualified()) throw new UserFacingError("The Codex app is not qualified for pilot orders on this computer yet: use Codex in a terminal, or Claude.");
     }
+    const unchanged = contextGuard(this.session, "The work order was not written");
     const p = await this.prepare(draft);
+    unchanged();
     for (const f of p.files) {
       const target = vscode.Uri.joinPath(p.folder, ...f.rel.split("/"));
       await vscode.workspace.fs.createDirectory(vscode.Uri.joinPath(target, ".."));
@@ -420,7 +422,7 @@ export class WorkOrderFlows {
     const digest = await orderDigest(p.folder);
     await this.service.markOwn(p.order.id, digest);
     await this.service.writeState(p.folder, { format: "datapass.work-order-state", version: "1", orderId: p.order.id, digest, status: "written", launches: [], seen: { pullRequests: [] }, closed: null });
-    await this.session.recordExchange({ id: newLocalId("work-order"), kind: "ai-context", label: `Work order ${shortId(p.order.id)}: ${p.order.title}`, status: "prepared", digest: digest.slice(7), scopeRef: this.session.model().scope.id, at: new Date().toISOString() });
+    await this.session.recordExchange({ id: newLocalId("work-order"), kind: "ai-context", label: `Work order ${shortId(p.order.id)}: ${p.order.title}`, status: "prepared", digest: digest.slice(7), scopeRef: this.session.model().scope.id, at: new Date().toISOString(), ...(p.order.stamp ? { stamp: p.order.stamp } : {}) });
     await this.service.reload();
     if (p.notes.length) report(`Work order ${p.order.id}`, p.notes);
     const loaded = this.service.get(p.order.id);
@@ -457,8 +459,9 @@ export class WorkOrderFlows {
     if (o.state?.status === "done" || o.state?.status === "abandoned") throw new UserFacingError(`Work order ${shortId(o.id)} is closed (${o.state.status}). Write a follow-up order instead.`);
     await this.requireOwn(o);
     // 0.27 (P1, D-23): an order stamped for another variant asks first (keep / rebuild / cancel).
+    // V1-FRESH: so do another environment and an unstamped order (freshness unknown).
     const stampCheck = stampVerdict(order, selectionStamp(this.session));
-    if (stampCheck.kind === "other-variant") {
+    if (stampCheck.kind !== "same") {
       const pick = await vscode.window.showWarningMessage(stampCheck.message, { modal: true, detail: stampCheck.detail }, "Keep and launch", "Rebuild for the selected variant");
       if (!pick) return;
       if (pick === "Rebuild for the selected variant") {

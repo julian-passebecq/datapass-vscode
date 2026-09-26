@@ -51,6 +51,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   .recent li { list-style: none; margin-left: -16px; display: flex; gap: 6px; justify-content: space-between; font-size: 12px; }
   .recent .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .recent .staleline { display: block; color: var(--warn); font-size: 11px; margin-top: -2px; white-space: normal; }
+  .recent .unknownline { display: block; opacity: .8; font-size: 11px; margin-top: -2px; white-space: normal; }
   .foot { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 8px; }
   [hidden] { display: none !important; }
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: -2px 0 10px; position: sticky; top: -10px; background: var(--vscode-sideBar-background); z-index: 1; }
@@ -301,6 +302,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       li.appendChild(el('span', 'muted', r.status + ' · ' + when(r.at)));
       list.appendChild(li);
       if (r.stale) { const s = el('li', 'staleline', '⚠ Stale: ' + r.stale + '. Copy a fresh pack.'); s.title = r.stale; list.appendChild(s); }
+      else if (r.unknown) { const s = el('li', 'unknownline', '? Freshness unknown: ' + r.unknown + '.'); s.title = r.unknown; list.appendChild(s); }
     }
     $('recentbox').hidden = !state.recent.length;
   }
@@ -386,6 +388,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       if (c.why) d.appendChild(el('div', 'why', '"' + c.why + '" (the agent says)'));
       if (c.message) d.appendChild(el('div', c.state === 'refused' ? 'badline' : 'muted', c.message));
       if (c.stale) d.appendChild(el('div', 'warnline', '⚠ Stale: ' + c.stale + '. Check before running it.'));
+      else if (c.unknown) d.appendChild(el('div', 'muted', '? Freshness unknown: ' + c.unknown + '. Check before running it.'));
       if (c.state !== 'answered' && c.n >= 1 && c.n <= 50) {
         const row = el('div', 'row');
         if (c.state === 'pending') {

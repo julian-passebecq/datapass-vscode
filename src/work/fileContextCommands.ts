@@ -11,7 +11,7 @@ import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
 import { activeVariantHeader } from "./activeVariantCommands";
-import { packStamp } from "./packStamps";
+import { contextGuard, packStamp } from "./packStamps";
 import { clipboard } from "../core/clipboard";
 import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { guarded, UserFacingError } from "./io";
@@ -76,6 +76,7 @@ async function siblingsOf(dir: vscode.Uri, fileName: string) {
 }
 
 async function copyFileContext(session: WorkSession, target: vscode.Uri | undefined, fromExplorer = false): Promise<void> {
+  const unchanged = contextGuard(session);
   const editor = vscode.window.activeTextEditor;
   const uri = target ?? editor?.document.uri;
   if (!uri) throw new UserFacingError("Open a file or right-click one in the Explorer to copy its context.");
@@ -150,10 +151,11 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
 
   const manifest = session.project.manifest;
   const localPaths = [...new Set([...(loc ? [loc.root] : []), ...[...candidates, ...observed].map(c => c.folder).filter((f): f is string => !!f), ...(wsFolder ? [wsFolder, await real(wsFolder)] : []), os.homedir(), await real(os.homedir())])];
+  const stamp = await packStamp(session);
   const pack = buildFileContext({
     question, project: manifest ? { id: manifest.project.id, title: manifest.project.title } : undefined,
     activeVariant: manifest ? activeVariantHeader(session) : undefined,
-    stamp: manifest ? await packStamp(session) : undefined,
+    stamp: manifest ? stamp : undefined,
     bridge: bridgeRepo ? { key: bridgeRepo.key, label: bridgeRepo.label } : undefined,
     repository,
     file: { relPath, languageId: doc?.languageId, unsaved, notOnDisk: uri.scheme === "untitled", binary, text, selection },
@@ -173,8 +175,9 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
     return;
   }
   if (choice !== "Copy") return;
+  unchanged();
   await clipboard.writeText(pack.text);
   // 0.27 (P1, D-23): remembered with its stamp, so the AI view can say when it goes stale.
-  if (manifest) await session.recordExchange({ id: newLocalId("file-ctx"), kind: "ai-context", label: `Context for my AI: ${relPath}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
+  if (manifest) await session.recordExchange({ id: newLocalId("file-ctx"), kind: "ai-context", label: `Context for my AI: ${relPath}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString(), stamp });
   void vscode.window.showInformationMessage(`Copied the context of ${relPath} (${pack.bytes} bytes). Paste it into your AI.`);
 }

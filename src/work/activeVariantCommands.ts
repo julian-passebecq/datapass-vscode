@@ -9,6 +9,7 @@
 import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { guarded, UserFacingError } from "./io";
+import { SwitchCounter } from "../core/refresh/tracker";
 import {
   ACTIVE_VARIANT_KEY, activeVariantLine, activeVariantView, readStore, resolveActiveVariant, sameRequest,
   statusBarText, variantChoices, withEntry, type ActiveVariantView, type VariantRequest
@@ -64,6 +65,7 @@ export class ActiveVariantService implements vscode.Disposable {
     const key = projectKey(this.session);
     if (!key || !this.session.project.options) { this.appliedFor = key; this.paint(); return; }
     const first = this.appliedFor !== key;
+    const note = this.switches.note();
     // First load: the remembered variant; with none yet, the window's preview (0.15–0.24) is kept.
     const entry = first ? this.store()[key] ?? this.session.previewRequest() : this.session.previewRequest();
     const r = resolveActiveVariant(this.session.project.options, entry);
@@ -73,6 +75,8 @@ export class ActiveVariantService implements vscode.Disposable {
         this.applying = true;
         try { await this.session.setPreview(r.request); } finally { this.applying = false; }
       }
+      // V1-FRESH: a switch made while the remembered variant was applied wins; no late save over it.
+      if (this.switches.switchedSince(note)) { this.paint(); return; }
       if (r.fellBack) await this.save(key, undefined);
       else if (first && !this.store()[key] && r.request) await this.save(key, r.request);
       if (r.fellBack) {
@@ -93,6 +97,7 @@ export class ActiveVariantService implements vscode.Disposable {
 
   /** Saves run one after the other, each reading the store the previous one wrote. */
   private saving: Promise<void> = Promise.resolve();
+  private readonly switches = new SwitchCounter();
   private save(key: string, req: VariantRequest | undefined): Promise<void> {
     this.saving = this.saving.catch(() => undefined).then(() => this.context.globalState.update(ACTIVE_VARIANT_KEY, withEntry(this.store(), key, req, new Date().toISOString())));
     return this.saving;
@@ -110,6 +115,7 @@ export class ActiveVariantService implements vscode.Disposable {
   async activate(req: VariantRequest | undefined): Promise<void> {
     const r = resolveActiveVariant(this.session.project.options, req);
     if (r.fellBack) throw new UserFacingError(`DataPass cannot switch: ${r.fellBack}.`);
+    this.switches.bump();
     // V1-STAB: the switch saves its own entry; the preview event it fires must not save a second,
     // older one after it (the test "back to current forgets the entry" was flaky on Windows).
     this.applying = true;
