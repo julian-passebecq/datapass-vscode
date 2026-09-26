@@ -1,5 +1,17 @@
 # DataPass VS Code — Project Workbench for AI-prepared cloud projects
 
+**DataPass 1.0 in one minute.** A client AI (ChatGPT, Claude) prepares a project in Git: a
+**bridge repository** describes the architecture in `.datapass/*.json` and lists the **native
+repositories**, which keep their own code. DataPass, a single VS Code extension, reads that and
+shows the architecture first, the files each step needs and what is missing, opens the right file
+or official tool, hands bounded context to your AI and gets merged work back with Check / Get
+updates. It never deploys, pushes or runs project code.
+
+- **Install**: *Extensions → … → Install from VSIX…* (or `code --install-extension datapass-vscode-<version>.vsix`).
+- **Start**: *DataPass: Open a Client Project…* (0.27+) with the bridge repository's Git URL; before 0.27, open a clone of the bridge repository.
+- **Daily loop**: Check for Updates → Architecture and Details → Copy Context for My AI → review the AI's PRs → Get Updates.
+- **Read next**: [docs/DEMARRER.md](docs/DEMARRER.md) (quick start, French) · [docs/guide/](docs/guide/README.md) (preparing a client project) · [handoff/CURRENT.md](handoff/CURRENT.md) (project status and plans, for contributors).
+
 DataPass VS Code is a **single VS Code extension** that sits between the AI assistant that prepares a
 project in Git (ChatGPT, Claude), GitHub, the **official** VS Code extensions and CLIs (Fabric,
 Databricks, Azure Functions, Azure Data Factory Studio, Cosmos DB, MongoDB, PostgreSQL/Neon, Power BI,
@@ -48,7 +60,7 @@ The presets are JSON (`resources/experience/presets.json`, schema `schemas/datap
 
 A project is described by `.datapass/project.json` (**manifest v5**, v3 and v4 still accepted) and
 `.datapass/graph.json` (**graph 0.2**): see the step-by-step guide [docs/guide/](docs/guide/README.md) (preparing a client project from scratch, in order, with validated examples; what the person prepares, in French), the field reference [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) and the examples in
-[examples/v3](examples/v3/). Architecture and status: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
+[examples/v3](examples/v3/). Architecture and status: [handoff/CURRENT.md](handoff/CURRENT.md).
 
 ```json
 { "id": "extract", "kind": "function", "label": "PDF extraction", "provider": "azure-functions",
@@ -158,7 +170,7 @@ project has loaded (a launcher's request wins over it). **Export Company Workspa
 Ops** writes a machine-local, secret-free JSON of company workspace files and their work views to
 `%LOCALAPPDATA%\DataPass\company-workspaces.json` (or the platform equivalent), so a launcher such
 as Power Ops (PowerToy_UI) can open a company or a specific work view; see
-[handoff/v3/07_WINDOWS_AND_POWER_OPS.md](handoff/v3/07_WINDOWS_AND_POWER_OPS.md) for the full
+[handoff/v3/07_WINDOWS_AND_POWER_OPS.md](handoff/archive/v3/07_WINDOWS_AND_POWER_OPS.md) for the full
 contract.
 
 ## Git view (0.19)
