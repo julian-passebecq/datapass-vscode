@@ -12,6 +12,7 @@ import { buildIntegrationEvidence, KNOWN_MCP_SERVERS } from "../src/core/evidenc
 import { mcpServerNames } from "../src/core/evidence/registration";
 import { isReceipt, resultFields } from "../src/core/evidence/receipts";
 import { fabricToolboxMcpDefinition } from "../src/core/mcp";
+import { knownTools } from "../src/core/toolchain/toolchain";
 import type { ToolObservation } from "../src/core/capabilities/tools";
 import type { ConnectionProbe } from "../src/core/toolchain/connections";
 import { buildOrder, type OrderInput } from "../src/core/workOrders/builder";
@@ -110,6 +111,16 @@ test("integrations: known MCP server names match what \"Add to MCP\" writes", ()
   }
 });
 
+test("integrations: every mcp-server of the tool registry has an evidence card", () => {
+  const mcp = [...knownTools().values()].filter(t => t.kind === "mcp-server").map(t => t.id);
+  assert.ok(mcp.length >= 5);
+  const ids = new Set(buildIntegrationEvidence({}).map(e => e.id));
+  for (const id of mcp) assert.ok(ids.has(id), `${id} has no evidence card`);
+  const hosted = buildIntegrationEvidence({}).find(e => e.id === "mcp.fabric-iq")!;
+  const reg = link(hosted, "registered");
+  assert.ok(reg.state === "unknown" && /names it/.test(reg.reason));
+});
+
 test("registration: only server names are read; a non-JSON file gives undefined", () => {
   const text = JSON.stringify({ servers: { "fabric-mgmt": { command: "python", env: { TOKEN: "dpfake-token-1" } }, remote: { url: "https://example.test/mcp", headers: { Authorization: "Bearer dpfake" } } }, inputs: [] });
   assert.deepEqual(mcpServerNames(text), ["fabric-mgmt", "remote"]);
@@ -128,7 +139,8 @@ test("no credential file is read: src/core/evidence imports no fs and names no c
     assert.doesNotMatch(src, /homedir|USERPROFILE|process\.env/, `${f} reaches the home folder`);
     // Code only: the header comments name these paths to say they are never read.
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
-    assert.doesNotMatch(code, /\.azure|\.databrickscfg|msal_token_cache|accessTokens\.json|\.config\/fabric|\.fab\b/i, `${f} names a credential path`);
+    // (?<![\w-]) keeps registry ids such as "mcp.azure" out; "~/.azure" and ".azure" still match.
+    assert.doesNotMatch(code, /(?<![\w-])\.azure|\.databrickscfg|msal_token_cache|accessTokens\.json|\.config\/fabric|\.fab\b/i, `${f} names a credential path`);
   }
 });
 

@@ -26,7 +26,12 @@ export interface KnownMcpServer {
   toolId?: string;
   /** Why "installed" cannot be observed when there is no probe. */
   installReason?: string;
+  /** Why "registered" cannot be observed when the server has no fixed name. */
+  registrationReason?: string;
 }
+
+const HOSTED_INSTALL = "Microsoft hosts it; nothing is installed on this PC";
+const FREE_NAME = "the person names it when registering it; DataPass does not guess which entry of .vscode/mcp.json it is";
 
 export const KNOWN_MCP_SERVERS: readonly KnownMcpServer[] = [
   { id: "mcp.fabric-management", label: "Fabric Management MCP server (Fabric Toolbox)", serverName: "fabric-mgmt",
@@ -35,7 +40,13 @@ export const KNOWN_MCP_SERVERS: readonly KnownMcpServer[] = [
     installReason: "it runs from a local Fabric Toolbox clone; DataPass does not look inside that clone" },
   { id: "mcp.dax-performance", label: "DAX Performance Tuner MCP server (Fabric Toolbox)", serverName: "dax-performance-tuner",
     installReason: "it runs from a local Fabric Toolbox clone; DataPass does not look inside that clone" },
-  { id: "mcp.powerbi-modeling", label: "Power BI Modeling MCP server", toolId: "ext.powerbi-modeling-mcp" }
+  { id: "mcp.powerbi-modeling", label: "Power BI Modeling MCP server", toolId: "ext.powerbi-modeling-mcp" },
+  // K2's Microsoft servers (src/core/toolchain/toolchain.ts): never probed, no fixed server name.
+  { id: "mcp.fabric-core", label: "Fabric Core MCP Server (remote)", installReason: HOSTED_INSTALL, registrationReason: FREE_NAME },
+  { id: "mcp.fabric-local", label: "Fabric MCP Server (local)", installReason: "DataPass does not probe its VS Code extension", registrationReason: FREE_NAME },
+  { id: "mcp.fabric-iq", label: "Fabric IQ MCP (read-only Power BI exploration)", installReason: HOSTED_INSTALL, registrationReason: FREE_NAME },
+  { id: "mcp.powerbi-authoring-hosted", label: "Power BI Authoring MCP (hosted)", installReason: HOSTED_INSTALL, registrationReason: FREE_NAME },
+  { id: "mcp.azure", label: "Azure MCP Server", installReason: "DataPass does not probe its VS Code extension", registrationReason: FREE_NAME }
 ];
 
 export type IntegrationKind = "cli" | "mcp-server";
@@ -81,8 +92,8 @@ function cliEvidence(tool: CheckedTool, input: EvidenceInput): IntegrationEviden
   return finish(tool, def.label, "cli", buildChain(obs));
 }
 
-function registration(name: string | undefined, ws: ToolObservation | undefined): EvidenceLink {
-  if (!name) return unknown("registered", "its extension registers the server with VS Code itself; DataPass cannot see VS Code's server list");
+function registration(name: string | undefined, ws: ToolObservation | undefined, reason?: string): EvidenceLink {
+  if (!name) return unknown("registered", reason ?? "its extension registers the server with VS Code itself; DataPass cannot see VS Code's server list");
   if (!ws) return unknown("registered", `${MCP_REGISTRATION_FILE} not checked yet`);
   if (ws.state === "unknown") return unknown("registered", `${MCP_REGISTRATION_FILE} could not be checked`);
   if (ws.state === "absent") return observed("registered", false, MCP_REGISTRATION_FILE, ws.observedAt, `no ${MCP_REGISTRATION_FILE} in this workspace (other hosts are not read)`);
@@ -112,7 +123,7 @@ export function buildIntegrationEvidence(input: EvidenceInput): IntegrationEvide
   const out: IntegrationEvidence[] = (Object.keys(SIGN_IN_CHECKS) as CheckedTool[]).map(t => cliEvidence(t, input));
   for (const s of KNOWN_MCP_SERVERS) {
     const installed = s.toolId ? installedFromProbe(input.tools?.get(s.toolId), s.label) : unknown("installed", s.installReason ?? "DataPass has no probe for it");
-    out.push(finish(s.id, s.label, "mcp-server", mcpChain(observed("known", true, "DataPass tool registry"), installed, registration(s.serverName, ws))));
+    out.push(finish(s.id, s.label, "mcp-server", mcpChain(observed("known", true, "DataPass tool registry"), installed, registration(s.serverName, ws, s.registrationReason))));
   }
   const knownNames = new Set(KNOWN_MCP_SERVERS.map(s => s.serverName).filter(Boolean));
   for (const name of (ws?.state === "present" ? ws.entries ?? [] : []).filter(n => !knownNames.has(n)).slice(0, 20)) {
