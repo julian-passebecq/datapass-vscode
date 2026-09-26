@@ -1,0 +1,23 @@
+{
+  "format": "datapass.ui-journey",
+  "version": 1,
+  "id": "UI01",
+  "title": "Open the DataPass Architecture view on the doc-pipeline example",
+  "client": "doc-pipeline-lab",
+  "features": [
+    "onboarding",
+    "architecture"
+  ],
+  "steps": [
+    {
+      "openView": "Architecture"
+    },
+    {
+      "expect": "PDF inbox",
+      "timeoutMs": 60000
+    },
+    {
+      "screenshot": "architecture-view"
+    }
+  ]
+}

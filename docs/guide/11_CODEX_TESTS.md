@@ -48,8 +48,9 @@ OS, the clients with each clone's commit, `agent` (Codex, model, app or terminal
 journey (`outcome` reached / partly / not-reached / blocked, each expectation met true / false /
 "unclear"), `findings[]` (`F1`…, severity, area = a feature tag), `answers[]` (`{question, answer,
 evidence, screens?, confidence high/medium/low}`), `clientFeedback`, `coverage {listed, reached}`.
-`agent.host` is always `app`: runs use the Codex desktop app only (Computer Use sees nothing launched
-from `codex exec`). DataPass carries the released commit in `datapass.commit` when known.
+`agent` is either Codex in its desktop app (`{"tool": "codex", "host": "app"}`: Computer Use sees
+nothing launched from `codex exec`) or `npm run qa:ui` (`{"tool": "qa-ui", "host": "playwright"}`, the
+model being the driver's version, see below). DataPass carries the released commit in `datapass.commit` when known.
 
 Screens are shell captures (Computer Use saves none), stored in the report folder as
 `screens/<journey id>-<what>.png` (for example `screens/J01-architecture.png`); every `screens`
@@ -93,6 +94,76 @@ Exit **0** = ready. Exit **2** = cannot prepare; every reason is printed, for ex
 
 VS Code: `--code`, else `VSCODE_EXECUTABLE`, else the Windows user install, else a stable download
 (cached under `.vscode-test/`).
+
+## UI journeys without Computer Use: `npm run qa:ui` (QA-4)
+
+While Codex's Computer Use sees no apps, Codex still writes the journeys and reads the reports, and
+`qa:ui` does the clicking. It drives the isolated VS Code of a prepared run root through Playwright
+`_electron`: no screen control, no Computer Use approval, and it works under `xvfb-run` on Linux.
+
+```
+npm run qa:ui -- <run root> <journey.json> [--code <VS Code executable>] [--out <report folder>]
+```
+
+1. Reads `run.json` (so run `qa:prepare` first) and the journey. It uses the journey's `client`, or the
+   first client if the journey names none.
+2. Starts VS Code with the same isolated profile (`.vscode-user`, `.vscode-ext`) and
+   `--disable-workspace-trust`, and opens the client's `.code-workspace`.
+3. Runs the steps in order and stops at the first failure. A failure takes a screenshot
+   (`screens/<id>-fail-step-<n>.png`), and the remaining steps are NOT_RUN.
+4. Writes a `datapass.qa-report` (validated before it is written) to `<run root>/qa-ui/<run id>-<journey id>/report.json`,
+   with the screenshots beside it under `screens/`. Exit 0 = reached, 1 = not reached (see the
+   report), 2 = cannot start (every reason printed).
+
+A UI journey is a separate format, `datapass.ui-journey` v1. A `test-journey` is a goal written for
+Codex; a `ui-journey` lists the exact steps (this is `tests/fixtures/qa/ui/smoke-doc-pipeline.json`,
+which the unit tests parse):
+
+```jsonc
+{
+  "format": "datapass.ui-journey", "version": 1,
+  "id": "UI01", "title": "Open the DataPass Architecture view on the doc-pipeline example",
+  "client": "doc-pipeline-lab", "features": ["onboarding", "architecture"],
+  "steps": [
+    { "openView": "Architecture" },
+    { "expect": "PDF inbox", "timeoutMs": 60000 },
+    { "screenshot": "architecture-view" }
+  ]
+}
+```
+
+| Step | Does |
+|---|---|
+| `{"run": "<palette label>"}` | Command Palette: types the label and picks the first entry showing it |
+| `{"openView": "<view name>"}` | *View: Open View*: types the name and picks the first entry showing it |
+| `{"click": "<text>", "role"?: "button"}` | clicks the first visible match, in the workbench or a webview; `role` (button, link, tab, treeitem, menuitem, checkbox, option) matches by accessible name |
+| `{"expect": "<text>", "timeoutMs"?: 15000}` | waits until the text is visible, in the workbench or a webview |
+| `{"press": "Escape"}` | a key or chord, e.g. `Control+Shift+P` |
+| `{"screenshot": "<name>"}` | saves `screens/<id>-<name>.png` |
+
+A step that is not understood (an unknown kind, an empty selector, two actions in one step) is
+reported **NOT_RUN, never PASS**, so the journey is at best `partly` reached. A bad header (format,
+id, features, 1 to 40 steps) refuses the file. Outcome: every step passed → `reached`; a step failed →
+`not-reached` with one major finding; some steps not run → `partly`; VS Code could not be driven →
+`blocked` with a blocker finding. Coverage lists the journey's `features` and counts them as reached
+only when the journey is reached.
+
+Note: in the default Standard mode the DataPass Project view is hidden. Journeys should open views
+that the mode they test shows (the smoke journey uses the Architecture panel).
+
+CI packages the VSIX on Ubuntu and runs the smoke journey (`tests/qa-ui.smoke.test.ts`) under `xvfb-run`;
+its report and screenshot are uploaded as the `qa-ui-evidence` artifact.
+
+## Codex procedure notes (from the in-app runs)
+
+- Start Codex's shell **without the user's PowerShell profile**: a profile that starts Anaconda
+  crashes it (`No module named '_ctypes'`). Use profile loading off (`login: false`), or
+  `powershell.exe -NoProfile`.
+- Take screenshots with **Windows PowerShell** (`powershell.exe -NoProfile -ExecutionPolicy Bypass -File shot.ps1`),
+  not `pwsh`: PowerShell 7 fails with `Unable to find type [System.Windows.Forms.Screen]`.
+- Start a Computer Use task with the `@Computer` or `@AppName` prefix on the first line of a new app thread
+  (for example `@Computer use Visual Studio Code: …`), with VS Code already open in front. The per-app
+  approval only appears then. Until Computer Use lists apps, use `qa:ui` for the UI steps.
 
 ## Validating a test repository (its own CI)
 

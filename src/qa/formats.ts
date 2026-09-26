@@ -114,8 +114,9 @@ export const QA_REPORT_SCHEMA: Schema = obj({
   runId: S(120, 1, "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"),
   datapass: DATAPASS_BUILD, vscode: VSCODE_BUILD, os: OS,
   clients: arr(CLIENT_RUN, 10, 1),
-  // The Codex desktop app only: Computer Use sees nothing launched from `codex exec`.
-  agent: obj({ tool: constOf("codex"), model: S(80), host: constOf("app") }),
+  // The Codex desktop app (Computer Use sees nothing launched from `codex exec`), or QA-4's qa:ui
+  // driving VS Code through Playwright `_electron` (tool "qa-ui", host "playwright", model = driver version).
+  agent: anyOf(obj({ tool: constOf("codex"), model: S(80), host: constOf("app") }), obj({ tool: constOf("qa-ui"), model: S(80), host: constOf("playwright") })),
   startedAt: TIME, finishedAt: TIME,
   journeys: arr(obj({
     id: JOURNEY_ID, outcome: enumOf(...OUTCOMES), minutes: INT(0, 480),
