@@ -319,7 +319,7 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
       // Copy Context for My AI under B: the header carries the stamp.
       const file = vscode.Uri.file(path.join(wsRoot, "processing", "process.py"));
       const ui = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", file, [file]));
-      assert.match(ui.clipboard, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision [0-9a-f]{12}\./);
+      assert.match(ui.clipboard, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision [0-9a-f]{12} · project state observed \d{4}-\d\d-\d\d \d\d:\d\d UTC\./);
       let s = await api().workOrders.aiState();
       const pack = s.recent.find(r => r.label === "Context for my AI: processing/process.py");
       assert.ok(pack, `the copy is in the AI view: ${JSON.stringify(s.recent)}`);
