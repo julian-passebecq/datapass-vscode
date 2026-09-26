@@ -1,2 +1,6 @@
+# Store text as LF in the repository whatever the local autocrlf setting.
+* text=auto eol=lf
+*.vsix binary
+*.png binary
 # Test fixtures are hashed byte-for-byte (frozen request digests); never convert line endings.
 tests/fixtures/** -text
