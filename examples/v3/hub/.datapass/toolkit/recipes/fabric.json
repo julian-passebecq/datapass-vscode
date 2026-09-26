@@ -144,6 +144,104 @@
       "risks": [
         "A .pbix saved beside the .pbip hides changes from review"
       ]
+    },
+    {
+      "id": "mcp.fabric-sample.inspect-readonly",
+      "module": "ai",
+      "title": "Inspect a Fabric sample's metadata through an MCP server (read-only)",
+      "when": "The first MCP experiment: prove the read path on an approved sample (a sample semantic model or workspace) before any agent is allowed to change anything.",
+      "tools": [
+        "mcp.fabric-iq",
+        "mcp.fabric-core",
+        "ext.powerbi-modeling-mcp",
+        "ws.mcp"
+      ],
+      "routes": [
+        {
+          "id": "fabric-iq",
+          "title": "Fabric IQ MCP (read-only by design)",
+          "tools": [
+            "mcp.fabric-iq"
+          ],
+          "steps": [
+            {
+              "text": "Known: read this entry and its verified date; open the official page and check nothing changed",
+              "tool": "mcp.fabric-iq",
+              "open": "https://learn.microsoft.com/en-us/fabric/iq/connectors/fabric-iq-mcp"
+            },
+            "Installed: nothing to install (Microsoft-hosted); the host must support Streamable HTTP and Entra OAuth",
+            "Registered: add the FabricIQ http entry with the documented endpoint to the host's MCP configuration yourself (GitHub Copilot CLI: ~/.copilot/mcp-config.json); no Authorization header",
+            {
+              "text": "Connected: in GitHub Copilot CLI, show the server and its tools",
+              "copy": "/mcp show FabricIQ"
+            },
+            "Authenticated: sign in with the Entra work account in the browser; note which account and tenant",
+            "Operation verified: ask 'Find the <sample> semantic model in Microsoft Fabric. Make no changes. List the tools you called.' Expect DiscoverArtifacts, then GetSemanticModelSchema",
+            "Record the evidence: host and version, account, target, tools called, date"
+          ]
+        },
+        {
+          "id": "fabric-core",
+          "title": "Fabric Core MCP, list operations only",
+          "tools": [
+            "mcp.fabric-core"
+          ],
+          "steps": [
+            {
+              "text": "Known: read this entry and the Core server's considerations",
+              "tool": "mcp.fabric-core",
+              "open": "https://learn.microsoft.com/en-us/rest/api/fabric/articles/mcp-servers/core-remote/overview-core-mcp-server"
+            },
+            "Installed: nothing to install (remote, preview)",
+            "Registered: in VS Code run MCP: Add Server, choose HTTP and give the Core endpoint; check the entry in .vscode/mcp.json",
+            "Connected: MCP: List Servers shows it started; its tools are listed",
+            "Authenticated: complete the browser Entra sign-in; the identity needs at least Viewer on the sample workspace",
+            "Operation verified: ask 'List the items in the <sample> workspace. Make no changes.' Approve each tool call yourself and refuse any create, update, delete or role call",
+            "Record the evidence: host and version, account, workspace, tools called, date"
+          ],
+          "note": "The Core server also exposes tools that create, delete and grant roles: keep per-call approval on."
+        },
+        {
+          "id": "powerbi-local-readonly",
+          "title": "Power BI Authoring MCP (local) with --readonly on a PBIP copy",
+          "tools": [
+            "ext.powerbi-modeling-mcp",
+            "ws.mcp"
+          ],
+          "steps": [
+            {
+              "text": "Known: read the README's read-only and security sections",
+              "tool": "ext.powerbi-modeling-mcp",
+              "open": "https://github.com/microsoft/powerbi-modeling-mcp"
+            },
+            {
+              "text": "Installed: install the VS Code extension yourself (DataPass shows whether it is present)",
+              "copy": "code --install-extension analysis-services.powerbi-modeling-mcp"
+            },
+            "Registered: start the server with the --readonly flag (writes are on by default); do not also register the hosted authoring server",
+            "Connected: MCP: List Servers shows it started",
+            "Authenticated: a PBIP copy on disk needs no sign-in; a Fabric workspace model asks for Entra sign-in",
+            "Operation verified: 'Open semantic model from PBIP folder <copy>/<name>.SemanticModel/definition. List the tables and measures. Make no changes.' Then check git status shows no change",
+            "Record the evidence: extension version, flag used, folder, tools called, date"
+          ],
+          "note": "Windows only for the local server; on macOS use the hosted server against a Fabric sample."
+        }
+      ],
+      "checks": [
+        "Every step of the chain has its own evidence: an entry in mcp.json alone proves only 'registered'",
+        "The identity used is the one you expected (account and tenant)",
+        "The agent's list of called tools contains only read tools",
+        "The target was the sample or a copy, never production"
+      ],
+      "risks": [
+        "A local server does not keep data local: metadata, schemas and query rows go to the client and its LLM provider",
+        "Read-only still exposes confidential metadata and rows (Fabric IQ returns 250 rows by default)",
+        "Fabric audit logs do not record every MCP call (the local server emits none of its own)",
+        "Registering the hosted and the local Power BI authoring servers together gives the agent overlapping tools"
+      ],
+      "verified": {
+        "on": "2026-09-26"
+      }
     }
   ]
 }
