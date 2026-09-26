@@ -246,7 +246,7 @@ test("V1-STAB: a sibling of the right name with no origin is named, never bound"
   assert.match(view().detail ?? "", /not cloned on this machine/);
   const none = view({ folderName: "code", origin: "none" });
   assert.equal(none.state, "unbound");
-  assert.match(none.detail ?? "", /a folder named code is next to this repository, but it has no Git origin/);
+  assert.match(none.detail ?? "", /folder code found, no remote: identity not verified/);
   assert.match(none.nextStep ?? "", /Locate an Existing Clone/);
-  assert.match(view({ folderName: "code", origin: "other" }).detail ?? "", /its Git origin is another repository/);
+  assert.match(view({ folderName: "code", origin: "other" }).detail ?? "", /folder code found, its remote is another repository: identity not verified/);
 });

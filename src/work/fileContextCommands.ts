@@ -16,7 +16,7 @@ import { clipboard } from "../core/clipboard";
 import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { guarded, UserFacingError } from "./io";
 import {
-  buildFileContext, capSiblings, locateFile, owningComponents, parentChain,
+  buildFileContext, capSiblings, componentPlaces, locateFile, owningComponents, parentChain,
   type ComponentPlace, type FileContextInput, type FileGitProbe, type FileGitState, type RepoRevision
 } from "../core/exchange/fileContext";
 import { normalizeRemote } from "../core/project/resolve";
@@ -111,12 +111,7 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
   const relPath = loc?.relPath || (doc ? `(untitled) ${path.basename(uri.path)}` : path.basename(uri.path));
 
   // ---- the owning components and the repositories they use
-  const scopeTitle = new Map((map?.subprojects ?? []).map(s => [s.id, s.title]));
-  const places: ComponentPlace[] = (map?.components ?? []).map(c => ({
-    id: c.id, label: c.label, kind: c.kind, provider: c.providerId, repoKey: c.artifacts?.repoKey ?? c.repoKey, root: c.artifacts?.root,
-    files: c.artifacts?.files.map(f => ({ repoPath: f.repoPath, role: f.role })),
-    scopes: c.subprojects.map(s => scopeTitle.get(s) ?? s)
-  }));
+  const places: ComponentPlace[] = map ? componentPlaces(map) : [];
   const components = loc?.kind === "declared" ? owningComponents(loc.key, loc.relPath, places) : [];
   const bridgeRepo = repos.find(r => r.coordination);
   const ids = new Set(components.map(c => c.id));

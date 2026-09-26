@@ -55,6 +55,7 @@ export function registerActiveVariantFlows(getApi: () => DataPassTestApi): void 
     const fn = vscode.Uri.file(path.join(ws(), "orchestration", "blob-function", "function_app.py"));
     const own = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", fn, [fn]));
     assert.match(own.clipboard, /Component: Blob-triggered Function \(`orchestrate`, function, azure-functions\)/);
+    assert.match(own.clipboard, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\*/, "the stamp and the component agree");
 
     // C — not coded (planned repository).
     await run("datapass.setSelectedVariant", "c-adf");
