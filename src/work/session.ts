@@ -25,6 +25,7 @@ import { parseStrictJson } from "../core/model/strictJson";
 import { upsertQualification, type QualificationRecord } from "../core/qualification/qualification";
 import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
 import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
+import { RefreshTracker, settleWithin, type ContextIdentityInput, type IncompleteStep, type RefreshStatus } from "../core/refresh/tracker";
 import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
 import { incompleteText } from "../core/project/observation";
@@ -73,6 +74,8 @@ async function readHead(fsPath: string, bytes: number, maxSize: number): Promise
   } finally { await handle.close(); }
 }
 
+/** V1-FRESH: one step of the refresh's second phase (probes, readiness, inventory) is given this long. */
+export const REFRESH_STEP_TIMEOUT_MS = 30_000;
 /** Inventory scans are cached this long unless the user refreshes the Work view. */
 const INVENTORY_TTL_MS = 60_000;
 const MAX_PY_FILES = 3000;
@@ -169,28 +172,37 @@ export class WorkSession implements vscode.Disposable {
    * the tool probes, readiness (env files, extensions.json, binding folders) and the inventory. Each
    * step fires onDidChange; the promise resolves when both are done. A newer refresh supersedes an
    * older one: the older one stops writing and resolves with the newer one.
+   *
+   * V1-FRESH (A03): each step of the second phase is bounded (REFRESH_STEP_TIMEOUT_MS); one that fails
+   * or times out keeps its previous value and is listed as incomplete. A refresh that rejects leaves
+   * the "failed" state (refreshStatus) and resolves: the views say so and offer a retry instead of
+   * showing the previous success unlabelled.
    */
   async refresh(forceProbe = false): Promise<void> {
-    const generation = ++this.generation;
-    const run = this.runRefresh(generation, forceProbe);
+    const token = this.tracker.begin();
+    const run = this.runRefresh(token, forceProbe).catch(e => {
+      if (this.tracker.fail(token, e)) this.changed();
+    });
     this.latest = run;
     return run;
   }
 
-  private generation = 0;
+  private readonly tracker = new RefreshTracker();
   private latest?: Promise<void>;
+  /** Generation, phase, observation times and incomplete steps of the newest refresh. */
+  refreshStatus(): RefreshStatus { return this.tracker.status(); }
   /** The timings of the last refresh that painted (ms since it started): firstPaint and settled. */
   lastRefreshTimings: { firstPaintMs?: number; settledMs?: number; steps?: Record<string, number> } = {};
   private readonly paintEmitter = new vscode.EventEmitter<"first-paint" | "settled">();
   /** Fires when a refresh has painted the project ("first-paint") and when it is complete ("settled"). */
   readonly onDidPaint = this.paintEmitter.event;
 
-  private async runRefresh(generation: number, forceProbe: boolean): Promise<void> {
+  private async runRefresh(token: { generation: number }, forceProbe: boolean): Promise<void> {
     const started = performance.now();
     const steps: Record<string, number> = {};
     const mark = (name: string) => { steps[name] = Math.round(performance.now() - started); };
     const step = <T>(name: string, p: Promise<T>): Promise<T> => p.then(v => { mark(name); return v; });
-    const superseded = () => generation !== this.generation;
+    const superseded = () => !this.tracker.isCurrent(token);
     if (forceProbe) invalidateToolProbes();
     // F02: the project is the folder holding .datapass/project.json (or the one chosen), not simply the first folder.
     const { root, candidates } = await step("root", detectProjectRoot(this.context.workspaceState.get<string>(KEYS.root)));
@@ -219,12 +231,15 @@ export class WorkSession implements vscode.Disposable {
     this.factObs = factObs;
     this.projectObs = projectObs;
     if (rootChanged) {
-      // Another project: what was observed for the previous one no longer applies.
+      // Another project: what was observed for the previous one no longer applies (V1-FRESH: nor
+      // its connection checks — a target authorization never carries over to another project).
       this.envObs = new Map();
       this.extensionsObs = undefined;
       this.bindingObs = new Map();
+      this.connectionProbes = new Map();
     }
     this.lastRefreshTimings = { firstPaintMs: performance.now() - started, steps };
+    this.tracker.publish(token, "first-paint", { project: ctx.root?.toString() });
     this.changed();
     this.paintEmitter.fire("first-paint");
 
@@ -233,13 +248,15 @@ export class WorkSession implements vscode.Disposable {
     const inventoryDue = forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString();
     // The probes start only now: on Windows each process start holds the extension host's thread,
     // which would slow the first paint's own Git reads.
+    const incomplete: IncompleteStep[] = [];
+    const bounded = <T>(name: string, p: Promise<T>, fallback: T) => settleWithin(name, p, REFRESH_STEP_TIMEOUT_MS, fallback, incomplete);
     const [tools, envObs, extensionsObs, bindingObs, inv] = await Promise.all([
-      step("probes", probeTools(forceProbe)),
-      ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()),
-      ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined),
-      ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()),
-      step("inventory", inventoryDue ? this.scanInventory(ctx) : Promise.resolve(this.inv)),
-      this.rememberProject()
+      bounded("tool probes", step("probes", probeTools(forceProbe)), this.tools),
+      bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs),
+      bounded("extensions.json", ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined), this.extensionsObs),
+      bounded("binding folders", ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()), this.bindingObs),
+      bounded("inventory", step("inventory", inventoryDue ? this.scanInventory(ctx) : Promise.resolve(this.inv)), this.inv?.root === ctx.root?.toString() ? this.inv : undefined),
+      bounded("recent projects", this.rememberProject(), undefined)
     ]);
     if (superseded()) return this.latest;
     this.tools = tools;
@@ -248,6 +265,7 @@ export class WorkSession implements vscode.Disposable {
     this.bindingObs = bindingObs;
     this.inv = inv;
     this.lastRefreshTimings.settledMs = performance.now() - started;
+    this.tracker.publish(token, "settled", { project: ctx.root?.toString(), incomplete });
     this.changed();
     this.paintEmitter.fire("settled");
   }
@@ -441,7 +459,22 @@ export class WorkSession implements vscode.Disposable {
   /** 0.27 (P1, D-23): the selected variant and environment, and the bridge revision (HEAD of the coordination repository) when Git knows it. */
   selectionStamp(): PackStamp {
     const environment = environmentOf(this.projectMap().environments);
-    return { variant: variantStamp(this.ctx.options, this.preview()), ...(environment ? { environment } : {}) };
+    const observedAt = this.tracker.status().settledAt ?? this.tracker.status().firstPaintAt;
+    return { variant: variantStamp(this.ctx.options, this.preview()), ...(environment ? { environment } : {}), ...(observedAt ? { observedAt } : {}) };
+  }
+
+  /**
+   * V1-FRESH (A03): what a pack or an order is built from — the project, the selected variant and
+   * environment, and the digests of project.json and options.json. Captured when building starts and
+   * compared (contextChange) just before the pack is copied or the order written.
+   */
+  contextIdentity(): ContextIdentityInput {
+    const s = this.selectionStamp();
+    return {
+      project: this.ctx.root?.toString(), variantKey: s.variant.key, environment: s.environment,
+      manifestDigest: this.ctx.manifestBytes ? sha256Bytes(this.ctx.manifestBytes).value : undefined,
+      optionsDigest: this.ctx.optionsBytes ? sha256Bytes(this.ctx.optionsBytes).value : undefined
+    };
   }
   async packStamp(): Promise<PackStamp> {
     const stamp = this.selectionStamp();

@@ -10,6 +10,7 @@
  * view) are reported by the webviews and held by the session, so work views can save and restore
  * them; the Workbench tab can move into a floating window of its own.
  */
+import { refreshLabel } from "../core/refresh/tracker";
 import { toolkitState } from "./toolkitState";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
@@ -109,7 +110,7 @@ export class WorkbenchHost implements vscode.Disposable {
     this.lastState = workbenchState({
       map: this.session.projectMap(), selection: this.session.selection(), version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(ctx.root), hasManifest: ctx.manifestExists, manifestErrors: ctx.manifestErrors, graphError: ctx.graphError,
-      trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), multipleProjectFolders: this.session.projectRootCandidates().length > 1,
+      trusted: vscode.workspace.isTrusted, observedAt: this.session.observedAt(), refresh: refreshLabel(this.session.refreshStatus()), multipleProjectFolders: this.session.projectRootCandidates().length > 1,
       readiness: ctx.manifest ? this.session.readiness() : undefined,
       options: ctx.options, analysis: this.session.optionsAnalysis(), optionsError: ctx.optionsError,
       sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview(),

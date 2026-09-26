@@ -207,7 +207,7 @@ function header(s: WorkbenchState): HTMLElement {
       sum?.reposToBind ? pill(`${sum.reposToBind} repo(s) to clone or create`, "warn") : undefined,
       behind ? pill(`${behind} commit(s) to get`, "info", "New commits on the remote (as of the last check)") : undefined,
       !s.trusted ? pill("Restricted Mode", "warn", "Git is not read in an untrusted workspace") : undefined,
-      pill(`inspected ${ago(s.observedAt)}`, "muted")),
+      s.refresh ? pill(s.refresh.text, s.refresh.tone === "ok" ? "muted" : s.refresh.tone, s.refresh.detail) : pill(`inspected ${ago(s.observedAt)}`, "muted")),
     h("div", { class: "row actions" },
       viewTabs(s),
       h("span", { class: "grow" }),

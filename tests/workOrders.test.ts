@@ -465,7 +465,7 @@ test("stamps: order.json and order.md carry the stamp; launching under another v
   const old = buildOrder(input());
   assert.equal(old.stamp, undefined);
   const parsed = parseWorkOrder(JSON.stringify(old), old.id);
-  assert.deepEqual(stampVerdict(parsed, STAMP_C), { kind: "not-stamped" });
+  assert.equal(stampVerdict(parsed, STAMP_C).kind, "not-stamped");
   assert.equal(stampLabel(parsed), "not stamped");
   assert.doesNotMatch(renderOrderMd(parsed, { components: [], packs: [], conventions: [], handoffs: [], datapassFiles: [] }, ORDERS), /Stamp:/);
   // A malformed stamp is refused like any other field.

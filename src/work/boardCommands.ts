@@ -11,6 +11,7 @@ import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import type { WorkbenchHost } from "../views/workbench";
 import { confirmModal, guarded, requireRoot, UserFacingError } from "./io";
+import { contextGuard } from "./packStamps";
 import { writeProjectFile } from "./optionsCommands";
 import { clipboard } from "../core/clipboard";
 import { openExternal, openFolderWindow } from "../core/external";
@@ -236,6 +237,8 @@ async function cardAiPack(session: WorkSession, version: string, itemId: string 
       if (errorText === undefined) return;
     }
   }
+  const unchanged = contextGuard(session);
+  const stamp = await session.packStamp();
   const map = session.projectMap();
   const revisions: Record<string, string> = {};
   for (const r of map.repositories) if (r.state === "local" && r.git?.head) revisions[r.key] = `${r.git.branch ?? "?"}@${r.git.head.slice(0, 7)}${r.git.changes ? " (+local changes)" : ""}`;
@@ -243,15 +246,16 @@ async function cardAiPack(session: WorkSession, version: string, itemId: string 
     board, card: c, map, question: pick.id, errorText, dataPassVersion: version, recipe: session.recipe(c.recipe?.id), generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     boardDigest: session.project.boardBytes ? sha256Bytes(session.project.boardBytes).value : undefined,
-    sheet: session.project.sheet, options: session.project.options, readiness: session.readiness(), stamp: await session.packStamp()
+    sheet: session.project.sheet, options: session.project.options, readiness: session.readiness(), stamp
   });
   const choice = await vscode.window.showInformationMessage(`AI pack for "${c.title}": ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`
   }, "Copy", "Preview");
   if (choice === "Preview") { await vscode.window.showTextDocument(await vscode.workspace.openTextDocument({ content: pack.text, language: "markdown" }), { preview: true }); return; }
   if (choice !== "Copy") return;
+  unchanged();
   await clipboard.writeText(pack.text);
-  await session.recordExchange({ id: newLocalId("card"), kind: "ai-context", label: `Card pack (${pick.id}): ${c.id}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString() });
+  await session.recordExchange({ id: newLocalId("card"), kind: "ai-context", label: `Card pack (${pick.id}): ${c.id}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString(), stamp });
   void vscode.window.showInformationMessage(pick.id === "fix" || pick.id === "implement"
     ? "Copied. The AI delivers a pull request and moves the card in board.json; when it is merged, use Check for updates."
     : pick.id === "plan" ? "Copied. Paste the AI's complete board.json back with \"Import the AI's answer\"." : "Copied. Paste it into ChatGPT or Claude.");

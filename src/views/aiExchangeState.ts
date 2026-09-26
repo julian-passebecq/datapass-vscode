@@ -5,7 +5,7 @@
  */
 import { AI_TASKS, EXCHANGE_FILES, type ExchangeKind } from "../core/project/aiExchange";
 import type { ExchangeRecord } from "../core/work/workModel";
-import { staleReason, type PackStamp } from "../core/exchange/stamp";
+import { freshness, type PackStamp } from "../core/exchange/stamp";
 
 export interface AiExchangeFile {
   kind: ExchangeKind;
@@ -26,8 +26,11 @@ export interface AiExchangeState {
   hasManifest: boolean;
   projectTitle?: string;
   files: AiExchangeFile[];
-  /** `stale`: 0.27 (P1, D-23) why a copied pack no longer matches the selected variant or environment. */
-  recent: Array<{ label: string; status: string; at: string; stale?: string }>;
+  /**
+   * `stale`: 0.27 (P1, D-23) why a copied pack no longer matches the selected variant or environment.
+   * `unknown`: V1-FRESH (A04) why its freshness cannot be judged (unstamped, bridge revision unknown).
+   */
+  recent: Array<{ label: string; status: string; at: string; stale?: string; unknown?: string }>;
 }
 
 export interface AiExchangeInput {
@@ -66,8 +69,11 @@ export function aiExchangeState(input: AiExchangeInput): AiExchangeState {
       };
     }),
     recent: input.exchanges.filter(e => e.kind === "ai-context").slice(0, RECENT).map(e => {
-      const stale = input.selection ? staleReason(e.stamp, input.selection) : undefined;
-      return { label: e.label.slice(0, 160), status: e.status, at: e.at, ...(stale ? { stale: stale.slice(0, 300) } : {}) };
+      const f = input.selection ? freshness(e.stamp, input.selection) : undefined;
+      return {
+        label: e.label.slice(0, 160), status: e.status, at: e.at,
+        ...(f?.state === "stale" ? { stale: f.reason.slice(0, 300) } : f?.state === "unknown" ? { unknown: f.reason.slice(0, 300) } : {})
+      };
     })
   };
 }
