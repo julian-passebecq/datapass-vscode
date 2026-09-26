@@ -10,6 +10,7 @@
  * links are never used to target a window (VS Code routes them to the last active one).
  */
 import * as vscode from "vscode";
+import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { WorkSession } from "./session";
@@ -37,6 +38,26 @@ const MAX_REGISTRY = 50;
 let exportFileForTests: string | undefined;
 /** Test-mode only: write the Power Ops list here instead of the per-user application data folder. */
 export function setExportFileForTests(file?: string): void { exportFileForTests = file; }
+
+/** Windows briefly locks a file just written or read (antivirus, indexer, a reader such as Power Ops). */
+const TRANSIENT_LOCK = new Set(["EBUSY", "EPERM", "EACCES"]);
+
+/**
+ * V1-FLAKE: the Power Ops list is replaced in one step (a temporary file renamed over it), so a reader never
+ * sees half a list, and a transient Windows lock is retried instead of leaving the old list in place.
+ */
+async function replaceFile(target: string, text: string): Promise<void> {
+  const temp = `${target}.${process.pid}.tmp`;
+  await fs.writeFile(temp, text, "utf8");
+  for (let attempt = 0; ; attempt++) {
+    try { await fs.rename(temp, target); return; }
+    catch (e) {
+      const code = (e as NodeJS.ErrnoException).code ?? "";
+      if (!TRANSIENT_LOCK.has(code) || attempt >= 9) { await fs.rm(temp, { force: true }); throw e; }
+      await new Promise(resolve => setTimeout(resolve, 25 * (attempt + 1)));
+    }
+  }
+}
 
 export interface WindowControls {
   /** Applies a launcher's request or the workspace file's startup view; resolves to the view applied. */
@@ -420,8 +441,8 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
     await context.globalState.update(REGISTRY_KEY, alive.slice(0, MAX_REGISTRY));
     const doc = buildPowerOpsExport(companies, { generatedAt: new Date().toISOString(), generator: `DataPass Control Plane ${version}`, requestFile: folder => path.join(folder, ...LOCAL_DIR.split("/"), OPEN_VIEW_REQUEST_FILE) });
     const target = exportTarget();
-    await vscode.workspace.fs.createDirectory(vscode.Uri.file(path.dirname(target)));
-    await vscode.workspace.fs.writeFile(vscode.Uri.file(target), new TextEncoder().encode(JSON.stringify(doc, null, 2) + "\n"));
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await replaceFile(target, JSON.stringify(doc, null, 2) + "\n");
     await context.globalState.update(EXPORT_KEY, { file: target, at: doc.generatedAt });
     return { file: target, companies: companies.length };
   };
@@ -433,7 +454,11 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
   const exportIfEnabled = (): Promise<void> => {
     exportQueue = exportQueue.then(async () => {
       if (!context.globalState.get(EXPORT_KEY)) return;
-      try { await exportCompanies(); } catch (e) { output().appendLine(`[export] ${errorMessage(e)}`); }
+      try { await exportCompanies(); }
+      catch (e) {
+        output().appendLine(`[export] ${errorMessage(e)}`);
+        void vscode.window.showWarningMessage(`DataPass could not update the Power Ops list: ${errorMessage(e)}`);
+      }
     });
     return exportQueue;
   };

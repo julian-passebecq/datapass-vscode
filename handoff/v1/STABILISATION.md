@@ -6,7 +6,7 @@ Package V1-STAB of [handoff/PLAN.md](../PLAN.md) (ROADMAP §1.3), coder TAMPON 2
 ## Verdict
 
 - **Bugs:** the 10 known carry-overs plus 2 new ones (a second Windows flake, and *Workbench Layout* in Standard mode).
-  11 of the 12 are fixed in this PR. The `windowFlows` flake (item 3) is still open. None needed a design decision.
+  11 of the 12 are fixed in this PR; the `windowFlows` flake (item 3) was fixed afterwards by V1-FLAKE. None needed a design decision.
 - **Stale documentation:** every guide of testlabs 4–10 was stale (old VSIX pins, the default Standard mode that
   hides the views they use, renamed labels, Mongoku). The guides are updated; see "Testlab guides".
 - **Extension host log:** the desktop runner now lists every error line of the extension host logs that mentions
@@ -14,8 +14,7 @@ Package V1-STAB of [handoff/PLAN.md](../PLAN.md) (ROADMAP §1.3), coder TAMPON 2
   ignored by name (`BENIGN_HOST_LINE` in `scripts/desktop-test.ts`):
   - a tree refresh cancelled while the host shuts down;
   - a test's own `git` call writing Git's CRLF warning to stderr.
-- **Open for ARCHI:** the `windowFlows` flake (item 3) is not fixed. One fix went in (the exports are serialised),
-  and the new diagnostic assertion will say which side fails next time. More limits are listed under "Left open".
+- **`windowFlows` flake (item 3):** fixed by V1-FLAKE (see the table). More limits are listed under "Left open".
 
 ## Bugs and fixes
 
@@ -23,7 +22,7 @@ Package V1-STAB of [handoff/PLAN.md](../PLAN.md) (ROADMAP §1.3), coder TAMPON 2
 |---|---|---|---|
 | 1 | `src/adapters/fabric.ts` still said "Workspace MCP configuration" (D-22) | "MCP registration file present (.vscode/mcp.json)", and the detail says it proves nothing about a server | — (label) |
 | 2 | Rewriting `.vscode/mcp.json` dropped its BOM: `TextDecoder` strips the BOM by default | The command decodes with `ignoreBOM`; `planMcpFileEdit` keeps a leading BOM and never adds one | `tests/mcp.test.ts` |
-| 3 | Flaky Windows test `windowFlows` ("Papers — review" rename) | **Not fixed, still open.** Power Ops exports now run one after another (a real race, kept). But the final local run on this PC failed once more (the list still had "Papers — review" after the rename), while CI passed on Windows and Ubuntu. A diagnostic assertion now tells "the rename was not stored" (the input prompt was missed) apart from "the list lagged behind the stored rename" | desktop `v3-research` |
+| 3 | Flaky Windows test `windowFlows` ("Papers — review" rename) | **Fixed (V1-FLAKE).** Most likely cause (the failing run's log was not kept, so it is inferred from the code): a product race with Windows file locks, not test timing. The input prompt cannot have been missed: `withUi` fails on an unused step. The rename's export rewrote the Power Ops list right after the previous export and the test had written and read it; on a PC with real-time antivirus or the indexer the overwrite could fail with a transient lock (EBUSY/EPERM), and the background export swallowed the error into the output channel, leaving the old name in the list (CI runners have no such scanner, hence green CI). Fix: the list is now written to a temporary file and renamed over the old one (a reader never sees half a list), a transient lock is retried with a short backoff, and a failed background export shows a warning instead of only an output line. The test's message names that warning. The earlier serialisation of exports is kept. 5 runs in a row of `v3-research` passed on this PC | desktop `v3-research` |
 | 3b | **New:** flaky `activeVariantFlows` "back to current forgets the entry" (CI run 36254906579) | The switch no longer saves twice (its own preview event is ignored); saves of the selected variant are serialised | desktop `v25-doc-pipeline` |
 | 4 | Readiness rows not filtered by the selected variant | Readiness uses the variant's repositories (C brings its planned `factory`). Rows only other variants use (env files, repositories and their checks) are hidden, with a "Variant: … · N rows of other variants hidden" line. `readinessForVariant` | `tests/readiness.test.ts`, desktop doc-pipeline |
 | 5 | **MAJOR (D-23):** Copy Context named the current architecture's component with variant B selected | The owning component comes from the selected variant's map (`componentPlaces`, `src/core/exchange/fileContext.ts`), the same selection as the P1 stamp in the pack | `tests/fileContext.test.ts`; desktop: B selected → "Component: Blob-triggered Function" and a stamp naming B; testlab 10 step 4.2 |
