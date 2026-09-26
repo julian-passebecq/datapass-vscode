@@ -27,7 +27,7 @@ const CORE = [
 const GATED: Record<string, readonly string[]> = {
   // Standard: the architecture, Details and the selected variant.
   "view.architecture": ["arrangeWorkbench", "previewArchitecture", "clearPreview"],
-  "view.details": ["preparationPack", "openComponentFolder", "openComponentEntry", "openNativeTool", "showOperation", "copyComponentCommand", "openCiRuns"],
+  "view.details": ["preparationPack", "openComponentFolder", "openComponentEntry", "openNativeTool", "showOperation", "copyComponentCommand", "openCiRuns", "runComponentTest", "showComponentTestReceipts"],
   "status.selectedVariant": ["switchVariant"],
   // DataPass: the Project tree and the Workbench.
   "view.project": ["openWorkbench", "chooseModules", "saveWorkView", "applyWorkView"],

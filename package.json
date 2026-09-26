@@ -1975,6 +1975,14 @@
           "when": "!datapass.hidden.view.details"
         },
         {
+          "command": "datapass.runComponentTest",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.showComponentTestReceipts",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
           "command": "datapass.recordComponentResult",
           "when": "!datapass.hidden.palette.full"
         },
