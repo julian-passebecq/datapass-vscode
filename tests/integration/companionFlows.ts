@@ -178,7 +178,7 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     assert.equal(rec?.result, "failed");
     assert.equal(rec?.note, "fab not installed yet");
     assert.equal(rec?.projectId, "retail-bi");
-    assert.match(rec?.dataPassVersion ?? "", /^\d+\.\d+\.\d+$/);
+    assert.match(rec?.dataPassVersion ?? "", /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, "semver, a pre-release such as 1.0.0-rc.1 included");
     const row = (await api().renderWorkTree()).find(r => r.id === `op:${op.capability.id}`);
     assert.match(row?.description ?? "", /✗ failed/);
     // Recording again replaces the result for the same operation and project.
