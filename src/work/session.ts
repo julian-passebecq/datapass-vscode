@@ -25,6 +25,7 @@ import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset
 import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
 import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
+import { incompleteText } from "../core/project/observation";
 import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
@@ -484,7 +485,8 @@ export class WorkSession implements vscode.Disposable {
       repoObservations: obs?.repos ?? new Map(), fileObservations: obs?.files ?? new Map(),
       tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs),
       reviewsConfirmed: this.reviews, checklist: this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {},
-      qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings()
+      qualification: this.qualification(), toolRangeWarnings: this.rangeWarnings(),
+      observationIncomplete: obs?.incomplete ? incompleteText(obs.incomplete) : undefined
     };
   }
 
@@ -681,6 +683,8 @@ export class WorkSession implements vscode.Disposable {
     const folder = this.repoFolder(key);
     if (!folder) return { ok: false, changed: [], detail: "not cloned here" };
     if (!vscode.workspace.isTrusted) return { ok: false, changed: [], detail: "Restricted Mode" };
+    const view = this.projectMap().repositories.find(r => r.key === key);
+    if (view && view.state !== "local") return { ok: false, changed: [], detail: view.detail };
     const before = await gitRunner(["rev-parse", "HEAD"], folder.fsPath, 5000);
     const r = await gitRunner(["merge", "--ff-only", "@{u}"], folder.fsPath, 60000);
     if (!r.ok) return { ok: false, changed: [], detail: (r.stderr ?? "").split(/\r?\n/).find(l => l.trim())?.slice(0, 300) ?? "fast-forward refused" };

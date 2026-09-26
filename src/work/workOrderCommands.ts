@@ -234,7 +234,7 @@ export class WorkOrderFlows {
       const folder = folderOfKey(this.session, key);
       if (!folder || (view && view.state !== "local")) {
         const why = view ? view.detail : "not found";
-        if (a === "change") throw new UserFacingError(`${view?.label ?? key} cannot be changed: ${view?.state === "planned" ? "it is planned, not created yet" : view?.state === "wrong-remote" ? "the clone here has another origin" : `it is not cloned here (${why})`}.`);
+        if (a === "change") throw new UserFacingError(`${view?.label ?? key} cannot be changed: ${view?.state === "planned" ? "it is planned, not created yet" : view?.state === "wrong-remote" ? "the clone here has another origin" : view?.state === "unverified" ? "the clone's origin is not verified (locate it or retry)" : `it is not cloned here (${why})`}.`);
         notes.push(`${view?.label ?? key}: not included (${why}).`);
         continue;
       }

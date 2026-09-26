@@ -42,8 +42,11 @@ For real changes across repositories by an agent.
 
 ## C. Pull requests and Check / Get updates
 
-1. The AI (in chat or as an agent) pushes a branch and opens a PR in the right repository,
-   updating `graph.json` and `board.json` in the same PR.
+1. The AI (in chat or as an agent) pushes a branch and opens a PR in each repository it changes
+   (a PR never spans repositories). When `graph.json` or `board.json` change too, they go in a
+   separate bridge PR in the bridge repository (coordination repository), and the PRs link each
+   other: a coordinated change set. The card moves to `review`, not to done: a merged PR is
+   evidence of implementation; done follows the card's acceptance.
 2. The person reviews and merges on the Git host.
 3. DataPass → **Check for updates** (`git fetch`, nothing merged) → **Get updates** (fast-forward
    only, after listing the commits). DataPass never pulls silently and never pushes.
