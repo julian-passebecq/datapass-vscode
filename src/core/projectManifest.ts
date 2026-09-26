@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { validateProjectManifest, type DataPassProjectManifest } from "./projectManifestModel";
 import { parseStrictJson } from "./model/strictJson";
 import { projectRoot } from "./workspace/root";
+import { readProjectFile } from "./workspace/readFile";
+import { PROJECT_FILE_MAX_BYTES } from "./model/boundedRead";
 
 export * from "./projectManifestModel";
 
@@ -20,16 +22,15 @@ export async function readProjectManifest(folder?: vscode.Uri): Promise<Manifest
   if (!root) return { exists: false, errors: [] };
   const uri = vscode.Uri.joinPath(root, ".datapass", "project.json");
 
-  try {
-    await vscode.workspace.fs.stat(uri);
-  } catch {
-    return { exists: false, uri, errors: [] };
-  }
+  // Typed, bounded read: absent is "no manifest"; unreadable, too large or not a file is an error, never "absent".
+  const read = await readProjectFile(uri, PROJECT_FILE_MAX_BYTES);
+  if (read.kind === "absent") return { exists: false, uri, errors: [] };
+  if (read.kind === "error") return { exists: true, uri, errors: [`Cannot read .datapass/project.json: ${read.message}`] };
 
+  const bytes = read.bytes;
   try {
-    const bytes = await vscode.workspace.fs.readFile(uri);
     // Strict parse: duplicate keys, non-finite numbers and prototype keys are rejected.
-    const raw = parseStrictJson(bytes, { maxBytes: 1_048_576 });
+    const raw = parseStrictJson(bytes, { maxBytes: PROJECT_FILE_MAX_BYTES });
     const errors = validateProjectManifest(raw);
     return errors.length
       ? { exists: true, uri, bytes, errors }

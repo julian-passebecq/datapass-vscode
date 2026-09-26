@@ -225,6 +225,22 @@ test("invalid manifest: reported in the Work view, never replaced by defaults", 
   record("manifestErrors", p.manifestErrors);
 }, ["broken"]);
 
+test("V1-LOAD: an unreadable project file is an error, never shown as absent", async () => {
+  // A directory where .datapass/board.json should be: the read fails, so the board must report an error.
+  const board = vscode.Uri.joinPath(root()!, ".datapass", "board.json");
+  await vscode.workspace.fs.createDirectory(board);
+  try {
+    await vscode.commands.executeCommand("datapass.work.refresh");
+    const error = await waitFor("boardError", () => api.project().boardError);
+    assert.match(error, /cannot read \.datapass\/board\.json: not a regular file/);
+    assert.equal(api.project().board, undefined);
+  } finally {
+    await vscode.workspace.fs.delete(board, { recursive: true });
+    await vscode.commands.executeCommand("datapass.work.refresh");
+  }
+  await waitFor("boardError cleared", () => api.project().boardError === undefined || undefined);
+}, ["broken"]);
+
 test("the contributed JSON schema produces diagnostics in the editor", async () => {
   const uri = vscode.Uri.joinPath(root()!, ".datapass", "project.json");
   await vscode.window.showTextDocument(uri);

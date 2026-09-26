@@ -9,6 +9,8 @@ import { parseGraph, type ProjectGraph } from "./graph";
 import { parseDomainPack, type DomainPack } from "../domainPacks/pack";
 import { vetRelativePath } from "../exchange/pathSafety";
 import { projectRoot } from "./root";
+import { readProjectFile } from "./readFile";
+import { DOMAIN_PACK_MAX_BYTES, PROJECT_FILE_MAX_BYTES } from "../model/boundedRead";
 import { OPTIONS_PATH, parseOptions, type OptionsFile } from "../project/options";
 import { SHEET_PATH, parseSheet, type ProjectSheet } from "../project/sheet";
 import { BOARD_PATH, parseBoard, type Board } from "../project/board";
@@ -51,45 +53,51 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   const graphRel = read.manifest?.graph ?? ".datapass/graph.json";
   const graphVet = vetRelativePath(graphRel);
   if (graphVet.ok) {
-    const bytes = await readOptional(vscode.Uri.joinPath(root, graphVet.relative));
-    if (bytes) {
-      try { ctx.graph = parseGraph(bytes); } catch (error) { ctx.graphError = message(error); }
+    const got = await readProjectFile(vscode.Uri.joinPath(root, graphVet.relative), PROJECT_FILE_MAX_BYTES);
+    if (got.kind === "error") ctx.graphError = `cannot read ${graphVet.relative}: ${got.message}`;
+    else if (got.kind === "ok") {
+      try { ctx.graph = parseGraph(got.bytes); } catch (error) { ctx.graphError = message(error); }
     }
   } else {
     ctx.graphError = `graph path rejected: ${graphVet.reason}`;
   }
 
-  // Optional files: absent is normal; present but invalid is reported, never replaced by a default.
-  const optionsBytes = await readOptional(vscode.Uri.joinPath(root, ...OPTIONS_PATH.split("/")));
-  if (optionsBytes) {
-    ctx.optionsBytes = optionsBytes;
-    try { ctx.options = parseOptions(optionsBytes); } catch (error) { ctx.optionsError = message(error); }
+  // Optional files: absent is normal; present but unreadable or invalid is reported, never replaced by a default.
+  const options = await readProjectFile(vscode.Uri.joinPath(root, ...OPTIONS_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
+  if (options.kind === "error") ctx.optionsError = `cannot read ${OPTIONS_PATH}: ${options.message}`;
+  else if (options.kind === "ok") {
+    ctx.optionsBytes = options.bytes;
+    try { ctx.options = parseOptions(options.bytes); } catch (error) { ctx.optionsError = message(error); }
   }
-  const sheetBytes = await readOptional(vscode.Uri.joinPath(root, ...SHEET_PATH.split("/")));
-  if (sheetBytes) {
-    ctx.sheetBytes = sheetBytes;
-    try { ctx.sheet = parseSheet(sheetBytes); } catch (error) { ctx.sheetError = message(error); }
+  const sheet = await readProjectFile(vscode.Uri.joinPath(root, ...SHEET_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
+  if (sheet.kind === "error") ctx.sheetError = `cannot read ${SHEET_PATH}: ${sheet.message}`;
+  else if (sheet.kind === "ok") {
+    ctx.sheetBytes = sheet.bytes;
+    try { ctx.sheet = parseSheet(sheet.bytes); } catch (error) { ctx.sheetError = message(error); }
   }
-  const boardBytes = await readOptional(vscode.Uri.joinPath(root, ...BOARD_PATH.split("/")));
-  if (boardBytes) {
-    ctx.boardBytes = boardBytes;
-    try { ctx.board = parseBoard(boardBytes); } catch (error) { ctx.boardError = message(error); }
+  const board = await readProjectFile(vscode.Uri.joinPath(root, ...BOARD_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
+  if (board.kind === "error") ctx.boardError = `cannot read ${BOARD_PATH}: ${board.message}`;
+  else if (board.kind === "ok") {
+    ctx.boardBytes = board.bytes;
+    try { ctx.board = parseBoard(board.bytes); } catch (error) { ctx.boardError = message(error); }
   }
 
   for (const ref of read.manifest?.domainPacks ?? []) {
     try {
-      let bytes: Uint8Array | undefined;
+      let uri: vscode.Uri;
       if (ref.startsWith("builtin:")) {
         const name = ref.slice("builtin:".length);
         if (!/^[a-z][a-z0-9.-]+$/.test(name)) throw new Error("invalid builtin pack name");
-        bytes = await readOptional(vscode.Uri.joinPath(extensionUri, "resources", "domain-packs", `${name}.json`));
+        uri = vscode.Uri.joinPath(extensionUri, "resources", "domain-packs", `${name}.json`);
       } else {
         const vet = vetRelativePath(ref);
         if (!vet.ok) throw new Error(vet.reason);
-        bytes = await readOptional(vscode.Uri.joinPath(root, vet.relative));
+        uri = vscode.Uri.joinPath(root, vet.relative);
       }
-      if (!bytes) throw new Error("not found");
-      ctx.packs.push(parseDomainPack(bytes));
+      const got = await readProjectFile(uri, DOMAIN_PACK_MAX_BYTES);
+      if (got.kind === "absent") throw new Error("not found");
+      if (got.kind === "error") throw new Error(got.message);
+      ctx.packs.push(parseDomainPack(got.bytes));
     } catch (error) {
       ctx.packErrors.push(`${ref}: ${message(error)}`);
     }
@@ -97,6 +105,10 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   return ctx;
 }
 
+/**
+ * Best-effort read that treats every failure as absent. Project files loaded above use the
+ * typed, bounded `readProjectFile` instead, so a broken file is never shown as missing.
+ */
 export async function readOptional(uri: vscode.Uri): Promise<Uint8Array | undefined> {
   try {
     return await vscode.workspace.fs.readFile(uri);
