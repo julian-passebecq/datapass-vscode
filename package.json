@@ -325,6 +325,16 @@
         "icon": "$(terminal)"
       },
       {
+        "command": "datapass.runComponentTest",
+        "title": "DataPass: Run Component Test…",
+        "icon": "$(beaker)",
+        "enablement": "isWorkspaceTrusted"
+      },
+      {
+        "command": "datapass.showComponentTestReceipts",
+        "title": "DataPass: Show Component Test Receipts"
+      },
+      {
         "command": "datapass.recordComponentResult",
         "title": "DataPass: Record a Component Operation Result…",
         "icon": "$(pass)"
@@ -1348,6 +1358,11 @@
           "command": "datapass.openComponentFolder",
           "when": "view == datapass.project && viewItem =~ /^component\\.local/",
           "group": "1_open@1"
+        },
+        {
+          "command": "datapass.runComponentTest",
+          "when": "view == datapass.project && viewItem =~ /^component\\.local/",
+          "group": "2_test@1"
         },
         {
           "command": "datapass.openNativeTool",

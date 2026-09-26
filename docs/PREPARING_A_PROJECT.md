@@ -836,3 +836,30 @@ folder is the hub. An agent working through a pull request (section 13) updates 
 same way it updates other project files. Nothing in a toolkit file is ever run by DataPass: install
 commands and recipe commands are only ever copied.
 
+
+## 15. A component's own test (native repository, DataPass ≥ 1.0.0-rc)
+
+*Run Component Test* (Project tree, right-click a component) runs the **client's own test**, declared
+where the code lives: a task of the `test` group in the native repository's `.vscode/tasks.json`,
+running in the component's folder. DataPass never writes this file; the native repository owns it.
+
+```jsonc
+{
+  "version": "2.0.0",
+  "tasks": [
+    { "label": "Test PDF processing", "type": "process", "command": "python", "args": ["-m", "unittest"],
+      "options": { "cwd": "${workspaceFolder}/processing" }, "group": "test", "problemMatcher": [] }
+  ]
+}
+```
+
+- A task belongs to the component whose `artifacts.root` equals its `cwd` (`${workspaceFolder}/<root>`
+  or a relative path). A task without `cwd` counts for a component at the repository root, or for the
+  repository's only component.
+- Two tasks for one folder: mark one `"group": { "kind": "test", "isDefault": true }`, otherwise
+  DataPass refuses (ambiguous). No task → "no test declared", never a pass.
+- DataPass shows the command and asks before running; it refuses in Restricted Mode and when the
+  repository is not a folder of the window. The receipt (commit, uncommitted changes, start and end
+  time, exit code: 0 passed, other failed, none unknown, stopped cancelled) stays on this machine;
+  *Show Component Test Receipts* lists them. A local test pass is not a deployment and not a check of
+  a cloud target. Example: `examples/v3/doc-pipeline` (`processing`).

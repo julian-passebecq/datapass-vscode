@@ -26,6 +26,7 @@ import { registerBoardCommands } from "./work/boardCommands";
 import { registerToolkitCommands } from "./work/toolkitCommands";
 import { registerGitHostCommands } from "./work/gitHostCommands";
 import { registerCheckCommands } from "./work/checkCommands";
+import { registerNativeTestCommands, resolveComponentTest } from "./work/nativeTestCommands";
 import type { WorkbenchState } from "./views/workbenchState";
 import { AiExchangeView } from "./views/aiExchange";
 import type { AiExchangeState } from "./views/aiExchangeState";
@@ -90,6 +91,8 @@ export interface DataPassTestApi {
   setPreview(req: Parameters<WorkSession["setPreview"]>[0]): Promise<void>;
   /** 0.25 (V-A): the selected variant's status item and what this machine remembers for the project. */
   selectedVariant: { statusText(): string; statusVisible(): boolean; remembered(): { scenario?: string; picks?: string[] } | undefined };
+  /** V1-TEST: the native Test route (what it would run, and the receipts kept on this machine). */
+  nativeTests: { resolve(componentId: string): Promise<import("./work/nativeTestCommands").ComponentTestView>; receipts(): import("./core/nativeTest/tasks").TestReceipt[] };
   /** 0.15.1: the AI exchange view (secondary side bar), driven through its real message handler. */
   aiExchange: {
     /** The view was shown in this window (the secondary side bar displays DataPass). */
@@ -254,6 +257,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerToolkitCommands(context, session, host);
   registerGitHostCommands(context, session);
   registerCheckCommands(context);
+  const nativeTests = registerNativeTestCommands(context, session, String(context.extension.packageJSON.version ?? "unknown"));
 
   // 0.19 Git module: read-only observation of the project's repositories, worktrees and PRs (left side bar, under Project).
   const git = new GitObserver(session);
@@ -476,6 +480,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     optionsAnalysis: () => session.optionsAnalysis(),
     setPreview: req => session.setPreview(req),
     selectedVariant: { statusText: () => activeVariant.statusText(), statusVisible: () => activeVariant.statusVisible(), remembered: () => activeVariant.remembered() },
+    nativeTests: { resolve: async id => { const { folder: _f, ...view } = await resolveComponentTest(session, id); return view; }, receipts: () => nativeTests.receipts() },
     aiExchange: {
       resolved: () => aiExchange.resolved(),
       state: () => aiExchange.state(),
