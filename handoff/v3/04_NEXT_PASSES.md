@@ -136,6 +136,24 @@ ids put in the lab's ID map), a secret pasted as an identifier refused without b
 pack's names-and-states section, and optionally a Databricks CLI profile. Guide:
 `D:\PROJ\datapass-testlab\8-outils-connexions\LISEZ-MOI.md`.
 
+### B6. Testlab project 9 — modes, context from any file, format checks, file versions, variants, offline (≈ 25 minutes)
+
+`D:\PROJ\datapass-testlab\9-modes-contexte-versions\` — `setup.ps1` builds the research project from
+scratch as two repositories with offline GitHub origins (bare repositories on disk, `insteadOf`):
+`research-hub` (bridge, `notes/decisions.md` with three commits, a `checks-demo/` folder) and
+`research-pipeline` (code); `simule-mise-a-jour.ps1` plays an AI merging one PR in each. Steps: the
+four modes (Standard on a new install, the status item, switch, customize and reset, no file written,
+a manifest error still shown in Vanilla); Copy Context for My AI on a native-repository file, a
+selection in an unsaved buffer (secret redacted) and an untitled buffer; format checks (a broken
+`databricks.yml`, a Dockerfile `COPY` of a missing folder, broken YAML → Problems; fixed → cleared;
+the copy-only `databricks bundle validate` quick fix); file versions (Open Version…, Compare, Open
+Latest Version before and after Check for updates, Get updates, Changed by the Last Update…); variants
+(preview banner pill in Standard, Selected architecture / All variants in DataPass mode, coding state
+following files created in the pipeline clone). Section 7 "Toolkit (0.23)" is a placeholder filled at
+the 0.23.0 release. Steps without human judgement were replayed in a desktop VS Code on a throwaway
+profile (`verification-claude/run.ts`, run from a built checkout) and are marked "vérifié par Claude".
+Guide: `D:\PROJ\datapass-testlab\9-modes-contexte-versions\LISEZ-MOI.md`.
+
 ### C. Account qualification (V1 gate 16, extended)
 
 Databricks `bundle validate` (with the generated build), Azure Functions `func start` then a deploy to
@@ -166,7 +184,7 @@ WSL qualification, variants on another branch or tag (J5). The items below stay 
    show companies (with their colour) and their work views in the Tool Launcher, open a company or a
    view exactly as the contract says, refresh when the file changes. Never writes anything else in a
    DataPass folder. Effort: high. A ready-to-paste prompt is in section 7.
-2. **From acceptance feedback.** Fix what A/B/B2/B3/B4/B5/C reveal; desktop tests for Restricted Mode
+2. **From acceptance feedback.** Fix what A/B/B2/B3/B4/B5/B6/C reveal; desktop tests for Restricted Mode
    (launch without `--disable-workspace-trust`) and for the catalog quick pick.
 3. **Remote hosts.** Qualify the Project view in Remote-SSH and WSL windows (paths, Git, probes on the
    remote host); document what runs where.
