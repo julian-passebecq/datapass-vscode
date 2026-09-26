@@ -15,6 +15,7 @@ import {
   type PilotOrderCli, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
 } from "./format";
 import { stampLine, type PackStamp } from "../exchange/stamp";
+import { RESULT_FIELDS } from "../evidence/receipts";
 
 export const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const DEFAULT_BRANCH_PREFIX = "dp/";
@@ -348,7 +349,10 @@ export function resultFormatMd(o: WorkOrder): string {
     summary: "What you changed, in two or three sentences.",
     repositories: changes.map(r => ({ ref: r.ref, branch: r.branch, commits: ["<short sha>"], pullRequest: "<the pull request's web address>" })),
     ...(o.expected.datapassFiles.length ? { datapassFiles: o.expected.datapassFiles } : {}),
-    checks: o.expected.checks.length ? o.expected.checks.map(c => ({ what: c.text, outcome: "passed" as const, note: "38 passed" })) : [{ what: "<a check you ran>", outcome: "passed", note: "<short note>" }],
+    // 0.27 (E1, D-22): each check names the result field it speaks for and, to count as a receipt, its tool, scope and input identity.
+    checks: o.expected.checks.length
+      ? o.expected.checks.map(c => ({ what: c.text, outcome: "passed" as const, note: "38 passed", field: "cli-exit" as const, tool: "<tool you ran, e.g. pytest>", scope: "<what it ran on: a repository path, workspace or environment>", input: "<input identity: commit sha, file digest or dataset version>" }))
+      : [{ what: "<a check you ran>", outcome: "passed", note: "<short note>", field: "cli-exit", tool: "<tool you ran, e.g. pytest>", scope: "<what it ran on: a repository path, workspace or environment>", input: "<input identity: commit sha, file digest or dataset version>" }],
     questions: ["<a question for Julian, if any>"],
     followUps: [{ title: "<a next step, as a short title>", why: "<why>" }],
     agent: { tool: o.agent.tool, model: "<model id>" },
@@ -369,6 +373,7 @@ export function resultFormatMd(o: WorkOrder): string {
     `| repositories[] | ref (${changes.map(r => r.ref).join(", ") || "none"}), branch, commits (hex, 7 to 40), pullRequest (its web address on that repository's host) |`,
     "| datapassFiles[] | kind (project, graph, options, sheet, board, catalog) and via (pull-request, or import with proposed/<kind>.json in the order folder) |",
     "| checks[] | what, outcome (passed · failed · not-run), note — shown to Julian as \"the agent says\" |",
+    `| checks[] field, tool, scope, input | field: which result it speaks for (${RESULT_FIELDS.join(" · ")}); tool: what ran it (pytest, az, dbt…); scope: what it ran on (repository path, workspace, environment); input: the identity of what it checked (commit sha, file digest, dataset version). Fill all four for every check you ran: with tool, scope and input a check is shown as your receipt, without them as "asserted, not verified" |`,
     "| questions[] | at most 20, each at most 1000 characters |",
     "| followUps[] | at most 10: title (at most 80) and why |",
     "| agent, finishedAt | optional: tool, model; an ISO 8601 time |",

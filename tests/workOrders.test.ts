@@ -482,3 +482,17 @@ test("stamps: the AI view marks a copied pack stale, with what changed", async (
     ["pack c", ""]
   ]);
 });
+
+test("0.27 (E1): result-format.md asks for field, tool, scope and input on every check; its example checks fit the schema", async () => {
+  const { WORK_ORDER_RESULT_SCHEMA } = await import("../src/core/workOrders/format");
+  const { validateSchema } = await import("../src/core/contracts/schemaDsl");
+  for (const o of [buildOrder(input()), buildOrder(input({ expected: {} }))]) {
+    const rf = resultFormatMd(o);
+    assert.match(rf, /\| checks\[\] field, tool, scope, input \| field: which result it speaks for \(cli-exit · ci · deployed · runtime · scientific-validity\)/);
+    assert.match(rf, /Fill all four for every check you ran/);
+    const example = JSON.parse(/```json\n([\s\S]+?)\n```/.exec(rf)![1]!);
+    assert.ok(example.checks.length && example.checks.every((c: Record<string, unknown>) => c.field && c.tool && c.scope && c.input));
+    // The checks (placeholders included) fit the result schema; the other placeholders (<short sha>…) are not meant to.
+    assert.deepEqual(validateSchema(WORK_ORDER_RESULT_SCHEMA, { ...example, repositories: undefined, checks: example.checks }).filter(i => i.path.startsWith("$.checks")), []);
+  }
+});
