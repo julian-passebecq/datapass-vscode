@@ -1,0 +1,30 @@
+resources:
+  jobs:
+    daily_sales:
+      name: daily-sales-${var.catalog}
+      tasks:
+        - task_key: ingest
+          notebook_task:
+            notebook_path: ../src/ingest
+        - task_key: publish
+          spark_python_task:
+            python_file: ../src/publish.py
+    from_git:
+      name: from-git
+      git_source:
+        git_url: https://example.invalid/repo.git
+        git_provider: gitHub
+        git_branch: main
+      tasks:
+        - task_key: t
+          notebook_task:
+            notebook_path: notebooks/only_in_git
+  pipelines:
+    sales_dlt:
+      name: sales-dlt
+      catalog: ${var.catalog}
+      libraries:
+        - notebook:
+            path: ../src/ingest.py
+        - file:
+            path: /Workspace/Shared/lib.py
