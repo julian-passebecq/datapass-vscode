@@ -21,6 +21,7 @@ import { registerToolchainFlows } from "./toolchainFlows";
 import { registerGitFlows } from "./gitFlows";
 import { registerWorkOrderFlows } from "./workOrderFlows";
 import { registerExperienceFlows } from "./experienceFlows";
+import { registerFileVersionFlows } from "./fileVersionFlows";
 import { registerFileContextFlows } from "./fileContextFlows";
 import { registerCheckFlows } from "./checkFlows";
 
@@ -236,6 +237,7 @@ registerWindowFlows(() => api);
 registerToolchainFlows(() => api);
 registerGitFlows(() => api);
 registerWorkOrderFlows(() => api);
+registerFileVersionFlows(() => api);
 registerFileContextFlows(() => api);
 registerCheckFlows(() => api);
 

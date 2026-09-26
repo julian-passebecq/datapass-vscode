@@ -197,6 +197,16 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
   return { workspace: hub, env: { DATAPASS_IT_V3: JSON.stringify({ aiClone: ai, labClone: lab, wrongClone: wrong, pipelineClone: clone }) } };
 }
 
+/** 0.22 file versions (package F): the research project plus a file with exactly three commits in the coordination repository. */
+function setupV22Versions(base: string): { workspace: string; env: Record<string, string> } {
+  const r = setupV3Research(base);
+  for (const n of ["first", "second", "third"]) {
+    writeTree(r.workspace, { "notes/decisions.md": `# Decisions\n\n${n}\n` });
+    commitAll(r.workspace, `${n} decisions`, false);
+  }
+  return r;
+}
+
 /**
  * 0.17: the research project as a company window — a `.code-workspace` file next to its two
  * repositories (relative folders) naming the company and the work view to open with, and that work
@@ -461,7 +471,8 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v19-git": setupV19Git,
   "v20-work-orders": setupV20WorkOrders,
   // 0.22 modes: the research project opened as a new install (no DataPass settings: Standard).
-  "v22-modes": setupV3Research
+  "v22-modes": setupV3Research,
+  "v22-versions": setupV22Versions
 };
 
 async function vscodeExecutable(): Promise<string> {
