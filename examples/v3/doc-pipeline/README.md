@@ -1,7 +1,7 @@
 # Document pipeline (example)
 
 A public, generic DataPass example for **variants you preview and switch** (guide page
-[10 — Switching variants](../../../docs/guide/10_SWITCHING_VARIANTS.md)).
+[10 — Switching variants](https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/guide/10_SWITCHING_VARIANTS.md)).
 
 PDFs arrive in a storage container and a shared script (`processing/process.py`) turns each one into
 a JSON result. What *starts* the processing has three variants, declared as the options of one

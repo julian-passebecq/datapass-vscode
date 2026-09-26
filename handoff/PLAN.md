@@ -6,14 +6,14 @@ Updated: 2026-09-26 (after 0.24.0) by ARCHI DataPass 1 · Sources: [v3/11_FOIL_M
 
 ## Now
 
-Kept by ASSISTANT ARCHI DataPass 2 (decisions: ARCHI DataPass 2). Released: **0.26.0** (commit `c78f01f`, PR #72). On main for 0.27: K2 (#71), V1-STAB (#81), QA-0 (#76), QA-1 (#79).
+Kept by ASSISTANT ARCHI DataPass 2 (decisions: ARCHI DataPass 2). Released: **0.27.0** (release PR on 2026-09-26: K2, V1-STAB, QA-0/1/2/4, V1-PERF, V1-REF, V1-FLAKE, HUB-1), after 0.26.0 (`c78f01f`, PR #72).
 
 **Ready for FOIL gate** (Julian, 2026-09-26: nobody contacts the FOIL AI until every item is merged on main):
 1. HUB-1, including "Working with a client" in the hub OPERATING_MANUAL and the generic page in common — todo
 2. BR-T (template, EXPECTATIONS.md, FOIL bridge + DATAPASS_EXPECTS.md, codex-datapass-bridge aligned) — ✓ (common #6, foil-v1-vscode-datapass #7, codex-datapass-bridge #2)
 3. Codex test mode end to end: QA-1 ✓ (#79, #83), QA-2 ✓ (#87), QA-3 ✓ (common #2–#5, #78, #82), `qa:prepare --launch` opens an isolated VS Code with the local VSIX — ✓ in code; the in-app Codex run still needs Julian's approvals (todo.md)
 4. V1-STAB ✓ (#81, #84), V1-PERF harness (#88), V1-REF progressive refresh and V1-FLAKE (`windowFlows`, incl. `--disable-workspace-trust` in the qa:prepare launch line) merged, no known open DataPass bug — todo. J01–J10 are out of the gate: they run once the client AI fills its repositories (ARCHI 2, 2026-09-26)
-5. Release ≥ 0.27.0 containing all of this, `common/VERSION` updated — todo
+5. Release ≥ 0.27.0 containing all of this, `common/VERSION` updated — ✓ (0.27.0; common synced by `npm run sync:common`)
 6. Final review of `~/.claude/effort-board/foil-ai-handoff-2026-09-26.md` by a low TAMPON (every link resolves; points to DATAPASS_EXPECTS.md and the operating manual) — todo, after 0.27.0
 
 Supplier/client rule (Julian, 2026-09-26): we write the extension, common and hub. A client's bridge (link repository) we may draft first; the client AI then reviews and maintains it. A client's native code (foil-study, the fake client's native repos) we never write.
@@ -22,12 +22,12 @@ Supplier/client rule (Julian, 2026-09-26): we write the extension, common and hu
 |---|---|---|---|
 | Stabilise | V1-PERF harness #88 → V1-REF progressive refresh (high) · V1-FLAKE `windowFlows` | TAMPON 25 → H 2 · M 5 | running |
 | Codex | QA-1/2/3 merged · HUB-1 hub/common seeds + "Working with a client" | TAMPON 18 | HUB-1 waits for Julian's OK to write the public common repo |
-| Next | Release 0.27.0 (after HUB-1, V1-PERF + V1-REF, V1-FLAKE; bumps `common/VERSION` too) → gate item 6 (low TAMPON) → V1-PAL → 1.0.0-rc · CQ after HUB-1 | free M TAMPON · low TAMPON · ARCHI 2 · TAMPON 24 | queued |
+| Next | 0.27.0 released → gate item 6 (low TAMPON) → V1-PAL → 1.0.0-rc · CQ after HUB-1 | free M TAMPON · low TAMPON · ARCHI 2 · TAMPON 24 | queued |
 | FOIL AI (client) | Codex Wind Lab, then FOIL (V1-FOIL-A depends on it and on Julian's FOIL #5/#6 reviews). foil-study#1 is merged as the DataPass reference version; the FOIL AI builds its own on branch `foil-ai/study` (from `12ce138`; V1-FOIL-A may compare the two) | — | client side |
 
 ## Versions
 
-"V1 / V2 / V3" are the feature tiers of plan 10 §3, not extension releases (current release: **0.26.0**; next: **0.27.0**, then **1.0.0-rc**).
+"V1 / V2 / V3" are the feature tiers of plan 10 §3, not extension releases (current release: **0.27.0**; next: **1.0.0-rc**).
 
 | Version | Goal (one line) | Useful? | Status |
 |---|---|---|---|
@@ -105,7 +105,7 @@ From [v3/11_FOIL_MCP_REVIEW.md](v3/11_FOIL_MCP_REVIEW.md) §3–4. Same common r
 | P1 (= V1-P1) | D-23 stamps: packs and work orders record selected variant, environment, bridge revision; a copied pack goes stale when the selection changes; launching a work order stamped for another variant asks first; unstamped old orders still load | S–M | 1–2 h · 15–30 | Opus 5.5 · medium | stamp parts of `src/core/workOrders/{builder,format,launch}.ts`, pack header of `fileContext.ts` / `optionsReport.ts`, `src/core/project/aiExchange.ts`, `src/views/aiExchange{,Html,State}.ts`, `src/work/workOrderCommands.ts`, work-order schema (additive), `tests/workOrders.test.ts`, `tests/fileContext.test.ts`, `tests/integration/workOrderFlows.ts` | unit: stamp written; variant change → stale with reason; other-variant launch → confirmation; old order loads; desktop flow on doc-pipeline (B → C). Rebase after AI-4a (#55) | TAMPON 21 | merged (#66), see V1-P1 | ≈ 1.1 h · ≈ 25 M (estimated) |
 | E1 | D-22 evidence chain: known → installed → registered → connected → authenticated → authorized → verified, each `observed` (source, time) or `unknown` with a reason, in Readiness and Details; receipts separate CLI exit / CI / deployed / runtime / scientific validity; an agent's claim stays "asserted" | M | 1.5–3 h · 20–40 | Opus 5.5 · medium | new `src/core/evidence/**`, evidence parts of `src/core/capabilities/{tools,registry,probe}.ts`, `src/core/toolchain/connections.ts`, `src/core/readiness/readiness.ts`, Details parts of `src/views/workbench{Html,State}.ts`, receipt fields of `src/core/workOrders/status.ts`, `tests/evidence.test.ts` | unit: links default unknown; registration ≠ connected; no credential file read; assertion-only receipt → "asserted, not verified"; old receipts load; desktop flow: Readiness chain for `az` and the Fabric MCP entry. Rebase after M1 (#57) | TAMPON 22 | merged (#67), in V1; left: a prompt row in `builder.ts` (P1) so agents fill `field/tool/scope/input`; "operation verified" never observed yet (no DataPass-run check) | ≈ 0.6 h · ≈ 20–25 M (estimated) |
 | T10 (= V1-T10) | D-28 testlab 10 on `doc-pipeline`: the review's acceptance journeys (DataPass disabled, preview A/B/C with the right packs, missing clone, unverified remote, dirty file, unsupported tool, variant never run, MCP card unknown states), run by the coder; Julian's visual steps in todo.md | M | 1.5–2.5 h · 15–30 | Opus 5.5 · medium | `D:\PROJ\datapass-testlab\10-*\**`, `LISEZ-MOI-TESTS.md` (one row), `handoff/v3/04_NEXT_PASSES.md` (B7 section) | `setup.ps1` twice clean; each step with what to see; steps not needing Julian run and marked | after P1 and E1 merge | todo | |
-| R4 | Release 0.27.0 | S | 0.5 h · 5–10 | Opus 5.5 · medium | release files | as R3 | — | todo | |
+| R4 | Release 0.27.0 | S | 0.5 h · 5–10 | Opus 5.5 · medium | release files | as R3 | TAMPON DATAPASSVSCODE - M 3 | **released 0.27.0**: K2, V1-STAB, QA-0/1/2/4, V1-PERF, V1-REF, V1-FLAKE, HUB-1; night notes folded; doc-pipeline link made absolute; common synced, `common/VERSION` 0.27.0 | |
 
 ## Packages (V1 → 1.0.0, from [ROADMAP.md](ROADMAP.md) §1.3 and the Codex test mode [v3/12_CODEX_TEST_MODE.md](v3/12_CODEX_TEST_MODE.md) §8)
 
