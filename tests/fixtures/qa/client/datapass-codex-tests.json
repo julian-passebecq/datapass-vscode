@@ -1,0 +1,17 @@
+{
+  "format": "datapass.codex-tests",
+  "version": 1,
+  "purpose": "client",
+  "client": { "id": "doc-pipeline-lab", "title": "Doc Pipeline Lab (fictional)" },
+  "datapass": { "version": "0.0.0", "vsix": "datapass-vscode.vsix" },
+  "workspace": {
+    "bridge": { "remote": "https://github.com/example-org/doc-pipeline", "folder": "doc-pipeline" },
+    "repositories": [
+      { "remote": "https://github.com/example-org/doc-orchestration", "folder": "doc-orchestration" },
+      { "remote": "https://github.com/example-org/doc-processing", "folder": "doc-processing" }
+    ]
+  },
+  "journeys": ["journeys/J01-open-my-project.json", "journeys/J02-choose-a-variant.json"],
+  "report": { "remote": "https://github.com/example-org/datapass-codex-test", "folder": "reports" },
+  "limits": { "runMinutes": 60, "journeyMinutes": 20 }
+}

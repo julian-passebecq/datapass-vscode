@@ -1,0 +1,27 @@
+{
+  "format": "datapass.qa-report",
+  "version": 1,
+  "purpose": "client",
+  "runId": "20260927-0930-doc-pipeline-lab",
+  "datapass": { "version": "0.26.0", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef" },
+  "vscode": { "version": "1.105.0", "commit": "0123456789abcdef0123456789abcdef01234567" },
+  "os": { "platform": "win32", "release": "10.0.26200", "arch": "x64" },
+  "clients": [{
+    "id": "doc-pipeline-lab", "title": "Doc Pipeline Lab (fictional)",
+    "bridge": { "folder": "doc-pipeline", "remote": "https://github.com/example-org/doc-pipeline", "commit": "1111111111111111111111111111111111111111" },
+    "repositories": [{ "folder": "doc-processing", "remote": "https://github.com/example-org/doc-processing", "commit": "2222222222222222222222222222222222222222" }]
+  }],
+  "agent": { "tool": "codex", "model": "luna-medium", "host": "app" },
+  "startedAt": "2026-09-27T09:30:00Z",
+  "finishedAt": "2026-09-27T10:05:00Z",
+  "journeys": [
+    { "id": "J01", "outcome": "reached", "minutes": 8, "path": ["Opened the workspace file", "Looked at the Architecture panel"], "expected": [{ "text": "The Architecture panel shows the pipeline components", "met": true }], "screens": ["screens/J01-architecture.png"] },
+    { "id": "J02", "outcome": "partly", "minutes": 15, "path": ["Clicked the variant in the status bar", "Chose B"], "expected": [{ "text": "Variant C names a repository that is still planned", "met": "unclear" }] }
+  ],
+  "findings": [
+    { "id": "F1", "journey": "J02", "severity": "minor", "area": "variants", "title": "The planned repository is easy to miss", "steps": ["Preview C", "Open the Project tree"], "expected": "C says its repository is planned", "actual": "Only a small label says 'repository planned'", "suggestion": "Show it in the status bar tooltip" }
+  ],
+  "answers": [{ "question": "Which panel opens first?", "answer": "The Architecture panel", "evidence": "screens/J01-architecture.png", "confidence": "high" }],
+  "clientFeedback": ["The format guide does not say where the environments are declared"],
+  "coverage": { "listed": ["onboarding", "workspace", "architecture", "variants", "options", "costs"], "reached": ["onboarding", "workspace", "architecture", "variants"] }
+}

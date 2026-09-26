@@ -1,0 +1,553 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-qa-report.schema.json",
+  "title": "DataPass QA report (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "format": {
+      "const": "datapass.qa-report"
+    },
+    "version": {
+      "const": 1
+    },
+    "purpose": {
+      "enum": [
+        "app",
+        "client"
+      ]
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"
+    },
+    "datapass": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 40,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "version",
+        "sha256"
+      ]
+    },
+    "vscode": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 40,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 40,
+          "maxLength": 40,
+          "pattern": "^[a-f0-9]{40}$"
+        }
+      },
+      "required": [
+        "version"
+      ]
+    },
+    "os": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "platform": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "release": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "arch": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        }
+      },
+      "required": [
+        "platform",
+        "release",
+        "arch"
+      ]
+    },
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80,
+            "pattern": "^[a-z][a-z0-9-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "bridge": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "folder": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+              },
+              "remote": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+              },
+              "commit": {
+                "type": "string",
+                "minLength": 40,
+                "maxLength": 40,
+                "pattern": "^[a-f0-9]{40}$"
+              }
+            },
+            "required": [
+              "folder",
+              "remote",
+              "commit"
+            ]
+          },
+          "repositories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "folder": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                },
+                "remote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+                },
+                "commit": {
+                  "type": "string",
+                  "minLength": 40,
+                  "maxLength": 40,
+                  "pattern": "^[a-f0-9]{40}$"
+                }
+              },
+              "required": [
+                "folder",
+                "remote",
+                "commit"
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "bridge",
+          "repositories"
+        ]
+      },
+      "maxItems": 10,
+      "minItems": 1
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "codex"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "host": {
+          "enum": [
+            "app",
+            "terminal"
+          ]
+        }
+      },
+      "required": [
+        "tool",
+        "model",
+        "host"
+      ]
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "journeys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[A-Z][A-Z0-9-]{1,19}$"
+          },
+          "outcome": {
+            "enum": [
+              "reached",
+              "partly",
+              "not-reached",
+              "blocked"
+            ]
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 480
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "maxItems": 40,
+            "minItems": 0
+          },
+          "expected": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500
+                },
+                "met": {
+                  "enum": [
+                    true,
+                    false,
+                    "unclear"
+                  ]
+                }
+              },
+              "required": [
+                "text",
+                "met"
+              ]
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "screens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            },
+            "maxItems": 40,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "id",
+          "outcome",
+          "minutes",
+          "path",
+          "expected"
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 0
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^F[0-9]{1,4}$"
+          },
+          "journey": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[A-Z][A-Z0-9-]{1,19}$"
+          },
+          "severity": {
+            "enum": [
+              "blocker",
+              "major",
+              "minor",
+              "idea"
+            ]
+          },
+          "area": {
+            "enum": [
+              "onboarding",
+              "workspace",
+              "architecture",
+              "variants",
+              "options",
+              "costs",
+              "readiness",
+              "evidence",
+              "work-orders",
+              "stamps",
+              "file-context",
+              "ai-exchange",
+              "resources",
+              "git",
+              "format-checks",
+              "modes",
+              "file-versions",
+              "toolkit",
+              "mcp",
+              "install",
+              "docs",
+              "performance"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 300
+            },
+            "maxItems": 30,
+            "minItems": 0
+          },
+          "expected": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "actual": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "screens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "suggestion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "id",
+          "severity",
+          "area",
+          "title",
+          "steps",
+          "expected",
+          "actual"
+        ]
+      },
+      "maxItems": 200,
+      "minItems": 0
+    },
+    "answers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        },
+        "required": [
+          "question",
+          "answer",
+          "evidence",
+          "confidence"
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 0
+    },
+    "clientFeedback": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1000
+      },
+      "maxItems": 50,
+      "minItems": 0
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "listed": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "onboarding",
+              "workspace",
+              "architecture",
+              "variants",
+              "options",
+              "costs",
+              "readiness",
+              "evidence",
+              "work-orders",
+              "stamps",
+              "file-context",
+              "ai-exchange",
+              "resources",
+              "git",
+              "format-checks",
+              "modes",
+              "file-versions",
+              "toolkit",
+              "mcp",
+              "install",
+              "docs",
+              "performance"
+            ]
+          },
+          "maxItems": 22,
+          "minItems": 0
+        },
+        "reached": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "onboarding",
+              "workspace",
+              "architecture",
+              "variants",
+              "options",
+              "costs",
+              "readiness",
+              "evidence",
+              "work-orders",
+              "stamps",
+              "file-context",
+              "ai-exchange",
+              "resources",
+              "git",
+              "format-checks",
+              "modes",
+              "file-versions",
+              "toolkit",
+              "mcp",
+              "install",
+              "docs",
+              "performance"
+            ]
+          },
+          "maxItems": 22,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "listed",
+        "reached"
+      ]
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "purpose",
+    "runId",
+    "datapass",
+    "vscode",
+    "os",
+    "clients",
+    "agent",
+    "journeys",
+    "findings",
+    "answers",
+    "coverage"
+  ]
+}

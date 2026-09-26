@@ -1,0 +1,15 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "J02",
+  "kind": "client",
+  "title": "Compare the three ways to start the processing",
+  "goal": "Preview variants A, B and C and understand which files each one needs and what it costs per month.",
+  "setup": { "mode": "DataPass", "variant": "B" },
+  "expected": [
+    "The status bar says which variant is previewed",
+    "Variant B shows that some of its files are present",
+    "Variant C names a repository that is still planned"
+  ],
+  "features": ["variants", "options", "costs"]
+}

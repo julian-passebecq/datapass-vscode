@@ -1,0 +1,18 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "J01",
+  "kind": "client",
+  "title": "Open my project and see my repositories in one architecture",
+  "as": "client engineer, new to DataPass",
+  "goal": "Open the document pipeline from its bridge and see the bridge and both code repositories in one architecture.",
+  "setup": { "mode": "Standard" },
+  "hints": ["The bridge is the folder that holds .datapass"],
+  "expected": [
+    "The Architecture panel shows the pipeline components",
+    "Both code repositories are found next to the bridge, with their remote",
+    "Nothing is written in the code repositories"
+  ],
+  "features": ["onboarding", "workspace", "architecture"],
+  "outOfScope": ["cloud deployment"]
+}
