@@ -70,7 +70,7 @@ test("toolkit: hub files layer over the baseline; built-in probes and kinds stay
   assert.equal(priceText(toolbox).dated, "2026-09-26");
   assert.equal(c.tools.get("cli.pbi-tools")!.replacedBy, "py.fabric-cicd");
   assert.equal(c.recipes.size, 4);
-  assert.equal(c.requests.length, 3);
+  assert.equal(c.requests.length, 1);
   assert.equal(c.requests[0]!.title, "Probe the Tabular Editor 3 version");
   // A hub entry cannot turn a built-in tool into another kind (the kind decides the probe).
   const kindChange = parseToolkitFile(file({ tools: [{ id: "cli.az", kind: "learning", note: "x" }] }), "t.json", V);
@@ -241,7 +241,7 @@ test("toolkit: the Workbench state names tools per component and keeps links on 
   assert.deepEqual(studio.links.map(l => l.id).sort(), ["marketplace", "repo"]);
   assert.ok(!JSON.stringify(studio.links).includes("https://"), "the webview gets link ids, not addresses");
   assert.ok(studio.recipes.includes("fabric.item-definition.bulk-edit"));
-  assert.equal(s.requests.length, 3);
+  assert.equal(s.requests.length, 1);
   assert.equal(s.files.length, 2);
   assert.ok(Object.keys(s.components).length > 0, "the research library's Azure components have catalogue tools");
 });
@@ -285,4 +285,60 @@ test("toolkit: the example hub files validate with the runtime and the editor sc
   });
   assert.deepEqual(buildCatalogue(parsed, V).problems, []);
   for (const t of parsed[0]!.tools) assert.ok(t.verified?.on, `${t.id} is dated`);
+});
+
+test("toolkit K2: Microsoft's MCP servers are built in (no hub), with transport, endpoint, hosts and sends-to-model", () => {
+  const ids = ["mcp.fabric-core", "mcp.fabric-local", "mcp.fabric-iq", "mcp.powerbi-authoring-hosted", "plugin.powerbi-authoring", "mcp.azure"];
+  const base = baselineTools(V);
+  for (const id of ids) {
+    const t = base.get(id);
+    assert.ok(t, `${id} is in the baseline`);
+    assert.equal(t.source, "built-in");
+    assert.equal(t.probe, false, `${id}: DataPass never starts or reaches an MCP server`);
+    assert.ok(t.sideEffects?.includes("sends-to-model"), `${id} says its results reach the model`);
+    assert.equal(t.verified?.on, "2026-09-26");
+  }
+  assert.equal(base.get("mcp.fabric-core")!.kind, "mcp-server");
+  assert.equal(base.get("plugin.powerbi-authoring")!.kind, "agent-plugin");
+  assert.equal(base.get("mcp.fabric-core")!.transport, "streamable-http");
+  assert.equal(base.get("mcp.fabric-core")!.endpoint, "https://api.fabric.microsoft.com/v1/mcp/core");
+  assert.equal(base.get("mcp.fabric-local")!.transport, "stdio");
+  assert.equal(base.get("mcp.fabric-local")!.endpoint, undefined);
+  assert.equal(base.get("ext.powerbi-modeling-mcp")!.transport, "stdio");
+  assert.deepEqual(base.get("mcp.fabric-iq")!.sideEffects, ["reads-remote", "credential-prompt", "sends-to-model"], "read-only, yet it sends rows to the model");
+  // The example hub no longer repeats them (no "changed by the hub" duplicates), and still names them in its recipe.
+  const hubIds = new Set((hubToolsJson().tools as Array<{ id: string }>).map(t => t.id));
+  for (const id of ids) assert.ok(!hubIds.has(id), `${id} is not repeated in the hub`);
+  const c = buildCatalogue(hubFiles(), V);
+  assert.deepEqual(c.problems, []);
+  assert.equal(c.tools.get("mcp.fabric-core")!.source, "built-in");
+  // The Workbench state carries the MCP facts as text and labels.
+  const s = toolkitState(c, hubFiles(), facts(), buildProjectMap(inputA()), "win32");
+  const core = s.tools.find(t => t.id === "mcp.fabric-core")!;
+  assert.equal(core.mcp?.transport, "streamable-http");
+  assert.ok(core.mcp?.hosts.includes("VS Code with GitHub Copilot"));
+  assert.equal(core.sendsToModel, true);
+  assert.equal(s.tools.find(t => t.id === "cli.az")!.mcp, undefined);
+});
+
+test("toolkit K2: the MCP fields are validated; an unknown transport or host is refused", () => {
+  const one = (t: Record<string, unknown>) => parseToolkitFile(file({ tools: [{ id: "mcp.x", label: "X", kind: "mcp-server", ...t }] }), "t.json", V);
+  const ok = one({ transport: "streamable-http", endpoint: "https://example.com/mcp", hosts: ["codex", "claude-code"], sideEffects: ["reads-remote", "sends-to-model"] });
+  assert.deepEqual(ok.skipped, []);
+  assert.equal(ok.tools[0]!.transport, "streamable-http");
+  const bad = (t: Record<string, unknown>, why: RegExp) => { const r = one(t); assert.equal(r.tools.length, 0); assert.match(r.skipped.join(" "), why); };
+  bad({ transport: "websocket" }, /transport/);
+  bad({ hosts: ["notepad"] }, /hosts/);
+  bad({ transport: "stdio", endpoint: "https://example.com/mcp" }, /stdio/);
+  bad({ endpoint: "http://example.com/mcp" }, /https/);
+  bad({ endpoint: "https://example.com/mcp?token=abc" }, /token/);
+  bad({ sideEffects: ["sends-to-cloud"] }, /sideEffects/);
+  const cli = parseToolkitFile(file({ tools: [{ id: "cli.x", label: "X", kind: "cli", transport: "stdio" }] }), "t.json", V);
+  assert.match(cli.skipped.join(" "), /not an mcp-server/);
+  // The editor schema knows the fields too.
+  const ajv = new Ajv2020({ allErrors: true, strict: false });
+  const schema = JSON.parse(readFileSync(join(__dirname, "..", "schemas", "datapass-toolkit.schema.json"), "utf8"));
+  const validate = ajv.compile(schema);
+  assert.ok(validate({ format: "datapass.toolkit", version: "1", tools: [{ id: "mcp.x", transport: "sse", hosts: ["any"] }] }), JSON.stringify(validate.errors));
+  assert.ok(!validate({ format: "datapass.toolkit", version: "1", tools: [{ id: "mcp.x", transport: "websocket" }] }));
 });

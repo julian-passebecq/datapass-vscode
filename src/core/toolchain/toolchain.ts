@@ -27,7 +27,7 @@ export interface ToolchainEntry {
 }
 export interface ToolchainDecl { tools: ToolchainEntry[] }
 
-export type ToolchainKind = ToolDefinition["kind"] | "python-library" | "agent-plugin";
+export type ToolchainKind = ToolDefinition["kind"] | "python-library" | "agent-plugin" | "mcp-server";
 /** A tool a toolchain may name: the probe registry plus tools DataPass knows but cannot probe. */
 export interface ToolchainTool {
   id: string; label: string; kind: ToolchainKind; publisher: ToolDefinition["publisher"];
@@ -38,7 +38,9 @@ export interface ToolchainTool {
 
 /**
  * Known tools without a probe: Python libraries run in CI or in Fabric notebooks (DataPass never
- * looks inside a Python environment), and agent plugins installed in Claude Code or Copilot CLI.
+ * looks inside a Python environment), agent plugins installed in Claude Code or Copilot CLI, and
+ * Microsoft's MCP servers (remote endpoints, or local servers a host starts: DataPass never starts,
+ * registers or signs in to one; their Readiness evidence is src/core/evidence/integrations.ts).
  */
 const NOT_PROBED: ToolchainTool[] = [
   { id: "py.fabric-cicd", label: "fabric-cicd (Python)", kind: "python-library", publisher: "microsoft", probe: false,
@@ -49,7 +51,25 @@ const NOT_PROBED: ToolchainTool[] = [
     install: { all: "%pip install semantic-link-labs", where: "a Fabric notebook cell (or a custom Fabric environment)", docs: "https://github.com/microsoft/semantic-link-labs" } },
   { id: "plugin.power-bi-agentic-development", label: "Power BI agentic development (plugins)", kind: "agent-plugin", publisher: "community", probe: false,
     note: "data-goblin's plugin marketplace for Claude Code and GitHub Copilot CLI (11 plugins).",
-    install: { all: "claude plugin marketplace add data-goblin/power-bi-agentic-development", docs: "https://github.com/data-goblin/power-bi-agentic-development" } }
+    install: { all: "claude plugin marketplace add data-goblin/power-bi-agentic-development", docs: "https://github.com/data-goblin/power-bi-agentic-development" } },
+  { id: "mcp.fabric-core", label: "Fabric Core MCP Server (remote)", kind: "mcp-server", publisher: "microsoft", probe: false,
+    note: "Microsoft-hosted: Fabric workspaces, items, folders and workspace roles with the signed-in user's permissions (preview).",
+    install: { docs: "https://learn.microsoft.com/en-us/rest/api/fabric/articles/mcp-servers/core-remote/get-started-core" } },
+  { id: "mcp.fabric-local", label: "Fabric MCP Server (local)", kind: "mcp-server", publisher: "microsoft", probe: false, extensionIds: ["fabric.vscode-fabric-mcp-server"],
+    note: "A local subprocess the host starts: offline Fabric API docs, OneLake, items and Fabric Data Factory.",
+    install: { docs: "https://learn.microsoft.com/en-us/rest/api/fabric/articles/mcp-servers/pro-dev-local/get-started-local" } },
+  { id: "mcp.fabric-iq", label: "Fabric IQ MCP (read-only Power BI exploration)", kind: "mcp-server", publisher: "microsoft", probe: false,
+    note: "Microsoft-hosted, read-only: find Power BI reports and semantic models, read their metadata, run DAX.",
+    install: { docs: "https://learn.microsoft.com/en-us/fabric/iq/connectors/fabric-iq-mcp" } },
+  { id: "mcp.powerbi-authoring-hosted", label: "Power BI Authoring MCP (hosted)", kind: "mcp-server", publisher: "microsoft", probe: false,
+    note: "Microsoft-hosted option of the Power BI Authoring MCP server: semantic models in Fabric workspaces (preview).",
+    install: { docs: "https://learn.microsoft.com/en-us/power-bi/developer/mcp/power-bi-authoring-mcp" } },
+  { id: "plugin.powerbi-authoring", label: "Power BI Agentic: powerbi-authoring plugin (Skills for Fabric)", kind: "agent-plugin", publisher: "microsoft", probe: false,
+    note: "Microsoft's plugin: Power BI skills plus the local Power BI Authoring MCP server, for GitHub Copilot CLI and other hosts.",
+    install: { all: "copilot plugin install powerbi-authoring@fabric-collection", where: "GitHub Copilot CLI, after: copilot plugin marketplace add microsoft/skills-for-fabric", docs: "https://learn.microsoft.com/en-us/power-bi/developer/agentic/power-bi-agentic-overview" } },
+  { id: "mcp.azure", label: "Azure MCP Server", kind: "mcp-server", publisher: "microsoft", probe: false, extensionIds: ["ms-azuretools.vscode-azure-mcp-server"],
+    note: "Azure resources (storage, Functions, Log Analytics, azd), not Fabric items.",
+    install: { docs: "https://learn.microsoft.com/en-us/azure/developer/azure-mcp-server/get-started/tools/visual-studio-code" } }
 ];
 
 let known: ReadonlyMap<string, ToolchainTool> | undefined;
@@ -179,7 +199,7 @@ export function buildToolchain(input: ToolchainInput): ToolchainView {
     const install = installFor(tool, String(input.platform));
     if (where !== "local") return { ...base, state: "not-checked", detail: `Runs in ${WHERE_TEXT[where]}: not checked on this computer.`, install };
     if (!tool.probe) {
-      const why = !catalog.has(tool.id) ? "the hub's toolkit describes it; DataPass has no probe for it" : tool.kind === "python-library" ? "DataPass does not look inside Python environments" : tool.kind === "agent-plugin" ? "agent plugins are installed inside Claude Code or Copilot CLI" : "DataPass cannot probe this application";
+      const why = !catalog.has(tool.id) ? "the hub's toolkit describes it; DataPass has no probe for it" : tool.kind === "python-library" ? "DataPass does not look inside Python environments" : tool.kind === "agent-plugin" ? "agent plugins are installed inside Claude Code or Copilot CLI" : tool.kind === "mcp-server" ? "an MCP server is started or reached by the agent host, not by DataPass" : "DataPass cannot probe this application";
       return { ...base, state: "not-checked", detail: `Not checked: ${why}.`, install };
     }
     const obs = input.tools.get(tool.id);

@@ -657,7 +657,11 @@ Known ids (DataPass ≥ 0.18.0):
   `cli.gcloud`, `cli.gcx`, `cli.copilot`.
 - Applications (never probed): `app.pbi-desktop`, `app.tabular-editor`. Workspace file: `ws.mcp`.
 - Python libraries (never probed: DataPass does not look inside Python environments):
-  `py.fabric-cicd`, `py.semantic-link-labs`. Agent plugins: `plugin.power-bi-agentic-development`.
+  `py.fabric-cicd`, `py.semantic-link-labs`. Agent plugins: `plugin.power-bi-agentic-development`,
+  `plugin.powerbi-authoring`.
+- Microsoft MCP servers (never probed: DataPass never starts, registers or signs in to one):
+  `mcp.fabric-core`, `mcp.fabric-local`, `mcp.fabric-iq`, `mcp.powerbi-authoring-hosted`, `mcp.azure`
+  (the local Power BI Authoring MCP is the extension `ext.powerbi-modeling-mcp`).
 
 What DataPass does: for each `local` tool it compares the version its probe read (`fab --version`,
 `az version`, an extension's own version…) with the range — *ok*, *outside the range*, *missing* or
@@ -781,11 +785,12 @@ newer DataPass" (Toolkit view) instead of being read.
 | `install[]` | `{ method, id?, tool?, command?, platform?, where? }`. `method` is `marketplace`, `extension-pack`, `winget`, `brew`, `pip`, `npm`, `command` or `download`; `command` is one line, shown to **copy**, never run. |
 | `modules` | Which of `develop`, `data`, `pipelines`, `cicd`, `monitoring`, `governance`, `admin`, `ai` this tool serves. |
 | `complements`, `useWhen`, `avoidWhen`, `note` | Free text / other tool ids, shown as context. |
-| `sideEffects[]` | Any of `reads-remote`, `writes-remote`, `credential-prompt`, `installs-software`, `runs-code`, `billable` — shown as a warning, never enforced. |
+| `sideEffects[]` | Any of `reads-remote`, `writes-remote`, `credential-prompt`, `installs-software`, `runs-code`, `billable`, `sends-to-model` (what the tool returns reaches the agent host's AI model provider, even from a local MCP server) — shown as a warning, never enforced. |
+| `transport`, `endpoint`, `hosts[]` | MCP servers only (`hosts` also for agent plugins). `transport` is `stdio` (a local process the host starts), `streamable-http` or `sse` (remote); `endpoint` is the remote server's `https://` address, never with `stdio`; `hosts` are the hosts the publisher documents: `vscode-copilot`, `copilot-cli`, `visual-studio`, `claude-code`, `claude-desktop`, `codex`, `cursor`, `windsurf`, `jetbrains`, `eclipse`, `cline`, or `any` (any host with that transport and sign-in). Optional and additive (format still 1); an older DataPass skips an entry that uses them. |
 | `pricing` | `priceModel` (`free`, `freemium`, `paid`, `included` — a free tool that needs a paid service, or `unknown`), `freeTier`, `pricingUrl`, `tiers[]` (`{ name, price, features[], note }`, `price` as text with a currency and unit, or `"unknown"`), `checkedAt` — **required whenever any price field is set**. Never invent a price: write `unknown` instead. |
 
 DataPass ships its own baseline (the probe registry, `fabric-cicd`, `semantic-link-labs`, the
-data-goblin plugins) with descriptions and prices checked on 2026-09-26, so the Toolkit view works with
+data-goblin plugins, Microsoft's Fabric, Power BI and Azure MCP servers and the `powerbi-authoring` plugin) with descriptions and prices checked on 2026-09-26, so the Toolkit view works with
 no hub at all; a hub only adds to or corrects it.
 
 ### `recipes[]` (in `recipes/*.json`)
