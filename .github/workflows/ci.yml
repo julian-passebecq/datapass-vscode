@@ -67,7 +67,7 @@ jobs:
 
   perf:
     # V1-PERF: activation, first refresh and refreshes after `git fetch` on a FOIL-sized fixture
-    # (scripts/perf.ts); fails when a median of 3 launches is above twice its budget.
+    # (scripts/perf.ts); fails when activation or the fetch storm is above twice its budget (the first refresh is report-only until V1-REF).
     strategy:
       fail-fast: false
       matrix:

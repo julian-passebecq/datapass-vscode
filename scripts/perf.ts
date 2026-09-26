@@ -3,7 +3,8 @@
  *
  *   npm run perf                  3 launches, prints the median against the budgets
  *   npm run perf -- --runs=5      more launches
- *   npm run perf -- --ci          exit 1 when a median is above twice its budget
+ *   npm run perf -- --ci          exit 1 when a gated median is above twice its budget
+ *                                 (the first refresh is report-only until V1-REF)
  *
  * The fixture (tests/fixtures/perf/foilSized.ts): 8 Git repositories side by side, 5,000 files, a
  * graph of 60 components, opened as a multi-root workspace. Each repository's origin is its GitHub
@@ -27,6 +28,8 @@ const runs = Math.max(1, Number(process.argv.find(a => a.startsWith("--runs="))?
 
 /** Budgets (ms, refreshes). CI fails above twice these. */
 export const BUDGET = { activationMs: 500, firstRefreshMs: 3000, fetchRefreshes: 1 };
+/** Budgets that fail the run (ARCHI, V1-PERF): the first refresh is printed only, until V1-REF merges. */
+const GATED: Array<keyof typeof BUDGET> = ["activationMs", "fetchRefreshes"];
 
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "user.name=DataPass perf", "-c", "user.email=perf@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", ...args], { cwd, stdio: "ignore" });
@@ -142,7 +145,8 @@ async function main(): Promise<void> {
   };
   fs.writeFileSync(path.join(out, "perf-report.json"), JSON.stringify({ generatedAt: new Date().toISOString(), host: { platform: process.platform, cpus: os.cpus().length }, budget: BUDGET, median: result, runs: reports }, null, 2));
   console.log(`\nmedian of ${runs}: activation ${ms(result.activationMs)} (budget ${BUDGET.activationMs}), first refresh ${ms(result.firstRefreshMs)} (budget ${BUDGET.firstRefreshMs}), refreshes after git fetch ${result.fetchRefreshes} (budget ${BUDGET.fetchRefreshes})`);
-  const over = (Object.keys(BUDGET) as Array<keyof typeof BUDGET>).filter(k => result[k] > BUDGET[k] * (ci ? 2 : 1));
+  const over = GATED.filter(k => result[k] > BUDGET[k] * (ci ? 2 : 1));
+  if (result.firstRefreshMs > BUDGET.firstRefreshMs) console.log(`First refresh above budget (report-only until V1-REF): ${ms(result.firstRefreshMs)}`);
   if (over.length) {
     console.error(`${ci ? "Above twice the budget" : "Above budget"}: ${over.join(", ")}`);
     if (ci) process.exit(1);

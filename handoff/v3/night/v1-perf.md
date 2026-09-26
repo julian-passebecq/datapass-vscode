@@ -1,4 +1,10 @@
-# V1-PERF — measurement first (TAMPON 25, 2026-09-26) — STOPPED, package bigger than estimated
+# V1-PERF — measurement harness (TAMPON 25, 2026-09-26)
+
+**ARCHI DataPass 2 decision:**
+- #88 ships as the harness;
+- CI gates activation (2× 500 ms) and the fetch storm (2× 1 refresh);
+- the first refresh is report-only until V1-REF (the refresh work, another session, high) merges;
+- no lazy imports in V1.
 
 ## What this branch adds
 - `scripts/perf.ts` (`npm run perf`, `-- --runs=N`, `-- --ci`):
