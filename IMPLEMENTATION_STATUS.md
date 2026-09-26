@@ -1,4 +1,222 @@
-# Implementation Status — 0.25.0: previewing variants and repository layout
+# Implementation Status — 0.26.0: pilot without sign-in, MCP and cost repairs, Mongoku removed
+
+Date: 2026-09-26. Version `0.26.0` — packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61)
+and X1 (PR #63), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
+(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`) are folded
+into this section. Inputs: the FOIL MCP review ([handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md),
+decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
+
+### What's new
+
+- **Pilot stage 1, read-only, no Azure sign-in needed** (package AI-4a, PR #55): a new order kind
+  `pilot-read` (cloud read-only, every repository read-only, permissions always *ask*, no pull
+  requests), written from the new **Pilot** tab of the AI view. DataPass writes the agent's guard rails
+  only inside the order folder (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`,
+  regenerated and compared byte for byte before each launch) and launches Claude or Codex in a terminal
+  with them; the Codex app is refused until `datapass.pilot.codexAppQualified`. The agent asks for a
+  read action by writing `requests/<n>.json`; each valid request becomes a **Pilot card** you run
+  (*Run it*) or decline (*Not now*), and DataPass answers in `responses/<n>.json` (names and states
+  only). Off until the machine setting `datapass.pilot.enabled`.
+- **Lossless `.vscode/mcp.json` edits** (package M1, PR #57, FOIL review R1): *Configure Fabric MCP*
+  keeps `inputs`, unknown keys and every server field (`env`, `envFile`, `cwd`, `type`, remote
+  `url`/`headers`), refuses another host's `mcpServers` dialect and files with comments or trailing
+  commas, and writes through the reviewed path (diff, confirmation, digest check, backup, journal).
+- **Toolkit knowledge refresh** (package K1, PR #60, FOIL review R2): the example hub gains the Fabric
+  Core / local / IQ MCP servers, the hosted Power BI Authoring MCP, the Skills for Fabric plugin and the
+  Azure MCP, each dated with hosts, transport and side effects; baseline corrections (Fabric Studio,
+  Power BI Authoring MCP local option, data-goblin plugin, semantic-link-labs, `ws.mcp` = registration
+  file only); recipe `mcp.fabric-sample.inspect-readonly`; guide page 9 section *MCP servers and the
+  official Power BI agentic route*.
+- **Cost basis in options.json** (package C1, PR #61, D-24): a cost line may carry `shared` (same key
+  across options counts **once** in combined totals; disagreeing figures → unpriced with a message) and
+  `use: "learning-only"` (flagged "learning only — not for client work", never hidden). options.json
+  stays version "1". These two fields require **DataPass ≥ 0.26**: an older DataPass rejects them with
+  the unknown-field message (the cost-basis brief says 0.27; it is a historical record, the guides are
+  right).
+- **Mongoku removed from DataPass** (package X1, PR #63): Mongoku is a separate app with no link to
+  DataPass. Its commands, the `datapass.mongoku.url` setting, the `vscode://…/open?entity=` link, its
+  Work-view and Readiness rows, the `mongoku` module and the context import are gone; new manifests and
+  the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
+  load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
+  `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
+- Also on main when 0.26.0 was cut: 0.27 E1 (PR #67), V1-ON (PR #68), V1-DOC (PR #64) and V1-T10
+  (PR #69); their notes stay in `handoff/v3/night/` (`0.27-e1.md`, `v1-on.md`, `v1-t10.md`).
+
+### Per package (folded night notes)
+
+#### 0.26 AI-4a — Pilot stage 1, everything that needs no Azure sign-in (PR #55)
+
+Decision implemented: [briefs/2026-09-26-ai4-pilot-allowlist.md](handoff/briefs/2026-09-26-ai4-pilot-allowlist.md) "Decision" (PR #49); design 09 §3.3, §4.2, §4.6, §8.8, §9.
+
+##### What changed
+- **Order kind `pilot-read`** (`src/core/workOrders/format.ts`, `builder.ts`): `policy.cloud: "read-only"` and a `pilot` section `{ stage: 1, environment: "dev", clis: ["az", "func"] }`. Every repository is read-only, `agent.permissions` is always `ask` and `expected.pullRequests` is `none`. The parser refuses any other combination. order.md gets a *Pilot* section and its own rules: read only, no generic API commands or remote shells, no bypass/auto, write only `requests/` and `result.json`. The attachment `attachments/pilot-request-format.md` holds an example that is itself a valid request.
+- **Pilot folder** (`src/core/pilot/folder.ts`): the order folder is the agent's working folder. DataPass writes three files there:
+  - `.claude/settings.json`: `defaultMode: default`, `disableBypassPermissionsMode` and `disableAutoMode` set to `disable`, `additionalDirectories` = the repositories it reads, each rule as both `Bash(…)` and `PowerShell(…)`, `Edit(requests/**)` and `Edit(result.json)` allowed, `Edit(//d/…/**)` denied on every repository it reads.
+  - `.codex/config.toml`: `sandbox_mode = "read-only"`, `approval_policy = "on-request"`.
+  - `.codex/rules/pilot.rules`: `prefix_rule` allow/forbidden, each with `match`/`not_match`. Verb denies are written per command group because Codex has no middle wildcard.
+
+  These files exist only under `.datapass/local/work-orders/<id>/`. DataPass refuses to write them when `.claude/` or `.codex/` already exists there. They are a pure function of the order: they are regenerated and compared byte for byte just before each launch.
+- **Rule tables are code** (`src/core/pilot/rules.ts`): az and func allow and deny lists exactly as decided. fab and databricks are only sketched (not enabled). The module imports nothing from the toolkit or hub.
+- **Launch profiles** (`src/core/pilot/profile.ts`, `WorkOrderFlows.launchPilot`):
+  - Claude terminal: cwd = order folder, `--permission-mode default --settings <order>\.claude\settings.json --add-dir <read repos>`.
+  - Claude app: prompt copied, "Choose this folder: the order folder".
+  - Codex terminal: `-C <order> --sandbox read-only --ask-for-approval on-request`.
+  - Codex app: refused until `datapass.pilot.codexAppQualified`.
+  - Refusals, each with its own message: kind, pilot setting, trust, environment ≠ dev or production, a repository to change, PRs, permissions, Codex app, CLIs other than az/func, guard rails changed, any forbidden argument value.
+- **Channel 2** (`src/core/pilot/requests.ts`, `src/work/pilot.ts`): `requests/<n>.json` is checked per §4.6:
+  - Format: strict JSON ≤ 4 KiB, no unknown fields, order id and receipt must match, n = file name, 1…50, no gap, not already answered, not the same action twice.
+  - Capability: must exist, phase `read`, side effects ⊆ {reads-local, reads-remote, credential-prompt}, action mode open-native or run-readonly, and DataPass must implement it. `infra.remote.ssh` is excluded explicitly (§9).
+  - Target: the component must exist; the environment must be `dev` and not production.
+
+  A valid request becomes a **Pilot card** in the new **Pilot** tab of the AI view. *Run it* re-checks the request, then runs the capability's own DataPass action and writes `responses/<n>.json` (done or failed, names and states only). *Not now* (or *Tell the agent* on a refused card) writes `declined` with the reason.
+- Settings `datapass.pilot.enabled` (machine, default false) and `datapass.pilot.codexAppQualified` (machine). Commands `datapass.pilot.show`, `.enable`, `.run`, `.decline` (run and decline are hidden from the palette). Surface `ai.pilot` is added (never renamed) and shown in the DataPass and Advanced presets. The Agent tab no longer offers the `pilot-read` kind: pilot orders come from the Pilot tab.
+
+##### Tests
+- `tests/pilot.test.ts` (10), acceptance tests 1–6 of the decision:
+  1. Snapshot of the three files (`tests/fixtures/pilot/`, update with `UPDATE_PILOT_SNAPSHOT=1` after a reviewed change).
+  2. Table test with the prefix matcher: 49 write/secret samples denied and matching no allow, "deny wins" samples (a denied flag on an allowed command), allow samples, ask samples, no `*` before a sub-command.
+  3. Codex `match`/`not_match` hold.
+  4. Arguments over every surface, effort and model.
+  5. One refusal per rule.
+  6. No toolkit or hub import.
+
+  The same file covers request validation (good, wrong phase, prod, duplicate, answered, 51st, oversize, unknown capability, action mode, side effects, not implemented, excluded, component, gap, number, unknown field, other order), the pilot order kind and order.md, and responses.
+- Desktop `tests/integration/pilotFlows.ts` on `v20-work-orders` (4 flows):
+  - pilot off until its setting is on, and the Codex app is refused;
+  - an order written from the Pilot tab, with guard rails only in its folder;
+  - a Claude terminal launch with a stub agent, which writes two requests and a result and calls no cloud CLI: cwd, `--permission-mode default`, `--settings`, cards (pending and refused), Run it with a stub action runner, Not now, "already answered";
+  - tampered guard rails → refused, nothing launched; `git status` of every repository unchanged (acceptance 7).
+
+##### Limits
+- **Channel 2 for Azure is thin today.** The FOIL flow's Azure capabilities (`azure-storage.browse`, …) are documentation-only, so they cannot be pilot requests. The real value in stage 1 is channel 1 (az/func read commands). The implemented read capabilities are: Fabric browse/capture, CI runs, ADF Studio, open a component's entry file, Mongo snapshot import, app revision.
+- Codex exact allows (`az version`, `func settings list`) are prefixes in Codex, which has no "exact". Flags that reveal values are forbidden separately.
+- In the Codex read-only sandbox, writing `requests/<n>.json` or `result.json` asks Julian first (no writable roots are set, on purpose).
+- Only Julian can do the one-time qualification after his read-only sign-in (todo.md, "À faire par toi"). `datapass.pilot.codexAppQualified` is to be set only after it passes for the Codex app.
+- Work-log `kind` enum gains `pilot-read` (additive; Galaxy consumer Mongoku to check).
+
+#### 0.26 M1 — MCP settings preservation repair (PR #57)
+
+Source: FOIL review R1, `foil-control-v1/docs/foil-platform-handbook/reviews/2026-09-26-mcp-modular-architecture/06_CODE_REVIEW.md` §6.1–6.4. Every claim was checked against the current source (0.25, `299e222`) before the fix: all four reproduced.
+
+##### What changed
+
+- `src/core/mcp.ts`: `.vscode/mcp.json` is edited losslessly.
+  - `parseMcpConfig` validates and returns a deep copy of the **whole** document: `inputs`, any other top-level key, and every server with all its fields (`env`, `envFile`, `cwd`, `type`, unknown native keys) are kept.
+  - Discriminated entries: stdio (`command`, `args`, `env`, `cwd`, `envFile`) and remote (`type: "http" | "sse"` or a bare `url`, with `url` and optional `headers`). An unknown `type` is refused.
+  - A top-level `mcpServers` (another host's dialect) is refused, never read as empty.
+  - `planMcpFileEdit(currentText, name, server)` parses strict JSON; comments or trailing commas are refused (they could not be kept) with a pointer to "MCP: Add Server…". It keeps the file's indentation and line endings and reports whether an entry is replaced.
+- `src/core/actions.ts::configureFabricMcp`: goes through the existing reviewed-write service — `showProposalDiff` (diff of current ↔ proposed), a modal confirmation, then `writeProjectFile` (digest compared just before writing, backup under `.datapass/local/backups`, journal write with read-back). Any parse/refusal error leaves the file untouched.
+- `src/work/optionsCommands.ts`: `showDiff` exported as `showProposalDiff`; `writeProjectFile` takes `Pick<WorkSession, "root">` (it only used the root). No behaviour change for its existing callers.
+- `src/core/capabilities/tools.ts`: `ws.mcp` is labelled "MCP registration file present (.vscode/mcp.json)" with a note that it says nothing about a server running, connected or signed in.
+
+##### Native route considered
+
+VS Code's native add-server routes (`MCP: Add Server…`, the `vscode:mcp/install` link, an `mcpServerDefinitionProviders` contribution) either are interactive-only, target the user profile rather than the workspace, or would move the Fabric Toolbox servers out of the workspace file into an extension-provided registration. That is a larger direction change than this repair, so the writer stays, now lossless. Logged in `effort-board/questions.md`.
+
+##### Tests
+
+`tests/mcp.test.ts`: MCP-01 (inputs/env/type/cwd/envFile/unknown keys kept, text plan keeps key order and indentation), MCP-02 (http entry parsed, kept, added; missing url refused), MCP-03 (`mcpServers` refused), MCP-04 (comments and trailing commas refused), unknown type refused, plus positive controls (new file, replace, CRLF + BOM, invalid args still refused).
+
+##### Left
+
+- The BOM of an existing file is not re-emitted (VS Code reads both).
+- `src/adapters/fabric.ts` still has its own "Workspace MCP configuration" label (not owned by M1).
+
+#### 0.26 K1 — Toolkit knowledge refresh: MCP servers and the official Power BI agentic route (FOIL review R2) (PR #60)
+
+Data and docs only: no code, schema, version or release change. Every fact below was re-read on the official page on
+2026-09-26 (Microsoft Learn pages dated 2026-09-01 to 2026-09-23, and the repositories' READMEs), not taken from the FOIL
+review alone.
+
+##### What changed
+- **Example hub** (`tests/fixtures/v3/toolkit.ts` → `examples/v3/hub/.datapass/toolkit/`, emitted with
+  `npx tsx scripts/emit-examples.ts`), new `kind: "mcp-server"` / `agent-plugin` entries, each with `verified.on`,
+  `sideEffects`, `useWhen` / `avoidWhen`, and hosts + transport + endpoint + "local server ≠ local data" in `note`:
+  `mcp.fabric-core` (remote, Streamable HTTP, preview), `mcp.fabric-local` (stdio subprocess, VS Code extension
+  `fabric.vscode-fabric-mcp-server` or `@microsoft/fabric-mcp`), `mcp.fabric-iq` (remote, read-only, GA),
+  `mcp.powerbi-authoring-hosted` (remote, Streamable HTTP, preview, tenant setting, session header),
+  `plugin.powerbi-authoring` (Microsoft Skills for Fabric plugin; registers the local Authoring MCP), `mcp.azure`
+  (Azure resources, not Fabric).
+- **Corrections**: built-in baseline (`resources/toolkit/baseline.json`) — `ext.fabric-studio` (community, not the
+  official MCP; README has no MCP), `ext.powerbi-modeling-mcp` (now Power BI Authoring MCP, local option: semantic
+  model only, writes by default, `--readonly`, links, side effects), `plugin.power-bi-agentic-development` (data-goblin,
+  ships no MCP servers, breaking transition 26.26–26.38), `py.semantic-link-labs` (notebook library, not MCP),
+  `ws.mcp` (registration ≠ connected). Hub: `acc.fabric-toolbox` (a best-effort collection with two sample MCP servers).
+- **Recipe** `mcp.fabric-sample.inspect-readonly` (module ai) in `recipes/fabric.json`: routes Fabric IQ, Fabric Core
+  (list only, per-call approval) and local Authoring with `--readonly` on a PBIP copy; each walks known → installed →
+  registered → connected → authenticated → operation verified, then records the evidence.
+- **datapassRequests** (listed as "Needs a newer DataPass"): transport / endpoint / hosts fields for MCP servers; a
+  side effect for "results reach the model provider".
+- Guide `docs/guide/09_TOOLKIT.md`: new section *MCP servers and the official Power BI agentic route*.
+
+##### Tests
+- `tests/toolkit.test.ts` counts: hub recipes 3 → 4, requests 1 → 3; `tests/integration/toolkitFlows.ts` request titles.
+- The existing checks cover the rest: every example entry valid (runtime + editor schema), no unknown tool reference,
+  baseline valid and dated. `npm run verify` green.
+
+##### Limits
+- New MCP entries live in the example hub, not the baseline: `baselineTools()` only shows ids of the extension's tool
+  registry (`src/core/capabilities/tools.ts`, `src/core/toolchain/toolchain.ts`). Moving them into the baseline needs a
+  registry entry per id (a code change, next pass if wanted).
+- Nothing was installed, registered or run: the recipe's evidence chain is to be walked on a real host.
+- Prices: no separate price is published for these servers; `priceModel: "included"` with the prerequisite service
+  named, no figure invented.
+
+#### 0.26 C1 — Cost basis in options.json (PR #61)
+
+Decision: `handoff/briefs/2026-09-26-cost-basis.md` (D-24, option 2).
+
+##### What changed
+- A cost line gains two optional fields (options.json `version` stays `"1"`):
+  - `shared` (key, `^[a-z][a-z0-9_.-]{0,79}$`): lines with the same key count **once** in any total that combines options (scenario table, previewed picks / active variant, Consequences side). Priced lines that agree (same monthly, one-time and currency) → that figure once; they differ → the resource is **unpriced** and the total says ``shared resource `<key>`: figures disagree`` (never max/min). A line without figure does not contradict a priced one; all unpriced → unpriced.
+  - `use`: `"any"` (default) | `"learning-only"` → "learning only — not for client work" on the line, on the option's declared cost and on every scenario total picking it. Never hidden or excluded.
+- `src/core/project/costs.ts`: one `aggregate` behind `sumCostLines` / `sumPickedOptions`; `CostTotal` gains `shared`, `disagree`, `learningOnly`; `costFlags`, `formatCostTotal` and `formatCostLine` carry the labels. An option's own subtotal shows ``shared (`<key>`), counted once per scenario``.
+- `options.ts`: schema + type; `costs.missing` uses the shared resolution. `optionsReport.ts` (packs): labels come through the shared formatters; one rule line for the AI about `shared` / `use`.
+- Webview (Options): declared cost, pricing lines, scenario columns and preview banner show the labels (warn tone for learning-only / disagree). `WbCost` type gains the two fields (`src/views/workbenchState.ts`, one line).
+- Example `examples/v3/doc-pipeline`: the storage account (`shared: "doc-storage"`) on A/B/C, and a 4th option **D — Databricks Free Edition job (to learn)** with a learning-only line (no scenario of its own).
+- Docs: guide 02 §2.5 "Cost basis (DataPass ≥ 0.26)", PREPARING_A_PROJECT options row. Schema regenerated.
+
+##### Tests
+- `tests/costs.test.ts` (10): three options one key counted once; same key different figures / currency → unpriced + message; currencies apart; shared + unpriced; option subtotal label; learning-only flags option and scenario; no new fields = 0.22 results; editor schema and runtime accept both fields and refuse bad key / bad `use`; example; report (packs) labels. `npm run verify` green (434).
+
+##### Limits
+- Desktop (real VS Code) flow not re-run: text-only change covered by unit tests; CI runs the suite.
+- Ships in 0.26.0: the docs say "DataPass ≥ 0.26".
+
+#### 0.26 X1 — Mongoku removed from DataPass (PR #63)
+
+Mongoku is a separate project-management app with no link to DataPass. It was frozen in 0.16; it is now gone from everything DataPass shows, offers and prepares.
+
+##### What changed
+- **Removed**: commands `datapass.mongoku.importContext` and `datapass.mongoku.setUrl`, their Work-view menu entry, the user setting `datapass.mongoku.url`, the `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` URI handler (and the `onUri` activation event), the Mongoku rows under Links in the Work view, the Mongoku row in Readiness › Companions (and its `companion.mongoku.url` note), the `mongoku` module (Choose Project Modules no longer lists it), the imported Mongoku context snapshot (`mongoku.portfolio-context` parser and `.datapass/local/mongoku/`), and `tests/fixtures/mongoku`.
+- **Open Companion Link** is Grafana only: `DataPass: Open Companion Link (Grafana)…`.
+- **New manifests** no longer write `"modules": { "mongoku": false }` (`NEW_MANIFEST_MODULES` is empty); examples, guide pages, README, PREPARING_A_PROJECT and the client-AI prompt no longer mention it.
+- **Old manifests keep loading**: `modules.mongoku` and any `companions` block (including `companions.mongoku` in any old shape) are accepted and ignored, without a message (`LEGACY_MODULE_IDS`, `LEGACY_COMPANION_KEYS`). The editor schema keeps both keys as `deprecated` so old files show no red squiggle. An unknown companion key other than the legacy one is still reported.
+- The generic operation `mongo.snapshot.import` (MongoDB authority snapshot, not Mongoku) moved from the old `mongoku` module to `databases`; `databases: false` now hides it.
+- `.datapass/board.json` and `.datapass/work-log.json` are unchanged; only the wording that named Mongoku as a reader was dropped (board view, board status confirmation, comments).
+
+##### Tests
+- Unit: `tests/modules.test.ts` — an old manifest with `modules.mongoku` + `companions.mongoku` validates and switches nothing off; new manifests never contain "mongoku"; **no contributed command, view, menu, setting or activation event mentions Mongoku** (test over package.json). `tests/companions.test.ts` — legacy companion blocks (even malformed) load and produce only Grafana links; schema and runtime agree.
+- Desktop: fixture `v4-cloudflare` keeps legacy Mongoku fields; `readinessFlows` checks the manifest has no errors and no Project/Work tree row, check or report mentions Mongoku. `companionFlows` lost its Mongoku Lite block.
+- `npm run verify` green; `npm run test:desktop` green.
+
+##### Limits
+- Handoff history (`handoff/`, `CHANGELOG.md`, `IMPLEMENTATION_STATUS.md`, the version history in `CLAUDE.md`) still names Mongoku: it is the record of past releases, not a visible surface.
+- A user who had set `datapass.mongoku.url` keeps the orphan value in their settings (VS Code shows it as unknown); harmless.
+- Mongoku links pointing at `vscode://…/open?entity=` now get VS Code's own "no handler" behaviour; galaxy.json updated and a line added under "À vérifier" for Mongoku.
+
+### Release checks
+
+- `npm run verify` and the full desktop suite (`npm run test:desktop`) green on the release branch;
+  VSIX built and installed with `code --install-extension <file> --force`.
+
+### Not checked here (Julian)
+
+- Install 0.26.0: switch on `datapass.pilot.enabled`, write a pilot order from the AI view's Pilot tab
+  and look at its guard-rail files; check that no Mongoku command, setting or row is left (≈ 10 min).
+- The pilot's one-time qualification after a read-only Azure sign-in (already in todo.md).
+
+## 0.25.0 — previewing variants and repository layout
 
 Date: 2026-09-26. Version `0.25.0` — packages V-A (selected variant, PR #54 and the preview / test / activate wording in the release PR) and R-L (repository layout
 contract, PR #52), released from main per [handoff/PLAN.md](handoff/PLAN.md). The night note

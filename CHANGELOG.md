@@ -3,6 +3,49 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.26.0 — Pilot without sign-in, MCP and cost repairs, Mongoku removed (2026-09-26)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3 (FOIL MCP review
+[handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md), decisions D-19 to D-28). One new order kind (`pilot-read`), two new
+optional options.json cost fields; no manifest version change.
+
+- **Pilot stage 1, read-only, no Azure sign-in needed** (package AI-4a, PR #55): a new order kind
+  `pilot-read` (cloud read-only, every repository read-only, permissions always *ask*, no pull
+  requests), written from the new **Pilot** tab of the AI view. DataPass writes the agent's guard rails
+  only inside the order folder (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`,
+  regenerated and compared byte for byte before each launch) and launches Claude or Codex in a terminal
+  with them; the Codex app is refused until `datapass.pilot.codexAppQualified`. The agent asks for a
+  read action by writing `requests/<n>.json`; each valid request becomes a **Pilot card** you run
+  (*Run it*) or decline (*Not now*), and DataPass answers in `responses/<n>.json` (names and states
+  only). Off until the machine setting `datapass.pilot.enabled`.
+- **Lossless `.vscode/mcp.json` edits** (package M1, PR #57, FOIL review R1): *Configure Fabric MCP*
+  keeps `inputs`, unknown keys and every server field (`env`, `envFile`, `cwd`, `type`, remote
+  `url`/`headers`), refuses another host's `mcpServers` dialect and files with comments or trailing
+  commas, and writes through the reviewed path (diff, confirmation, digest check, backup, journal).
+- **Toolkit knowledge refresh** (package K1, PR #60, FOIL review R2): the example hub gains the Fabric
+  Core / local / IQ MCP servers, the hosted Power BI Authoring MCP, the Skills for Fabric plugin and the
+  Azure MCP, each dated with hosts, transport and side effects; baseline corrections (Fabric Studio,
+  Power BI Authoring MCP local option, data-goblin plugin, semantic-link-labs, `ws.mcp` = registration
+  file only); recipe `mcp.fabric-sample.inspect-readonly`; guide page 9 section *MCP servers and the
+  official Power BI agentic route*.
+- **Cost basis in options.json** (package C1, PR #61, D-24): a cost line may carry `shared` (same key
+  across options counts **once** in combined totals; disagreeing figures → unpriced with a message) and
+  `use: "learning-only"` (flagged "learning only — not for client work", never hidden). options.json
+  stays version "1". These two fields require **DataPass ≥ 0.26**: an older DataPass rejects them with
+  the unknown-field message (the cost-basis brief says 0.27; it is a historical record, the guides are
+  right).
+- **Mongoku removed from DataPass** (package X1, PR #63): Mongoku is a separate app with no link to
+  DataPass. Its commands, the `datapass.mongoku.url` setting, the `vscode://…/open?entity=` link, its
+  Work-view and Readiness rows, the `mongoku` module and the context import are gone; new manifests and
+  the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
+  load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
+  `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
+- Also on main when 0.26.0 was cut: package 0.27 E1 (PR #67, integration evidence chain and receipt
+  result fields), V1-ON (PR #68, *DataPass: Open a Client Project…* and the *Get started with
+  DataPass* walkthrough), V1-DOC (PR #64, DEMARRER.md, handoff/CURRENT.md) and V1-T10 (PR #69, testlab
+  10 acceptance journeys, outside the repository). Their notes stay in `handoff/v3/night/` for their
+  own release.
+
 ## 0.25.0 — Previewing variants and repository layout (2026-09-26)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) rows V-A, R-L, R2 (Julian's FOIL answers Q1 and Q5). No new
