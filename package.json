@@ -149,6 +149,11 @@
         "icon": "$(copy)"
       },
       {
+        "command": "datapass.copyFileContext",
+        "title": "DataPass: Copy Context for My AI…",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "datapass.diagramCloud.openArchitecture",
         "title": "DataPass: Open Architecture in DiagramCloud"
       },
@@ -1510,6 +1515,25 @@
         {
           "command": "datapass.validateContract",
           "when": "resourceExtname == .json && resourcePath =~ /\\.datapass/",
+          "group": "7_datapass"
+        },
+        {
+          "command": "datapass.copyFileContext",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "7_datapass"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
+          "group": "7_datapass"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
           "group": "7_datapass"
         }
       ]
