@@ -26,6 +26,7 @@ import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
 import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
 import { incompleteText } from "../core/project/observation";
+import { deriveVariants, type VariantsAnalysis } from "../core/project/variants";
 import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
@@ -127,6 +128,7 @@ export class WorkSession implements vscode.Disposable {
   connectionRunner?: ConnectionRunner;
   private readinessCache?: Readiness;
   private analysisCache?: OptionsAnalysis;
+  private variantsCache?: VariantsAnalysis;
   private previewCache?: Preview;
   private boardCache?: BoardView;
   /** The person accepted, in this window, that moving a card writes its status in board.json. */
@@ -461,6 +463,7 @@ export class WorkSession implements vscode.Disposable {
     this.mapCache = undefined;
     this.readinessCache = undefined;
     this.analysisCache = undefined;
+    this.variantsCache = undefined;
     this.previewCache = undefined;
     this.boardCache = undefined;
     this.emitter.fire();
@@ -524,6 +527,17 @@ export class WorkSession implements vscode.Disposable {
     if (!options) return undefined;
     if (!this.analysisCache) this.analysisCache = analyzeOptions({ base: this.mapInput(), options, baseMap: this.projectMap() });
     return this.analysisCache;
+  }
+
+  /** 0.23: coding state of every option and scenario, and the files each variant needs (undefined without options). */
+  variants(): VariantsAnalysis | undefined {
+    const options = this.ctx.options;
+    if (!options) return undefined;
+    if (!this.variantsCache) {
+      const input = this.mapInput();
+      this.variantsCache = deriveVariants({ options, manifest: input.manifest, graph: input.graph, coordinationKey: input.coordinationKey, repositories: this.projectMap().repositories, fileObservations: input.fileObservations });
+    }
+    return this.variantsCache;
   }
 
   /** The architecture previewed on the diagram, when one is selected and still valid. */

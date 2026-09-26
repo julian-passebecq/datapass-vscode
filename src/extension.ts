@@ -12,6 +12,7 @@ import { setAppLauncherForTests, setExternalOpenerForTests, setFolderOpenerForTe
 import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
 import { registerFileContextCommands } from "./work/fileContextCommands";
+import { registerVariantCommands } from "./work/variantCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
@@ -170,6 +171,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const projectView = vscode.window.createTreeView(ProjectTreeProvider.viewType, { treeDataProvider: projectTree, showCollapseAll: true });
   projectTree.attach(projectView);
   projectTree.setSurfaces(experience.shows, experience.onDidChange);
+  registerVariantCommands(context, session, projectTree);
   host.setSurfaces(experience.shows, experience.onDidChange);
   aiExchange.setSurfaces(experience.shows, experience.onDidChange);
   context.subscriptions.push(

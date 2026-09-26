@@ -245,6 +245,20 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "datapass.showAllVariants",
+        "title": "DataPass: Show All Variants in the Project Tree",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "datapass.showSelectedArchitecture",
+        "title": "DataPass: Show Only the Selected Architecture",
+        "icon": "$(filter-filled)"
+      },
+      {
+        "command": "datapass.openVariantFile",
+        "title": "DataPass: Open a Variant's File"
+      },
+      {
         "command": "datapass.checkForUpdates",
         "title": "DataPass: Check for Updates (git fetch, nothing merged)",
         "icon": "$(cloud-download)"
@@ -873,6 +887,16 @@
           "group": "navigation@1"
         },
         {
+          "command": "datapass.showAllVariants",
+          "when": "view == datapass.project && !datapass.allVariants && !datapass.hidden.project.variantFilter",
+          "group": "navigation@3"
+        },
+        {
+          "command": "datapass.showSelectedArchitecture",
+          "when": "view == datapass.project && datapass.allVariants && !datapass.hidden.project.variantFilter",
+          "group": "navigation@3"
+        },
+        {
           "command": "datapass.checkForUpdates",
           "when": "view == datapass.project",
           "group": "navigation@2"
@@ -1481,6 +1505,10 @@
           "when": "false"
         },
         {
+          "command": "datapass.openVariantFile",
+          "when": "false"
+        },
+        {
           "command": "datapass.openExchange",
           "when": "false"
         },
@@ -2019,6 +2047,14 @@
             "badge.alternatives": {
               "type": "boolean",
               "description": "\"Alternatives exist\" on components: Marks components an options.json decision can change"
+            },
+            "project.variantFilter": {
+              "type": "boolean",
+              "description": "Project tree: selected architecture and All variants: The tree follows the previewed scenario; a toggle lists every option's components and files"
+            },
+            "badge.codingState": {
+              "type": "boolean",
+              "description": "Coding state of options and scenarios: coded / partly coded / not coded, derived from the files DataPass finds"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."

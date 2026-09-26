@@ -42,7 +42,10 @@ export const SURFACES: readonly Surface[] = [
   { id: "status.mode", kind: "statusBar", label: "Status bar: DataPass mode", detail: "Shows the mode; click to switch" },
   { id: "status.health", kind: "statusBar", label: "Status bar: tool health", detail: "Tools and bindings ready (opens the Galaxy view)" },
   { id: "landing.architecture", kind: "landing", label: "Open on the architecture", detail: "Focus the Architecture panel when a project opens (a workspace's startup view wins)" },
-  { id: "badge.alternatives", kind: "badge", label: "\"Alternatives exist\" on components", detail: "Marks components an options.json decision can change" }
+  { id: "badge.alternatives", kind: "badge", label: "\"Alternatives exist\" on components", detail: "Marks components an options.json decision can change" },
+  // 0.23 (package G): variants.
+  { id: "project.variantFilter", kind: "projectSection", label: "Project tree: selected architecture and All variants", detail: "The tree follows the previewed scenario; a toggle lists every option's components and files" },
+  { id: "badge.codingState", kind: "badge", label: "Coding state of options and scenarios", detail: "coded / partly coded / not coded, derived from the files DataPass finds" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

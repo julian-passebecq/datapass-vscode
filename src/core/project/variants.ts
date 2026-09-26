@@ -170,7 +170,12 @@ function optionCoding(d: Decision, o: ArchOption, input: VariantsInput, repoInde
   return { ...head, state: combineStates(components.map(c => c.state)), reason: summarize(components), components, removes };
 }
 
-function scenarioCoding(id: string, title: string, kind: ScenarioCoding["kind"], picks: Picks, input: VariantsInput, byKey: Record<string, OptionCoding>): ScenarioCoding {
+/** The coding state of any set of picks (a declared scenario, or a combination previewed on the diagram). */
+export function codingOfPicks(options: OptionsFile, analysis: VariantsAnalysis, picks: Picks): Pick<ScenarioCoding, "state" | "reason" | "picks"> {
+  return scenarioCoding("", "", "declared", picks, { options } as VariantsInput, analysis.options);
+}
+
+function scenarioCoding(id: string, title: string, kind: ScenarioCoding["kind"], picks: Picks, input: Pick<VariantsInput, "options">, byKey: Record<string, OptionCoding>): ScenarioCoding {
   const chosen = input.options.decisions.map(d => byKey[`${d.id}=${picks.get(d.id) ?? d.current}`]).filter((x): x is OptionCoding => !!x);
   const state = combineStates(chosen.map(c => c.state));
   const gaps = chosen.filter(c => c.state !== "coded");
