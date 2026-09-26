@@ -541,6 +541,12 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v26-open-client-window": setupV26OpenClientWindow
 };
 
+/**
+ * Logged as errors but not DataPass errors: a tree refresh cancelled while the host shuts down, and a
+ * test's own `git` call writing Git's CRLF warning on stderr.
+ */
+const BENIGN_HOST_LINE = /Unable to refresh tree view datapass\.\w+: Canceled|\[error\] warning: in the working copy of /;
+
 /** Error lines of a profile's extension host and renderer logs that mention DataPass. */
 function extensionHostErrors(logs: string): string[] {
   const out = new Set<string>();
@@ -550,7 +556,7 @@ function extensionHostErrors(logs: string): string[] {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
       else if (/exthost|renderer/i.test(e.name) && e.name.endsWith(".log")) {
-        for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) if (/\[error\]/.test(line) && /datapass/i.test(line)) out.add(line.slice(0, 400));
+        for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) if (/\[error\]/.test(line) && /datapass/i.test(line) && !BENIGN_HOST_LINE.test(line)) out.add(line.slice(0, 400));
       }
     }
   };
