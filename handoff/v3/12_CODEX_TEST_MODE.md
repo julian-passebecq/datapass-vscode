@@ -286,7 +286,7 @@ verified procedure, QA-1, QA-3, the client's bridge and a 0.26.0 VSIX release as
   / setPreview / copyContext / aiImport / writeOrder / wait), expectations (`equals`, `contains`,
   `exists`, `absent`, `count`, anchored `matches`, `noUnhandledErrors`), an allowlist of Test API
   probes and command ids, no shell, no network, and exit 0/1/2. The first draft of this document
-  (PR #75, commit 1) holds the full step design; reuse it then.
+  (commit d1ebb42 in PR #75) holds the full step design; reuse it then.
 - Real clients get their own auto repository.
 - Claude Code as a second tester.
 - Codex walks cloud journeys through the Pilot (read-only) on a real sandbox, after AI-4b.
