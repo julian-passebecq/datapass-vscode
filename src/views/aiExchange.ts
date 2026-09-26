@@ -140,13 +140,14 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   async state(): Promise<AiViewState> {
     await this.measure();
     const c = this.session.project;
+    const now = c.manifest ? await packStamp(this.session) : undefined;
     const base = aiExchangeState({
       version: String(this.context.extension.packageJSON.version ?? ""),
       hasRoot: Boolean(this.session.root), hasManifest: c.manifestExists, projectTitle: c.manifest?.project.title, graphPath: c.manifest?.graph,
       kinds: KINDS, sizes: this.sizes,
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges(),
-      selection: c.manifest ? await packStamp(this.session) : undefined
+      selection: now
     });
     const hiddenTabs = (["agent", "manual", "pilot"] as const).filter(t => !this.shows(`ai.${t}`));
     if (!this.work || !base.ready || !c.manifest) return { ...base, hiddenTabs };
@@ -155,7 +156,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       ...base, hiddenTabs,
       agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope, codexCli: this.work.flows.codexCliFound() }),
       manual: manualTabState(this.session, this.work.git.observation().needsYou.length),
-      ...(this.pilot ? { pilot: pilotTabState(this.session, this.work.service, this.pilot, { choice: s.choice, effort: s.effort, enabled: pilotEnabled(), codexAppQualified: codexAppQualified(), trusted: vscode.workspace.isTrusted }) } : {})
+      ...(this.pilot ? { pilot: pilotTabState(this.session, this.work.service, this.pilot, { choice: s.choice, effort: s.effort, enabled: pilotEnabled(), codexAppQualified: codexAppQualified(), trusted: vscode.workspace.isTrusted, now }) } : {})
     };
   }
 

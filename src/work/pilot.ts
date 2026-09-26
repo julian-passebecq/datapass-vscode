@@ -80,6 +80,8 @@ export interface PilotCard {
   why?: string;
   message?: string;
   outcome?: "done" | "declined" | "failed";
+  /** 0.27 (P1, D-23): why the order behind this card no longer matches the selected variant or the bridge revision. */
+  stale?: string;
 }
 
 interface OrderRequests { order: LoadedOrder; cards: PilotCard[]; valid: Map<number, PilotRequest> }

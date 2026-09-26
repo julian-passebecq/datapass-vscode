@@ -81,6 +81,17 @@ export function staleReason(then: PackStamp | undefined, now: PackStamp): string
   return why.length ? why.join("; ") : undefined;
 }
 
+/**
+ * Items built for an order (Pilot request cards) with `stale` set when their order's stamp no longer
+ * matches `now` (variant, environment or bridge revision). Unstamped orders are not judged.
+ */
+export function withStale<T extends { orderId: string }>(items: readonly T[], stampOf: (orderId: string) => PackStamp | undefined, now: PackStamp | undefined): Array<T & { stale?: string }> {
+  return items.map(i => {
+    const why = now ? staleReason(stampOf(i.orderId), now) : undefined;
+    return why ? { ...i, stale: why.slice(0, 300) } : { ...i };
+  });
+}
+
 /** A stamp read back from storage (global state, order.json): anything malformed is dropped. */
 export function readStamp(raw: unknown): PackStamp | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;

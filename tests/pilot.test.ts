@@ -308,3 +308,30 @@ test("pilot responses: names and states only, schema-valid, bounded", () => {
   assert.equal(r.what.length, 500);
   assert.doesNotMatch(r.what, /\n/);
 });
+
+// ------------------------------------------------------------------ 0.27 (P1, D-23) stamps on pilot orders
+
+const PILOT_STAMP = { variant: { key: "orchestration=blob-function", title: "B — Blob event + Function", picks: ["orchestration=blob-function"] }, environment: "dev", bridge: "4e1a9c2f0b7d11223344556677889900aabbccdd" };
+
+test("0.27: a pilot-read order carries the stamp in order.json and order.md; launching under another variant asks", async () => {
+  const { stampVerdict } = await import("../src/core/workOrders/launch");
+  const o = pilotOrder({ stamp: PILOT_STAMP });
+  assert.deepEqual(o.stamp, PILOT_STAMP);
+  assert.deepEqual(parseWorkOrder(JSON.stringify(o), o.id), o);
+  const md = renderOrderMd(o, { components: [], packs: [], conventions: [], handoffs: [], datapassFiles: [] }, folderOf(o));
+  assert.match(md, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\*.* · environment dev · bridge revision 4e1a9c2f0b7d\./);
+  assert.equal(stampVerdict(o, { variant: { key: "orchestration=adf", title: "C — Data Factory" }, environment: "dev" }).kind, "other-variant");
+  assert.equal(stampVerdict(o, PILOT_STAMP).kind, "same");
+});
+
+test("0.27: a Pilot request card goes stale when the selected variant or the bridge HEAD changes", async () => {
+  const { withStale } = await import("../src/core/exchange/stamp");
+  const cards = [{ orderId: "wo-20260926-2105-aaaa", n: 1 }, { orderId: "wo-20260926-2105-old0", n: 1 }];
+  const stampOf = (id: string) => (id.endsWith("aaaa") ? PILOT_STAMP : undefined);
+  assert.deepEqual(withStale(cards, stampOf, PILOT_STAMP).map(c => c.stale), [undefined, undefined], "same selection and bridge: fresh");
+  const moved = withStale(cards, stampOf, { ...PILOT_STAMP, bridge: "0123456789abcdef0123456789abcdef01234567" });
+  assert.deepEqual(moved.map(c => c.stale), ["the bridge moved from 4e1a9c2f0b7d to 0123456789ab", undefined], "an unstamped order's card is not judged");
+  const other = withStale(cards, stampOf, { variant: { key: "orchestration=adf", title: "C — Data Factory" }, environment: "dev", bridge: PILOT_STAMP.bridge });
+  assert.equal(other[0]!.stale, "built for B — Blob event + Function; the selected variant is now C — Data Factory");
+  assert.equal(withStale(cards, stampOf, undefined)[0]!.stale, undefined, "no project: nothing to compare");
+});

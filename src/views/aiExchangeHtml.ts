@@ -385,6 +385,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       if (c.effects) d.appendChild(el('div', 'muted', c.effects + ' · ' + c.runsIn));
       if (c.why) d.appendChild(el('div', 'why', '"' + c.why + '" (the agent says)'));
       if (c.message) d.appendChild(el('div', c.state === 'refused' ? 'badline' : 'muted', c.message));
+      if (c.stale) d.appendChild(el('div', 'warnline', '⚠ Stale: ' + c.stale + '. Check before running it.'));
       if (c.state !== 'answered' && c.n >= 1 && c.n <= 50) {
         const row = el('div', 'row');
         if (c.state === 'pending') {

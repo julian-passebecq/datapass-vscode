@@ -8,6 +8,7 @@ import type { WorkOrderService } from "../work/workOrders";
 import type { WorkSession } from "../work/session";
 import { AGENT_CHOICES, CHOICE_LABELS, stampLabel, stampVerdict, type AgentChoice } from "../core/workOrders/launch";
 import { selectionStamp } from "../work/packStamps";
+import { withStale, type PackStamp } from "../core/exchange/stamp";
 import { EFFORTS, ORDER_KINDS, shortId, type Effort, type MergePolicy, type OrderKind, type ProjectType } from "../core/workOrders/format";
 import { KIND_LABELS } from "../core/workOrders/builder";
 import { TYPE_DEFAULTS, defaultMergePolicy } from "../core/workOrders/projectType";
@@ -140,7 +141,7 @@ export interface PilotTabState {
   pending: number;
 }
 
-export function pilotTabState(session: WorkSession, service: WorkOrderService, pilot: PilotService, settings: { choice: AgentChoice; effort: Effort; enabled: boolean; codexAppQualified: boolean; trusted: boolean }): PilotTabState {
+export function pilotTabState(session: WorkSession, service: WorkOrderService, pilot: PilotService, settings: { choice: AgentChoice; effort: Effort; enabled: boolean; codexAppQualified: boolean; trusted: boolean; now?: PackStamp }): PilotTabState {
   const verdict = service.verdict();
   const allowed = settings.enabled && verdict.allowed;
   const choices = AGENT_CHOICES.map(id => ({ id, label: CHOICE_LABELS[id], ...(id === "codex-desktop" && !settings.codexAppQualified ? { disabled: "not qualified on this computer yet (stage 1)" } : {}) }));
@@ -158,7 +159,8 @@ export function pilotTabState(session: WorkSession, service: WorkOrderService, p
       const closed = o.state?.status === "done" || o.state?.status === "abandoned";
       return { id: o.id, short: shortId(o.id), title: s?.title ?? o.error ?? "unreadable order", status: s?.status ?? "error", agent: s?.agent ?? "", next: s?.next ?? "", canLaunch: allowed && settings.trusted && !closed && Boolean(o.order) && Boolean(service.ownDigest(o.id)) };
     }),
-    cards: [...pilot.list()],
+    // 0.27 (P1, D-23): a card whose order was built for another variant or bridge revision is stale.
+    cards: withStale(pilot.list(), id => service.get(id)?.order?.stamp, settings.now),
     pending: pilot.pending()
   };
 }
