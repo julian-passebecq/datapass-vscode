@@ -315,7 +315,7 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
     await waitFor("the options file", () => api().project().options, 20_000);
     await cfg().update("ai.workOrders.enabled", true, vscode.ConfigurationTarget.Global);
     try {
-      await run("datapass.setActiveVariant", "b-event");
+      await run("datapass.setSelectedVariant", "b-event");
       // Copy Context for My AI under B: the header carries the stamp.
       const file = vscode.Uri.file(path.join(wsRoot, "processing", "process.py"));
       const ui = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", file, [file]));
@@ -331,7 +331,7 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
       assert.match(fs.readFileSync(path.join(written.folder.fsPath, "order.md"), "utf8"), /^DataPass work order wo-[^\n]+\n[\s\S]*Stamp: built for the selected variant \*\*B — Blob event/);
 
       // Switch to C: the copied pack is stale, with what changed; the order row says it was built for B.
-      await run("datapass.setActiveVariant", "c-adf");
+      await run("datapass.setSelectedVariant", "c-adf");
       s = await waitFor("the pack marked stale", async () => { const x = await api().workOrders.aiState(); return x.recent.find(r => r.label === pack!.label)?.stale ? x : undefined; });
       assert.equal(s.recent.find(r => r.label === pack!.label)!.stale, "built for B — Blob event + Function; the selected variant is now C — Data Factory");
       const row = s.agent?.recent.find(r => r.id === written.id);
@@ -345,12 +345,12 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
       assert.equal(api().workOrders.list().find(o => o.id === written.id)?.state?.launches.length, 0, "nothing launched");
 
       // Back on B: no stamp question.
-      await run("datapass.setActiveVariant", "b-event");
+      await run("datapass.setSelectedVariant", "b-event");
       const same = await withUi([{ dismiss: true }], () => run("datapass.workOrders.launch", written.id), { allowErrors: true });
       assert.ok(!same.prompts.some(p => /built for another variant/.test(p.text ?? "")), `no stamp question under B: ${JSON.stringify(same.prompts)}`);
       record("stamps", { stale: s.recent.find(r => r.label === pack!.label)!.stale, row: row?.stamp, prompt: stampPrompt!.text });
     } finally {
-      await run("datapass.setActiveVariant", "current");
+      await run("datapass.setSelectedVariant", "current");
       await cfg().update("ai.workOrders.enabled", undefined, vscode.ConfigurationTarget.Global);
     }
   }, ["v25-doc-pipeline"]);
