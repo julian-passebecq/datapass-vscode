@@ -306,6 +306,23 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     // 0.16: the board (tasks, bugs, sprints), when the project has one.
     const bv = show("project.board") ? s.boardView() : undefined;
     if (bv || (show("project.board") && ctx.boardError)) nodes.push(boardSection(bv, ctx.boardError));
+    // 0.23: the hub's toolkit files (tools, recipes, "Needs a newer DataPass"), when one was read.
+    const tk = show("project.toolkit") ? s.toolkitFileResults() : [];
+    if (tk.length) {
+      const cat = s.catalogue();
+      const newer = tk.filter(f => f.newer);
+      const bad = tk.filter(f => f.error || f.skipped.length);
+      const ask = cat.requests.length + newer.length;
+      nodes.push({
+        t: "section", id: "toolkit", label: "Toolkit", icon: "tools", collapsed: true,
+        description: `${cat.recipes.size} recipe(s) · ${[...cat.tools.values()].filter(x => x.source !== "built-in").length} tool(s) from the hub${ask ? ` · ${ask} need(s) a newer DataPass` : ""}${bad.length ? ` · ${bad.length} file(s) with problems` : ""}`,
+        kids: () => [
+          { t: "info" as const, id: "tk:open", label: "Open the Toolkit", description: "tools, prices, recipes", icon: ["tools"] as [string], command: { command: "datapass.openToolkit", title: "Open" } },
+          ...cat.requests.slice(0, 20).map((q, i) => ({ t: "info" as const, id: `tk:req:${i}`, label: q.title, description: "needs a newer DataPass", icon: ["arrow-circle-up", "charts.yellow"] as [string, string], tooltip: q.why, command: { command: "datapass.openToolkit", title: "Open", arguments: ["requests"] } })),
+          ...[...newer, ...bad.filter(f => !f.newer)].slice(0, 20).map(f => ({ t: "info" as const, id: `tk:file:${f.path}`, label: f.path, description: f.error ? "not read" : f.newer ? "written for a newer DataPass" : `${f.skipped.length} entr${f.skipped.length === 1 ? "y" : "ies"} skipped`, icon: [f.error ? "error" : "warning", f.error ? "problemsErrorIcon.foreground" : "problemsWarningIcon.foreground"] as [string, string], tooltip: f.error ?? f.newer?.text ?? f.skipped.join(" · "), command: { command: "datapass.toolkit.openFile", title: "Open", arguments: [{ path: f.path }] } }))
+        ]
+      });
+    }
     // 0.15: architecture options and project sheet, when the project has them.
     const o = show("project.options") ? ctx.options : undefined;
     if (o || (show("project.options") && ctx.optionsError)) nodes.push({

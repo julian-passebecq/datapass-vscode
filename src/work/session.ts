@@ -31,6 +31,9 @@ import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProb
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
+import { buildCatalogue, hubToolchainTools, recipeView, type Catalogue, type RecipeFacts, type RecipeView } from "../core/toolkit/toolkit";
+import { loadToolkitFiles } from "./toolkitFiles";
+import type { ToolkitFileResult } from "../core/toolkit/toolkit";
 import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
 import { observeLocalEnv } from "./envObserver";
@@ -101,6 +104,9 @@ export class WorkSession implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private ctx: ProjectContext = { manifestErrors: [], manifestExists: false, packs: [], packErrors: [] };
   private tools: Map<string, ToolObservation> = new Map();
+  /** 0.23: the toolkit files of the hub repositories this window knows. */
+  private toolkitFiles: ToolkitFileResult[] = [];
+  private catalogueCache?: Catalogue;
   /** File-backed facts as observed on disk (a declared path counts only once it was seen). */
   private factObs: Map<string, FactObservation> = new Map();
   /** Review confirmations are session-only: a new window asks again. */
@@ -155,6 +161,7 @@ export class WorkSession implements vscode.Disposable {
     const [ctx, tools] = await Promise.all([loadProjectContext(this.context.extensionUri), probeTools(forceProbe)]);
     this.ctx = ctx;
     this.tools = tools;
+    this.toolkitFiles = await loadToolkitFiles(ctx.root, this.version);
     this.factObs = await observeFileFacts(ctx.root, ctx.manifest);
     const coordination = ctx.root ? coordinationKeyOf(ctx.manifest, ctx.root) : ".";
     this.projectObs = ctx.root ? await observeProject({
@@ -466,6 +473,7 @@ export class WorkSession implements vscode.Disposable {
     this.variantsCache = undefined;
     this.previewCache = undefined;
     this.boardCache = undefined;
+    this.catalogueCache = undefined;
     this.emitter.fire();
   }
 
@@ -504,9 +512,38 @@ export class WorkSession implements vscode.Disposable {
     if (c.options) map.problems.push(...optionsProblems(c.options, c.manifest, c.graph).filter(p => p.severity !== "info"));
     if (c.sheet) map.problems.push(...sheetProblems(c.sheet, c.manifest, c.graph, c.options?.decisions.map(d => d.id) ?? []));
     if (c.boardError) map.problems.push({ severity: "error", where: "board.json", message: c.boardError });
-    if (c.board) map.problems.push(...boardProblems(c.board, c.manifest, c.graph, c.options));
+    if (c.board) map.problems.push(...boardProblems(c.board, c.manifest, c.graph, c.options, this.catalogue().hub ? this.catalogue().recipes : undefined));
     this.mapCache = map;
     return this.mapCache;
+  }
+
+  // ------------------------------------------------------------ 0.23 toolkit catalogue
+
+  /** This extension's version (what a toolkit file's requires.datapass is compared with). */
+  get version(): string { return String(this.context.extension?.packageJSON?.version ?? "0.0.0"); }
+
+  /** The built-in baseline with the hub's toolkit files layered over it. */
+  catalogue(): Catalogue {
+    this.catalogueCache ??= buildCatalogue(this.toolkitFiles.filter(f => !f.error), this.version);
+    return this.catalogueCache;
+  }
+  toolkitFileResults(): readonly ToolkitFileResult[] { return this.toolkitFiles; }
+  /** A recipe as a card or a pack shows it (undefined when the catalogue has no such recipe). */
+  recipe(id: string | undefined): RecipeView | undefined {
+    const r = id ? this.catalogue().recipes.get(id) : undefined;
+    return r ? recipeView(r, this.catalogue(), this.recipeFacts()) : undefined;
+  }
+
+  /** What a recipe route's condition can be checked against: project facts and this computer's probes. */
+  recipeFacts(): RecipeFacts {
+    const facts = new Map<string, boolean>();
+    const m = this.ctx.manifest;
+    if (m && m.schemaVersion >= 5) facts.set("fabric.gitBinding", (m.connections ?? []).some(c => c.kind === "git-binding" && c.provider === "fabric"));
+    const coord = this.projectMap().repositories.find(r => r.coordination);
+    if (coord && coord.state !== "restricted") facts.set("git.repository", coord.state === "local");
+    const tools = new Map<string, "present" | "absent">();
+    for (const [id, o] of this.tools) if (o.state === "present" || o.state === "absent") tools.set(id, o.state);
+    return { facts, tools };
   }
 
   // ------------------------------------------------------------ 0.16 board
@@ -608,7 +645,7 @@ export class WorkSession implements vscode.Disposable {
       manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: map.repositories, problems: map.problems,
       settings: { mongokuUrl: config.get<string>("mongoku.url") ?? "", diagramCloudUrl: config.get<string>("diagramCloud.url") ?? "" },
       diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION,
-      tools: this.tools, platform: process.platform, connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs
+      tools: this.tools, platform: process.platform, hubTools: hubToolchainTools(this.catalogue()), connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs
     });
     return this.readinessCache;
   }

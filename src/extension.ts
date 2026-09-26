@@ -22,6 +22,7 @@ import { ProjectTreeProvider } from "./views/projectTree";
 import { registerWorkbenchCommands } from "./work/workbenchCommands";
 import { registerOptionsCommands } from "./work/optionsCommands";
 import { registerBoardCommands } from "./work/boardCommands";
+import { registerToolkitCommands } from "./work/toolkitCommands";
 import { registerGitHostCommands } from "./work/gitHostCommands";
 import { registerCheckCommands } from "./work/checkCommands";
 import type { WorkbenchState } from "./views/workbenchState";
@@ -185,6 +186,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerWorkbenchCommands(context, session, host);
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
+  registerToolkitCommands(context, session, host);
   registerGitHostCommands(context, session);
   registerCheckCommands(context);
 
@@ -307,7 +309,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 
   // Graph, packs and claims only affect the Work view; .datapass/local is private session data.
   const workRefresh = () => void session.refresh();
-  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,options.json,sheet.json,board.json,claims.json,packs/*.json,queries/*.json}");
+  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,options.json,sheet.json,board.json,claims.json,packs/*.json,queries/*.json,toolkit/*.json,toolkit/recipes/*.json}");
   workWatcher.onDidCreate(workRefresh);
   workWatcher.onDidChange(workRefresh);
   workWatcher.onDidDelete(workRefresh);

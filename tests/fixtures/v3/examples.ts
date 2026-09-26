@@ -2,6 +2,7 @@
  * The public V3 examples (examples/v3/**), built from the synthetic fixtures. Everything here is
  * invented: example-org repositories, no FOIL or client content.
  */
+import { hubToolkitFiles } from "./toolkit";
 import { graphAJson, manifestA } from "./research";
 import { optionsAJson, sheetAJson } from "./researchOptions";
 import { boardAJson } from "./researchBoard";
@@ -92,6 +93,21 @@ const CATALOG = {
   ]
 };
 
+const HUB_README = `# Project hub (example)
+
+A small repository that holds, for several projects:
+
+- \`.datapass/catalog.json\`: the list of projects and where their coordination repositories live. Add
+  its path to the \`datapass.catalogs\` setting (or open it) and use *DataPass: Switch Project*.
+- \`.datapass/toolkit/tools.json\` and \`.datapass/toolkit/recipes/*.json\` (DataPass 0.23, guide page 9): the toolkit
+  catalogue. Tools the hub adds or corrects (links, status, when to use them, free tier and prices with
+  the date they were read), recipes (step-by-step routes that name their tools), and
+  \`datapassRequests\`: what the format cannot say yet, listed in DataPass as "Needs a newer DataPass".
+  DataPass reads them after *Get updates* and layers them over its built-in baseline; nothing in
+  them is run. ChatGPT updates \`tools.json\` through *Copy a DataPass File for the AI* → toolkit; an
+  agent updates any of them through a pull request.
+`;
+
 export function exampleFiles(): Record<string, string> {
   const out: Record<string, string> = {};
   out["examples/v3/research-library/.datapass/project.json"] = json(manifestA());
@@ -107,6 +123,7 @@ export function exampleFiles(): Record<string, string> {
   out["examples/v3/shop-platform/README.md"] = SHOP_README;
   for (const [rel, content] of Object.entries(filesSales())) out[`examples/v3/sales-bi/${rel}`] = content;
   out["examples/v3/hub/.datapass/catalog.json"] = json(CATALOG);
-  out["examples/v3/hub/README.md"] = "# Project hub (example)\n\nA small repository whose only job is `.datapass/catalog.json`: the list of projects and where their\ncoordination repositories live. Add its path to the `datapass.catalogs` setting (or open it) and use\n*DataPass: Switch Project*.\n";
+  for (const [rel, content] of Object.entries(hubToolkitFiles())) out[`examples/v3/hub/${rel}`] = content;
+  out["examples/v3/hub/README.md"] = HUB_README;
   return out;
 }

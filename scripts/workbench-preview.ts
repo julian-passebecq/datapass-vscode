@@ -22,6 +22,9 @@ import { parseExtensionsJson } from "../src/core/toolchain/extensionsJson";
 import { manifestSales, SALES_EXTENSIONS_JSON, SALES_IDS } from "../tests/fixtures/v3/salesBi";
 import type { WbOrder, WbWorkOrders } from "../src/views/workbenchState";
 import { aiExchangeHtml } from "../src/views/aiExchangeHtml";
+import { buildCatalogue, parseToolkitFile } from "../src/core/toolkit/toolkit";
+import { toolkitState } from "../src/views/toolkitState";
+import { hubRecipesJson, hubToolsJson } from "../tests/fixtures/v3/toolkit";
 
 const light = process.argv.includes("--light");
 const T = new Date().toISOString();
@@ -99,13 +102,22 @@ const pages: Page[] = [
   { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } },
   { name: "readiness", mode: "full", selection: {}, readiness: true },
   { name: "work-orders", mode: "full", selection: { subproject: "papers", component: "extract" }, ui: { view: "workOrders" }, orders: true },
-  { name: "detail-order", mode: "detail", selection: { subproject: "papers", component: "extract" }, orders: true }
+  { name: "detail-order", mode: "detail", selection: { subproject: "papers", component: "extract" }, orders: true },
+  // 0.23: the toolkit (baseline + the example hub), a card that names a recipe, a component's tools.
+  { name: "toolkit", mode: "full", selection: {}, ui: { view: "toolkit", tkFocus: "tool:cli.copilot" } },
+  { name: "toolkit-recipe", mode: "full", selection: {}, ui: { view: "toolkit", tkSection: "recipes", tkFocus: "recipe:fabric.item-definition.bulk-edit" } },
+  { name: "toolkit-requests", mode: "full", selection: {}, ui: { view: "toolkit", tkSection: "requests" } },
+  { name: "board-recipe", mode: "full", selection: {}, ui: { view: "board", boardFocus: "bug-3" } },
+  { name: "detail-tools", mode: "detail", selection: { subproject: "papers", component: "extract" } }
 ];
+const hubFiles = [parseToolkitFile(JSON.stringify(hubToolsJson()), "hub/.datapass/toolkit/tools.json", "0.23.0"), parseToolkitFile(JSON.stringify(hubRecipesJson()), "hub/.datapass/toolkit/recipes/fabric.json", "0.23.0")];
+const toolkit = toolkitState(buildCatalogue(hubFiles, "0.23.0"), hubFiles, { facts: new Map([["fabric.gitBinding", true]]), tools: new Map([["cli.git", "present"], ["cli.fab", "absent"]]) }, map, "win32");
+for (const c of board.cards) if (c.id === "bug-3") c.recipe = { id: "fabric.item-definition.bulk-edit", route: "git" };
 for (const p of pages) {
   const state = workbenchState({
     map, selection: p.selection, version: "preview", hasRoot: true, hasManifest: true, manifestErrors: [], trusted: true, observedAt: T, multipleProjectFolders: false,
     options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board, readiness: p.readiness ? salesReadiness : undefined,
-    workOrders: p.orders ? workOrders : undefined
+    workOrders: p.orders ? workOrders : undefined, toolkit
   });
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.

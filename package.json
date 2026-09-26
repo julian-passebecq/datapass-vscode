@@ -541,6 +541,31 @@
         "title": "DataPass: Open a Link of a Card"
       },
       {
+        "command": "datapass.openToolkit",
+        "title": "DataPass: Open the Toolkit (tools, prices, recipes)",
+        "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.toolkit.openLink",
+        "title": "DataPass: Open a Tool's Page"
+      },
+      {
+        "command": "datapass.toolkit.copyInstall",
+        "title": "DataPass: Copy a Tool's Install Command"
+      },
+      {
+        "command": "datapass.toolkit.copyStep",
+        "title": "DataPass: Copy a Recipe Step"
+      },
+      {
+        "command": "datapass.toolkit.openStep",
+        "title": "DataPass: Open a Recipe Step's Page"
+      },
+      {
+        "command": "datapass.toolkit.openFile",
+        "title": "DataPass: Open a Toolkit File"
+      },
+      {
         "command": "datapass.openRepositoryWeb",
         "title": "DataPass: Open a Repository on the Web (GitHub, Azure DevOps, GitLab)…",
         "icon": "$(globe)"
@@ -1553,6 +1578,26 @@
           "when": "false"
         },
         {
+          "command": "datapass.toolkit.openLink",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.copyInstall",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.copyStep",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.openStep",
+          "when": "false"
+        },
+        {
+          "command": "datapass.toolkit.openFile",
+          "when": "false"
+        },
+        {
           "command": "datapass.connections.copySignIn",
           "when": "false"
         },
@@ -2055,6 +2100,18 @@
             "badge.codingState": {
               "type": "boolean",
               "description": "Coding state of options and scenarios: coded / partly coded / not coded, derived from the files DataPass finds"
+            },
+            "workbench.toolkit": {
+              "type": "boolean",
+              "description": "Workbench: Toolkit: Tools with their free tier and prices, recipes, what needs a newer DataPass"
+            },
+            "project.toolkit": {
+              "type": "boolean",
+              "description": "Project tree: Toolkit: Hub toolkit files read, entries skipped, Needs a newer DataPass"
+            },
+            "badge.hubChanged": {
+              "type": "boolean",
+              "description": "\"Changed by the hub\" on catalogue entries: Marks built-in tools a hub toolkit file changed"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
@@ -2092,6 +2149,13 @@
           "**/.datapass/catalog.json"
         ],
         "url": "./schemas/datapass-catalog.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/toolkit/tools.json",
+          "**/.datapass/toolkit/recipes/*.json"
+        ],
+        "url": "./schemas/datapass-toolkit.schema.json"
       },
       {
         "fileMatch": [

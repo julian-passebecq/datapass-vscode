@@ -77,10 +77,13 @@
                 "landing.architecture",
                 "badge.alternatives",
                 "project.variantFilter",
-                "badge.codingState"
+                "badge.codingState",
+                "workbench.toolkit",
+                "project.toolkit",
+                "badge.hubChanged"
               ]
             },
-            "maxItems": 26,
+            "maxItems": 29,
             "minItems": 0
           }
         },

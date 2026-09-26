@@ -144,12 +144,28 @@ jobs:
       - run: python -c "print('fabric-cicd deploy of fabric/ to the prod workspace (synthetic example)')"
 `;
 
+/** 0.23: a board whose cards name the hub's toolkit recipes (examples/v3/hub/.datapass/toolkit). */
+export function boardSalesJson(): Record<string, unknown> {
+  return {
+    format: "datapass.board", version: "1", title: "Sales BI work", updated: "2026-09-26",
+    columns: [{ id: "todo", title: "To do" }, { id: "doing", title: "In progress", limit: 3 }, { id: "done", title: "Done", done: true }],
+    items: [
+      { id: "lowercase-copyjob", type: "task", title: "Lower-case the Copy Job's destination tables and columns", status: "todo", priority: "P2",
+        components: ["load"], environment: "dev", recipe: "fabric.item-definition.bulk-edit", route: "git" },
+      { id: "first-prod-deploy", type: "task", title: "First deployment to prod with fabric-cicd", status: "doing", priority: "P1",
+        components: ["deploy"], files: [{ path: "fabric/parameter.yml" }], environment: "prod", recipe: "fabric.deploy.fabric-cicd" },
+      { id: "model-in-git", type: "task", title: "Keep the semantic model in Git (PBIP)", status: "done", components: ["model"], recipe: "powerbi.pbip-git" }
+    ]
+  };
+}
+
 /** Files of the repository (relative path → content). */
 export function filesSales(): Record<string, string> {
   const json = (v: unknown) => JSON.stringify(v, null, 2) + "\n";
   return {
     ".datapass/project.json": json(manifestSales()),
     ".datapass/graph.json": json(graphSalesJson()),
+    ".datapass/board.json": json(boardSalesJson()),
     ".vscode/extensions.json": json(SALES_EXTENSIONS_JSON),
     "README.md": README,
     "AGENTS.md": AGENTS,

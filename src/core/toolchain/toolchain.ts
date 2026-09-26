@@ -144,6 +144,8 @@ export interface ToolchainInput {
   toolchain?: ToolchainDecl;
   tools: ReadonlyMap<string, ToolObservation>;
   platform: NodeJS.Platform | string;
+  /** 0.23: tools the hub's toolkit describes (known, never probed). The extension's registry wins. */
+  hubTools?: ReadonlyMap<string, ToolchainTool>;
 }
 
 /** The install command for a platform: platform-specific first, then the one for every platform. */
@@ -167,7 +169,7 @@ export function buildToolchain(input: ToolchainInput): ToolchainView {
     const optional = e.optional === true;
     const parsed = e.version !== undefined ? parseRange(e.version) : undefined;
     const range = parsed && !isRangeError(parsed) ? parsed : undefined;
-    const tool = catalog.get(e.tool);
+    const tool = catalog.get(e.tool) ?? input.hubTools?.get(e.tool);
     if (!tool) {
       const suggestions = suggestTools(e.tool);
       return { tool: e.tool, label: e.tool, where, optional, range: range?.text, state: "unknown-tool", suggestions,
@@ -177,7 +179,7 @@ export function buildToolchain(input: ToolchainInput): ToolchainView {
     const install = installFor(tool, String(input.platform));
     if (where !== "local") return { ...base, state: "not-checked", detail: `Runs in ${WHERE_TEXT[where]}: not checked on this computer.`, install };
     if (!tool.probe) {
-      const why = tool.kind === "python-library" ? "DataPass does not look inside Python environments" : tool.kind === "agent-plugin" ? "agent plugins are installed inside Claude Code or Copilot CLI" : "DataPass cannot probe this application";
+      const why = !catalog.has(tool.id) ? "the hub's toolkit describes it; DataPass has no probe for it" : tool.kind === "python-library" ? "DataPass does not look inside Python environments" : tool.kind === "agent-plugin" ? "agent plugins are installed inside Claude Code or Copilot CLI" : "DataPass cannot probe this application";
       return { ...base, state: "not-checked", detail: `Not checked: ${why}.`, install };
     }
     const obs = input.tools.get(tool.id);

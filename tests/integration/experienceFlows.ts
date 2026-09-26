@@ -61,7 +61,7 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     const marked = rows.filter(r => / · alternatives exist$/.test(r.description ?? ""));
     assert.ok(marked.length > 0, "components an options.json decision can change are marked");
     const wb = api().workbenchState();
-    assert.deepEqual(wb.experience, { hiddenViews: ["options", "sheet", "board", "workOrders"], alternatives: true });
+    assert.deepEqual(wb.experience, { hiddenViews: ["options", "sheet", "board", "workOrders", "toolkit"], alternatives: true });
     assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, ["agent", "manual"]);
     record("modes.standardTree", sections);
   }, ONLY);

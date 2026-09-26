@@ -153,8 +153,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       for (const kind of KINDS) {
         const loaded = kind === "manifest" ? c.manifestBytes : kind === "options" ? c.optionsBytes : kind === "sheet" ? c.sheetBytes : kind === "board" ? c.boardBytes : undefined;
         if (loaded) { sizes[kind] = loaded.byteLength; continue; }
-        if (kind !== "graph" && kind !== "catalog") continue;
-        const rel = kind === "graph" ? c.manifest?.graph ?? ".datapass/graph.json" : ".datapass/catalog.json";
+        if (kind !== "graph" && kind !== "catalog" && kind !== "toolkit") continue;
+        const rel = kind === "graph" ? c.manifest?.graph ?? ".datapass/graph.json" : kind === "toolkit" ? ".datapass/toolkit/tools.json" : ".datapass/catalog.json";
         const vet = vetRelativePath(rel);
         if (!vet.ok) continue;
         const bytes = await readOptional(vscode.Uri.joinPath(root, ...vet.relative.split("/")));

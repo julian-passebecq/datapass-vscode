@@ -140,6 +140,10 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .comprow .muted { max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .actions-col { display: grid; gap: 6px; }
   .actions-col .btn:not(.link) { justify-content: flex-start; }
+  .route.chosen { border-color: var(--vscode-focusBorder); }
+  ol.steps { margin: 6px 0 4px 18px; padding: 0; }
+  ol.steps li { margin: 3px 0; }
+  ol.steps code { word-break: break-all; }
   .tool { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--border); }
   .needs { display: grid; gap: 4px; }
   .evidence { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 6px; }

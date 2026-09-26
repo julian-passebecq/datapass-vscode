@@ -25,6 +25,7 @@ import { boardAJson } from "../tests/fixtures/v3/researchBoard";
 import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from "../tests/fixtures/v3/devops";
 import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
+import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
@@ -277,7 +278,10 @@ function setupV18Toolchain(base: string): { workspace: string; env: Record<strin
   const ws = path.join(base, "sales-bi");
   writeTree(ws, filesSales());
   commitAll(ws, "sales bi");
-  return { workspace: ws, env: {} };
+  // 0.23: a hub repository beside it (catalog + toolkit), found through the datapass.catalogs setting the flow sets.
+  const hub = path.join(base, "hub");
+  writeTree(hub, { ".datapass/catalog.json": JSON.stringify({ format: "datapass.catalog", version: "1", projects: [] }, null, 2) + "\n", ...hubToolkitFiles() });
+  return { workspace: ws, env: { DATAPASS_IT_HUB: path.join(hub, ".datapass", "catalog.json") } };
 }
 
 /**

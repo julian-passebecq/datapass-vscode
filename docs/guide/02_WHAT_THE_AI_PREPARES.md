@@ -502,6 +502,15 @@ the person adds its path to the `datapass.catalogs` setting and uses *Switch Pro
 }
 ```
 
+### The toolkit (optional, in the hub, DataPass ≥ 0.23.0)
+
+A hub can also carry `.datapass/toolkit/tools.json` and `.datapass/toolkit/recipes/*.json`: real
+tools, prices and step-by-step recipes DataPass shows instead of the AI guessing. Same envelope as
+other DataPass files (`format: "datapass.toolkit"`, `version: "1"`); a tool needs at least `label` and
+`kind`; a recipe needs `id`, `module`, `title` and one to eight `routes[]`. Full field reference:
+[`../PREPARING_A_PROJECT.md`](../PREPARING_A_PROJECT.md), section 14. Example:
+[`../../examples/v3/hub/.datapass/toolkit/`](../../examples/v3/hub/.datapass/toolkit/).
+
 ## 2.9 `.datapass/work-log.json` — the work log (DataPass writes it)
 
 DataPass writes this file when the person clicks *Publish summary* in the AI view's Agent tab: one

@@ -285,7 +285,7 @@ export class WorkOrderFlows {
     let cardFile: string | undefined, decisionFile: string | undefined;
     if (card && ctx.board) {
       const cq: CardQuestion = card.type === "bug" ? "fix" : "implement";
-      const pack = buildCardPack({ board: ctx.board, card, map, question: cq, ...common, boardDigest: ctx.boardBytes ? sha256Bytes(ctx.boardBytes).value : undefined, sheet: ctx.sheet, options: ctx.options, readiness: this.session.readiness() });
+      const pack = buildCardPack({ board: ctx.board, card, map, question: cq, recipe: this.session.recipe(card.recipe?.id), ...common, boardDigest: ctx.boardBytes ? sha256Bytes(ctx.boardBytes).value : undefined, sheet: ctx.sheet, options: ctx.options, readiness: this.session.readiness() });
       cardFile = `attachments/board-card-${safeName(card.id)}.md`;
       attach(cardFile, pack.text);
     }
