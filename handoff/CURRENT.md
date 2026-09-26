@@ -14,7 +14,8 @@ shows the architecture first, lists the files each step needs and what is missin
 file or official tool, exchanges bounded context with the AI, and gets merged work with
 Check / Get updates. It never deploys, pushes or runs project code.
 
-Surfaces: four modes (Vanilla, Standard, DataPass, Advanced), the Project tree, the Architecture panel,
+Surfaces: four modes (Vanilla, Standard, DataPass, Advanced; since V1-SURF the Command Palette
+follows the mode too: `src/core/experience/palette.ts`), the Project tree, the Architecture panel,
 Details, the AI view (DataPass-guided / Agent / Manual), the Git view, the Workbench, work orders,
 the toolkit catalogue, architecture variants (preview only). The user-facing overview is the
 [README](../README.md); the French quick start is [docs/DEMARRER.md](../docs/DEMARRER.md).

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { plan, refusal, syncCommon } from "../scripts/sync-common";
+import { lf, plan, refusal, syncCommon } from "../scripts/sync-common";
 
 const ROOT = join(__dirname, "..");
 
@@ -39,4 +39,16 @@ test("sync-common is idempotent: the second run changes nothing", () => {
   assert.deepEqual([second.written, second.removed], [[], []]);
   assert.equal(readFileSync(join(target, "README.md"), "utf8"), "kept");
   assert.match(readFileSync(join(target, "VERSION"), "utf8"), /^\d+\.\d+\.\d+/);
+});
+
+test("sync-common --check ignores CRLF/LF differences (Windows checkouts) and writes LF", () => {
+  const target = mkdtempSync(join(tmpdir(), "dp-common-eol-"));
+  syncCommon(ROOT, target);
+  const f = join(target, "VERSION");
+  assert.ok(!readFileSync(f, "utf8").includes("\r"), "written with LF");
+  writeFileSync(f, readFileSync(f, "utf8").replace(/\n/g, "\r\n"));
+  assert.deepEqual(syncCommon(ROOT, target, true).written, [], "a CRLF copy is not stale");
+  writeFileSync(f, "0.0.0\r\n");
+  assert.deepEqual(syncCommon(ROOT, target, true).written, ["VERSION"], "a real change still is");
+  assert.equal(lf(Buffer.from([1, 0, 13, 10])).length, 4, "binary content untouched");
 });

@@ -84,10 +84,11 @@
                 "status.selectedVariant",
                 "view.agentPanel",
                 "ai.pilot",
-                "ai.codexTests"
+                "ai.codexTests",
+                "palette.full"
               ]
             },
-            "maxItems": 33,
+            "maxItems": 34,
             "minItems": 0
           }
         },

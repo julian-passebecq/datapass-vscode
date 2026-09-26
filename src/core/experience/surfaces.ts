@@ -3,11 +3,12 @@
  * Pure (no `vscode`). Ids are a contract: presets.json, the `datapass.experience.overrides`
  * setting and the context keys `datapass.hidden.<id>` use them. Add, never rename.
  *
- * Presets only change presentation (D-03): safety blockers, commands in the palette and the
- * files of a project are the same in every mode.
+ * Presets only change presentation (D-03): safety blockers and the files of a project are the
+ * same in every mode. Since V1-SURF the Command Palette lists fewer commands in the lighter modes
+ * (`palette.ts`); every command stays registered and reachable from its view.
  */
 
-export type SurfaceKind = "view" | "aiTab" | "projectSection" | "workbenchView" | "statusBar" | "landing" | "badge";
+export type SurfaceKind = "view" | "aiTab" | "projectSection" | "workbenchView" | "statusBar" | "landing" | "badge" | "palette";
 
 export interface Surface {
   id: string;
@@ -57,7 +58,9 @@ export const SURFACES: readonly Surface[] = [
   // 0.26 (AI-4a): pilot stage 1.
   { id: "ai.pilot", kind: "aiTab", label: "AI view: Pilot tab", detail: "Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)" },
   // QA-2: the Codex tests mode (handoff/v3/12 §4.5).
-  { id: "ai.codexTests", kind: "workbenchView", label: "Work orders: Codex tests", detail: "The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)" }
+  { id: "ai.codexTests", kind: "workbenchView", label: "Work orders: Codex tests", detail: "The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)" },
+  // V1-SURF: the palette lists the core commands and those of the shown surfaces; this adds the rest.
+  { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

@@ -25,8 +25,8 @@
     {
       "id": "advanced",
       "label": "Advanced",
-      "description": "Everything, as in 0.20: the board, Work and Galaxy views and the tool-health status item as well.",
-      "show": ["view.project", "view.git", "view.work", "view.galaxy", "view.architecture", "view.aiExchange", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.board", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.board", "workbench.workOrders", "status.mode", "status.health", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.selectedVariant", "ai.pilot", "ai.codexTests"]
+      "description": "Everything, as in 0.20: the board, Work and Galaxy views, the tool-health status item and every command in the Command Palette.",
+      "show": ["view.project", "view.git", "view.work", "view.galaxy", "view.architecture", "view.aiExchange", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.board", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.board", "workbench.workOrders", "status.mode", "status.health", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.selectedVariant", "ai.pilot", "ai.codexTests", "palette.full"]
     }
   ]
 }

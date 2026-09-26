@@ -135,8 +135,9 @@ test("experience: settings follow the surface and preset lists; menus of hidden 
   const menus = [...pkg.contributes.menus["view/title"], ...pkg.contributes.menus["view/item/context"]] as Array<{ command: string; when: string }>;
   for (const m of menus.filter(x => x.command.startsWith("datapass.workOrders."))) assert.match(m.when, /!datapass\.hidden\.ai\.agent/, m.command);
   for (const m of menus.filter(x => x.command === "datapass.openBoard")) assert.match(m.when, /!datapass\.hidden\.workbench\.board/);
-  // D-03: commands stay in the palette — the modes never add a commandPalette `when` on a surface key.
-  for (const m of pkg.contributes.menus.commandPalette as Array<{ when?: string }>) assert.ok(!(m.when ?? "").includes("datapass.hidden."));
+  // D-03 as amended by V1-SURF: the palette lists fewer commands in lighter modes (tests/palette.test.ts),
+  // but the mode commands themselves are listed in every mode.
+  for (const m of pkg.contributes.menus.commandPalette as Array<{ command: string; when?: string }>) assert.ok(!["datapass.experience.switchMode", "datapass.experience.customize"].includes(m.command), m.command);
   for (const id of ["datapass.experience.switchMode", "datapass.experience.customize", "datapass.experience.resetOverrides"]) {
     assert.ok(pkg.contributes.commands.some((c: { command: string }) => c.command === id), id);
   }
