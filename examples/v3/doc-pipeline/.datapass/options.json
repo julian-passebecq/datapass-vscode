@@ -25,7 +25,8 @@
           "pros": ["Nothing to deploy: runs wherever Python runs"],
           "cons": ["Someone (or a scheduler) must start it"],
           "costs": [
-            { "label": "A small Linux VM to run it nightly", "service": "Azure Virtual Machines", "price": "B1s pay-as-you-go, order of magnitude", "monthly": 8, "currency": "EUR", "source": "https://azure.microsoft.com/pricing/details/virtual-machines/linux/", "asOf": "2026-09-26", "note": "0 when it runs on a machine you already have" }
+            { "label": "A small Linux VM to run it nightly", "service": "Azure Virtual Machines", "price": "B1s pay-as-you-go, order of magnitude", "monthly": 8, "currency": "EUR", "source": "https://azure.microsoft.com/pricing/details/virtual-machines/linux/", "asOf": "2026-09-26", "note": "0 when it runs on a machine you already have" },
+            { "label": "Storage account holding the inbox and the results (the same account in every variant)", "service": "Azure Blob Storage", "price": "Hot LRS, about 0.02 USD per GB-month, 50 GB", "monthly": 1, "shared": "doc-storage", "basis": "allocated: one account whatever starts the processing", "source": "https://azure.microsoft.com/pricing/details/storage/blobs/", "asOf": "2026-09-26" }
           ]
         },
         {
@@ -42,7 +43,8 @@
           "pros": ["Processes each PDF as soon as it arrives"],
           "cons": ["A Function App to deploy and monitor"],
           "costs": [
-            { "label": "Functions Consumption plan, a few thousand runs a month", "service": "Azure Functions", "price": "first 1 million executions a month free, then 0.20 USD per million", "monthly": 0, "source": "https://azure.microsoft.com/pricing/details/functions/", "asOf": "2026-09-26" }
+            { "label": "Functions Consumption plan, a few thousand runs a month", "service": "Azure Functions", "price": "first 1 million executions a month free, then 0.20 USD per million", "monthly": 0, "source": "https://azure.microsoft.com/pricing/details/functions/", "asOf": "2026-09-26" },
+            { "label": "Storage account holding the inbox and the results (the same account in every variant)", "service": "Azure Blob Storage", "price": "Hot LRS, about 0.02 USD per GB-month, 50 GB", "monthly": 1, "shared": "doc-storage", "basis": "allocated: one account whatever starts the processing", "source": "https://azure.microsoft.com/pricing/details/storage/blobs/", "asOf": "2026-09-26" }
           ]
         },
         {
@@ -60,7 +62,25 @@
           "pros": ["Monitoring, retries and lineage in Data Factory Studio"],
           "cons": ["A factory and its Git folder to create first"],
           "costs": [
-            { "label": "Orchestration, about 3,000 activity runs a month", "service": "Azure Data Factory", "price": "about 1 USD per 1,000 activity runs (Azure integration runtime)", "monthly": 3, "source": "https://azure.microsoft.com/pricing/details/data-factory/data-pipeline/", "asOf": "2026-09-26" }
+            { "label": "Orchestration, about 3,000 activity runs a month", "service": "Azure Data Factory", "price": "about 1 USD per 1,000 activity runs (Azure integration runtime)", "monthly": 3, "source": "https://azure.microsoft.com/pricing/details/data-factory/data-pipeline/", "asOf": "2026-09-26" },
+            { "label": "Storage account holding the inbox and the results (the same account in every variant)", "service": "Azure Blob Storage", "price": "Hot LRS, about 0.02 USD per GB-month, 50 GB", "monthly": 1, "shared": "doc-storage", "basis": "allocated: one account whatever starts the processing", "source": "https://azure.microsoft.com/pricing/details/storage/blobs/", "asOf": "2026-09-26" }
+          ]
+        },
+        {
+          "id": "databricks-free",
+          "label": "D — Databricks Free Edition job (to learn)",
+          "summary": "A scheduled Databricks job runs the same script: a way to try Databricks, not to run client work.",
+          "changes": {
+            "replace": [
+              { "id": "orchestrate", "kind": "workflow", "label": "Databricks job (Free Edition)", "provider": "databricks", "status": "planned" }
+            ]
+          },
+          "values": { "cost": "0 (learning only)", "setup": { "score": 3 } },
+          "pros": ["Try Databricks jobs and notebooks at no cost"],
+          "cons": ["Free Edition is for learning: non-commercial use, no SLA"],
+          "costs": [
+            { "label": "Databricks Free Edition workspace", "service": "Azure Databricks", "price": "free, non-commercial use, quotas", "monthly": 0, "use": "learning-only", "source": "https://www.databricks.com/learn/free-edition", "asOf": "2026-09-26" },
+            { "label": "Storage account holding the inbox and the results (the same account in every variant)", "service": "Azure Blob Storage", "price": "Hot LRS, about 0.02 USD per GB-month, 50 GB", "monthly": 1, "shared": "doc-storage", "basis": "allocated: one account whatever starts the processing", "source": "https://azure.microsoft.com/pricing/details/storage/blobs/", "asOf": "2026-09-26" }
           ]
         }
       ]
