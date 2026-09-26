@@ -98,7 +98,8 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
 
   // ---- where the file is
   const fsPath = uri.scheme === "file" ? uri.fsPath : "";
-  const map = session.root ? session.projectMap() : undefined;
+  // The selected variant's map, like the tree: the owning component is the one the person previews.
+  const map = session.root ? session.preview()?.map ?? session.projectMap() : undefined;
   const obs = session.projectObservation();
   const repos = map?.repositories ?? [];
   const observed = repos.map(r => ({ key: r.key, folder: obs?.folders.get(r.key)?.fsPath, remoteUrl: r.remoteUrl }));
