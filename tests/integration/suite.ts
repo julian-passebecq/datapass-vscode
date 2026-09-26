@@ -20,6 +20,7 @@ import { registerWindowFlows } from "./windowFlows";
 import { registerToolchainFlows } from "./toolchainFlows";
 import { registerGitFlows } from "./gitFlows";
 import { registerWorkOrderFlows } from "./workOrderFlows";
+import { registerFileVersionFlows } from "./fileVersionFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -230,6 +231,7 @@ registerWindowFlows(() => api);
 registerToolchainFlows(() => api);
 registerGitFlows(() => api);
 registerWorkOrderFlows(() => api);
+registerFileVersionFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

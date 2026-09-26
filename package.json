@@ -732,6 +732,26 @@
         "command": "datapass.workOrders.newFromFailingPr",
         "title": "DataPass: Work Order to Fix this (failing CI)",
         "icon": "$(tools)"
+      },
+      {
+        "command": "datapass.fileVersions.openLatest",
+        "title": "DataPass: Open Latest Version",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "datapass.fileVersions.openVersion",
+        "title": "DataPass: Open Version…",
+        "icon": "$(history)"
+      },
+      {
+        "command": "datapass.fileVersions.compare",
+        "title": "DataPass: Compare with Version…",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "datapass.fileVersions.lastUpdate",
+        "title": "DataPass: Changed by the Last Update…",
+        "icon": "$(git-compare)"
       }
     ],
     "viewsContainers": {
@@ -1140,6 +1160,16 @@
           "command": "datapass.workOrders.exportProject",
           "when": "view == datapass.aiExchange",
           "group": "2_agent@4"
+        },
+        {
+          "command": "datapass.fileVersions.lastUpdate",
+          "when": "view == datapass.project",
+          "group": "3_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.lastUpdate",
+          "when": "view == datapass.git",
+          "group": "3_versions@1"
         }
       ],
       "view/item/context": [
@@ -1382,6 +1412,21 @@
           "command": "datapass.workOrders.newForMissingFiles",
           "when": "view == datapass.project && viewItem =~ /^component.*\\.missing/",
           "group": "2_ai@1"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@3"
         }
       ],
       "commandPalette": [
@@ -1511,6 +1556,38 @@
           "command": "datapass.validateContract",
           "when": "resourceExtname == .json && resourcePath =~ /\\.datapass/",
           "group": "7_datapass"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@3"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@1"
+        },
+        {
+          "command": "datapass.fileVersions.openVersion",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@2"
+        },
+        {
+          "command": "datapass.fileVersions.compare",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@3"
         }
       ]
     },
