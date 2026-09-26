@@ -105,7 +105,7 @@ test("qa:prepare installs the VSIX into the isolated profile, writes the workspa
   try {
     fs.copyFileSync(vsix!, path.join(root, "datapass-vscode.vsix"));
     const lines: string[] = [];
-    const r = await prepare({ auto, root, log: l => lines.push(l), now: new Date("2026-09-27T09:30:00Z") });
+    const r = await prepare({ auto, root, commit: "c78f01f", log: l => lines.push(l), now: new Date("2026-09-27T09:30:00Z") });
     assert.equal(r.code, 0, lines.join("\n"));
     // The VSIX is in the isolated extensions dir, not in the person's profile.
     const installed = fs.readdirSync(path.join(root, ".vscode-ext")).filter(n => n.toLowerCase().startsWith(`${EXTENSION_ID}-`));
@@ -117,6 +117,11 @@ test("qa:prepare installs the VSIX into the isolated profile, writes the workspa
     const run = parseQaRun(fs.readFileSync(path.join(root, "run.json"))) as any;
     assert.equal(run.runId, "20260927-0930-doc-pipeline-lab");
     assert.equal(run.datapass.version, version);
+    assert.equal(run.datapass.commit, "c78f01f");
+    assert.equal(run.host, "codex-desktop");
+    assert.ok(run.preconditions.some((p: string) => /unlocked foreground desktop/.test(p)) && run.preconditions.some((p: string) => /own local build/.test(p)));
+    assert.ok(run.knownLeaks.some((p: string) => /\.vscode-shared/.test(p)));
+    assert.match(run.screenshots.command, /<file>/);
     assert.equal(run.datapass.sha256, createHash("sha256").update(fs.readFileSync(vsix!)).digest("hex"));
     assert.equal(run.clients[0].bridge.commit, git(path.join(root, "doc-pipeline"), "rev-parse", "HEAD"));
     assert.deepEqual(run.journeys.map((x: { id: string }) => x.id), ["J01", "J02"]);

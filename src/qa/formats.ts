@@ -60,11 +60,13 @@ const JOURNEY_ID: Schema = S(20, 2, "^[A-Z][A-Z0-9-]{1,19}$");
 const TEXT = (max: number) => S(max);
 const LINES = (maxItems: number, maxLength: number, minItems = 0) => arr(S(maxLength), maxItems, minItems);
 
-const FOLDER_REF: Schema = obj({ remote: HTTPS_REMOTE, folder: REL_PATH });
+/** `folder` = the clone under the run root; `path` = a sub-folder inside it (an `examples/v3/*` of a datapass-vscode clone). */
+const FOLDER_REF: Schema = obj({ remote: HTTPS_REMOTE, folder: REL_PATH, path: REL_PATH }, ["remote", "folder"]);
 const CLIENT: Schema = obj({ id: CLIENT_ID, title: TEXT(120) });
 const WORKSPACE_FIELDS = { bridge: FOLDER_REF, repositories: arr(FOLDER_REF, 20) };
 const WORKSPACE: Schema = obj(WORKSPACE_FIELDS);
-const APP_WORKSPACE: Schema = obj({ client: CLIENT, ...WORKSPACE_FIELDS });
+/** 12 §4.7: an app workspace carries its own `id` and `title`. */
+const APP_WORKSPACE: Schema = obj({ id: CLIENT_ID, title: TEXT(120), ...WORKSPACE_FIELDS });
 
 const COMMON_CONFIG = {
   $schema: S(500),
@@ -94,9 +96,14 @@ export const TEST_JOURNEY_SCHEMA: Schema = obj({
   outOfScope: LINES(10, 300)
 }, ["format", "version", "id", "kind", "title", "goal", "expected", "features"]);
 
-const REPO_COMMIT: Schema = obj({ folder: REL_PATH, remote: HTTPS_REMOTE, commit: COMMIT });
+const REPO_COMMIT: Schema = obj({ folder: REL_PATH, path: REL_PATH, remote: HTTPS_REMOTE, commit: COMMIT }, ["folder", "remote", "commit"]);
 const CLIENT_RUN: Schema = obj({ id: CLIENT_ID, title: TEXT(120), bridge: REPO_COMMIT, repositories: arr(REPO_COMMIT, 20) });
-const DATAPASS_BUILD: Schema = obj({ version: VERSION, sha256: SHA256 });
+/** The released commit the VSIX was built from (the repository has no tags; PLAN.md records it), short or full. */
+const RELEASED_COMMIT: Schema = S(40, 7, "^[a-f0-9]{7,40}$");
+const DATAPASS_BUILD: Schema = obj({ version: VERSION, sha256: SHA256, commit: RELEASED_COMMIT }, ["version", "sha256"]);
+/** Screens are shell captures (Codex Computer Use saves none): `screens/<journey id>-<what>.png` in the report folder. */
+export const SCREEN_PATTERN = "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$";
+const SCREEN: Schema = S(120, 1, SCREEN_PATTERN);
 const VSCODE_BUILD: Schema = obj({ version: VERSION, commit: COMMIT }, ["version"]);
 const OS: Schema = obj({ platform: S(20), release: S(80), arch: S(20) });
 
@@ -107,20 +114,21 @@ export const QA_REPORT_SCHEMA: Schema = obj({
   runId: S(120, 1, "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"),
   datapass: DATAPASS_BUILD, vscode: VSCODE_BUILD, os: OS,
   clients: arr(CLIENT_RUN, 10, 1),
-  agent: obj({ tool: constOf("codex"), model: S(80), host: enumOf("app", "terminal") }),
+  // The Codex desktop app only: Computer Use sees nothing launched from `codex exec`.
+  agent: obj({ tool: constOf("codex"), model: S(80), host: constOf("app") }),
   startedAt: TIME, finishedAt: TIME,
   journeys: arr(obj({
     id: JOURNEY_ID, outcome: enumOf(...OUTCOMES), minutes: INT(0, 480),
     path: LINES(40, 300),
     expected: arr(obj({ text: TEXT(500), met: { enum: [true, false, "unclear"] } }), 20),
-    screens: arr(REL_PATH, 40)
+    screens: arr(SCREEN, 40)
   }, ["id", "outcome", "minutes", "path", "expected"]), 50),
   findings: arr(obj({
     id: S(20, 1, "^F[0-9]{1,4}$"), journey: JOURNEY_ID, severity: enumOf(...SEVERITIES), area: enumOf(...FEATURES),
     title: TEXT(160), steps: LINES(30, 300), expected: TEXT(1000), actual: TEXT(1000),
-    screens: arr(REL_PATH, 20), suggestion: TEXT(1000)
+    screens: arr(SCREEN, 20), suggestion: TEXT(1000)
   }, ["id", "severity", "area", "title", "steps", "expected", "actual"]), 200),
-  answers: arr(obj({ question: TEXT(500), answer: TEXT(2000), evidence: TEXT(1000), confidence: enumOf(...CONFIDENCES) }), 50),
+  answers: arr(obj({ question: TEXT(500), answer: TEXT(2000), evidence: TEXT(1000), screens: arr(SCREEN, 10), confidence: enumOf(...CONFIDENCES) }, ["question", "answer", "evidence", "confidence"]), 50),
   clientFeedback: LINES(50, 1000),
   coverage: obj({ listed: arr(enumOf(...FEATURES), FEATURES.length), reached: arr(enumOf(...FEATURES), FEATURES.length) })
 }, ["format", "version", "purpose", "runId", "datapass", "vscode", "os", "clients", "agent", "journeys", "findings", "answers", "coverage"]);
@@ -130,9 +138,15 @@ export const QA_RUN_SCHEMA: Schema = obj({
   runId: S(120, 1, "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"),
   purpose: enumOf(...PURPOSES),
   createdAt: TIME,
-  datapass: obj({ version: VERSION, sha256: SHA256, vsix: S(260), extension: S(120) }),
+  datapass: obj({ version: VERSION, sha256: SHA256, commit: RELEASED_COMMIT, vsix: S(260), extension: S(120) }, ["version", "sha256", "vsix", "extension"]),
   vscode: VSCODE_BUILD, os: OS,
+  host: constOf("codex-desktop"),
   profile: obj({ userDataDir: constOf(".vscode-user"), extensionsDir: constOf(".vscode-ext") }),
+  /** What must hold before the agent starts (visible desktop, Computer Use approval, the VSIX is the user's build). */
+  preconditions: LINES(10, 500, 1),
+  /** What the isolated profile does not isolate (~/.vscode-shared). */
+  knownLeaks: LINES(10, 500),
+  screenshots: obj({ folder: constOf("screens"), pattern: constOf(SCREEN_PATTERN), command: S(1000) }),
   clients: arr(obj({ id: CLIENT_ID, title: TEXT(120), workspaceFile: REL_PATH, bridge: REPO_COMMIT, repositories: arr(REPO_COMMIT, 20), launch: S(2000) }), 10, 1),
   journeys: arr(obj({ id: JOURNEY_ID, kind: enumOf(...PURPOSES), title: TEXT(160), file: REL_PATH, features: arr(enumOf(...FEATURES), 20, 1) }), 50, 1)
 });
@@ -145,7 +159,9 @@ export class QaFormatError extends Error {
   }
 }
 
-export interface FolderRef { remote: string; folder: string }
+export interface FolderRef { remote: string; folder: string; path?: string }
+/** Where a reference opens: the clone folder, or the sub-folder inside it. */
+export const openPath = (ref: FolderRef): string => (ref.path ? `${ref.folder}/${ref.path}` : ref.folder);
 export interface ClientWorkspace { client: { id: string; title: string }; bridge: FolderRef; repositories: FolderRef[] }
 export interface CodexTestsConfig {
   purpose: Purpose;
@@ -184,8 +200,9 @@ function checkRefs(refs: Array<{ where: string; ref: FolderRef }>): string[] {
   for (const { where, ref } of refs) {
     const v = vetRelativePath(ref.folder);
     if (!v.ok) out.push(`${where}.folder "${ref.folder}": ${v.reason}`);
-    const key = ref.folder.toLowerCase();
-    if (folders.has(key)) out.push(`${where}.folder "${ref.folder}" is also used by ${folders.get(key)}`);
+    if (ref.path !== undefined) { const p = vetRelativePath(ref.path); if (!p.ok) out.push(`${where}.path "${ref.path}": ${p.reason}`); }
+    const key = openPath(ref).toLowerCase();
+    if (folders.has(key)) out.push(`${where}.folder "${openPath(ref)}" is also used by ${folders.get(key)}`);
     else folders.set(key, where);
     if (!remoteIdentity(ref.remote)) out.push(`${where}.remote "${ref.remote}" is not a repository address`);
   }
@@ -200,13 +217,13 @@ export function parseCodexTests(raw: string | Uint8Array, file = CODEX_TESTS_FIL
   const issues = describe(validateSchema(purpose === "app" ? APP_CONFIG_SCHEMA : CLIENT_CONFIG_SCHEMA, doc));
   if (issues.length) throw new QaFormatError(file, issues);
   const workspaces: ClientWorkspace[] = purpose === "app"
-    ? (doc.workspaces as ClientWorkspace[])
+    ? (doc.workspaces as Array<{ id: string; title: string } & Omit<ClientWorkspace, "client">>).map(({ id, title, ...w }) => ({ client: { id, title }, ...w }))
     : [{ client: doc.client as ClientWorkspace["client"], ...(doc.workspace as Omit<ClientWorkspace, "client">) }];
   const extra: string[] = [];
   const ids = new Set<string>();
   workspaces.forEach((w, i) => {
     const at = purpose === "app" ? `$.workspaces[${i}]` : "$.workspace";
-    if (ids.has(w.client.id)) extra.push(`${at}.client.id "${w.client.id}" appears twice`);
+    if (ids.has(w.client.id)) extra.push(`${at}${purpose === "app" ? "" : ".client"}.id "${w.client.id}" appears twice`);
     ids.add(w.client.id);
     extra.push(...checkRefs([{ where: `${at}.bridge`, ref: w.bridge }, ...w.repositories.map((ref, j) => ({ where: `${at}.repositories[${j}]`, ref }))]));
   });

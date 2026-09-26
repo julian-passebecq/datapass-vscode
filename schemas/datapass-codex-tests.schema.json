@@ -132,6 +132,12 @@
                   "minLength": 1,
                   "maxLength": 400,
                   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
                 }
               },
               "required": [
@@ -152,6 +158,12 @@
                     "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
                   },
                   "folder": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "path": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 400,
@@ -279,26 +291,16 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-              "client": {
-                "type": "object",
-                "additionalProperties": false,
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 80,
-                    "pattern": "^[a-z][a-z0-9-]{0,79}$"
-                  },
-                  "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  }
-                },
-                "required": [
-                  "id",
-                  "title"
-                ]
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80,
+                "pattern": "^[a-z][a-z0-9-]{0,79}$"
+              },
+              "title": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
               },
               "bridge": {
                 "type": "object",
@@ -311,6 +313,12 @@
                     "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
                   },
                   "folder": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "path": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 400,
@@ -339,6 +347,12 @@
                       "minLength": 1,
                       "maxLength": 400,
                       "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                    },
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
                     }
                   },
                   "required": [
@@ -351,7 +365,8 @@
               }
             },
             "required": [
-              "client",
+              "id",
+              "title",
               "bridge",
               "repositories"
             ]
