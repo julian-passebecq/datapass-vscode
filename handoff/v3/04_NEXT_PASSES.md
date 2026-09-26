@@ -19,7 +19,7 @@ Architecture options and scenarios (options.json: compare, preview on the diagra
 AI contexts to compare or apply), project sheet (sheet.json), diagram orientation / lanes / folding,
 JSON exchange with an AI (copy, validated import with diff and backup, restore), `vm` and `docker`
 providers, Google tools named and probed. Unit 234, desktop 151 (7 fixtures). Design and readiness:
-[06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
+[06_VISION_AND_READINESS.md](../archive/v3/06_VISION_AND_READINESS.md).
 
 ## Done in 0.15.1
 
@@ -34,14 +34,14 @@ GitHub/Azure DevOps/GitLab (repository, pull/merge requests, pipelines/Actions, 
 profiles `github-actions`, `azure-pipelines`, `gitlab-ci` routed to the official extensions or the
 host's runs page. Mongoku frozen (`modules.mongoku: false` in prepared manifests). Grafana's "Edit in
 Grafana" route. Unit 249, desktop 172 (8 fixtures, new `v3-devops`). Design and readiness:
-[06_VISION_AND_READINESS.md](06_VISION_AND_READINESS.md).
+[06_VISION_AND_READINESS.md](../archive/v3/06_VISION_AND_READINESS.md).
 
 ## Done in 0.17.0 (windows and work views)
 
 Company workspace file (one window per company), work views (save / apply / manage, machine-local),
 the status-bar switcher, `datapass.startupView`, the Workbench in a floating window, and the Power
 Ops launcher list — on top of 0.16.0. Unit 268, desktop 200 (9 fixtures). Full detail and the launcher contract:
-[07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md).
+[07_WINDOWS_AND_POWER_OPS.md](../archive/v3/07_WINDOWS_AND_POWER_OPS.md).
 
 ## Done in 0.18.0 (toolchain, ID map, connections)
 
@@ -189,7 +189,7 @@ WSL qualification, variants on another branch or tag (J5). The items below stay 
    board items (a board contract change); the "Needs a newer DataPass" list from `datapassRequests`.
    The toolchain of 0.18 already names tools by the ids the catalogue will describe.
 1. **PowerToy_UI task (Power Ops launcher), separate repository.** Read the company-workspaces list
-   DataPass exports (contract: [07_WINDOWS_AND_POWER_OPS.md](07_WINDOWS_AND_POWER_OPS.md) section 7),
+   DataPass exports (contract: [07_WINDOWS_AND_POWER_OPS.md](../archive/v3/07_WINDOWS_AND_POWER_OPS.md) section 7),
    show companies (with their colour) and their work views in the Tool Launcher, open a company or a
    view exactly as the contract says, refresh when the file changes. Never writes anything else in a
    DataPass folder. Effort: high. A ready-to-paste prompt is in section 7.
