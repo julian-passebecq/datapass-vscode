@@ -23,6 +23,7 @@ import { vetRelativePath } from "../exchange/pathSafety";
 import { safeAppUrl } from "../model/safeUrl";
 import type { IdentifierDecl } from "../readiness/readiness";
 import { TOOL_ID } from "./toolchain";
+import { observed, unknown, type EvidenceLink } from "../evidence/chain";
 
 export const MAX_CONNECTIONS = 30;
 const ID_RE = /^[a-z][a-z0-9_.-]{0,79}$/;
@@ -364,4 +365,26 @@ export function signInCommand(c: ConnectionDecl, identifiers: readonly Identifie
 /** Tools to run for the declared sign-ins (at most one run per tool). */
 export function toolsToCheck(connections: readonly ConnectionDecl[] | undefined): CheckedTool[] {
   return [...new Set((connections ?? []).filter(c => c.kind === "sign-in" && isCheckedTool(c.tool)).map(c => c.tool as CheckedTool))];
+}
+
+// ------------------------------------------------------------------ evidence (D-22)
+
+/**
+ * The "authenticated identity" link of a CLI's evidence chain, from the read-only sign-in check
+ * the person ran (never from the CLI's own credential files). Declared sign-ins add whether the
+ * identity is the declared tenant / subscription / profile; that is still not access to a target.
+ */
+export function signInEvidence(tool: CheckedTool, probe: ConnectionProbe | undefined, declared: readonly ConnectionView[] = []): EvidenceLink {
+  const text = SIGN_IN_CHECKS[tool].text;
+  if (!probe) return unknown("authenticated", declared.length
+    ? `not checked yet: "Check connections" runs ${text} (read-only, no prompt)`
+    : `no sign-in declared for it in connections; DataPass runs ${text} only for a declared sign-in`);
+  if (probe.outcome === "not-installed") return unknown("authenticated", `${text} could not run: the CLI was not found`);
+  if (probe.outcome !== "ok") return unknown("authenticated", probe.reason ?? `${text} failed`);
+  const match = declared.find(c => c.state === "ok") ? "as declared" : declared.find(c => c.state === "mismatch" || c.state === "profile-missing" || c.state === "profile-invalid")?.detail;
+  if (tool === "cli.databricks") {
+    const valid = probe.profiles?.filter(p => p.valid).map(p => p.name) ?? [];
+    return observed("authenticated", valid.length > 0, text, probe.ranAt, valid.length ? `valid profile(s): ${valid.slice(0, 5).join(", ")}${match ? ` · ${match}` : ""}` : "no valid profile");
+  }
+  return observed("authenticated", probe.signedIn === true, text, probe.ranAt, probe.signedIn ? match : undefined);
 }

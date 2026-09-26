@@ -251,3 +251,23 @@ test("no env value appears in any output: readiness, webview state, snapshot, re
   ]);
   assert.deepEqual(snap.environment.companions, [{ module: "mongoku", state: "disabled" }, { module: "diagramcloud", state: "disabled" }]);
 });
+
+// ------------------------------------------------------------------ D-22 evidence chain
+
+test("readiness: the evidence chain for az and the Fabric MCP server, unknown with reasons, in the report and the workbench", () => {
+  const at = "2026-09-26T10:00:00.000Z";
+  const r = buildReadiness(input({ tools: new Map([["cli.az", { toolId: "cli.az", state: "present", via: "az", version: "2.70.0", observedAt: at }], ["ws.mcp", { toolId: "ws.mcp", state: "absent", observedAt: at }]]) }));
+  const az = r.evidence.find(e => e.id === "cli.az")!;
+  assert.equal(az.summary, "installed / authenticated identity unknown");
+  const fabric = r.evidence.find(e => e.id === "mcp.fabric-management")!;
+  assert.equal(fabric.summary, "installed unknown");
+  const reg = fabric.chain.find(l => l.link === "registered")!;
+  assert.ok(reg.state === "observed" && !reg.holds, "no .vscode/mcp.json: observed not registered");
+  assert.ok(fabric.chain.filter(l => l.state === "unknown").every(l => l.state === "unknown" && l.reason.length > 10));
+  const report = readinessReport(r, { id: "p", title: "P" }, at);
+  assert.match(report, /## Integration evidence/);
+  assert.match(report, /connected: unknown — a registration says what a host may start/);
+  const wb = wbReadiness(r);
+  assert.equal(wb.evidence.find(e => e.id === "cli.az")!.links.length, 7);
+  assert.ok(!JSON.stringify(wb).includes(FAKE_SECRET));
+});

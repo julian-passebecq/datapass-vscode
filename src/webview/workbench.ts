@@ -706,6 +706,7 @@ function readinessCard(r: WbReadiness): HTMLElement {
         : btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
     r.tools ? toolsBlock(r.tools) : undefined,
     r.connections.length ? connectionsBlock(r.connections) : undefined,
+    r.evidence?.length ? evidenceBlock(r.evidence) : undefined,
     h("div", { class: "row" },
       btn("Copy project ID", () => command("datapass.copyProjectId"), { icon: "⧉" }),
       btn("Open Power Ops", () => command("datapass.openPowerOps"), { icon: "⚿", title: "Secrets live in your local vault; DataPass never reads their values" }),
@@ -747,6 +748,21 @@ function connectionsBlock(list: WbReadiness["connections"]): HTMLElement {
       c.signIn ? btn("Copy sign-in command", () => command("datapass.connections.copySignIn", c.id), { kind: "link", title: "You run it; DataPass never signs in" })
         : c.hasPortal ? btn("Open portal page", () => command("datapass.connections.openPortal", c.id), { kind: "link", title: "Where to verify it: DataPass cannot see this binding" })
         : undefined)));
+}
+
+const LINK_MARK: Record<string, string> = { yes: "✓", no: "✗", unknown: "?", "not-applicable": "–" };
+
+/** D-22: known → installed → registered → connected → signed in → authorized → verified; unknown unless observed. */
+function evidenceBlock(list: WbReadiness["evidence"]): HTMLElement {
+  return h("details", { class: "envsub", "aria-label": "Integration evidence" },
+    h("summary", {}, h("b", { text: "Integration evidence" }), " ",
+      h("span", { class: "muted small", text: "what DataPass observed for each CLI and MCP server; a registration file is not a connection" })),
+    ...list.map(e => h("div", { class: "envrow evidence" },
+      h("span", { text: e.label }), pill(e.summary, e.tone, e.links.map(l => l.text).join("\n")),
+      h("span", { class: "chain muted small" }, ...e.links.map(l => h("span", {
+        class: `link ${l.state === "observed" ? (l.holds ? "ok" : "warn") : "muted"}`, title: l.text,
+        text: `${LINK_MARK[l.state === "observed" ? (l.holds ? "yes" : "no") : l.state]} ${l.name}`
+      }))))));
 }
 
 function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {

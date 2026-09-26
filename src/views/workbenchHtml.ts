@@ -159,6 +159,9 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .envrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; }
   .envsub { display: grid; gap: 4px; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
   .envsub .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  details.envsub > summary { cursor: pointer; font-size: 12px; }
+  .envrow.evidence .chain { display: flex; flex-wrap: wrap; gap: 6px; flex-basis: 100%; }
+  .envrow.evidence .link.ok { color: var(--ok); } .envrow.evidence .link.warn { color: var(--warn); }
   .envcard .checks { list-style: none; margin: 0; padding: 0; }
 
   /* 0.15: views, preview, diagram toolbar, lanes, folding */

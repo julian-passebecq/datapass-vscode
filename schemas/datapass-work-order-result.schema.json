@@ -136,6 +136,30 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          },
+          "field": {
+            "enum": [
+              "cli-exit",
+              "ci",
+              "deployed",
+              "runtime",
+              "scientific-validity"
+            ]
+          },
+          "tool": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "input": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
           }
         },
         "required": [
