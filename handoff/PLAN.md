@@ -2,7 +2,7 @@
 
 Kept by `ARCHI DataPass N` (docs/roles/archi.md in claude-control). Lean on purpose: one screen per version. Estimates are orders of magnitude; fill **Actual** when a package merges (GALAXY Contrôle compares them every week).
 
-Updated: 2026-09-26 10:20 by ARCHI DataPass 1 · Sources: [v3/10_GLOBAL_IMPROVEMENT_PLAN.md](v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions D-01…D-18, §3 features by version), [v3/08_TOOLKIT_AND_AGENTS.md](v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4 (toolkit catalogue), [v3/09_AI_MODES_WORK_ORDERS_GIT.md](v3/09_AI_MODES_WORK_ORDERS_GIT.md) §12–13.1 (AI-3, AI-4, pass order), main `743dca3` (0.22.0 released, 0.23 G merged).
+Updated: 2026-09-26 (after 0.24.0) by ARCHI DataPass 1 · Sources: [v3/10_GLOBAL_IMPROVEMENT_PLAN.md](v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions D-01…D-18, §3 features by version), [v3/08_TOOLKIT_AND_AGENTS.md](v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4 (toolkit catalogue), [v3/09_AI_MODES_WORK_ORDERS_GIT.md](v3/09_AI_MODES_WORK_ORDERS_GIT.md) §12–13.1 (AI-3, AI-4, pass order), main `3b1635b` (0.24.0 released).
 
 ## Versions
 
@@ -10,7 +10,7 @@ Updated: 2026-09-26 10:20 by ARCHI DataPass 1 · Sources: [v3/10_GLOBAL_IMPROVEM
 
 | Version | Goal (one line) | Useful? | Status |
 |---|---|---|---|
-| V1 — up to 1.0.0 | The daily loop on real projects: bridge repository, architecture first, modes, context from any file, format checks, file versions, variants, toolkit catalogue, AI work orders | yes: it is what Julian and FOIL use now | in progress: 0.22.0 released, 0.23 = G (merged) + toolkit catalogue (below); then AI-3, AI-4 stage 1, Julian's acceptance (testlabs 4–9, FOIL), 1.0.0 |
+| V1 — up to 1.0.0 | The daily loop on real projects: bridge repository, architecture first, modes, context from any file, format checks, file versions, variants, toolkit catalogue, AI work orders | yes: it is what Julian and FOIL use now | in progress: 0.22.0, 0.23.0 (variants + toolkit catalogue) and 0.24.0 (AI-3) released; next Julian's acceptance (testlab 9 + the Claude & Codex panel), then AI-4 stage 1, FOIL, 1.0.0 |
 | V2 | Bridge recommends a mode (manifest v6 `presentation`), presets from the hub, check plan / evidence rows, coordinated change sets shown, cost lines linked to toolkit ids, Python syntax check, variants on another branch/tag, side-by-side variant diff, company-level global view, Remote-SSH/WSL | yes, after 1.0: each item comes from a real gap seen in V1 | later (J3, J5 recommended "yes, in V2") |
 | V3 | Recipes as agent skills, read-only MCP server, Pilot stages 2–3, FOIL producer routes, diagram editing | no for now: depends on V1 used for real and on FOIL | parked |
 
@@ -42,9 +42,13 @@ T4 → T1 → T2 → T3 → R (0.23.0). T5 merges its one repository line whenev
 | Id | Package | Size | Model · effort | Depends on |
 |---|---|---|---|---|
 | AI-3 | Claude & Codex panel + Codex hand-off (09 §12) | L | Opus 5.5 · high; panel polish medium | Claude Control pass C-1 is merged (claude-control PR #15). Starts after 0.23.0: it shares the AI view and work-order files with the toolkit pass · **Status: merged, released in 0.24.0** (PR #46 + release PR) · **Actual: ≈ 1.2 h · ≈ 18 M tokens** (TAMPON 7, one session, AI-3 + release) |
-| AI-4 | Pilot stage 1, read-only: allowlist design per CLI (`az` + `func` first, for the FOIL PDF flow, 09 §13.1 Q8), `requests/` / `responses/`, Pilot tab | L | allowlist design: an "ARCHI xh" consult brief; build: high | toolkit connections (0.18, done); Julian signs in read-only on dev resources |
+| AI-4 | Pilot stage 1, read-only: allowlist design per CLI (`az` + `func` first, for the FOIL PDF flow, 09 §13.1 Q8), `requests/` / `responses/`, Pilot tab | L | allowlist design: an "ARCHI xh" consult brief; build: high | toolkit connections (0.18, done); Julian signs in read-only on dev resources · **Status: on hold** (with SUPERVISOR 2, week budget at 71 %) until Julian has run testlab 9 and the panel check and installed `az` / `func` with read-only sign-in |
 | FOIL-PDF | Apply the FOIL bridge preparation (foil-v1-vscode-datapass `docs/DATAPASS_PREPARATION.md` steps 1–3) | M | medium | Julian's answers Q2–Q4 and the FOIL AI's spike (todo.md, 2026-09-26) |
 | 1.0.0 | Release after Julian's acceptance (testlabs 4–9, FOIL on the real repositories, account qualification gate 16) | S | medium | Julian |
+
+## Estimate calibration
+
+Toolkit T1–T4 took ≈ 9 h in one session (estimate 9–14 h): in range. AI-3 + release took ≈ 1.2 h · 18 M tokens against 3–6 h · 60–120 M: 3–5× below. For UI-and-client packages in this repository that reuse existing views and patterns, estimate at a third of the table's size guide; keep the guide for new cores and formats.
 
 ## Escalations and decisions
 
