@@ -146,3 +146,15 @@ export function contextChange(before: ContextIdentityInput, after: ContextIdenti
   if ((before.optionsDigest ?? "") !== (after.optionsDigest ?? "")) return "options.json changed";
   return undefined;
 }
+
+/**
+ * V1-FRESH (A03): the person's latest switch wins. Background work (applying a remembered variant
+ * after a load) notes the count when it starts and drops its late write when a switch came since.
+ */
+export class SwitchCounter {
+  private n = 0;
+  /** A switch by the person: every note taken before it is now stale. */
+  bump(): void { this.n++; }
+  note(): number { return this.n; }
+  switchedSince(note: number): boolean { return note !== this.n; }
+}

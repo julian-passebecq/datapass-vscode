@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { contextChange, RefreshTracker, refreshLabel, settleWithin, type ContextIdentityInput, type IncompleteStep, type RefreshToken } from "../src/core/refresh/tracker";
+import { contextChange, RefreshTracker, SwitchCounter, refreshLabel, settleWithin, type ContextIdentityInput, type IncompleteStep, type RefreshToken } from "../src/core/refresh/tracker";
 import { freshness, readStamp, stampLine, withStale, NATIVE_NOT_COMPARED, type PackStamp } from "../src/core/exchange/stamp";
 import { stampVerdict } from "../src/core/workOrders/launch";
 
@@ -192,4 +192,26 @@ test("stamps carry the observation time: shown in the pack line, read back, neve
   assert.equal(readStamp(JSON.parse(JSON.stringify(s)))?.observedAt, s.observedAt);
   assert.equal(readStamp({ ...s, observedAt: "yesterday" })?.observedAt, undefined);
   assert.equal(freshness(s, { ...B, observedAt: "2026-09-27T00:00:00.000Z" }).state, "fresh");
+});
+
+test("selected variant: a late save of the remembered variant never overwrites a switch made meanwhile", async () => {
+  // The service in miniature: sync() applies the remembered variant after a load (awaiting the
+  // preview write), activate() is the person's switch. Without the counter, sync saved b-event late.
+  const switches = new SwitchCounter();
+  const store = new Map<string, string | undefined>();
+  const setPreview = (_v: string | undefined, ms: number) => later(ms, undefined);
+  const sync = async (remembered: string) => {
+    const note = switches.note();
+    await setPreview(remembered, 20);
+    if (switches.switchedSince(note)) return "dropped";
+    if (!store.get("p")) store.set("p", remembered);
+    return "saved";
+  };
+  const activate = async (v: string | undefined) => { switches.bump(); await setPreview(v, 1); store.set("p", v); };
+  const loading = sync("b-event");
+  await activate(undefined);
+  assert.equal(await loading, "dropped");
+  assert.equal(store.get("p"), undefined, "back to current forgets the entry");
+  assert.equal(await sync("b-event"), "saved", "with no switch meanwhile the remembered variant is saved");
+  assert.equal(store.get("p"), "b-event");
 });
