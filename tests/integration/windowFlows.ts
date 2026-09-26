@@ -195,7 +195,10 @@ export function registerWindowFlows(getApi: () => DataPassTestApi): void {
     assert.match(project.views[0].openView.file, /[\\/]\.datapass[\\/]local[\\/]open-view\.json$/);
     assert.deepEqual(project.views[0].openView.request, { format: "datapass.open-view", version: "1", view: "papers-review" });
     // Kept up to date: renaming the view rewrites the list.
-    await withUi([{ input: "Papers review" }], () => run("datapass.renameWorkView", "papers-review"));
+    const renameUi = await withUi([{ input: "Papers review" }], () => run("datapass.renameWorkView", "papers-review"));
+    // V1-STAB diagnostic for the Windows flake: was the view renamed at all, or did the list lag behind it?
+    const stored = (await api().workViews()).views.find(v => v.id === "papers-review")?.name;
+    assert.equal(stored, "Papers review", `rename not stored; prompts: ${JSON.stringify(renameUi.prompts)}`);
     const again = JSON.parse(fs.readFileSync(out, "utf8"));
     assert.equal(again.companies.find((c: { name: string }) => c.name === "Research Co").projects[0].views[0].name, "Papers review");
     record("powerOpsList", doc);
