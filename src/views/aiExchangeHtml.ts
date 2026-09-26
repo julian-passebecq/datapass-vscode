@@ -75,6 +75,9 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   .routes { list-style: none; padding: 0; margin: 6px 0 0; }
   .routes li { display: flex; justify-content: space-between; gap: 6px; align-items: center; padding: 4px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
   .pilot { margin-top: 12px; opacity: .7; }
+  .pcard { border: 1px solid var(--border); border-left: 3px solid var(--warn); border-radius: 4px; padding: 6px 8px; margin: 6px 0; background: var(--card); font-size: 12px; }
+  .pcard.refused { border-left-color: var(--bad); } .pcard.answered { border-left-color: var(--border); opacity: .8; }
+  .pcard .why { font-style: italic; margin-top: 3px; }
 </style>
 </head>
 <body>
@@ -82,6 +85,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   <button id="t-guided" class="tab active" role="tab" aria-selected="true" title="DataPass takes you step by step: copy a DataPass file for ChatGPT or Claude, paste the answer, review, write">DataPass-guided</button>
   <button id="t-agent" class="tab" role="tab" aria-selected="false" title="Work orders for Claude Code or Codex, in your repositories">Agent<span id="agentbadge" class="badge" hidden></span></button>
   <button id="t-manual" class="tab" role="tab" aria-selected="false" title="You work with the official tools; DataPass shows where things stand">Manual</button>
+  <button id="t-pilot" class="tab" role="tab" aria-selected="false" title="Pilot, stage 1: an agent reads your dev cloud read-only and asks DataPass for actions you click">Pilot<span id="pilotbadge" class="badge" hidden></span></button>
 </nav>
 <div id="notready" class="note" hidden>Open a project folder to exchange its DataPass files (project.json, graph.json, options.json, sheet.json) with ChatGPT or Claude.</div>
 <main id="main" hidden>
@@ -183,7 +187,33 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   <div id="woempty" class="small muted">No work order yet.</div>
   <ul id="worecent" class="orders"></ul>
   <div class="row"><button id="woall" class="link">All work orders ↗</button><button id="wopublish" class="link" title="Writes .datapass/work-log.json (and your private log repository when set); you commit them">Publish summary</button></div>
-  <div class="small muted pilot">Pilot mode (the agent reads your clouds read-only, you click each action): a later option.</div>
+  <div class="small muted pilot">Pilot mode (the agent reads your dev cloud read-only, you click each action): the Pilot tab.</div>
+</section>
+
+<section id="tab-pilot" role="tabpanel" aria-labelledby="t-pilot" hidden>
+  <div id="pilotoff" class="note warn" hidden><span id="pilotofftext"></span><div class="row"><button id="pilotfix" class="secondary" hidden></button></div></div>
+  <p class="small">Stage 1, read-only, <b>dev</b> only. The agent works in the order's own folder, where DataPass writes its guard rails; it may run read-only <code>az</code> and <code>func</code> commands with your sign-in (a Reader role is the real safety net) and asks before anything else. It changes no repository.</p>
+  <h2>Requests from the agent</h2>
+  <div id="pcempty" class="small muted">No request yet. The agent writes requests/&lt;n&gt;.json in its order's folder; each one shows here.</div>
+  <div id="pcards"></div>
+  <h2>New pilot order</h2>
+  <label for="pgoal">What should the agent look at?</label>
+  <textarea id="pgoal" class="prose" maxlength="8000" spellcheck="true" placeholder="For example: check the dev Function App of the PDF flow: which functions exist, and did the last runs fail?"></textarea>
+  <div class="grid2">
+    <div><label for="pcomp">Component</label><select id="pcomp"></select></div>
+    <div><label for="peffort">Effort</label><select id="peffort"></select></div>
+  </div>
+  <label for="pchoice">Agent</label>
+  <select id="pchoice"></select>
+  <div class="small muted">Permissions: asks before each action (always, for a pilot order).</div>
+  <div class="row">
+    <button id="pwrite" class="secondary" title="Writes the order and its guard rails on this computer; nothing is launched">Write the order</button>
+    <button id="plaunch" class="primary" title="Writes the order, then asks you to confirm the launch">Write and launch ▸</button>
+  </div>
+  <div id="pstatus" class="note" hidden></div>
+  <h2>Pilot orders</h2>
+  <div id="poempty" class="small muted">No pilot order yet.</div>
+  <ul id="porders" class="orders"></ul>
 </section>
 
 <section id="tab-manual" role="tabpanel" aria-labelledby="t-manual" hidden>
@@ -203,13 +233,13 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   let review = null;
   let timer = null;
 
-  let tab = saved.tab === 'agent' || saved.tab === 'manual' ? saved.tab : 'guided';
+  let tab = saved.tab === 'agent' || saved.tab === 'manual' || saved.tab === 'pilot' ? saved.tab : 'guided';
   // 0.22 modes: tabs the mode hides; a tab a command opened explicitly stays until the person leaves it.
   let hiddenTabs = [];
   let forced = null;
   function applyTabs() {
-    for (const x of ['agent', 'manual']) $('t-' + x).hidden = hiddenTabs.includes(x) && forced !== x;
-    document.querySelector('nav.tabs').hidden = ['agent', 'manual'].every(x => $('t-' + x).hidden);
+    for (const x of ['agent', 'manual', 'pilot']) $('t-' + x).hidden = hiddenTabs.includes(x) && forced !== x;
+    document.querySelector('nav.tabs').hidden = ['agent', 'manual', 'pilot'].every(x => $('t-' + x).hidden);
     if ($('t-' + tab).hidden) showTab('guided');
   }
   let prefillToken = null;
@@ -313,7 +343,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   function showTab(t) {
     if (forced && forced !== t) { forced = null; setTimeout(applyTabs, 0); }
     tab = t; persist();
-    for (const x of ['guided', 'agent', 'manual']) {
+    for (const x of ['guided', 'agent', 'manual', 'pilot']) {
       $('tab-' + x).hidden = x !== t;
       $('t-' + x).classList.toggle('active', x === t);
       $('t-' + x).setAttribute('aria-selected', String(x === t));
@@ -322,6 +352,78 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   $('t-guided').addEventListener('click', () => showTab('guided'));
   $('t-agent').addEventListener('click', () => showTab('agent'));
   $('t-manual').addEventListener('click', () => showTab('manual'));
+  $('t-pilot').addEventListener('click', () => showTab('pilot'));
+
+  // ------------------------------------------------------------------ Pilot tab (0.26, AI-4a)
+  function pStatus(text, tone) { const b = $('pstatus'); b.hidden = !text; b.className = 'note ' + (tone || ''); b.textContent = text || ''; }
+  function renderPilot() {
+    const p = state && state.pilot; if (!p) return;
+    $('pilotoff').hidden = p.allowed;
+    $('pilotofftext').textContent = p.why || '';
+    const fixes = { 'pilot-setting': 'Switch pilot mode on…', 'machine-setting': 'Open the setting', trust: 'Manage Workspace Trust', 'project-module': 'Open project.json' };
+    $('pilotfix').hidden = !p.fix || !fixes[p.fix];
+    $('pilotfix').textContent = fixes[p.fix] || '';
+    for (const b of ['pwrite', 'plaunch']) $(b).disabled = !p.allowed;
+    if (!$('pchoice').options.length) {
+      for (const c of p.choices) { const o = opt($('pchoice'), c.id, c.label + (c.disabled ? ' (' + c.disabled + ')' : '')); o.disabled = !!c.disabled; }
+      $('pchoice').value = p.defaults.choice;
+      fillSelect('peffort', p.efforts.map(e => ({ id: e, label: e })), p.defaults.effort);
+    }
+    fillSelect('pcomp', p.components, undefined, 'None');
+    const badge = $('pilotbadge'); badge.hidden = !p.pending; badge.textContent = String(p.pending);
+    const box = $('pcards'); box.textContent = '';
+    $('pcempty').hidden = p.cards.length > 0;
+    for (const c of p.cards) {
+      const d = el('div', 'pcard ' + c.state);
+      const head = el('div', 'head');
+      head.appendChild(el('span', 'pill ' + (c.state === 'pending' ? 'warn' : c.state === 'refused' ? 'bad' : c.outcome === 'done' ? 'ok' : ''), c.state === 'answered' ? c.outcome : c.state));
+      head.appendChild(el('b', '', 'PILOT · ' + c.short + ' asks (' + (c.n || '?') + ')'));
+      d.appendChild(head);
+      if (c.capability) d.appendChild(el('div', '', c.capability + ' · component ' + c.component + ' · ' + c.environment));
+      if (c.effects) d.appendChild(el('div', 'muted', c.effects + ' · ' + c.runsIn));
+      if (c.why) d.appendChild(el('div', 'why', '"' + c.why + '" (the agent says)'));
+      if (c.message) d.appendChild(el('div', c.state === 'refused' ? 'badline' : 'muted', c.message));
+      if (c.state !== 'answered' && c.n >= 1 && c.n <= 50) {
+        const row = el('div', 'row');
+        if (c.state === 'pending') {
+          const run = el('button', 'primary', 'Run it'); run.addEventListener('click', () => { run.disabled = true; post({ type: 'pilot.run', orderId: c.orderId, n: c.n }); });
+          row.appendChild(run);
+        }
+        const no = el('button', 'secondary', c.state === 'pending' ? 'Not now' : 'Tell the agent');
+        no.addEventListener('click', () => { no.disabled = true; post({ type: 'pilot.decline', orderId: c.orderId, n: c.n }); });
+        row.appendChild(no);
+        d.appendChild(row);
+      }
+      if (c.state !== 'answered') d.appendChild(el('div', 'small muted', 'The agent reads the answer in responses/' + c.n + '.json.'));
+      box.appendChild(d);
+    }
+    const list = $('porders'); list.textContent = '';
+    $('poempty').hidden = p.orders.length > 0;
+    for (const o of p.orders) {
+      const li = el('li');
+      const head = el('div', 'head');
+      head.appendChild(el('span', 'pill', o.status));
+      const t = el('b', '', o.short + ' ' + o.title); t.title = o.id; head.appendChild(t);
+      li.appendChild(head);
+      if (o.agent) li.appendChild(el('div', 'muted', o.agent));
+      if (o.next) li.appendChild(el('div', 'muted', o.next));
+      const row = el('div', 'row');
+      if (o.canLaunch && o.status === 'written') { const b = el('button', 'secondary', 'Launch…'); b.addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.launch', args: [o.id] })); row.appendChild(b); }
+      const f = el('button', 'link', 'Folder'); f.addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.openFolder', args: [o.id] })); row.appendChild(f);
+      li.appendChild(row);
+      list.appendChild(li);
+    }
+  }
+  function pilotDraft() {
+    return { goal: $('pgoal').value, components: $('pcomp').value ? [$('pcomp').value] : [], choice: $('pchoice').value, effort: $('peffort').value };
+  }
+  $('pwrite').addEventListener('click', () => { pStatus('Writing…'); post({ type: 'pilot.write', draft: pilotDraft(), launch: false }); });
+  $('plaunch').addEventListener('click', () => { pStatus('Writing…'); post({ type: 'pilot.write', draft: pilotDraft(), launch: true }); });
+  $('pilotfix').addEventListener('click', () => {
+    const f = state && state.pilot && state.pilot.fix;
+    const cmd = f === 'pilot-setting' ? 'datapass.pilot.enable' : f === 'machine-setting' ? 'datapass.workOrders.enable' : f === 'trust' ? 'workbench.trust.manage' : f === 'project-module' ? 'datapass.openProjectManifest' : '';
+    if (cmd) post({ type: 'wo.cmd', command: cmd, args: [] });
+  });
 
   // ------------------------------------------------------------------ Agent tab
   function opt(select, value, label) { const o = el('option', '', label); o.value = value; select.appendChild(o); return o; }
@@ -554,18 +656,22 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       applyTabs();
       $('notready').hidden = state.ready;
       $('main').hidden = !state.ready;
-      if (state.ready) { renderFiles(); renderRecent(); renderAgent(); renderManual(); }
+      if (state.ready) { renderFiles(); renderRecent(); renderAgent(); renderManual(); renderPilot(); }
       if ($('answer').value.trim()) check();
     } else if (m.type === 'prefill') {
       if (state && state.ready) applyPrefill(m);
     } else if (m.type === 'tab') {
-      if (m.tab === 'agent' || m.tab === 'manual' || m.tab === 'guided') { if (m.tab !== 'guided') forced = m.tab; showTab(m.tab); applyTabs(); }
+      if (m.tab === 'agent' || m.tab === 'manual' || m.tab === 'pilot' || m.tab === 'guided') { if (m.tab !== 'guided') forced = m.tab; showTab(m.tab); applyTabs(); }
     } else if (m.type === 'wo.done') {
       if (m.error) woStatus(m.error, 'bad');
       else if (m.id) {
         woStatus('Work order ' + m.id + ' written' + (m.launched ? ' and handed over.' : '. Launch it from the list below when you are ready.'), 'ok');
         $('goal').value = ''; $('wotitle').value = ''; prefillToken = null; $('prefillnote').hidden = true;
       } else woStatus('');
+    } else if (m.type === 'pilot.done') {
+      if (m.error) pStatus(m.error, 'bad');
+      else if (m.id) { pStatus('Pilot order ' + m.id + ' written' + (m.launched ? ' and handed over.' : '. Launch it from the list below when you are ready.'), 'ok'); $('pgoal').value = ''; }
+      else pStatus('');
     } else if (m.type === 'focus') {
       showTab('guided');
       if (typeof m.kind === 'string' && state && state.files.some(f => f.kind === m.kind)) { kind = m.kind; persist(); $('file').value = kind; renderFile(); }

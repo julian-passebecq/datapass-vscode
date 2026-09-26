@@ -17,7 +17,8 @@ import { clipboard } from "../core/clipboard";
 import { errorMessage, readBounded, UserFacingError } from "../work/io";
 import { readOptional } from "../core/workspace/loader";
 import { vetRelativePath } from "../core/exchange/pathSafety";
-import { agentTabState, manualTabState, type AgentTabState, type ManualTabState } from "./agentState";
+import { agentTabState, manualTabState, pilotTabState, type AgentTabState, type ManualTabState, type PilotTabState } from "./agentState";
+import { codexAppQualified, pilotEnabled, type PilotService } from "../work/pilot";
 import type { WorkOrderService } from "../work/workOrders";
 import { aiSettings, sanitizeDraft, type AgentPrefill, type Draft, type WorkOrderFlows } from "../work/workOrderCommands";
 import type { GitObserver } from "../work/gitObserver";
@@ -30,11 +31,12 @@ const AGENT_ALLOWED = new Set([
   "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openApp", "datapass.workOrders.enable",
   "datapass.workOrders.copyForChat", "datapass.openProjectManifest", "workbench.trust.manage",
   "datapass.project.focus", "datapass.git.focus", "datapass.readinessReport", "datapass.openWorkbench", "datapass.openNativeTool",
-  "datapass.checkForUpdates", "datapass.openPreparationGuide", "workbench.actions.view.problems"
+  "datapass.checkForUpdates", "datapass.openPreparationGuide", "workbench.actions.view.problems",
+  "datapass.pilot.enable", "datapass.workOrders.openFolder"
 ]);
 
 /** 0.22 modes: `hiddenTabs` are the tabs the current mode does not show (the guided tab always shows). */
-export type AiViewState = AiExchangeState & { agent?: AgentTabState; manual?: ManualTabState; hiddenTabs?: Array<"agent" | "manual"> };
+export type AiViewState = AiExchangeState & { agent?: AgentTabState; manual?: ManualTabState; pilot?: PilotTabState; hiddenTabs?: Array<"agent" | "manual" | "pilot"> };
 
 type Reply = (message: Record<string, unknown>) => void | Thenable<boolean>;
 
@@ -48,6 +50,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   private readonly subs: vscode.Disposable[] = [];
   private sizes: Partial<Record<ExchangeKind, number>> = {};
   private work?: { service: WorkOrderService; flows: WorkOrderFlows; git: GitObserver };
+  /** 0.26 (AI-4a): the Pilot tab's requests. */
+  private pilot?: PilotService;
   /** Parts of a prefilled draft the webview never sees (a failing PR's checks, base branches, the order it follows). */
   private hidden?: { token: string; draft: Partial<Draft> };
   private lastVisible?: Partial<Draft>;
@@ -63,6 +67,12 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   attachWorkOrders(service: WorkOrderService, flows: WorkOrderFlows, git: GitObserver): void {
     this.work = { service, flows, git };
     this.subs.push(service.onDidChange(() => void this.post()), git.onDidChange(() => void this.post()));
+  }
+
+  /** 0.26 (AI-4a): the pilot requests behind the Pilot tab. */
+  attachPilot(pilot: PilotService): void {
+    this.pilot = pilot;
+    this.subs.push(pilot.onDidChange(() => void this.post()));
   }
 
   /** 0.22 modes: hide the Agent and Manual tabs the mode does not show; a command that opens one still does. */
@@ -87,7 +97,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined { return this.hidden ? { ...this.hidden, visible: this.lastVisible ?? {} } : undefined; }
 
   /** Show one tab (desktop tests, commands). */
-  async showTab(tab: "guided" | "agent" | "manual"): Promise<void> {
+  async showTab(tab: "guided" | "agent" | "manual" | "pilot"): Promise<void> {
     await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
     await this.view?.webview.postMessage({ type: "tab", tab });
   }
@@ -134,13 +144,14 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges()
     });
-    const hiddenTabs = (["agent", "manual"] as const).filter(t => !this.shows(`ai.${t}`));
+    const hiddenTabs = (["agent", "manual", "pilot"] as const).filter(t => !this.shows(`ai.${t}`));
     if (!this.work || !base.ready || !c.manifest) return { ...base, hiddenTabs };
     const s = aiSettings();
     return {
       ...base, hiddenTabs,
       agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope, codexCli: this.work.flows.codexCliFound() }),
-      manual: manualTabState(this.session, this.work.git.observation().needsYou.length)
+      manual: manualTabState(this.session, this.work.git.observation().needsYou.length),
+      ...(this.pilot ? { pilot: pilotTabState(this.session, this.work.service, this.pilot, { choice: s.choice, effort: s.effort, enabled: pilotEnabled(), codexAppQualified: codexAppQualified(), trusted: vscode.workspace.isTrusted }) } : {})
     };
   }
 
@@ -246,6 +257,29 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
           }
           return;
         }
+        // 0.26 (AI-4a): the Pilot tab. The draft is reduced to what a pilot order takes; the kind is forced.
+        case "pilot.write": {
+          if (!this.work) return;
+          const mm = m as { draft?: unknown; launch?: unknown };
+          const d = sanitizeDraft(mm.draft);
+          const draft: Draft = { kind: "pilot-read", title: d.title, goal: d.goal, components: d.components, subproject: d.subproject, choice: d.choice, effort: d.effort, model: d.model, permissions: "ask", attachExport: d.attachExport };
+          const written = await this.work.flows.write(draft);
+          await reply({ type: "pilot.done", id: written.id, launched: false });
+          if (mm.launch === true) {
+            await this.work.flows.launch(written.id);
+            const launched = (this.work.service.get(written.id)?.state?.launches.length ?? 0) > 0;
+            await reply({ type: "pilot.done", id: written.id, launched });
+          }
+          return;
+        }
+        case "pilot.run":
+        case "pilot.decline": {
+          if (!this.pilot) return;
+          const mm = m as { orderId?: unknown; n?: unknown };
+          if (m.type === "pilot.run") await this.pilot.run(mm.orderId, mm.n);
+          else await this.pilot.decline(mm.orderId, mm.n);
+          return;
+        }
         case "wo.cmd": {
           const mm = m as { command?: unknown; args?: unknown };
           if (typeof mm.command !== "string" || !AGENT_ALLOWED.has(mm.command)) return;
@@ -259,6 +293,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       if (m.type === "write") await reply({ type: "written", error: msg });
       else if (m.type === "copy") await reply({ type: "copied", error: msg });
       else if (m.type === "wo.write" || m.type === "wo.preview") await reply({ type: "wo.done", error: msg });
+      else if (m.type === "pilot.write") await reply({ type: "pilot.done", error: msg });
       else void vscode.window.showErrorMessage(`DataPass: ${msg}`);
     }
   }

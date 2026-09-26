@@ -44,7 +44,8 @@
         "prepare-files",
         "apply-decision",
         "fix-card",
-        "datapass-files"
+        "datapass-files",
+        "pilot-read"
       ]
     },
     "project": {
@@ -408,7 +409,10 @@
           ]
         },
         "cloud": {
-          "const": "none"
+          "enum": [
+            "none",
+            "read-only"
+          ]
         },
         "secrets": {
           "const": "never"
@@ -422,6 +426,39 @@
         "cloud",
         "secrets",
         "stayInRepositories"
+      ]
+    },
+    "pilot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {
+          "const": 1
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$"
+        },
+        "clis": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "az",
+              "func",
+              "fab",
+              "databricks"
+            ]
+          },
+          "maxItems": 4,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "stage",
+        "environment",
+        "clis"
       ]
     },
     "agent": {

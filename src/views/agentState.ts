@@ -12,6 +12,7 @@ import { KIND_LABELS } from "../core/workOrders/builder";
 import { TYPE_DEFAULTS, defaultMergePolicy } from "../core/workOrders/projectType";
 import { outputText } from "../core/workOrders/status";
 import type { ExportScope } from "../core/workOrders/export";
+import type { PilotCard, PilotService } from "../work/pilot";
 
 export interface AgentRecent {
   id: string;
@@ -85,7 +86,8 @@ export function agentTabState(session: WorkSession, service: WorkOrderService, s
     projectType: { type: type.type, source: type.source === "machine" ? "this computer's setting" : type.source === "manifest" ? "project.json" : "default", explain: TYPE_DEFAULTS[type.type].explain },
     defaults: { choice: settings.choice, effort: settings.effort, merge: defaultMergePolicy(type.type), exportScope: settings.exportScope, model: settings.model },
     choices: AGENT_CHOICES.map(id => ({ id, label: CHOICE_LABELS[id] })),
-    kinds: ORDER_KINDS.map(id => ({ id, label: KIND_LABELS[id] })),
+    // 0.26: pilot orders are written from the Pilot tab.
+    kinds: ORDER_KINDS.filter(id => id !== "pilot-read").map(id => ({ id, label: KIND_LABELS[id] })),
     efforts: EFFORTS,
     subprojects: map.subprojects.filter(s => !s.implicit).map(s => ({ id: s.id, title: s.title })),
     components: map.components.map(c => ({ id: c.id, label: c.label, subproject: c.subprojects[0], repoKey: c.repoKey })),
@@ -112,3 +114,44 @@ export function manualTabState(session: WorkSession, gitNeeds: number): ManualTa
   };
 }
 
+
+// ------------------------------------------------------------------ 0.26 (AI-4a): the Pilot tab
+
+export interface PilotTabState {
+  /** datapass.pilot.enabled on this computer, and the work-order verdict (a pilot order is a work order). */
+  enabled: boolean;
+  allowed: boolean;
+  why?: string;
+  fix?: "pilot-setting" | "machine-setting" | "trust" | "project-module";
+  choices: Array<{ id: AgentChoice; label: string; disabled?: string }>;
+  defaults: { choice: AgentChoice; effort: Effort };
+  efforts: readonly Effort[];
+  components: Array<{ id: string; label: string }>;
+  environment: string;
+  orders: Array<{ id: string; short: string; title: string; status: string; agent: string; next: string; canLaunch: boolean }>;
+  cards: PilotCard[];
+  pending: number;
+}
+
+export function pilotTabState(session: WorkSession, service: WorkOrderService, pilot: PilotService, settings: { choice: AgentChoice; effort: Effort; enabled: boolean; codexAppQualified: boolean; trusted: boolean }): PilotTabState {
+  const verdict = service.verdict();
+  const allowed = settings.enabled && verdict.allowed;
+  const choices = AGENT_CHOICES.map(id => ({ id, label: CHOICE_LABELS[id], ...(id === "codex-desktop" && !settings.codexAppQualified ? { disabled: "not qualified on this computer yet (stage 1)" } : {}) }));
+  const choice = choices.find(c => c.id === settings.choice && !c.disabled)?.id ?? "claude-terminal";
+  return {
+    enabled: settings.enabled, allowed,
+    ...(allowed ? {} : settings.enabled
+      ? { why: verdict.why, fix: (verdict.allowed ? undefined : verdict.fix) as PilotTabState["fix"] }
+      : { why: "Pilot mode is off on this computer. It lets an agent read your dev cloud read-only (az, func) and ask DataPass for VS Code actions you click.", fix: "pilot-setting" as const }),
+    choices, defaults: { choice, effort: settings.effort }, efforts: EFFORTS,
+    components: session.projectMap().components.map(c => ({ id: c.id, label: c.label })),
+    environment: "dev",
+    orders: pilot.pilotOrders().slice(0, 6).map(o => {
+      const s = o.summary;
+      const closed = o.state?.status === "done" || o.state?.status === "abandoned";
+      return { id: o.id, short: shortId(o.id), title: s?.title ?? o.error ?? "unreadable order", status: s?.status ?? "error", agent: s?.agent ?? "", next: s?.next ?? "", canLaunch: allowed && settings.trusted && !closed && Boolean(o.order) && Boolean(service.ownDigest(o.id)) };
+    }),
+    cards: [...pilot.list()],
+    pending: pilot.pending()
+  };
+}

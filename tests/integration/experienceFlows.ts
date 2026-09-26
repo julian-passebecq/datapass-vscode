@@ -62,7 +62,7 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     assert.ok(marked.length > 0, "components an options.json decision can change are marked");
     const wb = api().workbenchState();
     assert.deepEqual(wb.experience, { hiddenViews: ["options", "sheet", "board", "workOrders", "toolkit"], alternatives: true });
-    assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, ["agent", "manual"]);
+    assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, ["agent", "manual", "pilot"]);
     record("modes.standardTree", sections);
   }, ONLY);
 
@@ -80,7 +80,7 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await tryRun("datapass.details.focus");
     await run("datapass.git.focus");
     await waitFor("architecture and details hidden", () => !panes().includes("architecture") && !panes().includes("details"));
-    assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, ["agent", "manual"]);
+    assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, ["agent", "manual", "pilot"]);
     // Components are not listed in Vanilla, repositories and problems are.
     const sections = await treeSections();
     assert.ok(!sections.some(s => s.startsWith("sp:")), sections.join(", "));
