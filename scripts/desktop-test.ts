@@ -541,6 +541,29 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v26-open-client-window": setupV26OpenClientWindow
 };
 
+/**
+ * Logged as errors but not DataPass errors: a tree refresh cancelled while the host shuts down, and a
+ * test's own `git` call writing Git's CRLF warning on stderr.
+ */
+const BENIGN_HOST_LINE = /Unable to refresh tree view datapass\.\w+: Canceled|\[error\] warning: in the working copy of /;
+
+/** Error lines of a profile's extension host and renderer logs that mention DataPass. */
+function extensionHostErrors(logs: string): string[] {
+  const out = new Set<string>();
+  const walk = (dir: string): void => {
+    if (!fs.existsSync(dir)) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/exthost|renderer/i.test(e.name) && e.name.endsWith(".log")) {
+        for (const line of fs.readFileSync(p, "utf8").split(/\r?\n/)) if (/\[error\]/.test(line) && /datapass/i.test(line) && !BENIGN_HOST_LINE.test(line)) out.add(line.slice(0, 400));
+      }
+    }
+  };
+  walk(logs);
+  return [...out];
+}
+
 async function vscodeExecutable(): Promise<string> {
   const fromEnv = process.env.VSCODE_EXECUTABLE;
   if (fromEnv) return fromEnv;
@@ -566,6 +589,7 @@ async function main(): Promise<void> {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-desktop-"));
   const reports: unknown[] = [];
   let failed = 0;
+  let hostErrorCount = 0;
   for (const name of [...Object.keys(FIXTURES), ...Object.keys(SETUPS)]) {
     if (only && !only.includes(name)) continue;
     const files = FIXTURES[name];
@@ -608,7 +632,14 @@ async function main(): Promise<void> {
     } catch {
       failed++;
     }
-    if (fs.existsSync(reportFile)) reports.push(JSON.parse(fs.readFileSync(reportFile, "utf8")));
+    // V1-STAB: errors the extension host logged (unhandled rejections included) fail nothing on their
+    // own, so they are collected here, before the profile is deleted, and listed in the report.
+    const hostErrors = extensionHostErrors(path.join(scratch, "profile", name, "logs"));
+    if (hostErrors.length) {
+      hostErrorCount += hostErrors.length;
+      console.log(`  ⚠ ${hostErrors.length} extension host error line(s):\n${hostErrors.map(l => `    ${l}`).join("\n")}`);
+    }
+    if (fs.existsSync(reportFile)) reports.push({ ...JSON.parse(fs.readFileSync(reportFile, "utf8")), hostErrors });
     else reports.push({ fixture: name, results: [], error: "the extension host produced no report (crash or timeout)" });
   }
 
@@ -623,6 +654,7 @@ async function main(): Promise<void> {
   fs.writeFileSync(summaryFile, JSON.stringify(summary, null, 2));
   fs.rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
   console.log(`\nEvidence report: ${path.relative(repo, summaryFile)}`);
+  console.log(hostErrorCount ? `${hostErrorCount} extension host error line(s) mention DataPass (listed above and in the report).` : "No extension host error line mentions DataPass.");
   if (failed) {
     console.error(`${failed} fixture run(s) failed.`);
     process.exit(1);

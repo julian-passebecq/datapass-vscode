@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildFileContext, capSiblings, locateFile, owningComponents, parentChain, relativeInside, type ComponentPlace, type FileContextInput } from "../src/core/exchange/fileContext";
+import { buildFileContext, capSiblings, componentPlaces, locateFile, owningComponents, parentChain, relativeInside, type ComponentPlace, type FileContextInput } from "../src/core/exchange/fileContext";
+import { inputA } from "./fixtures/v3/research";
+import { optionsA } from "./fixtures/v3/researchOptions";
+import { evaluatePicks, picksFrom } from "../src/core/project/options";
+import { buildProjectMap } from "../src/core/project/projectMap";
 
 // Synthetic, non-FOIL layout: a bridge repository and two native repositories next to it.
 const HUB = "D:\\work\\sales-hub";
@@ -209,4 +213,14 @@ test("0.27 (P1, D-23): the pack header carries the stamp — selected variant, e
   assert.match(head, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision fedcba987654\./);
   // No project open: no stamp line (there is no selection to stamp).
   assert.doesNotMatch(buildFileContext(base({ project: undefined, stamp })).text, /Stamp:/);
+});
+
+test("V1-STAB (D-23): the owning component comes from the selected variant's map, like the stamp", () => {
+  const base = inputA();
+  const current = buildProjectMap(base);
+  const { map: variant } = evaluatePicks({ base, options: optionsA(), baseMap: current }, picksFrom(optionsA(), ["processing=script"]), "x");
+  const file = "scripts/extract/run.py";
+  assert.deepEqual(owningComponents("pipeline", file, componentPlaces(current)).map(c => c.id), [], "the current architecture has no component there");
+  const owned = owningComponents("pipeline", file, componentPlaces(variant));
+  assert.deepEqual(owned.map(c => `${c.id}:${c.provider}`), ["extract:python"], "the variant's script owns it");
 });

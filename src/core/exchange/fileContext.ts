@@ -11,6 +11,7 @@
  * machine. Credential-shaped text is scrubbed with the shared scrubber. The caller previews first.
  */
 import { scrub } from "./aiContext";
+import type { ProjectMap } from "../project/projectMap";
 import { normalizeRemote } from "../project/resolve";
 import { stampLine, type PackStamp } from "./stamp";
 
@@ -98,6 +99,19 @@ export interface ComponentPlace {
   /** Expected files, repository-relative, with their role (entry, config, …). */
   files?: Array<{ repoPath: string; role: string }>;
   scopes: string[];
+}
+
+/**
+ * The places of a map's components. The command passes the selected variant's map (V1-STAB, D-23):
+ * the owning component then agrees with the pack's stamp, which names that variant.
+ */
+export function componentPlaces(map: Pick<ProjectMap, "components" | "subprojects">): ComponentPlace[] {
+  const scopeTitle = new Map(map.subprojects.map(s => [s.id, s.title]));
+  return map.components.map(c => ({
+    id: c.id, label: c.label, kind: c.kind, provider: c.providerId, repoKey: c.artifacts?.repoKey ?? c.repoKey, root: c.artifacts?.root,
+    files: c.artifacts?.files.map(f => ({ repoPath: f.repoPath, role: f.role })),
+    scopes: c.subprojects.map(s => scopeTitle.get(s) ?? s)
+  }));
 }
 
 export interface OwningComponent { id: string; label: string; kind?: string; provider?: string; root: string; scopes: string[]; fileRole?: string }

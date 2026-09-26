@@ -133,9 +133,10 @@ function isInsideWorkspace(uri: vscode.Uri): boolean {
 
 async function arrange(session: WorkSession): Promise<void> {
   // Left: the Project tree. Bottom: the architecture diagram. Right: details and checklists. Centre: files.
-  await vscode.commands.executeCommand("datapass.project.focus");
-  await vscode.commands.executeCommand("datapass.architecture.focus");
-  await vscode.commands.executeCommand("datapass.details.focus");
+  // V1-STAB: a view the mode hides (the Project tree in Standard) may refuse focus; the others still open.
+  for (const view of ["datapass.project", "datapass.architecture", "datapass.details"]) {
+    try { await vscode.commands.executeCommand(`${view}.focus`); } catch { /* hidden in this mode */ }
+  }
   const c = session.selection().component ? session.projectMap().components.find(x => x.id === session.selection().component) : undefined;
   if (c?.artifacts?.entry?.state === "found") await vscode.commands.executeCommand("datapass.openComponentEntry", c.id);
 }
@@ -521,7 +522,7 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     readiness: session.readiness(),
-    sheet: session.project.sheet, options: session.project.options, board: session.project.board
+    sheet: session.project.sheet, options: session.project.options, board: session.project.board, stamp: await session.packStamp()
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`

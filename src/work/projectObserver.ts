@@ -151,6 +151,7 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
     if (repo.planned) continue;
     let folder: string | undefined;
     let source: RepoObservation["source"] = "none";
+    let nearby: RepoObservation["nearby"];
     if (key === coordinationKey) { folder = o.root.fsPath; source = "coordination"; }
     else if (o.localBindings[key] && await exists(o.localBindings[key]!)) { folder = o.localBindings[key]; source = "local-binding"; }
     else if (repo.path) {
@@ -162,11 +163,14 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
       const candidates = [...workspaceFolders.map(f => ({ f, s: "workspace-folder" as const })), ...(name ? parents.map(p => ({ f: path.join(p, name), s: "sibling-folder" as const })) : [])];
       for (const c of candidates) {
         if (!(await exists(c.f))) continue;
-        if (sameRemote(await originOf(c.f), repo.remote.url)) { folder = c.f; source = c.s; break; }
+        const origin = await originOf(c.f);
+        if (sameRemote(origin, repo.remote.url)) { folder = c.f; source = c.s; break; }
+        // A sibling of the right name that is not this remote is never bound; it is only named (V1-STAB).
+        if (c.s === "sibling-folder" && !nearby) nearby = { folderName: path.basename(c.f), origin: origin ? "other" : "none" };
       }
     }
     // Untrusted: an origin cannot be verified without Git, so an unlocated clone is "not inspected", not "not cloned".
-    if (!folder) { repos.set(key, { key, source: "none", exists: false, restricted: !o.trusted || undefined }); continue; }
+    if (!folder) { repos.set(key, { key, source: "none", exists: false, restricted: !o.trusted || undefined, ...(nearby ? { nearby } : {}) }); continue; }
     folders.set(key, vscode.Uri.file(folder));
     if (!o.trusted) { repos.set(key, { key, folder, source, exists: true, restricted: true }); continue; }
     const g = await gitState(o.git, folder);

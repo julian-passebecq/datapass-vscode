@@ -125,7 +125,8 @@ export function planMcpFileEdit(current: string | undefined, name: string, serve
   const previous = config.servers[name];
   const next = mergeMcpServer(config, name, server);
   const eol = current?.includes("\r\n") ? "\r\n" : "\n";
-  return { text: JSON.stringify(next, null, indent).replace(/\n/g, eol) + eol, replaces: previous !== undefined, previous };
+  const bom = current?.startsWith("﻿") ? "﻿" : "";
+  return { text: bom + JSON.stringify(next, null, indent).replace(/\n/g, eol) + eol, replaces: previous !== undefined, previous };
 }
 
 export function fabricToolboxMcpDefinition(

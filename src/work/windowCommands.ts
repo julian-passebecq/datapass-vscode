@@ -427,13 +427,21 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
   };
 
   /** After the first export, the list is kept up to date whenever a company or a work view changes. */
-  const exportIfEnabled = async () => {
-    if (!context.globalState.get(EXPORT_KEY)) return;
-    try { await exportCompanies(); } catch (e) { output().appendLine(`[export] ${errorMessage(e)}`); }
+  // V1-STAB: exports run one after the other. Two at once (a rename's and a late open-view request's)
+  // could read the views before the rename and write after it, leaving the old name in the list.
+  let exportQueue: Promise<void> = Promise.resolve();
+  const exportIfEnabled = (): Promise<void> => {
+    exportQueue = exportQueue.then(async () => {
+      if (!context.globalState.get(EXPORT_KEY)) return;
+      try { await exportCompanies(); } catch (e) { output().appendLine(`[export] ${errorMessage(e)}`); }
+    });
+    return exportQueue;
   };
 
   reg("datapass.exportCompanyWorkspaces", async () => {
-    const r = await exportCompanies();
+    const queued = exportQueue.then(() => exportCompanies());
+    exportQueue = queued.then(() => undefined, () => undefined);
+    const r = await queued;
     const choice = await vscode.window.showInformationMessage(
       `Power Ops list written: ${r.companies} company workspace(s).`,
       { modal: true, detail: `${r.file}\n\nPower Ops' Tool Launcher opens a company with code <file.code-workspace>, and a work view by writing the request file given for it. DataPass keeps this list up to date from now on. It holds file paths and view names only, never a secret.` },

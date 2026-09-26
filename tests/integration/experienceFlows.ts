@@ -51,6 +51,10 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await run("datapass.git.focus");
     await run("datapass.aiExchange.focus");
     await waitFor("the AI view", () => panes().includes("aiExchange"));
+    // V1-STAB: Workbench Layout in Standard — the hidden Project view does not stop the Architecture and Details.
+    await run("datapass.arrangeWorkbench");
+    await waitFor("Details after Workbench Layout", () => panes().includes("details"));
+    assert.ok(!panes().includes("project"), "the Project view stays hidden");
   }, ONLY);
 
   test("0.22 modes: Standard marks components with alternatives instead of the Options section; Workbench and AI tabs gated", async () => {

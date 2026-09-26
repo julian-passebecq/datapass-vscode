@@ -80,6 +80,8 @@ export interface RepoObservation {
   /** Not inspected: Restricted Mode (untrusted workspace) never runs Git. */
   restricted?: boolean;
   git?: RepoGitState;
+  /** Not located, but a folder of the repository's name is next to it: no Git origin, or another one (V1-STAB). */
+  nearby?: { folderName: string; origin: "none" | "other" };
 }
 
 export interface RepoGitState {
@@ -150,6 +152,7 @@ export function resolveRepositories(manifest: DataPassProjectManifest | undefine
     if (obs?.restricted) { views.push({ ...base, state: "restricted", source: obs.source, folderName: folderName(obs.folder), detail: "not inspected in Restricted Mode", nextStep: "Trust this workspace to let DataPass read Git state." }); continue; }
     if (!obs || !obs.exists) {
       if (repo.path && !coordination) views.push({ ...base, state: "missing", detail: `not found at the declared path ${repo.path}`, nextStep: remote ? `Clone ${remote} there, or locate an existing clone.` : "Fix repositories." + key + ".path, or locate the folder." });
+      else if (remote && obs?.nearby) views.push({ ...base, state: "unbound", detail: `folder ${obs.nearby.folderName} found, ${obs.nearby.origin === "none" ? "no remote" : "its remote is another repository"}: identity not verified`, nextStep: `If it is this repository, run Locate an Existing Clone… on it (DataPass then remembers it on this machine); otherwise clone ${remote}.` });
       else if (remote) views.push({ ...base, state: "unbound", detail: "not cloned on this machine (or not found next to this repository)", nextStep: `Clone ${remote}, or locate an existing clone.` });
       else views.push({ ...base, state: "missing", detail: "no local folder and no remote declared", nextStep: `Declare repositories.${key}.remote.url or a path.` });
       continue;

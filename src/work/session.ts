@@ -35,7 +35,7 @@ import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingComm
 import { buildCatalogue, hubToolchainTools, recipeView, type Catalogue, type RecipeFacts, type RecipeView } from "../core/toolkit/toolkit";
 import { loadToolkitFiles } from "./toolkitFiles";
 import type { ToolkitFileResult } from "../core/toolkit/toolkit";
-import { buildReadiness, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
+import { buildReadiness, readinessForVariant, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
 import { observeLocalEnv } from "./envObserver";
 import { observeBindingFolders, observeExtensionsJson } from "./toolchainObserver";
@@ -579,6 +579,7 @@ export class WorkSession implements vscode.Disposable {
   async setPreview(req: PreviewRequest | undefined): Promise<void> {
     await this.context.workspaceState.update(KEYS.preview, req && (req.scenario || req.picks?.length) ? { scenario: req.scenario, picks: req.picks?.slice(0, 50) } : undefined);
     this.previewCache = undefined;
+    this.readinessCache = undefined;
     this.selectionEmitter.fire(this.selection());
   }
 
@@ -614,13 +615,26 @@ export class WorkSession implements vscode.Disposable {
   readiness(): Readiness {
     if (this.readinessCache) return this.readinessCache;
     const map = this.projectMap();
+    const preview = this.preview();
+    const variant = preview && preview.key !== "scenario:current" ? preview : undefined;
     const config = vscode.workspace.getConfiguration("datapass");
     this.readinessCache = buildReadiness({
-      manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: map.repositories, problems: map.problems,
+      // A selected variant brings its own repositories (a planned one it adds, for instance).
+      manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: (variant?.map ?? map).repositories, problems: map.problems,
       settings: { diagramCloudUrl: config.get<string>("diagramCloud.url") ?? "" },
       diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION,
       tools: this.tools, platform: process.platform, hubTools: hubToolchainTools(this.catalogue()), connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs
     });
+    // V1-STAB: with a variant selected, rows of repositories only other variants use leave the view.
+    if (variant) {
+      const repoOf = (c: { repoKey?: string; artifacts?: { repoKey?: string } }) => c.artifacts?.repoKey ?? c.repoKey;
+      const used = new Set([map.coordinationKey, ...variant.map.components.map(repoOf)].filter((k): k is string => !!k));
+      const hide = new Set([
+        ...map.components.map(repoOf),
+        ...Object.values(this.variants()?.options ?? {}).flatMap(o => o.components.map(c => c.repoKey))
+      ].filter((k): k is string => !!k && !used.has(k)));
+      this.readinessCache = readinessForVariant(this.readinessCache, hide, variant.title);
+    }
     return this.readinessCache;
   }
 

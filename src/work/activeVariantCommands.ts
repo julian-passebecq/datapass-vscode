@@ -91,8 +91,11 @@ export class ActiveVariantService implements vscode.Disposable {
     this.paint();
   }
 
-  private async save(key: string, req: VariantRequest | undefined): Promise<void> {
-    await this.context.globalState.update(ACTIVE_VARIANT_KEY, withEntry(this.store(), key, req, new Date().toISOString()));
+  /** Saves run one after the other, each reading the store the previous one wrote. */
+  private saving: Promise<void> = Promise.resolve();
+  private save(key: string, req: VariantRequest | undefined): Promise<void> {
+    this.saving = this.saving.catch(() => undefined).then(() => this.context.globalState.update(ACTIVE_VARIANT_KEY, withEntry(this.store(), key, req, new Date().toISOString())));
+    return this.saving;
   }
 
   private paint(): void {
@@ -107,7 +110,10 @@ export class ActiveVariantService implements vscode.Disposable {
   async activate(req: VariantRequest | undefined): Promise<void> {
     const r = resolveActiveVariant(this.session.project.options, req);
     if (r.fellBack) throw new UserFacingError(`DataPass cannot switch: ${r.fellBack}.`);
-    await this.session.setPreview(r.request);
+    // V1-STAB: the switch saves its own entry; the preview event it fires must not save a second,
+    // older one after it (the test "back to current forgets the entry" was flaky on Windows).
+    this.applying = true;
+    try { await this.session.setPreview(r.request); } finally { this.applying = false; }
     const key = projectKey(this.session);
     if (key) { this.appliedFor = key; await this.save(key, r.request); }
     this.paint();

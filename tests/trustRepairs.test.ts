@@ -239,3 +239,14 @@ test("F07: one PR per repository plus a separate bridge PR; never the same PR ac
   }
   assert.match(readFileSync("docs/guide/02_WHAT_THE_AI_PREPARES.md", "utf8"), /bridge repository \(coordination repository\)/);
 });
+
+test("V1-STAB: a sibling of the right name with no origin is named, never bound", () => {
+  const m = { schemaVersion: 3, project: { id: "p", title: "P" }, repositories: { code: { label: "Code", remote: { url: "https://github.com/o/code.git" } } } } as unknown as DataPassProjectManifest;
+  const view = (nearby?: RepoObservation["nearby"]) => resolveRepositories(m, new Map([["code", { key: "code", source: "none", exists: false, ...(nearby ? { nearby } : {}) }]]), COORDINATION_KEY).find(r => r.key === "code")!;
+  assert.match(view().detail ?? "", /not cloned on this machine/);
+  const none = view({ folderName: "code", origin: "none" });
+  assert.equal(none.state, "unbound");
+  assert.match(none.detail ?? "", /folder code found, no remote: identity not verified/);
+  assert.match(none.nextStep ?? "", /Locate an Existing Clone/);
+  assert.match(view({ folderName: "code", origin: "other" }).detail ?? "", /folder code found, its remote is another repository: identity not verified/);
+});
