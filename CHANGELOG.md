@@ -3,6 +3,42 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.22.0 — modes, trust repairs, context from any file, format checks, file versions (2026-09-26)
+
+Plan: [handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (packages
+A, B, C, D, F; PRs #36, #37, #34, #35, #38). The toolkit catalogue pass (0.21) runs in its own session
+and is not part of this release. No project file format changes: manifest v5, graph 0.2 and options 1
+read as before; a new schema ships for the extension's own presets.
+
+- **Modes** (B): presentation presets **Vanilla**, **Standard** (default for a new install),
+  **DataPass** and **Advanced** over the same project files. Status item `DataPass: Standard`,
+  *DataPass: Switch Mode*, *Customize DataPass Mode* (show or hide each of 24 surfaces: views, AI
+  tabs, Project tree sections, Workbench views, status items, landing, markers), *Reset Mode
+  Customization*. Machine settings `datapass.experience.preset` / `.overrides`; presets are JSON
+  (`resources/experience/presets.json`, schema `schemas/datapass-experience.schema.json`). Standard and
+  above open on the architecture panel (a workspace startup view wins) and mark components an
+  options.json decision can change ("alternatives exist"). Switching writes no project file; blockers
+  and palette commands show in every mode; Advanced is 0.20's full view.
+- **Trust repairs F01–F08** (A, from the FOIL review): per-currency cost totals (monthly and one-time
+  apart, never converted), "partial: n of m priced" and "not priced" instead of hidden zeros; typed file
+  fingerprints (`sha256` or `stat`, a weak digest never matches an approval); Git tracking
+  `tracked / untracked / unknown` (unknown never counts as clean); new repository state **unverified**
+  (declared remote, origin absent or lookup failed: browse only, no Get updates or work orders); bounded
+  observation (16 at a time, byte budget, "inspection incomplete (n skipped)"); board prompts no longer
+  treat a merged PR as done nor assume a beginner or a two-week sprint; one PR per repository plus a
+  separate, cross-linked bridge PR ("coordinated change set") in the guide and packs.
+- **Copy Context for My AI…** (C) from any file (Explorer, editor tab, editor with a selection,
+  palette): question, repository and Git state, owning component and scope, repository revisions,
+  folder excerpt, the file or selection (24 KB, unsaved buffers included), its diagnostics and the rules
+  for the answer; local paths and secrets scrubbed; modal preview, clipboard only.
+- **Format checks without execution** (D) → Problems: JSON and YAML syntax, Databricks bundles (name,
+  targets, includes, paths, `${var.x}`), Dockerfile (`FROM`, `COPY` sources), docker-compose (build
+  context, env files). On save, *Check This File*, *Check This Repository* (bounded), a quick fix that
+  copies `databricks bundle validate`. Guide page 08.
+- **File versions** (F), read-only, on native Git: *Open Latest Version* (origin/<default> as of the last
+  fetch, never fetches), *Open Version…* (last 50 commits, renames followed), *Compare with Version…*,
+  *Changed by the Last Update…* (the last fast-forward's files per component, each opens its diff).
+
 ## 0.20.0 — work orders (pass AI-2, 2026-09-25)
 
 Design and Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)

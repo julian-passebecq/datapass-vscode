@@ -34,6 +34,7 @@ treats a declaration as proof.
 | **0.18.0** | **Toolchain, ID map, connections — manifest v5 (`toolchain`, identifier `values` per environment and `kind`, `connections`), Tools & versions and Connections in Readiness, read-only sign-in checks, `.vscode/extensions.json` comparison, AI pack fields, the 11 data-goblin plugins** | merged, PR #28 |
 | **0.19.0** | **Pass AI-1: the Git module — Git view with Needs you, worktrees, PRs with CI, recent merges, Fetch all, other repositories in `D:\PROJ`, Workbench Git card** | merged, PR #29 (main `da0e168`) |
 | **0.20.0** | **Pass AI-2: work orders — the AI view's three tabs (DataPass-guided / Agent / Manual), orders handed to the Claude or Codex desktop apps (or a terminal), project types dev / work / perso, results checked by receipt, PRs found by branch, Needs you rule 8, the Work orders view, `.datapass/work-log.json`** | merged, PR #30 (main `538a3d3`) |
+| **0.22.0** | **Global improvement plan: modes (Vanilla / Standard / DataPass / Advanced), trust repairs F01–F08, Copy Context for My AI from any file, format checks without execution, file versions** | merged, PRs #34–#38 + release |
 | 1.0.0 | When the V3 acceptance with Julian passes on one real multi-repository project (section 6) | — |
 
 "V3" names the architecture of this handoff; 0.13.0 is the first extension release that implements

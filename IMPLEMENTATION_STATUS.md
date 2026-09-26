@@ -1,3 +1,368 @@
+# Implementation Status — 0.22.0: modes, trust repairs, context from any file, format checks, file versions
+
+Date: 2026-09-26. Version `0.22.0`, on 0.20.0 (the toolkit catalogue pass 0.21 runs in its own session
+and is not included). Plan: [handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md).
+Five packages built in parallel the night of 2026-09-26, merged in the order A, C, D, F, B:
+A trust repairs F01–F08 (PR #36), C *Copy Context for My AI* from any file (PR #34), D format checks
+without execution (PR #35), F file versions (PR #38), B modes (PR #37). Release step E consolidates
+their night notes below (the `handoff/v3/night/` folder is removed). Next: 0.23 = package G
+(variants: coding state, architecture-scoped tree), which adds two surfaces to the B presets.
+
+### What's new
+
+- **Modes** (B): Vanilla / Standard (default) / DataPass / Advanced presets over one model; status item,
+  Switch Mode, Customize (24 surfaces), per-machine settings; switching writes no project file; blockers
+  and palette commands in every mode; Standard lands on the architecture and marks alternatives.
+- **Trust repairs** (A): typed per-currency cost totals with partial marking, typed fingerprints (weak
+  digests never match), three-state Git tracking, the `unverified` repository state, bounded observation,
+  honest prompts, coordinated change sets (one PR per repository + a bridge PR).
+- **Copy Context for My AI…** (C) from any file or selection, scrubbed, clipboard only.
+- **Format checks** (D) for JSON, YAML, Databricks bundles, Dockerfile and docker-compose into Problems,
+  nothing executed.
+- **File versions** (F): latest / chosen revision read-only, compare, what the last update changed.
+
+### Tests
+
+`npm run verify` on main after the five merges: typecheck, the unit suite and the build pass. Full
+desktop suite (every fixture, including v22-modes, v22-versions, v22-checks) run for this release; CI
+runs `validate` and `desktop` on ubuntu-latest and windows-latest.
+
+### Package notes (from handoff/v3/night/, consolidated)
+
+### 0.22 package A — Trust repairs (FOIL review F01–F08)
+
+Release notes for step E (consolidation into 0.22.0). Plan: `handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md` §4 A.
+
+#### What changed
+
+| Finding | Fix | Where |
+|---|---|---|
+| F01 mixed currencies | One typed aggregation `src/core/project/costs.ts` (`sumCostLines`, `sumPickedOptions`, `formatCostTotal`): per currency, never converted; monthly and one-time apart. Used by the option subtotal ("Declared cost of this choice"), the scenario table, the compact cost line, the per-line cost and the webview (comparison table, scenario cells, preview banner, consequences panel). `formatMoney` now delegates to it. | `costs.ts`, `options.ts`, `optionsReport.ts`, `webview/workbench.ts`, `views/workbenchState.ts` |
+| F08 partial costs hidden | A line without a figure is unpriced; an option without lines or with an unpriced line makes its decision unpriced. Totals say "partial: n of m lines/decisions priced"; nothing priced says "not priced"; unknown is never 0. `ArchitectureImpact.costs.total` (`CostTotal`) carries priced/total; `costs.missing` = decisions not fully priced. The AI rules say a partial total is not the full cost. | same |
+| F02 stat stored as sha256 | `FileObservation.fingerprint` is `{ kind: "sha256", value }` or `{ kind: "stat", size, mtimeMs }`; a failed read is `hashError` (the file is no longer silently left out of the digest). Files up to 2 MiB are read, larger ones streamed (≤ 64 MiB each, 256 MiB per refresh); beyond that, stat only. `ArtifactView.digestStrength` = exact / weak. A weak digest never matches a recorded result (shown stale) and is not recorded with a result. | `resolve.ts`, `observation.ts`, `work/projectObserver.ts`, `projectMap.ts` (2 lines), `work/workbenchCommands.ts` (1 line) |
+| F03 failed ls-files read as untracked | `tracking: { state: tracked / untracked / unknown, reason }` from `git ls-files -z` in batches of 50; failed call or output without the final NUL → unknown. `mustNotCommit[].tracking` + `trackingReason`; unknown gives a warning "could not check Git tracking of …", the Workbench and preparation pack say so; never counted as clean. | `resolve.ts`, `observation.ts`, `projectObserver.ts`, `preparation.ts`, `webview/workbench.ts` (1 line) |
+| F04 origin not verified | New `RepoState` "unverified": a remote is declared, the folder is a Git repository, origin absent (`git remote` has no origin) or its lookup failed. Files are browsable (`isBrowsable`); Get updates (command and `session.fastForward`), work orders and operations' repository requirement refuse it; Workbench row offers Locate / Retry; Project tree icon `unverified`; readiness warning; Git view state "unverified". A repository declared without a remote stays local; SSH and HTTPS forms remain the same identity. | `resolve.ts`, `observation.ts` (`interpretOrigin`), `projectObserver.ts`, `projectTree.ts`, `webview/workbench.ts`, `readiness.ts`, `gitReport.ts` (type), `projectMap.ts`, `workbenchCommands.ts`, `session.ts`, `workOrderCommands.ts` (message) |
+| F05 unbounded concurrency | `runBounded` (16 in flight), byte budget above, plan capped at 2,000 entries; `ProjectObservation.incomplete` → Problems in project files: "Project files: inspection incomplete (n skipped): …". | `observation.ts`, `projectObserver.ts`, `session.ts`, `projectMap.ts` |
+| F06 merge = done, beginner, sprint | Board "update" task: a merged PR moves a card to `review` (or last open column); done only per the card's acceptance or a project rule. "Plan the next sprint" asks for dates and capacity instead of assuming two weeks / one person. "I am a beginner in cloud engineering" removed from the options compare prompt, the card pack and the preparation pack ("in plain language"). | `aiExchange.ts`, `optionsReport.ts`, `boardPack.ts`, `preparation.ts` |
+| F07 same PR across repositories | `COORDINATED_CHANGE_RULE` in the preparation and card packs: one PR per repository, `.datapass` changes in a separate cross-linked bridge PR (coordinated change set). Guide 02 (§2.1 "bridge repository (coordination repository)", AGENTS.md template, board rule), 05 (loop C), `PREPARING_A_PROJECT.md` (§1 diagram, rule 2, card pack), example AGENTS.md; 07 gets a "Trust limits (0.22)" section. | docs, `tests/fixtures/v3/examples.ts`, `examples/v3/research-library/AGENTS.md` |
+
+#### Tests
+
+- `tests/trustRepairs.test.ts` (15 tests): mixed currencies, default currency, monthly + one-time, zero line, all unknown, partial (lines and decisions), report + analysis; stat fingerprint with equal size+mtime → stale result, exact control; failed hash → weak; budget modes; ls-files missing git / error / truncated / ok; unknown tracking → warning + pack text; absent origin, failed lookup, wrong origin, SSH vs HTTPS, local-only; unverified blocks operations but keeps files; origin interpretation; 2,500 entries bounded at 16 with "inspection incomplete (500 skipped)"; prompt texts; coordinated change set in packs and docs.
+- Existing fixtures moved from `sha256: "x"` / `tracked: bool` to `fingerprint` / `tracking`.
+- `npm run verify`: all unit tests pass. Desktop suite: see the PR.
+
+#### Limits
+
+- The Git view does not inspect an unverified repository (status, worktrees, PRs); it shows its state and detail. Browsing its files works from the Project tree / Workbench.
+- Coordinated change sets are described, not yet shown linked in the views (V2 in the plan §3).
+- `docs/guide/06_PROMPT_FOR_THE_CLIENT_AI.md` and `01_OVERVIEW.md` still describe the person as a cloud beginner (Julian's own template text, not a DataPass prompt; outside package A's files).
+- Package A touched a few files outside its ownership table with one-line hooks: `src/core/git/gitReport.ts` (state type), `src/core/project/projectMap.ts`, `src/core/readiness/readiness.ts`, `src/work/{session,workbenchCommands,workOrderCommands}.ts`, `src/webview/workbench.ts` (cost and state rendering).
+
+### 0.22 package B — Modes (experience presets)
+
+Night of 2026-09-26, coder B. Plan: [10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) §2 D-01..D-03, D-10, §4 B.
+No version bump, no CHANGELOG / IMPLEMENTATION_STATUS / CLAUDE.md edits (step E consolidates).
+
+#### What changed
+
+- **Surfaces** (`src/core/experience/surfaces.ts`): a stable list of 24 ids — 7 views, the Agent and
+  Manual AI tabs, 7 Project tree sections, 4 Workbench views, 2 status items (`status.mode`,
+  `status.health`), the landing (`landing.architecture`) and the "alternatives exist" marker
+  (`badge.alternatives`). Ids are a contract: add, never rename.
+- **Presets** (`resources/experience/presets.json`, format `datapass.experience` 1, schema
+  `schemas/datapass-experience.schema.json` emitted from the same DSL as the other schemas):
+  Vanilla ⊂ Standard ⊂ DataPass ⊂ Advanced, as in the plan's §3 table. Each preset lists what it
+  shows; everything else is hidden.
+- **Resolver** (`src/core/experience/presets.ts`, pure): preset → overrides → effective surfaces,
+  each with its origin (`preset` / `override`). An unknown mode falls back to the default (Standard),
+  an unknown surface or a non-boolean override is ignored; each gives a message (output channel and
+  one warning with "Open settings").
+- **Settings** (machine scope, so a repository's `.vscode/settings.json` cannot set them):
+  `datapass.experience.preset` (default `standard`) and `datapass.experience.overrides`
+  (surface id → true/false; only the differences from the preset are stored).
+- **Context keys** `datapass.hidden.<surface>` (true while hidden). Every contributed view has
+  `"when": "!datapass.hidden.<id>"`; menu entries that open a hidden surface carry the same key
+  (work orders → `ai.agent`, Open Board → `workbench.board`, Open Options / Sheet, board card items).
+  Nothing is added to `commandPalette`: commands keep running from the palette with their own guards.
+- **Commands**: *DataPass: Switch Mode…* (quick pick, also accepts a preset id as argument; offers
+  Customize and Reset), *DataPass: Customize DataPass Mode…* (multi-select of every surface),
+  *DataPass: Reset Mode Customization*. Switch Mode is also in the Git and Project views' `…` menu.
+- **Status bar**: `$(layers) DataPass: Standard` (a `*` when customized); the tooltip gives the mode
+  and each change. The 0.9 tool-health item shows only when `status.health` is on (Advanced).
+- **Landing**: Standard and above focus the Architecture panel once the project is loaded, after the
+  0.17 startup work view. A workspace `datapass.startupView` or a launcher's request wins; the
+  keyboard goes back to the active editor.
+- **Gating**: Project tree root sections (`src/views/projectTree.ts`), the Workbench tabs
+  (`src/webview/workbench.ts`: a hidden view falls back to Architecture unless a command opened it),
+  the AI view tabs (`src/views/aiExchangeHtml.ts`: the tab bar disappears when only the guided tab
+  is left; a command that prefills or opens the Agent tab still shows it).
+- **Blockers in every mode (D-03)**: Restricted Mode, manifest / graph errors and "several project
+  folders" rows are never gated; readiness **errors** keep the Readiness section even when the mode
+  hides it; problems of severity error keep the Problems section. The AI import refuses secrets in
+  every mode (tested in Vanilla).
+- **"Alternatives exist"** (`src/core/experience/alternatives.ts`): components that an options.json
+  decision can change (declared concerns + what its other options remove or replace) get
+  " · alternatives exist" in the Project tree, a small `alternatives` tag on the diagram node and a
+  pill in Details, with the decision titles in the tooltip. No verdict (D-05).
+- **New install**: a one-time notification "DataPass opens in Standard mode … Switch mode" (skipped
+  when the preset was already set, and in Test mode).
+
+#### Files outside B's ownership (one-line hooks)
+
+- `src/views/workbench.ts` (host: `setSurfaces`, `experience` field of the state),
+  `src/views/workbenchState.ts` (one optional `experience` field on `WorkbenchState`),
+  `src/webview/workbench.ts` (tab filter, fallback, the diagram/Details marker),
+  `src/views/aiExchange.ts` (`setSurfaces`, `hiddenTabs` in the state),
+  `src/core/contracts/schemaFiles.ts` (one schema entry),
+  `scripts/desktop-test.ts` (fixture `v22-modes`; the other fixtures' profiles get
+  `preset: advanced` + `landing.architecture: false`, so their 0.20 expectations stay unchanged).
+
+#### Tests
+
+- `tests/experience.test.ts` (9): presets.json validates (runtime + ajv on the emitted schema; the
+  committed schema is current); unknown surface / preset id, missing preset, duplicate, wrong format
+  rejected with a message; presets grow Vanilla → Advanced and match §3; resolution order and origins;
+  unknown mode / surface / non-boolean ignored with a message; customize keeps only differences and
+  survives a mode switch; **every contributed view has a surface id and its `when` clause** (a future
+  view cannot escape the modes); settings enums follow the lists, menus of hidden surfaces are gated,
+  no `commandPalette` gating; the alternatives marker.
+- `tests/integration/experienceFlows.ts` (8, fixture `v22-modes` = the research project as a new
+  install): Standard + landing + status item; Project / Galaxy views really hidden by the `when`
+  clauses, Git / AI / Details shown; Standard tree sections, markers, Workbench and AI tabs gated;
+  `datapass.openOptions` still runs from the palette; Vanilla (architecture and Details hidden, guided
+  tab only, a leaky answer refused, Git view present); Advanced shows everything; overrides
+  (status `*`, tooltip, unknown id reported, reset, nothing in workspace settings); **`git status` of
+  the fixture repository unchanged after every switch**.
+- `npm run verify`: unit suite 343/343.
+
+#### Limits
+
+- The desktop harness runs with `--disable-workspace-trust`, so the untrusted-workspace blocker in
+  Vanilla is covered by the code path (the Git view's and Project tree's Restricted rows are not
+  gated), not by a desktop test.
+- Before activation (activation is `onView` / `workspaceContains`), every view is visible: the keys
+  are "hidden" keys so that nothing is hidden by accident when the extension has not started. In a
+  folder without `.datapass/`, the DataPass views show until one is opened.
+- VS Code cannot recolour contributed icons at runtime; the 0.17 company switcher in the status bar
+  is not a surface (it shows in every mode; VS Code's own right-click hides it).
+- The context keys are `datapass.hidden.<id>` rather than the plan's `datapass.surface.<id>`: a view
+  whose `when` needs a key set to true would stay hidden before activation, and VS Code turns
+  `key != false` into "key is set".
+
+#### Adding a surface (package G: `project.variantFilter`, `badges.codingState`)
+
+1. One entry in `SURFACES` (`src/core/experience/surfaces.ts`).
+2. Its id in the `show` lists of the presets that show it (`resources/experience/presets.json`; Standard+ means standard, datapass, advanced).
+3. One boolean property under `datapass.experience.overrides` in `package.json`.
+4. `npm run schemas` (the enum of surface ids in the schema), then gate the code with `shows("<id>")`
+   (Project tree: `this.shows`, Workbench: `state.experience`). `tests/experience.test.ts` fails if 1–4 disagree.
+
+#### For E (release 0.22.0)
+
+CHANGELOG: "Modes: Vanilla / Standard (default) / DataPass / Advanced, Switch Mode and Customize,
+presets.json and its schema, alternatives marker, landing on the architecture." README already has
+the modes table. `04_NEXT_PASSES.md`: V2 "bridge recommends a preset (manifest v6 `presentation`)",
+"presets shipped from the hub".
+
+### 0.22 package C — "Copy Context for My AI" from any file
+
+Plan: [10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) §4 C, decision D-08 (first half of the daily loop).
+For step E (0.22.0 consolidation): CHANGELOG, IMPLEMENTATION_STATUS, README and the guide are not edited here.
+
+#### What changed
+
+- New command **DataPass: Copy Context for My AI…** (`datapass.copyFileContext`) on the Explorer context
+  menu (files only), the editor tab context menu and the editor context menu (so it takes a selection),
+  and in the palette. It asks for an optional question, shows a modal preview (bytes, sections, what is
+  never included, the owning component) with *Copy* / *Preview*, and copies to the clipboard. It writes
+  no file anywhere.
+- The pack (`src/core/exchange/fileContext.ts`, pure):
+  - the question (when given);
+  - the file's repository: declared id and label, bridge (coordination) or native, remote identity,
+    branch, HEAD, the file's own Git state (unchanged / modified / untracked / ignored) and the
+    repository's uncommitted change count; "not in the bridge" when no declared repository holds it;
+  - "another clone or worktree of that repository (same remote)" when the file is in a clone DataPass
+    does not observe: Git's `--show-toplevel` + origin identity decide, so two worktrees of one remote
+    resolve to the one that holds the file, and its own branch/HEAD are reported;
+  - the owning component(s) (deepest component root wins; ties all listed), their scope(s), and the file's
+    declared role (entry, config…) when it is one of the component's expected files;
+  - the revision of each repository those components use, plus the bridge;
+  - a folder excerpt: parent folders from the repository root, siblings (folders first, capped at 30, the
+    file always kept, `.git` hidden);
+  - the file or the selection (the editor's buffer when open, flagged when unsaved; an untitled buffer is
+    "not on disk"; binary files omitted), 24 KB budget cut on a line boundary with a labelled truncation;
+    the pack as a whole is capped at 48 KB;
+  - the file's current VS Code diagnostics (all sources, so package D's checks are included), errors
+    first, 40 at most;
+  - the rules for the answer: a PR in the repository that holds the file; a separate bridge PR, cross-
+    linked, if the architecture changes (never one PR, never DataPass files in a native repository).
+- Privacy: paths are repository-relative; every known repository folder, the workspace folder and the
+  home folder are replaced by `<local-path>` wherever they appear (both slash forms, any case on
+  Windows), then the whole pack goes through the shared `scrub()` (paths and credential shapes).
+- Read-only: Git is only read (`rev-parse`, `config --get`, `status`), never run in Restricted Mode
+  ("Git: not read (Restricted Mode…)"). The resolver and project map are used as observed; no existing
+  module changed.
+
+#### Files
+
+- `src/core/exchange/fileContext.ts` (new), `src/work/fileContextCommands.ts` (new)
+- `package.json`: the command and its three menu entries only
+- `src/extension.ts`: one import and one register call
+- `tests/fileContext.test.ts` (12 tests), `tests/integration/fileContextFlows.ts` (5 flows) and one line in
+  `tests/integration/suite.ts`
+
+#### Tests
+
+- `npm run verify`: check + 346/346 unit tests + build.
+- `tests/fileContext.test.ts`: file inside a component; in a declared repository but no component; outside
+  every declared repository (tree + "not in the bridge", with and without Git); unsaved buffer and
+  untitled buffer; selection; oversize file truncated and labelled, binary omitted, tiny total budget;
+  secrets scrubbed (API key, connection string, JSON secret, GitHub token); no absolute local path (any
+  slash form or case); two worktrees of the same remote; bridge in a monorepo sub-folder; siblings cap;
+  fences with backticks in the content; diagnostics cap.
+- Desktop (`--fixture=v3-research`, 51/51): menus contributed; the Explorer entry on a pipeline file
+  (component *PDF extraction*, scope, revisions, rules, no local path); the editor entry with an unsaved
+  buffer + selection + a secret (scrubbed, file on disk and Git status unchanged); a real `git worktree`
+  of the pipeline clone on a new branch; a file outside every repository.
+- Note: one run showed `0.17: the Power Ops list names the company workspace…` failing once and passing on
+  the next two runs; it is unrelated to this package (likely another coder's desktop run writing the
+  same machine-level Power Ops list at the same time).
+
+#### Limits
+
+- The question box: Esc cancels; an empty answer adds no Question section.
+- Multi-select in the Explorer copies the first (clicked) file only.
+- Diagnostics are what VS Code has at that moment; a file never opened may have none yet from language
+  servers (package D's checks and the JSON schema server fill Problems for files they watch).
+- "Revisions of the repositories the component uses" come from the last observation (Refresh), not a new
+  Git read; the file's own repository is read fresh.
+- Not recorded in the exchange log (the log needs a scope; the pack is not a project exchange).
+
+### 0.22 package D — Format checks without execution → Problems
+
+Plan: [10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) §4 D (decision D-08, second half).
+Branch `claude/0.22-d-format-checks`. No version bump (step E consolidates).
+
+#### What changed
+
+- **`src/core/checks/`** (new, pure, no `vscode`, no process): rule ids `json.syntax`, `yaml.syntax`,
+  `dab.bundle-name`, `dab.targets`, `dab.include`, `dab.path`, `dab.var`, `docker.from`,
+  `docker.copy-source`, `compose.build-context`, `compose.env-file`, `checks.incomplete`. Reads go
+  through a `CheckFs` interface; a repository scan is bounded (`maxFiles` 2,000, `maxFileBytes`
+  1 MB, depth 12, dependency/build/cache folders skipped). JSON errors are located by our own
+  scanner (runtime messages vary). YAML through the bundled `yaml` 2.x parser (new dev dependency,
+  bundled by esbuild; core schema, unique keys). DAB checks follow `include` into the resource
+  files and resolve paths relative to the declaring file. `FindingStore` merges a file's own
+  findings with the bundle check's findings for it.
+- **`src/work/checkCommands.ts`** (new): DiagnosticCollection `datapass-checks` (source `DataPass`,
+  code = rule id), on-save check (setting `datapass.checks.onSave`; JSON left to VS Code's JSON
+  support on save), *DataPass: Check This File* / *Check This Repository* (palette and Explorer
+  context), a quick fix on `dab.*` diagnostics that copies `databricks bundle validate` for the
+  bundle's folder (existing `buildDatabricksBundleCommand`, never run). Reads through
+  `vscode.workspace.fs`, symlinks not followed; works in Restricted Mode.
+- **package.json** (my entries only): three commands (one hidden from the palette), two Explorer
+  menu items, settings `datapass.checks.onSave|maxFiles|maxFileBytes`, activation on
+  `workspaceContains:**/databricks.y(a)ml` and `onLanguage:dockerfile|dockercompose`, dev dependency `yaml`.
+- **src/extension.ts**: one import and one `registerCheckCommands(context)` call.
+- **Guide**: new page [docs/guide/08_FORMAT_CHECKS.md](docs/guide/08_FORMAT_CHECKS.md)
+  ("What DataPass checks without running anything", every rule, what is skipped and why, a passing
+  bundle) and its row in the guide README.
+
+#### Tests
+
+- `tests/checks.test.ts` (13 tests): good fixture has no finding; bad fixture fires every rule at the
+  expected files; env files never read; a fixed file clears its findings and a deleted one is
+  dropped; a 5,000-file repository stops at the budget with one `checks.incomplete` finding and reads
+  ≤ 2,000 files; large files and skipped folders never read; DAB edge cases (globs, notebook
+  extensions, workspace paths, interpolation, git sources, artifacts-built wheels); Dockerfile
+  parsing (continuations, heredocs, JSON form, escape directive); glob matching; JSON error
+  locations; `core/checks` imports only local modules and `yaml` (no `child_process`, exec, fs,
+  network, vscode) and calls no process/eval API; the guide has a row for every rule id.
+- Fixtures: `tests/fixtures/checks/{good,bad}`.
+- Desktop: fixture `v22-checks` (a native repository with no `.datapass`, the `bad` fixture) and
+  `tests/integration/checkFlows.ts`: the broken `databricks.yml` and friends show in Problems after
+  *Check This Repository*; the validate quick fix is offered on bundle diagnostics only; saving a fixed
+  `resources/jobs.yml` clears its diagnostics through the on-save listener (a URI-case bug on Windows
+  was found and fixed here); *Check This File* clears and re-reports a JSON file.
+- `npm run verify` green; full desktop suite run locally.
+
+#### Limits
+
+- Build context is taken as the Dockerfile's folder (`docker.copy-source` is therefore a warning);
+  `.dockerignore` is not applied.
+- `include` globs support `*`, `?`, `**`, `[…]` (no `{a,b}`).
+- Only `${var.x}` references are checked (not `${variables.x.value}` nor target-level overrides).
+- JSON-with-comments files are recognised by name (`tsconfig*.json`, `.vscode/`, `.devcontainer/`,
+  `settings/launch/tasks/extensions.json`…); another JSONC file named `*.json` would be reported.
+- Python syntax, notebooks, Terraform/Bicep, CI and Kubernetes schemas: V2 or later.
+- For step E: CHANGELOG line "Format checks without execution → Problems (JSON, YAML, Databricks
+  bundles, Dockerfile, docker-compose), guide page 08"; the guide README header still says 0.20.0.
+
+### 0.22 package F — File versions (thin commands on native Git)
+
+Night of 2026-09-26, coder B (took F while waiting to merge B). Plan: [10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) D-18, §4 F.
+No version bump, no CHANGELOG / IMPLEMENTATION_STATUS / CLAUDE.md edits (step E consolidates).
+
+#### What changed
+
+Four commands, on any file (Explorer and editor-tab context menus, Project tree file rows, the palette):
+
+- **DataPass: Open Latest Version** — the file at `origin/<default branch>` (origin/HEAD, else
+  origin/main, else origin/master) **as of the last fetch**, in a read-only tab titled
+  `name (origin main 1a2b3c4, fetched 26 Sep 02:10)`. Never fetches or pulls: without that ref it says
+  "run Check for Updates first"; when the file is not in that branch it says so.
+- **DataPass: Open Version…** — quick pick of the file's last 50 commits (`git log --follow`, renames
+  followed; date, author, subject, "from PR #n" for a squash-merge subject), opens that revision
+  read-only (`name (1a2b3c4 2026-09-26)`).
+- **DataPass: Compare with Version…** — VS Code's diff editor, chosen revision ↔ working file.
+- **DataPass: Changed by the Last Update…** (Project and Git views' `…` menu) — for every cloned
+  project repository, the newest fast-forward in the reflog (what *Get updates* records:
+  `merge @{u}: Fast-forward`; `git pull` fast-forwards too), its files grouped by component
+  (`changedComponents` from `gitSync.ts`, read, not changed); a row opens the diff old..new
+  (an added file opens the new version, a deleted one the old).
+
+Revisions are served by a read-only `datapass-rev:` content provider (`git show <sha>:<path>`). The
+request is vetted (a 7–40 hex revision, a repository-relative path that cannot escape the repository,
+a repository that is an open folder or a project repository); Git runs by absolute path with
+`core.fsmonitor=false`, only in a trusted workspace. Nothing checks out, fetches, pulls or writes.
+
+#### Files
+
+`src/core/git/fileVersions.ts` (pure: git arguments, log / reflog parsers, paths, URI requests),
+`src/work/fileVersionCommands.ts` (commands, provider), `package.json` (4 commands, menus:
+`explorer/context`, new `editor/title/context`, `view/item/context` on `file.found`, `view/title`),
+one register call in `src/extension.ts`, one suite line, fixture `v22-versions` in
+`scripts/desktop-test.ts`.
+
+#### Tests
+
+- `tests/fileVersions.test.ts` (6), with real Git in a scratch repository: `--follow` across a rename
+  (path before the rename, PR number, newest first), a file with no history, noise and the 50 limit,
+  a path with spaces as one argument, a revision where the file did not exist, repository-relative
+  paths (Windows case, outside the repository refused), no origin/<default> (no fetch), the last
+  fast-forward read from the reflog (a fresh clone is not an update), `datapass-rev:` requests
+  refusing `..`, absolute paths and non-hash revisions.
+- `tests/integration/fileVersionFlows.ts` (4, fixture `v22-versions` = research project +
+  `notes/decisions.md` with three commits): Open Version… lists the three commits and opens the first
+  one's content read-only; Compare opens a diff editor (revision ↔ working file); Open Latest Version
+  refuses without origin/<default> and opens the pipeline's latest otherwise; after the AI's commit
+  is fetched and fast-forwarded, Changed by the Last Update lists *PDF extraction* and opens the diff.
+- `npm run verify` green.
+
+#### Choices and limits
+
+- Revisions always open through DataPass's own read-only provider rather than the Git extension's
+  `toGitUri`: same content, works when the Git extension is disabled, and the tab title can say which
+  revision and when it was fetched (logged in questions.md).
+- "from PR #n" comes from the squash-merge subject `(#n)`; a merge commit or a rebased branch shows no
+  PR number.
+- "Changed by the last update" is a quick pick (Project and Git view menus), not yet a section of
+  Details or the Project tree (those files belong to packages B/G); the reflog is per clone, so it
+  shows the last update made on this machine.
+
+---
+
 # Implementation Status — 0.20.0 (pass AI-2): work orders
 
 Date: 2026-09-25. Version `0.20.0` — merged, PR #30 (main `538a3d3`), on 0.19.0 (PR #29). The guide

@@ -53,6 +53,36 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.19.0 and 0.20.0
+
+The Git module (AI-1, PR #29) and work orders (AI-2, PR #30): [09_AI_MODES_WORK_ORDERS_GIT.md](09_AI_MODES_WORK_ORDERS_GIT.md).
+
+## Done in 0.22.0 (global improvement plan, night of 2026-09-26)
+
+[10_GLOBAL_IMPROVEMENT_PLAN.md](10_GLOBAL_IMPROVEMENT_PLAN.md) packages: A trust repairs F01–F08 (PR #36),
+C *Copy Context for My AI* from any file (PR #34), D format checks without execution (PR #35), F file
+versions (PR #38), B modes Vanilla / Standard / DataPass / Advanced (PR #37). Detail:
+[IMPLEMENTATION_STATUS.md](../../IMPLEMENTATION_STATUS.md). The toolkit catalogue (0.21) is still its own pass.
+
+## Next: 0.23.0 — package G, variants
+
+Plan §4 G (D-15..D-17): coding state per option and scenario (coded / partly coded / not coded) as
+badges, the Project tree scoped to the selected architecture with an *All variants* toggle, the guide
+section "Declaring variants"; adds the surfaces `project.variantFilter` and `badges.codingState` to
+the modes (Standard and above; see IMPLEMENTATION_STATUS, package B, "Adding a surface").
+
+## V2 list from the plan (§3)
+
+- The bridge recommends a mode and surfaces (manifest v6 `presentation`; the local choice wins).
+- Presets and checklists shipped from the hub, like the toolkit.
+- Check plan and evidence rows (NOT_RUN / UNKNOWN / FAIL / STALE), result reuse by input identity.
+- Coordinated change sets shown (native PR ↔ bridge PR, prepared vs landed).
+- Cost lines linked to toolkit ids, pinned catalogue revision, stale assertions.
+- Python syntax check through a vetted parser, notebook formats.
+- Company-level global view (every project of a company on one diagram).
+- Remote-SSH / WSL qualification.
+- Variants on another branch or tag (file references with a Git `ref`); side-by-side variant comparison.
+
 ## Acceptance with Julian (before 1.0.0)
 
 Run by Julian, reported with *Export Qualification Report* and a short note per step.
