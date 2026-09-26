@@ -36,7 +36,7 @@ const HEALTH_ICON: Record<string, [string, string?]> = {
 const REPO_ICON: Record<string, [string, string?]> = {
   local: ["repo", "testing.iconPassed"], unbound: ["cloud", "problemsWarningIcon.foreground"], planned: ["circle-large-outline", "disabledForeground"],
   missing: ["error", "problemsErrorIcon.foreground"], "wrong-remote": ["error", "problemsErrorIcon.foreground"], "not-a-repo": ["warning", "problemsWarningIcon.foreground"],
-  restricted: ["shield", "disabledForeground"]
+  restricted: ["shield", "disabledForeground"], unverified: ["unverified", "problemsWarningIcon.foreground"]
 };
 const icon = ([id, color]: [string, string?]) => new vscode.ThemeIcon(id, color ? new vscode.ThemeColor(color) : undefined);
 
@@ -179,7 +179,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const r = n.r;
         const item = new vscode.TreeItem(r.label, vscode.TreeItemCollapsibleState.None);
         item.id = n.id;
-        item.description = r.state === "local" ? r.detail : r.remote ? `${r.state === "unbound" ? "not cloned" : r.state} · ${r.remote}` : r.detail;
+        item.description = r.state === "local" ? r.detail : r.remote ? `${r.state === "unbound" ? "not cloned" : r.state === "unverified" ? "origin not verified" : r.state} · ${r.remote}` : r.detail;
         item.iconPath = icon(REPO_ICON[r.state] ?? ["repo"]);
         const url = r.state === "planned" ? undefined : r.remoteUrl ?? r.git?.originUrl;
         const host = gitHostOf(url)?.label;
@@ -240,7 +240,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     });
     if (show("project.repositories")) nodes.push({
       t: "section", id: "repositories", label: "Repositories", icon: "repo",
-      description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,
+      description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => r.state === "unverified") ? ` · ${map.repositories.filter(r => r.state === "unverified").length} unverified` : ""}${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,
       kids: () => map.repositories.map(r => ({ t: "repo" as const, id: `repo:${r.key}`, r }))
     });
     // Readiness blockers (errors) show in every mode, even when the mode hides the full sections (D-03).

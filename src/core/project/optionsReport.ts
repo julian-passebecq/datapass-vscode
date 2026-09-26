@@ -4,7 +4,8 @@
  * (declarations) and DataPass's own analysis (consequences), never from file contents or paths.
  */
 import { scrub } from "../exchange/aiContext";
-import { formatMoney, type ArchitectureImpact, type ArchOption, type CriterionValue, type Decision, type OptionsAnalysis, type OptionsFile } from "./options";
+import { formatCostLine, formatCostTotal, sumCostLines } from "./costs";
+import { type ArchitectureImpact, type ArchOption, type CriterionValue, type Decision, type OptionsAnalysis, type OptionsFile } from "./options";
 
 export type OptionsReportPurpose = "export" | "compare" | "apply";
 
@@ -49,10 +50,9 @@ function componentsLine(i: ArchitectureImpact): string {
   return parts.length ? parts.join(" ") : "unchanged";
 }
 
+/** Per currency, monthly and one-time apart, "partial: n of m decisions priced" when any is unknown (F01, F08). */
 function costLine(i: ArchitectureImpact): string {
-  const m = formatMoney(i.costs.monthly, "/month");
-  const o = formatMoney(i.costs.oneTime, " one-time");
-  return [m, o].filter(Boolean).join(" · ") || "no figure declared";
+  return formatCostTotal(i.costs.total);
 }
 
 function decisionSection(o: OptionsFile, d: Decision, a: OptionsAnalysis, lines: string[]): void {
@@ -72,17 +72,13 @@ function decisionSection(o: OptionsFile, d: Decision, a: OptionsAnalysis, lines:
   lines.push(row("Components (DataPass)", (_x, i) => componentsLine(i)));
   lines.push(row("New official tools (DataPass)", (_x, i) => toolsLine(i)));
   lines.push(row("DataPass support (DataPass)", (_x, i) => supportLine(i)));
-  lines.push(row("Declared cost of this choice", x => {
-    const m = (x.costs ?? []).filter(l => l.monthly !== undefined).reduce((n, l) => n + l.monthly!, 0);
-    const t = (x.costs ?? []).filter(l => l.oneTime !== undefined).reduce((n, l) => n + l.oneTime!, 0);
-    return [(x.costs ?? []).some(l => l.monthly !== undefined) ? `≈ ${Math.round(m * 100) / 100}/month` : "", t ? `≈ ${Math.round(t * 100) / 100} one-time` : ""].filter(Boolean).join(" · ") || "—";
-  }));
+  lines.push(row("Declared cost of this choice", x => formatCostTotal(sumCostLines(x.costs, o.currency ?? "USD"))));
   for (const x of opts) {
     const bits: string[] = [];
     if (x.pros?.length) bits.push(`  - Pros: ${x.pros.join("; ")}`);
     if (x.cons?.length) bits.push(`  - Cons: ${x.cons.join("; ")}`);
     if (x.consequences?.length) bits.push(`  - Consequences: ${x.consequences.join("; ")}`);
-    for (const c of x.costs ?? []) bits.push(`  - Cost: ${c.label}${c.price ? ` — ${c.price}` : ""}${c.monthly !== undefined ? ` (≈ ${c.monthly} ${c.currency ?? o.currency ?? "USD"}/month)` : ""}${c.oneTime !== undefined ? ` (≈ ${c.oneTime} ${c.currency ?? o.currency ?? "USD"} one-time)` : ""}${c.source ? ` — source ${c.source}` : ""}${c.asOf ? `, as of ${c.asOf}` : ""}${c.note ? ` — ${c.note}` : ""}`);
+    for (const c of x.costs ?? []) bits.push(`  - Cost: ${c.label}${c.price ? ` — ${c.price}` : ""} (${formatCostLine(c, o.currency ?? "USD")})${c.source ? ` — source ${c.source}` : ""}${c.asOf ? `, as of ${c.asOf}` : ""}${c.note ? ` — ${c.note}` : ""}`);
     if (x.requires?.length) bits.push(`  - Requires: ${x.requires.join(", ")}`);
     if (x.excludes?.length) bits.push(`  - Does not work with: ${x.excludes.join(", ")}`);
     if (bits.length) lines.push("", `- **${x.label}**`, ...bits);
@@ -98,8 +94,8 @@ export function optionsMarkdown(input: OptionsReportInput): { text: string; byte
   const focus = input.decisionId ? o.decisions.find(d => d.id === input.decisionId) : undefined;
   if (input.purpose === "compare") {
     lines.push("", "## What I am asking", focus
-      ? `Compare the options of the decision "${focus.title}" for my project. Recommend one, explain the consequences in plain language (I am a beginner in cloud engineering), and point out anything missing or wrong in the comparison (consequences, prices without source or date, incompatible combinations). If the file needs corrections, return the complete corrected .datapass/options.json in one \`\`\`json block.`
-      : "Compare these architecture scenarios for my project. Recommend one, explain the consequences in plain language (I am a beginner in cloud engineering), and point out anything missing or wrong in the comparison. If the file needs corrections, return the complete corrected .datapass/options.json in one ```json block.");
+      ? `Compare the options of the decision "${focus.title}" for my project. Recommend one, explain the consequences in plain language, and point out anything missing or wrong in the comparison (consequences, prices without source or date, incompatible combinations). If the file needs corrections, return the complete corrected .datapass/options.json in one \`\`\`json block.`
+      : "Compare these architecture scenarios for my project. Recommend one, explain the consequences in plain language, and point out anything missing or wrong in the comparison. If the file needs corrections, return the complete corrected .datapass/options.json in one ```json block.");
   } else if (input.purpose === "apply" && focus) {
     const target = focus.options.find(x => x.id === (input.optionId ?? focus.chosen)) ?? focus.options.find(x => x.id === focus.current)!;
     lines.push("", "## What I am asking",
@@ -118,7 +114,8 @@ export function optionsMarkdown(input: OptionsReportInput): { text: string; byte
     lines.push("", "## Rules for your answer",
       "- Never put secrets, keys, tokens, connection strings or local paths in any file or in your answer.",
       "- Do not claim anything is deployed, tested or working; say which check I run in which official tool.",
-      "- A price is an order of magnitude with its official source and the date you read it.");
+      "- A price is an order of magnitude with its official source and the date you read it, in its own currency (never converted). A cost you do not know stays without a figure: never 0.",
+      "- DataPass adds costs per currency and marks a total \"partial\" when a decision or line has no figure; do not read a partial total as the full cost.");
     if (input.guideUrl) lines.push(`- DataPass formats: ${input.guideUrl}`);
   }
   let text = scrub(lines.join("\n")) + "\n";

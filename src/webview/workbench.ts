@@ -9,6 +9,7 @@
  */
 import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbOrder, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import type { CardView } from "../core/project/board";
+import { formatAmounts, formatCostLine, formatCostTotal, partialLabel, sumCostLines, type CostTotal } from "../core/project/costs";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
@@ -118,7 +119,7 @@ const FILE_STATE: Record<string, [string, string]> = {
 const OP_STATE: Record<string, string> = { ready: "ok", blocked: "bad", "needs-config": "warn", "needs-review": "info", unknown: "muted", unsupported: "bad" };
 const REPO_STATE: Record<string, [string, string]> = {
   local: ["cloned", "ok"], unbound: ["not cloned", "warn"], planned: ["planned", "muted"], missing: ["not found", "bad"],
-  "wrong-remote": ["wrong clone", "bad"], "not-a-repo": ["no Git", "warn"], restricted: ["not inspected", "muted"]
+  "wrong-remote": ["wrong clone", "bad"], "not-a-repo": ["no Git", "warn"], restricted: ["not inspected", "muted"], unverified: ["unverified", "warn"]
 };
 const SUPPORT_TEXT: Record<string, [string, string]> = { operations: ["DataPass operations", "ok"], files: ["files only", "info"], unsupported: ["not supported yet", "warn"] };
 const DIFF_TEXT: Record<string, string> = { added: "new", replaced: "changed", removed: "removed" };
@@ -136,7 +137,9 @@ const ago = (iso?: string) => {
   const s = Math.round((Date.now() - Date.parse(iso)) / 1000);
   return s < 90 ? "just now" : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 172800 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} days ago`;
 };
-const money = (amounts: Record<string, number>, suffix: string) => Object.entries(amounts).map(([c, n]) => `≈ ${n >= 100 ? Math.round(n) : n} ${c}${suffix}`).join(" + ");
+// 0.22 (F01, F08): one aggregation everywhere; amounts per currency, "partial" when a part has no figure.
+const money = (amounts: Record<string, number>, suffix: string) => formatAmounts(amounts, suffix);
+const withPartial = (text: string, t: CostTotal) => [text, partialLabel(t)].filter(Boolean).join(" · ");
 
 function toggle(key: string) {
   ui.collapsed[key] = !ui.collapsed[key];
@@ -212,7 +215,7 @@ function previewBanner(s: WorkbenchState): HTMLElement | undefined {
   const parts = [
     `${i.components.added.length ? `+${i.components.added.length} ` : ""}${i.components.removed.length ? `−${i.components.removed.length} ` : ""}${i.components.replaced.length ? `~${i.components.replaced.length} ` : ""}component(s)`,
     i.tools.newlyNeeded.length ? `${i.tools.newlyNeeded.length} new official tool(s)${i.tools.newlyNeeded.some(t => t.state === "absent") ? ", some not installed" : ""}` : "no new tool",
-    money(i.costs.monthly, "/month") || undefined
+    withPartial(money(i.costs.monthly, "/month"), i.costs.total) || undefined
   ].filter(Boolean);
   return h("div", { class: "banner preview", role: "status" },
     h("b", { text: `Preview: ${p.title}` }),
@@ -263,6 +266,11 @@ function repoRow(r: WbRepository, compact: boolean): HTMLElement {
   if (r.state === "unbound" || r.state === "missing" || r.state === "wrong-remote") {
     if (r.remote) actions.push(btn("Clone", () => command("datapass.cloneRepository", r.key), { kind: "link", title: `Clone ${r.remote} next to this project (you confirm first)` }));
     actions.push(btn("Locate", () => command("datapass.locateRepository", r.key), { kind: "link", title: "Point DataPass to an existing clone on this machine" }));
+  }
+  // 0.22 (F04): a clone whose origin could not be compared: browse it, but prove it before updating it.
+  if (r.state === "unverified") {
+    actions.push(btn("Locate", () => command("datapass.locateRepository", r.key), { kind: "link", title: "Point DataPass to the right clone on this machine" }));
+    actions.push(btn("Retry", () => command("datapass.refreshProject"), { kind: "link", title: "Read the clone's origin again" }));
   }
   if (r.state === "local" && !r.coordination) actions.push(btn("Open", () => command("datapass.openRepositoryWindow", r.key), { kind: "link", title: "Open this repository in a new window" }));
   if (r.state === "local" && (r.behind ?? 0) > 0) actions.push(btn(`Get ${r.behind}`, () => command("datapass.getUpdates", r.key), { kind: "link", title: "Fast-forward to the commits already fetched (you confirm first)" }));
@@ -452,7 +460,7 @@ function filesBlock(c: WbComponent): HTMLElement {
       h("span", { class: "muted small", text: `${a.summary.found}/${a.summary.expected} required found${a.summary.optionalMissing ? ` · ${a.summary.optionalMissing} recommended missing` : ""}` })),
     h("p", { class: "muted small", text: a.profileAbout }),
     h("div", { class: "filelist", role: "list" }, ...rows),
-    ...a.mustNotCommit.map(m => h("div", { class: `note ${m.tracked ? "bad" : ""}`, text: m.tracked ? `${m.path} is committed to Git although it ${m.why}. Remove it from the repository and rotate what it contains.` : `${m.path} ${m.why}: keep it out of Git (it is not tracked).` })));
+    ...a.mustNotCommit.map(m => h("div", { class: `note ${m.tracked ? "bad" : ""}`, text: m.tracked ? `${m.path} is committed to Git although it ${m.why}. Remove it from the repository and rotate what it contains.` : m.tracking === "unknown" ? `${m.path} ${m.why}: could not check Git tracking (${m.trackingReason ?? "not checked"}); make sure it is not committed.` : `${m.path} ${m.why}: keep it out of Git (it is not tracked).` })));
 }
 
 // ------------------------------------------------------------------ operations and detail
@@ -761,9 +769,9 @@ function impactCell(i: WbImpact, what: "components" | "tools" | "missing" | "sup
     case "repos":
       return h("div", { class: "small", text: [i.repositories.newlyUsed.length ? `new: ${i.repositories.newlyUsed.join(", ")}` : "", i.repositories.planned.length ? `planned: ${i.repositories.planned.join(", ")}` : ""].filter(Boolean).join(" · ") || `${i.repositories.used.length} used` });
     case "monthly":
-      return h("div", { class: "small money", text: money(i.costs.monthly, "/month") || "—", title: i.costs.missing.length ? `No monthly figure declared for: ${i.costs.missing.join(", ")}` : "Sum of the monthly figures declared in options.json" });
+      return h("div", { class: `small money ${partialLabel(i.costs.total) ? "warn" : ""}`, text: withPartial(money(i.costs.monthly, "/month"), i.costs.total) || "not priced", title: i.costs.missing.length ? `Not fully priced: ${i.costs.missing.join(", ")} (unknown, not zero)` : "Sum of the monthly figures declared in options.json, per currency" });
     case "oneTime":
-      return h("div", { class: "small money", text: money(i.costs.oneTime, "") || "—" });
+      return h("div", { class: "small money", text: withPartial(money(i.costs.oneTime, ""), i.costs.total) || "not priced" });
     case "problems":
       return i.problems.length ? h("div", { class: "small" }, ...i.problems.slice(0, 3).map(p => h("div", { class: p.severity === "error" ? "bad" : "warn", text: p.message }))) : h("div", { class: "muted small", text: "none" });
   }
@@ -849,11 +857,7 @@ function decisionTable(s: WorkbenchState, d: WbDecision): HTMLElement {
     ...opts.map(x => { const v = x.values[c.id]; return h("td", { title: v?.note ?? "" }, v ? h("div", { class: "small" }, v.text ? h("span", { text: v.text }) : undefined, v.text && v.score ? " " : undefined, scoreDots(v.score)) : h("span", { class: "muted", text: "—" })); })));
   const row = (label: string, what: Parameters<typeof impactCell>[1], title?: string) => h("tr", { class: "computed" }, h("th", { text: label, title }), ...opts.map(x => h("td", {}, impactCell(x.impact, what))));
   const list = (label: string, pick: (x: WbOption) => string[], tone = "") => opts.some(x => pick(x).length) ? h("tr", {}, h("th", { text: label }), ...opts.map(x => h("td", {}, pick(x).length ? h("ul", { class: `small bul ${tone}` }, ...pick(x).map(t => h("li", { text: t }))) : h("span", { class: "muted", text: "—" })))) : undefined;
-  const declaredCost = (x: WbOption) => {
-    const m = x.costs.filter(c => c.monthly !== undefined).reduce((n, c) => n + c.monthly!, 0);
-    const t = x.costs.filter(c => c.oneTime !== undefined).reduce((n, c) => n + c.oneTime!, 0);
-    return [x.costs.some(c => c.monthly !== undefined) ? `≈ ${Math.round(m * 100) / 100} ${o.currency}/month` : "", t ? `≈ ${Math.round(t * 100) / 100} ${o.currency} once` : ""].filter(Boolean).join(" · ") || "—";
-  };
+  const declaredCost = (x: WbOption) => formatCostTotal(sumCostLines(x.costs, o.currency), { once: " once" });
   const table = h("table", { class: "cmp" }, h("thead", {}, head), h("tbody", {},
     ...declared,
     h("tr", {}, h("th", { text: "Declared cost of this choice" }), ...opts.map(x => h("td", { class: "small money", text: declaredCost(x) }))),
@@ -889,7 +893,7 @@ function costList(s: WorkbenchState, d: WbDecision): HTMLElement | undefined {
         h("td", { class: "small", text: x.label }),
         h("td", { class: "small" }, h("div", { text: c.label }), c.note ? h("div", { class: "muted", text: c.note }) : undefined),
         h("td", { class: "small", text: c.price ?? "—" }),
-        h("td", { class: "small money", text: [c.monthly !== undefined ? `≈ ${c.monthly} ${c.currency}/month` : "", c.oneTime !== undefined ? `≈ ${c.oneTime} ${c.currency} once` : ""].filter(Boolean).join(" · ") || "—" }),
+        h("td", { class: "small money", text: formatCostLine(c, c.currency ?? "USD", { once: " once" }) }),
         h("td", { class: "small" }, c.source ? btn(hostOf(c.source), () => command("datapass.openOptionSource", c.source), { kind: "link", title: c.source }) : h("span", { class: "warn", text: "no source" })),
         h("td", { class: `small ${c.asOf ? "" : "warn"}`, text: c.asOf ?? "no date" }))))),
     h("p", { class: "muted small", text: "Orders of magnitude declared by the project (usually by the AI), not quotes. Check the official calculator before committing to a service; free tiers and regions change prices." }));
@@ -903,7 +907,7 @@ function impactSide(s: WorkbenchState, title: string, i: WbImpact, actions: HTML
       kv("Components", `${i.components.total} (${[i.components.added.length ? `+${i.components.added.length}` : "", i.components.removed.length ? `−${i.components.removed.length}` : "", i.components.replaced.length ? `~${i.components.replaced.length}` : ""].filter(Boolean).join(" ") || "unchanged"})`),
       kv("Links", `${i.relations.added ? `+${i.relations.added} ` : ""}${i.relations.removed ? `−${i.relations.removed}` : ""}`.trim() || "unchanged"),
       kv("Operations DataPass can check", `${i.operations.total}`),
-      kv("Declared cost", [money(i.costs.monthly, "/month"), money(i.costs.oneTime, " once")].filter(Boolean).join(" · ") || "—")),
+      kv("Declared cost", formatCostTotal(i.costs.total, { once: " once" }))),
     i.tools.newlyNeeded.length ? h("section", {}, eyebrow("Official tools it adds"), ...i.tools.newlyNeeded.map(t => h("div", { class: "tool" },
       h("div", {}, h("b", { text: t.label }), h("div", { class: "muted small", text: `for ${t.why.join(", ")}` })),
       t.state === "present" ? pill("installed", "ok") : t.extensionId ? btn("Show extension", () => command("datapass.installTool", t.extensionId), { kind: "link", title: "Opens the extension page; you decide whether to install" }) : pill(t.state === "absent" ? "not installed" : "unknown", t.state === "absent" ? "warn" : "muted")))) : undefined,

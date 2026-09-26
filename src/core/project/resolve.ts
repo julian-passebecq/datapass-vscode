@@ -2,11 +2,13 @@
  * Repository and artifact resolution (V3). Pure: the session observes the disk and Git, this
  * module turns declarations + observations into states a person can act on.
  *
- *   declared repository  ──►  local | wrong-remote | not-a-repo | missing | unbound | planned | restricted
+ *   declared repository  ──►  local | unverified | wrong-remote | not-a-repo | missing | unbound | planned | restricted
  *   declared component   ──►  expected files ──►  found | missing | unbound | planned | unknown
  *
  * A declaration is an expectation. Only an observation says a file exists, and a repository whose
- * clone is not here is "unbound" (its files are unknown, never "missing").
+ * clone is not here is "unbound" (its files are unknown, never "missing"). A clone whose origin
+ * could not be compared with the declared remote is "unverified" (0.22, F04): its files can be
+ * browsed, but nothing that relies on its identity (Get updates, work orders) runs.
  */
 import type { DataPassProjectManifest, RepositoryBinding } from "../projectManifestModel";
 import type { ArtifactsDecl, GraphItem, ProjectGraph } from "../workspace/graph";
@@ -63,7 +65,10 @@ export function globMatcher(pattern: string, caseInsensitive = process.platform 
 
 // ------------------------------------------------------------------ repositories
 
-export type RepoState = "local" | "wrong-remote" | "not-a-repo" | "missing" | "unbound" | "planned" | "restricted";
+export type RepoState = "local" | "unverified" | "wrong-remote" | "not-a-repo" | "missing" | "unbound" | "planned" | "restricted";
+
+/** A folder DataPass may read files from: a verified clone, an unverified one, or a plain folder. */
+export const isBrowsable = (state: RepoState | undefined): boolean => state === "local" || state === "unverified" || state === "not-a-repo";
 
 /** What the session saw for one repository key. Folders are absolute and never leave the session. */
 export interface RepoObservation {
@@ -88,6 +93,12 @@ export interface RepoGitState {
   /** Changed tracked files only. */
   trackedChanges?: number;
   originUrl?: string;
+  /**
+   * 0.22 (F04): how the origin lookup went. "absent": Git answered and the clone has no origin;
+   * "failed": Git could not answer (timeout, error). Undefined in older observations means "ok" when
+   * originUrl is set.
+   */
+  originLookup?: "ok" | "absent" | "failed";
   /** When the remote was last fetched (FETCH_HEAD), ISO time. */
   lastFetch?: string;
   /** 0.19: the same status split for the Git view (staged, unstaged, untracked, conflicted). */
@@ -149,6 +160,12 @@ export function resolveRepositories(manifest: DataPassProjectManifest | undefine
       views.push({ ...common, state: "wrong-remote", detail: `this folder's origin is ${normalizeRemote(obs.git.originUrl) ?? "another repository"}, not ${remote}`, nextStep: "Locate the right clone; DataPass does not trust a folder name." });
       continue;
     }
+    // A declared remote that could not be compared: browsing is fine, identity is not proven (F04).
+    if (remote && !obs.git?.originUrl) {
+      const failed = obs.git?.originLookup === "failed";
+      views.push({ ...common, state: "unverified", detail: failed ? `unverified: Git could not read this folder's origin, so DataPass cannot confirm it is ${remote}` : `unverified: this folder has no origin, so DataPass cannot confirm it is ${remote}`, nextStep: failed ? "Retry (Refresh), or locate the right clone." : `Locate the right clone, or add the origin (git remote add origin <${remote} URL>) and refresh.` });
+      continue;
+    }
     views.push({ ...common, state: "local", detail: describeGit(obs.git), nextStep: obs.git?.behind ? `${obs.git.behind} new commit(s) on the remote: review and get them.` : undefined });
   }
   return views;
@@ -162,16 +179,29 @@ function folderName(folder: string | undefined): string | undefined {
 
 export type FileState = "found" | "missing" | "unbound" | "planned" | "unknown";
 
+/**
+ * 0.22 (F02): how a file's content was identified. "sha256" is a digest of every byte; "stat" is
+ * only size + modification time (a file too large for the byte budget), which two different
+ * contents can share: it detects most edits but proves nothing.
+ */
+export type Fingerprint = { kind: "sha256"; value: string } | { kind: "stat"; size: number; mtimeMs: number };
+
+/** 0.22 (F03): Git tracking of a file that must not be committed; "unknown" never counts as clean. */
+export interface TrackingObservation { state: "tracked" | "untracked" | "unknown"; reason?: string }
+
+export const fingerprintText = (f: Fingerprint): string => f.kind === "sha256" ? `sha256:${f.value}` : `stat:${f.size}:${f.mtimeMs}`;
+
 /** What the session saw at `${repoKey}\0${repoPath}`. */
 export interface FileObservation {
   state: "found" | "missing" | "unknown";
   kind?: "file" | "dir";
   /** Matches for a folder or wildcard. */
   count?: number;
-  /** Content digest (files only, bounded). */
-  sha256?: string;
-  /** Tracked by Git (checked only for files that must not be committed). */
-  tracked?: boolean;
+  /** Content fingerprint (files asked to be hashed only). Absent with `hashError` when reading failed. */
+  fingerprint?: Fingerprint;
+  hashError?: string;
+  /** Git tracking (checked only for files that must not be committed). */
+  tracking?: TrackingObservation;
   detail?: string;
 }
 
@@ -191,7 +221,7 @@ export interface ExpectedFile {
   generated?: { producer: string; how?: string };
   state: FileState;
   count?: number;
-  sha256?: string;
+  fingerprint?: Fingerprint;
 }
 
 export type Availability = "none-declared" | "planned-repo" | "unbound" | "restricted" | "complete" | "incomplete" | "generation-needed" | "unknown";
@@ -205,9 +235,15 @@ export interface ArtifactView {
   files: ExpectedFile[];
   availability: Availability;
   summary: { expected: number; found: number; missing: number; generatedMissing: number; optionalMissing: number };
-  /** Digest of the found files' content; changes whenever one of them changes. */
+  /** Digest of the found files' fingerprints; changes whenever one of them changes. */
   digest?: string;
-  mustNotCommit: Array<{ path: string; repoPath: string; why: string; tracked: boolean }>;
+  /**
+   * 0.22 (F02): "exact" when every found file was hashed; "weak" when one is only a size + time
+   * stamp or could not be read. Anything that needs exact content (qualification results, approvals)
+   * treats a weak digest as unknown.
+   */
+  digestStrength?: "exact" | "weak";
+  mustNotCommit: Array<{ path: string; repoPath: string; why: string; tracked: boolean; tracking: TrackingObservation["state"]; trackingReason?: string }>;
   issues: string[];
 }
 
@@ -234,7 +270,7 @@ export function artifactsOf(item: GraphItem): ArtifactsDecl | undefined {
 }
 
 /** Expected files of an item before observation (profile defaults merged with declarations). */
-export function expectedFiles(item: GraphItem, decl: ArtifactsDecl): { profile: ArtifactProfile; profileDeclared: boolean; root: string; entry?: string; files: Omit<ExpectedFile, "state" | "count" | "sha256" | "repoPath">[]; issues: string[] } {
+export function expectedFiles(item: GraphItem, decl: ArtifactsDecl): { profile: ArtifactProfile; profileDeclared: boolean; root: string; entry?: string; files: Omit<ExpectedFile, "state" | "count" | "fingerprint" | "repoPath">[]; issues: string[] } {
   const issues: string[] = [];
   const declaredProfile = decl.profile ? PROFILE_INDEX.get(decl.profile) : undefined;
   if (decl.profile && !declaredProfile) issues.push(`profile "${decl.profile}" is not known to this DataPass version; files are listed without conventions`);
@@ -242,8 +278,8 @@ export function expectedFiles(item: GraphItem, decl: ArtifactsDecl): { profile: 
   const root = (decl.root ?? ".").replace(/\\/g, "/");
   if (!vetRelativePath(root === "." ? "x" : root).ok) issues.push(`root "${root}" is not a relative path inside the repository`);
   const entry = decl.entry ?? profile.entry;
-  const byPath = new Map<string, Omit<ExpectedFile, "state" | "count" | "sha256" | "repoPath">>();
-  const add = (f: Omit<ExpectedFile, "state" | "count" | "sha256" | "repoPath">) => byPath.set(f.path, { ...byPath.get(f.path), ...f });
+  const byPath = new Map<string, Omit<ExpectedFile, "state" | "count" | "fingerprint" | "repoPath">>();
+  const add = (f: Omit<ExpectedFile, "state" | "count" | "fingerprint" | "repoPath">) => byPath.set(f.path, { ...byPath.get(f.path), ...f });
   for (const pf of profile.files) add({ path: pf.path, kind: pathKind(pf.path), role: pf.role, requiredFor: [...requiredPhases(pf)], optional: Boolean(pf.optional), source: "profile", about: pf.about });
   for (const raw of decl.files ?? []) {
     const d = typeof raw === "string" ? { path: raw } : raw;
@@ -293,7 +329,7 @@ export function artifactPlan(items: ReadonlyArray<{ item: GraphItem; repoKey: st
 export function resolveArtifacts(item: GraphItem, decl: ArtifactsDecl, repoKey: string, repo: RepoView | undefined, obs: ReadonlyMap<string, FileObservation>): ArtifactView {
   const e = expectedFiles(item, decl);
   const repoState = repo?.state;
-  const local = repoState === "local" || repoState === "not-a-repo";
+  const local = isBrowsable(repoState);
   const rootObs = obs.get(obsKey(repoKey, e.root === "." ? "" : e.root.replace(/\/+$/, "")));
   const files: ExpectedFile[] = e.files.map(f => {
     const repoPath = joinPath(e.root, f.path).replace(/\/\*\*$/, "").replace(/\/$/, "");
@@ -302,7 +338,7 @@ export function resolveArtifacts(item: GraphItem, decl: ArtifactsDecl, repoKey: 
     if (!local) return { ...f, repoPath, state: "unbound" as const };
     const o = obs.get(obsKey(repoKey, repoPath));
     const state: FileState = !o ? "unknown" : o.state === "found" ? "found" : o.state === "missing" ? "missing" : "unknown";
-    return { ...f, repoPath, state, count: o?.count, sha256: o?.sha256 };
+    return { ...f, repoPath, state, count: o?.count, fingerprint: o?.fingerprint };
   });
   const required = files.filter(f => !f.optional);
   const summary = {
@@ -321,18 +357,27 @@ export function resolveArtifacts(item: GraphItem, decl: ArtifactsDecl, repoKey: 
     : summary.generatedMissing ? "generation-needed"
     : required.length || files.length ? "complete"
     : "none-declared";
-  const found = files.filter(f => f.state === "found" && f.kind === "file" && f.sha256).map(f => `${f.repoPath}\0${f.sha256}`).sort();
+  // Every found file counts: a file that could not be hashed makes the digest weak, never smaller.
+  const foundFiles = files.filter(f => f.state === "found" && f.kind === "file");
+  const found = foundFiles.map(f => `${f.repoPath}\0${f.fingerprint ? fingerprintText(f.fingerprint) : "unread"}`).sort();
   const digest = local && found.length ? sha256Bytes(found.join("\n")).value.slice(0, 16) : undefined;
+  const digestStrength = digest ? (foundFiles.every(f => f.fingerprint?.kind === "sha256") ? "exact" as const : "weak" as const) : undefined;
   const issues = [...e.issues];
   if (local && rootObs?.state === "missing" && e.root !== ".") issues.push(`the folder ${e.root} does not exist in this repository`);
   const mustNotCommit = (e.profile.mustNotCommit ?? []).map(m => {
     const repoPath = joinPath(e.root, m.path);
-    return { path: m.path, repoPath, why: m.why, tracked: Boolean(obs.get(obsKey(repoKey, repoPath))?.tracked) };
+    const t = local ? obs.get(obsKey(repoKey, repoPath))?.tracking : undefined;
+    const tracking = t?.state ?? "unknown";
+    const trackingReason = t?.reason ?? (!local ? "the repository is not cloned here" : "not checked");
+    return { path: m.path, repoPath, why: m.why, tracked: tracking === "tracked", tracking, trackingReason: tracking === "unknown" ? trackingReason : undefined };
   });
-  for (const m of mustNotCommit) if (m.tracked) issues.push(`${m.path} is committed to Git although it ${m.why}: remove it from the repository and rotate what it contains`);
+  for (const m of mustNotCommit) {
+    if (m.tracked) issues.push(`${m.path} is committed to Git although it ${m.why}: remove it from the repository and rotate what it contains`);
+    else if (m.tracking === "unknown" && local) issues.push(`could not check Git tracking of ${m.path} (${m.trackingReason}): it ${m.why}, so check it is not committed`);
+  }
   return {
     repoKey, root: e.root, profile: e.profile, profileDeclared: e.profileDeclared,
     entry: e.entry ? files.find(f => f.path === e.entry) : undefined,
-    files, availability, summary, digest, mustNotCommit, issues
+    files, availability, summary, digest, digestStrength, mustNotCommit, issues
   };
 }

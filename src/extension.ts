@@ -11,6 +11,7 @@ import { setClipboardForTests, type Clipboard } from "./core/clipboard";
 import { setAppLauncherForTests, setExternalOpenerForTests, setFolderOpenerForTests, type AppLauncher, type ExternalOpener, type FolderOpener } from "./core/external";
 import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
+import { registerFileContextCommands } from "./work/fileContextCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
@@ -157,6 +158,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerQualificationCommands(context, session);
   registerReadinessCommands(context, session);
   registerToolchainCommands(context, session);
+  registerFileContextCommands(context, session);
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.

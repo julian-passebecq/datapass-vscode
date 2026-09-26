@@ -14,6 +14,7 @@
  * and whether they are installed here, DataPass support, repositories, operations. Prices, scores,
  * pros and cons are declarations (with a source and a date), never observations.
  */
+import { formatAmounts, isPriced, sumPickedOptions, type CostTotal } from "./costs";
 import { anyOf, arr, constOf, enumOf, ID, obj, TEXT, validateSchema, type Schema, type SchemaIssue } from "../contracts/schemaDsl";
 import { parseStrictJson } from "../model/strictJson";
 import { GRAPH_ITEM_SCHEMA, GRAPH_RELATION_SCHEMA, parseGraphItems, type GraphDocRef, type GraphItem, type GraphRelation, type ProjectGraph } from "../workspace/graph";
@@ -477,7 +478,8 @@ export interface ArchitectureImpact {
   support: { operations: number; files: number; unsupported: number };
   operations: { total: number; ready: number };
   repositories: { used: string[]; planned: string[]; newlyUsed: string[] };
-  costs: { monthly: Record<string, number>; oneTime: Record<string, number>; lines: Array<CostLine & { decision: string; option: string }>; missing: string[] };
+  /** 0.22 (F01/F08): per currency, never converted; `missing` = decisions not fully priced; `total` says how many are. */
+  costs: { monthly: Record<string, number>; oneTime: Record<string, number>; lines: Array<CostLine & { decision: string; option: string }>; missing: string[]; total: CostTotal };
   problems: MapProblem[];
 }
 
@@ -538,16 +540,12 @@ function impactFrom(key: string, options: OptionsFile, derived: DerivedArchitect
   const support = { operations: 0, files: 0, unsupported: 0 };
   for (const p of providers) support[p.support] += p.components.length;
   const currency = options.currency ?? "USD";
-  const costs: ArchitectureImpact["costs"] = { monthly: {}, oneTime: {}, lines: [], missing: [] };
+  const total = sumPickedOptions(derived.picks.map(p => p.option), currency);
+  const costs: ArchitectureImpact["costs"] = { monthly: total.monthly, oneTime: total.oneTime, lines: [], missing: [], total };
   for (const { decision, option } of derived.picks) {
     const lines = option.costs ?? [];
-    if (!lines.some(l => l.monthly !== undefined)) costs.missing.push(decision.id);
-    for (const l of lines) {
-      const cur = l.currency ?? currency;
-      costs.lines.push({ ...l, decision: decision.id, option: option.id });
-      if (l.monthly !== undefined) costs.monthly[cur] = round2((costs.monthly[cur] ?? 0) + l.monthly);
-      if (l.oneTime !== undefined) costs.oneTime[cur] = round2((costs.oneTime[cur] ?? 0) + l.oneTime);
-    }
+    if (!lines.length || lines.some(l => !isPriced(l))) costs.missing.push(decision.id);
+    for (const l of lines) costs.lines.push({ ...l, decision: decision.id, option: option.id });
   }
   return {
     key,
@@ -578,8 +576,6 @@ function impactFrom(key: string, options: OptionsFile, derived: DerivedArchitect
     problems: derived.problems
   };
 }
-
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export interface AnalyzeInput {
   /** The real project's map input: observations, tools, reviews, results. */
@@ -621,8 +617,7 @@ export function analyzeOptions(input: AnalyzeInput): OptionsAnalysis {
   return { problems, current, byOption, scenarios };
 }
 
-/** Shortest readable form of a money amount per currency: "≈ 12.5 USD/month". */
+/** Shortest readable form of a money amount per currency: "≈ 12.5 USD/month" (one term per currency, never converted). */
 export function formatMoney(amounts: Record<string, number>, suffix = ""): string {
-  const parts = Object.entries(amounts).map(([cur, n]) => `${n >= 100 ? Math.round(n) : n} ${cur}${suffix}`);
-  return parts.length ? `≈ ${parts.join(" + ")}` : "";
+  return formatAmounts(amounts, suffix);
 }

@@ -20,7 +20,7 @@ cannot observe.
 ```text
 hub repository (optional)          .datapass/catalog.json → list of projects and their coordination repos
    │
-coordination repository            .datapass/project.json  repositories, sub-projects, environments, docs
+bridge repository                  .datapass/project.json  repositories, sub-projects, environments, docs
 (one per project)                  .datapass/graph.json    components, their files, operations, links
                                    AGENTS.md, docs/        instructions for AIs, architecture notes
    │  references by Git remote URL, never by a local path
@@ -231,7 +231,10 @@ Factory and Fabric Data Factory are two different providers. Google Drive is not
 
 1. Put native files in the repository and folder the graph names, in their native format. Deliver a
    branch or pull request; the person reviews and merges it.
-2. Update `.datapass/graph.json` in the same pull request when you add, move or rename files.
+2. One pull request per repository; a pull request never spans repositories. When you add, move or
+   rename files in a native repository, update `.datapass/graph.json` in a separate pull request in
+   the bridge repository (coordination repository) and link the two pull requests to each other (a
+   coordinated change set). Native repositories never contain DataPass files.
 3. Never write secrets, keys, tokens, connection strings, SAS URLs or `user:password@` anywhere
    (files, JSON, commit messages). Name where they belong (Key Vault, app settings,
    `local.settings.json` kept out of Git). This also covers `identifiers` (v4): declare only ids the
@@ -482,8 +485,10 @@ What DataPass does with it:
   message you paste or type is included with credentials, tokens and local paths removed, up to 4000
   characters. The pack names the card, its sprint/milestone/environment, its files and whether they
   are here, each component's files/operations/blockers, repositories (no local paths), and relevant
-  sheet/decisions; its rules ask the AI to deliver a pull request and, in that same pull request, move
-  the card to "review" (or the last open column) and add the pull request's link, keeping every id.
+  sheet/decisions; its rules ask the AI to deliver one pull request per repository and, in the bridge pull request
+  (the same one when the work is in the bridge repository), move the card to "review" (or the last
+  open column) and add the pull requests' links, keeping every id. A merged pull request is evidence
+  of implementation; a card is done only when its acceptance is met or a project rule says so.
   Never included: absolute local paths, file contents, credentials, notebook outputs, user names.
 - **JSON exchange with an AI** (section 9): `board.json` is one of the files of the AI exchange view
   (right side bar) and of the commands "Copy a DataPass File for the AI" / "Import the AI's Answer",
