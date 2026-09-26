@@ -30,7 +30,7 @@ async function openVariantFile(session: WorkSession, repoKey: unknown, repoPath:
   if (!folder) throw new UserFacingError(`The repository "${repoKey}" is not cloned on this machine, so DataPass cannot open ${repoPath}.`);
   const uri = vscode.Uri.joinPath(folder, ...repoPath.split("/"));
   let type: vscode.FileType;
-  try { type = (await vscode.workspace.fs.stat(uri)).type; } catch { throw new UserFacingError(`${repoPath} is not in ${repoKey} yet: this variant is not coded there.`); }
+  try { type = (await vscode.workspace.fs.stat(uri)).type; } catch { throw new UserFacingError(`${repoPath} is not in ${repoKey} yet: this variant has no files there yet.`); }
   if (type & vscode.FileType.Directory) await vscode.commands.executeCommand("revealInExplorer", uri);
   else await vscode.commands.executeCommand("vscode.open", uri);
 }

@@ -1,4 +1,75 @@
-# Implementation Status — 0.24.0: Claude & Codex panel
+# Implementation Status — 0.25.0: previewing variants and repository layout
+
+Date: 2026-09-26. Version `0.25.0` — packages V-A (selected variant, PR #54 and the preview / test / activate wording in the release PR) and R-L (repository layout
+contract, PR #52), released from main per [handoff/PLAN.md](handoff/PLAN.md). The night note
+(`handoff/v3/night/0.25-va.md`) is folded into this section. Inputs: Julian's FOIL answers Q1
+(repository layout) and Q5 (V1 orchestration as three switchable variants).
+
+### What's new
+
+- **Selected variant** (package V-A, PR #54 and the release PR): choose which architecture variant to
+  **preview**, **on this machine, per project** (VS Code global state keyed by project id; never
+  written in a repository). A status-bar item (surface `status.selectedVariant`, Standard, DataPass and
+  Advanced) reads `Variant: B — … · preview`; one click opens *DataPass: Switch the Selected Variant*
+  (current, decided, every scenario of options.json). It is the architecture preview made persistent:
+  the Project tree (*Selected architecture*), the diagram, Details and the Workbench follow it, and
+  switching in the Workbench selector or on the diagram switches it too. A scenario or option that
+  disappears falls back to the current architecture with one message.
+- **Preview, test, activate** are kept apart (FOIL review): the selected variant is a preview only —
+  not a decision (*Record decision* stays the committed path), not a test (a native check on a
+  declared environment, approved separately) and never an activation (switching the live route is
+  operational, outside DataPass; DataPass does not observe it).
+- **Packs name the selected variant as a preview**: *Copy Context for My AI*, the options export /
+  compare / apply packs and the options work orders carry `Selected variant (preview on this machine —
+  not a decision, not a deployment): **…** · files: … Live route: not observed by DataPass.`
+- **Files on disk, not "coded"**: the coding-state badges now read **files present** / **some files
+  present** / **no files** / not checked here, with "present on disk; not built, tested or deployed"
+  in their tooltips (the internal states are unchanged).
+- **Example `examples/v3/doc-pipeline`** (public, generic): PDFs → storage → processing, orchestrated
+  by A a direct script (files present), B a Blob event + Function (some files present) or C Data
+  Factory in a planned repository (no files), with dated per-currency prices. Guide page
+  [docs/guide/10_SWITCHING_VARIANTS.md](docs/guide/10_SWITCHING_VARIANTS.md) (previewing variants;
+  preview / test / activate also in guide page 2).
+- **Repository layout contract** (package R-L, PR #52, docs only): "we prefer one native repository per
+  sub-project; you may also use one repository with sub-folders (`path`)"; the bridge holds only
+  links and DataPass JSON, never code, and is not part of what a client or auditor receives. Sources
+  cited with their check date in [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md),
+  guide pages 01, 02 and 06.
+
+### How it is built
+
+- `src/core/project/activeVariant.ts` (pure): the machine store (validated on read, at most 100
+  projects, oldest dropped; key `datapass.v25.activeVariant` kept from the first build), the fallback when a scenario or option vanished, the switcher choices,
+  the pack line and the status text.
+- `src/work/activeVariantCommands.ts`: the status-bar item, `datapass.switchVariant` (quick pick) and
+  `datapass.setSelectedVariant <scenario>`. It links the session's preview with global state: on the
+  first load of a project the remembered variant is applied (with none yet, the window's existing
+  preview is kept, as in 0.15–0.24); every later preview change is remembered.
+- One-line hooks: `fileContext.ts` / `optionsReport.ts` (header line), their callers in
+  `fileContextCommands.ts`, `optionsCommands.ts` and `workOrderCommands.ts`; the Workbench banner reads
+  *Selected variant* and the selector *Variant*; the coding labels live in `variants.ts` (`CODING_LABELS`, `CODING_NOTE`).
+
+### Tests
+
+Unit 425 (new `tests/activeVariant.test.ts`: the example valid for the runtime and the schemas,
+A → B → C changes the orchestration component and its files, pack headers, switcher, store survives a
+reload and never touches the example's files, fallbacks, no contributed id says "active variant"). Desktop: new fixture `v25-doc-pipeline`
+and flow (status item, quick-pick switch, tree and Details follow, Copy Context names B as a preview with "some
+files present", back to current forgets, `git status` clean); full desktop suite green.
+
+### Limits
+
+- Readiness and *Tools & versions* rows are still computed for the whole project, not filtered to the
+  selected variant's components.
+- Board card packs do not carry the selected-variant line; the options-based work orders do.
+- For brevity the doc-pipeline example keeps its code beside `.datapass/`; its README says a real
+  project uses native repositories (R-L).
+
+### Not checked here (Julian)
+
+- Install 0.25.0, open `examples/v3/doc-pipeline`, preview A → B → C from the status bar (≈ 10 min).
+
+## 0.24.0 — Claude & Codex panel
 
 Date: 2026-09-26. Version `0.24.0` — pass AI-3 (PR #46), released from main per
 [handoff/PLAN.md](handoff/PLAN.md). The night note (`handoff/v3/night/0.24-ai3.md`) is folded into

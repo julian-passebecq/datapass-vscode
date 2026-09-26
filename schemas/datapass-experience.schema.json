@@ -81,7 +81,7 @@
                 "workbench.toolkit",
                 "project.toolkit",
                 "badge.hubChanged",
-                "status.activeVariant",
+                "status.selectedVariant",
                 "view.agentPanel",
                 "ai.pilot"
               ]

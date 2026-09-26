@@ -412,15 +412,21 @@ option already says:
   it `"planned": true` (no remote): the variant is still declared, compared and shown.
 
 A variant nobody has coded yet is declared the same way: its components name a planned repository,
-or no files yet. Do not mark anything "coded" or "prepared": DataPass derives the **coding state**
-of every option and scenario from the files it finds, and it cannot go stale:
+or no files yet. Do not mark anything "coded" or "prepared": DataPass derives, for every option and
+scenario, which of its files are **present on disk** (not built, tested or deployed), and it cannot
+go stale:
 
-| State | When |
+| Badge | When |
 |---|---|
-| coded | every required file of its components is here; an option that only removes components is coded |
-| partly coded | some files are here and some are missing, or its components are in different states |
-| not coded | no file yet, no files declared, or only planned repositories |
+| files present | every required file of its components is here; an option that only removes components has its files |
+| some files present | some files are here and some are missing, or its components are in different states |
+| no files | no file yet, no files declared, or only planned repositories |
 | not checked here | the files cannot be seen on this machine (repository not cloned, Restricted Mode, unverified clone) |
+
+Three verbs, never mixed: **preview** a variant in DataPass (the selected variant, page 10), **test**
+it with a native check on a declared environment (approved separately, reported with the scenario,
+its configuration and the commit), **activate** it operationally outside DataPass (switch the live
+trigger owner, drain, verify). A preview is never an activation.
 
 A scenario combines its picked options (the decisions it does not change count with their current
 option); a file two options share is shown with both. In V1 a variant lives in its own folder or its

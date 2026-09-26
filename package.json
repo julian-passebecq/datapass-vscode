@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.24.0",
+  "version": "0.25.0",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -247,12 +247,12 @@
       },
       {
         "command": "datapass.switchVariant",
-        "title": "DataPass: Switch the Active Variant",
+        "title": "DataPass: Switch the Selected Variant",
         "icon": "$(versions)"
       },
       {
-        "command": "datapass.setActiveVariant",
-        "title": "DataPass: Set the Active Variant (scenario id)"
+        "command": "datapass.setSelectedVariant",
+        "title": "DataPass: Set the Selected Variant (scenario id)"
       },
       {
         "command": "datapass.showAllVariants",
@@ -2228,9 +2228,9 @@
               "type": "boolean",
               "description": "Status bar: tool health: Tools and bindings ready (opens the Galaxy view)"
             },
-            "status.activeVariant": {
+            "status.selectedVariant": {
               "type": "boolean",
-              "description": "Status bar: active variant: The variant this machine works on; click to switch (the tree, Details, the diagram and the packs follow)"
+              "description": "Status bar: selected variant: The variant previewed on this machine; click to switch (the tree, Details, the diagram and the packs follow). Not a decision, not a deployment"
             },
             "landing.architecture": {
               "type": "boolean",

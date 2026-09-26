@@ -14,19 +14,19 @@
       "id": "standard",
       "label": "Standard",
       "description": "Vanilla plus the architecture: the diagram opens with the project, Details beside it, and components with alternatives are marked.",
-      "show": ["view.git", "view.aiExchange", "view.architecture", "view.details", "project.subprojects", "project.repositories", "project.problems", "status.mode", "landing.architecture", "badge.alternatives", "badge.codingState", "status.activeVariant"]
+      "show": ["view.git", "view.aiExchange", "view.architecture", "view.details", "project.subprojects", "project.repositories", "project.problems", "status.mode", "landing.architecture", "badge.alternatives", "badge.codingState", "status.selectedVariant"]
     },
     {
       "id": "datapass",
       "label": "DataPass",
       "description": "Standard plus the Project tree, options, project sheet, readiness, and the Agent and Manual tabs (work orders stay opt-in). The board is available as a change.",
-      "show": ["view.project", "view.git", "view.aiExchange", "view.architecture", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.workOrders", "status.mode", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.activeVariant", "ai.pilot"]
+      "show": ["view.project", "view.git", "view.aiExchange", "view.architecture", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.workOrders", "status.mode", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.selectedVariant", "ai.pilot"]
     },
     {
       "id": "advanced",
       "label": "Advanced",
       "description": "Everything, as in 0.20: the board, Work and Galaxy views and the tool-health status item as well.",
-      "show": ["view.project", "view.git", "view.work", "view.galaxy", "view.architecture", "view.aiExchange", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.board", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.board", "workbench.workOrders", "status.mode", "status.health", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.activeVariant", "ai.pilot"]
+      "show": ["view.project", "view.git", "view.work", "view.galaxy", "view.architecture", "view.aiExchange", "view.details", "view.agentPanel", "ai.agent", "ai.manual", "project.subprojects", "project.repositories", "project.options", "project.sheet", "project.board", "project.readiness", "project.problems", "workbench.options", "workbench.sheet", "workbench.board", "workbench.workOrders", "status.mode", "status.health", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState", "workbench.toolkit", "project.toolkit", "badge.hubChanged", "status.selectedVariant", "ai.pilot"]
     }
   ]
 }

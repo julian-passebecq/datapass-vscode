@@ -22,8 +22,11 @@ import { artifactsOf, componentRepoKey, resolveArtifacts, type FileObservation, 
 export type CodingState = "coded" | "partly-coded" | "not-coded" | "unknown";
 
 export const CODING_LABELS: Readonly<Record<CodingState, string>> = {
-  coded: "coded", "partly-coded": "partly coded", "not-coded": "not coded", unknown: "not checked here"
+  coded: "files present", "partly-coded": "some files present", "not-coded": "no files", unknown: "not checked here"
 };
+
+/** 0.25: what a coding state means (and does not): files on disk only. */
+export const CODING_NOTE = "present on disk; not built, tested or deployed";
 
 export interface VariantFileRef { repoKey: string; repoPath: string; state: FileState; optional: boolean }
 
@@ -181,7 +184,7 @@ function scenarioCoding(id: string, title: string, kind: ScenarioCoding["kind"],
   const gaps = chosen.filter(c => c.state !== "coded");
   const reason = gaps.length
     ? gaps.slice(0, 3).map(c => `${c.label}: ${CODING_LABELS[c.state]}`).join("; ") + (gaps.length > 3 ? "…" : "")
-    : chosen.length ? "every picked option is coded" : "no decision";
+    : chosen.length ? "every picked option has its files" : "no decision";
   return { id, title, kind, picks: chosen.filter(c => !c.current).map(c => c.key), state, reason };
 }
 

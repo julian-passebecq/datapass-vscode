@@ -230,9 +230,9 @@ function previewBanner(s: WorkbenchState): HTMLElement | undefined {
     withPartial(money(i.costs.monthly, "/month"), i.costs.total) || undefined
   ].filter(Boolean);
   return h("div", { class: "banner preview", role: "status" },
-    h("b", { text: `Active variant: ${p.title}`, title: "This machine's working choice (remembered per project, never written in a repository). Record decision in Options commits a choice." }),
+    h("b", { text: `Selected variant: ${p.title}`, title: "A preview on this machine (remembered per project, never written in a repository): not a decision, not a deployment. Record decision in Options commits a choice." }),
     codingPill(s.coding?.preview),
-    h("span", { class: "muted small", text: ` · ${parts.join(" · ")} · this machine only: graph.json is unchanged` }),
+    h("span", { class: "muted small", text: ` · ${parts.join(" · ")} · a preview on this machine: graph.json and the live route are unchanged` }),
     h("span", { class: "grow" }),
     btn("Compare", () => { ui.view = "options"; ui.optFocus = "scenarios"; saveUi(); if (MODE === "full") render(); else command("datapass.openOptions"); }, { kind: "link" }),
     btn("Back to current", () => previewScenario("current"), { kind: "link" }));
@@ -315,7 +315,7 @@ function diagramToolbar(s: WorkbenchState): HTMLElement {
     const current = s.preview ? (s.preview.key.startsWith("scenario:") ? s.preview.key.slice(9) : "custom") : "current";
     const opts: Array<[string, string]> = [["current", "Architecture: current"], ...s.options.scenarios.filter(x => x.id !== "current").map(x => [x.id, `Variant: ${x.title}${x.recommended ? " ★" : ""}`] as [string, string])];
     if (current === "custom") opts.push(["custom", `Variant: ${s.preview!.title}`]);
-    const previewSel = h("select", { class: "sel", "aria-label": "Active variant", title: "The active variant: the tree, Details, the diagram and the packs for your AI follow it (this machine only: nothing is written)", onchange: (e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v !== "custom") previewScenario(v); } },
+    const previewSel = h("select", { class: "sel", "aria-label": "Selected variant", title: "The selected variant (a preview): the tree, Details, the diagram and the packs for your AI follow it (this machine only: nothing is written or deployed)", onchange: (e: Event) => { const v = (e.target as HTMLSelectElement).value; if (v !== "custom") previewScenario(v); } },
       ...opts.map(([v, t]) => { const o = h("option", { value: v, text: t }) as HTMLOptionElement; o.selected = v === current; return o; }));
     parts.push(previewSel);
   }

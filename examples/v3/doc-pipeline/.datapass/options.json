@@ -2,7 +2,7 @@
   "format": "datapass.options",
   "version": "1",
   "title": "Document pipeline — how is the batch orchestrated?",
-  "description": "Three variants of the same pipeline. The processing script is shared; only what starts it changes. Switch the active variant from the status bar: nothing is written. Record decision is what commits a choice.",
+  "description": "Three variants of the same pipeline. The processing script is shared; only what starts it changes. Preview one from the status bar (the selected variant): nothing is written or deployed. Record decision is what commits a choice.",
   "currency": "USD",
   "criteria": [
     { "id": "cost", "label": "Monthly cost (declared)", "better": "lower" },
@@ -87,8 +87,8 @@
     }
   ],
   "scenarios": [
-    { "id": "a-direct", "title": "A — direct script", "picks": ["orchestration=direct"], "description": "The current architecture: coded." },
-    { "id": "b-event", "title": "B — Blob event + Function", "picks": ["orchestration=blob-function"], "recommended": true, "description": "Partly coded: function_app.py is here, host.json is not." },
-    { "id": "c-adf", "title": "C — Data Factory", "picks": ["orchestration=adf"], "description": "Not coded: its repository is planned." }
+    { "id": "a-direct", "title": "A — direct script", "picks": ["orchestration=direct"], "description": "The current architecture: its files are here." },
+    { "id": "b-event", "title": "B — Blob event + Function", "picks": ["orchestration=blob-function"], "recommended": true, "description": "Some files present: function_app.py is here, host.json is not." },
+    { "id": "c-adf", "title": "C — Data Factory", "picks": ["orchestration=adf"], "description": "No files yet: its repository is planned." }
   ]
 }

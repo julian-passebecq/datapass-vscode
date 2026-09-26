@@ -1,5 +1,5 @@
 /**
- * 0.25 (package V-A): the active variant on this machine — the status-bar switcher, the commands,
+ * 0.25 (package V-A): the selected variant (a preview) on this machine — the status-bar switcher, the commands,
  * and the link between the session's architecture preview and VS Code's global state.
  *
  * The preview *is* the active variant: choosing a scenario in the Options view, on the diagram or
@@ -13,9 +13,9 @@ import {
   ACTIVE_VARIANT_KEY, activeVariantLine, activeVariantView, readStore, resolveActiveVariant, sameRequest,
   statusBarText, variantChoices, withEntry, type ActiveVariantView, type VariantRequest
 } from "../core/project/activeVariant";
-import { CODING_LABELS } from "../core/project/variants";
+import { CODING_LABELS, CODING_NOTE } from "../core/project/variants";
 
-const SURFACE = "status.activeVariant";
+const SURFACE = "status.selectedVariant";
 
 /** This project's key in the machine-wide store (the project id; the folder when there is no manifest). */
 function projectKey(session: WorkSession): string | undefined {
@@ -44,7 +44,7 @@ export class ActiveVariantService implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession, private readonly shows: (surface: string) => boolean, onSurfaces: vscode.Event<unknown>) {
     this.item = vscode.window.createStatusBarItem("datapass.activeVariant", vscode.StatusBarAlignment.Left, 21);
-    this.item.name = "DataPass active variant";
+    this.item.name = "DataPass selected variant";
     this.item.command = "datapass.switchVariant";
     this.subs.push(
       this.item,
@@ -99,7 +99,7 @@ export class ActiveVariantService implements vscode.Disposable {
     const v = currentActiveVariant(this.session);
     if (!v || !this.shows(SURFACE)) { this.item.hide(); return; }
     this.item.text = statusBarText(v);
-    this.item.tooltip = `Active variant (this machine only): ${v.title}${v.state ? `\nCoding: ${CODING_LABELS[v.state]}${v.reason ? ` — ${v.reason}` : ""}` : ""}\nThe tree, Details, the diagram and Copy Context for My AI follow it. Click to switch. Record decision in Options is what commits a choice.`;
+    this.item.tooltip = `Selected variant (a preview on this machine): ${v.title}${v.state ? `\nFiles: ${CODING_LABELS[v.state]}${v.reason ? ` — ${v.reason}` : ""} (${CODING_NOTE})` : ""}\nThe tree, Details, the diagram and Copy Context for My AI follow it. Click to switch.\nNot a decision (Record decision in Options commits one) and not a deployment: DataPass does not see or change the live route.`;
     this.item.show();
   }
 
@@ -126,11 +126,11 @@ export function registerActiveVariantCommands(context: vscode.ExtensionContext, 
       if (!options) throw new UserFacingError("This project has no .datapass/options.json: there is no variant to switch to.");
       const choices = variantChoices(options, session.variants(), session.previewRequest());
       const pick = await vscode.window.showQuickPick(choices.map(c => ({ label: `${c.active ? "$(check) " : ""}${c.label}`, description: c.description, detail: c.detail, choice: c })), {
-        title: "Active variant (this machine only)", placeHolder: "The tree, Details, the diagram and the packs for your AI follow it; nothing is written"
+        title: "Selected variant (a preview on this machine)", placeHolder: "The tree, Details, the diagram and the packs for your AI follow it; nothing is written or deployed"
       });
       if (pick) await service.activate(pick.choice.request);
     })),
-    vscode.commands.registerCommand("datapass.setActiveVariant", guarded(async (scenario?: unknown) => {
+    vscode.commands.registerCommand("datapass.setSelectedVariant", guarded(async (scenario?: unknown) => {
       if (scenario !== undefined && (typeof scenario !== "string" || !scenario)) throw new UserFacingError("Choose a scenario from options.json.");
       await service.activate(!scenario || scenario === "current" ? undefined : { scenario: scenario as string });
     }))

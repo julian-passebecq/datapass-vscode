@@ -53,6 +53,15 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.25.0 (2026-09-26)
+
+Packages V-A (PR #54) and R-L (PR #52): the machine-local selected variant per project (a preview;
+status-bar switcher, surface `status.selectedVariant`; the tree, Details, the diagram, the Workbench and the packs
+for an AI follow it; fallback to current when a scenario vanishes), example `examples/v3/doc-pipeline`
+and guide page 10; badges read files present / some files present / no files; the repository layout contract (one native repository per sub-project preferred,
+the bridge holds only links and DataPass JSON). Unit 425. Next: readiness rows filtered by the selected
+variant; AI-4a and the FOIL bridge packages (PLAN.md). See IMPLEMENTATION_STATUS.md.
+
 ## Done in 0.24.0 (2026-09-26)
 
 Pass AI-3 (PLAN row AI-3, PR #46): the Claude & Codex panel (quick links, Claude Control on/off with

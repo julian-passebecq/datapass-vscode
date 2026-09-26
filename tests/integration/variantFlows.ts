@@ -40,11 +40,11 @@ export function registerVariantFlows(getApi: () => DataPassTestApi): void {
     r = await rows();
     const option = r.find(x => x.id === "variants:o:processing=script");
     assert.ok(option, "the script option is listed");
-    assert.match(option.description ?? "", /not coded/);
+    assert.match(option.description ?? "", /no files/);
     const file = r.find(x => x.id === `variants:f:processing=script:extract:pipeline:${SCRIPT_FILE}`);
     assert.ok(file, `the script's entry file is listed: ${r.filter(x => x.id?.startsWith("variants:f:")).map(x => x.id).slice(0, 5).join(", ")}`);
     assert.match(file.description ?? "", /missing · One Python script, run by hand/);
-    assert.match(r.find(x => x.id === "variants:o:staging=mongo-staging")?.description ?? "", /coded/, "a removal-only option is coded");
+    assert.match(r.find(x => x.id === "variants:o:staging=mongo-staging")?.description ?? "", /files present/, "a removal-only option has its files");
     assert.ok(r.some(x => x.id === "variants:r:staging=mongo-staging:cosmos"), "what it removes is listed");
 
     // Preview "lean" (the script): the filtered tree now holds the script's files.
