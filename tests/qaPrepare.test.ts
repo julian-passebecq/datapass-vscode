@@ -125,7 +125,7 @@ test("qa:prepare installs the VSIX into the isolated profile, writes the workspa
     assert.equal(run.datapass.sha256, createHash("sha256").update(fs.readFileSync(vsix!)).digest("hex"));
     assert.equal(run.clients[0].bridge.commit, git(path.join(root, "doc-pipeline"), "rev-parse", "HEAD"));
     assert.deepEqual(run.journeys.map((x: { id: string }) => x.id), ["J01", "J02"]);
-    assert.match(run.clients[0].launch, /--user-data-dir .*\.vscode-user --extensions-dir .*\.vscode-ext .*doc-pipeline-lab\.code-workspace/);
+    assert.match(run.clients[0].launch, /--user-data-dir .*\.vscode-user --extensions-dir .*\.vscode-ext --disable-workspace-trust .*doc-pipeline-lab\.code-workspace/);
     assert.ok(lines.some(l => /Launch the isolated VS Code/.test(l)));
     // It wrote only under the root: the clones are untouched.
     for (const name of ["doc-pipeline", "doc-orchestration", "doc-processing"]) assert.equal(git(path.join(root, name), "status", "--porcelain"), "", `${name} unchanged`);

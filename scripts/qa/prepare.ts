@@ -181,6 +181,8 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     log(`✓ DataPass ${installedVersion} installed in ${EXTENSIONS_DIR} (VS Code ${vscodeVersion}, isolated profile ${USER_DATA_DIR})`);
 
     const runId = runIdOf(config, opts.now ?? new Date());
+    // The test clones are trusted by construction: no Restricted Mode prompt in front of the journeys.
+    const launchArgs = (file: string) => [...isolation, "--disable-workspace-trust", file];
     const workspaceFiles: string[] = [];
     const launch: string[] = [];
     const clients = config.workspaces.map(w => {
@@ -188,7 +190,7 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
       const { doc } = buildCompanyWorkspace({ file, company: w.client.title, folders: [w.bridge, ...w.repositories].map(r => path.join(root, openPath(r))) });
       fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
       workspaceFiles.push(file);
-      const command = [executable, ...isolation, file].map(quote).join(" ");
+      const command = [executable, ...launchArgs(file)].map(quote).join(" ");
       launch.push(command);
       return { id: w.client.id, title: w.client.title, workspaceFile: path.basename(file), bridge: withPath(repos.get(w.bridge.folder)!, w.bridge), repositories: w.repositories.map(r => withPath(repos.get(r.folder)!, r)), launch: command };
     });
@@ -220,7 +222,7 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     log(`Launch ${clients.length > 1 ? "each client's" : "the"} isolated VS Code:`);
     for (const l of launch) log(`  ${l}`);
     if (opts.launch) {
-      for (const w of workspaceFiles) spawn(executable, [...isolation, w], { detached: true, stdio: "ignore", windowsHide: false }).unref();
+      for (const w of workspaceFiles) spawn(executable, launchArgs(w), { detached: true, stdio: "ignore", windowsHide: false }).unref();
       log(`✓ launched ${workspaceFiles.length} isolated VS Code window(s)`);
     }
     return { code: 0, reasons: [], runFile, workspaceFiles, launch };
