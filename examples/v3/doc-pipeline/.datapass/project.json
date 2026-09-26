@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "id": "doc-pipeline",
+    "title": "Document pipeline",
+    "description": "PDFs dropped in storage are processed into JSON results. Three ways to orchestrate it, switched from the status bar."
+  },
+  "environments": [
+    {
+      "id": "dev",
+      "title": "Development"
+    }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "pipeline",
+      "title": "PDF to JSON",
+      "objective": "Every PDF in the inbox becomes one JSON result",
+      "itemRefs": [
+        "inbox",
+        "orchestrate",
+        "process",
+        "results"
+      ]
+    }
+  ]
+}

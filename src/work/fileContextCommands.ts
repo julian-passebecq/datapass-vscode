@@ -10,6 +10,7 @@ import { promises as fsp } from "node:fs";
 import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
+import { activeVariantHeader } from "./activeVariantCommands";
 import { clipboard } from "../core/clipboard";
 import { guarded, UserFacingError } from "./io";
 import {
@@ -153,6 +154,7 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
   const localPaths = [...new Set([...(loc ? [loc.root] : []), ...[...candidates, ...observed].map(c => c.folder).filter((f): f is string => !!f), ...(wsFolder ? [wsFolder, await real(wsFolder)] : []), os.homedir(), await real(os.homedir())])];
   const pack = buildFileContext({
     question, project: manifest ? { id: manifest.project.id, title: manifest.project.title } : undefined,
+    activeVariant: manifest ? activeVariantHeader(session) : undefined,
     bridge: bridgeRepo ? { key: bridgeRepo.key, label: bridgeRepo.label } : undefined,
     repository,
     file: { relPath, languageId: doc?.languageId, unsaved, notOnDisk: uri.scheme === "untitled", binary, text, selection },

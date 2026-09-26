@@ -45,6 +45,7 @@ import { readProjectManifest } from "../core/projectManifest";
 import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
+import { activeVariantHeader } from "./activeVariantCommands";
 import type { GitObserver } from "./gitObserver";
 import { machineSetting, orderDigest, type LoadedOrder, type WorkOrderService } from "./workOrders";
 import { importAnswer, importContext, writeProjectFile } from "./optionsCommands";
@@ -293,7 +294,7 @@ export class WorkOrderFlows {
       const analysis = this.session.optionsAnalysis();
       if (analysis) {
         const apply = Boolean(decision.chosen && decision.chosen !== decision.current);
-        const md = optionsMarkdown({ options: ctx.options, analysis, project: map.project, purpose: apply ? "apply" : "compare", decisionId: decision.id, optionId: apply ? decision.chosen : undefined, generatedAt: common.generatedAt, dataPassVersion: common.dataPassVersion, guideUrl: GUIDE_URL });
+        const md = optionsMarkdown({ options: ctx.options, analysis, project: map.project, purpose: apply ? "apply" : "compare", decisionId: decision.id, optionId: apply ? decision.chosen : undefined, generatedAt: common.generatedAt, dataPassVersion: common.dataPassVersion, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(this.session) });
         decisionFile = `attachments/decision-${safeName(decision.id)}.md`;
         attach(decisionFile, md.text);
         if (!apply && draft.kind === "apply-decision") notes.push(`Decision ${decision.id} has no chosen option different from the current one: the agent gets the comparison, not an apply plan.`);

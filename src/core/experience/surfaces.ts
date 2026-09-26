@@ -51,6 +51,8 @@ export const SURFACES: readonly Surface[] = [
   { id: "project.toolkit", kind: "projectSection", label: "Project tree: Toolkit", detail: "Hub toolkit files read, entries skipped, Needs a newer DataPass" },
   { id: "badge.hubChanged", kind: "badge", label: "\"Changed by the hub\" on catalogue entries", detail: "Marks built-in tools a hub toolkit file changed" },
   // 0.24 (pass AI-3): the Claude & Codex panel.
+  // 0.25 (package V-A): the active variant.
+  { id: "status.activeVariant", kind: "statusBar", label: "Status bar: active variant", detail: "The variant this machine works on; click to switch (the tree, Details, the diagram and the packs follow)" },
   { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" }
 ];
 

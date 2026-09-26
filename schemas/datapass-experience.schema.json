@@ -81,10 +81,11 @@
                 "workbench.toolkit",
                 "project.toolkit",
                 "badge.hubChanged",
+                "status.activeVariant",
                 "view.agentPanel"
               ]
             },
-            "maxItems": 30,
+            "maxItems": 31,
             "minItems": 0
           }
         },
