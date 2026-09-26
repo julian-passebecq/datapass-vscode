@@ -521,7 +521,7 @@ async function preparationPack(session: WorkSession, version: string, arg?: { co
     map, componentId, subprojectId, question, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     readiness: session.readiness(),
-    sheet: session.project.sheet, options: session.project.options, board: session.project.board
+    sheet: session.project.sheet, options: session.project.options, board: session.project.board, stamp: await session.packStamp()
   });
   const choice = await vscode.window.showInformationMessage(`AI preparation pack: ${pack.bytes} bytes, ${pack.sections.length} sections${pack.truncated ? ", TRUNCATED" : ""}.`, {
     modal: true, detail: `Sections: ${pack.sections.join(", ")}\nNever included: ${pack.omissions.join(", ")}.\nPaste it into ChatGPT or Claude yourself; nothing is sent by DataPass.`
