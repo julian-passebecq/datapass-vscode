@@ -206,3 +206,29 @@ end close the window and delete `<root>\vscode-user` and `<root>\vscode-ext` (no
 - VS Code Workspace Trust — https://code.visualstudio.com/docs/editing/workspaces/workspace-trust
 - Local: `codex --version`, `codex features list`, `codex plugin list`, `codex exec --help`,
   `%USERPROFILE%\.codex\config.toml`, VS Code logs `<root>\codex-user\logs\*\main.log`.
+
+## 6. In-app run by Julian (2026-09-26 21:16) — result
+
+Julian ran `prompt-app.txt` in an interactive thread of the Codex desktop app ("Run DataPass VS Code QA check").
+
+| Step | Result |
+|---|---|
+| Launch outside the sandbox | **Works**, after a retry. The first try failed before PowerShell ran: Julian's PowerShell profile starts Anaconda and crashes (`ModuleNotFoundError: No module named '_ctypes'` / `'_socket'`). With profile loading off (`login:false`) the exact §3 launch command opened *Welcome - doc-pipeline - Visual Studio Code*. **No escalated-run approval was shown.** |
+| Computer Use on the window | **Fails, in the app too**: the inventory returned `apps: []` (only the in-app browser), and `cua.listWindows()` / `cua.getApp(...)` failed with `is not a function`. No per-app approval prompt appeared, so no app id was recorded. |
+| Trust dialog, DataPass view, command palette, notifications | **Not done** (blocked by the step above). |
+| Screenshot | A full-screen capture via `powershell.exe -NoProfile -ExecutionPolicy Bypass -File shot.ps1` **works**. It shows the Codex app in front, not VS Code, so it is not evidence of the window. The configured PowerShell 7 (`pwsh`) failed with `Unable to find type [System.Windows.Forms.Screen]`: use Windows PowerShell (`powershell.exe`) for the capture. |
+| Close | **Works** (process stopped by exact window title). |
+
+**What this changes.** Neither host could reach a desktop app with Computer Use on this PC. So "Codex drives VS Code" is **not verified**, and the procedure cannot rely on it yet. Likely causes, not verified:
+
+1. The prompt never mentioned `@Computer` or the app by name. The docs say to "mention `@Computer` or `@AppName`" to start a Computer Use task, and the per-app approval (which fills the inventory) only appears then.
+2. The Computer Use plugin's server or skill toggle is off for this project. Check **Plugins > Computer Use**.
+3. The runtime version installed (plugin 26.917) doesn't match the documented API.
+
+**Next try** (one row in todo.md): a new app thread whose first line is `@Computer use Visual Studio Code: …`, with VS Code already open in front.
+
+**Also for the procedure.**
+- Start Codex's shell without Julian's PowerShell profile. Anaconda's hook breaks it.
+- Take screenshots with `powershell.exe`, not `pwsh`.
+- Bring the VS Code window to the front before capturing the screen.
+- Until Computer Use reaches the window, the UI track falls back to QA-4 (Playwright `_electron` click and screenshot steps), which needs no desktop control.
