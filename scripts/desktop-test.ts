@@ -18,7 +18,7 @@ import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { pathToFileURL } from "node:url";
-import { foilProjectManifest, genericProjectManifest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
+import { foilProjectManifest, genericProjectManifest, migrateManifestToLatest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
 import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
 import { boardAJson } from "../tests/fixtures/v3/researchBoard";
@@ -474,6 +474,59 @@ function setupV25DocPipeline(base: string): { workspace: string; env: Record<str
 }
 
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
+/**
+ * V1-ON Open a Client Project: "GitHub on disk". Bare repositories in a temp folder stand for
+ * GitHub (acme-bridge, lab) and Azure DevOps (pipeline); Git's url.<base>.insteadOf (GIT_CONFIG_*
+ * environment, this extension host only) sends the real https / SSH addresses there, so the clones'
+ * origins keep the real addresses. `lab` is already cloned, under another name and with its SSH
+ * address; `portal` is planned. The window starts on an empty folder.
+ */
+function setupV26OpenClient(base: string): { workspace: string; env: Record<string, string> } {
+  const hosts = path.join(base, "hosts"), work = path.join(base, "src");
+  const bare = (name: string, files: Record<string, string>, dest: string) => {
+    const dir = path.join(work, name);
+    writeTree(dir, files);
+    commitAll(dir, `${name}: first commit`);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    execFileSync("git", ["clone", "-q", "--bare", dir, dest], { stdio: "ignore" });
+  };
+  const manifest = migrateManifestToLatest({ ...genericProjectManifest("Acme"), schemaVersion: 1 });
+  manifest.project = { id: "acme", title: "Acme" };
+  manifest.repositories = {
+    lab: { label: "Lab", description: "Notebooks and studies", remote: { url: "https://github.com/acme/lab.git" } },
+    pipeline: { label: "Pipeline", description: "Ingestion (Azure DevOps)", remote: { url: "https://dev.azure.com/acme-org/Data/_git/pipeline" } },
+    portal: { label: "Portal", description: "Web app, not started", planned: true, remote: { url: "https://github.com/acme/portal.git" } }
+  };
+  bare("acme-bridge", { ".datapass/project.json": JSON.stringify(manifest, null, 2) + "\n", "README.md": "# Acme bridge\n" }, path.join(hosts, "github", "acme", "acme-bridge.git"));
+  bare("lab", { "README.md": "# Lab\n" }, path.join(hosts, "github", "acme", "lab.git"));
+  bare("pipeline", { "README.md": "# Pipeline\n" }, path.join(hosts, "ado", "pipeline.git"));
+  const fileUrl = (p: string) => pathToFileURL(p).href.replace(/\/?$/, "/");
+  const rewrites: Array<[string, string]> = [
+    [fileUrl(path.join(hosts, "github", "acme")), "https://github.com/acme/"],
+    [fileUrl(path.join(hosts, "github", "acme")), "git@github.com:acme/"],
+    [fileUrl(path.join(hosts, "ado")), "https://dev.azure.com/acme-org/Data/_git/"]
+  ];
+  const env: Record<string, string> = { GIT_CONFIG_COUNT: String(rewrites.length) };
+  rewrites.forEach(([to, from], i) => { env[`GIT_CONFIG_KEY_${i}`] = `url.${to}.insteadOf`; env[`GIT_CONFIG_VALUE_${i}`] = from; });
+  // An existing clone of lab, under another name and with the SSH form of its address.
+  const clients = path.join(base, "clients");
+  fs.mkdirSync(clients, { recursive: true });
+  execFileSync("git", ["clone", "-q", path.join(hosts, "github", "acme", "lab.git"), path.join(clients, "my-lab")], { stdio: "ignore" });
+  execFileSync("git", ["remote", "set-url", "origin", "git@github.com:acme/lab.git"], { cwd: path.join(clients, "my-lab"), stdio: "ignore" });
+  const start = path.join(base, "start");
+  writeTree(start, { "README.md": "# empty window\n" });
+  return { workspace: start, env: { ...env, DATAPASS_IT_V26: JSON.stringify({ clients }) } };
+}
+
+/** The company workspace file the previous fixture's command wrote, opened as a new window would open it. */
+function setupV26OpenClientWindow(base: string): { workspace: string; env: Record<string, string> } {
+  const file = path.join(path.dirname(base), "v26-open-client", "clients", "Acme.code-workspace");
+  if (fs.existsSync(file)) return { workspace: file, env: {} };
+  // Run alone (or after a failed first fixture): an empty window whose test fails with the reason.
+  writeTree(base, { "README.md": "# missing company workspace\n" });
+  return { workspace: base, env: { DATAPASS_IT_V26_MISSING: `v26-open-client-window runs after v26-open-client, which writes ${file}` } };
+}
+
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,
@@ -485,7 +538,10 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   // 0.22 modes: the research project opened as a new install (no DataPass settings: Standard).
   "v22-modes": setupV3Research,
   "v22-versions": setupV22Versions,
-  "v25-doc-pipeline": setupV25DocPipeline
+  "v25-doc-pipeline": setupV25DocPipeline,
+  // V1-ON: the command in an empty window, then the window it opens (Standard, as a new install).
+  "v26-open-client": setupV26OpenClient,
+  "v26-open-client-window": setupV26OpenClientWindow
 };
 
 async function vscodeExecutable(): Promise<string> {
@@ -534,7 +590,7 @@ async function main(): Promise<void> {
       git("commit", "-q", "-m", "fixture");
     }
     // 0.22 modes: the earlier suites check 0.20's surfaces (Advanced, no landing); v22-modes starts as a new install.
-    if (name !== "v22-modes") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }, null, 2) });
+    if (name !== "v22-modes" && name !== "v26-open-client-window") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }, null, 2) });
     const reportFile = path.join(out, `report-${name}.json`);
     const launchArgs = [
       ws,
