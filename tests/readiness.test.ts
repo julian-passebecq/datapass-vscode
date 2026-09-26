@@ -44,7 +44,8 @@ function cloudflareManifest(extra: Partial<DataPassProjectManifest> = {}): DataP
     project: { id: "edge-shop", title: "Edge shop" },
     localEnv: { files: [".env", { path: ".env.local", optional: true }], requiredKeys: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "MONGODB_URI"] },
     identifiers: [{ id: "cf-account", label: "Cloudflare account ID", value: ACCOUNT_ID, provider: "cloudflare", envKey: "CLOUDFLARE_ACCOUNT_ID" }],
-    modules: { mongoku: false, diagramcloud: false },
+    modules: { diagramcloud: false },
+    // Legacy block from an older manifest: accepted and ignored.
     companions: { mongoku: { entityId: "edge_shop" } },
     ...extra
   };
@@ -176,18 +177,18 @@ test("readiness: missing file and key, committed or not-ignored env file", () =>
 
 test("optional companions: a disabled module yields only 'optional module disabled' — no warning, no error, no check", () => {
   const r = buildReadiness(input({ settings: {} }));
-  assert.deepEqual(r.companions.map(c => [c.module, c.state, c.detail]), [["mongoku", "disabled", "optional module disabled"], ["diagramcloud", "disabled", "optional module disabled"]]);
+  assert.deepEqual(r.companions.map(c => [c.module, c.state, c.detail]), [["diagramcloud", "disabled", "optional module disabled"]]);
   assert.equal(r.checks.filter(c => c.area === "companion").length, 0);
   assert.ok(!r.checks.some(c => /mongoku|diagramcloud/i.test(c.message)));
   // Enabled, mapped, no address: a note, never a warning.
   const on = buildReadiness(input({ manifest: cloudflareManifest({ modules: {} }) }));
-  assert.deepEqual(on.checks.filter(c => c.area === "companion").map(c => [c.id, c.severity]), [["companion.mongoku.url", "info"], ["companion.diagramcloud.url", "info"]]);
-  const configured = buildReadiness(input({ manifest: cloudflareManifest({ modules: {} }), settings: { mongokuUrl: "http://localhost:3100/", diagramCloudUrl: "https://diagram.example.com/" } }));
-  assert.deepEqual(configured.companions.map(c => c.state), ["configured", "configured"]);
+  assert.deepEqual(on.checks.filter(c => c.area === "companion").map(c => [c.id, c.severity]), [["companion.diagramcloud.url", "info"]]);
+  const configured = buildReadiness(input({ manifest: cloudflareManifest({ modules: {} }), settings: { diagramCloudUrl: "https://diagram.example.com/" } }));
+  assert.deepEqual(configured.companions.map(c => c.state), ["configured"]);
   assert.equal(configured.checks.filter(c => c.area === "companion").length, 0);
   // Enabled but not used by the project: nothing to fix either.
   const unused = buildReadiness(input({ manifest: cloudflareManifest({ modules: {}, companions: undefined }), diagramCloudSidecar: false }));
-  assert.deepEqual(unused.companions.map(c => c.state), ["not-configured", "not-configured"]);
+  assert.deepEqual(unused.companions.map(c => c.state), ["not-configured"]);
   assert.equal(unused.checks.filter(c => c.area === "companion").length, 0);
 });
 
@@ -249,7 +250,7 @@ test("no env value appears in any output: readiness, webview state, snapshot, re
     { name: "CLOUDFLARE_API_TOKEN", state: "set", source: "vault" },
     { name: "MONGODB_URI", state: "set", source: "vault" }
   ]);
-  assert.deepEqual(snap.environment.companions, [{ module: "mongoku", state: "disabled" }, { module: "diagramcloud", state: "disabled" }]);
+  assert.deepEqual(snap.environment.companions, [{ module: "diagramcloud", state: "disabled" }]);
 });
 
 // ------------------------------------------------------------------ D-22 evidence chain

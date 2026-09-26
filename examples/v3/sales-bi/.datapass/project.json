@@ -5,9 +5,6 @@
     "title": "Sales BI",
     "description": "Synthetic DataPass 0.18 example: a Fabric lakehouse, a notebook and a Power BI model, deployed with fabric-cicd."
   },
-  "modules": {
-    "mongoku": false
-  },
   "environments": [
     {
       "id": "dev",

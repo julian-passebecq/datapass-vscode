@@ -106,7 +106,6 @@ Minimal:
 {
   "schemaVersion": 5,
   "project": { "id": "invoice-reader", "title": "Invoice reader", "type": "work" },
-  "modules": { "mongoku": false },
   "environments": [ { "id": "dev", "title": "Development" } ],
   "graph": ".datapass/graph.json"
 }
@@ -124,7 +123,7 @@ Full (every block explained below):
     "description": "Supplier invoices (PDF) extracted page by page, reviewed, then published to MongoDB.",
     "type": "work"
   },
-  "modules": { "fabric": false, "powerbi": false, "grafana": false, "airflow": false, "mongoku": false, "diagramcloud": false, "workOrders": true },
+  "modules": { "fabric": false, "powerbi": false, "grafana": false, "airflow": false, "diagramcloud": false, "workOrders": true },
   "repositories": {
     "pipeline": {
       "label": "Invoice pipeline",
@@ -199,7 +198,7 @@ Full (every block explained below):
 | `schemaVersion` | `5`. | 1–5 accepted; `toolchain`, `connections`, identifier `values`/`kind` need 5; `localEnv`/`identifiers` need 4. DataPass 0.14–0.17 refuses 5 (then write 4 and leave those out). |
 | `project.id` / `title` | A lowercase id, stable forever (work orders, catalogs, `datapass.ai.projectTypes` use it). | Required. |
 | `project.type` | `work` for a client project; `dev` or `perso` for your own. | `work`: work orders off unless `modules.workOrders: true`, the person merges. The machine setting `datapass.ai.projectTypes` wins. |
-| `modules` | `false` for every module the project does not use. `mongoku: false` always (Mongoku is frozen). | Only `false` switches off; unlisted = on. Keys: `fabric`, `databricks`, `powerbi`, `grafana`, `infrastructure` (VMs, SSH, IaC), `airflow`, `azure` (ADF, Functions, Storage, Cosmos), `databases` (Atlas, PostgreSQL/Neon), `mongoku`, `diagramcloud`, `workOrders`, `pilot`. |
+| `modules` | `false` for every module the project does not use. | Only `false` switches off; unlisted = on. Keys: `fabric`, `databricks`, `powerbi`, `grafana`, `infrastructure` (VMs, SSH, IaC), `airflow`, `azure` (ADF, Functions, Storage, Cosmos), `databases` (Atlas, PostgreSQL/Neon), `diagramcloud`, `workOrders`, `pilot`. |
 | `repositories.<key>` | `remote.url` (https or `git@host:path`), optional `branch`, `label`, `description`; `"planned": true` for a repository not created yet; `path` only for a folder of this repository. | No credentials in URLs (Azure DevOps `https://<org>@dev.azure.com/<org>/…` is the one exception, the user name must equal the organization). A planned repository cannot have a `path`. |
 | `environments[]` | `dev`, then `test`/`prod` only when they exist. `production: true` on production. | ≤ 20, lowercase ids, unique. A review confirmed for `dev` never applies to `prod`. |
 | `docs[]` | `path` (+ `repoRef`) or `url` (https). | Exactly one of `path`/`url`; paths relative. |

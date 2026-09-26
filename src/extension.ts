@@ -69,12 +69,9 @@ export interface DataPassTestApi {
   /** Replace how DataPass opens a remote folder (undefined restores Remote - SSH). */
   setFolderOpener(impl?: FolderOpener): void;
   companions(): ReturnType<WorkSession["companions"]>;
-  mongokuStatus(): ReturnType<WorkSession["mongokuStatus"]>;
   inventory(): ReturnType<WorkSession["inventory"]>;
   qualification(): ReturnType<WorkSession["qualification"]>;
   repositories(): ReturnType<WorkSession["repositories"]>;
-  /** Drive the vscode://…/open handler directly (VS Code's own "allow URI?" prompt is not scriptable). */
-  handleUri(uri: vscode.Uri): Promise<void>;
   /** V3: the project map, the Workbench state the webviews render, and the shared selection. */
   projectMap(): ReturnType<WorkSession["projectMap"]>;
   workbenchState(): WorkbenchState;
@@ -184,7 +181,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(session, workTree, workView, session.onDidChange(updateWorkBadge), session.onDidChange(() => void galaxy.refreshOperations()));
   registerWorkCommands(context, session);
   registerBridgeCommands(context, session);
-  const companionUri = registerCompanionCommands(context, session);
+  registerCompanionCommands(context, session);
   registerResourceCommands(context, session);
   registerQualificationCommands(context, session);
   registerReadinessCommands(context, session);
@@ -410,8 +407,6 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setAppLauncher: setAppLauncherForTests,
     readiness: () => session.readiness(),
     companions: () => session.companions(),
-    mongokuStatus: () => session.mongokuStatus(),
-    handleUri: uri => companionUri.handleUri(uri),
     inventory: () => session.inventory(),
     qualification: () => session.qualification(),
     repositories: () => session.repositories(),

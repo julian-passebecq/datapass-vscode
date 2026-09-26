@@ -147,15 +147,8 @@ export interface DataPassProjectManifest {
   toolchain?: ToolchainDecl;
   /** v5: sign-ins and bindings the project needs; sign-ins are checked read-only on request, bindings are declared. */
   connections?: ConnectionDecl[];
-  /** Optional companion apps. Their addresses are user settings; the manifest holds only stable ids. */
-  companions?: {
-    mongoku?: {
-      /** Mongoku entity for the whole project. */
-      entityId?: string;
-      /** Per-scope entity (scope id or "project" → Mongoku entity id). */
-      scopeEntities?: Record<string, string>;
-    };
-  };
+  /** Legacy block from older manifests: accepted and ignored. */
+  companions?: Record<string, unknown>;
 }
 
 export function parseProjectManifest(raw: unknown): DataPassProjectManifest {
@@ -445,12 +438,8 @@ export function migrateManifestToV2(v1: DataPassProjectManifest): DataPassProjec
   return next;
 }
 
-/**
- * Modules of a manifest DataPass creates (0.16). Mongoku is frozen: it reads the project's files
- * (board.json, project.json) from GitHub and has no link with DataPass, so a new project starts
- * with its module off. Existing manifests keep their behaviour (an unlisted module stays on).
- */
-export const NEW_MANIFEST_MODULES: ModuleSwitches = { mongoku: false };
+/** Modules of a manifest DataPass creates: none switched off (an unlisted module stays on). */
+export const NEW_MANIFEST_MODULES: ModuleSwitches = {};
 
 export function genericProjectManifest(folderName = "data-project"): DataPassProjectManifest {
   return {

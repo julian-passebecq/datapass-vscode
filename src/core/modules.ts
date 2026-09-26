@@ -8,7 +8,7 @@
  */
 import type { CapabilityRecord } from "./capabilities/registry";
 
-export type ModuleId = "fabric" | "databricks" | "powerbi" | "grafana" | "infrastructure" | "airflow" | "azure" | "databases" | "mongoku" | "diagramcloud";
+export type ModuleId = "fabric" | "databricks" | "powerbi" | "grafana" | "infrastructure" | "airflow" | "azure" | "databases" | "diagramcloud";
 
 export interface ModuleInfo {
   id: ModuleId;
@@ -28,17 +28,18 @@ export const MODULES: readonly ModuleInfo[] = [
   { id: "databricks", label: "Databricks", group: "core", galaxyCard: "databricks", providers: ["databricks"] },
   // Azure Data Factory is its own service, not part of Fabric (Fabric has its own Data Factory items).
   { id: "azure", label: "Azure data services (Data Factory, Functions, Storage, Cosmos DB)", group: "core", providers: ["adf", "azure-functions", "azure-storage", "cosmos"] },
-  { id: "databases", label: "Databases (MongoDB Atlas, PostgreSQL / Neon)", group: "core", providers: ["mongodb", "postgres"] },
+  { id: "databases", label: "Databases (MongoDB Atlas, PostgreSQL / Neon)", group: "core", providers: ["mongodb", "postgres", "mongo"] },
   { id: "infrastructure", label: "Infrastructure (Azure/IaC, VM, SSH, containers)", group: "core", galaxyCard: "infrastructure", providers: ["infrastructure"] },
   { id: "airflow", label: "Airflow", group: "core", providers: ["airflow"] },
   { id: "powerbi", label: "Power BI", group: "core", galaxyCard: "powerbi", providers: ["powerbi"] },
   { id: "grafana", label: "Grafana / observability", group: "core", galaxyCard: "observability", providers: ["grafana"] },
-  { id: "mongoku", label: "Mongoku and Mongo context", group: "add-on", providers: ["mongo"],
-    note: "frozen: Mongoku reads board.json and project.json from GitHub; DataPass never connects to it. Off for new projects." },
   { id: "diagramcloud", label: "DiagramCloud", group: "add-on", providers: ["diagram"] }
 ];
 
 export const MODULE_IDS: readonly ModuleId[] = MODULES.map(m => m.id);
+
+/** Module ids older manifests may still carry: accepted and ignored (no longer part of DataPass). */
+export const LEGACY_MODULE_IDS: readonly string[] = ["mongoku"];
 
 /**
  * 0.20: switches that are not cloud modules. `workOrders` (AI agents working from a DataPass work
@@ -79,6 +80,7 @@ export function validateModules(value: unknown): string[] {
   if (!value || typeof value !== "object" || Array.isArray(value)) return ["modules must be an object of module ids to true/false."];
   const issues: string[] = [];
   for (const [key, on] of Object.entries(value as Record<string, unknown>)) {
+    if (LEGACY_MODULE_IDS.includes(key)) continue;
     if (![...MODULE_IDS, ...AI_SWITCH_IDS].includes(key as ModuleId)) issues.push(`modules.${key} is not a known module (${[...MODULE_IDS, ...AI_SWITCH_IDS].join(", ")}).`);
     else if (typeof on !== "boolean") issues.push(`modules.${key} must be true or false.`);
   }

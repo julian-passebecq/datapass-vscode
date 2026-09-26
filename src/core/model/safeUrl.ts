@@ -1,5 +1,5 @@
 /**
- * Validation for the external web apps DataPass links to (DiagramCloud, Grafana, Mongoku).
+ * Validation for the external web apps DataPass links to (DiagramCloud, Grafana).
  * Pure. A valid URL is only a well-formed, credential-free destination: it is not permission,
  * reachability, authentication or evidence that the service is healthy.
  */

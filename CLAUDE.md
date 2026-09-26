@@ -19,4 +19,4 @@ Non-negotiable boundaries:
 - Do not publish the private FOIL packages, detailed scientific/commercial payloads or credentials into this public repository.
 - Preserve existing behavior/tests and add migration, negative, non-FOIL and native desktop acceptance tests.
 
-The latest FOIL Design Lab is foil-streamlit-wind-3d-lcoe/app.py, a bootstrap rather than a completed editable lab. Mongo reconciliation remains separate. DiagramCloud is integrated only through the reviewed bridge (`contracts/diagramcloud`, one native `.datapass/diagramcloud.json`); Mongoku only through optional links and user-imported context snapshots, never database access. No architecture proposal becomes accepted FOIL authority merely because a handoff describes it.
+The latest FOIL Design Lab is foil-streamlit-wind-3d-lcoe/app.py, a bootstrap rather than a completed editable lab. Mongo reconciliation remains separate. DiagramCloud is integrated only through the reviewed bridge (`contracts/diagramcloud`, one native `.datapass/diagramcloud.json`). No architecture proposal becomes accepted FOIL authority merely because a handoff describes it.

@@ -5,7 +5,7 @@ import Ajv2020 from "ajv/dist/2020";
 import { ALWAYS_ON_PROVIDERS, MODULES, MODULE_IDS, disabledProviders, galaxyCardEnabled, moduleEnabled, modulesBlock, validateModules } from "../src/core/modules";
 import { foilProjectManifest, genericProjectManifest, validateProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { buildWorkModel, IMPLICIT_SCOPE_ID } from "../src/core/work/workModel";
-import { resolveCompanions, scopesForEntity } from "../src/core/companions/companions";
+import { resolveCompanions } from "../src/core/companions/companions";
 import { CAPABILITIES } from "../src/core/capabilities/registry";
 
 const manifest = (modules?: DataPassProjectManifest["modules"]): DataPassProjectManifest => ({
@@ -13,7 +13,6 @@ const manifest = (modules?: DataPassProjectManifest["modules"]): DataPassProject
   project: { id: "lab", title: "Lab" },
   ...(modules ? { modules } : {}),
   platforms: { fabric: { workspaceName: "Lab" }, databricks: { bundleRoot: "." }, powerbi: { projectRoot: "bi" }, grafana: { url: "https://g.example.com/" }, infrastructure: { root: "infra" } },
-  companions: { mongoku: { entityId: "lab_entity" } },
   scopes: [{ id: "weekly", title: "Weekly", capabilityRefs: ["fabric.workspace.browse", "powerbi.report.edit-pbir"] }]
 });
 const model = (m: DataPassProjectManifest, scope?: string) => buildWorkModel({
@@ -27,7 +26,7 @@ test("modules: unlisted means on, only false switches off, no block keeps today'
   assert.equal(moduleEnabled(manifest({ powerbi: false }), "powerbi"), false);
   assert.equal(galaxyCardEnabled(manifest({ grafana: false }), "observability"), false, "the Observability card is the grafana module");
   assert.equal(galaxyCardEnabled(manifest({ grafana: false }), "fabric"), true);
-  assert.deepEqual([...disabledProviders(manifest({ mongoku: false, diagramcloud: false }))].sort(), ["diagram", "mongo"]);
+  assert.deepEqual([...disabledProviders(manifest({ databases: false, diagramcloud: false }))].sort(), ["diagram", "mongo", "mongodb", "postgres"]);
   assert.deepEqual(Object.keys(modulesBlock(new Set(["fabric"]))), [...MODULE_IDS]);
   // Every capability provider except the always-on core (apps, Python, opening files) belongs to exactly one module.
   for (const cap of CAPABILITIES) {
@@ -36,13 +35,25 @@ test("modules: unlisted means on, only false switches off, no block keeps today'
   }
 });
 
-test("modules: Mongoku is frozen — off in the manifests DataPass creates, unchanged in existing ones", () => {
-  assert.equal(moduleEnabled(genericProjectManifest("x"), "mongoku"), false);
-  assert.equal(moduleEnabled(foilProjectManifest(), "mongoku"), false);
+test("modules: old manifests with the removed Mongoku switch and companion still load, and it is ignored", () => {
   assert.deepEqual(validateProjectManifest(genericProjectManifest("x")), []);
-  assert.equal(moduleEnabled(manifest(), "mongoku"), true, "a manifest without a modules block keeps it");
-  assert.match(MODULES.find(m => m.id === "mongoku")!.note ?? "", /frozen.*GitHub/);
+  assert.equal(JSON.stringify(genericProjectManifest("x")).toLowerCase().includes("mongoku"), false, "new manifests never mention it");
+  assert.equal(JSON.stringify(foilProjectManifest()).toLowerCase().includes("mongoku"), false);
+  assert.deepEqual(validateModules({ mongoku: false, fabric: true }), []);
+  assert.deepEqual(validateModules({ mongoku: true }), []);
+  const old = { ...manifest({ mongoku: false, diagramcloud: false } as DataPassProjectManifest["modules"]) } as DataPassProjectManifest;
+  assert.deepEqual(validateProjectManifest(old), []);
+  assert.deepEqual([...disabledProviders(old)], ["diagram"], "the legacy switch turns nothing off");
+  assert.ok(!MODULE_IDS.includes("mongoku" as never));
   assert.ok(ALWAYS_ON_PROVIDERS.has("devops"), "a project's Git host and CI are core, never a switchable module");
+});
+
+test("no contributed command, view, menu, setting or walkthrough mentions Mongoku", () => {
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  const contributes = JSON.stringify(pkg.contributes ?? {}).toLowerCase();
+  assert.equal(contributes.includes("mongoku"), false);
+  assert.equal(JSON.stringify(pkg.activationEvents ?? []).toLowerCase().includes("mongoku"), false);
+  assert.ok(!MODULES.some(m => `${m.id} ${m.label} ${m.note ?? ""}`.toLowerCase().includes("mongoku")));
 });
 
 test("modules: validation and editor schema agree", () => {
@@ -52,7 +63,7 @@ test("modules: validation and editor schema agree", () => {
   assert.match(validateModules([])[0]!, /must be an object/);
   const ajv = new Ajv2020({ strict: false, validateFormats: false });
   const validate = ajv.compile(JSON.parse(readFileSync("schemas/datapass-project.schema.json", "utf8")));
-  assert.ok(validate(manifest({ powerbi: false, mongoku: false })), JSON.stringify(validate.errors));
+  assert.ok(validate({ ...manifest({ powerbi: false, mongoku: false } as DataPassProjectManifest["modules"]), companions: { mongoku: { entityId: "lab_entity" } } }), JSON.stringify(validate.errors));
   for (const bad of [{ kafka: true }, { fabric: "yes" }]) {
     const m = manifest() as any;
     m.modules = bad;
@@ -74,11 +85,7 @@ test("modules: a switched-off module leaves the Work view, and a scope that uses
   assert.deepEqual(model(manifest(), "weekly").problems, [], "without a modules block nothing changes");
 });
 
-test("modules: switched-off add-ons produce no links and cannot be selected from a Mongoku link", () => {
-  const on = resolveCompanions({ manifest: manifest(), scopeId: "weekly", mongokuUrl: "http://localhost:3100/" });
-  assert.ok(on.grafana && on.mongoku);
-  const off = resolveCompanions({ manifest: manifest({ grafana: false, mongoku: false }), scopeId: "weekly", mongokuUrl: "http://localhost:3100/" });
-  assert.equal(off.grafana, undefined);
-  assert.equal(off.mongoku, undefined);
-  assert.deepEqual(scopesForEntity(manifest({ mongoku: false }), "lab_entity"), []);
+test("modules: a switched-off Grafana module produces no links", () => {
+  assert.ok(resolveCompanions({ manifest: manifest(), scopeId: "weekly" }).grafana);
+  assert.equal(resolveCompanions({ manifest: manifest({ grafana: false }), scopeId: "weekly" }).grafana, undefined);
 });

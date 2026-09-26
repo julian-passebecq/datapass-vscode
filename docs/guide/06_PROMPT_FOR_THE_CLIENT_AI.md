@@ -20,7 +20,7 @@ Read, in this order, before writing anything:
 Deliver, as a pull request in the coordination repository <coordination repo URL>:
 - AGENTS.md (and CLAUDE.md = "Read AGENTS.md"), README.md, docs/ARCHITECTURE.md;
 - .datapass/project.json with schemaVersion 5, project.type "work", modules (false for every
-  module the project does not use, "mongoku": false), repositories (remote URLs, "planned": true
+  module the project does not use), repositories (remote URLs, "planned": true
   for those not created yet), environments (only those that exist), scopes, identifiers (the ID
   map, one value per environment, ids only), localEnv (env file names and variable names only),
   toolchain, connections, and resources/bindings for machines;

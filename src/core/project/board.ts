@@ -12,7 +12,7 @@
  *                 item, a GitHub issue, a pull request), and (0.23) the toolkit recipe and route
  *                 the work follows
  *
- * Other viewers (Mongoku, a web page) read the same file from GitHub; DataPass never talks to them.
+ * Other viewers (a web page, another tool) read the same file from GitHub; DataPass never talks to them.
  * DataPass shows the board, opens a card's component or file, prepares an AI pack for a card and,
  * when the person moves a card, rewrites only that card's "status" value: the rest of the file,
  * formatting included, stays byte for byte.

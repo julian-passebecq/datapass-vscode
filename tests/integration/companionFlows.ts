@@ -1,11 +1,10 @@
 /**
- * Desktop flows for the DiagramCloud bridge and the optional companions (Grafana, Mongoku),
+ * Desktop flows for the DiagramCloud bridge and the optional Grafana companion,
  * driven through the real command handlers with a scripted UI. Nothing is contacted: links only
  * reach the Test-mode browser seam and the clipboard is the scripted one.
  *
  * Fixture v2-retail carries DiagramCloud's own sidecar sample plus DiagramCloud's serialization
- * of it after a known plan, a synthetic Grafana stack with one scoped dashboard, a project-level
- * Mongoku mapping (no Mongoku address set yet) and a context produced by Mongoku's own exporter.
+ * of it after a known plan and a synthetic Grafana stack with one scoped dashboard.
  */
 import * as assert from "node:assert/strict";
 import * as os from "node:os";
@@ -96,10 +95,11 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
 
   // ------------------------------------------------------------ Links: Grafana (v2-retail)
 
-  test("links: the Work view shows Grafana (scoped dashboard + source), Mongoku and DiagramCloud", async () => {
+  test("links: the Work view shows Grafana (scoped dashboard + source) and DiagramCloud", async () => {
     const ids = new Set((await api().renderWorkTree()).map(r => r.id));
     for (const id of ["links", "links:grafana", "link:grafana.home", "link:grafana.explore", "link:grafana.dashboard:weekly-1", "linksrc:grafana.dashboard:weekly-1",
-      "links:mongoku", "mongoku:setUrl", "mongoku:none", "mongoku:import", "links:diagramcloud"]) assert.ok(ids.has(id), `missing row ${id}`);
+      "links:diagramcloud"]) assert.ok(ids.has(id), `missing row ${id}`);
+    assert.ok(![...ids].some(id => /mongoku/i.test(id ?? "")), "nothing from the removed Mongoku companion");
     await withUi([{ pick: "Whole project" }], () => run("datapass.selectScope"));
     const whole = new Set((await api().renderWorkTree()).map(r => r.id));
     assert.ok(whole.has("link:grafana.home") && !whole.has("link:grafana.dashboard:weekly-1"), "a scoped dashboard must stay in its scope");
@@ -136,67 +136,6 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     assert.deepEqual(ui.opened, ["https://metrics.example.com/grafana/"]);
   }, ["v2-retail"]);
 
-  // ------------------------------------------------------------ Mongoku Lite (v2-retail)
-
-  test("mongoku: an unsafe address is refused by the input itself and nothing is saved", async () => {
-    const ui = await withUi([{ input: "http://mongoku.lan/" }], () => run("datapass.openCompanionLink", "mongoku.entity"), { allowErrors: true });
-    assert.ok(ui.errors.some(e => /own validation/.test(e)), ui.errors.join(" / "));
-    assert.deepEqual(ui.opened, []);
-    assert.equal(setting("mongoku.url"), "");
-  }, ["v2-retail"]);
-
-  test("mongoku: the address is asked once, then Open in Mongoku uses Mongoku's own ?project= deep link", async () => {
-    const ui = await withUi([{ input: "http://localhost:3100" }, { button: "Open" }], () => run("datapass.openCompanionLink", "mongoku.entity"));
-    assert.deepEqual(ui.opened, ["http://localhost:3100/?project=retail_bi"]);
-    assert.equal(setting("mongoku.url"), "http://localhost:3100/");
-    const ids = new Set((await api().renderWorkTree()).map(r => r.id));
-    assert.ok(ids.has("link:mongoku.entity") && !ids.has("mongoku:setUrl"));
-  }, ["v2-retail"]);
-
-  const freshContext = async (mutate?: (ctx: any) => void) => {
-    const ctx = JSON.parse(await readText("incoming/mongoku-context.json"));
-    ctx.generated_at = new Date(Date.now() - 60_000).toISOString();
-    mutate?.(ctx);
-    return JSON.stringify(ctx, null, 2);
-  };
-
-  test("mongoku: import the Developer context from the clipboard → private dated snapshot in the Work view", async () => {
-    const text = await freshContext();
-    const ui = await withUi([{ pick: "From clipboard" }], async u => { u.clipboard = text; await run("datapass.mongoku.importContext"); });
-    assert.ok(ui.notices.some(n => /imported .*not a live view/s.test(n)), ui.notices.join(" / "));
-    assert.equal(await readText(".datapass/local/mongoku/weekly-forecast.json"), text, "the snapshot is stored byte-for-byte");
-    assert.match(await readText(".datapass/local/.gitignore"), /^\*$/m);
-    assert.equal(api().mongokuStatus()?.state, "ok");
-    const rows = await api().renderWorkTree();
-    const next = rows.find(r => r.id === "mongoku:next");
-    assert.match(next?.label ?? "", /Review the weekly report/);
-    assert.match(next?.description ?? "", /reported/);
-    assert.match(rows.find(r => r.id === "mongoku:snapshot")?.description ?? "", /not live/);
-    assert.ok(rows.some(r => r.id === "mongoku:items"));
-    record("mongokuRows", rows.filter(r => r.id?.startsWith("mongoku:")).map(r => `${r.label}${r.description ? ` — ${r.description}` : ""}`));
-  }, ["v2-retail"]);
-
-  test("mongoku: a context for another Mongoku project is refused and the snapshot is kept", async () => {
-    const before = await read(".datapass/local/mongoku/weekly-forecast.json");
-    const text = await freshContext(ctx => { ctx.scope.project_id = "other_project"; });
-    const ui = await withUi([{ pick: "From clipboard" }], async u => { u.clipboard = text; await run("datapass.mongoku.importContext"); }, { allowErrors: true });
-    assert.ok(ui.errors.some(e => /maps to "retail_bi".*Nothing was saved/s.test(e)), ui.errors.join(" / "));
-    assert.deepEqual(await read(".datapass/local/mongoku/weekly-forecast.json"), before);
-  }, ["v2-retail"]);
-
-  test("mongoku: vscode://…/open?entity= selects the mapped scope and ignores everything else", async () => {
-    const opened = await withUi([], () => api().handleUri(vscode.Uri.parse("vscode://julian-passebecq.datapass-vscode/open?entity=retail_bi&mongoku=https%3A%2F%2Fevil.example%2F")));
-    assert.equal(api().workModel().scope.id, "project", "the project-level mapping selects the whole project");
-    assert.ok(opened.notices.some(n => /opened from Mongoku/.test(n)), opened.notices.join(" / "));
-    assert.equal(setting("mongoku.url"), "http://localhost:3100/", "a link never configures DataPass");
-    const unknown = await withUi([], () => api().handleUri(vscode.Uri.parse("vscode://julian-passebecq.datapass-vscode/open?entity=nobody")));
-    assert.ok(unknown.notices.some(n => /Nothing in .* is mapped to Mongoku project "nobody"/.test(n)), unknown.notices.join(" / "));
-    const other = await withUi([], () => api().handleUri(vscode.Uri.parse("vscode://julian-passebecq.datapass-vscode/run?command=workbench.action.terminal.new")), { allowErrors: true });
-    assert.ok(other.errors.some(e => /Unsupported DataPass link/.test(e)), other.errors.join(" / "));
-    assert.equal(api().workModel().scope.id, "project");
-    await withUi([{ pick: "Weekly forecast refresh" }], () => run("datapass.selectScope"));
-  }, ["v2-retail"]);
-
   // ------------------------------------------------------------ static inventory (v2-retail)
 
   test("inventory: Assets lists each native asset kind statically and Repositories shows local Git state", async () => {
@@ -224,10 +163,10 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
   }, ["v2-retail"]);
 
   test("inventory: switching a module off hides its assets", async () => {
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Power BI", "Grafana", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
     const ids = new Set((await api().renderWorkTree()).map(r => r.id));
     assert.ok(!ids.has("assets:airflow-dag") && ids.has("assets:databricks-bundle"), [...ids].filter(i => i?.startsWith("assets")).join(","));
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
   }, ["v2-retail"]);
 
   // ------------------------------------------------------------ qualification (v2-retail)
@@ -294,22 +233,22 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     const core = ["Microsoft Fabric", "Databricks", "Infrastructure", "Airflow", "Grafana"];
     await withUi([{ pick: core }, { button: "Save" }], () => run("datapass.chooseModules"));
     const saved = JSON.parse(await readText(".datapass/project.json"));
-    assert.deepEqual(saved.modules, { fabric: true, databricks: true, azure: false, databases: false, powerbi: false, grafana: true, infrastructure: true, airflow: true, mongoku: false, diagramcloud: false });
+    assert.deepEqual(saved.modules, { fabric: true, databricks: true, azure: false, databases: false, powerbi: false, grafana: true, infrastructure: true, airflow: true, diagramcloud: false });
     assert.equal(Object.keys(saved)[2], "modules", "the block is written right after project");
     const state = await api().refresh();
     assert.ok(!state.platforms.some(p => p.id === "powerbi"), state.platforms.map(p => p.id).join(","));
     assert.ok(state.platforms.some(p => p.id === "fabric") && state.platforms.some(p => p.id === "observability"));
     const ids = new Set((await api().renderWorkTree()).map(r => r.id));
     assert.ok(ids.has("modules") && ids.has("links:grafana"));
-    assert.ok(!ids.has("links:mongoku") && !ids.has("links:diagramcloud"), [...ids].filter(i => i?.startsWith("links")).join(","));
+    assert.ok(!ids.has("links:diagramcloud"), [...ids].filter(i => i?.startsWith("links")).join(","));
     const refused = await withUi([], () => run("datapass.diagramCloud.copySummary"), { allowErrors: true });
     assert.ok(refused.errors.some(e => /DiagramCloud module is switched off/.test(e)), refused.errors.join(" / "));
     record("modulesOff", { galaxy: state.platforms.map(p => p.id), workRows: [...ids].filter(i => i?.startsWith("links")) });
 
-    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "Mongoku", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
+    await withUi([{ pick: ["Microsoft Fabric", "Databricks", "Azure data services", "Databases", "Infrastructure", "Airflow", "Power BI", "Grafana", "DiagramCloud"] }, { button: "Save" }], () => run("datapass.chooseModules"));
     const restored = await api().refresh();
     assert.equal(restored.platforms.length, 5);
-    assert.ok((await api().renderWorkTree()).some(r => r.id === "links:mongoku"));
+    assert.ok((await api().renderWorkTree()).some(r => r.id === "links:diagramcloud"));
   }, ["v2-retail"]);
 
   test("modules: declining the save changes nothing", async () => {
@@ -330,10 +269,9 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
   test("companions and bridge refuse an invalid manifest", async () => {
     const ui = await withUi([], async () => {
       await run("datapass.openCompanionLink", "grafana.home");
-      await run("datapass.mongoku.importContext");
       await run("datapass.diagramCloud.copyAiContext");
     }, { allowErrors: true });
-    assert.equal(ui.errors.length, 3, ui.errors.join(" / "));
+    assert.equal(ui.errors.length, 2, ui.errors.join(" / "));
     assert.ok(ui.errors.every(e => /valid .*project\.json/i.test(e)), ui.errors.join(" / "));
     assert.equal(ui.clipboard, "");
     assert.deepEqual(ui.opened, []);

@@ -211,7 +211,7 @@ export interface IdentifierView {
   environments: string[];
 }
 export type CompanionState = "disabled" | "not-configured" | "needs-url" | "configured";
-export interface CompanionView { module: "mongoku" | "diagramcloud"; label: string; state: CompanionState; detail: string }
+export interface CompanionView { module: "diagramcloud"; label: string; state: CompanionState; detail: string }
 export interface RepoReadiness {
   key: string; label: string; state: RepoView["state"]; branch?: string; expectedBranch?: string; head?: string;
   changes?: number; ahead?: number; behind?: number; upstream: boolean;
@@ -248,7 +248,7 @@ export interface ReadinessInput {
   envFiles: ReadonlyMap<string, EnvFileObservation>;
   repositories: readonly RepoView[];
   problems: readonly MapProblem[];
-  settings: { mongokuUrl?: string; diagramCloudUrl?: string };
+  settings: { diagramCloudUrl?: string };
   /** .datapass/diagramcloud.json exists in the project. */
   diagramCloudSidecar: boolean;
   latestSchemaVersion: number;
@@ -314,17 +314,6 @@ export function buildReadiness(input: ReadinessInput): Readiness {
 
   // Optional companions: a disabled module yields exactly one "optional module disabled" row and nothing else.
   const companions: CompanionView[] = [];
-  if (!moduleEnabled(m, "mongoku")) companions.push({ module: "mongoku", label: "Mongoku", state: "disabled", detail: "optional module disabled" });
-  else {
-    const mapped = Boolean(m?.companions?.mongoku);
-    const url = safeAppUrl(input.settings.mongokuUrl?.trim());
-    // Frozen (0.16): Mongoku reads the project's files from GitHub; nothing to configure in DataPass.
-    if (!mapped) companions.push({ module: "mongoku", label: "Mongoku", state: "not-configured", detail: "frozen · reads board.json and project.json from GitHub, no link with DataPass" });
-    else if (!url) {
-      companions.push({ module: "mongoku", label: "Mongoku", state: "needs-url", detail: "mapped · address not set" });
-      add({ id: "companion.mongoku.url", severity: "info", area: "companion", message: "Mongoku is mapped for this project, but its address (datapass.mongoku.url) is not set.", nextStep: "Run \"DataPass: Set Mongoku Address…\"." });
-    } else companions.push({ module: "mongoku", label: "Mongoku", state: "configured", detail: "mapped · address set" });
-  }
   if (!moduleEnabled(m, "diagramcloud")) companions.push({ module: "diagramcloud", label: "DiagramCloud", state: "disabled", detail: "optional module disabled" });
   else {
     const url = safeAppUrl(input.settings.diagramCloudUrl?.trim());

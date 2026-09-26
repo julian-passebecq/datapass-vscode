@@ -76,7 +76,8 @@
         },
         "mongoku": {
           "type": "boolean",
-          "description": "Frozen: Mongoku reads this project's files (board.json, project.json) from GitHub and has no link with DataPass. New manifests set it to false."
+          "deprecated": true,
+          "description": "Legacy switch from older manifests: accepted and ignored."
         },
         "diagramcloud": {
           "type": "boolean"
@@ -291,9 +292,9 @@
           "additionalProperties": false,
           "properties": {
             "sshHost": {
-          "type": "string",
-          "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$",
-          "description": "SSH config host alias only (no user@, port or key). Do not store credentials here."
+              "type": "string",
+              "pattern": "^$|^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$",
+              "description": "SSH config host alias only (no user@, port or key). Do not store credentials here."
             }
           }
         },
@@ -356,41 +357,8 @@
     },
     "companions": {
       "type": "object",
-      "additionalProperties": false,
-      "description": "Optional companion apps. Their addresses are user settings (datapass.mongoku.url); the manifest only maps stable ids.",
-      "properties": {
-        "mongoku": {
-          "type": "object",
-          "additionalProperties": false,
-          "anyOf": [
-            {
-              "required": [
-                "entityId"
-              ]
-            },
-            {
-              "required": [
-                "scopeEntities"
-              ]
-            }
-          ],
-          "properties": {
-            "entityId": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
-              "description": "Mongoku entity id for the whole project, e.g. foil_project."
-            },
-            "scopeEntities": {
-              "type": "object",
-              "description": "Scope id (or \"project\") → Mongoku entity id, for scopes that map to a different entity.",
-              "additionalProperties": {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
-              }
-            }
-          }
-        }
-      }
+      "deprecated": true,
+      "description": "Legacy block from older manifests: accepted and ignored."
     },
     "scopes": {
       "type": "array",

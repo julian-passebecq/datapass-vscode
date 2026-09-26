@@ -74,7 +74,7 @@ Oracle Cloud (runs a nightly Python job), in `dev` only for now:
 {
   "schemaVersion": 5,
   "project": { "id": "invoice-reader", "title": "Invoice reader", "type": "work" },
-  "modules": { "mongoku": false, "infrastructure": true },
+  "modules": { "infrastructure": true },
   "repositories": {
     "review-app": { "label": "Review web app", "remote": { "url": "https://github.com/example-org/invoice-review-app" } },
     "workers": { "label": "Nightly workers", "remote": { "url": "https://github.com/example-org/invoice-workers" } }
@@ -172,5 +172,4 @@ Refused — the legacy `platforms.oracle.sshHost` with a user and address (it ta
 - `platforms.fabric`, `platforms.databricks`, `platforms.grafana`, `platforms.infrastructure`,
   `platforms.airflow`, `platforms.powerbi` — settings for the older Work view operations (workspace
   name, bundle root, Grafana URL and dashboards…). Use them only when a check or an operation asks.
-- `apps[]` (external apps with their repository and hosting page), `links[]` (https pages),
-  `companions.mongoku` (frozen: leave out).
+- `apps[]` (external apps with their repository and hosting page), `links[]` (https pages).

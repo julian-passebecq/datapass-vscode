@@ -6,7 +6,7 @@
  *   <private log repository>/work-logs/<project id>.json  the same format, across projects, in a
  *                                                          private repository named by a machine setting
  *
- * ChatGPT (and so Mongoku, which reads GitHub files only) can read it on GitHub. It holds what
+ * ChatGPT (and any viewer that reads GitHub files only) can read it on GitHub. It holds what
  * happened, never how: order id, title, kind, dates, statuses, the repositories by their declared
  * remote, planned branches and pull requests. Never the goal text, the agent's summary, questions,
  * local paths, session ids, receipts or any credential. DataPass writes it when the person clicks

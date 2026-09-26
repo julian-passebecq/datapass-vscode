@@ -136,7 +136,7 @@ async function moveCard(session: WorkSession, itemId: string | undefined, status
   if (!session.boardMovesConfirmed) {
     const choice = await vscode.window.showWarningMessage(`Move "${item.title}" to ${column.title ?? column.id}?`, {
       modal: true,
-      detail: `DataPass writes only this card's "status" in ${BOARD_PATH}: every other character of the file stays as it is. A backup goes to .datapass/local/backups. DataPass never commits or pushes: commit the change when you are ready, since the board in Git is what the AI and other viewers (Mongoku) read.`
+      detail: `DataPass writes only this card's "status" in ${BOARD_PATH}: every other character of the file stays as it is. A backup goes to .datapass/local/backups. DataPass never commits or pushes: commit the change when you are ready, since the board in Git is what the AI and other viewers read.`
     }, "Move", "Move, and don't ask again in this window");
     if (!choice) return;
     if (choice !== "Move") session.boardMovesConfirmed = true;

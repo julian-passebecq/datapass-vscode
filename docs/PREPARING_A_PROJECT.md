@@ -107,7 +107,7 @@ and [Overview of Fabric Git integration](https://learn.microsoft.com/fabric/cicd
       "itemRefs": ["pdf-archive", "adf", "extract", "cosmos", "review", "study-db"],
       "checklist": [ { "id": "inventory", "label": "Inventory the PDFs and reading rights" } ] }
   ],
-  "modules": { "azure": true, "databases": true, "fabric": false, "mongoku": false }
+  "modules": { "azure": true, "databases": true, "fabric": false }
 }
 ```
 
@@ -119,7 +119,7 @@ and [Overview of Fabric Git integration](https://learn.microsoft.com/fabric/cicd
 | `environments[]` | Deployment environments. Every deploy/run/publish operation names one; a review confirmed for `dev` never applies to `prod`. |
 | `scopes[]` | Sub-projects (work areas). `itemRefs` lists their components (children via `contains` follow); `repoRef` is the default repository of their components. |
 | `docs[]` | Files (`path`, optional `repoRef`) or https pages opened from DataPass. |
-| `modules` | `false` hides a module (its operations and cards). `azure` = Data Factory, Functions, Storage, Cosmos DB; `databases` = MongoDB Atlas, PostgreSQL/Neon. Projects an AI prepares now set `"modules": { "mongoku": false }`: **Mongoku is frozen** — it reads `board.json` and `project.json` from GitHub on its own; DataPass never connects to it, so there is nothing to configure here beyond keeping those files well-formed. |
+| `modules` | `false` hides a module (its operations and cards). `azure` = Data Factory, Functions, Storage, Cosmos DB; `databases` = MongoDB Atlas, PostgreSQL/Neon. |
 | `project.type` | DataPass ≥ 0.20: `dev`, `work` or `perso`. **dev** and **perso**: work orders for Claude Code / Codex are on (once the person switches them on for their computer) and the agent merges its own pull requests when CI is green. **work** (FOIL, client projects): work orders stay off unless `modules.workOrders` is `true`, and the person merges. Unset = `dev`; the person's machine setting `datapass.ai.projectTypes` wins. |
 | `modules.workOrders`, `modules.pilot` | DataPass ≥ 0.20. `false` switches work orders (or the later pilot mode) off for this project; a **work** project needs `workOrders: true` to allow them. A project can never switch them on alone: the machine setting `datapass.ai.workOrders.enabled` is required. DataPass ≤ 0.19 reports these keys as unknown. |
 
@@ -542,9 +542,8 @@ What DataPass does with it:
   with its own tasks ("Update the board from the project's work", "Plan the next sprint", or a free
   task typed in chat).
 
-Other viewers read `board.json` (and `project.json`) straight from GitHub — for example **Mongoku**,
-frozen since 0.16.0 (section 2): DataPass never talks to it, it only has to keep the files
-well-formed.
+Other viewers may read `board.json` (and `project.json`) straight from GitHub: DataPass never talks
+to them, it only has to keep the files well-formed.
 
 ## 11. Git hosts and CI (GitHub, Azure DevOps, GitLab)
 

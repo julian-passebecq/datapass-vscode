@@ -19,7 +19,6 @@ export function manifestDevops(): DataPassProjectManifest {
   return {
     schemaVersion: 4,
     project: { id: "shop-platform", title: "Shop platform", description: "Synthetic DataPass 0.16 example: one repository per Git host, CI on each." },
-    modules: { mongoku: false },
     repositories: {
       web: { label: "Web app", remote: { url: DEVOPS_REMOTES.web, branch: "main" }, description: "Front end, built by GitHub Actions" },
       api: { label: "Orders API", remote: { url: DEVOPS_REMOTES.api, branch: "main" }, description: "API, built by Azure Pipelines" },
