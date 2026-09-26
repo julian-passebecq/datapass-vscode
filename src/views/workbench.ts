@@ -83,6 +83,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private gitSource?: () => GitObservation;
   /** 0.20: the work orders of this project. */
   private workOrderSource?: () => WbWorkOrders | undefined;
+  /** 0.22 modes: which Workbench views and markers the current mode shows (all until a mode is attached). */
+  private shows: (surface: string) => boolean = () => true;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
@@ -107,10 +109,19 @@ export class WorkbenchHost implements vscode.Disposable {
       git: this.gitCard(),
       workOrders: this.workOrderSource?.()
     });
+    this.lastState.experience = {
+      hiddenViews: (["options", "sheet", "board", "workOrders"] as const).filter(v => !this.shows(`workbench.${v}`)),
+      alternatives: this.shows("badge.alternatives")
+    };
     return this.lastState;
   }
 
   setGitSource(source: () => GitObservation): void { this.gitSource = source; }
+  /** 0.22 modes: gate the Workbench views and the "alternatives exist" marker; repaint on a mode change. */
+  setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
+    this.shows = shows;
+    this.subs.push(changed(() => void this.post()));
+  }
   /** 0.20: where the Work orders view and the Details timeline read the orders; `changed` repaints every view. */
   setWorkOrderSource(source: () => WbWorkOrders | undefined, changed: vscode.Event<void>): void {
     this.workOrderSource = source;

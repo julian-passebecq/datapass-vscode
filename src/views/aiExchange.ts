@@ -33,7 +33,8 @@ const AGENT_ALLOWED = new Set([
   "datapass.checkForUpdates", "datapass.openPreparationGuide", "workbench.actions.view.problems"
 ]);
 
-export type AiViewState = AiExchangeState & { agent?: AgentTabState; manual?: ManualTabState };
+/** 0.22 modes: `hiddenTabs` are the tabs the current mode does not show (the guided tab always shows). */
+export type AiViewState = AiExchangeState & { agent?: AgentTabState; manual?: ManualTabState; hiddenTabs?: Array<"agent" | "manual"> };
 
 type Reply = (message: Record<string, unknown>) => void | Thenable<boolean>;
 
@@ -51,6 +52,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   private hidden?: { token: string; draft: Partial<Draft> };
   private lastVisible?: Partial<Draft>;
   private pendingPrefill?: Record<string, unknown>;
+  /** 0.22 modes: which tabs the current mode shows (all until a mode is attached). */
+  private shows: (surface: string) => boolean = () => true;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => void this.post()));
@@ -60,6 +63,12 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   attachWorkOrders(service: WorkOrderService, flows: WorkOrderFlows, git: GitObserver): void {
     this.work = { service, flows, git };
     this.subs.push(service.onDidChange(() => void this.post()), git.onDidChange(() => void this.post()));
+  }
+
+  /** 0.22 modes: hide the Agent and Manual tabs the mode does not show; a command that opens one still does. */
+  setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
+    this.shows = shows;
+    this.subs.push(changed(() => void this.post()));
   }
 
   /** Open the Agent tab with a prefilled draft (entry points of §8.9). */
@@ -125,10 +134,11 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
       exchanges: this.session.exchanges()
     });
-    if (!this.work || !base.ready || !c.manifest) return base;
+    const hiddenTabs = (["agent", "manual"] as const).filter(t => !this.shows(`ai.${t}`));
+    if (!this.work || !base.ready || !c.manifest) return { ...base, hiddenTabs };
     const s = aiSettings();
     return {
-      ...base,
+      ...base, hiddenTabs,
       agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope }),
       manual: manualTabState(this.session, this.work.git.observation().needsYou.length)
     };

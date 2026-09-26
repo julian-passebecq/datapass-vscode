@@ -8,6 +8,7 @@ import { SHEET_SCHEMA } from "../project/sheet";
 import { BOARD_SCHEMA } from "../project/board";
 import { WORK_ORDER_RESULT_SCHEMA, WORK_ORDER_SCHEMA, WORK_ORDER_STATE_SCHEMA } from "../workOrders/format";
 import { WORK_LOG_SCHEMA } from "../workOrders/workLog";
+import { EXPERIENCE_SCHEMA } from "../experience/presets";
 import type { Schema } from "./schemaDsl";
 
 const withMeta = (schema: Schema, id: string, title: string) =>
@@ -28,6 +29,7 @@ export function emittedSchemaFiles(): Record<string, unknown> {
   out["schemas/datapass-work-order-state.schema.json"] = withMeta(WORK_ORDER_STATE_SCHEMA, "datapass-work-order-state.schema.json", "DataPass work order state (1)");
   out["schemas/datapass-work-order-result.schema.json"] = withMeta(WORK_ORDER_RESULT_SCHEMA, "datapass-work-order-result.schema.json", "DataPass work order result (1)");
   out["schemas/datapass-work-log.schema.json"] = withMeta(WORK_LOG_SCHEMA, "datapass-work-log.schema.json", "DataPass work log (1)");
+  out["schemas/datapass-experience.schema.json"] = withMeta(EXPERIENCE_SCHEMA, "datapass-experience.schema.json", "DataPass experience presets (1)");
   return out;
 }
 
