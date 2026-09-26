@@ -36,7 +36,7 @@ import {
   COORDINATION_REF, DEFAULT_BRANCH_PREFIX, GUIDE_URL, KIND_LABELS, buildOrder, keyOfRef, oneLine, refOfKey, renderOrderMd, resultFormatMd,
   type OrderMdInfo, type OrderRepositoryInput
 } from "../core/workOrders/builder";
-import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, toolOf, type AgentChoice } from "../core/workOrders/launch";
+import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexAppArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, toolOf, type AgentChoice } from "../core/workOrders/launch";
 import { defaultMergePolicy } from "../core/workOrders/projectType";
 import { WORK_LOG_PATH, mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, serializeWorkLog, workLogEntry, type WorkLog } from "../core/workOrders/workLog";
 import { EXPORT_FORMAT, EXPORT_NOTE, EXPORT_SCOPES, exportEntry, exportText, type ExportScope, type ProjectExport } from "../core/workOrders/export";
@@ -489,7 +489,10 @@ export class WorkOrderFlows {
     if (order.agent.surface === "desktop") {
       await clipboard.writeText(markerLine(order, orderMd));
       const app = order.agent.tool === "claude-code" ? "claude" : "codex";
-      await openExternal(vscode.Uri.parse(APP_URI[app]));
+      // 0.24 (AI-3): with the Codex CLI, `codex app <folder>` opens the folder in the ChatGPT app; else the app is brought to the front.
+      const codex = app === "codex" ? this.executable("codex") : undefined;
+      const opened = codex ? this.runHidden(o, codex, codexAppArgs(ws.cwd), ws.cwd) : false;
+      if (!opened) await openExternal(vscode.Uri.parse(APP_URI[app]));
       await this.recordLaunch(o, { how: "copied", cwd: ws.cwd });
       const steps = desktopSteps(app, ws.cwd);
       const next = await vscode.window.showInformationMessage(`Prompt copied for work order ${shortId(o.id)}. ${steps.join(" ")}`, "Copy the folder path", "Show the order");
@@ -567,8 +570,16 @@ export class WorkOrderFlows {
     return found.script ? { file: found.path, prefix: [], env: {}, cmd: true, display: found.path } : { file: found.path, prefix: [], env: {}, display: found.path };
   }
 
+  /** 0.24: whether a Codex CLI is configured or on an absolute PATH entry (the panel says which Codex route applies). */
+  codexCliFound(): boolean { return !!this.executable("codex"); }
+
+  /** A short helper command (`codex app <folder>`) in a terminal that is not shown; false when it cannot be started safely. */
+  private runHidden(o: LoadedOrder, exe: NonNullable<ReturnType<WorkOrderFlows["executable"]>>, args: string[], cwd: string): boolean {
+    return !!this.terminal(o, exe, args, cwd, true);
+  }
+
   /** A terminal whose process is the agent (arguments as an array); a `.cmd` shim goes through cmd.exe with strict tokens only. */
-  private terminal(o: LoadedOrder, exe: NonNullable<ReturnType<WorkOrderFlows["executable"]>>, args: string[], cwd: string): vscode.Terminal | undefined {
+  private terminal(o: LoadedOrder, exe: NonNullable<ReturnType<WorkOrderFlows["executable"]>>, args: string[], cwd: string, helper = false): vscode.Terminal | undefined {
     const location = aiSettings().terminalLocation === "panel" ? vscode.TerminalLocation.Panel : vscode.TerminalLocation.Editor;
     const env = { ...exe.env, DATAPASS_WORK_ORDER: o.id };
     const name = `DataPass ${shortId(o.id)} · ${o.order!.agent.tool === "claude-code" ? "Claude" : "Codex"}`;
@@ -576,7 +587,7 @@ export class WorkOrderFlows {
       const line = agentCmdLine(exe.file, args);
       const comspec = path.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "cmd.exe");
       if (!line) return undefined;
-      return vscode.window.createTerminal({ name, shellPath: comspec, shellArgs: `/d /s /k ${line}`, cwd, env, location, isTransient: true });
+      return vscode.window.createTerminal({ name, shellPath: comspec, shellArgs: `/d /s ${helper ? "/c" : "/k"} ${line}`, cwd, env, location, isTransient: true });
     }
     return vscode.window.createTerminal({ name, shellPath: exe.file, shellArgs: [...exe.prefix, ...args], cwd, env, location, isTransient: true });
   }

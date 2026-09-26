@@ -142,8 +142,14 @@ export interface WbOrder {
   proposed: string[];
   timeline: Array<{ at?: string; what: string; detail?: string[]; tone?: string }>;
   error?: string;
+  /** 0.24 (AI-3): the conversation Claude Control linked to this order (status, where, tokens); no text of it. */
+  conversation?: { status: string; text: string; tokens?: string; linked: string; openable: boolean; last?: string; others: number };
 }
-export interface WbWorkOrders { allowed: boolean; why: string; typeLine: string; orders: WbOrder[]; selected?: string; open: number; needs: number }
+export interface WbWorkOrders {
+  allowed: boolean; why: string; typeLine: string; orders: WbOrder[]; selected?: string; open: number; needs: number;
+  /** 0.24: whether Claude Control's conversation data is shown (on), unavailable (off) or switched off (disabled). */
+  control?: "on" | "off" | "disabled" | "unknown" | "bad-url";
+}
 
 /** 0.19: what the Workbench overview says about Git (no path, no branch content, only counts and one sentence). */
 export interface WbGit { needsYou: number; repositories: number; checked: number; openPrs: number; failing: number; oldestFetch?: string; top?: string; restricted: boolean }

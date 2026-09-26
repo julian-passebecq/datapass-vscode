@@ -151,6 +151,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     <div><label for="choice">Agent</label><select id="choice"></select></div>
     <div><label for="effort">Effort</label><select id="effort"></select></div>
   </div>
+  <div id="codexnote" class="small muted" hidden></div>
   <label>Repositories <span class="muted">(change: its own branch and PR · read: context only)</span></label>
   <div id="repos"></div>
   <label for="merge">Merge</label>
@@ -391,6 +392,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       $('merge').value = a.defaults.merge;
       if (a.defaults.model) $('model').value = a.defaults.model;
     }
+    codexNote();
     const first = !$('sub').options.length;
     fillSelect('sub', a.subprojects.map(x => ({ id: x.id, label: x.title })), first ? (a.selection.subproject || '') : undefined, 'Whole project');
     if (first && a.selection.component) $('comp').dataset.initial = a.selection.component;
@@ -458,6 +460,18 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   $('woall').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.show', args: [] }));
   $('wopublish').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.publishSummary', args: [] }));
   $('openclaude').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.openApp', args: ['claude'] }));
+  // 0.24 (AI-3): which Codex route applies on this computer.
+  function codexNote() {
+    const a = state && state.agent;
+    const c = $('choice').value;
+    const n = $('codexnote');
+    if (!a || !a.codex || (c !== 'codex-terminal' && c !== 'codex-desktop')) { n.hidden = true; return; }
+    n.hidden = false;
+    n.textContent = c === 'codex-terminal'
+      ? (a.codex.cli ? 'Codex CLI found: it starts in a terminal with the workspace-write sandbox and asks before network actions (git push, gh).' : 'No Codex CLI here (datapass.ai.codex.path or PATH): the launch copies the command for your own terminal. The Codex app works without it.')
+      : (a.codex.cli ? 'DataPass copies the prompt and opens the folder in the ChatGPT app (codex app).' : 'DataPass copies the prompt and opens the ChatGPT app; choose the folder there.');
+  }
+  $('choice').addEventListener('change', codexNote);
   $('opencodex').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.openApp', args: ['codex'] }));
   $('exportjson').addEventListener('click', () => post({ type: 'wo.cmd', command: 'datapass.workOrders.exportProject', args: [] }));
   $('agentfix').addEventListener('click', () => {
@@ -482,7 +496,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     $('comp').value = comps.join(',');
     $('card').value = d.boardCard || '';
     $('dec').value = d.decision || '';
-    if (d.choice) $('choice').value = d.choice;
+    if (d.choice) { $('choice').value = d.choice; codexNote(); }
     if (d.effort) $('effort').value = d.effort;
     if (d.merge) $('merge').value = d.merge;
     $('donewhen').value = (d.doneWhen || []).join('\n');

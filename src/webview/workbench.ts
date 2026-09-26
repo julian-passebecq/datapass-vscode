@@ -1339,11 +1339,18 @@ function woNav(s: WorkbenchState): HTMLElement {
     h("p", { class: "muted small", text: "Orders stay on this computer (.datapass/local/work-orders). The durable record is the branches, the pull requests and the summary you publish. DataPass never merges, deploys or deletes." }));
 }
 
+/** 0.24 (AI-3): the conversation Claude Control linked to an order, or why none is shown. */
+function conversationCell(o: WbOrder, w: NonNullable<WorkbenchState["workOrders"]>): HTMLElement {
+  if (o.conversation) return h("span", { class: o.conversation.status === "needs-you" ? "warn" : "", text: o.conversation.text.replace(/ · (exact session|found by the marker line|moved to the app with \/desktop)$/, ""), title: o.conversation.text });
+  const why = w.control === "on" ? "—" : w.control === "disabled" ? "— (Control switched off)" : w.control === "unknown" ? "—" : "— (Control off)";
+  return h("span", { class: "muted", text: why });
+}
+
 function woCenter(s: WorkbenchState): HTMLElement {
   const w = s.workOrders!;
   const rows = woRows(s);
   const table = h("table", { class: "cmp sheet" },
-    h("thead", {}, h("tr", {}, ...["When", "Order", "Agent", "Output", "Result"].map(t => h("th", { text: t })))),
+    h("thead", {}, h("tr", {}, ...["When", "Order", "Agent", "Conversation", "Output", "Result", "Tokens"].map(t => h("th", { text: t })))),
     h("tbody", {}, ...rows.map(o => h("tr", {
       class: `clickrow${w.selected === o.id ? " focus" : ""}`, tabindex: "0", title: `${o.id}\nClick: its timeline in Details, its components in the diagram`,
       onclick: () => command("datapass.workOrders.select", o.id),
@@ -1352,9 +1359,11 @@ function woCenter(s: WorkbenchState): HTMLElement {
       h("td", { class: "muted small", text: o.createdAt ? o.createdAt.slice(5, 16).replace("T", " ") : "" }),
       h("td", {}, h("div", {}, pill(o.status, ORDER_TONE[o.status] ?? "muted"), " ", h("b", { text: `${o.short} ${o.title}` })), h("div", { class: "muted small", text: o.error ?? o.scope })),
       h("td", { class: "small", text: o.agent }),
+      h("td", { class: "small" }, conversationCell(o, w)),
       h("td", {}, ...(o.outputs.length ? o.outputs.map(x => h("div", { class: `small ${x.ci === "failing" ? "bad" : ""}`, text: x.text })) : [h("span", { class: "muted small", text: o.kind === "investigate" ? "no pull request (a report)" : "no pull request (files to import)" })])),
       h("td", { class: "small" }, o.result.state === "valid" ? h("span", { text: `${o.result.status} (the agent says)${o.result.questions.length ? ` · ${o.result.questions.length} ?` : ""}` })
-        : o.result.state === "refused" ? h("span", { class: "bad", text: "refused" }) : h("span", { class: "muted", text: "—" }))))));
+        : o.result.state === "refused" ? h("span", { class: "bad", text: "refused" }) : h("span", { class: "muted", text: "—" })),
+      h("td", { class: "small money", text: o.conversation?.tokens ?? "—", title: o.conversation?.tokens ? "Tokens of the conversation (Claude Control)" : "Unknown without Claude Control" })))));
   const needs = w.orders.filter(o => !o.closed && o.needs.length).map(o => `${o.short}: ${o.needs[0]}`);
   return h("main", { class: "center" },
     h("div", { class: "breadcrumb", text: `${s.project?.title ?? "Project"} / Work orders` }),
@@ -1378,6 +1387,11 @@ function orderDetail(o: WbOrder, s: WorkbenchState, inWorkbench: boolean): HTMLE
     h("div", { class: `next` }, h("b", { text: "Next: " }), h("span", { text: o.next })),
     o.outputs.length ? h("section", {}, eyebrow("Pull requests (checked by DataPass)"), ...o.outputs.map(x => h("div", { class: "envrow" },
       h("span", { text: x.text }), x.url ? btn("Open", () => command("datapass.workOrders.openPr", o.id, x.ref), { kind: "link", icon: "↗" }) : pill(x.state === "no-pr" ? "no PR" : x.state, OUT_TONE[x.state] ?? "muted")))) : undefined,
+    o.conversation ? h("section", {}, eyebrow("Conversation (Claude Control)"),
+      h("div", { class: "envrow" }, h("span", { class: "small", text: o.conversation.text }),
+        o.conversation.openable ? btn("Open in Claude", () => command("datapass.control.openConversation", o.id), { kind: "link", icon: "↗" }) : undefined),
+      h("div", { class: "muted small", text: [o.conversation.tokens ? `${o.conversation.tokens} tokens` : "", o.conversation.last ? `last activity ${o.conversation.last.slice(5, 16).replace("T", " ")}` : "", o.conversation.others ? `${o.conversation.others} more conversation${o.conversation.others > 1 ? "s" : ""} from this order` : ""].filter(Boolean).join(" · ") || "No token count yet" }))
+      : s.workOrders?.control === "off" && o.status !== "written" && o.status !== "draft" ? h("p", { class: "muted small", text: "Claude Control is off: conversation status and tokens are hidden. The result and pull requests still arrive." }) : undefined,
     o.result.state === "valid" && (o.result.questions.length || o.result.followUps.length) ? h("section", {}, eyebrow("The agent asks / proposes"),
       ...o.result.questions.map(q => h("div", { class: "small", text: `? ${q}` })),
       ...o.result.followUps.map((f, i) => h("div", { class: "envrow" }, h("span", { class: "small", text: `→ ${f.title}` }), btn("Follow-up order", () => command("datapass.workOrders.followUp", o.id, i), { kind: "link" })))) : undefined,

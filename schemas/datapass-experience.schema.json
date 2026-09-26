@@ -80,10 +80,11 @@
                 "badge.codingState",
                 "workbench.toolkit",
                 "project.toolkit",
-                "badge.hubChanged"
+                "badge.hubChanged",
+                "view.agentPanel"
               ]
             },
-            "maxItems": 29,
+            "maxItems": 30,
             "minItems": 0
           }
         },

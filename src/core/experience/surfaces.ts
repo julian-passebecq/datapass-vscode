@@ -49,7 +49,9 @@ export const SURFACES: readonly Surface[] = [
   // 0.23: the toolkit catalogue.
   { id: "workbench.toolkit", kind: "workbenchView", label: "Workbench: Toolkit", detail: "Tools with their free tier and prices, recipes, what needs a newer DataPass" },
   { id: "project.toolkit", kind: "projectSection", label: "Project tree: Toolkit", detail: "Hub toolkit files read, entries skipped, Needs a newer DataPass" },
-  { id: "badge.hubChanged", kind: "badge", label: "\"Changed by the hub\" on catalogue entries", detail: "Marks built-in tools a hub toolkit file changed" }
+  { id: "badge.hubChanged", kind: "badge", label: "\"Changed by the hub\" on catalogue entries", detail: "Marks built-in tools a hub toolkit file changed" },
+  // 0.24 (pass AI-3): the Claude & Codex panel.
+  { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

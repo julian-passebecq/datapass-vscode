@@ -46,6 +46,8 @@ export interface AgentTabState {
   selection: { subproject?: string; component?: string };
   recent: AgentRecent[];
   counts: { total: number; open: number; needs: number };
+  /** 0.24 (AI-3): a Codex CLI is configured or on PATH (terminal launch, `codex app <folder>`). */
+  codex?: { cli: boolean };
 }
 
 export interface ManualTabState {
@@ -56,7 +58,7 @@ export interface ManualTabState {
   behind: number;
 }
 
-export function agentTabState(session: WorkSession, service: WorkOrderService, settings: { choice: AgentChoice; effort: Effort; model?: string; exportScope: ExportScope }): AgentTabState {
+export function agentTabState(session: WorkSession, service: WorkOrderService, settings: { choice: AgentChoice; effort: Effort; model?: string; exportScope: ExportScope; codexCli?: boolean }): AgentTabState {
   const map = session.projectMap();
   const ctx = session.project;
   const verdict = service.verdict();
@@ -94,6 +96,7 @@ export function agentTabState(session: WorkSession, service: WorkOrderService, s
     coordinationKey: map.coordinationKey,
     selection: session.selection(),
     recent,
+    codex: settings.codexCli === undefined ? undefined : { cli: settings.codexCli },
     counts: { total: list.length, open: list.filter(o => o.state && o.state.status !== "done" && o.state.status !== "abandoned").length, needs: list.reduce((n, o) => n + (o.summary?.needs.length ?? 0), 0) }
   };
 }

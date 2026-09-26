@@ -139,7 +139,7 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
     const s = aiSettings();
     return {
       ...base, hiddenTabs,
-      agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope }),
+      agent: agentTabState(this.session, this.work.service, { choice: s.choice, effort: s.effort, model: s.model, exportScope: s.exportScope, codexCli: this.work.flows.codexCliFound() }),
       manual: manualTabState(this.session, this.work.git.observation().needsYou.length)
     };
   }

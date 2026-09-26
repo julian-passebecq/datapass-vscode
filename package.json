@@ -19,6 +19,7 @@
     "onView:datapass.galaxy",
     "onView:datapass.architecture",
     "onView:datapass.details",
+    "onView:datapass.agentPanel",
     "onView:datapass.aiExchange",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
@@ -825,6 +826,19 @@
       {
         "command": "datapass.experience.resetOverrides",
         "title": "DataPass: Reset Mode Customization"
+      },
+      {
+        "command": "datapass.control.refresh",
+        "title": "DataPass: Refresh Claude Control Status",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "datapass.control.copyStartCommand",
+        "title": "DataPass: Copy the Claude Control Start Command"
+      },
+      {
+        "command": "datapass.control.openConversation",
+        "title": "DataPass: Open a Work Order's Conversation in Claude"
       }
     ],
     "viewsContainers": {
@@ -894,6 +908,14 @@
           "type": "webview",
           "initialSize": 3,
           "when": "!datapass.hidden.view.aiExchange"
+        },
+        {
+          "id": "datapass.agentPanel",
+          "name": "Claude & Codex",
+          "type": "webview",
+          "visibility": "collapsed",
+          "initialSize": 1,
+          "when": "!datapass.hidden.view.agentPanel"
         },
         {
           "id": "datapass.details",
@@ -1265,6 +1287,11 @@
           "command": "datapass.experience.switchMode",
           "when": "view == datapass.git || view == datapass.project",
           "group": "9_mode@1"
+        },
+        {
+          "command": "datapass.control.refresh",
+          "when": "view == datapass.agentPanel",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -1672,6 +1699,10 @@
         {
           "command": "datapass.checks.copyBundleValidate",
           "when": "false"
+        },
+        {
+          "command": "datapass.control.openConversation",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -1947,6 +1978,71 @@
           "scope": "machine",
           "markdownDescription": "Absolute folder of a **private** Git clone that collects every project's work-order summary (`work-logs/<project id>.json`) when you *Publish summary*. Never this public repository or a repository of the project; on GitHub, `gh` must say it is private (else DataPass asks). DataPass writes the file; you commit and push."
         },
+        "datapass.ai.quickLinks": {
+          "type": "array",
+          "default": [
+            {
+              "label": "ChatGPT",
+              "url": "https://chatgpt.com/"
+            },
+            {
+              "label": "Claude",
+              "url": "https://claude.ai/"
+            },
+            {
+              "label": "Claude Code web",
+              "url": "https://claude.ai/code"
+            },
+            {
+              "label": "Codex",
+              "url": "https://chatgpt.com/codex"
+            },
+            {
+              "label": "Control",
+              "url": "http://127.0.0.1:7430/"
+            }
+          ],
+          "maxItems": 12,
+          "items": {
+            "type": "object",
+            "required": [
+              "label",
+              "url"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "label": {
+                "type": "string",
+                "maxLength": 40
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 500
+              }
+            }
+          },
+          "scope": "application",
+          "markdownDescription": "Links at the top of the **Claude & Codex** panel (0.24). Only `https:` pages, `claude:` links (the Claude app) and `http://` on 127.0.0.1 or localhost open; others are left out with a note. Yours, never the project's."
+        },
+        "datapass.control.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "markdownDescription": "Read **Claude Control** (your local dashboard) for the Claude & Codex panel and the Work orders view: conversation status, tokens, plan usage, *À faire par toi*. Off = DataPass sends no request to Control at all. Nothing is ever sent to Control; DataPass only reads."
+        },
+        "datapass.control.url": {
+          "type": "string",
+          "default": "http://127.0.0.1:7430",
+          "scope": "machine",
+          "pattern": "^http://(127\\.0\\.0\\.1|localhost):\\d{2,5}/?$",
+          "description": "Claude Control's address. Loopback only (http://127.0.0.1:<port> or http://localhost:<port>); any other address is refused. Machine-level: a workspace can never point DataPass elsewhere."
+        },
+        "datapass.control.folder": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "description": "Absolute folder of your claude-control repository, used only to build the start command DataPass copies when Control is off (python server/server.py). DataPass never starts Control itself."
+        },
         "datapass.checks.onSave": {
           "type": "boolean",
           "default": true,
@@ -2112,6 +2208,10 @@
             "badge.hubChanged": {
               "type": "boolean",
               "description": "\"Changed by the hub\" on catalogue entries: Marks built-in tools a hub toolkit file changed"
+            },
+            "view.agentPanel": {
+              "type": "boolean",
+              "description": "Claude & Codex panel: Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
