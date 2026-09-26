@@ -11,7 +11,7 @@ import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, W
 import type { CardView } from "../core/project/board";
 import type { WbTool } from "../views/toolkitState";
 import type { RecipeRouteView, RecipeView } from "../core/toolkit/toolkit";
-import { formatAmounts, formatCostLine, formatCostTotal, partialLabel, sumCostLines, type CostTotal } from "../core/project/costs";
+import { costFlags, formatAmounts, formatCostLine, formatCostTotal, partialLabel, sumCostLines, type CostTotal } from "../core/project/costs";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
@@ -150,7 +150,7 @@ const ago = (iso?: string) => {
 };
 // 0.22 (F01, F08): one aggregation everywhere; amounts per currency, "partial" when a part has no figure.
 const money = (amounts: Record<string, number>, suffix: string) => formatAmounts(amounts, suffix);
-const withPartial = (text: string, t: CostTotal) => [text, partialLabel(t)].filter(Boolean).join(" · ");
+const withPartial = (text: string, t: CostTotal) => [text, partialLabel(t), ...costFlags(t)].filter(Boolean).join(" · ");
 
 function toggle(key: string) {
   ui.collapsed[key] = !ui.collapsed[key];
@@ -706,6 +706,7 @@ function readinessCard(r: WbReadiness): HTMLElement {
         : btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
     r.tools ? toolsBlock(r.tools) : undefined,
     r.connections.length ? connectionsBlock(r.connections) : undefined,
+    r.evidence?.length ? evidenceBlock(r.evidence) : undefined,
     h("div", { class: "row" },
       btn("Copy project ID", () => command("datapass.copyProjectId"), { icon: "⧉" }),
       btn("Open Power Ops", () => command("datapass.openPowerOps"), { icon: "⚿", title: "Secrets live in your local vault; DataPass never reads their values" }),
@@ -749,6 +750,21 @@ function connectionsBlock(list: WbReadiness["connections"]): HTMLElement {
         : undefined)));
 }
 
+const LINK_MARK: Record<string, string> = { yes: "✓", no: "✗", unknown: "?", "not-applicable": "–" };
+
+/** D-22: known → installed → registered → connected → signed in → authorized → verified; unknown unless observed. */
+function evidenceBlock(list: WbReadiness["evidence"]): HTMLElement {
+  return h("details", { class: "envsub", "aria-label": "Integration evidence" },
+    h("summary", {}, h("b", { text: "Integration evidence" }), " ",
+      h("span", { class: "muted small", text: "what DataPass observed for each CLI and MCP server; a registration file is not a connection" })),
+    ...list.map(e => h("div", { class: "envrow evidence" },
+      h("span", { text: e.label }), pill(e.summary, e.tone, e.links.map(l => l.text).join("\n")),
+      h("span", { class: "chain muted small" }, ...e.links.map(l => h("span", {
+        class: `link ${l.state === "observed" ? (l.holds ? "ok" : "warn") : "muted"}`, title: l.text,
+        text: `${LINK_MARK[l.state === "observed" ? (l.holds ? "yes" : "no") : l.state]} ${l.name}`
+      }))))));
+}
+
 function detailColumn(s: WorkbenchState, withFiles: boolean): HTMLElement {
   // 0.20: a selected work order shows its timeline until something else is selected.
   const order = s.workOrders?.selected ? s.workOrders.orders.find(o => o.id === s.workOrders!.selected) : undefined;
@@ -784,7 +800,7 @@ function impactCell(i: WbImpact, what: "components" | "tools" | "missing" | "sup
     case "repos":
       return h("div", { class: "small", text: [i.repositories.newlyUsed.length ? `new: ${i.repositories.newlyUsed.join(", ")}` : "", i.repositories.planned.length ? `planned: ${i.repositories.planned.join(", ")}` : ""].filter(Boolean).join(" · ") || `${i.repositories.used.length} used` });
     case "monthly":
-      return h("div", { class: `small money ${partialLabel(i.costs.total) ? "warn" : ""}`, text: withPartial(money(i.costs.monthly, "/month"), i.costs.total) || "not priced", title: i.costs.missing.length ? `Not fully priced: ${i.costs.missing.join(", ")} (unknown, not zero)` : "Sum of the monthly figures declared in options.json, per currency" });
+      return h("div", { class: `small money ${partialLabel(i.costs.total) || costFlags(i.costs.total).length ? "warn" : ""}`, text: withPartial(money(i.costs.monthly, "/month"), i.costs.total) || "not priced", title: i.costs.missing.length ? `Not fully priced: ${i.costs.missing.join(", ")} (unknown, not zero)` : "Sum of the monthly figures declared in options.json, per currency" });
     case "oneTime":
       return h("div", { class: "small money", text: withPartial(money(i.costs.oneTime, ""), i.costs.total) || "not priced" });
     case "problems":
@@ -875,7 +891,7 @@ function decisionTable(s: WorkbenchState, d: WbDecision): HTMLElement {
   const declaredCost = (x: WbOption) => formatCostTotal(sumCostLines(x.costs, o.currency), { once: " once" });
   const table = h("table", { class: "cmp" }, h("thead", {}, head), h("tbody", {},
     ...declared,
-    h("tr", {}, h("th", { text: "Declared cost of this choice" }), ...opts.map(x => h("td", { class: "small money", text: declaredCost(x) }))),
+    h("tr", {}, h("th", { text: "Declared cost of this choice" }), ...opts.map(x => h("td", { class: `small money ${x.costs.some(c => c.use === "learning-only") ? "warn" : ""}`, text: declaredCost(x) }))),
     h("tr", { class: "sep" }, h("th", { colspan: String(opts.length + 1), text: "Consequences computed by DataPass (whole project, other decisions current)" })),
     row("Components", "components"),
     row("New official tools", "tools"),

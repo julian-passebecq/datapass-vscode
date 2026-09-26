@@ -14,6 +14,7 @@ import type { WbToolkit } from "./toolkitState";
 import { toolStateText } from "../core/toolchain/toolchain";
 import { extensionsJsonText } from "../core/toolchain/extensionsJson";
 import { CONNECTION_STATE_TEXT } from "../core/toolchain/connections";
+import { LINK_LABELS, linkText } from "../core/evidence/chain";
 import type { ArchitectureImpact, CriterionValue, DerivedArchitecture, OptionsAnalysis, OptionsFile } from "../core/project/options";
 import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../core/project/sheet";
 import type { BoardView } from "../core/project/board";
@@ -69,6 +70,8 @@ export interface WbReadiness {
   /** 0.18 (manifest v5): names, versions and states only; install commands carry no project value. */
   tools?: { entries: Array<{ tool: string; label: string; state: string; stateText: string; detail: string; optional: boolean; extensionId?: string; install?: "command" | "docs" }>; summary: { ok: number; attention: number; notChecked: number; total: number }; extensionsText: string; extensionsAttention: boolean };
   connections: Array<{ id: string; label: string; kind: string; environment?: string; state: string; stateText: string; detail: string; nextStep?: string; signIn: boolean; hasPortal: boolean; tool?: string }>;
+  /** D-22: each integration's evidence chain; every link says observed (source, time) or unknown (why). */
+  evidence: Array<{ id: string; label: string; kind: string; summary: string; tone: string; links: Array<{ link: string; name: string; state: string; holds?: boolean; text: string }> }>;
   checks: Array<{ severity: string; area: string; message: string; nextStep?: string }>;
   summary: Readiness["summary"];
 }
@@ -168,6 +171,8 @@ export function wbReadiness(r: Readiness): WbReadiness {
       extensionsAttention: r.extensions.state === "invalid" || r.extensions.expected.some(x => (!x.recommended && !x.optional) || x.unwanted)
     } : undefined,
     connections: r.connections.map(c => ({ id: c.id, label: c.label, kind: c.kind, environment: c.environment, state: c.state, stateText: CONNECTION_STATE_TEXT[c.state], detail: c.detail, nextStep: c.nextStep, signIn: Boolean(c.signIn), hasPortal: Boolean(c.hasPortal), tool: c.tool })),
+    evidence: r.evidence.map(e => ({ id: e.id, label: e.label, kind: e.kind, summary: e.summary, tone: e.tone,
+      links: e.chain.map(l => ({ link: l.link, name: LINK_LABELS[l.link].name, state: l.state, ...(l.state === "observed" ? { holds: l.holds } : {}), text: linkText(l) })) })),
     checks: r.checks.slice(0, 30).map(c => ({ severity: c.severity, area: c.area, message: c.message, nextStep: c.nextStep })),
     summary: r.summary
   };
@@ -190,7 +195,7 @@ export interface WbImpact {
   costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[]; total: CostTotal };
   problems: Array<{ severity: string; message: string }>;
 }
-export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string }
+export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string; shared?: string; use?: "any" | "learning-only" }
 export interface WbOption {
   id: string; label: string; summary?: string; current: boolean; chosen: boolean; rejected: boolean; note?: string;
   values: Record<string, { text: string; score?: number; note?: string }>;

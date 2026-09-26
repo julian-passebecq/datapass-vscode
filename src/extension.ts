@@ -39,6 +39,8 @@ import { GitTreeProvider } from "./views/gitTree";
 import { registerGitCommands } from "./work/gitCommands";
 import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
+import { PilotService, type PilotCard } from "./work/pilot";
+import { registerPilotCommands } from "./work/pilotCommands";
 import { ControlService, type ControlSnapshot } from "./work/controlService";
 import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
 import type { AgentPanelState } from "./views/agentPanelState";
@@ -127,6 +129,15 @@ export interface DataPassTestApi {
     aiState(): Promise<AiViewState>;
     lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined;
     selected(): string | undefined;
+  };
+  /** 0.26 (AI-4a): pilot requests as cards; Run it with a stub action runner (tests never open real tools). */
+  pilot: {
+    cards(): readonly PilotCard[];
+    reload(): Promise<readonly PilotCard[]>;
+    run(orderId: string, n: number, ran: string[]): Promise<void>;
+    decline(orderId: string, n: number): Promise<void>;
+    /** One message as the AI view's webview would send it; the replies it got. */
+    aiSend(message: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
   };
   /** 0.24: Claude Control as DataPass read it, a refresh, and the Claude & Codex panel's state. */
   control: {
@@ -243,6 +254,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       workOrders.refreshGit(Boolean(id));
     });
   void workOrders.reload();
+  // 0.26 (AI-4a): pilot stage 1 — requests/<n>.json as Pilot cards in the AI view.
+  const pilot = new PilotService(session, workOrders);
+  context.subscriptions.push(pilot);
+  aiExchange.attachPilot(pilot);
+  registerPilotCommands(context, pilot, () => aiExchange.showTab("pilot"));
 
   // 0.24 (pass AI-3): the Claude & Codex panel and Claude Control's data in the Work orders view (read only while someone looks).
   const control = new ControlService(session);
@@ -448,6 +464,13 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       aiState: () => aiExchange.state(),
       lastPrefill: () => aiExchange.lastPrefill(),
       selected: () => workOrders.selected()?.id
+    },
+    pilot: {
+      cards: () => pilot.list(),
+      reload: async () => { await pilot.reload(); return pilot.list(); },
+      run: (orderId, n, ran) => pilot.run(orderId, n, async id => { ran.push(id); }),
+      decline: (orderId, n) => pilot.decline(orderId, n),
+      aiSend: async message => { const replies: Array<Record<string, unknown>> = []; await aiExchange.handle(message, r => { replies.push(r); }); return replies; }
     },
     git: {
       observation: () => git.observation(),

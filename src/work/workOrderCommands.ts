@@ -33,7 +33,7 @@ import {
   type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type WorkOrder
 } from "../core/workOrders/format";
 import {
-  COORDINATION_REF, DEFAULT_BRANCH_PREFIX, GUIDE_URL, KIND_LABELS, buildOrder, keyOfRef, oneLine, refOfKey, renderOrderMd, resultFormatMd,
+  COORDINATION_REF, DEFAULT_BRANCH_PREFIX, GUIDE_URL, KIND_LABELS, buildOrder, keyOfRef, oneLine, pilotRequestFormatMd, refOfKey, renderOrderMd, resultFormatMd,
   type OrderMdInfo, type OrderRepositoryInput
 } from "../core/workOrders/builder";
 import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexAppArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, toolOf, type AgentChoice } from "../core/workOrders/launch";
@@ -49,6 +49,9 @@ import { activeVariantHeader } from "./activeVariantCommands";
 import type { GitObserver } from "./gitObserver";
 import { machineSetting, orderDigest, type LoadedOrder, type WorkOrderService } from "./workOrders";
 import { importAnswer, importContext, writeProjectFile } from "./optionsCommands";
+import { pilotArgs, pilotRefusals, pilotWorkspace } from "../core/pilot/profile";
+import { PILOT_CLIS } from "../core/pilot/rules";
+import { codexAppQualified, guardRailsMatch, pilotEnabled, projectEnvironments, writeGuardRails } from "./pilot";
 import { UserFacingError, confirmModal, errorMessage, guarded, jsonBytes, readBounded, report, requireRoot } from "./io";
 
 // ------------------------------------------------------------------ drafts
@@ -226,6 +229,9 @@ export class WorkOrderFlows {
 
     // Repositories: the draft's choice over the defaults; planned or not-cloned ones cannot be changed.
     const access = { ...defaultAccess(this.session, draft), ...(draft.repos ?? {}) };
+    // 0.26 (AI-4a): a pilot order reads every repository it names; it changes none.
+    const pilot = draft.kind === "pilot-read";
+    if (pilot) for (const k of Object.keys(access)) if (access[k] === "change") access[k] = "read";
     const plan: RepoPlanEntry[] = [];
     for (const [key, a] of Object.entries(access)) {
       if (a === "skip") continue;
@@ -361,11 +367,17 @@ export class WorkOrderFlows {
         doneWhen: draft.doneWhen ?? []
       },
       merge: draft.merge ?? defaultMergePolicy(type),
-      agent: { tool: agent.tool, surface: agent.surface, model: draft.model ?? settings.model, effort: draft.effort ?? settings.effort, permissions: draft.permissions ?? "usual" },
+      agent: { tool: agent.tool, surface: agent.surface, model: draft.model ?? settings.model, effort: draft.effort ?? settings.effort, permissions: pilot ? "ask" : draft.permissions ?? "usual" },
+      ...(pilot ? { pilot: { environment: "dev", clis: [...PILOT_CLIS] } } : {}),
       folderFor, pathJoin: (...p) => path.join(...p),
       links: { followsUp: draft.followsUp ?? null, revises: draft.revises ?? null }
     });
     attach("attachments/result-format.md", resultFormatMd(order));
+    if (pilot) {
+      const example = map.components.find(c => comps.includes(c.id)) ?? map.components[0];
+      attach("attachments/pilot-request-format.md", pilotRequestFormatMd(order, { capability: "generic.files.open", component: example?.id ?? "component-id" }));
+      order.context.attachments = [...new Set([...order.context.attachments, "attachments/pilot-request-format.md"])].slice(0, 40);
+    }
     const folder = vscode.Uri.file(folderFor(order.id));
     const coordRef = refOfKey(map.coordinationKey, map.coordinationKey, manifestKeys);
     const md = renderOrderMd(order, {
@@ -386,6 +398,10 @@ export class WorkOrderFlows {
   async write(draft: Draft): Promise<LoadedOrder> {
     const verdict = this.service.verdict();
     if (!verdict.allowed) throw new UserFacingError(verdict.why);
+    if (draft.kind === "pilot-read") {
+      if (!pilotEnabled()) throw new UserFacingError("Pilot mode is off on this computer (setting datapass.pilot.enabled).");
+      if (draft.choice === "codex-desktop" && !codexAppQualified()) throw new UserFacingError("The Codex app is not qualified for pilot orders on this computer yet: use Codex in a terminal, or Claude.");
+    }
     const p = await this.prepare(draft);
     for (const f of p.files) {
       const target = vscode.Uri.joinPath(p.folder, ...f.rel.split("/"));
@@ -394,6 +410,7 @@ export class WorkOrderFlows {
     }
     await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(p.folder, "order.json"), jsonBytes(p.order));
     await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(p.folder, "order.md"), new TextEncoder().encode(p.md));
+    if (p.order.kind === "pilot-read") await writeGuardRails(p.folder, p.order);
     // .datapass/local ignores itself (the same rule as backups and the exchange history).
     const ignore = vscode.Uri.joinPath(requireRoot(this.session.root), ...LOCAL_DIR.split("/"), ".gitignore");
     if (!(await readOptional(ignore))) await vscode.workspace.fs.writeFile(ignore, new TextEncoder().encode("# DataPass private session data. Never committed.\n*\n"));
@@ -436,6 +453,7 @@ export class WorkOrderFlows {
     if (!verdict.allowed) throw new UserFacingError(verdict.why);
     if (o.state?.status === "done" || o.state?.status === "abandoned") throw new UserFacingError(`Work order ${shortId(o.id)} is closed (${o.state.status}). Write a follow-up order instead.`);
     await this.requireOwn(o);
+    if (order.kind === "pilot-read") return this.launchPilot(o);
     const map = this.session.projectMap();
     const choice = choiceOf(order.agent.tool, order.agent.surface);
     // Clones: every repository must be the clone DataPass resolves for the project, with the declared origin.
@@ -516,6 +534,63 @@ export class WorkOrderFlows {
     }
     terminal.show();
     await this.recordLaunch(o, { how: "launched", cwd: ws.cwd });
+  }
+
+  /**
+   * 0.26 (AI-4a): a pilot order starts in its own folder, where DataPass wrote the guard rails.
+   * Every refusal of the decision is checked just before the modal (the guard-rail files are re-read).
+   */
+  private async launchPilot(o: LoadedOrder): Promise<void> {
+    const order = o.order!;
+    await this.checkClones(order);
+    const folder = o.folder.fsPath;
+    const orderMd = path.join(folder, "order.md");
+    const args = pilotArgs(order, orderMd, folder, (...p) => path.join(...p));
+    const refusals = pilotRefusals({
+      order, enabled: pilotEnabled(), trusted: vscode.workspace.isTrusted, codexAppQualified: codexAppQualified(),
+      guardRailsMatch: await guardRailsMatch(o.folder, order), args, environments: projectEnvironments(this.session)
+    });
+    if (refusals.length) throw new UserFacingError(`Pilot order ${shortId(o.id)} is not launched: ${refusals.map(r => r.message).join(" ")}`);
+    const ws = pilotWorkspace(order, folder);
+    const choice = choiceOf(order.agent.tool, order.agent.surface);
+    const exe = order.agent.surface === "terminal" ? this.executable(order.agent.tool) : undefined;
+    const cli = order.agent.tool === "claude-code" ? "claude" : "codex";
+    if (order.agent.surface === "terminal" && !exe) {
+      await clipboard.writeText(copyableCommand(cli, args!, folder, process.platform));
+      throw new UserFacingError(`${cli} was not found (absolute PATH entries or datapass.ai.${cli}.path). The command was copied instead.`);
+    }
+    const detail = [
+      `Pilot, stage 1, read-only, ${order.pilot!.environment} only. The agent works in the order's folder, where DataPass wrote its guard rails (.claude/settings.json, .codex/…), and reads ${ws.addDirs.map(d => path.basename(d)).join(", ") || "no repository"}.`,
+      `It may run read-only ${order.pilot!.clis.join(" and ")} commands with your current sign-in; anything else asks you first. Your cloud role (Reader) is the real safety net.`,
+      "It changes no repository and opens no pull request. It asks DataPass for VS Code actions as Pilot cards: you click Run it or Not now.",
+      order.agent.surface === "desktop" ? `DataPass copies the prompt and opens the Claude app: choose the order's folder, ${folder}.` : `It runs in a new terminal in ${folder}.`
+    ].join("\n");
+    const primary = order.agent.surface === "desktop" ? "Copy the prompt and open the app" : "Launch";
+    const buttons = order.agent.surface === "terminal" ? [primary, "Copy the command instead"] : [primary];
+    const pick = await vscode.window.showWarningMessage(`Launch ${CHOICE_LABELS[choice]} for the pilot order "${order.title}"?`, { modal: true, detail }, ...buttons);
+    if (!pick) return;
+    if (order.agent.surface === "desktop") {
+      await clipboard.writeText(markerLine(order, orderMd));
+      await openExternal(vscode.Uri.parse(APP_URI.claude));
+      await this.recordLaunch(o, { how: "copied", cwd: folder });
+      const next = await vscode.window.showInformationMessage(`Prompt copied for pilot order ${shortId(o.id)}. ${desktopSteps("claude", folder).join(" ")}`, "Copy the folder path");
+      if (next === "Copy the folder path") await clipboard.writeText(folder);
+      return;
+    }
+    if (!exe || !args) return;
+    if (pick === "Copy the command instead") {
+      await clipboard.writeText(copyableCommand(exe.display, args, folder, process.platform));
+      await this.recordLaunch(o, { how: "copied", cwd: folder });
+      void vscode.window.showInformationMessage("Command copied. Paste it into your own terminal.");
+      return;
+    }
+    const terminal = this.terminal(o, exe, args, folder);
+    if (!terminal) {
+      await clipboard.writeText(copyableCommand(exe.display, args, folder, process.platform));
+      throw new UserFacingError("A path or name holds characters cmd.exe could interpret, so DataPass did not start it. The command was copied: paste it into your own terminal.");
+    }
+    terminal.show();
+    await this.recordLaunch(o, { how: "launched", cwd: folder });
   }
 
   private async recordLaunch(o: LoadedOrder, l: { how: "launched" | "copied"; cwd: string }): Promise<void> {

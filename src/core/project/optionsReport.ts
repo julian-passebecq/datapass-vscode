@@ -118,7 +118,8 @@ export function optionsMarkdown(input: OptionsReportInput): { text: string; byte
       "- Never put secrets, keys, tokens, connection strings or local paths in any file or in your answer.",
       "- Do not claim anything is deployed, tested or working; say which check I run in which official tool.",
       "- A price is an order of magnitude with its official source and the date you read it, in its own currency (never converted). A cost you do not know stays without a figure: never 0.",
-      "- DataPass adds costs per currency and marks a total \"partial\" when a decision or line has no figure; do not read a partial total as the full cost.");
+      "- DataPass adds costs per currency and marks a total \"partial\" when a decision or line has no figure; do not read a partial total as the full cost.",
+      "- A cost line with `shared` is a share of one resource used by several options: DataPass counts the same key once per scenario and says \"figures disagree\" when lines with that key differ. `use: \"learning-only\"` marks an offer not usable for client work.");
     if (input.guideUrl) lines.push(`- DataPass formats: ${input.guideUrl}`);
   }
   let text = scrub(lines.join("\n")) + "\n";

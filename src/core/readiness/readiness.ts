@@ -30,6 +30,8 @@ import type { ToolObservation } from "../capabilities/tools";
 import { buildToolchain, toolStateText, validateToolchain, type ToolchainTool, type ToolchainView } from "../toolchain/toolchain";
 import { compareExtensionsJson, extensionsJsonText, EXTENSIONS_JSON, type ExtensionsJsonObservation, type ExtensionsJsonView } from "../toolchain/extensionsJson";
 import { buildConnections, CONNECTION_STATE_TEXT, validateConnections, type ConnectionProbe, type ConnectionView } from "../toolchain/connections";
+import { buildIntegrationEvidence, type IntegrationEvidence } from "../evidence/integrations";
+import { linkText } from "../evidence/chain";
 
 export const MAX_ENV_FILES = 10;
 export const MAX_REQUIRED_KEYS = 100;
@@ -233,6 +235,8 @@ export interface Readiness {
   extensions: ExtensionsJsonView;
   /** v5: declared sign-ins and bindings with their state (names and states only). */
   connections: ConnectionView[];
+  /** D-22: the evidence chain of each CLI and MCP server (known → … → operation verified), unknown by default. */
+  evidence: IntegrationEvidence[];
   checks: ReadinessCheck[];
   summary: { keysSet: number; keysTotal: number; filesFound: number; filesRequired: number; errors: number; warnings: number; infos: number };
 }
@@ -359,6 +363,9 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     if (c.folderState === "missing") add({ id: `connection.folder:${c.id}`, severity: "info", area: "connection", message: `${c.label}: the bound folder is not in the local clone.` });
   }
 
+  // D-22: what is observed of each integration, link by link (never inferred from another link).
+  const evidence = buildIntegrationEvidence({ tools, connectionProbes: input.connectionProbes, connections });
+
   // Manifest consistency.
   if (m && m.schemaVersion < input.latestSchemaVersion) add({ id: "manifest.version", severity: "info", area: "manifest", message: `The manifest is schemaVersion ${m.schemaVersion}; v${input.latestSchemaVersion} can declare ${m.schemaVersion < 4 ? "env files, variable names, non-secret ids, " : ""}the tools and versions the project needs, ids per environment and connections.`, nextStep: "Run \"DataPass: Upgrade Project Manifest\" (a backup copy is kept)." });
   if (m && m.schemaVersion >= 4 && !decl) add({ id: "manifest.localEnv", severity: "info", area: "manifest", message: "No localEnv declared: DataPass cannot tell which env files and variables this project needs." });
@@ -397,7 +404,7 @@ export function buildReadiness(input: ReadinessInput): Readiness {
   const rank: Record<CheckSeverity, number> = { error: 0, warning: 1, info: 2 };
   checks.sort((a, b) => rank[a.severity] - rank[b.severity]);
   return {
-    declared: Boolean(decl), schemaVersion: m?.schemaVersion, files, keys, identifiers, companions, repositories, toolchain, extensions, connections, checks,
+    declared: Boolean(decl), schemaVersion: m?.schemaVersion, files, keys, identifiers, companions, repositories, toolchain, extensions, connections, evidence, checks,
     summary: {
       keysSet: keys.filter(k => k.state === "set").length, keysTotal: keys.length,
       filesFound: files.filter(f => f.state === "found").length, filesRequired: files.filter(f => !f.optional).length,
@@ -517,6 +524,13 @@ export function readinessReport(r: Readiness, project: { id: string; title: stri
   if (r.connections.length) {
     lines.push("", "## Connections");
     for (const c of r.connections) lines.push(`- ${c.label} (${c.kind}${c.environment ? `, ${c.environment}` : ""}): ${CONNECTION_STATE_TEXT[c.state]} — ${c.detail}${c.checkedAt ? ` (checked ${c.checkedAt})` : ""}`);
+  }
+  if (r.evidence.length) {
+    lines.push("", "## Integration evidence", "", "Each link is observed (source, time) or unknown (why). Nothing is inferred from another link.");
+    for (const e of r.evidence) {
+      lines.push(`- ${e.label}: ${e.summary}`);
+      for (const l of e.chain) lines.push(`  - ${linkText(l)}`);
+    }
   }
   lines.push("", "## Optional companions");
   for (const c of r.companions) lines.push(`- ${c.label}: ${c.detail}`);

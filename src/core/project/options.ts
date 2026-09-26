@@ -50,7 +50,8 @@ const VALUES_MAP: Schema = { type: "object", additionalProperties: false, proper
 
 const COST: Schema = obj({
   label: SHORT, service: SHORT, price: SHORT, monthly: MONEY, oneTime: MONEY, currency: enumOf(...CURRENCIES),
-  basis: TEXT, source: HTTPS, asOf: DATE, note: TEXT
+  basis: TEXT, source: HTTPS, asOf: DATE, note: TEXT,
+  shared: ID, use: enumOf("any", "learning-only")
 }, ["label"]);
 const DOC: Schema = obj({ label: SHORT, url: HTTPS, path: REL_PATH, repoRef: ID }, ["label"]);
 const NEW_REPO: Schema = obj({
@@ -87,6 +88,10 @@ export type CriterionValue = string | number | { text?: string; score?: number; 
 export interface CostLine {
   label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency?: typeof CURRENCIES[number];
   basis?: string; source?: string; asOf?: string; note?: string;
+  /** 0.26 (D-24): a shared resource key; the same key across options counts once in combined totals. */
+  shared?: string;
+  /** 0.26 (D-24): "learning-only" = not usable for client work (flagged, never hidden). */
+  use?: "any" | "learning-only";
 }
 export interface NewRepository { key: string; label?: string; description?: string; planned?: true; remote?: { url: string; branch?: string } }
 export interface OptionChanges {
@@ -544,7 +549,8 @@ function impactFrom(key: string, options: OptionsFile, derived: DerivedArchitect
   const costs: ArchitectureImpact["costs"] = { monthly: total.monthly, oneTime: total.oneTime, lines: [], missing: [], total };
   for (const { decision, option } of derived.picks) {
     const lines = option.costs ?? [];
-    if (!lines.length || lines.some(l => !isPriced(l))) costs.missing.push(decision.id);
+    const priced = (l: CostLine) => l.shared ? total.shared.includes(l.shared) : isPriced(l);
+    if (!lines.length || lines.some(l => !priced(l))) costs.missing.push(decision.id);
     for (const l of lines) costs.lines.push({ ...l, decision: decision.id, option: option.id });
   }
   return {
