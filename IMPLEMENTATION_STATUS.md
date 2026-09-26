@@ -74,8 +74,8 @@ workspaces only, `core.fsmonitor=false`; nothing fetches, checks out or writes.
 | Check | Result |
 |---|---|
 | `npm run check` | clean |
-| `npm test` | UNIT_COUNT on main (new: `trustRepairs` 15, `experience` 9, `fileContext` 12, `checks` 13, `fileVersions` 6) |
-| `npm run test:desktop` (installed VS Code, Windows 11) | DESKTOP_COUNT (new fixtures `v22-modes`, `v22-checks`, `v22-versions`; new flows `experienceFlows`, `fileContextFlows`, `checkFlows`, `fileVersionFlows`) |
+| `npm test` | 389 / 389 on main (new: `trustRepairs` 15, `experience` 9, `fileContext` 12, `checks` 13, `fileVersions` 6) |
+| `npm run test:desktop` (installed VS Code, Windows 11) | 314 / 314 on 15 fixtures (`empty` 13, `v22-checks` 15, `v2-retail` 49, `v1-foil` 15, `broken` 16, `v4-cloudflare` 21, `v3-research` 51, `v3-monorepo` 13, `v3-devops` 15, `v17-company` 13, `v18-toolchain` 16, `v19-git` 20, `v20-work-orders` 23, `v22-modes` 19, `v22-versions` 15). One run had the 0.17 "Power Ops list" flow fail in `v3-research` (a machine-level file other desktop runs write at the same time, already seen by package C); it passed on the rerun of that fixture (51/51). New fixtures `v22-modes`, `v22-checks`, `v22-versions`; new flows `experienceFlows`, `fileContextFlows`, `checkFlows`, `fileVersionFlows`) |
 | CI | validate + desktop on ubuntu-latest and windows-latest green for every package PR |
 
 ### Known limits

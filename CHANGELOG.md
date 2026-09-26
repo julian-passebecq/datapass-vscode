@@ -49,7 +49,7 @@ variants (package G). No project-file format changes; new DataPass file `resourc
   "from PR #n"), *Compare with Version…*, *Changed by the Last Update…* (the last fast-forward's
   files grouped by component). Read-only `datapass-rev:` tabs titled with the revision and fetch time.
 
-Tests: unit UNIT_COUNT; desktop DESKTOP_COUNT (new fixtures `v22-modes`, `v22-checks`,
+Tests: unit 389/389; desktop 314/314 on 15 fixtures (new fixtures `v22-modes`, `v22-checks`,
 `v22-versions`). Detail: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
 
 ## 0.20.0 — work orders (pass AI-2, 2026-09-25)
