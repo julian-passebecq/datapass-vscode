@@ -126,7 +126,7 @@ test("a linked worktree is fingerprinted through its .git file; a plain folder h
     git(dir, "worktree", "add", "-q", "-b", "side", wt);
     const f = await repoFingerprint(wt);
     assert.ok(f);
-    assert.equal(fs.realpathSync(path.dirname(path.dirname(f!.gitDir))), fs.realpathSync(path.join(dir, ".git")));
+    assert.equal(fs.realpathSync.native(path.dirname(path.dirname(f!.gitDir))), fs.realpathSync.native(path.join(dir, ".git")));
     assert.notEqual(f!.key, (await repoFingerprint(dir))!.key);
     assert.equal(await repoFingerprint(plain), undefined);
   } finally { cleanup(wt); cleanup(dir); cleanup(plain); }
