@@ -41,21 +41,20 @@ function v4Cloudflare(): DataPassProjectManifest {
       requiredKeys: ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN", "MONGODB_URI", "R2_SECRET_ACCESS_KEY"]
     },
     identifiers: [{ id: "cf-account", label: "Cloudflare account ID", value: "0123456789abcdef0123456789abcdef", provider: "cloudflare", envKey: "CLOUDFLARE_ACCOUNT_ID" }],
-    modules: { mongoku: false, diagramcloud: false },
+    // Written before Mongoku was removed from DataPass: the legacy switch and companion still load and are ignored.
+    modules: { mongoku: false, diagramcloud: false } as DataPassProjectManifest["modules"],
     companions: { mongoku: { entityId: "edge_shop" } }
   };
 }
 
 function v2Retail(): DataPassProjectManifest {
   const m = migrateManifestToV2(genericProjectManifest("retail-bi"));
-  // A project created before Mongoku was frozen (0.16): no modules block, so its Mongoku companion stays on.
   delete m.modules;
   m.platforms = {
     fabric: { workspaceName: "Retail" }, powerbi: { projectRoot: "bi" }, databricks: { bundleRoot: "bundle" },
     // Synthetic stack; nothing is contacted (links only reach the Test-mode browser seam).
     grafana: { url: "https://metrics.example.com/grafana/", dashboards: [{ uid: "weekly-1", title: "Weekly metrics", scopes: ["weekly-forecast"], source: "grafana/weekly.json" }] }
   };
-  m.companions = { mongoku: { entityId: "retail_bi" } };
   // One synthetic VM shared by two scopes (Resources section, Remote-SSH seam; nothing is contacted).
   m.resources = [{ id: "retail-vm", kind: "vm", title: "Retail VM", provider: "oci", ssh: { host: "retail-vm" } }];
   m.bindings = [
@@ -113,16 +112,14 @@ const FIXTURES: Record<string, Record<string, string>> = {
     "adf/pipeline/CopySales.json": JSON.stringify({ name: "CopySales", properties: { activities: [{ name: "Copy", type: "Copy" }] } }, null, 2) + "\n",
     // DiagramCloud's own sidecar sample and its own serialization after a known plan (tests/fixtures/diagramcloud).
     ".datapass/diagramcloud.json": fixtureText("diagramcloud/total.sidecar.json"),
-    "incoming/diagramcloud.after-plan.golden.json": fixtureText("diagramcloud/total.after-plan.sidecar.json"),
-    // Produced by Mongoku's own exporter from synthetic input (tests/fixtures/mongoku).
-    "incoming/mongoku-context.json": fixtureText("mongoku/portfolio-context.synthetic.json")
+    "incoming/diagramcloud.after-plan.golden.json": fixtureText("diagramcloud/total.after-plan.sidecar.json")
   },
   "v1-foil": { ".datapass/project.json": JSON.stringify(foilProjectManifest(), null, 2) + "\n" },
   // Parses as JSON, but schemaVersion 6 does not exist (5 is the latest): both the extension and the schema must say so.
   "broken": { ".datapass/project.json": JSON.stringify({ ...genericProjectManifest("broken"), schemaVersion: 6 }, null, 2) + "\n" },
   // Manifest v4 environment readiness: a Cloudflare-backed project whose .env holds recognizable fake secrets
-  // (tests/integration/readinessFlows.ts checks that none reaches any output). Mongoku and DiagramCloud are
-  // switched off although mapped / present. .env and .env.local are git-ignored; the repository is real Git.
+  // (tests/integration/readinessFlows.ts checks that none reaches any output). DiagramCloud is
+  // switched off although present, and the manifest keeps legacy Mongoku fields (ignored). .env and .env.local are git-ignored; the repository is real Git.
   "v4-cloudflare": {
     ".datapass/project.json": JSON.stringify(v4Cloudflare(), null, 2) + "\n",
     ".datapass/diagramcloud.json": fixtureText("diagramcloud/total.sidecar.json"),
@@ -320,7 +317,7 @@ function setupV19Git(base: string): { workspace: string; env: Record<string, str
   const manifest = {
     schemaVersion: 4,
     project: { id: "git-orientation", title: "Git orientation", description: "Synthetic 0.19 fixture: two repositories, worktrees, pull requests." },
-    modules: { mongoku: false, diagramcloud: false },
+    modules: { diagramcloud: false },
     repositories: {
       pipeline: { label: "research-pipeline", remote: { url: "https://github.com/example-org/research-pipeline", branch: "main" } },
       infra: { label: "research-infra", planned: true, remote: { url: "https://github.com/example-org/research-infra" } }

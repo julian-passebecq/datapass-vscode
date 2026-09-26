@@ -6,7 +6,7 @@
  * and local paths removed). Pure; built from allowlisted fields, shown before anything is copied.
  *
  * The rules ask the AI to deliver a pull request and to move the card itself in board.json, so
- * the board in GitHub stays the shared truth (Mongoku and other viewers read it there).
+ * the board in GitHub stays the shared truth (other viewers read it there).
  */
 import type { RecipeView } from "../toolkit/toolkit";
 import { scrub } from "../exchange/aiContext";

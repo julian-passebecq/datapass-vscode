@@ -23,7 +23,6 @@ export function manifestSales(): DataPassProjectManifest {
   return {
     schemaVersion: 5,
     project: { id: "sales-bi", title: "Sales BI", description: "Synthetic DataPass 0.18 example: a Fabric lakehouse, a notebook and a Power BI model, deployed with fabric-cicd." },
-    modules: { mongoku: false },
     environments: [{ id: "dev", title: "Development" }, { id: "prod", title: "Production", production: true }],
     graph: ".datapass/graph.json",
     scopes: [{ id: "sales", title: "Sales reporting", objective: "A daily sales report from the lakehouse", itemRefs: ["lakehouse", "load", "model", "deploy"],

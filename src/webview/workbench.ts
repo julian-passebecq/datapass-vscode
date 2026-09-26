@@ -1212,7 +1212,7 @@ function boardNav(s: WorkbenchState): HTMLElement {
       btn("Ask the AI to update the board", () => command("datapass.copyForAi", "board"), { icon: "✦", title: "board.json plus instructions: the AI returns the complete updated file" }),
       btn("Paste the AI's answer", () => command("datapass.showAiExchange", "board"), { icon: "⇣", title: "Opens the AI exchange (right side bar): checked as you paste, shown as a diff, backed up; you confirm before it is written" }),
       btn("Open board.json", () => command("datapass.openBoardFile"), { kind: "link" })),
-    h("p", { class: "muted small", text: "Moving a card writes only its status in board.json (a backup is kept); the AI keeps the rest. Other viewers, such as Mongoku, read this file from GitHub: DataPass never talks to them." }));
+    h("p", { class: "muted small", text: "Moving a card writes only its status in board.json (a backup is kept); the AI keeps the rest. Other viewers read this file from GitHub: DataPass never talks to them." }));
 }
 
 function cardEl(s: WorkbenchState, c: CardView): HTMLElement {

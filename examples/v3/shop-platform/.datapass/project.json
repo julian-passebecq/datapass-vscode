@@ -5,9 +5,6 @@
     "title": "Shop platform",
     "description": "Synthetic DataPass 0.16 example: one repository per Git host, CI on each."
   },
-  "modules": {
-    "mongoku": false
-  },
   "repositories": {
     "web": {
       "label": "Web app",

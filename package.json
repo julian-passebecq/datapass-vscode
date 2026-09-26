@@ -23,7 +23,6 @@
     "onView:datapass.aiExchange",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
-    "onUri",
     "workspaceContains:**/databricks.yml",
     "workspaceContains:**/databricks.yaml",
     "onLanguage:dockerfile",
@@ -192,16 +191,8 @@
       },
       {
         "command": "datapass.openCompanionLink",
-        "title": "DataPass: Open Companion Link (Grafana, Mongoku)…",
+        "title": "DataPass: Open Companion Link (Grafana)…",
         "icon": "$(link-external)"
-      },
-      {
-        "command": "datapass.mongoku.importContext",
-        "title": "DataPass: Import Mongoku Context…"
-      },
-      {
-        "command": "datapass.mongoku.setUrl",
-        "title": "DataPass: Set Mongoku Address…"
       },
       {
         "command": "datapass.chooseModules",
@@ -1151,11 +1142,6 @@
           "group": "7_companions@1"
         },
         {
-          "command": "datapass.mongoku.importContext",
-          "when": "view == datapass.work",
-          "group": "7_companions@2"
-        },
-        {
           "command": "datapass.chooseModules",
           "when": "view == datapass.work",
           "group": "5_project@0"
@@ -1815,12 +1801,6 @@
           "default": "",
           "scope": "application",
           "description": "Where DiagramCloud runs (https://…, or http://localhost for a dev server). Opened by \"Open Architecture in DiagramCloud\"; no project data is ever put in the URL."
-        },
-        "datapass.mongoku.url": {
-          "type": "string",
-          "default": "",
-          "scope": "application",
-          "description": "Where your Mongoku runs (https://…, or http://localhost:3100 for a local server). Used for \"Open in Mongoku\"; DataPass appends only ?project=<entity id>. No credentials."
         },
         "datapass.foil.controlRoot": {
           "type": "string",

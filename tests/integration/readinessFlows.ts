@@ -1,7 +1,8 @@
 /**
  * Desktop flows for environment readiness (manifest v4 localEnv / identifiers), in real VS Code
  * on a real Git repository. Fixture v4-cloudflare: a Cloudflare-backed project whose .env holds
- * recognizable fake secrets, Mongoku and DiagramCloud switched off (although mapped / present).
+ * recognizable fake secrets, DiagramCloud switched off (although present) and legacy Mongoku
+ * fields from an older manifest (accepted and ignored).
  *
  * Acceptance: the expected env files and variable names and which are missing show at once,
  * without any value; Copy CLOUDFLARE_ACCOUNT_ID and Open .env are one click; disabled optional
@@ -47,17 +48,18 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
     record("readinessTree", rows.filter(x => /^(env|readiness|companion|check)/.test(x.id ?? "")).map(x => `${x.label} — ${x.description ?? ""}`));
   }, ["v4-cloudflare"]);
 
-  test("readiness: Mongoku and DiagramCloud switched off show only \"optional module disabled\"", async () => {
+  test("readiness: DiagramCloud switched off shows only \"optional module disabled\"; legacy Mongoku fields load and show nothing", async () => {
     const rows = await api().renderProjectTree();
-    assert.equal(row(rows, "companion:mongoku")?.description, "optional module disabled");
+    assert.equal(api().project().manifestErrors.length, 0, api().project().manifestErrors.join(" | "));
+    assert.equal(row(rows, "companion:mongoku"), undefined);
+    assert.ok(!rows.some(x => /mongoku/i.test(`${x.id} ${x.label} ${x.description ?? ""}`)), "the project tree never mentions Mongoku");
     assert.equal(row(rows, "companion:diagramcloud")?.description, "optional module disabled");
     const r = api().readiness();
     assert.equal(r.checks.filter(c => c.area === "companion").length, 0, "no warning, error or note for a disabled module");
     assert.ok(!r.checks.some(c => /mongoku|diagramcloud/i.test(`${c.message} ${c.nextStep ?? ""}`)));
-    // Nothing else from them either: no Links section, no Mongoku rows in the Work view.
+    // Nothing else either: no Links section, no Mongoku rows in the Work view.
     const work = await api().renderWorkTree();
     assert.ok(!work.some(w => /mongoku|diagramcloud/i.test(`${w.id} ${w.label}`)), JSON.stringify(work.map(w => w.label)));
-    assert.equal(api().companions().mongoku, undefined);
   }, ["v4-cloudflare"]);
 
   test("readiness: Copy CLOUDFLARE_ACCOUNT_ID is one click (the tree row's own command) and copies the name only", async () => {
@@ -117,7 +119,7 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
     noSecret("environment snapshot", snap.clipboard);
     const doc = JSON.parse(snap.clipboard);
     assert.deepEqual(doc.environment.keys.map((k: { name: string; state: string }) => `${k.name}:${k.state}`), ["CLOUDFLARE_ACCOUNT_ID:set", "CLOUDFLARE_API_TOKEN:set", "MONGODB_URI:empty", "R2_SECRET_ACCESS_KEY:missing"]);
-    assert.deepEqual(doc.environment.companions, [{ module: "mongoku", state: "disabled" }, { module: "diagramcloud", state: "disabled" }]);
+    assert.deepEqual(doc.environment.companions, [{ module: "diagramcloud", state: "disabled" }]);
     assert.ok(!snap.clipboard.includes("0123456789abcdef0123456789abcdef"), "the snapshot carries names and states only");
 
     const ctx = await withUi([{ pick: "current-task" }, { button: "Copy" }], () => run("datapass.copyAiContext"));
@@ -133,7 +135,8 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
     const report = vscode.window.activeTextEditor?.document.getText() ?? "";
     noSecret("readiness report", report);
     assert.match(report, /# Readiness — Edge shop/);
-    assert.match(report, /Mongoku: optional module disabled/);
+    assert.match(report, /DiagramCloud: optional module disabled/);
+    assert.doesNotMatch(report, /mongoku/i);
     await run("workbench.action.closeAllEditors");
 
     noSecret("Workbench state", JSON.stringify(api().workbenchState()));

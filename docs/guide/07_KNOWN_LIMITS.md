@@ -8,7 +8,7 @@ that does not exist.
 
 | What | Fix |
 |---|---|
-| `PREPARING_A_PROJECT.md` §2 was titled "manifest v5" but its example said `schemaVersion: 3`. | Example is v5, with `project.type` and `mongoku: false` (validated). |
+| `PREPARING_A_PROJECT.md` §2 was titled "manifest v5" but its example said `schemaVersion: 3`. | Example is v5, with `project.type` (validated). |
 | `README.md` still called the current manifest v4. | Says v5 (v3 and v4 still accepted). |
 | §6 said only project/graph/catalog are validated as you type. | Lists every file with an editor schema (options, sheet, board, work-log, claims, packs, work orders). |
 | `resources[]` / `bindings[]` (VMs, container hosts) were not documented in the contract. | Pointer in §2, full walkthrough in [04 §4.5](04_CUSTOMIZATION.md#45-resources-such-as-vms--worked-example-with-two-vms). |

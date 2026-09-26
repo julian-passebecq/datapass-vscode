@@ -33,8 +33,7 @@ sub-project, or one repository with sub-folders ([Repository layout](../PREPARIN
   never shown as verified. DataPass shows what it observed.
 - Not an AI API client: the AI exchange is manual (copy/paste, Git, or a work order handed to the
   Claude/Codex desktop app). No paid API is needed.
-- Not Mongoku, DiagramCloud or Datapass Mosaic (separate products; Mongoku is frozen and only reads
-  `board.json`/`project.json` from GitHub by itself).
+- Not DiagramCloud or Datapass Mosaic (separate products).
 
 ## 1.3 Vocabulary
 
@@ -51,7 +50,7 @@ sub-project, or one repository with sub-folders ([Repository layout](../PREPARIN
 | **Toolchain** | The tools and versions the project needs (CLIs, VS Code extensions, apps, Python libraries), compared with the computer. | `toolchain.tools[]` |
 | **Connection** | A sign-in (az, fab, databricks), a Git binding (a Fabric workspace ↔ a folder) or a named cloud connection. Declared, sign-ins checked read-only on request. | `connections[]` |
 | **Resource / binding** | A shared machine (a VM, a container host) declared once, and how each sub-project uses it (folder, repository, env names, processes). | `resources[]`, `bindings[]` |
-| **Module** | A part of DataPass a project switches off when unused: `fabric`, `databricks`, `azure`, `databases`, `infrastructure`, `powerbi`, `grafana`, `airflow`, add-ons `mongoku`, `diagramcloud`, and the AI switches `workOrders`, `pilot`. | `modules` |
+| **Module** | A part of DataPass a project switches off when unused: `fabric`, `databricks`, `azure`, `databases`, `infrastructure`, `powerbi`, `grafana`, `airflow`, add-on `diagramcloud`, and the AI switches `workOrders`, `pilot`. | `modules` |
 | **Profile** | An **artifact profile** is the convention for a kind of native unit (`azure-functions.python` expects `function_app.py`, `host.json`, `requirements.txt`). A *project profile* (`project.profile: "foil"`) is an older, consumer-specific setting. | `artifacts.profile` |
 | **Provider** | The service behind a component (`azure-functions`, `cosmos-nosql`, `mongodb-atlas`, `databricks`, `vm`…): decides the official tool and whether DataPass has operations for it. | `items[].provider` |
 | **Domain pack** | Optional declarative vocabulary and forms for a business domain. Data only, no code. | `domainPacks` |

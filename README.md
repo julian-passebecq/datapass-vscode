@@ -86,8 +86,6 @@ A project is described by `.datapass/project.json` (**manifest v5**, v3 and v4 s
 - **CI profiles**: `github-actions`, `azure-pipelines` and `gitlab-ci` components open their pipeline
   files and, with "See the runs", the host's runs page (or the GitHub Actions extension's own view
   when it is installed).
-- **Mongoku is frozen**: manifests DataPass prepares now set `"modules": { "mongoku": false }` —
-  Mongoku reads `board.json` and `project.json` from GitHub on its own; DataPass never talks to it.
 
 See [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) sections 10–11, and the examples in
 [examples/v3/research-library](examples/v3/research-library/) (a board) and
@@ -289,12 +287,12 @@ click the *modules* row in the Work view) and tick what the project needs; DataP
 
 ```json
 { "modules": { "fabric": true, "databricks": true, "powerbi": false, "grafana": false,
-               "infrastructure": true, "airflow": false, "mongoku": false, "diagramcloud": false } }
+               "infrastructure": true, "airflow": false, "diagramcloud": false } }
 ```
 
 A module set to `false` disappears from Galaxy, the Work view and Links; unlisted modules stay on,
 and a manifest without `modules` shows everything as before. Fabric, Databricks, Infrastructure,
-Airflow, Power BI and Grafana are the cloud core; Mongoku and DiagramCloud are optional add-ons.
+Airflow, Power BI and Grafana are the cloud core; DiagramCloud is an optional add-on.
 
 ## Assets and repositories (v0.11)
 
@@ -322,15 +320,12 @@ The Work view's **Resources** section shows the selected scope's binding and war
 shared ("host-level changes affect all"). Click the folder to open it on the VM over Remote - SSH.
 `ssh.host` is an alias from your `~/.ssh/config`; env lists **names** only; no credentials anywhere.
 
-## Links: Grafana, Mongoku and DiagramCloud (v0.9.3, all optional)
+## Links: Grafana and DiagramCloud (v0.9.3, all optional)
 
 When configured, the Work view shows a **Links** section for the selected scope:
 
 - **Grafana** — your stack's home, Explore and the dashboards declared for this scope, plus each
   dashboard's as-code source file. The Galaxy Observability card gets **Open Grafana**.
-- **Mongoku** — **Open in Mongoku** (Mongoku's own `/?project=<entity>` page) and the last
-  **imported Mongoku context**: status, test gate, stop point, next action and the listed work
-  items, always labelled with its age and "not live".
 - **DiagramCloud** — when `.datapass/diagramcloud.json` exists: open it in DiagramCloud, copy a
   bounded AI context, import a reviewed AI plan (Work view **…** menu).
 
@@ -341,17 +336,12 @@ When configured, the Work view shows a **Links** section for the selected scope:
       "url": "https://your-stack.grafana.net/",
       "dashboards": [{ "uid": "weekly-1", "title": "Weekly metrics", "scopes": ["weekly"], "source": "grafana/weekly.ts" }]
     }
-  },
-  "companions": { "mongoku": { "entityId": "retail_bi", "scopeEntities": { "hydro": "retail_hydro" } } }
+  }
 }
 ```
 
-Addresses of apps that serve every project are **user settings**, not manifest fields:
-`datapass.mongoku.url` (e.g. `http://localhost:3100/`) and `datapass.diagramCloud.url`. DataPass
-asks for them the first time. To bring Mongoku context in: in Mongoku, open the project →
-**Developer context** → **JSON** → **Copy**, then run **DataPass: Import Mongoku Context…**.
-Mongoku (or any page) can open `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` to
-select the scope mapped to that entity; the link can do nothing else.
+The DiagramCloud address is a **user setting**, not a manifest field: `datapass.diagramCloud.url`.
+DataPass asks for it the first time.
 
 Every link shows its exact address once per window before opening and is re-checked afterwards;
 a destination that changed meanwhile is refused. A link is navigation only: DataPass never

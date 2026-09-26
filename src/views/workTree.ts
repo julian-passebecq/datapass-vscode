@@ -14,7 +14,7 @@ import { resourcesForScope, scopeTitles, type ResourceView } from "../core/resou
 import { ASSET_GROUPS, describeRepo, type Asset } from "../core/inventory/inventory";
 import { findQualification } from "../core/qualification/qualification";
 import type { DataPassProjectManifest } from "../core/projectManifestModel";
-import { ageLabel, viewMongokuContext, type CompanionLink, type MongokuStatus, type ResolvedCompanions } from "../core/companions/companions";
+import type { CompanionLink, ResolvedCompanions } from "../core/companions/companions";
 import { projectRoot } from "../core/workspace/root";
 
 type Node =
@@ -271,12 +271,12 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
     }
     const companions = s.companions();
     const sidecar = Boolean(ctx.diagramCloudSidecar) && moduleEnabled(ctx.manifest, "diagramcloud");
-    if (companions.grafana || companions.mongoku || sidecar) {
-      const names = [companions.grafana && "Grafana", companions.mongoku && "Mongoku", sidecar && "DiagramCloud"].filter(Boolean).join(" · ");
+    if (companions.grafana || sidecar) {
+      const names = [companions.grafana && "Grafana", sidecar && "DiagramCloud"].filter(Boolean).join(" · ");
       nodes.push({
         t: "section", id: "links", label: "Links", icon: "link-external", description: names,
         tooltip: "Companion apps for this scope. Links open your browser; they are navigation, not health or sign-in checks.",
-        children: () => linkNodes(companions, s.mongokuStatus(), sidecar)
+        children: () => linkNodes(companions, sidecar)
       });
     }
     nodes.push({
@@ -342,8 +342,8 @@ function resourceNode(view: ResourceView, manifest: DataPassProjectManifest): No
 const openLink = (link: CompanionLink): vscode.Command => ({ command: "datapass.openCompanionLink", title: "Open", arguments: [link.id] });
 const clipText = (text: string, max = 110) => { const one = text.replace(/\s+/g, " ").trim(); return one.length > max ? `${one.slice(0, max - 1)}…` : one; };
 
-/** Grafana, Mongoku and DiagramCloud rows for the selected scope. Every string from Mongoku is untrusted text. */
-function linkNodes(c: ResolvedCompanions, mongoku: MongokuStatus | undefined, sidecar: boolean): Node[] {
+/** Grafana and DiagramCloud rows for the selected scope. */
+function linkNodes(c: ResolvedCompanions, sidecar: boolean): Node[] {
   const out: Node[] = [];
   if (c.grafana) {
     const g = c.grafana;
@@ -358,55 +358,10 @@ function linkNodes(c: ResolvedCompanions, mongoku: MongokuStatus | undefined, si
       })
     });
   }
-  if (c.mongoku) {
-    const mk = c.mongoku;
-    out.push({
-      t: "section", id: "links:mongoku", label: "Mongoku", description: mk.entityId, icon: "project",
-      tooltip: `Mongoku project "${mk.entityId}" (${mk.entitySource === "scope" ? "mapped for this scope" : "project-level mapping"}). Imported contexts are dated snapshots, never live data.`,
-      children: () => mongokuNodes(mk.links, mk.needsUrl, mongoku)
-    });
-  }
   if (sidecar) {
     out.push({ t: "info", id: "links:diagramcloud", label: "DiagramCloud architecture", description: ".datapass/diagramcloud.json", icon: "type-hierarchy", tooltip: "Open in DiagramCloud, copy its AI context or import a reviewed AI plan (Work view … menu).", command: { command: "datapass.diagramCloud.openArchitecture", title: "Open" } });
   }
   return out;
-}
-
-function mongokuNodes(links: CompanionLink[], needsUrl: boolean, status: MongokuStatus | undefined): Node[] {
-  const out: Node[] = needsUrl
-    ? [{ t: "info", id: "mongoku:setUrl", label: "Set Mongoku address…", description: "user setting", icon: "gear", command: { command: "datapass.mongoku.setUrl", title: "Set" } }]
-    : links.map((link): Node => ({ t: "info", id: `link:${link.id}`, label: link.label, description: "browser", icon: "link-external", tooltip: link.url, command: openLink(link) }));
-  const importRow: Node = { t: "info", id: "mongoku:import", label: "Import Mongoku context…", description: "Developer context → JSON → Copy", icon: "cloud-download", command: { command: "datapass.mongoku.importContext", title: "Import" } };
-  if (!status || status.state === "missing") return [...out, { t: "info", id: "mongoku:none", label: "No context imported", description: "optional", icon: "circle-large-outline" }, importRow];
-  if (status.state === "invalid") return [...out, { t: "info", id: "mongoku:invalid", label: "Stored context rejected", description: clipText(status.reason, 80), icon: ["warning", "problemsWarningIcon.foreground"], tooltip: status.reason }, importRow];
-  const ctx = status.context;
-  const now = Date.now();
-  const view = viewMongokuContext(ctx, now);
-  const old = view.age === "old";
-  const reported = old ? "reported · old snapshot" : "reported";
-  const p = ctx.project;
-  const md = new vscode.MarkdownString();
-  md.appendMarkdown(`**${esc(p.name)}** — Mongoku context generated ${esc(ctx.generatedAt)} (${esc(ctx.classification)})\n\n`);
-  md.appendMarkdown(`Imported snapshot, not live. Mongoku marks its entity source *${esc(view.sourceFreshness)}*.\n\n`);
-  if (ctx.exclusions.length) md.appendMarkdown(ctx.exclusions.map(e => `- ${esc(e)}`).join("\n"));
-  out.push({
-    t: "info", id: "mongoku:snapshot", label: `Snapshot · ${ageLabel(ctx.generatedAt, now)}`,
-    description: ["not live", old ? "old: re-import" : undefined, view.sourceFreshness !== "CURRENT_FOR_DECLARED_SCOPE" ? `source ${view.sourceFreshness.toLowerCase().replace(/_/g, " ")}` : undefined].filter(Boolean).join(" · "),
-    icon: old ? ["history", "problemsWarningIcon.foreground"] : "history", tooltip: md
-  });
-  const field = (id: string, label: string, value: string | undefined): Node[] => value
-    ? [{ t: "info", id: `mongoku:${id}`, label: `${label}: ${clipText(value)}`, description: reported, tooltip: `${label} (reported by Mongoku at ${ctx.generatedAt})\n\n${value}` }]
-    : [];
-  out.push(...field("status", "Status", p.status), ...field("gate", "Test gate", p.test_gate), ...field("stop", "Stop point", p.stop_point), ...field("next", "Next", p.next_action));
-  const listed = ctx.items.filter(i => i.kind === "WORK" || i.kind === "TEST_GATE");
-  if (listed.length) {
-    out.push({
-      t: "section", id: "mongoku:items", label: `${view.work} work · ${view.testGates} test gate(s) listed`, description: "capped by Mongoku", icon: "list-unordered", collapsed: true,
-      tooltip: "Mongoku lists at most 15 open work items per context. This is not a complete backlog count.",
-      children: () => listed.map((item, i): Node => ({ t: "info", id: `mongoku:item:${i}`, label: clipText(item.summary), description: item.kind === "TEST_GATE" ? "test gate" : undefined, icon: item.kind === "TEST_GATE" ? "beaker" : "circle-small-filled", tooltip: `${item.id} · ${item.kind} · ${item.assertion}\n\n${item.summary}` }))
-    });
-  }
-  return [...out, importRow];
 }
 
 function esc(s: string): string {
