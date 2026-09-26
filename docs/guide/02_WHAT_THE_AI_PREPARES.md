@@ -58,11 +58,20 @@ AGENTS.md                   instructions for every AI working on the project
 README.md, docs/            human documentation, architecture notes
 ```
 
+The bridge holds **links and DataPass JSON, never code**. It is the working layer of the people and
+AIs building the project, not part of what the client and its auditor receive: the deliverable is
+the native repositories (for example in the client's Azure DevOps).
+
 The native code (Functions, bundles, notebooks, SQL, Terraform…) stays in the **native
-repositories**. The coordination repository references them by Git remote URL and never copies
-their files. A sub-project can also be a folder of the coordination repository while the client
-decides (declare it as a repository with `"path": "study"`, or put its components in the
-coordination repository with `artifacts.root`).
+repositories**, which the bridge references by Git remote URL and never copies. **We prefer one
+native repository per sub-project** (a study pipeline in one, the Fabric part in another — in Azure
+DevOps, one project with several repositories). **You may also use one repository with sub-folders**
+when the parts are small, owned and released together: the scopes share its `repoRef` and each
+component names its folder with `artifacts.root`. What Azure DevOps, Databricks bundles, ADF and
+Fabric expect, with sources: [PREPARING_A_PROJECT.md, *Repository layout*](../PREPARING_A_PROJECT.md#repository-layout).
+A dev or personal project may be looser while prototyping — code in a folder of the bridge,
+declared as a repository with `"path": "study"` — and is split before it becomes a client
+deliverable.
 
 `AGENTS.md` (every AI tool reads it; `CLAUDE.md` can contain one line: "Read AGENTS.md"):
 

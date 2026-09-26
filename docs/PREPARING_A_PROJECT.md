@@ -30,10 +30,12 @@ native repositories                the real code, in native formats: databricks.
 
 - **One authoritative copy of each native file.** The coordination repository references files; it
   never copies notebooks or bundles "so DataPass can see them".
-- **A sub-project does not need its own repository.** Use a folder of an existing repository when
-  permissions, CI and release rhythm are shared; use a separate repository when they differ, or when
-  a native tool expects the repository root (Fabric Git integration binds a workspace to a folder;
-  ADF Git integration has a root folder setting; Databricks bundles work fine in a monorepo).
+- **The bridge holds links and DataPass JSON, never code.** It is the working layer of the people and
+  AIs who build the project, not part of the deliverable: what the client (and its auditor) receives
+  is the native repositories, for example in the client's Azure DevOps. Nothing in a native
+  repository depends on the bridge. See *Repository layout* below.
+- **We prefer one native repository per sub-project; one repository with sub-folders is fine too.**
+  The choice, its trade-offs and what each tool expects are in *Repository layout* below.
 - **Local clone locations are machine-specific.** DataPass finds a clone next to the coordination
   repository (or in the `datapass.projectsFolders` setting) and checks its Git origin; otherwise the
   person uses *Clone* or *Locate*. The choice is saved in `.datapass/local/` (never committed).
@@ -43,6 +45,48 @@ native repositories                the real code, in native formats: databricks.
   or edit anything under it. Likewise, the company `.code-workspace` file (DataPass ≥ 0.17.0, one
   window per company) is created by DataPass on each computer, not in a repository — never add one
   to a pull request.
+
+### Repository layout
+
+Checked against the official guidance on 2026-09-26 (sources below). DataPass works with every
+layout here; this is what we recommend when you choose.
+
+**The bridge repository.** One small repository per project, holding `.datapass/*.json`, `AGENTS.md`
+and documentation — links to the project's repositories, never code, never data. Keep it separate
+from what the client receives: the deliverable is the native repositories, and the bridge can live
+where the team works (your own GitHub or Azure DevOps project) without being handed over. A
+bridge that the client also wants is fine: it contains no secret and no code by construction.
+
+**Native code: we prefer one repository per sub-project.** A study pipeline, the Fabric part, the
+infrastructure: each its own repository, declared under `repositories` with its remote URL and
+used as the scopes' `repoRef`. Reasons, which match Azure DevOps' own guidance: each part has its own
+permissions, CI, release rhythm and history, an auditor reviews one repository at a time, and a
+native tool that binds to a repository (ADF allows one factory per Azure Repos repository) does not
+collide with another part.
+
+**You may also use one repository with sub-folders** (declare it once; each scope names it as
+`repoRef`, and each component points at its folder with `artifacts.root`). Choose it
+when the parts are small, owned by the same people, released together and often changed together —
+Azure DevOps suggests starting that way for small teams — or when a tool is designed for it:
+
+| Tool | What it expects | Layout that fits |
+|---|---|---|
+| Azure DevOps | An organization holds projects; a project holds any number of Git repositories. One project with several repositories when the parts are released together and share access; several projects when access or process must differ. Repositories move between projects with their history. | One Azure DevOps project for the client's work, one repository per sub-project. |
+| GitHub ↔ Azure DevOps | *Import repository* copies a GitHub (or any Git) repository into Azure Repos **once**; later changes are not mirrored — keeping both needs a clone with both remotes, or a CI job, pushing to each. Azure Pipelines can also build a GitHub repository directly. | Decide where each repository lives; do not keep two living copies by hand. DataPass recognises either host from the remote URL. |
+| Databricks bundles | Databricks recommends several bundles in one repository with a shared folder (`sync.paths`, shared `include`), each bundle folder with its own `databricks.yml`; small, focused bundles, one team's work per bundle. | Bundles of one sub-project share a repository; a component per bundle, `artifacts.root` = the bundle folder. |
+| Azure Data Factory | Git integration with Azure Repos or GitHub, a collaboration branch and a **root folder**; an Azure Repos repository can be associated with only one data factory (a GitHub repository with several). Files outside the root folder need their own deployment. | ADF in its own repository (Azure Repos), or its root folder in the sub-project's repository. |
+| Microsoft Fabric | A workspace connects to one repository, one branch and one **folder** at a time (Azure DevOps or GitHub, cloud only); the folder can be the root or a sub-folder. | One folder per workspace; several workspaces can share a repository in separate folders. Declare the binding under `connections`. |
+
+**Dev and personal projects may be looser.** While prototyping alone, code may sit in a folder of the
+bridge (`"path"`), and one repository can hold everything. Split it before the work becomes a
+client deliverable; `project.type: "work"` is where the rule above applies.
+
+Sources (checked 2026-09-26): [Azure DevOps — Plan your organizational structure](https://learn.microsoft.com/azure/devops/user-guide/plan-your-azure-devops-org-structure)
+(updated 2026-03-17); [Azure Repos — Import a Git repository](https://learn.microsoft.com/azure/devops/repos/git/import-git-repository);
+[Azure Databricks — Sharing bundles and bundle files](https://learn.microsoft.com/azure/databricks/dev-tools/bundles/sharing)
+(2026-09-11); [Azure Data Factory — Source control](https://learn.microsoft.com/azure/data-factory/source-control)
+(2026-07-29); [Fabric — Get started with Git integration](https://learn.microsoft.com/fabric/cicd/git-integration/git-get-started)
+and [Overview of Fabric Git integration](https://learn.microsoft.com/fabric/cicd/git-integration/intro-to-git-integration) (2026-07-21).
 
 ## 2. `.datapass/project.json` (manifest v5)
 
@@ -71,7 +115,7 @@ native repositories                the real code, in native formats: databricks.
 |---|---|
 | `repositories.<key>.remote.url` | The identity of the repository (https or `git@host:path`, never credentials). For Azure DevOps, the address its **Clone** button copies — `https://<org>@dev.azure.com/<org>/<project>/_git/<repo>` (the user name before `@` must equal the organization; anything else is refused like a credential) — and its SSH form `<org>@vs-ssh.visualstudio.com:v3/<org>/<project>/<repo>` (or `git@ssh.dev.azure.com:v3/<org>/<project>/<repo>`) are both accepted and name the same repository, so a clone made with one form is recognised when the manifest declares the other. |
 | `repositories.<key>.planned: true` | The repository does not exist yet. Components in it show "planned", never "missing". |
-| `repositories.<key>.path` | Only for legacy or monorepo layouts (relative to this repository). Prefer remotes. |
+| `repositories.<key>.path` | A folder of this repository declared as its own repository key (relative path). For a dev or personal project that keeps code in the bridge while prototyping, or a legacy layout; a work project declares native repositories by remote instead (see *Repository layout*). |
 | `environments[]` | Deployment environments. Every deploy/run/publish operation names one; a review confirmed for `dev` never applies to `prod`. |
 | `scopes[]` | Sub-projects (work areas). `itemRefs` lists their components (children via `contains` follow); `repoRef` is the default repository of their components. |
 | `docs[]` | Files (`path`, optional `repoRef`) or https pages opened from DataPass. |
