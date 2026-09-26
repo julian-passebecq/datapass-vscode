@@ -172,6 +172,31 @@ the 0.23.0 release. Steps without human judgement were replayed in a desktop VS 
 profile (`verification-claude/run.ts`, run from a built checkout) and are marked "vérifié par Claude".
 Guide: `D:\PROJ\datapass-testlab\9-modes-contexte-versions\LISEZ-MOI.md`.
 
+### B7. Testlab project 10 — client journeys, the FOIL/MCP review acceptance (D-28), offline (≈ 20 minutes)
+
+`D:\PROJ\datapass-testlab\10-parcours-client\` — `setup.ps1` builds the public `examples/v3/doc-pipeline`
+from scratch, split the way a client project is: a bridge `doc-pipeline` (only `.datapass/`: manifest
+with two native repositories, graph, options A/B/C) and two native repositories cloned next to it,
+`doc-orchestration` (A's script, B's Function without `host.json`) and `doc-processing` (declared in SSH,
+cloned in https); C's `factory` repository is planned. Offline GitHub origins (bare repositories on
+disk, `insteadOf`); one extra component, a Google Drive report (unsupported provider).
+`ouvre-depuis-bridge.ps1` is the manual equivalent of V1-ON's *Open a Client Project…* (clone the
+bridge, read the manifest, clone the declared non-planned repositories, write a 3-root workspace file;
+idempotent) until that command is on main. Steps: (2) a plain client repository works with DataPass
+disabled, no DataPass file in native repositories; (3) open from the bridge, both clones found
+(SSH/https equivalence); (4) preview A → B → C: status bar, tree, Details, Copy Context line, C's
+planned repository, nothing written; (5) missing clone → `unbound`, files never `missing`; (6) a clone
+without origin, *Locate an Existing Clone* → `unverified`, still browsable; (7) a modified file → the
+repository counts one change and the pack says "modified, not committed"; (8) unsupported tool → "not
+supported yet", no operation; (9) B with every file present → "files present", "not a decision, not a
+deployment", "Live route: not observed" (0.25.0, R-04); (10) `.vscode/mcp.json` → "MCP registration file
+present", never connected; the MCP evidence card (E1, PR #67) and the *Open a Client Project…* command
+(V1-ON, PR #68) are marked 0.27+. Every non-visual step ran in a desktop VS Code on a throwaway profile
+(`verification-claude/run.ts`; 10/10 on the installed 0.25.0 VSIX and on main 2026-09-26; set
+`DATAPASS_EXT_DIR` to an unzipped VSIX to test a published build) and is marked "vérifié par Claude";
+findings for V1-STAB are listed at the end of the guide and in `handoff/v3/night/v1-t10.md`.
+Guide: `D:\PROJ\datapass-testlab\10-parcours-client\LISEZ-MOI.md`.
+
 ### C. Account qualification (V1 gate 16, extended)
 
 Databricks `bundle validate` (with the generated build), Azure Functions `func start` then a deploy to
