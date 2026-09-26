@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "0.27.0",
+  "version": "1.0.0-rc.1",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -2975,7 +2975,8 @@
     "perf": "npm run build && tsx scripts/perf.ts",
     "preview:galaxy": "tsx scripts/galaxy-preview.ts",
     "qa:prepare": "tsx scripts/qa/prepare.ts",
-    "qa:ui": "tsx scripts/qa/ui-run.ts"
+    "qa:ui": "tsx scripts/qa/ui-run.ts",
+    "qa:rc": "tsx scripts/qa/rc.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

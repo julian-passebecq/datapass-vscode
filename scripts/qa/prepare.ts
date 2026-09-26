@@ -126,7 +126,7 @@ export async function vscodeExecutable(explicit?: string): Promise<string> {
 }
 
 /** Run the VS Code CLI (never the person's profile: every call passes both isolation flags). */
-function cli(executable: string, args: string[]): string {
+export function cli(executable: string, args: string[]): string {
   const bin = resolveCliPathFromVSCodeExecutablePath(executable);
   const r = process.platform === "win32"
     // code.cmd needs a shell (CVE-2024-27980); every argument is quoted.
