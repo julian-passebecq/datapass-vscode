@@ -52,5 +52,8 @@ bugs and fixes.
   connection rows are project-wide and stay.
 - A same-name sibling whose origin is another repository gets the same "identity not verified" wording, and is still
   never bound.
-- The flake of item 3 had no surviving CI log. The fix targets the race the code allows (two concurrent exports);
+- **Item 3 is still open.** The final local run failed once more after the export serialisation.
+  - `windowFlows` now asserts the stored name first. If "rename not stored" fires, the input prompt was missed (UI
+    timing); otherwise the list lagged behind the rename.
+  - The flake of item 3 had no surviving CI log. The fix targets the race the code allows (two concurrent exports);
   if it comes back, the next suspect is the open-view request watcher firing late.
