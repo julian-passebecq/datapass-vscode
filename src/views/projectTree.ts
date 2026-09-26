@@ -20,7 +20,7 @@ import { CONNECTION_STATE_TEXT, SIGN_IN_CHECKS, type ConnectionView } from "../c
 import { openCardsByUrgency, TYPE_LABELS, type BoardItemType, type BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
 import { alternativesByComponent } from "../core/experience/alternatives";
-import { CODING_LABELS, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
+import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
 import type { ProjectMap } from "../core/project/projectMap";
 
 type Node =
@@ -145,7 +145,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       t: "info", id: "variants:selected", label: p ? `Selected architecture: ${p.title}` : "Selected architecture: current (graph.json)",
       description: [state ? CODING_LABELS[state.state] : "", this.allVariants ? "all variants below" : ""].filter(Boolean).join(" · ") || undefined,
       icon: ["filter"],
-      tooltip: `${p ? `The tree shows the previewed architecture "${p.title}". Back to current: click.` : "The tree shows the current architecture. Preview a scenario on the diagram to see its components here."}${state ? `\nCoding: ${CODING_LABELS[state.state]} — ${state.reason}` : ""}\nAll variants (view title) lists every option's components and files.`,
+      tooltip: `${p ? `The tree shows the selected variant "${p.title}" (a preview on this machine: not a decision, not a deployment). Back to current: click.` : "The tree shows the current architecture. Preview a scenario on the diagram to see its components here."}${state ? `\nCoding: ${CODING_LABELS[state.state]} — ${state.reason}` : ""}\nAll variants (view title) lists every option's components and files.`,
       command: p ? { command: "datapass.clearPreview", title: "Back to current" } : { command: "datapass.openOptions", title: "Compare", arguments: ["scenarios"] },
       contextValue: "variants.selected"
     };

@@ -98,12 +98,13 @@ test("active variant: the pack header names the variant and its coding state", (
   const b = activeVariantView(o, a, { title: "B — Blob event + Function", picks: picksFrom(o, ["orchestration=blob-function"]) });
   assert.equal(b.state, "partly-coded");
   const line = activeVariantLine(b);
-  assert.match(line, /Active variant .*\*\*B — Blob event \+ Function\*\* — coding state: partly coded/);
-  assert.match(line, /not a decision/);
+  assert.match(line, /^Selected variant \(preview on this machine — not a decision, not a deployment\): \*\*B — Blob event \+ Function\*\* · files: some files present/);
+  assert.match(line, /Live route: not observed by DataPass\./);
+  assert.doesNotMatch(line, /active|running|deployed variant/i, "never reads as the running architecture");
   const current = activeVariantView(o, a, undefined);
   assert.equal(current.title, "Current architecture");
   assert.equal(current.state, "coded");
-  assert.match(statusBarText(b), /^\$\(versions\) B — Blob event \+ Function · partly coded$/);
+  assert.match(statusBarText(b), /^\$\(versions\) Variant: B — Blob event \+ Function · preview$/);
 
   // Copy Context for My AI and the options pack carry it, right under the project line.
   const pack = buildFileContext({
@@ -112,11 +113,11 @@ test("active variant: the pack header names the variant and its coding state", (
     file: { relPath: "processing/process.py", text: "x = 1\n" }, components: [], revisions: [],
     tree: { parents: [], siblings: [], moreSiblings: 0 }, diagnostics: [], localPaths: []
   } as Parameters<typeof buildFileContext>[0]);
-  assert.match(pack.text.split("\n")[2] ?? "", /^Active variant .*B — Blob event/);
+  assert.match(pack.text.split("\n")[2] ?? "", /^Selected variant .*B — Blob event/);
   const md = optionsMarkdown({ options: { ...o, decisions: [] }, analysis: { scenarios: [], problems: [], decisions: {} } as never, purpose: "export", generatedAt: "2026-09-26", dataPassVersion: "0.25.0", activeVariant: line });
-  assert.match(md.text, /Active variant .*B — Blob event/);
+  assert.match(md.text, /Selected variant .*B — Blob event/);
   const without = optionsMarkdown({ options: { ...o, decisions: [] }, analysis: { scenarios: [], problems: [], decisions: {} } as never, purpose: "export", generatedAt: "2026-09-26", dataPassVersion: "0.25.0" });
-  assert.doesNotMatch(without.text, /Active variant/);
+  assert.doesNotMatch(without.text, /Selected variant/);
 });
 
 test("active variant: the switcher lists current and every scenario with its coding state, and marks the active one", () => {
@@ -124,8 +125,8 @@ test("active variant: the switcher lists current and every scenario with its cod
   const choices = variantChoices(o, analysis(), { scenario: "b-event" });
   assert.deepEqual(choices.map(c => c.id), ["current", "a-direct", "b-event", "c-adf"]);
   assert.equal(choices.find(c => c.active)?.id, "b-event");
-  assert.match(choices.find(c => c.id === "b-event")!.description, /partly coded · recommended/);
-  assert.match(choices.find(c => c.id === "c-adf")!.description, /not coded/);
+  assert.match(choices.find(c => c.id === "b-event")!.description, /some files present · recommended/);
+  assert.match(choices.find(c => c.id === "c-adf")!.description, /no files/);
   assert.equal(variantChoices(o, analysis(), undefined).find(c => c.active)?.id, "current");
 });
 
@@ -167,4 +168,15 @@ test("active variant: a scenario or option that disappears falls back to the cur
   const decided = parseOptions(JSON.stringify({ ...JSON.parse(read(".datapass/options.json")), decisions: [{ ...JSON.parse(read(".datapass/options.json")).decisions[0], chosen: "adf" }] }));
   assert.deepEqual(resolveActiveVariant(decided, { scenario: "decided" }).request, { scenario: "decided" });
   assert.match(resolveActiveVariant(undefined, { scenario: "b-event" }).fellBack ?? "", /no options.json/);
+});
+
+test("selected variant: no contributed id says \"active variant\" (preview, not activation)", () => {
+  const pkg = readFileSync(join(ROOT, "package.json"), "utf8");
+  const presets = readFileSync(join(ROOT, "resources", "experience", "presets.json"), "utf8");
+  const surfaces = readFileSync(join(ROOT, "src", "core", "experience", "surfaces.ts"), "utf8");
+  for (const [name, text] of [["package.json", pkg], ["presets.json", presets], ["surfaces.ts", surfaces]] as const) {
+    assert.doesNotMatch(text, /activeVariant|active variant/i, name);
+  }
+  assert.match(presets, /"status\.selectedVariant"/);
+  assert.match(pkg, /"datapass\.setSelectedVariant"/);
 });

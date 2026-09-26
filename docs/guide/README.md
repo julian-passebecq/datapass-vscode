@@ -15,7 +15,7 @@ uses it (page 3 in French).
 | 7 | [Known limits and open bugs](07_KNOWN_LIMITS.md) | both |
 | 8 | [What DataPass checks without running anything](08_FORMAT_CHECKS.md) — JSON, YAML, Databricks bundles, Dockerfiles and compose files in Problems; rule ids; what the client AI can pre-check before a PR | both |
 | 9 | [The toolkit](09_TOOLKIT.md) — tools with their free tier and dated prices, recipes, the hub files, what needs a newer DataPass (0.23) | both |
-| 10 | [Switching variants](10_SWITCHING_VARIANTS.md) — the active variant: switch A / B / C from the status bar, what follows it, what it is not (0.25) | both |
+| 10 | [Previewing variants](10_SWITCHING_VARIANTS.md) — the selected variant: preview A / B / C from the status bar, what follows it; preview, test and activate are three different things (0.25) | both |
 
 Field-by-field reference: [../PREPARING_A_PROJECT.md](../PREPARING_A_PROJECT.md). Schemas:
 [`schemas/`](../../schemas/). Complete example projects: [`examples/v3`](../../examples/v3/).

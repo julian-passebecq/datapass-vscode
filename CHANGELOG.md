@@ -3,6 +3,40 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.25.0 — Previewing variants and repository layout (2026-09-26)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows V-A, R-L, R2 (Julian's FOIL answers Q1 and Q5). No new
+file format; one new machine-local state key (`datapass.v25.activeVariant`).
+
+- **Selected variant** (package V-A, PR #54 and the release PR): choose which architecture variant to
+  **preview**, **on this machine, per project** (VS Code global state keyed by project id; never
+  written in a repository). A status-bar item (surface `status.selectedVariant`, Standard, DataPass and
+  Advanced) reads `Variant: B — … · preview`; one click opens *DataPass: Switch the Selected Variant*
+  (current, decided, every scenario of options.json). It is the architecture preview made persistent:
+  the Project tree (*Selected architecture*), the diagram, Details and the Workbench follow it, and
+  switching in the Workbench selector or on the diagram switches it too. A scenario or option that
+  disappears falls back to the current architecture with one message.
+- **Preview, test, activate** are kept apart (FOIL review): the selected variant is a preview only —
+  not a decision (*Record decision* stays the committed path), not a test (a native check on a
+  declared environment, approved separately) and never an activation (switching the live route is
+  operational, outside DataPass; DataPass does not observe it).
+- **Packs name the selected variant as a preview**: *Copy Context for My AI*, the options export /
+  compare / apply packs and the options work orders carry `Selected variant (preview on this machine —
+  not a decision, not a deployment): **…** · files: … Live route: not observed by DataPass.`
+- **Files on disk, not "coded"**: the coding-state badges now read **files present** / **some files
+  present** / **no files** / not checked here, with "present on disk; not built, tested or deployed"
+  in their tooltips (the internal states are unchanged).
+- **Example `examples/v3/doc-pipeline`** (public, generic): PDFs → storage → processing, orchestrated
+  by A a direct script (files present), B a Blob event + Function (some files present) or C Data
+  Factory in a planned repository (no files), with dated per-currency prices. Guide page
+  [docs/guide/10_SWITCHING_VARIANTS.md](docs/guide/10_SWITCHING_VARIANTS.md) (previewing variants;
+  preview / test / activate also in guide page 2).
+- **Repository layout contract** (package R-L, PR #52, docs only): "we prefer one native repository per
+  sub-project; you may also use one repository with sub-folders (`path`)"; the bridge holds only
+  links and DataPass JSON, never code, and is not part of what a client or auditor receives. Sources
+  cited with their check date in [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md),
+  guide pages 01, 02 and 06.
+
 ## 0.24.0 — Claude & Codex panel (2026-09-26)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) row AI-3. Design:

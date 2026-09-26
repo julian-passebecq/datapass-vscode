@@ -100,14 +100,14 @@ test("variants: a scenario mixing coded, not-coded and removal-only options is p
   const v = analyse(o, observed(o, ["processing=script"]));
   const mixed = v.scenarios.find(s => s.id === "mixed")!;
   assert.equal(mixed.state, "partly-coded");
-  assert.match(mixed.reason, /A small API service \(new repository\): not coded/);
+  assert.match(mixed.reason, /A small API service \(new repository\): no files/);
   assert.deepEqual(mixed.picks.sort(), ["api=service", "processing=script"]);
   assert.equal(v.scenarios.find(s => s.id === "lean")!.state, "coded", "script (coded) + mongo staging (removal only)");
   // Google: its two new options are not coded; the decisions it leaves current are, so partly coded.
   const google = v.scenarios.find(s => s.id === "google")!;
   assert.equal(google.state, "partly-coded");
-  assert.match(google.reason, /Google Cloud Storage: not coded/);
-  assert.match(google.reason, /BigQuery object table \+ Document AI: not coded/);
+  assert.match(google.reason, /Google Cloud Storage: no files/);
+  assert.match(google.reason, /BigQuery object table \+ Document AI: no files/);
   assert.equal(v.scenarios[0]!.kind, "current");
 });
 

@@ -45,14 +45,14 @@ export const SURFACES: readonly Surface[] = [
   { id: "badge.alternatives", kind: "badge", label: "\"Alternatives exist\" on components", detail: "Marks components an options.json decision can change" },
   // 0.23 (package G): variants.
   { id: "project.variantFilter", kind: "projectSection", label: "Project tree: selected architecture and All variants", detail: "The tree follows the previewed scenario; a toggle lists every option's components and files" },
-  { id: "badge.codingState", kind: "badge", label: "Coding state of options and scenarios", detail: "coded / partly coded / not coded, derived from the files DataPass finds" },
+  { id: "badge.codingState", kind: "badge", label: "Coding state of options and scenarios", detail: "files present / some files present / no files, derived from the files DataPass finds (not built, tested or deployed)" },
   // 0.23: the toolkit catalogue.
   { id: "workbench.toolkit", kind: "workbenchView", label: "Workbench: Toolkit", detail: "Tools with their free tier and prices, recipes, what needs a newer DataPass" },
   { id: "project.toolkit", kind: "projectSection", label: "Project tree: Toolkit", detail: "Hub toolkit files read, entries skipped, Needs a newer DataPass" },
   { id: "badge.hubChanged", kind: "badge", label: "\"Changed by the hub\" on catalogue entries", detail: "Marks built-in tools a hub toolkit file changed" },
   // 0.24 (pass AI-3): the Claude & Codex panel.
-  // 0.25 (package V-A): the active variant.
-  { id: "status.activeVariant", kind: "statusBar", label: "Status bar: active variant", detail: "The variant this machine works on; click to switch (the tree, Details, the diagram and the packs follow)" },
+  // 0.25 (package V-A): the selected variant (a preview on this machine).
+  { id: "status.selectedVariant", kind: "statusBar", label: "Status bar: selected variant", detail: "The variant previewed on this machine; click to switch (the tree, Details, the diagram and the packs follow). Not a decision, not a deployment" },
   { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" }
 ];
 

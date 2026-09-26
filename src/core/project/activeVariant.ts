@@ -1,6 +1,8 @@
 /**
- * 0.25 (package V-A): the active variant — the architecture a person works on right now, on this
- * machine, per project. It is the architecture preview made persistent: the tree, Details, the
+ * 0.25 (package V-A): the selected variant — the architecture a person previews right now, on this
+ * machine, per project. It is a preview only: not a decision (Record decision), not a test (a native
+ * check on a declared environment) and never an activation (switching the live route is operational,
+ * outside DataPass). Internal names keep "active variant" (the global-state key is unchanged). It is the architecture preview made persistent: the tree, Details, the
  * diagram, the Workbench and the packs for an AI all follow it, and it is chosen in 1–2 clicks from
  * the status bar or the Options view.
  *
@@ -132,13 +134,13 @@ export function activeVariantView(options: OptionsFile | undefined, analysis: Va
 
 /** One line for the packs an AI reads (Copy Context for My AI, options, work orders). */
 export function activeVariantLine(v: ActiveVariantView): string {
-  const state = v.state ? ` — coding state: ${CODING_LABELS[v.state]}${v.reason ? ` (${v.reason})` : ""}` : "";
-  return `Active variant (this machine's working choice, not a decision): **${v.title}**${state}. The committed architecture is graph.json; recorded decisions are in options.json.`;
+  const files = v.state ? ` · files: ${CODING_LABELS[v.state]}${v.reason ? ` (${v.reason})` : ""}` : "";
+  return `Selected variant (preview on this machine — not a decision, not a deployment): **${v.title}**${files}. Live route: not observed by DataPass. The committed architecture is graph.json; recorded decisions are in options.json.`;
 }
 
 /** The status-bar text: short, with the coding state. */
 export function statusBarText(v: ActiveVariantView): string {
-  return `$(versions) ${v.title.length > 40 ? `${v.title.slice(0, 39)}…` : v.title}${v.state ? ` · ${CODING_LABELS[v.state]}` : ""}`;
+  return `$(versions) Variant: ${v.title.length > 40 ? `${v.title.slice(0, 39)}…` : v.title} · preview`;
 }
 
 /** Picks as "decision=option" for the options the active variant changes (for a header or a test). */

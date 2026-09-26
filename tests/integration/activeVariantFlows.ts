@@ -21,22 +21,22 @@ export function registerActiveVariantFlows(getApi: () => DataPassTestApi): void 
   const status = () => execFileSync("git", ["status", "--porcelain", "--untracked-files=all"], { cwd: ws(), encoding: "utf8" });
   const treeHas = async (suffix: string) => (await api().renderProjectTree()).some(x => x.id?.endsWith(suffix) && !x.id.startsWith("variants:"));
 
-  test("0.25 active variant: switch A → B → C from the status bar; tree, Details and Copy Context follow; nothing is written", async () => {
+  test("0.25 selected variant: switch A → B → C from the status bar; tree, Details and Copy Context follow; nothing is written", async () => {
     await waitFor("the options file", () => api().project().options, 20_000);
     const before = status();
-    await run("datapass.setActiveVariant", "current");
-    await waitFor("the active-variant status item", () => api().activeVariant.statusVisible());
-    assert.match(api().activeVariant.statusText(), /\$\(versions\) Current architecture · coded/);
+    await run("datapass.setSelectedVariant", "current");
+    await waitFor("the selected-variant status item", () => api().selectedVariant.statusVisible());
+    assert.match(api().selectedVariant.statusText(), /^\$\(versions\) Variant: Current architecture · preview$/);
 
     // A — direct script: the current architecture's script is in the tree.
-    await run("datapass.setActiveVariant", "a-direct");
-    assert.match(api().activeVariant.statusText(), /A — direct script · coded/);
+    await run("datapass.setSelectedVariant", "a-direct");
+    assert.match(api().selectedVariant.statusText(), /Variant: A — direct script · preview/);
     assert.ok(await treeHas("f:orchestration/direct/run.py"), "A's script is in the tree");
 
     // B — the status-bar switcher (the quick pick), the way a person does it.
     await withUi([{ pick: "B — Blob event + Function" }], () => run("datapass.switchVariant"));
-    assert.match(api().activeVariant.statusText(), /B — Blob event \+ Function · partly coded/);
-    assert.equal(api().activeVariant.remembered()?.scenario, "b-event", "remembered on this machine");
+    assert.match(api().selectedVariant.statusText(), /Variant: B — Blob event \+ Function · preview/);
+    assert.equal(api().selectedVariant.remembered()?.scenario, "b-event", "remembered on this machine");
     const r = await api().renderProjectTree();
     assert.match(r.find(x => x.id === "variants:selected")?.label ?? "", /B — Blob event \+ Function/);
     assert.ok(!(await treeHas("f:orchestration/direct/run.py")), "A's script left the tree");
@@ -49,15 +49,15 @@ export function registerActiveVariantFlows(getApi: () => DataPassTestApi): void 
     // Copy Context for My AI names variant B and its coding state.
     const file = vscode.Uri.file(path.join(ws(), "processing", "process.py"));
     const ui = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", file, [file]));
-    assert.match(ui.clipboard, /Active variant \(this machine's working choice, not a decision\): \*\*B — Blob event \+ Function\*\* — coding state: partly coded/);
+    assert.match(ui.clipboard, /Selected variant \(preview on this machine — not a decision, not a deployment\): \*\*B — Blob event \+ Function\*\* · files: some files present .*Live route: not observed by DataPass\./);
 
     // C — not coded (planned repository).
-    await run("datapass.setActiveVariant", "c-adf");
-    assert.match(api().activeVariant.statusText(), /C — Data Factory · not coded/);
-    record("activeVariant.c", { status: api().activeVariant.statusText() });
+    await run("datapass.setSelectedVariant", "c-adf");
+    assert.match(api().selectedVariant.statusText(), /Variant: C — Data Factory · preview/);
+    record("activeVariant.c", { status: api().selectedVariant.statusText() });
 
-    await run("datapass.setActiveVariant", "current");
-    assert.equal(api().activeVariant.remembered(), undefined, "back to current forgets the entry");
+    await run("datapass.setSelectedVariant", "current");
+    assert.equal(api().selectedVariant.remembered(), undefined, "back to current forgets the entry");
     assert.equal(status(), before, "no file written in the repository");
   }, ONLY);
 }
