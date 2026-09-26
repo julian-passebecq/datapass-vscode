@@ -47,7 +47,7 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | V1-LOAD | GPT T1 + A01: typed, bounded reads in `src/core/workspace/loader.ts` and `src/core/model/**`; a read failure is an error state, never "absent" | M0 | CODER DataPass LOAD | 0.5–1 M | | running |
 | V1-FRESH | GPT T3 + A03/A04: refresh/variant race guard, freshness and stale labels (`src/work/session.ts`, `src/work/projectObserver.ts`, pack stamps) | M0 | CODER DataPass FRESH | 0.5–1.5 M | | running |
 | V1-TEST | GPT T4 + A05: minimal native *Test* route per component (VS Code task declared in the native repo or recipe) with a receipt; truthful tool states (`src/core/checks/**`, `src/work/checkCommands.ts`) | M0 | CODER DataPass TEST | 0.5–1 M | | running |
-| V1-RC | GPT T5: M3 qualification and 1.0.0-rc.1 cut (`scripts/qa/**`, tests, CI, release files) | SURF, LOAD, FRESH, TEST | fresh coder after M2 | 1–2 M | | later |
+| V1-RC | GPT T5: M3 qualification and 1.0.0-rc.1 cut (`scripts/qa/**`, tests, CI, release files) | SURF, LOAD, FRESH, TEST | CODER DataPass RC | 1–2 M | #110 | in review: dry run done ([RC_QUALIFICATION.md](v1/RC_QUALIFICATION.md)); after merge `npm run qa:rc` on main pins the VSIX, then RC_CHECK |
 
 Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
 
