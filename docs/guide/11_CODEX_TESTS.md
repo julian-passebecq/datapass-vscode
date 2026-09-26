@@ -116,9 +116,10 @@ npm run qa:ui -- <run root> <journey.json> [--code <VS Code executable>] [--out 
    report), 2 = cannot start (every reason printed).
 
 A UI journey is a separate format, `datapass.ui-journey` v1. A `test-journey` is a goal written for
-Codex; a `ui-journey` lists the exact steps:
+Codex; a `ui-journey` lists the exact steps (this is `tests/fixtures/qa/ui/smoke-doc-pipeline.json`,
+which the unit tests parse):
 
-```json
+```jsonc
 {
   "format": "datapass.ui-journey", "version": 1,
   "id": "UI01", "title": "Open the DataPass Architecture view on the doc-pipeline example",
