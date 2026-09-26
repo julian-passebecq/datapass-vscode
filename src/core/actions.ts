@@ -21,7 +21,9 @@ import {
   repositoryPathRelativeToConfig
 } from "./fabricDeployment";
 import { renderFabricPreflightWorkflow } from "./fabricWorkflow";
-import { fabricToolboxMcpDefinition, mergeMcpServer, parseMcpConfig } from "./mcp";
+import { fabricToolboxMcpDefinition, planMcpFileEdit } from "./mcp";
+import { showProposalDiff, writeProjectFile } from "../work/optionsCommands";
+import { LOCAL_DIR } from "./workspace/loader";
 import { commandAvailable } from "./vscodeDetection";
 import { collectGalaxyState } from "./galaxyState";
 import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
@@ -582,48 +584,51 @@ async function configureFabricMcp(item: ToolCatalogItem): Promise<void> {
     return;
   }
 
-  const vscodeDir = vscode.Uri.joinPath(workspaceRoot, ".vscode");
-  const mcpUri = vscode.Uri.joinPath(vscodeDir, "mcp.json");
-  await vscode.workspace.fs.createDirectory(vscodeDir);
-
-  let config = { servers: {} as Record<string, { command: string; args?: string[] }> };
+  // 0.26 M1: a lossless edit through the reviewed-write path (diff, confirm, digest check just
+  // before writing, backup under .datapass/local/backups, journal write with read-back).
+  const rel = ".vscode/mcp.json";
+  const mcpUri = vscode.Uri.joinPath(workspaceRoot, ".vscode", "mcp.json");
+  let base: Uint8Array | undefined;
   try {
-    const bytes = await vscode.workspace.fs.readFile(mcpUri);
-    config = parseMcpConfig(JSON.parse(new TextDecoder().decode(bytes)) as unknown);
+    base = await vscode.workspace.fs.readFile(mcpUri);
   } catch (error) {
-    if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") {
-      // new configuration
-    } else {
-      try {
-        await vscode.workspace.fs.stat(mcpUri);
-        void vscode.window.showErrorMessage(
-          `DataPass: existing .vscode/mcp.json could not be safely parsed: ${error instanceof Error ? error.message : String(error)}`
-        );
-        return;
-      } catch {
-        // file does not exist
-      }
+    if (!(error instanceof vscode.FileSystemError && error.code === "FileNotFound")) {
+      void vscode.window.showErrorMessage(`DataPass: could not read ${rel}: ${error instanceof Error ? error.message : String(error)}`);
+      return;
     }
   }
 
-  const existing = config.servers[definition.serverName];
-  if (existing) {
-    const replace = await vscode.window.showWarningMessage(
-      `MCP server "${definition.serverName}" already exists. Replace it with the verified local Fabric Toolbox path?`,
-      { modal: true },
-      "Replace"
-    );
-    if (replace !== "Replace") return;
+  let edit;
+  try {
+    edit = planMcpFileEdit(base ? new TextDecoder().decode(base) : undefined, definition.serverName, definition.server);
+  } catch (error) {
+    void vscode.window.showErrorMessage(`DataPass: ${rel} was left unchanged. ${error instanceof Error ? error.message : String(error)}`);
+    return;
   }
 
-  const merged = mergeMcpServer(config, definition.serverName, definition.server);
-  await vscode.workspace.fs.writeFile(
-    mcpUri,
-    new TextEncoder().encode(JSON.stringify(merged, null, 2) + "\n")
+  await showProposalDiff(workspaceRoot, rel, edit.text, `${rel}: current ↔ with ${definition.serverName}`);
+  const confirmed = await vscode.window.showWarningMessage(
+    edit.replaces
+      ? `Replace the existing MCP server "${definition.serverName}" in ${rel} with the verified local Fabric Toolbox path?`
+      : `Add the MCP server "${definition.serverName}" to ${rel}?`,
+    {
+      modal: true,
+      detail: `The diff shows the change. Other servers, their settings and the file's inputs are kept as they are. ${base ? `The previous version is kept in ${LOCAL_DIR}/backups. ` : ""}No credential is stored.`
+    },
+    edit.replaces ? "Replace" : "Add"
   );
+  if (!confirmed) return;
+
+  let backup: string | undefined;
+  try {
+    backup = await writeProjectFile({ root: workspaceRoot }, rel, new TextEncoder().encode(edit.text), base);
+  } catch (error) {
+    void vscode.window.showErrorMessage(`DataPass: ${error instanceof Error ? error.message : String(error)}`);
+    return;
+  }
   await vscode.window.showTextDocument(mcpUri);
   void vscode.window.showInformationMessage(
-    `DataPass: configured ${item.name} in .vscode/mcp.json without storing credentials.`
+    `DataPass: registered ${item.name} in ${rel}${backup ? " (backup kept)" : ""}. VS Code starts it when you use it; nothing was connected or signed in.`
   );
 }
 
