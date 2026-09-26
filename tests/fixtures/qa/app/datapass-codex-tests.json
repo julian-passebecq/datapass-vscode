@@ -1,0 +1,20 @@
+{
+  "format": "datapass.codex-tests",
+  "version": 1,
+  "purpose": "app",
+  "datapass": { "version": "0.26.0", "vsix": "build/datapass-vscode-0.26.0.vsix" },
+  "workspaces": [
+    {
+      "client": { "id": "doc-pipeline-lab", "title": "Doc Pipeline Lab (fictional)" },
+      "bridge": { "remote": "https://github.com/example-org/doc-pipeline", "folder": "doc-pipeline" },
+      "repositories": [{ "remote": "https://github.com/example-org/doc-processing", "folder": "doc-processing" }]
+    },
+    {
+      "client": { "id": "codex-wind-lab", "title": "Codex Wind Lab (fictional)" },
+      "bridge": { "remote": "https://github.com/julian-passebecq/codex-datapass-bridge", "folder": "codex-datapass-bridge" },
+      "repositories": [{ "remote": "https://github.com/julian-passebecq/datapass-codex-fakeclient", "folder": "wind-study-2d" }]
+    }
+  ],
+  "journeys": ["journeys/A01-install-and-first-open.json"],
+  "report": { "remote": "https://github.com/julian-passebecq/datapass-codex-test", "folder": "reports" }
+}

@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-codex-tests.schema.json",
+  "title": "DataPass Codex tests configuration (1)",
+  "anyOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "format": {
+          "const": "datapass.codex-tests"
+        },
+        "version": {
+          "const": 1
+        },
+        "datapass": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 40,
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+            },
+            "vsix": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            }
+          },
+          "required": [
+            "version"
+          ]
+        },
+        "journeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+          },
+          "maxItems": 50,
+          "minItems": 1
+        },
+        "report": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "remote": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+            },
+            "folder": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            }
+          },
+          "required": [
+            "remote",
+            "folder"
+          ]
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 480
+            },
+            "journeyMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            }
+          },
+          "required": []
+        },
+        "purpose": {
+          "const": "client"
+        },
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^[a-z][a-z0-9-]{0,79}$"
+            },
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          },
+          "required": [
+            "id",
+            "title"
+          ]
+        },
+        "workspace": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "bridge": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "remote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+                },
+                "folder": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                }
+              },
+              "required": [
+                "remote",
+                "folder"
+              ]
+            },
+            "repositories": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "remote": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+                  },
+                  "folder": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  }
+                },
+                "required": [
+                  "remote",
+                  "folder"
+                ]
+              },
+              "maxItems": 20,
+              "minItems": 0
+            }
+          },
+          "required": [
+            "bridge",
+            "repositories"
+          ]
+        }
+      },
+      "required": [
+        "format",
+        "version",
+        "purpose",
+        "datapass",
+        "journeys",
+        "report",
+        "client",
+        "workspace"
+      ]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "$schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "format": {
+          "const": "datapass.codex-tests"
+        },
+        "version": {
+          "const": 1
+        },
+        "datapass": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 40,
+              "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+            },
+            "vsix": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            }
+          },
+          "required": [
+            "version"
+          ]
+        },
+        "journeys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400,
+            "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+          },
+          "maxItems": 50,
+          "minItems": 1
+        },
+        "report": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "remote": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500,
+              "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+            },
+            "folder": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400,
+              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+            }
+          },
+          "required": [
+            "remote",
+            "folder"
+          ]
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "runMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 480
+            },
+            "journeyMinutes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 120
+            }
+          },
+          "required": []
+        },
+        "purpose": {
+          "const": "app"
+        },
+        "workspaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "client": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80,
+                    "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "id",
+                  "title"
+                ]
+              },
+              "bridge": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "remote": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+                  },
+                  "folder": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  }
+                },
+                "required": [
+                  "remote",
+                  "folder"
+                ]
+              },
+              "repositories": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "remote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500,
+                      "pattern": "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$"
+                    },
+                    "folder": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                    }
+                  },
+                  "required": [
+                    "remote",
+                    "folder"
+                  ]
+                },
+                "maxItems": 20,
+                "minItems": 0
+              }
+            },
+            "required": [
+              "client",
+              "bridge",
+              "repositories"
+            ]
+          },
+          "maxItems": 10,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "format",
+        "version",
+        "purpose",
+        "datapass",
+        "journeys",
+        "report",
+        "workspaces"
+      ]
+    }
+  ]
+}

@@ -29,6 +29,9 @@ jobs:
       - run: npm run build
       - run: npx vsce package --no-dependencies
         if: matrix.os == 'ubuntu-latest'
+      # QA-1: qa:prepare installs the VSIX just packaged into an isolated profile on a local fixture.
+      - run: DATAPASS_QA_VSIX="$(ls "$PWD"/*.vsix | head -n 1)" npx tsx --test tests/qaPrepare.test.ts
+        if: matrix.os == 'ubuntu-latest'
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'ubuntu-latest'
         with:

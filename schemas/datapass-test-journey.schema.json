@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-test-journey.schema.json",
+  "title": "DataPass test journey (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "format": {
+      "const": "datapass.test-journey"
+    },
+    "version": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 20,
+      "pattern": "^[A-Z][A-Z0-9-]{1,19}$"
+    },
+    "kind": {
+      "enum": [
+        "app",
+        "client"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "as": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80,
+          "pattern": "^[a-z][a-z0-9-]{0,79}$"
+        },
+        "mode": {
+          "enum": [
+            "Vanilla",
+            "Standard",
+            "DataPass",
+            "Advanced"
+          ]
+        },
+        "variant": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "environment": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        }
+      },
+      "required": []
+    },
+    "hints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      },
+      "maxItems": 10,
+      "minItems": 0
+    },
+    "expected": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "maxItems": 20,
+      "minItems": 1
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 500
+      },
+      "maxItems": 20,
+      "minItems": 0
+    },
+    "features": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "onboarding",
+          "workspace",
+          "architecture",
+          "variants",
+          "options",
+          "costs",
+          "readiness",
+          "evidence",
+          "work-orders",
+          "stamps",
+          "file-context",
+          "ai-exchange",
+          "resources",
+          "git",
+          "format-checks",
+          "modes",
+          "file-versions",
+          "toolkit",
+          "mcp",
+          "install",
+          "docs",
+          "performance"
+        ]
+      },
+      "maxItems": 20,
+      "minItems": 1
+    },
+    "outOfScope": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 300
+      },
+      "maxItems": 10,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "id",
+    "kind",
+    "title",
+    "goal",
+    "expected",
+    "features"
+  ]
+}

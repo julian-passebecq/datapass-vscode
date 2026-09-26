@@ -1,0 +1,13 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "A01",
+  "kind": "app",
+  "title": "Install the VSIX and open two different clients",
+  "as": "DataPass tester",
+  "goal": "Install the released VSIX in an isolated profile and open each client's workspace without errors.",
+  "setup": { "client": "codex-wind-lab", "mode": "Standard" },
+  "expected": ["DataPass activates in each workspace", "No error notification appears on first open"],
+  "questions": ["How long does the first open take, in seconds?", "Which panel opens first?"],
+  "features": ["install", "onboarding", "workspace"]
+}
