@@ -1,4 +1,121 @@
-# Implementation Status — 0.23.0: toolkit catalogue and variants
+# Implementation Status — 0.24.0: Claude & Codex panel
+
+Date: 2026-09-26. Version `0.24.0` — pass AI-3 (PR #46), released from main per
+[handoff/PLAN.md](handoff/PLAN.md). The night note (`handoff/v3/night/0.24-ai3.md`) is folded into
+this section. Design: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
+§7, §8.7, §3.2, §5, §9, §13.1 (Q5: the desktop apps by default; Codex installed as the Windows app
+"ChatGPT"). Claude Control side: pass C-1 (`GET /api/work-orders`, `builders/build_codex.py`), not
+changed here.
+
+### What's new
+
+- **Claude & Codex panel** (right side bar, between the AI view and Details, folded by default;
+  shown in the DataPass and Advanced modes, surface `view.agentPanel`): your quick links
+  (`datapass.ai.quickLinks`: https pages, `claude:` links and http on 127.0.0.1 / localhost only),
+  Claude Control ● on / ○ off with the time of the check, plan usage (5-hour and weekly %), and per
+  project the conversations running, waiting for you or with an open PR (*Open in Claude*), open
+  PRs, urgent alerts and your *À faire par toi* rows. When Control is off: "Claude Control is off.
+  DataPass works normally; conversation status and token counts are hidden." and *Copy the start
+  command* (`datapass.control.folder`); DataPass never starts Control.
+- **Claude Control, read-only and loopback only**: `datapass.control.enabled` (off = no request at
+  all) and `datapass.control.url` (machine setting, `http://127.0.0.1:<port>` or
+  `http://localhost:<port>` only). DataPass reads `/api/health`, `/api/status`, `/api/project/<name>`
+  and `/api/work-orders` only while the panel is visible or a launched order is open (every 60 s;
+  every 5 min once Control is off), never during activation. Everything is treated as untrusted:
+  allowlisted fields (never task texts, last messages, agents, mode or project instructions),
+  flattened text, and links kept only when `claude://claude.ai/epitaxy/<id>` or an https PR page on
+  a known Git host; the webview never holds a URL.
+- **Work orders view**: new **Conversation** and **Tokens** columns and a *Conversation (Claude
+  Control)* section in the order's Details: status, where it runs, how DataPass knows it is this
+  order's conversation — the exact session id DataPass chose, **moved to the app with /desktop**
+  (the Claude app keeps that id), or found by the marker line — tokens, last activity, and *Open in
+  Claude*. Without Control: "— (Control off)", everything else unchanged.
+- **Codex hand-off**: the ChatGPT app route runs `codex app <folder>` when a Codex CLI is configured
+  (`datapass.ai.codex.path`) or on PATH, otherwise it copies the prompt and opens the app as before;
+  the Codex terminal launch (`-C`, `--add-dir`, `--sandbox workspace-write --ask-for-approval
+  on-request`) and `.cmd` shims (strict tokens on the cmd.exe line, else *Copy the command*) are
+  covered by tests. The Agent tab says which Codex route applies on this computer.
+
+### How it is built
+
+- `src/work/controlClient.ts` (plain Node, no `vscode`): the Control client. GET only, to
+  `http://127.0.0.1:<port>` or `http://localhost:<port>` only (anything else is refused before a
+  request; Control's own Host check accepts exactly these), 800 ms for `/api/health`, 3 s for the
+  rest, 2 MB cap, JSON only. Sanitizers keep the fields of §7 and nothing else (never `task`,
+  `last_user`, `last_claude`, `agents`, `mode`, project `info`); text flattened (control and bidi
+  characters) and bounded; links kept only when `claude://claude.ai/epitaxy/<id>` or an https PR page
+  on github.com / gitlab.com / dev.azure.com / *.visualstudio.com. An impostor on the port that does
+  not answer `{ ok: true }` counts as off. Also the quick-link policy (https, `claude:`, http on
+  127.0.0.1 / localhost only, at most 12) and a work order's conversation line: the newest
+  conversation Control linked to the order; **exact** when Control's `cli_id` is the session id
+  DataPass chose, **moved to the app with /desktop** when that conversation is an app one (the
+  Claude app keeps the CLI session id), else **found by the marker line**.
+- `src/work/controlService.ts`: when DataPass reads Control. Never during activation; only while the
+  panel is visible or a launched order is still open (every 60 s; every 5 min once Control is off),
+  and on request. `datapass.control.enabled: false` = no request at all. Project names = the folder
+  names of the coordination repository and the clones; after an "unknown project" answer Control's
+  list is cached and matched case-insensitively. One read at a time; a refresh asked during a read
+  (a setting changed) runs once more after it.
+- `src/views/agentPanel{,Html,State}.ts`: the **Claude & Codex** webview view (`datapass.agentPanel`)
+  in the right side bar between the AI view and Details, folded by default. Quick links, Control
+  ● on / ○ off with the time of the check and ⟳, plan (5-hour and weekly %), per matched project the
+  conversations running / needs you / PR open (needs you first; *Open in Claude*), open PRs, urgent
+  alerts, *À faire par toi* rows; off: the §7 sentence and *Copy the start command* (`python
+  server/server.py` in `datapass.control.folder` when set; DataPass never starts Control). The
+  webview never holds a URL: it sends a link index or a row key and the host re-reads and re-checks
+  the link before `openExternal`. A line says which Codex route applies.
+- Work orders view (Workbench) and the order's Details: columns **Conversation** and **Tokens**
+  (`— (Control off)` / `— (Control switched off)` when unknown), and a *Conversation (Claude
+  Control)* section with status, where it runs, how it is linked, tokens, last activity, other
+  conversations from the same order, and *Open in Claude* (`datapass.control.openConversation`, the
+  link looked up in the host from Control's data for that order). `WbOrder.conversation`,
+  `WbWorkOrders.control`; `WorkOrderService.attachControl` / `notifyControlChanged`.
+- Codex hand-off: the ChatGPT app route runs `codex app <folder>` (`codexAppArgs`) in a hidden
+  transient terminal when a Codex CLI is configured (`datapass.ai.codex.path`) or on an absolute PATH
+  entry, else copies the prompt and opens `codex:` as before; a `.cmd` shim goes through the same
+  strict-token cmd.exe line (with `/c` for this helper). The Codex terminal launch (AI-2's
+  `codexArgs`: `-C`, `--add-dir`, `--sandbox workspace-write --ask-for-approval on-request`, `-m`) is
+  unchanged and now covered by a desktop test. The Agent tab shows which Codex route applies under the
+  agent choice (`AgentTabState.codex.cli`).
+- Settings: `datapass.ai.quickLinks` (application), `datapass.control.enabled` (application, true),
+  `datapass.control.url` (machine, loopback pattern), `datapass.control.folder` (machine). Commands:
+  *Refresh Claude Control Status* (panel title ⟳), *Copy the Claude Control Start Command*,
+  `datapass.control.openConversation` (hidden from the palette).
+- Surface `view.agentPanel` (add, never rename): DataPass and Advanced; in `surfaces.ts`,
+  `presets.json`, the overrides setting and the emitted experience schema. It gates nothing safety-
+  related.
+
+### Tests
+
+- Unit `tests/control.test.ts` (9): loopback-only addresses; a fake Control on 127.0.0.1 (on, off,
+  slow → timeout, bad JSON, too large, HTTP 500, impostor); allowlisted fields only and hostile
+  links dropped; unknown project → Control's names, case-insensitive match; hostile work-order rows;
+  quick-link policy; conversation linking (exact, /desktop, marker) and token text; panel state
+  (off message, live conversations only, no URL in the webview, `linkOfKey` refuses foreign keys);
+  Codex arguments with spaces, `.cmd` shims under `Program Files`, `&` / `%` folders refused,
+  `codex app`.
+- Desktop `tests/integration/agentPanelFlows.ts` (6, fixture `v20-work-orders`, after the 0.20
+  flows): Control off (panel message, start command copied, Work orders view "Control off"); switched
+  off and a non-loopback address send no request; a stub Control server — plan, conversations,
+  PRs, alerts, to-dos, only allowlisted links open, the terminal order's conversation "moved to the
+  app with /desktop" with 1.8 M tokens, the app order found by its marker with its rogue link
+  dropped, *Open in Claude* through the command; quick links from the setting with a refused
+  `javascript:`; Codex app without a CLI (prompt copied, `codex:` opened), with a stub CLI (`codex app
+  <folder>` run, nothing opened), and a Codex terminal launch (`-C`, workspace-write, marker).
+
+Totals: unit 418, desktop 325 on 15 fixtures (6 new flows in `tests/integration/agentPanelFlows.ts`).
+
+### Not checked here (Julian)
+
+- A real Codex run: the Codex CLI is not on this PC (Q5), so `codex app <folder>` and the terminal
+  launch were checked with a stub only. Julian: optionally install the Codex CLI
+  (`npm install -g @openai/codex`), set `datapass.ai.codex.path` if it is not on PATH, and hand one
+  small order to Codex.
+- Whether the Claude app keeps the CLI session id after `/desktop` (the "exact after /desktop" link)
+  is what Control reports as `cli_id`; checked with Control's data shape, not with a real `/desktop`
+  move in this pass.
+
+## 0.23.0 — 0.23.0: toolkit catalogue and variants
 
 Date: 2026-09-26. Version `0.23.0` — released from main after package G (variants, PR #39) and the
 toolkit catalogue (packages T1–T4, one session, PR #43), per [handoff/PLAN.md](handoff/PLAN.md). The

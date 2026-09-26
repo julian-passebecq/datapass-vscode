@@ -53,6 +53,15 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.24.0 (2026-09-26)
+
+Pass AI-3 (PLAN row AI-3, PR #46): the Claude & Codex panel (quick links, Claude Control on/off with
+the off message, plan usage, this project's conversations, PRs, urgent alerts, À faire; surface
+`view.agentPanel` in DataPass and Advanced), Claude Control's conversation, link type (exact,
+/desktop, marker) and tokens in the Work orders view through `GET /api/work-orders`, and the Codex
+hand-off (`codex app <folder>` when a Codex CLI exists). Control is read over loopback only, while
+someone looks. Unit 418, desktop 325. Next: AI-4 (pilot, read-only). See IMPLEMENTATION_STATUS.md.
+
 ## Done in 0.23.0 (2026-09-26)
 
 The toolkit catalogue (PLAN T1–T4, PR #43): `datapass.toolkit` 1 files in the hub repository over a
