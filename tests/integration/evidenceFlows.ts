@@ -4,6 +4,9 @@
  * a reason; a CLI is never "registered", an MCP server is never "connected" from a file.
  */
 import * as assert from "node:assert/strict";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { record, test, waitFor } from "./harness";
 
@@ -32,5 +35,24 @@ export function registerEvidenceFlows(getApi: () => DataPassTestApi): void {
     const wb = api().workbenchState().readiness;
     assert.ok(wb?.evidence.some(e => e.id === "mcp.fabric-management" && e.links.every(l => l.text.length > 0)), "the Workbench carries the chain");
     record("evidence.docPipeline", r.evidence.map(e => ({ id: e.id, summary: e.summary, links: e.chain.map(l => `${l.link}:${l.state}`) })));
+  }, ONLY);
+
+  test("V1-STAB: a new .vscode/mcp.json shows on Re-inspect Project (not only on Refresh Work View)", async () => {
+    const dir = path.join(vscode.workspace.workspaceFolders![0]!.uri.fsPath, ".vscode");
+    const file = path.join(dir, "mcp.json");
+    const hadDir = fs.existsSync(dir);
+    assert.ok(!fs.existsSync(file), "the fixture has no mcp.json");
+    const registered = () => api().readiness().evidence.find(e => e.id === "mcp.fabric-management")?.chain.find(l => l.link === "registered");
+    try {
+      await vscode.commands.executeCommand("datapass.refreshProject");
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(file, JSON.stringify({ servers: { "fabric-mgmt": { command: "python" } } }));
+      await vscode.commands.executeCommand("datapass.refreshProject");
+      const reg = registered();
+      assert.ok(reg?.state === "observed" && reg.holds, JSON.stringify(reg));
+    } finally {
+      fs.rmSync(hadDir ? file : dir, { recursive: true, force: true });
+      await vscode.commands.executeCommand("datapass.refreshProject");
+    }
   }, ONLY);
 }
