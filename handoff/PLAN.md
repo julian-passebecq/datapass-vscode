@@ -25,6 +25,22 @@ Supplier/client rule (Julian, 2026-09-26): we write the extension, common and hu
 | Next | 0.27.0 released → gate item 6 (low TAMPON) → V1-PAL → 1.0.0-rc · CQ after HUB-1 | free M TAMPON · low TAMPON · ARCHI 2 · TAMPON 24 | queued |
 | FOIL AI (client) | Codex Wind Lab, then FOIL (V1-FOIL-A depends on it and on Julian's FOIL #5/#6 reviews). foil-study#1 is merged as the DataPass reference version; the FOIL AI builds its own on branch `foil-ai/study` (from `12ce138`; V1-FOIL-A may compare the two) | — | client side |
 
+## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
+
+Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). No coordinator: one coder at a time until 1.0.0-rc. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+
+| Session | Role | Package / job | GO date | Reports to |
+|---|---|---|---|---|
+| PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
+| PM ASSISTANT DataPass 1 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate | 2026-09-26 | PM |
+| TAMPON DATAPASSVSCODE - M 3 | coder (medium) | Release 0.27.0 (#97), then stops | 2026-09-26 | PM |
+
+Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
+
+Next packages after 0.27.0, in order (one fresh coder each): gate item 6 (low, handoff link review) → V1-PAL (medium) → 1.0.0-rc (medium). V1-FOIL-A waits on the FOIL AI (client side). Expected conversations to 1.0.0-rc: 3 coders + PM + assistant.
+
+Julian-only moments: one ~20 min check at 1.0.0-rc (batched by the assistant). FOIL is a **dev** project (Julian, 22:40): the owning AI merges on green CI.
+
 ## Versions
 
 "V1 / V2 / V3" are the feature tiers of plan 10 §3, not extension releases (current release: **0.27.0**; next: **1.0.0-rc**).
