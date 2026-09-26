@@ -36,7 +36,7 @@ export const MAX_ORDER_BYTES = 256 * 1024;
 export const MAX_RESULT_BYTES = 256 * 1024;
 export const MAX_STATE_BYTES = 256 * 1024;
 
-export const ORDER_KINDS = ["change", "investigate", "prepare-files", "apply-decision", "fix-card", "datapass-files"] as const;
+export const ORDER_KINDS = ["change", "investigate", "prepare-files", "apply-decision", "fix-card", "datapass-files", "pilot-read"] as const;
 export type OrderKind = typeof ORDER_KINDS[number];
 export const AGENT_TOOLS = ["claude-code", "codex"] as const;
 export type AgentTool = typeof AGENT_TOOLS[number];
@@ -51,6 +51,9 @@ export type ProjectType = typeof PROJECT_TYPES[number];
 /** The DataPass files an order can name (the AI exchange kinds; "project" is project.json). */
 export const DATAPASS_FILE_KINDS = ["project", "graph", "options", "sheet", "board", "catalog"] as const;
 export type DataPassFileKind = typeof DATAPASS_FILE_KINDS[number];
+/** 0.26 (AI-4a): the CLIs a pilot order names (stage 1: az and func; fab and databricks later, each behind its flag). */
+export const PILOT_ORDER_CLIS = ["az", "func", "fab", "databricks"] as const;
+export type PilotOrderCli = typeof PILOT_ORDER_CLIS[number];
 export const ORDER_STATUSES = ["written", "launched", "reported", "done", "abandoned"] as const;
 export type OrderStatus = typeof ORDER_STATUSES[number];
 export const RESULT_STATUSES = ["done", "partial", "blocked", "failed"] as const;
@@ -104,11 +107,12 @@ export const WORK_ORDER_SCHEMA: Schema = obj({
     checks: arr(obj({ repoRef: REF, text: S(500) }, ["text"]), 20),
     doneWhen: arr(S(1000), 10)
   }),
-  policy: obj({ merge: enumOf(...MERGE_POLICIES), cloud: constOf("none"), secrets: constOf("never"), stayInRepositories: constOf(true) }),
+  policy: obj({ merge: enumOf(...MERGE_POLICIES), cloud: enumOf("none", "read-only"), secrets: constOf("never"), stayInRepositories: constOf(true) }),
+  pilot: obj({ stage: constOf(1), environment: REF, clis: arr(enumOf(...PILOT_ORDER_CLIS), 4, 1) }),
   agent: obj({ tool: enumOf(...AGENT_TOOLS), surface: enumOf(...SURFACES), model: MODEL, effort: enumOf(...EFFORTS), sessionId: UUID, permissions: enumOf("usual", "ask") }, ["tool", "surface", "effort", "permissions"]),
   result: obj({ path: ABS_PATH }),
   links: obj({ revises: NULLABLE_ORDER, followsUp: NULLABLE_ORDER })
-});
+}, ["format", "version", "id", "receipt", "title", "createdAt", "createdBy", "kind", "project", "scope", "goal", "repositories", "context", "expected", "policy", "agent", "result", "links"]);
 
 const SEEN_PR: Schema = obj({
   repoRef: REF, url: HTTPS, number: { type: "integer", minimum: 1, maximum: 1e9 }, state: enumOf("open", "merged", "closed"),
@@ -174,7 +178,9 @@ export interface WorkOrder {
     checks: Array<{ repoRef?: string; text: string }>;
     doneWhen: string[];
   };
-  policy: { merge: MergePolicy; cloud: "none"; secrets: "never"; stayInRepositories: true };
+  policy: { merge: MergePolicy; cloud: "none" | "read-only"; secrets: "never"; stayInRepositories: true };
+  /** 0.26 (AI-4a): only on `kind: pilot-read` (stage 1: read-only, one environment, the CLIs the agent may run). */
+  pilot?: { stage: 1; environment: string; clis: PilotOrderCli[] };
   agent: { tool: AgentTool; surface: Surface; model?: string; effort: Effort; sessionId?: string; permissions: "usual" | "ask" };
   result: { path: string };
   links: { revises: string | null; followsUp: string | null };
@@ -304,6 +310,13 @@ export function parseWorkOrder(raw: string | Uint8Array, folderId?: string): Wor
   }
   if (o.agent.sessionId && !(o.agent.tool === "claude-code" && o.agent.surface === "terminal")) {
     throw new WorkOrderFormatError("a session id is chosen only for Claude Code in a terminal");
+  }
+  const pilot = o.kind === "pilot-read";
+  if (pilot !== Boolean(o.pilot) || pilot !== (o.policy.cloud === "read-only")) throw new WorkOrderFormatError("only a pilot-read order has a pilot section and policy.cloud read-only");
+  if (pilot) {
+    if (o.repositories.some(r => r.access !== "read")) throw new WorkOrderFormatError("a pilot order only reads repositories");
+    if (o.expected.pullRequests !== "none") throw new WorkOrderFormatError("a pilot order opens no pull request");
+    if (o.agent.permissions !== "ask") throw new WorkOrderFormatError("a pilot order always asks before each action (permissions: ask)");
   }
   if (o.links.revises === o.id || o.links.followsUp === o.id) throw new WorkOrderFormatError("an order cannot revise or follow itself");
   return o;

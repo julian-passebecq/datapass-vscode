@@ -1,0 +1,4 @@
+# Written by DataPass for the pilot order wo-20260926-2105-1234 (stage 1, read-only). Do not edit:
+# DataPass compares this file with what it generated before each launch and refuses when they differ.
+sandbox_mode = "read-only"
+approval_policy = "on-request"

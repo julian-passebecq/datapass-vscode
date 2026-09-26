@@ -1,0 +1,628 @@
+# Written by DataPass for the pilot order wo-20260926-2105-1234 (stage 1, read-only). Do not edit.
+# allow: runs outside the read-only sandbox (it needs the network). forbidden: blocked.
+# Every other command runs in the read-only sandbox, without network, or asks you first.
+# Not allowed on purpose (asks): func azure functionapp logstream.
+
+prefix_rule(
+    pattern = ["az", "version"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az version"],
+    not_match = ["az delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az account show --output json"],
+    not_match = ["az account delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az account list --output json"],
+    not_match = ["az account delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "group", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az group list --output json"],
+    not_match = ["az group delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "group", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az group show --output json"],
+    not_match = ["az group delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "resource", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az resource list --output json"],
+    not_match = ["az resource delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "resource", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az resource show --output json"],
+    not_match = ["az resource delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp list --output json"],
+    not_match = ["az functionapp delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp show --output json"],
+    not_match = ["az functionapp delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "function", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp function list --output json"],
+    not_match = ["az functionapp function delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "function", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp function show --output json"],
+    not_match = ["az functionapp function delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "config", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp config show --output json"],
+    not_match = ["az functionapp config delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "plan", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az functionapp plan show --output json"],
+    not_match = ["az functionapp plan delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "account", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az storage account list --output json"],
+    not_match = ["az storage account delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "account", "show"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az storage account show --output json"],
+    not_match = ["az storage account delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "container", "list", "--auth-mode", "login"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az storage container list --auth-mode login --output json"],
+    not_match = ["az storage container list --auth-mode delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "blob", "list", "--auth-mode", "login"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az storage blob list --auth-mode login --output json"],
+    not_match = ["az storage blob list --auth-mode delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "app-insights", "query"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az monitor app-insights query --output json"],
+    not_match = ["az monitor app-insights delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "metrics", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az monitor metrics list --output json"],
+    not_match = ["az monitor metrics delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "activity-log", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["az monitor activity-log list --output json"],
+    not_match = ["az monitor activity-log delete-me"],
+)
+
+prefix_rule(
+    pattern = ["func", "--version"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["func --version"],
+    not_match = ["func delete-me"],
+)
+
+prefix_rule(
+    pattern = ["func", "azure", "functionapp", "list-functions"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["func azure functionapp list-functions --output json"],
+    not_match = ["func azure functionapp delete-me"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "list"],
+    decision = "allow",
+    justification = "DataPass pilot stage 1: read-only",
+    match = ["func settings list"],
+    not_match = ["func settings delete-me"],
+)
+
+prefix_rule(
+    pattern = ["az", "rest"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az rest --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "login"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az login --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "logout"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az logout --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", "set"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az account set --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", "clear"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az account clear --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", "get-access-token"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az account get-access-token --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "config"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az config --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "configure"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az configure --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "extension", "add"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az extension add --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "extension", "update"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az extension update --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "extension", "remove"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az extension remove --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "interactive"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az interactive --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "upgrade"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az upgrade --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "keyvault"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az keyvault --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "ad"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az ad --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "role"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az role --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "blob", "query"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az storage blob query --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "--debug"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["az --debug --help"],
+    not_match = ["az version-check"],
+)
+
+prefix_rule(
+    pattern = ["az", "account", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az account create --name x"],
+    not_match = ["az account list"],
+)
+
+prefix_rule(
+    pattern = ["az", "group", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az group create --name x"],
+    not_match = ["az group list"],
+)
+
+prefix_rule(
+    pattern = ["az", "resource", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az resource create --name x"],
+    not_match = ["az resource list"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az functionapp create --name x"],
+    not_match = ["az functionapp list"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "function", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az functionapp function create --name x"],
+    not_match = ["az functionapp function list"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "config", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az functionapp config create --name x"],
+    not_match = ["az functionapp config list"],
+)
+
+prefix_rule(
+    pattern = ["az", "functionapp", "plan", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az functionapp plan create --name x"],
+    not_match = ["az functionapp plan list"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "account", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az storage account create --name x"],
+    not_match = ["az storage account list"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "container", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az storage container create --name x"],
+    not_match = ["az storage container list"],
+)
+
+prefix_rule(
+    pattern = ["az", "storage", "blob", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az storage blob create --name x"],
+    not_match = ["az storage blob list"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "app-insights", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az monitor app-insights create --name x"],
+    not_match = ["az monitor app-insights list"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "metrics", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az monitor metrics create --name x"],
+    not_match = ["az monitor metrics list"],
+)
+
+prefix_rule(
+    pattern = ["az", "monitor", "activity-log", ["create", "delete", "update", "set", "start", "stop", "restart", "deploy", "upload", "download", "copy", "sync", "import", "purge", "invoke-action", "generate-sas", "keys", "show-connection-string", "connection-string", "appsettings", "lease"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no change in the cloud, no key",
+    match = ["az monitor activity-log create --name x"],
+    not_match = ["az monitor activity-log list"],
+)
+
+prefix_rule(
+    pattern = ["func", "azure", "functionapp", "publish"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func azure functionapp publish --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "azure", "functionapp", "fetch-app-settings"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func azure functionapp fetch-app-settings --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "azure", "storage", "fetch-connection-string"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func azure storage fetch-connection-string --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "start"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func start --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "run"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func run --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "host"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func host --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "new"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func new --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "init"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func init --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "pack"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func pack --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "deploy"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func deploy --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "add"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func settings add --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "delete"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func settings delete --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "encrypt"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func settings encrypt --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "decrypt"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func settings decrypt --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "durable"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func durable --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "extensions"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func extensions --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "bundles"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func bundles --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "workload"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func workload --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "setup"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func setup --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "quickstart"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func quickstart --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "profile", "set"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func profile set --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "kubernetes"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func kubernetes --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "azurecontainerapps"],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: writes, secrets or sign-in changes",
+    match = ["func azurecontainerapps --help"],
+    not_match = ["func version-check"],
+)
+
+prefix_rule(
+    pattern = ["func", "settings", "list", ["-a", "--showValue"]],
+    decision = "forbidden",
+    justification = "DataPass pilot stage 1: no secret values",
+    match = ["func settings list -a"],
+    not_match = ["func settings list"],
+)

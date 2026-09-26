@@ -82,7 +82,8 @@
               "prepare-files",
               "apply-decision",
               "fix-card",
-              "datapass-files"
+              "datapass-files",
+              "pilot-read"
             ]
           },
           "createdAt": {
