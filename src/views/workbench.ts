@@ -10,6 +10,7 @@
  * view) are reported by the webviews and held by the session, so work views can save and restore
  * them; the Workbench tab can move into a floating window of its own.
  */
+import { toolkitState } from "./toolkitState";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
@@ -46,10 +47,12 @@ const ALLOWED = new Set([
   "datapass.workOrders.followUp", "datapass.workOrders.revise", "datapass.workOrders.checkPrFiles", "datapass.workOrders.importProposed",
   "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openFolder", "datapass.workOrders.openFile",
   "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision",
-  "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr"
+  "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr",
+  // 0.21: the toolkit catalogue.
+  "datapass.openToolkit", "datapass.toolkit.openLink", "datapass.toolkit.copyInstall", "datapass.toolkit.copyStep", "datapass.toolkit.openStep", "datapass.toolkit.openFile"
 ]);
 
-export type WorkbenchView = "architecture" | "options" | "sheet" | "board" | "workOrders";
+export type WorkbenchView = "architecture" | "options" | "sheet" | "board" | "workOrders" | "toolkit";
 
 /** VS Code's command that moves the active editor into a floating window (VS Code 1.85+). */
 export const MOVE_TO_NEW_WINDOW = "workbench.action.moveEditorToNewWindow";
@@ -105,7 +108,8 @@ export class WorkbenchHost implements vscode.Disposable {
       sheet: ctx.sheet, sheetError: ctx.sheetError, preview: this.session.preview(),
       board: this.session.boardView(), boardError: ctx.boardError,
       git: this.gitCard(),
-      workOrders: this.workOrderSource?.()
+      workOrders: this.workOrderSource?.(),
+      toolkit: toolkitState(this.session.catalogue(), this.session.toolkitFileResults(), this.session.recipeFacts(), ctx.root ? this.session.projectMap() : undefined, process.platform)
     });
     return this.lastState;
   }

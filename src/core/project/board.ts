@@ -9,7 +9,8 @@
  *     milestones  dated targets
  *     items       the cards: type, title, status, priority, the components and files they
  *                 concern, environment, sprint, milestone, due date, links (an Azure DevOps work
- *                 item, a GitHub issue, a pull request)
+ *                 item, a GitHub issue, a pull request), and (0.21) the toolkit recipe and route
+ *                 the work follows
  *
  * Other viewers (Mongoku, a web page) read the same file from GitHub; DataPass never talks to them.
  * DataPass shows the board, opens a card's component or file, prepares an AI pack for a card and,
@@ -47,7 +48,8 @@ const FILE: Schema = obj({ repoRef: ID, path: REL_PATH, line: { type: "integer",
 const ITEM: Schema = obj({
   id: ID, type: enumOf(...ITEM_TYPES), title: SHORT, status: ID, priority: enumOf(...PRIORITIES), description: TEXT,
   subproject: ID, components: arr(ID, 30), files: arr(FILE, 30), environment: ID, sprint: ID, milestone: ID,
-  due: DATE, created: DATE, closed: DATE, assignee: SHORT, labels: arr(LABEL, 20), links: arr(LINK, 20), decisionRef: ID
+  due: DATE, created: DATE, closed: DATE, assignee: SHORT, labels: arr(LABEL, 20), links: arr(LINK, 20), decisionRef: ID,
+  recipe: ID, route: ID
 }, ["id", "type", "title", "status"]);
 
 export const BOARD_SCHEMA: Schema = obj({
@@ -64,6 +66,8 @@ export interface BoardItem {
   id: string; type: BoardItemType; title: string; status: string; priority?: Priority; description?: string;
   subproject?: string; components?: string[]; files?: BoardFileRef[]; environment?: string; sprint?: string; milestone?: string;
   due?: string; created?: string; closed?: string; assignee?: string; labels?: string[]; links?: string[]; decisionRef?: string;
+  /** 0.21: the toolkit recipe the work follows (.datapass/toolkit), and optionally which of its routes. */
+  recipe?: string; route?: string;
 }
 export interface Board {
   $schema?: string; format: typeof BOARD_FORMAT; version: "1"; title?: string; description?: string; updated?: string;
@@ -118,6 +122,7 @@ export function parseBoard(raw: string | Uint8Array): Board {
     if (!columns.has(it.status)) throw new BoardError(`Card "${it.id}": status "${it.status}" is not a column (${[...columns].join(", ")})`);
     if (it.sprint && !sprints.has(it.sprint)) throw new BoardError(`Card "${it.id}": sprint "${it.sprint}" is not declared in sprints`);
     if (it.milestone && !milestones.has(it.milestone)) throw new BoardError(`Card "${it.id}": milestone "${it.milestone}" is not declared in milestones`);
+    if (it.route && !it.recipe) throw new BoardError(`Card "${it.id}": route "${it.route}" needs the recipe it belongs to ("recipe")`);
     dates.push([`card ${it.id} due`, it.due], [`card ${it.id} created`, it.created], [`card ${it.id} closed`, it.closed]);
     for (const link of it.links ?? []) {
       const why = linkProblem(link);
@@ -131,7 +136,7 @@ export function parseBoard(raw: string | Uint8Array): Board {
 // ------------------------------------------------------------------ checks against the project
 
 /** References the manifest, the graph or options.json do not know (warnings: those files may be updated separately). */
-export function boardProblems(board: Board, manifest: DataPassProjectManifest | undefined, graph: ProjectGraph | undefined, options?: OptionsFile): MapProblem[] {
+export function boardProblems(board: Board, manifest: DataPassProjectManifest | undefined, graph: ProjectGraph | undefined, options?: OptionsFile, recipes?: ReadonlyMap<string, { routes: ReadonlyArray<{ id: string }> }>): MapProblem[] {
   const out: MapProblem[] = [];
   const items = new Set((graph?.items ?? []).map(i => i.id));
   const scopes = new Set((manifest?.scopes ?? []).map(s => s.id));
@@ -145,6 +150,10 @@ export function boardProblems(board: Board, manifest: DataPassProjectManifest | 
     if (it.environment && !envs.has(it.environment)) warn(`environment "${it.environment}" is not declared in project.json environments.`);
     for (const f of it.files ?? []) if (f.repoRef && !repos.has(f.repoRef)) warn(`file ${f.path}: repository "${f.repoRef}" is not declared in project.json.`);
     if (it.decisionRef && !decisions.has(it.decisionRef)) warn(`decisionRef "${it.decisionRef}" is not a decision of options.json.`);
+    // Recipes live in the hub repository's toolkit: checked only when DataPass read one.
+    const r = it.recipe && recipes ? recipes.get(it.recipe) : undefined;
+    if (it.recipe && recipes && !r) warn(`recipe "${it.recipe}" is not a recipe of the toolkit (.datapass/toolkit).`);
+    if (r && it.route && !r.routes.some(x => x.id === it.route)) warn(`route "${it.route}" is not a route of recipe "${it.recipe}" (${r.routes.map(x => x.id).join(", ")}).`);
   }
   return out;
 }
@@ -181,6 +190,8 @@ export interface CardView {
   due?: string; overdue: boolean; created?: string; closed?: string; assignee?: string; labels: string[];
   links: Array<{ index: number; url: string; label: string }>;
   decision?: { id: string; title: string; current?: string; chosen?: string };
+  /** 0.21: the toolkit recipe (resolved against the catalogue by the Workbench). */
+  recipe?: { id: string; route?: string };
 }
 export interface BoardView {
   title?: string; description?: string; updated?: string;
@@ -268,7 +279,8 @@ export function boardView(board: Board, input: BoardViewInput): BoardView {
       milestone: milestone ? { id: milestone.id, title: milestone.title, due: milestone.due } : undefined,
       due: it.due, overdue: Boolean(!isDone && it.due && it.due < today), created: it.created, closed: it.closed, assignee: it.assignee, labels: it.labels ?? [],
       links: (it.links ?? []).map((url, index) => ({ index, url, label: linkLabel(url) })),
-      decision: it.decisionRef ? { id: it.decisionRef, title: d?.title ?? it.decisionRef, current: d?.options.find(o => o.id === d.current)?.label, chosen: d?.chosen && d.chosen !== d.current ? d.options.find(o => o.id === d.chosen)?.label : undefined } : undefined
+      decision: it.decisionRef ? { id: it.decisionRef, title: d?.title ?? it.decisionRef, current: d?.options.find(o => o.id === d.current)?.label, chosen: d?.chosen && d.chosen !== d.current ? d.options.find(o => o.id === d.chosen)?.label : undefined } : undefined,
+      recipe: it.recipe ? { id: it.recipe, route: it.route } : undefined
     };
   });
   const count = (pred: (c: CardView) => boolean) => cards.filter(pred).length;

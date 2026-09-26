@@ -1,0 +1,589 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-toolkit.schema.json",
+  "title": "DataPass toolkit catalogue and recipes (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "format": {
+      "const": "datapass.toolkit"
+    },
+    "version": {
+      "const": "1"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "updated": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "datapass": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      },
+      "required": []
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "enum": [
+              "vscode-extension",
+              "extension-pack",
+              "cli",
+              "python-library",
+              "powershell-module",
+              "desktop-app",
+              "notebook-collection",
+              "accelerator",
+              "report-template",
+              "agent-plugin",
+              "mcp-server",
+              "learning",
+              "workspace-file",
+              "cloud-service"
+            ]
+          },
+          "publisher": {
+            "enum": [
+              "microsoft",
+              "vendor",
+              "community",
+              "workspace"
+            ]
+          },
+          "maintainer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "repo": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              },
+              "marketplace": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              },
+              "docs": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              },
+              "home": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              },
+              "pypi": {
+                "type": "string",
+                "maxLength": 2000,
+                "pattern": "^https://\\S+$"
+              }
+            },
+            "required": []
+          },
+          "verified": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "on": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40
+              }
+            },
+            "required": [
+              "on"
+            ]
+          },
+          "status": {
+            "enum": [
+              "active",
+              "maintenance",
+              "archived",
+              "superseded",
+              "fork"
+            ]
+          },
+          "replacedBy": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+          },
+          "upstream": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+          },
+          "install": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "method": {
+                  "enum": [
+                    "marketplace",
+                    "extension-pack",
+                    "winget",
+                    "brew",
+                    "pip",
+                    "npm",
+                    "command",
+                    "download"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$"
+                },
+                "tool": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+                },
+                "command": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "pattern": "^[^\\r\\n`]+$"
+                },
+                "platform": {
+                  "enum": [
+                    "windows",
+                    "macos",
+                    "linux",
+                    "all"
+                  ]
+                },
+                "where": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "method"
+              ]
+            },
+            "maxItems": 10,
+            "minItems": 0
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "develop",
+                "data",
+                "pipelines",
+                "cicd",
+                "monitoring",
+                "governance",
+                "admin",
+                "ai"
+              ]
+            },
+            "maxItems": 8,
+            "minItems": 0
+          },
+          "complements": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "sideEffects": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "reads-remote",
+                "writes-remote",
+                "credential-prompt",
+                "installs-software",
+                "runs-code",
+                "billable"
+              ]
+            },
+            "maxItems": 6,
+            "minItems": 0
+          },
+          "useWhen": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "avoidWhen": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "priceModel": {
+            "enum": [
+              "free",
+              "freemium",
+              "paid",
+              "included",
+              "unknown"
+            ]
+          },
+          "freeTier": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 400
+          },
+          "pricingUrl": {
+            "type": "string",
+            "maxLength": 2000,
+            "pattern": "^https://\\S+$"
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "price": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "features": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "maxItems": 8,
+                  "minItems": 0
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                }
+              },
+              "required": [
+                "name",
+                "price"
+              ]
+            },
+            "maxItems": 8,
+            "minItems": 0
+          },
+          "checkedAt": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "maxItems": 500,
+      "minItems": 0
+    },
+    "recipes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "module": {
+            "enum": [
+              "develop",
+              "data",
+              "pipelines",
+              "cicd",
+              "monitoring",
+              "governance",
+              "admin",
+              "ai"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "when": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "routes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "if": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "fact": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-zA-Z0-9_.-]{0,79}$"
+                        }
+                      },
+                      "required": [
+                        "fact"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "tool": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+                        }
+                      },
+                      "required": [
+                        "tool"
+                      ]
+                    }
+                  ]
+                },
+                "tools": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+                  },
+                  "maxItems": 10,
+                  "minItems": 0
+                },
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "text": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500
+                          },
+                          "copy": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 500,
+                            "pattern": "^[^\\r\\n`]+$"
+                          },
+                          "capability": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                          },
+                          "open": {
+                            "type": "string",
+                            "maxLength": 2000,
+                            "pattern": "^https://\\S+$"
+                          },
+                          "tool": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9]{0,15}\\.[a-z0-9][a-z0-9.-]{0,63}$"
+                          }
+                        },
+                        "required": [
+                          "text"
+                        ]
+                      }
+                    ]
+                  },
+                  "maxItems": 30,
+                  "minItems": 1
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4000
+                }
+              },
+              "required": [
+                "id",
+                "steps"
+              ]
+            },
+            "maxItems": 8,
+            "minItems": 1
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "risks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "practice": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "verified": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "on": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            },
+            "required": [
+              "on"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "module",
+          "title",
+          "routes"
+        ]
+      },
+      "maxItems": 200,
+      "minItems": 0
+    },
+    "datapassRequests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "example": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "module": {
+            "enum": [
+              "develop",
+              "data",
+              "pipelines",
+              "cicd",
+              "monitoring",
+              "governance",
+              "admin",
+              "ai"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "why"
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format",
+    "version"
+  ]
+}

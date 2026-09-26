@@ -10,6 +10,7 @@ import { PHASE_LABELS } from "../core/capabilities/registry";
 import type { ComponentView, MapChecklistEntry, OperationView, ProjectMap } from "../core/project/projectMap";
 import type { LayoutEdgeInput } from "../core/project/layout";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
+import type { WbToolkit } from "./toolkitState";
 import { toolStateText } from "../core/toolchain/toolchain";
 import { extensionsJsonText } from "../core/toolchain/extensionsJson";
 import { CONNECTION_STATE_TEXT } from "../core/toolchain/connections";
@@ -108,6 +109,8 @@ export interface WorkbenchState {
   git?: WbGit;
   /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
   workOrders?: WbWorkOrders;
+  /** 0.21: the toolkit catalogue (built-in baseline + the hub's files). */
+  toolkit?: WbToolkit;
 }
 
 /** 0.20: one work order as the Workbench shows it (no local path, no goal text; the agent's words only as "the agent says"). */
@@ -267,6 +270,7 @@ export interface StateInput {
   boardError?: string;
   git?: WbGit;
   workOrders?: WbWorkOrders;
+  toolkit?: WbToolkit;
 }
 
 function impact(i: ArchitectureImpact): WbImpact {
@@ -376,6 +380,7 @@ export function workbenchState(input: StateInput): WorkbenchState {
     board: input.board,
     boardError: input.boardError,
     git: input.git,
-    workOrders: input.workOrders
+    workOrders: input.workOrders,
+    toolkit: input.toolkit
   };
 }

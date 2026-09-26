@@ -5,7 +5,8 @@
  * backup), and restoring a backup.
  *
  * Arguments can come from webviews and are re-validated against the loaded files. DataPass writes
- * only .datapass/options.json, sheet.json, board.json, graph.json, project.json or catalog.json, and
+ * only .datapass/options.json, sheet.json, board.json, graph.json, project.json, catalog.json or
+ * (0.21, when this folder is the hub) toolkit/tools.json, and
  * only after the person confirmed a diff; it keeps a backup and never commits or pushes.
  */
 import * as vscode from "vscode";
@@ -26,7 +27,7 @@ import { AI_TASKS, EXCHANGE_FILES, checkIncoming, exportForAi, reviewIncoming, t
 import { BACKUP_SUBDIR, backupFileName, backupsToPrune, parseBackupName } from "../core/project/backups";
 
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
-export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog"];
+export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog", "toolkit"];
 const str = (v: unknown, max = 300) => (typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined);
 
 /** Read-only documents shown in diffs ("the AI's proposal"), keyed by a random id. */
@@ -324,7 +325,7 @@ export async function copyForAi(session: WorkSession, version: string, preset?: 
 
 export function importContext(session: WorkSession): ProjectContextForImport {
   const c = session.project;
-  return { manifest: c.manifest, graph: c.graph, graphPath: c.manifest?.graph, decisionIds: c.options?.decisions.map(d => d.id), options: c.options };
+  return { manifest: c.manifest, graph: c.graph, graphPath: c.manifest?.graph, decisionIds: c.options?.decisions.map(d => d.id), options: c.options, dataPassVersion: session.version };
 }
 
 /** The live check of the AI exchange view: which file the answer is, whether it is valid, how much changes. */

@@ -18,6 +18,7 @@ import { registerBoardFlows } from "./boardFlows";
 import { registerDevopsFlows } from "./devopsFlows";
 import { registerWindowFlows } from "./windowFlows";
 import { registerToolchainFlows } from "./toolchainFlows";
+import { registerToolkitFlows } from "./toolkitFlows";
 import { registerGitFlows } from "./gitFlows";
 import { registerWorkOrderFlows } from "./workOrderFlows";
 
@@ -228,6 +229,7 @@ registerBoardFlows(() => api);
 registerDevopsFlows(() => api);
 registerWindowFlows(() => api);
 registerToolchainFlows(() => api);
+registerToolkitFlows(() => api);
 registerGitFlows(() => api);
 registerWorkOrderFlows(() => api);
 

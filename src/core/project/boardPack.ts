@@ -8,6 +8,7 @@
  * The rules ask the AI to deliver a pull request and to move the card itself in board.json, so
  * the board in GitHub stays the shared truth (Mongoku and other viewers read it there).
  */
+import type { RecipeView } from "../toolkit/toolkit";
 import { scrub } from "../exchange/aiContext";
 import type { ProjectMap } from "./projectMap";
 import type { ProjectSheet } from "./sheet";
@@ -66,6 +67,8 @@ export interface CardPackInput {
   options?: OptionsFile;
   /** 0.18: the toolchain, ID map and connection states (names and states only). */
   readiness?: Readiness;
+  /** 0.21: the toolkit recipe the card names, resolved against the catalogue. */
+  recipe?: RecipeView;
 }
 
 /** The pasted error, without credentials or local paths, at most MAX_ERROR_CHARS characters. */
@@ -109,6 +112,23 @@ export function buildCardPack(input: CardPackInput, maxBytes = 24_000): PackExpo
       lines.push(`  - ${o.label}${o.id === d!.current ? " (current)" : ""}${o.summary ? `: ${o.summary}` : ""}`);
       for (const p of o.pros ?? []) lines.push(`    - + ${p}`);
       for (const c of o.cons ?? []) lines.push(`    - − ${c}`);
+    }
+  }
+
+  if (card.recipe) {
+    const r = input.recipe;
+    h("Recipe the card follows (toolkit)");
+    if (!r) lines.push(`- \`${card.recipe.id}\` — not in the toolkit DataPass read: say so if you know it.`);
+    else {
+      lines.push(`- ${r.title} (\`${r.id}\`, ${r.moduleLabel})${r.when ? `: ${r.when}` : ""}`);
+      for (const route of r.routes.filter(x => !card.recipe!.route || x.id === card.recipe!.route)) {
+        const state = route.applies === "yes" ? "applies here" : route.applies === "no" ? "does not apply here" : "not checked";
+        lines.push(`- Route "${route.title}" (\`${route.id}\`${card.recipe.route === route.id ? ", the card's route" : ""}; ${state}${route.condition ? `, ${route.condition}` : ""})`);
+        if (route.tools.length) lines.push(`  - Tools: ${route.tools.map(t => `${t.label} (${t.state === "present" ? "installed" : t.state === "absent" ? "not installed" : "not checked"}; ${t.price})`).join(", ")}`);
+        route.steps.forEach((st, i) => lines.push(`  ${i + 1}. ${st.text}${st.copy ? ` — \`${st.copy}\`` : ""}`));
+      }
+      for (const c of r.checks) lines.push(`- Check: ${c}`);
+      for (const x of r.risks) lines.push(`- Risk: ${x}`);
     }
   }
 

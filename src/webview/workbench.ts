@@ -9,6 +9,8 @@
  */
 import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbOrder, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import type { CardView } from "../core/project/board";
+import type { WbTool } from "../views/toolkitState";
+import type { RecipeRouteView, RecipeView } from "../core/toolkit/toolkit";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
@@ -19,7 +21,7 @@ const MODE = (document.body.dataset.mode ?? "full") as "full" | "map" | "detail"
 const root = document.getElementById("app")!;
 let state: WorkbenchState | undefined;
 
-type View = "architecture" | "options" | "sheet" | "board" | "workOrders";
+type View = "architecture" | "options" | "sheet" | "board" | "workOrders" | "toolkit";
 type SheetSection = "datasets" | "formulas" | "runtimes" | "glossary";
 const CARD_TYPES = ["task", "bug", "feature", "decision", "question"] as const;
 interface Ui {
@@ -46,6 +48,11 @@ interface Ui {
   boardQuery?: string;
   /** Work orders view: which orders are listed. */
   woFilter?: "all" | "open" | "needs" | "done";
+  /** Toolkit view (0.21): section, selection ("tool:<id>" / "recipe:<id>") and filters. */
+  tkSection?: "tools" | "recipes" | "requests" | "files";
+  tkFocus?: string;
+  tkModule?: string;
+  tkQuery?: string;
 }
 const ui = ((vscode.getState() as Partial<Ui> | undefined) ?? {}) as Ui;
 ui.collapsed ??= {};
@@ -77,7 +84,7 @@ function applyHostUi(u: Partial<Ui> | undefined): void {
   if (typeof u.groupBy === "string" && (GROUP_BY as readonly string[]).includes(u.groupBy)) ui.groupBy = u.groupBy;
   if (Array.isArray(u.folded)) ui.folded = u.folded.filter((f): f is string => typeof f === "string").slice(0, 100);
   if (u.zoom === "fit" || u.zoom === "100") ui.zoom = u.zoom;
-  if (MODE === "full" && (u.view === "architecture" || u.view === "options" || u.view === "sheet" || u.view === "board" || u.view === "workOrders")) ui.view = u.view;
+  if (MODE === "full" && (u.view === "architecture" || u.view === "options" || u.view === "sheet" || u.view === "board" || u.view === "workOrders" || u.view === "toolkit")) ui.view = u.view;
   reportedUi = JSON.stringify(diagramUi());
   vscode.setState(ui);
 }
@@ -171,7 +178,8 @@ function viewTabs(s: WorkbenchState): HTMLElement {
     tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined),
     tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined),
     tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined),
-    tab("workOrders", "Work orders", s.workOrders?.needs ? `${s.workOrders.needs}!` : s.workOrders?.open ? String(s.workOrders.open) : undefined));
+    tab("workOrders", "Work orders", s.workOrders?.needs ? `${s.workOrders.needs}!` : s.workOrders?.open ? String(s.workOrders.open) : undefined),
+    tab("toolkit", "Toolkit", s.toolkit && (s.toolkit.requests.length || s.toolkit.newerFiles || s.toolkit.files.some(f => f.error)) ? "!" : undefined));
 }
 
 function header(s: WorkbenchState): HTMLElement {
@@ -542,6 +550,7 @@ function componentDetail(c: WbComponent, s: WorkbenchState, withFiles: boolean):
     boardBlock(s, x => x.components.some(y => y.id === c.id)),
     sheetBlock(c, s),
     optionsBlock(c, s),
+    toolsDetailBlock(c.id),
     c.operations.length && !preview ? h("section", { class: "ops" }, eyebrow("What you can do, step by step"), ...[...byPhase].map(([phase, ops]) => h("div", { class: "phase" }, h("div", { class: "phasehead", text: phase }), ...ops.map(o => operationRow(o, c))))) : undefined,
     preview ? undefined : checklistBlock("Checklist", c.checklist, c.id),
     preview ? undefined : h("section", { class: "actions-col" }, eyebrow("Actions"),
@@ -901,6 +910,7 @@ function impactSide(s: WorkbenchState, title: string, i: WbImpact, actions: HTML
       kv("Declared cost", [money(i.costs.monthly, "/month"), money(i.costs.oneTime, " once")].filter(Boolean).join(" · ") || "—")),
     i.tools.newlyNeeded.length ? h("section", {}, eyebrow("Official tools it adds"), ...i.tools.newlyNeeded.map(t => h("div", { class: "tool" },
       h("div", {}, h("b", { text: t.label }), h("div", { class: "muted small", text: `for ${t.why.join(", ")}` })),
+      toolByExt(t.extensionId) ? pricePill(toolByExt(t.extensionId)!) : undefined,
       t.state === "present" ? pill("installed", "ok") : t.extensionId ? btn("Show extension", () => command("datapass.installTool", t.extensionId), { kind: "link", title: "Opens the extension page; you decide whether to install" }) : pill(t.state === "absent" ? "not installed" : "unknown", t.state === "absent" ? "warn" : "muted")))) : undefined,
     i.tools.noLongerNeeded.length ? h("p", { class: "muted small", text: `No longer needed: ${i.tools.noLongerNeeded.join(", ")}` }) : undefined,
     h("section", {}, eyebrow("Services and DataPass support"), ...i.providers.map(p => {
@@ -1192,6 +1202,7 @@ function cardEl(s: WorkbenchState, c: CardView): HTMLElement {
     h("div", { class: "kcardtitle", text: c.title }),
     c.sprint || c.due ? h("div", { class: "kcardmeta small" }, c.sprint ? h("span", { class: "muted", text: c.sprint.title }) : undefined, c.due ? h("span", { class: c.overdue ? "bad" : "muted", text: `${c.overdue ? "overdue · " : "due "}${c.due}` }) : undefined) : undefined,
     c.components.length ? h("div", { class: "kchips" }, ...c.components.slice(0, 4).map(x => h("span", { class: `chip${x.known ? "" : " warn"}`, text: `${x.glyph ? `${x.glyph} ` : ""}${x.label}` }))) : undefined,
+    c.recipe ? h("div", { class: "muted small", text: `⚒ ${recipeById(c.recipe.id)?.title ?? c.recipe.id}${c.recipe.route ? ` · ${recipeById(c.recipe.id)?.routes.find(x => x.id === c.recipe!.route)?.title ?? c.recipe.route}` : ""}` }) : undefined,
     c.files.length || c.links.length ? h("div", { class: "muted small", text: [c.files.length ? `${c.files.length} file${c.files.length === 1 ? "" : "s"}${c.files.some(f => f.state === "missing") ? " (missing)" : ""}` : "", c.links.length ? `${c.links.length} link${c.links.length === 1 ? "" : "s"}` : ""].filter(Boolean).join(" · ") }) : undefined);
 }
 
@@ -1257,6 +1268,7 @@ function boardSide(s: WorkbenchState): HTMLElement {
         h("span", { class: "fname" }, h("code", { text: f.path }), f.line ? h("span", { class: "muted small", text: ` :${f.line}` }) : undefined, h("span", { class: "muted small repoline", text: f.repoLabel })), pill(text, tone));
     }))) : undefined,
     c.links.length ? h("section", {}, eyebrow("Links"), h("div", { class: "actions-col" }, ...c.links.map(l => btn(l.label, () => command("datapass.board.openLink", { item: c.id, index: l.index }), { kind: "link", icon: "↗", title: l.url })))) : undefined,
+    cardRecipeBlock(c),
     c.decision ? h("section", { class: "optbits" }, eyebrow("Architecture decision"), h("button", { class: "comprow", type: "button", title: "Compare the options", onclick: () => command("datapass.openOptions", c.decision!.id) },
       h("span", { class: "glyph", text: "⑂", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: c.decision.title }), h("span", { class: "muted small", text: `  current: ${c.decision.current ?? "?"}${c.decision.chosen ? ` · decided: ${c.decision.chosen}` : ""}` })))) : undefined,
     h("section", { class: "actions-col" }, eyebrow("Actions"),
@@ -1385,6 +1397,191 @@ function woEmpty(s: WorkbenchState): HTMLElement {
   return h("div", { class: "empty" }, h("h2", { text: "Work orders" }), h("p", { class: "muted", text: "Open a DataPass project to prepare work orders for Claude Code or Codex." }), btn("Switch project…", () => command("datapass.switchProject")));
 }
 
+// ------------------------------------------------------------------ toolkit (0.21)
+
+const toolById = (id: string | undefined) => state?.toolkit?.tools.find(t => t.id === id);
+const toolByExt = (ext: string | undefined) => ext ? state?.toolkit?.tools.find(t => t.extensionIds.some(e => e.toLowerCase() === ext.toLowerCase())) : undefined;
+const recipeById = (id: string | undefined) => state?.toolkit?.recipes.find(r => r.id === id);
+const PRICE_NOTE = "Prices are dated claims of the toolkit (DataPass's baseline or your hub), never authority: check the vendor's page before you buy.";
+const APPLIES: Record<string, [string, string]> = { yes: ["applies here", "ok"], no: ["does not apply here", "muted"], unknown: ["not checked", "muted"] };
+const SOURCE_TONE: Record<string, string> = { "built-in": "muted", hub: "info", "built-in, changed by the hub": "info" };
+
+function pricePill(t: WbTool): HTMLElement {
+  return pill(t.price.text, t.price.tone, [t.freeTier, t.price.dated ? `Checked ${t.price.dated}.` : "No date recorded.", PRICE_NOTE].filter(Boolean).join("\n"));
+}
+
+function openToolkitAt(focus: string): void {
+  // The side bar and the panel have no views: the Workbench tab opens on the Toolkit.
+  if (MODE !== "full") { command("datapass.openToolkit", focus); return; }
+  ui.view = "toolkit";
+  ui.tkFocus = focus;
+  if (focus.startsWith("recipe:")) ui.tkSection = "recipes";
+  else if (focus.startsWith("tool:")) ui.tkSection = "tools";
+  saveUi();
+  render();
+}
+
+function toolLine(t: WbTool, why?: string): HTMLElement {
+  return h("button", { class: "comprow", type: "button", title: "Show it in the Toolkit", onclick: () => openToolkitAt(`tool:${t.id}`) },
+    h("span", { class: "label" }, h("b", { text: t.label }), why ? h("span", { class: "muted small", text: `  ${why}` }) : undefined),
+    t.state === "present" ? pill("installed", "ok") : undefined, pricePill(t));
+}
+
+/** Details: the catalogue tools of the component's official tool, with prices, and the recipes that use them. */
+function toolsDetailBlock(componentId: string): HTMLElement | undefined {
+  const k = state?.toolkit?.components[componentId];
+  if (!k) return undefined;
+  const tools = k.tools.map(toolById).filter((t): t is WbTool => !!t);
+  return h("section", { class: "optbits" }, eyebrow("Tools and what they cost"),
+    ...tools.map(t => toolLine(t, t.avoidWhen && t.status && t.status !== "active" ? t.status : undefined)),
+    ...k.recipes.map(recipeById).filter((r): r is RecipeView => !!r).map(r => h("button", { class: "comprow", type: "button", title: "Show the recipe", onclick: () => openToolkitAt(`recipe:${r.id}`) },
+      h("span", { class: "glyph", text: "⚒", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: r.title }), h("span", { class: "muted small", text: `  recipe · ${r.moduleLabel}` })))),
+    h("p", { class: "muted small", text: PRICE_NOTE }));
+}
+
+function stepEl(r: RecipeView, route: RecipeRouteView, step: RecipeRouteView["steps"][number], i: number): HTMLElement {
+  return h("li", {},
+    h("span", { text: step.text }),
+    step.copy ? h("div", { class: "row tight" }, h("code", { class: "small", text: step.copy }), btn("Copy", () => command("datapass.toolkit.copyStep", { recipe: r.id, route: route.id, step: i }), { kind: "link", title: "Copies the command; DataPass runs nothing from a recipe" })) : undefined,
+    step.open ? btn("Open the page", () => command("datapass.toolkit.openStep", { recipe: r.id, route: route.id, step: i }), { kind: "link", icon: "↗" }) : undefined,
+    step.capability ? h("span", { class: "muted small", text: ` (DataPass operation ${step.capability})` }) : undefined,
+    step.tool ? h("span", { class: "muted small", text: ` · ${toolById(step.tool)?.label ?? step.tool}` }) : undefined);
+}
+
+function routeEl(r: RecipeView, route: RecipeRouteView, chosen: boolean): HTMLElement {
+  const [text, tone] = APPLIES[route.applies] ?? [route.applies, "muted"];
+  return h("div", { class: `card route${chosen ? " chosen" : ""}` },
+    h("div", { class: "bar" }, h("b", { text: route.title }), h("span", {},
+      chosen ? pill("the card's route", "info") : r.suggested === route.id ? pill("suggested", "ok", "The first route whose condition holds here") : undefined,
+      pill(text, tone, route.condition))),
+    route.condition ? h("div", { class: "muted small", text: route.condition }) : undefined,
+    route.tools.length ? h("div", { class: "kchips" }, ...route.tools.map(t => h("button", { class: `chip${t.known ? "" : " warn"}`, type: "button", title: t.known ? `${t.price} — show it in the Toolkit` : "Not in the catalogue", onclick: () => t.known && openToolkitAt(`tool:${t.id}`), text: `${t.label}${t.state === "absent" ? " (not installed)" : ""} · ${t.price}` }))) : undefined,
+    h("ol", { class: "steps" }, ...route.steps.map((s, i) => stepEl(r, route, s, i))),
+    route.note ? h("p", { class: "muted small", text: route.note }) : undefined);
+}
+
+function recipeDetail(r: RecipeView, route?: string): HTMLElement {
+  return h("div", { class: "recipe" },
+    r.when ? h("p", { class: "small", text: `When: ${r.when}` }) : undefined,
+    ...r.routes.map(x => routeEl(r, x, x.id === route)),
+    r.checks.length ? h("div", {}, eyebrow("Checks"), h("ul", {}, ...r.checks.map(c => h("li", { text: c })))) : undefined,
+    r.risks.length ? h("div", {}, eyebrow("Risks"), ...r.risks.map(x => h("div", { class: "problem warning", text: x }))) : undefined,
+    h("p", { class: "muted small", text: `${r.moduleLabel} · ${r.file}${r.verified ? ` · verified ${r.verified}` : ""}${r.practice ? ` · practice: ${r.practice}` : ""}` }));
+}
+
+/** Board: the card's recipe, resolved against the toolkit. */
+function cardRecipeBlock(c: CardView): HTMLElement | undefined {
+  if (!c.recipe) return undefined;
+  const r = recipeById(c.recipe.id);
+  if (!r) return h("section", {}, eyebrow("Recipe"), h("div", { class: "problem warning", text: `Recipe "${c.recipe.id}" is not in the toolkit${state?.toolkit?.hub ? "" : " (no hub toolkit is read: add the hub's catalog to the datapass.catalogs setting)"}.` }));
+  const unknownRoute = c.recipe.route && !r.routes.some(x => x.id === c.recipe!.route);
+  return h("section", { class: "optbits" }, eyebrow("Recipe"),
+    h("button", { class: "comprow", type: "button", title: "Show it in the Toolkit", onclick: () => openToolkitAt(`recipe:${r.id}`) },
+      h("span", { class: "glyph", text: "⚒", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: r.title }), h("span", { class: "muted small", text: `  ${r.moduleLabel}` }))),
+    unknownRoute ? h("div", { class: "problem warning", text: `Route "${c.recipe.route}" is not a route of this recipe.` }) : undefined,
+    recipeDetail({ ...r, routes: c.recipe.route && !unknownRoute ? r.routes.filter(x => x.id === c.recipe!.route) : r.routes }, c.recipe.route));
+}
+
+function tkNav(s: WorkbenchState): HTMLElement {
+  const k = s.toolkit!;
+  const section = ui.tkSection ?? "tools";
+  const item = (id: NonNullable<Ui["tkSection"]>, label: string, count: number, tone?: string) => h("button", { class: `navrow ${section === id ? "active" : ""}`, type: "button", onclick: () => { ui.tkSection = id; ui.tkFocus = undefined; saveUi(); render(); } },
+    h("span", { class: "label", text: label }), h("span", { class: `vbadge${tone ? ` ${tone}` : ""}`, text: String(count) }));
+  const option = (value: string, text: string, selected: boolean) => { const o = h("option", { value, text }) as HTMLOptionElement; o.selected = selected; return o; };
+  return h("nav", { class: "nav", "aria-label": "Toolkit sections" },
+    eyebrow("Toolkit"),
+    item("tools", "Tools", k.tools.length),
+    item("recipes", "Recipes", k.recipes.length),
+    item("requests", "Needs a newer DataPass", k.requests.length + k.newerFiles, k.requests.length + k.newerFiles ? "over" : undefined),
+    item("files", "Files read", k.files.length, k.files.some(f => f.error || f.skipped.length) ? "over" : undefined),
+    h("div", { class: "divider" }),
+    h("div", { class: "filters" },
+      h("label", {}, "Module", h("select", { class: "sel", "aria-label": "Module", onchange: (e: Event) => { ui.tkModule = (e.target as HTMLSelectElement).value || undefined; saveUi(); render(); } },
+        option("", "All modules", !ui.tkModule), ...k.modules.map(m => option(m.id, m.label, ui.tkModule === m.id)))),
+      h("input", { id: "tk-search", class: "sel", type: "search", placeholder: "Name or id…", "aria-label": "Filter tools and recipes", value: ui.tkQuery ?? "", oninput: (e: Event) => { ui.tkQuery = (e.target as HTMLInputElement).value || undefined; saveUi(); render(); } })),
+    h("div", { class: "divider" }),
+    h("p", { class: "muted small", text: k.hub ? "DataPass's baseline, with the hub's toolkit files layered over it." : "DataPass's built-in baseline only: no hub toolkit was found (.datapass/toolkit in this folder, or beside a catalog of the datapass.catalogs setting)." }),
+    h("div", { class: "actions-col" },
+      btn("Ask the AI to update the toolkit", () => command("datapass.copyForAi", "toolkit"), { icon: "✦", title: "tools.json plus instructions: the AI returns the complete updated file (only when this folder is the hub)" }),
+      btn("Paste the AI's answer", () => command("datapass.showAiExchange", "toolkit"), { icon: "⇣" })));
+}
+
+function tkMatch(text: string[], modules: string[]): boolean {
+  if (ui.tkModule && !modules.includes(ui.tkModule)) return false;
+  const q = ui.tkQuery?.toLowerCase();
+  return !q || text.some(t => t.toLowerCase().includes(q));
+}
+
+function tkCenter(s: WorkbenchState): HTMLElement {
+  const k = s.toolkit!;
+  const section = ui.tkSection ?? "tools";
+  const head = (title: string, sub: string) => [h("div", { class: "breadcrumb", text: `${s.project?.title ?? "DataPass"} / Toolkit` }), h("div", { class: "bar" }, h("div", {}, eyebrow("Toolkit"), h("h2", { text: title })), h("span", { class: "muted small objective", text: sub }))];
+  if (section === "recipes") {
+    const list = k.recipes.filter(r => tkMatch([r.title, r.id], [r.module]));
+    return h("main", { class: "center" }, ...head("Recipes", `${list.length} of ${k.recipes.length}`),
+      !k.recipes.length ? h("p", { class: "muted", text: "No recipe yet. Recipes live in the hub repository (.datapass/toolkit/recipes/*.json): step-by-step routes that name their tools." }) : undefined,
+      h("div", { class: "filelist", role: "list" }, ...list.map(r => h("button", { class: `filerow${ui.tkFocus === `recipe:${r.id}` ? " active" : ""}`, type: "button", onclick: () => { ui.tkFocus = `recipe:${r.id}`; saveUi(); render(); } },
+        h("span", { class: "fname" }, h("b", { text: r.title }), h("span", { class: "muted small repoline", text: `${r.moduleLabel} · ${r.routes.length} route(s)` })),
+        r.suggested ? pill(`suggested: ${r.routes.find(x => x.id === r.suggested)?.title ?? r.suggested}`, "ok") : pill("route not checked", "muted")))));
+  }
+  if (section === "requests") {
+    const newer = k.files.filter(f => f.newer);
+    return h("main", { class: "center" }, ...head("Needs a newer DataPass", "What the toolkit's authors could not say with this version"),
+      h("p", { class: "muted small", text: "When the toolkit format cannot express what a project needs, the AI adds an entry to datapassRequests instead of inventing a field. These are the input of the next DataPass version." }),
+      ...newer.map(f => h("div", { class: "problem warning", text: `${f.path}: ${f.newer}` })),
+      !k.requests.length && !newer.length ? h("p", { class: "muted", text: "Nothing requested." }) : undefined,
+      ...k.requests.map(q => h("div", { class: "card" }, h("b", { text: q.title }), h("p", { class: "small", text: q.why }), q.example ? h("p", { class: "muted small", text: `Example: ${q.example}` }) : undefined,
+        h("span", { class: "muted small", text: `${q.module ? `${q.module} · ` : ""}${q.file}` }))));
+  }
+  if (section === "files") {
+    return h("main", { class: "center" }, ...head("Files read", k.hub ? `${k.files.length} file(s)` : "none"),
+      h("div", { class: "card" }, h("b", { text: "Built-in baseline" }), h("span", { class: "muted small", text: "  the probe registry and the tools DataPass knows, with dated prices (shipped with the extension)" })),
+      ...k.files.map(f => h("div", { class: "card" },
+        h("div", { class: "bar" }, h("b", { text: f.title ?? f.path }), btn("Open", () => command("datapass.toolkit.openFile", { path: f.path }), { kind: "link" })),
+        h("div", { class: "muted small", text: `${f.path}${f.updated ? ` · updated ${f.updated}` : ""}${f.requires ? ` · requires DataPass ${f.requires}` : ""} · ${f.tools} tool(s), ${f.recipes} recipe(s), ${f.requests} request(s)` }),
+        f.error ? h("div", { class: "problem error", text: f.error }) : undefined,
+        f.newer ? h("div", { class: "problem warning", text: f.newer }) : undefined,
+        ...f.skipped.map(x => h("div", { class: "problem warning", text: `Skipped ${x}` })))),
+      ...k.problems.map(p => h("div", { class: "problem warning", text: p })));
+  }
+  const list = k.tools.filter(t => tkMatch([t.label, t.id, ...t.extensionIds], t.modules));
+  return h("main", { class: "center" }, ...head("Tools", `${list.length} of ${k.tools.length} · prices are dated claims`),
+    h("div", { class: "filelist", role: "list" }, ...list.map(t => h("button", { class: `filerow${ui.tkFocus === `tool:${t.id}` ? " active" : ""}`, type: "button", onclick: () => { ui.tkFocus = `tool:${t.id}`; saveUi(); render(); } },
+      h("span", { class: "fname" }, h("b", { text: t.label }), h("span", { class: "muted small repoline", text: [t.kind, t.publisher, t.status && t.status !== "active" ? t.status : undefined, t.source !== "built-in" ? t.source : undefined].filter(Boolean).join(" · ") })),
+      t.state === "present" ? pill("installed", "ok") : undefined, pricePill(t)))));
+}
+
+function tkSide(s: WorkbenchState): HTMLElement {
+  const k = s.toolkit!;
+  const [kind, id] = (ui.tkFocus ?? "").split(/:(.*)/s);
+  if (kind === "recipe") {
+    const r = k.recipes.find(x => x.id === id);
+    if (r) return h("div", { class: "detail" }, eyebrow(`Recipe · ${r.moduleLabel}`), h("h2", { text: r.title }), recipeDetail(r));
+  }
+  const t = kind === "tool" ? k.tools.find(x => x.id === id) : undefined;
+  if (!t) return h("div", { class: "detail" }, eyebrow("Toolkit"), h("h2", { text: "Select a tool or a recipe" }),
+    h("p", { class: "muted", text: "Each tool says what it is for, who publishes it, what is free and what costs how much (with the date it was read), and how to install it (copied, never run). Recipes give the steps of a job and the tools of each route." }));
+  return h("div", { class: "detail" },
+    eyebrow(`${t.kind}${t.publisher ? ` · ${t.publisher}` : ""}`),
+    h("h2", { text: t.label }),
+    h("div", { class: "row tight" }, pricePill(t), t.status ? pill(t.status, t.status === "active" ? "ok" : "warn") : undefined, pill(t.source, SOURCE_TONE[t.source] ?? "muted", t.changed.length ? `The hub changed: ${t.changed.join(", ")}` : undefined),
+      t.probe ? pill(t.state === "present" ? "installed" : t.state === "absent" ? "not installed" : "not probed yet", t.state === "present" ? "ok" : "muted") : pill("no probe", "muted", "DataPass cannot see whether it is installed")),
+    t.useWhen ? h("p", { class: "small", text: `Use when: ${t.useWhen}` }) : undefined,
+    t.avoidWhen ? h("p", { class: "small", text: `Avoid when: ${t.avoidWhen}` }) : undefined,
+    t.note ? h("p", { class: "muted small", text: t.note }) : undefined,
+    t.replacedBy ? h("p", { class: "small" }, "Replaced by ", btn(toolById(t.replacedBy)?.label ?? t.replacedBy, () => openToolkitAt(`tool:${t.replacedBy}`), { kind: "link" })) : undefined,
+    h("section", {}, eyebrow("Free tier and prices"),
+      t.freeTier ? h("p", { class: "small", text: t.freeTier }) : h("p", { class: "muted small", text: t.priceModel === undefined ? "No price recorded for this tool." : "No free tier described." }),
+      t.tiers.length ? h("div", { class: "card" }, ...t.tiers.map(x => h("div", { class: "tool" }, h("div", {}, h("b", { text: x.name }), x.features?.length ? h("div", { class: "muted small", text: x.features.join(" · ") }) : undefined, x.note ? h("div", { class: "muted small", text: x.note }) : undefined), h("span", { class: "small", text: x.price })))) : undefined,
+      h("p", { class: "muted small", text: `${t.checkedAt ? `Read on ${t.checkedAt}. ` : ""}${PRICE_NOTE}` })),
+    t.install.length ? h("section", {}, eyebrow("Install (copied, never run)"), ...t.install.map(l => h("div", { class: "row tight" }, h("code", { class: "small", text: l.text }), l.copy ? btn("Copy", () => command("datapass.toolkit.copyInstall", { tool: t.id, index: l.index }), { kind: "link" }) : undefined))) : undefined,
+    t.links.length ? h("section", { class: "actions-col" }, eyebrow("Pages"), ...t.links.map(l => btn(l.label, () => command("datapass.toolkit.openLink", { tool: t.id, link: l.id }), { kind: "link", icon: "↗" }))) : undefined,
+    t.recipes.length ? h("section", {}, eyebrow("Recipes that use it"), ...t.recipes.map(recipeById).filter((r): r is RecipeView => !!r).map(r => btn(r.title, () => openToolkitAt(`recipe:${r.id}`), { kind: "link", icon: "⚒" }))) : undefined,
+    t.complements.length ? h("p", { class: "muted small", text: `Works with: ${t.complements.map(x => toolById(x)?.label ?? x).join(", ")}` }) : undefined,
+    t.sideEffects.length ? h("p", { class: "muted small", text: `Side effects: ${t.sideEffects.join(", ")}` }) : undefined,
+    h("p", { class: "muted small evidence", text: [t.maintainer ? `Maintainer: ${t.maintainer}.` : undefined, t.verified ? `Verified ${t.verified}.` : undefined, t.file ? `From ${t.file}.` : "From DataPass's baseline.", "Labels such as publisher and status are the catalogue's claims."].filter(Boolean).join(" ") }));
+}
+
 // ------------------------------------------------------------------ modes
 
 function render(): void {
@@ -1434,6 +1631,10 @@ function renderInner(): void {
     root.append(header(s), s.workOrders ? h("div", { class: "shell wide" }, woNav(s), woCenter(s), h("aside", { class: "side", "aria-label": "Work order" }, woSide(s))) : woEmpty(s));
     return;
   }
+  if (ui.view === "toolkit") {
+    root.append(header(s), s.toolkit ? h("div", { class: "shell wide" }, tkNav(s), tkCenter(s), h("aside", { class: "side", "aria-label": "Tool or recipe" }, tkSide(s))) : h("div", { class: "empty" }, h("h2", { text: "Toolkit" }), h("p", { class: "muted", text: "Loading the catalogue…" })));
+    return;
+  }
   if (ui.view === "board") {
     root.append(header(s), s.board ? h("div", { class: "shell wide board" }, boardNav(s), boardCenter(s), h("aside", { class: "side", "aria-label": "Card details" }, boardSide(s))) : boardEmpty(s));
     return;
@@ -1456,10 +1657,11 @@ window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string; ui?: Partial<Ui> };
   if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
   if (msg?.type === "ui") { applyHostUi(msg.ui); render(); return; }
-  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board" || msg.view === "workOrders")) {
+  if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board" || msg.view === "workOrders" || msg.view === "toolkit")) {
     ui.view = msg.view;
     if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
     if (msg.view === "board" && typeof msg.focus === "string") revealCard(msg.focus);
+    if (msg.view === "toolkit" && typeof msg.focus === "string" && /^(tool|recipe):/.test(msg.focus)) { ui.tkFocus = msg.focus; ui.tkSection = msg.focus.startsWith("recipe:") ? "recipes" : "tools"; }
     if (msg.view === "sheet" && typeof msg.focus === "string") {
       const [section, id] = msg.focus.split(":");
       if (section === "datasets" || section === "formulas" || section === "runtimes" || section === "glossary") { ui.sheetSection = section; ui.sheetFocus = id || undefined; }

@@ -445,14 +445,16 @@ the coordination repository and the person moves. Sprints and milestones are dat
 | `columns[]` | The kanban columns, in order (1–12). `done: true` marks finished work; if no column says so, a column named `done` or `closed` counts. `limit` shows a work-in-progress cap (`n/limit`, red when exceeded). |
 | `sprints[]` | Dated iterations: `id`, `title`, `start`, `end` (`end` ≥ `start`), `goal`. The current sprint is the one whose dates include today. |
 | `milestones[]` | Dated targets: `id`, `title`, `due`, `description`. |
-| `items[]` (cards) | `id`, `type` (`task`, `bug`, `feature`, `decision`, `question`), `title` (≤ 200 chars), `status` (a column id), `priority?` (`P0`–`P4`), `description?`, `subproject?` (a scope id), `components?` (graph item ids), `files?` (`{ repoRef?, path, line? }` — `repoRef` omitted means the coordination repository, the one holding `board.json`), `environment?`, `sprint?`, `milestone?`, `due?`, `created?`, `closed?`, `assignee?`, `labels?` (≤ 20, ≤ 40 chars each), `links?` (https pages only — an Azure DevOps work item, a GitHub issue, a pull request), `decisionRef?` (a decision id of `options.json`). |
+| `items[]` (cards) | `id`, `type` (`task`, `bug`, `feature`, `decision`, `question`), `title` (≤ 200 chars), `status` (a column id), `priority?` (`P0`–`P4`), `description?`, `subproject?` (a scope id), `components?` (graph item ids), `files?` (`{ repoRef?, path, line? }` — `repoRef` omitted means the coordination repository, the one holding `board.json`), `environment?`, `sprint?`, `milestone?`, `due?`, `created?`, `closed?`, `assignee?`, `labels?` (≤ 20, ≤ 40 chars each), `links?` (https pages only — an Azure DevOps work item, a GitHub issue, a pull request), `decisionRef?` (a decision id of `options.json`), `recipe?` (a recipe id of the hub's toolkit catalogue, section 14), `route?` (one of that recipe's route ids; requires `recipe`). |
 
 Rules: unknown fields are errors; ids (columns, sprints, milestones, cards) must be unique; a card's
 `status` must be a declared column, its `sprint`/`milestone` must be declared; every date must be a
 real calendar date; `links` must be `https://` with no user name, password, or token/signature query
 parameter (`sig`, `token`, `access_token`, `code`, `key`, `password`, `secret`, `se`); file paths must
-be relative, inside the repository. Problems in project files warns (never blocks) on a `subproject`,
-`component`, `environment`, `repository` or `decisionRef` the rest of the project does not know.
+be relative, inside the repository; a card's `route` needs a `recipe`. Problems in project files warns
+(never blocks) on a `subproject`, `component`, `environment`, `repository` or `decisionRef` the rest of
+the project does not know, and on a `recipe` or `route` not found in the toolkit catalogue — only when a
+hub toolkit was read (section 14).
 Editor schema: `schemas/datapass-board.schema.json` (validated as you type; no `$schema` line —
 see rule 9 of section 4). Example: `examples/v3/research-library/.datapass/board.json`.
 
@@ -465,8 +467,9 @@ What DataPass does with it:
   assignee, labels — clicking a **component** selects it and shows it on the Architecture view;
   clicking a **file** opens it (a missing file is explained, never created; a repository that is not
   cloned offers Clone/Locate); a **link** opens after its address is shown once per window; a
-  **decisionRef** opens the Options view; "Prepare AI pack for this card"; "Open in board.json" jumps
-  to the card in the editor).
+  **decisionRef** opens the Options view; a card's **recipe** (and **route**, when set) shows that
+  recipe's steps from the toolkit catalogue (section 14), with the same route DataPass would suggest;
+  "Prepare AI pack for this card"; "Open in board.json" jumps to the card in the editor).
 - Project tree: a **Board** section (open cards, most urgent first: priority, then the column
   furthest along; overdue cards marked); clicking opens the board on that card. Details side bar of a
   component or sub-project lists its cards. Preparation packs of a component list its open cards.
@@ -681,4 +684,102 @@ It never holds the goal text, the agent's summary, a local path or a secret. An 
 files up to date may read it, must keep it valid, and should not rewrite it: DataPass merges it by
 order id. The same format, one file per project, can go to a private log repository
 (`work-logs/<project id>.json`) set on the person's computer.
+
+## 14. Toolkit catalogue and recipes (hub repository, DataPass ≥ 0.21.0)
+
+A hub repository (the one holding a `catalog.json`, section 2.8 of the guide, or the coordination
+repository itself when it is also the hub) can list the tools worth using and the recipes for common
+jobs, so an AI preparing a project reads real prices and real steps instead of guessing. DataPass reads
+these files after *Get updates* and whenever they change; it never installs, runs or buys anything —
+install commands and recipe steps are shown for the person to **copy**, never run.
+
+**Where the files live:** `<hub>/.datapass/toolkit/tools.json` and
+`<hub>/.datapass/toolkit/recipes/*.json`, one recipe file per module (or however the hub chooses to
+split them). The hub is either the project's own coordination repository (its own
+`.datapass/toolkit/`) or the folder beside each catalog entry's `catalog.json` that `datapass.catalogs`
+points at (`<hub>/.datapass/catalog.json` → `<hub>/.datapass/toolkit/`). `tools.json` is read first,
+then the recipe files, each matched by name. On a duplicate tool id, the first file read wins.
+
+Both files share one envelope:
+
+```json
+{
+  "format": "datapass.toolkit",
+  "version": "1",
+  "title": "Example Corp toolkit",
+  "description": "Tools and recipes for the data platform.",
+  "updated": "2026-09-20",
+  "requires": { "datapass": ">=0.21.0" },
+  "tools": [ /* tools.json only */ ],
+  "recipes": [ /* recipes/*.json only */ ],
+  "datapassRequests": [ /* either file */ ]
+}
+```
+
+`title`, `description`, `updated` (a calendar date) and `requires` are optional; `requires.datapass` is
+a version range (section 12) — a file that needs a newer DataPass than this one is listed as "Needs a
+newer DataPass" (Toolkit view) instead of being read.
+
+### `tools[]` (in `tools.json`)
+
+| Field | Meaning |
+|---|---|
+| `id` | `family.name` (`cli.fab`, `ext.fabric-studio`, `acc.fabric-toolbox`…). An id DataPass already knows (section 12) changes only the fields it sets — label, links, install, pricing… — never the probe or the kind DataPass already has for it. A new id needs at least `label` and `kind`. |
+| `label`, `kind` | `kind` is one of `vscode-extension`, `extension-pack`, `cli`, `python-library`, `powershell-module`, `desktop-app`, `notebook-collection`, `accelerator`, `report-template`, `agent-plugin`, `mcp-server`, `learning`, `workspace-file`, `cloud-service`. |
+| `publisher`, `maintainer` | `publisher` is `microsoft`, `vendor`, `community` or `workspace`. |
+| `links` | `repo`, `marketplace`, `docs`, `home`, `pypi` — `https://` only, no token. |
+| `verified` | `{ on, version }` — the date and version the hub last checked this entry. |
+| `status` | `active`, `maintenance`, `archived`, or `superseded` (with `replacedBy`) / `fork` (with `upstream`). |
+| `install[]` | `{ method, id?, tool?, command?, platform?, where? }`. `method` is `marketplace`, `extension-pack`, `winget`, `brew`, `pip`, `npm`, `command` or `download`; `command` is one line, shown to **copy**, never run. |
+| `modules` | Which of `develop`, `data`, `pipelines`, `cicd`, `monitoring`, `governance`, `admin`, `ai` this tool serves. |
+| `complements`, `useWhen`, `avoidWhen`, `note` | Free text / other tool ids, shown as context. |
+| `sideEffects[]` | Any of `reads-remote`, `writes-remote`, `credential-prompt`, `installs-software`, `runs-code`, `billable` — shown as a warning, never enforced. |
+| `pricing` | `priceModel` (`free`, `freemium`, `paid`, `included` — a free tool that needs a paid service, or `unknown`), `freeTier`, `pricingUrl`, `tiers[]` (`{ name, price, features[], note }`, `price` as text with a currency and unit, or `"unknown"`), `checkedAt` — **required whenever any price field is set**. Never invent a price: write `unknown` instead. |
+
+DataPass ships its own baseline (the probe registry, `fabric-cicd`, `semantic-link-labs`, the
+data-goblin plugins) with descriptions and prices checked on 2026-09-26, so the Toolkit view works with
+no hub at all; a hub only adds to or corrects it.
+
+### `recipes[]` (in `recipes/*.json`)
+
+A recipe is a job with one or more **routes** — alternative ways to do it — so DataPass can suggest the
+one that applies to this project and this machine instead of showing every option at once.
+
+| Field | Meaning |
+|---|---|
+| `id`, `module`, `title`, `when` | `module` is one of the toolkit's module ids; `when` says in plain text when this recipe applies. |
+| `tools[]` | Tool ids the recipe as a whole uses. |
+| `routes[]` (1–8) | `id`, `title`, `if?` (`{ fact: "fabric.gitBinding" }`, `{ fact: "git.repository" }`, or another fact shown but not checked, or `{ tool: id }` meaning that tool is installed), `tools[]`, `steps[]`, `note?`. |
+| `routes[].steps[]` | Plain `text`, or `{ text, copy?, open?, capability?, tool? }` — `copy` is a one-line command shown to copy, `open` an `https://` page, `capability` a DataPass operation id. |
+| `checks[]`, `risks[]`, `practice`, `verified` | Free text context and `{ on }` (date last checked). |
+
+DataPass marks each route "applies" / "does not apply" / "not checked for this project and machine",
+and suggests the first that applies. A board card (section 10) can point at a recipe (`recipe`) and one
+of its routes (`route`); the card panel then shows that recipe's steps.
+
+### `datapassRequests[]`
+
+When the toolkit format cannot express something an AI wants to record, it adds a request instead of
+inventing a field: `{ title, why, example?, module? }`. DataPass lists these next to files that need a
+newer DataPass or format version, under "Needs a newer DataPass" in the Toolkit view.
+
+**Validation is per entry**, not per file: an entry DataPass does not understand is skipped and listed
+with its reason (Toolkit view → Files read), never guessed at. The AI import round trip (section 9) is
+stricter: it refuses the whole file if any entry is invalid, or if credential-shaped text or a local
+path appears anywhere in it.
+
+**Where it shows:** the Workbench's **Toolkit** view (Tools, Recipes, Needs a newer DataPass, Files
+read); a component's Details ("Tools and what they cost"); board cards (a card's recipe with its
+steps); Options (the price next to each official tool an option adds); card AI packs (the recipe
+section). Editor schema: `schemas/datapass-toolkit.schema.json`. Example:
+[`examples/v3/hub/.datapass/toolkit/`](../examples/v3/hub/.datapass/toolkit/) (`tools.json` with four
+tools and one request; `recipes/fabric.json` with three recipes), used by
+[`examples/v3/sales-bi/.datapass/board.json`](../examples/v3/sales-bi/.datapass/board.json)'s cards.
+
+Keeping `tools.json` current is one of the AI exchange tasks (section 9): "Copy a DataPass File for the
+AI" offers the toolkit catalogue with a task (check free tiers and prices; add or correct tools and
+recipes; something else), and "Paste the AI's Answer" diffs, backs up and confirms it — only when this
+folder is the hub. An agent working through a pull request (section 13) updates any toolkit file the
+same way it updates other project files. Nothing in a toolkit file is ever run by DataPass: install
+commands and recipe commands are only ever copied.
 

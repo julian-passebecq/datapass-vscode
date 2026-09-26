@@ -27,7 +27,7 @@ import type { RepoView } from "../project/resolve";
 import { safeAppUrl } from "../model/safeUrl";
 import { ENV_KEY_NAME, isEnvFileName, type KeyPresence } from "./envFile";
 import type { ToolObservation } from "../capabilities/tools";
-import { buildToolchain, toolStateText, validateToolchain, type ToolchainView } from "../toolchain/toolchain";
+import { buildToolchain, toolStateText, validateToolchain, type ToolchainTool, type ToolchainView } from "../toolchain/toolchain";
 import { compareExtensionsJson, extensionsJsonText, EXTENSIONS_JSON, type ExtensionsJsonObservation, type ExtensionsJsonView } from "../toolchain/extensionsJson";
 import { buildConnections, CONNECTION_STATE_TEXT, validateConnections, type ConnectionProbe, type ConnectionView } from "../toolchain/connections";
 
@@ -251,6 +251,8 @@ export interface ReadinessInput {
   /** v5: this computer's tool probes, and the platform (for install commands). */
   tools?: ReadonlyMap<string, ToolObservation>;
   platform?: NodeJS.Platform | string;
+  /** 0.21: tools the hub's toolkit describes, so a toolchain may name them (never probed). */
+  hubTools?: ReadonlyMap<string, ToolchainTool>;
   /** v5: the last read-only sign-in checks (only run when the person asks), by tool id. */
   connectionProbes?: ReadonlyMap<string, ConnectionProbe>;
   /** v5: the coordination repository's .vscode/extensions.json. */
@@ -331,7 +333,7 @@ export function buildReadiness(input: ReadinessInput): Readiness {
 
   // v5: tools & versions, extensions.json, connections.
   const tools = input.tools ?? new Map<string, ToolObservation>();
-  const toolchain = buildToolchain({ toolchain: m?.toolchain, tools, platform: input.platform ?? "linux" });
+  const toolchain = buildToolchain({ toolchain: m?.toolchain, tools, platform: input.platform ?? "linux", hubTools: input.hubTools });
   for (const e of toolchain.entries) {
     const at = `${e.label}${e.where !== "local" ? ` (${e.where})` : ""}`;
     const install = e.install?.command ? `Install it: ${e.install.command}${e.install.where ? ` in ${e.install.where}` : ""} (copy it from DataPass; DataPass installs nothing).` : e.install?.docs ? `Install it from ${e.install.docs}.` : undefined;

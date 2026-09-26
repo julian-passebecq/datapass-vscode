@@ -1,0 +1,64 @@
+{
+  "format": "datapass.board",
+  "version": "1",
+  "title": "Sales BI work",
+  "updated": "2026-09-26",
+  "columns": [
+    {
+      "id": "todo",
+      "title": "To do"
+    },
+    {
+      "id": "doing",
+      "title": "In progress",
+      "limit": 3
+    },
+    {
+      "id": "done",
+      "title": "Done",
+      "done": true
+    }
+  ],
+  "items": [
+    {
+      "id": "lowercase-copyjob",
+      "type": "task",
+      "title": "Lower-case the Copy Job's destination tables and columns",
+      "status": "todo",
+      "priority": "P2",
+      "components": [
+        "load"
+      ],
+      "environment": "dev",
+      "recipe": "fabric.item-definition.bulk-edit",
+      "route": "git"
+    },
+    {
+      "id": "first-prod-deploy",
+      "type": "task",
+      "title": "First deployment to prod with fabric-cicd",
+      "status": "doing",
+      "priority": "P1",
+      "components": [
+        "deploy"
+      ],
+      "files": [
+        {
+          "path": "fabric/parameter.yml"
+        }
+      ],
+      "environment": "prod",
+      "recipe": "fabric.deploy.fabric-cicd"
+    },
+    {
+      "id": "model-in-git",
+      "type": "task",
+      "title": "Keep the semantic model in Git (PBIP)",
+      "status": "done",
+      "components": [
+        "model"
+      ],
+      "recipe": "powerbi.pbip-git"
+    }
+  ]
+}

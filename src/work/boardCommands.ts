@@ -240,7 +240,7 @@ async function cardAiPack(session: WorkSession, version: string, itemId: string 
   const revisions: Record<string, string> = {};
   for (const r of map.repositories) if (r.state === "local" && r.git?.head) revisions[r.key] = `${r.git.branch ?? "?"}@${r.git.head.slice(0, 7)}${r.git.changes ? " (+local changes)" : ""}`;
   const pack = buildCardPack({
-    board, card: c, map, question: pick.id, errorText, dataPassVersion: version, generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
+    board, card: c, map, question: pick.id, errorText, dataPassVersion: version, recipe: session.recipe(c.recipe?.id), generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL,
     manifestDigest: session.project.manifestBytes ? sha256Bytes(session.project.manifestBytes).value : undefined,
     boardDigest: session.project.boardBytes ? sha256Bytes(session.project.boardBytes).value : undefined,
     sheet: session.project.sheet, options: session.project.options, readiness: session.readiness()

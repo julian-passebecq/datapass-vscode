@@ -1,0 +1,1006 @@
+{
+  "format": "datapass.toolkit",
+  "version": "1",
+  "title": "DataPass built-in baseline",
+  "description": "Descriptions and dated prices of the tools DataPass knows without a hub. Prices were read on the vendors' pages on 2026-09-26; a figure that could not be confirmed there is written unknown. A hub repository's .datapass/toolkit/tools.json overrides any entry.",
+  "updated": "2026-09-26",
+  "tools": [
+    {
+      "id": "ext.fabric",
+      "modules": [
+        "develop",
+        "cicd",
+        "admin"
+      ],
+      "priceModel": "included",
+      "freeTier": "The VS Code extension itself is free; it needs a Fabric capacity (trial or paid) or a Fabric workspace to be useful.",
+      "note": "The tool is free; the Fabric capacity (F SKU, or a trial) it works against is billed separately: see the Fabric pricing page.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=fabric.vscode-fabric"
+      },
+      "pricingUrl": "https://azure.microsoft.com/pricing/details/microsoft-fabric/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.fabric-data-engineering",
+      "modules": [
+        "develop",
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "The extension is free; it needs a Fabric capacity (trial or paid) or Fabric workspace to run notebooks/pipelines.",
+      "note": "The tool is free; the Fabric capacity (F SKU, or a trial) it works against is billed separately: see the Fabric pricing page.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=SynapseVSCode.synapse"
+      },
+      "pricingUrl": "https://azure.microsoft.com/pricing/details/microsoft-fabric/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.jupyter",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Free, open-source VS Code extension for running Jupyter notebooks.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.python",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Free, open-source Python language support extension for VS Code.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-python.python"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.java",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Microsoft Build of OpenJDK is a free, no-cost OpenJDK distribution.",
+      "pricingUrl": "https://www.microsoft.com/openjdk",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.fabric-studio",
+      "modules": [
+        "develop",
+        "pipelines",
+        "cicd",
+        "admin"
+      ],
+      "priceModel": "included",
+      "freeTier": "Free community VS Code extension by Gerhard Brueckl for managing a Fabric tenant; needs a Fabric tenant/capacity to connect to.",
+      "note": "Community-maintained (gbrueckl), not an official Microsoft product; free to install, requires Fabric access.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.fabricstudio",
+        "repo": "https://github.com/gbrueckl/FabricStudio"
+      },
+      "useWhen": "Edit an item definition without Git, run REST calls, manage deployment pipelines from VS Code.",
+      "avoidWhen": "The workspace is connected to Git: edit the files in the repository instead.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.onelake",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "OneLake explorer functionality is bundled free within Fabric Studio; needs a Fabric workspace/OneLake to browse.",
+      "note": "Not a separate product; it's the OneLake browser feature inside Gerhard Brueckl's Fabric Studio extension.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.onelake-vscode"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.fab",
+      "modules": [
+        "cicd",
+        "admin",
+        "pipelines"
+      ],
+      "priceModel": "included",
+      "freeTier": "Microsoft's official open-source Fabric CLI (package ms-fabric-cli) is free; needs a Fabric capacity/workspace to operate against.",
+      "pricingUrl": "https://azure.microsoft.com/pricing/details/microsoft-fabric/",
+      "note": "The tool is free; the Fabric capacity (F SKU, or a trial) it works against is billed separately: see the Fabric pricing page.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.python",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Python interpreter/runtime is free and open source.",
+      "pricingUrl": "https://www.python.org/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.az",
+      "modules": [
+        "admin",
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "Azure CLI itself is free; usage costs come only from the Azure resources it manages.",
+      "pricingUrl": "https://learn.microsoft.com/en-us/cli/azure/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.databricks",
+      "modules": [
+        "develop",
+        "pipelines"
+      ],
+      "priceModel": "included",
+      "freeTier": "The VS Code Databricks extension is free; it needs a Databricks workspace (Free Edition or paid) to connect to.",
+      "note": "See cli.databricks note for Databricks workspace pricing.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=databricks.databricks"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.databricks",
+      "modules": [
+        "cicd",
+        "pipelines"
+      ],
+      "priceModel": "included",
+      "freeTier": "The Databricks CLI is free; it needs a Databricks workspace. Free Edition workspaces exist for non-commercial learning; production use is pay-as-you-go DBU.",
+      "pricingUrl": "https://www.databricks.com/product/pricing",
+      "tiers": [
+        {
+          "name": "Free Edition",
+          "price": "USD 0 (non-commercial)",
+          "features": [
+            "Serverless compute, usage quotas",
+            "1 SQL warehouse (2X-Small), 5 concurrent job tasks",
+            "No SLA/support",
+            "No AI features requiring paid compute"
+          ]
+        },
+        {
+          "name": "Pay-as-you-go (Jobs Compute)",
+          "price": "unknown (not confirmed on the official page on 2026-09-26)",
+          "features": [
+            "Production job workloads"
+          ]
+        },
+        {
+          "name": "Pay-as-you-go (All-Purpose Compute)",
+          "price": "unknown (not confirmed on the official page on 2026-09-26)",
+          "features": [
+            "Interactive clusters/notebooks"
+          ]
+        },
+        {
+          "name": "Serverless SQL",
+          "price": "unknown (not confirmed on the official page on 2026-09-26)",
+          "features": [
+            "Serverless SQL warehouses"
+          ]
+        }
+      ],
+      "note": "Prices of paid tiers change often; check the official pricing page.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.tmdl",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Free VS Code extension providing TMDL language support.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=analysis-services.TMDL"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "app.pbi-desktop",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "included",
+      "freeTier": "Power BI Desktop is free to download and use for building reports on your own machine; sharing/collaboration needs Pro or PPU licences.",
+      "pricingUrl": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+      "tiers": [
+        {
+          "name": "Free account",
+          "price": "USD 0",
+          "features": [
+            "Build reports in Power BI Desktop",
+            "No sharing/publishing to others"
+          ]
+        },
+        {
+          "name": "Power BI Pro",
+          "price": "USD 14 / user / month (annual)",
+          "features": [
+            "Publish and share reports",
+            "Collaborate in workspaces/apps"
+          ]
+        },
+        {
+          "name": "Power BI Premium Per User",
+          "price": "USD 24 / user / month (annual)",
+          "features": [
+            "Larger model sizes",
+            "48 refreshes/day vs 8",
+            "Advanced AI/paginated reports"
+          ]
+        },
+        {
+          "name": "Fabric/Premium capacity (F/P SKUs)",
+          "price": "Variable, see Fabric pricing",
+          "features": [
+            "Org-wide capacity, free viewers with F64+"
+          ]
+        }
+      ],
+      "note": "Desktop itself never costs money; pricing shown is for sharing/collaboration tiers.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "app.tabular-editor",
+      "modules": [
+        "develop",
+        "governance"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "Tabular Editor 2 is free and open source; Tabular Editor 3 is a paid commercial tool with subscription editions.",
+      "pricingUrl": "https://tabulareditor.com/pricing",
+      "tiers": [
+        {
+          "name": "Tabular Editor 2",
+          "price": "USD 0 (free, open source)",
+          "features": [
+            "Full TE2 feature set",
+            "No official support"
+          ]
+        },
+        {
+          "name": "TE3 Desktop",
+          "price": "unknown (price shown dynamically on site, not captured)",
+          "features": [
+            "For business analysts/BI pros"
+          ]
+        },
+        {
+          "name": "TE3 Business",
+          "price": "unknown (price shown dynamically on site, not captured)",
+          "features": [
+            "For individual BI developers"
+          ]
+        },
+        {
+          "name": "TE3 Enterprise",
+          "price": "USD 950/seat/yr (1-5 seats), USD 900 (6-10), USD 850 (11+), annual",
+          "features": [
+            "Teams of BI developers/consultants",
+            "Volume discounts",
+            "Best Practice Analyzer, scripting"
+          ]
+        }
+      ],
+      "note": "TE3 Desktop/Business exact list prices are rendered dynamically via JS and were not readable from the fetched page; only Enterprise tier pricing was confirmed. Recheck tabulareditor.com/pricing directly for current Desktop/Business figures.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.copilot",
+      "modules": [
+        "ai"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "GitHub Copilot Free gives 2,000 completions and 50 chat requests/month, usable from the Copilot CLI.",
+      "pricingUrl": "https://github.com/features/copilot/plans",
+      "tiers": [
+        {
+          "name": "Free",
+          "price": "USD 0",
+          "features": [
+            "2,000 completions + 50 chat requests/month",
+            "CLI and agent mode included, limited quota"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "USD 10 / month",
+          "features": [
+            "Unlimited completions",
+            "USD 15/month total AI credits (10 base + 5 flex)"
+          ]
+        },
+        {
+          "name": "Pro+",
+          "price": "USD 39 / month",
+          "features": [
+            "USD 70/month total AI credits",
+            "Cloud agent with third-party agents"
+          ]
+        },
+        {
+          "name": "Business",
+          "price": "USD 19 / user / month",
+          "features": [
+            "Org policy/license management",
+            "Included AI credits"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "USD 39 / user / month",
+          "features": [
+            "Codebase indexing",
+            "Deeper GitHub.com integration"
+          ]
+        }
+      ],
+      "note": "As of mid-2026 GitHub moved billing from 'premium request' units to token-based 'AI Credits'; a Max plan (USD 100/month) also exists for heavy agent usage.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ws.mcp",
+      "modules": [
+        "ai"
+      ],
+      "priceModel": "free",
+      "freeTier": "A plain workspace/config file, no cost.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.gcx",
+      "modules": [
+        "monitoring"
+      ],
+      "priceModel": "free",
+      "freeTier": "Grafana's gcx CLI (Grafana Cloud extensions tool) is free to use.",
+      "pricingUrl": "https://github.com/grafana/grafana-cloud-extensions-cli",
+      "note": "Interacts with Grafana Cloud, which has its own paid tiers (see ext.grafana).",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.tofu",
+      "modules": [
+        "cicd",
+        "admin"
+      ],
+      "priceModel": "free",
+      "freeTier": "OpenTofu is a free, open-source (MPL-2.0) Terraform fork with no paid tiers.",
+      "pricingUrl": "https://opentofu.org/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.terraform",
+      "modules": [
+        "cicd",
+        "admin"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "The Terraform CLI itself is free (BSL license, local use); HCP Terraform (formerly Terraform Cloud) adds paid managed tiers.",
+      "pricingUrl": "https://www.hashicorp.com/en/products/terraform/pricing",
+      "tiers": [
+        {
+          "name": "HCP Terraform Free",
+          "price": "USD 0, up to 500 managed resources",
+          "features": [
+            "Remote state, basic remote runs",
+            "No advanced governance"
+          ]
+        },
+        {
+          "name": "Essentials",
+          "price": "from USD 0.10 / resource / month",
+          "features": [
+            "Individuals/teams adopting IaC provisioning"
+          ]
+        },
+        {
+          "name": "Standard",
+          "price": "from USD 0.47 / resource / month",
+          "features": [
+            "Policy enforcement, cost estimation",
+            "Enhanced security"
+          ]
+        },
+        {
+          "name": "Premium",
+          "price": "from USD 0.99 / resource / month",
+          "features": [
+            "Audit logging, custom RBAC",
+            "Priority support"
+          ]
+        }
+      ],
+      "note": "Terraform CLI itself has no cost; figures above are for the optional HCP Terraform managed service.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.containers",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Container Tools extension for VS Code is free.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-containers"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.remote-ssh",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Remote-SSH VS Code extension is free.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.ssh",
+      "modules": [
+        "admin"
+      ],
+      "priceModel": "free",
+      "freeTier": "OpenSSH is free, open-source software.",
+      "pricingUrl": "https://www.openssh.com/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.mongodb",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "The MongoDB VS Code extension is free; it needs a MongoDB server or Atlas cluster (free M0 available) to connect to.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=mongodb.mongodb-vscode"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.mongosh",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "mongosh (MongoDB Shell) is free; it needs a MongoDB server/Atlas cluster to connect to (Atlas M0 free tier available).",
+      "pricingUrl": "https://www.mongodb.com/pricing",
+      "tiers": [
+        {
+          "name": "Atlas M0",
+          "price": "USD 0 forever",
+          "features": [
+            "512 MB storage, shared RAM/vCPU",
+            "Auto-pauses after inactivity",
+            "No AI features"
+          ]
+        }
+      ],
+      "note": "The shell itself is free; pricing shown is for the Atlas cluster it typically connects to.",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.drawio",
+      "modules": [
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "Draw.io Integration VS Code extension is free.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.git",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "Git is free, open-source software.",
+      "pricingUrl": "https://git-scm.com/",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.azure-functions",
+      "modules": [
+        "develop",
+        "cicd"
+      ],
+      "priceModel": "included",
+      "freeTier": "Azure Functions VS Code extension is free; deploying to Azure incurs Functions/Storage costs (Consumption plan has a free monthly grant).",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.func",
+      "modules": [
+        "develop",
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "Azure Functions Core Tools is a free local CLI/runtime; only deployment to Azure incurs cost.",
+      "pricingUrl": "https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.azure-storage",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "Azure Storage VS Code extension is free; actual Azure Storage usage is billed (no dedicated always-free storage tier outside the Azure free account credits).",
+      "note": "Azure Storage has no standing 'always free' quota beyond the general Azure free account's $200 credit / limited free amounts for 12 months.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurestorage"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.cosmosdb",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "included",
+      "freeTier": "The Azure Cosmos DB extension is free; Cosmos DB itself offers a lifetime free tier of 1000 RU/s and 25 GB storage per account.",
+      "pricingUrl": "https://learn.microsoft.com/en-us/azure/cosmos-db/free-tier",
+      "tiers": [
+        {
+          "name": "Free tier",
+          "price": "USD 0 (first 1000 RU/s + 25 GB, lifetime, 1 per subscription)",
+          "features": [
+            "Standard Cosmos DB features",
+            "Usage above the free amount billed at normal rates"
+          ]
+        }
+      ],
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-cosmosdb"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.azure-resources",
+      "modules": [
+        "admin"
+      ],
+      "priceModel": "free",
+      "freeTier": "Azure Resources VS Code extension is free (browsing/managing Azure resources).",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azureresourcegroups"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.pgsql",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "free",
+      "freeTier": "Microsoft's PostgreSQL VS Code extension is free.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.neon",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "Neon has a free tier (100 CU-hours/month, 0.5 GB storage) usable with any Postgres client/extension.",
+      "pricingUrl": "https://neon.com/pricing",
+      "tiers": [
+        {
+          "name": "Free",
+          "price": "USD 0",
+          "features": [
+            "100 CU-hours/month, 0.5 GB storage",
+            "Up to 2 CU autoscale, 10 branches",
+            "Scale-to-zero after 5 min (mandatory)"
+          ]
+        },
+        {
+          "name": "Launch",
+          "price": "USD 0.106 / CU-hour + USD 0.35/GB-month storage",
+          "features": [
+            "No monthly minimum",
+            "Autoscale up to 16 CU",
+            "500 GB egress included"
+          ]
+        },
+        {
+          "name": "Scale",
+          "price": "USD 0.222 / CU-hour + USD 0.35/GB-month storage",
+          "features": [
+            "Fixed sizes up to 56 CU",
+            "IP allow rules, private networking, uptime SLA"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "unknown (contact sales)",
+          "features": [
+            "Custom limits/SLA"
+          ]
+        }
+      ],
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=databricks.neon-local-connect"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.psql",
+      "modules": [
+        "data"
+      ],
+      "priceModel": "free",
+      "freeTier": "psql is the free, open-source PostgreSQL command-line client.",
+      "pricingUrl": "https://www.postgresql.org/docs/current/app-psql.html",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.docker",
+      "modules": [
+        "develop",
+        "cicd"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "Docker Personal is free for individuals, small businesses (<250 employees and <$10M revenue), students/educators, and non-commercial open source.",
+      "pricingUrl": "https://www.docker.com/pricing/",
+      "tiers": [
+        {
+          "name": "Personal",
+          "price": "USD 0",
+          "features": [
+            "Docker Desktop/Engine/Hub",
+            "200 image pulls/6h",
+            "3 Docker Scout repos"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "USD 9 / month (annual) or 11 (monthly)",
+          "features": [
+            "Docker Build Cloud, Testcontainers Cloud",
+            "5-business-day support"
+          ]
+        },
+        {
+          "name": "Team",
+          "price": "USD 15 / user / month (annual) or 16 (monthly)",
+          "features": [
+            "Bulk user management, audit logs",
+            "2-business-day support"
+          ]
+        },
+        {
+          "name": "Business",
+          "price": "USD 24 / user / month",
+          "features": [
+            "SSO, SCIM, enhanced image/container isolation",
+            "1-business-day support"
+          ]
+        }
+      ],
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.gcloud-data",
+      "modules": [
+        "data",
+        "ai"
+      ],
+      "priceModel": "included",
+      "freeTier": "The Google Cloud Data Agent Kit extension is free; it operates against Google Cloud data services which are billed per Google Cloud pricing (with an Always Free tier for some services).",
+      "pricingUrl": "https://cloud.google.com/free",
+      "note": "Could not confirm an official marketplace listing/pricing page specifically for 'Google Cloud Data Agent Kit' extension; treat name/version as unverified.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GoogleCloudTools.datacloud"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "cli.gcloud",
+      "modules": [
+        "admin"
+      ],
+      "priceModel": "included",
+      "freeTier": "gcloud CLI is free; Google Cloud offers an Always Free tier (e.g. 1 e2-micro VM, 5GB Cloud Storage, 1TB BigQuery queries/month) plus a $300 free trial credit for new accounts.",
+      "pricingUrl": "https://cloud.google.com/free",
+      "tiers": [
+        {
+          "name": "Free trial",
+          "price": "USD 300 credit, 90 days",
+          "features": [
+            "Applies to most Google Cloud services"
+          ]
+        },
+        {
+          "name": "Always Free",
+          "price": "USD 0, capped usage, no expiration",
+          "features": [
+            "1 e2-micro VM/month",
+            "5 GB Cloud Storage",
+            "1 TB BigQuery queries/month",
+            "2 million Cloud Run requests/month"
+          ]
+        }
+      ],
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.github-actions",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "GitHub Actions VS Code extension is free; underlying Actions minutes billing depends on the GitHub plan (see note).",
+      "note": "GitHub Actions is free for public repos on GitHub-hosted runners; private repos get included minutes/month: Free 2,000, Pro/Team 3,000, Enterprise Cloud 50,000, beyond which standard per-minute rates apply.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=github.vscode-github-actions"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.github-prs",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "GitHub Pull Requests and Issues VS Code extension is free.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GitHub.vscode-pull-request-github"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.azure-pipelines",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "included",
+      "freeTier": "Azure Pipelines VS Code extension is free; Azure Pipelines itself gives 1 free Microsoft-hosted parallel job with 1,800 minutes/month for private projects.",
+      "pricingUrl": "https://azure.microsoft.com/en-us/pricing/details/devops/azure-devops-services/",
+      "tiers": [
+        {
+          "name": "Free (private projects)",
+          "price": "USD 0: 1 parallel job, 1,800 min/month",
+          "features": [
+            "Microsoft-hosted agents",
+            "May require a one-time free-grant request for new orgs"
+          ]
+        },
+        {
+          "name": "Additional Microsoft-hosted parallel job",
+          "price": "USD 40 / job / month",
+          "features": [
+            "Up to 360 min/run, no monthly cap"
+          ]
+        },
+        {
+          "name": "Additional self-hosted parallel job",
+          "price": "USD 15 / job / month",
+          "features": [
+            "Unlimited minutes, self-hosted agents"
+          ]
+        }
+      ],
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=ms-azure-devops.azure-pipelines"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.gitlab",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "GitLab Workflow VS Code extension is free; GitLab.com has a Free tier for the platform itself.",
+      "pricingUrl": "https://about.gitlab.com/pricing/",
+      "tiers": [
+        {
+          "name": "Free",
+          "price": "USD 0 / user / month",
+          "features": [
+            "Core SCM/CI, 5 users per top-level namespace on SaaS"
+          ]
+        },
+        {
+          "name": "Premium",
+          "price": "unknown (not confirmed on the official page on 2026-09-26)",
+          "features": [
+            "Advanced CI/CD, code owners, multiple approval rules"
+          ]
+        },
+        {
+          "name": "Ultimate",
+          "price": "unknown (not confirmed on the official page on 2026-09-26)",
+          "features": [
+            "Security scanning, compliance, portfolio management",
+            "GitLab Duo AI credits included"
+          ]
+        }
+      ],
+      "note": "Prices of paid tiers change often; check the official pricing page.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GitLab.gitlab-workflow"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.grafana",
+      "modules": [
+        "monitoring"
+      ],
+      "priceModel": "freemium",
+      "freeTier": "Grafana VS Code extension is free; Grafana Cloud has an always-free tier (10k metrics series, 50GB logs/traces/profiles, 14-day retention, 3 users).",
+      "pricingUrl": "https://grafana.com/pricing/",
+      "tiers": [
+        {
+          "name": "Free",
+          "price": "USD 0",
+          "features": [
+            "10k active series, 50GB logs/traces/profiles",
+            "14-day retention",
+            "Community support"
+          ]
+        },
+        {
+          "name": "Pro",
+          "price": "from USD 19/month + usage",
+          "features": [
+            "Pay-as-you-go above free amounts",
+            "13-month metrics retention",
+            "8x5 email support"
+          ]
+        },
+        {
+          "name": "Enterprise",
+          "price": "from USD 25,000/year commitment",
+          "features": [
+            "Custom retention, premium support",
+            "BYOC / federal cloud options"
+          ]
+        }
+      ],
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=Grafana.grafana-vscode"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.powerbi-studio",
+      "modules": [
+        "develop",
+        "admin"
+      ],
+      "priceModel": "included",
+      "freeTier": "Free community VS Code extension by Gerhard Brueckl for managing a Power BI tenant/TMDL editing; needs a Power BI tenant (Pro/PPU/capacity) to publish against.",
+      "note": "Community-maintained, not an official Microsoft extension.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.powerbi-vscode"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "pack.powerbi-gbrueckl",
+      "modules": [
+        "develop",
+        "admin"
+      ],
+      "priceModel": "included",
+      "freeTier": "Gerhard Brueckl's Power BI/Fabric Studio and OneLake explorer VS Code extensions are free to install; using them against Power BI/Fabric requires an existing licensed tenant/capacity.",
+      "pricingUrl": "https://blog.gbrueckl.at/",
+      "note": "Bundles ext.fabric-studio, ext.onelake and ext.powerbi-studio under one community author.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.powerbi-vscode-extensionpack"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "ext.powerbi-modeling-mcp",
+      "modules": [
+        "ai",
+        "develop"
+      ],
+      "priceModel": "included",
+      "freeTier": "Microsoft's Power BI Modeling MCP server is free and open source; it needs Power BI Desktop locally or a Fabric/Power BI workspace for the remote variant.",
+      "pricingUrl": "https://github.com/microsoft/powerbi-modeling-mcp",
+      "note": "Public preview as of research date; local mode needs Power BI Desktop, remote (hosted) mode needs a Fabric workspace.",
+      "links": {
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=analysis-services.powerbi-modeling-mcp"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "py.fabric-cicd",
+      "modules": [
+        "cicd"
+      ],
+      "priceModel": "free",
+      "freeTier": "fabric-cicd is a free, open-source (MIT) Python library by Microsoft for Fabric CI/CD.",
+      "pricingUrl": "https://github.com/microsoft/fabric-cicd",
+      "note": "The library is free; deploying to Fabric still runs against a billed Fabric capacity.",
+      "useWhen": "Deploy the items of a Fabric Git folder to dev, test and prod, with parameter.yml replacing ids per environment.",
+      "links": {
+        "docs": "https://microsoft.github.io/fabric-cicd/",
+        "repo": "https://github.com/microsoft/fabric-cicd"
+      },
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "py.semantic-link-labs",
+      "modules": [
+        "governance",
+        "develop"
+      ],
+      "priceModel": "free",
+      "freeTier": "semantic-link-labs is a free, open-source Python library by Microsoft, installed via pip/PyPI.",
+      "pricingUrl": "https://github.com/microsoft/semantic-link-labs",
+      "note": "Runs inside Fabric notebooks, which consume Fabric capacity (billed separately).",
+      "checkedAt": "2026-09-26"
+    },
+    {
+      "id": "plugin.power-bi-agentic-development",
+      "modules": [
+        "ai"
+      ],
+      "priceModel": "included",
+      "freeTier": "The data-goblin Power BI/Fabric agentic-development plugin marketplace is free and open source on GitHub; it requires Claude Code to run, which itself needs a Claude Pro or Max (or Team/Enterprise) subscription for meaningful usage limits.",
+      "pricingUrl": "https://github.com/data-goblin/power-bi-agentic-development",
+      "tiers": [
+        {
+          "name": "Claude Free",
+          "price": "USD 0",
+          "features": [
+            "Basic Claude access; Claude Code usage very limited"
+          ]
+        },
+        {
+          "name": "Claude Pro",
+          "price": "USD 17/mo (annual) or 20/mo (monthly)",
+          "features": [
+            "Claude Code included with standard usage limits"
+          ]
+        },
+        {
+          "name": "Claude Max 5x",
+          "price": "from USD 100 / month",
+          "features": [
+            "5x usage vs Pro for Claude Code"
+          ]
+        },
+        {
+          "name": "Claude Max 20x",
+          "price": "unknown (not readable on the official page on 2026-09-26)",
+          "features": [
+            "Highest individual usage limits"
+          ]
+        }
+      ],
+      "note": "The plugin itself is free; cost comes from the Claude subscription needed to run Claude Code with adequate usage limits. Re-check claude.com/pricing directly for the exact Max 20x figure before relying on it.",
+      "checkedAt": "2026-09-26"
+    }
+  ]
+}
