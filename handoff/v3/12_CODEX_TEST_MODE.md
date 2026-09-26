@@ -215,6 +215,47 @@ Findings are claims (D-22). The ARCHI verifies each one before it becomes a pack
   `handoff/briefs/2026-09-27-codex-procedure.md`. The ARCHI then corrects §4.3–4.5 and
   `common/testing/CODEX_PROCEDURE.md`.
 
+### 4.7 App tests (vsixtest)
+
+ARCHI decision, 2026-09-26, following Julian's new direction. It updates §4.1–4.4 where they
+differ, and QA-1 builds the formats below.
+
+1. **Two complementary Codex modes. Codex runs vsixtest first, then auto.**
+   - **vsixtest** tests the released VSIX itself, in the private repository
+     `julian-passebecq/codex-datapass-vsixtest` (ours; prose allowed). Codex opens, closes and
+     switches between several projects: the `examples/v3/*` of this repository plus the fake
+     client. It also answers DataPass's open questions (`QUESTIONS.md`, V01–V19).
+   - **auto** walks the client journeys of §4.2 and §5, in the client's auto repository.
+2. **Formats.**
+   - **One config format:** `datapass.codex-tests` v1, with `purpose: "app" | "client"`. `"app"`
+     allows several `workspaces[]`: each has an `id`, a `title`, a `bridge` (`remote`, `folder`,
+     optional `path` for an example inside a clone) and `repositories[]`.
+   - **One journey format:** `datapass.test-journey` v1, with `kind: "app" | "client"`. App
+     journeys are `A` + digits and client journeys `J` + digits; `V` + digits is kept for the
+     open questions.
+   - **The report:** `datapass.qa-report` v1 gains `purpose` and
+     `answers[] = { question, answer, evidence, confidence }`.
+   - **Reports** go to `datapass-codex-test` under `reports/app/<run-id>/` and
+     `reports/client/<run-id>/`.
+   - **`qa:prepare`** writes one `.code-workspace` per workspace for `"app"`.
+3. **The VSIX.**
+   - There is no GitHub release asset and the repository has no tags. `datapass.vsix` is a local
+     path.
+   - The VSIX is built locally from the **released commit**: `npm ci && npx vsce package` in a
+     `datapass-vscode` clone checked out at it. 0.26.0 is commit `c78f01f`; each later release's
+     commit is recorded in handoff/PLAN.md. The copy already installed on the machine may be used
+     instead.
+   - `qa:prepare` records the VSIX's sha256.
+4. **Where it is written.**
+   - **Common** has one `testing/CODEX_PROCEDURE.md` with two sections, "App tests (vsixtest)"
+     and "Client journeys (auto)". Next to it are `TEST_FORMAT.md` (config and journeys),
+     `FEATURES.md`, `JOURNEYS.md` (+ `journeys/J01–J10`) and `REPORT_FORMAT.md`.
+   - **`codex-datapass-vsixtest`** is seeded with a config (`purpose: "app"`; workspaces = the
+     five examples + Codex Wind Lab), `QUESTIONS.md` V01–V19, one app journey (A01) and a
+     3-line AGENTS.md.
+   - **The config file** at the root of both settings repositories is `datapass-tests.json`,
+     unless QA-1's `qa:prepare` settles on another name.
+
 ## 5. Example client journeys (published in common as examples; Codex writes the real ones)
 
 | Id | Client goal | Features |
