@@ -23,7 +23,7 @@ import type { ClosedPullRequest, PullRequest } from "./hostPrs";
 import { isBranchName, type StatusCounts } from "./porcelain";
 
 export type RepoRole = "coordination" | "project" | "other";
-export type RepoReportState = "ok" | "not-checked" | "not-a-repo" | "not-cloned" | "planned" | "wrong-remote" | "restricted";
+export type RepoReportState = "ok" | "not-checked" | "not-a-repo" | "not-cloned" | "planned" | "wrong-remote" | "unverified" | "restricted";
 
 export interface Unpushed { count: number; oldest?: string; noUpstream: boolean }
 

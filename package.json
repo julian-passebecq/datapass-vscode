@@ -149,6 +149,11 @@
         "icon": "$(copy)"
       },
       {
+        "command": "datapass.copyFileContext",
+        "title": "DataPass: Copy Context for My AI…",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "datapass.diagramCloud.openArchitecture",
         "title": "DataPass: Open Architecture in DiagramCloud"
       },
@@ -1558,6 +1563,11 @@
           "group": "7_datapass"
         },
         {
+          "command": "datapass.copyFileContext",
+          "when": "!explorerResourceIsFolder && resourceScheme == file",
+          "group": "7_datapass"
+        },
+        {
           "command": "datapass.fileVersions.openLatest",
           "when": "resourceScheme == file && !explorerResourceIsFolder",
           "group": "7_datapass_versions@1"
@@ -1575,6 +1585,11 @@
       ],
       "editor/title/context": [
         {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
+          "group": "7_datapass"
+        },
+        {
           "command": "datapass.fileVersions.openLatest",
           "when": "resourceScheme == file",
           "group": "7_datapass_versions@1"
@@ -1588,6 +1603,13 @@
           "command": "datapass.fileVersions.compare",
           "when": "resourceScheme == file",
           "group": "7_datapass_versions@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "datapass.copyFileContext",
+          "when": "resourceScheme == file || resourceScheme == untitled",
+          "group": "7_datapass"
         }
       ]
     },
