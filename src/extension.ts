@@ -38,6 +38,9 @@ import { GitTreeProvider } from "./views/gitTree";
 import { registerGitCommands } from "./work/gitCommands";
 import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
+import { ControlService, type ControlSnapshot } from "./work/controlService";
+import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
+import type { AgentPanelState } from "./views/agentPanelState";
 import type { AiViewState } from "./views/aiExchange";
 import { ExperienceService, landOnArchitecture, registerExperienceCommands } from "./work/experienceCommands";
 import type { Experience } from "./core/experience/presets";
@@ -120,6 +123,14 @@ export interface DataPassTestApi {
     aiState(): Promise<AiViewState>;
     lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined;
     selected(): string | undefined;
+  };
+  /** 0.24: Claude Control as DataPass read it, a refresh, and the Claude & Codex panel's state. */
+  control: {
+    snapshot(): ControlSnapshot;
+    refresh(): Promise<ControlSnapshot>;
+    panel(): AgentPanelState;
+    /** Send one message as the panel's webview would (open a link, open a row, copy the start command). */
+    panelSend(message: Record<string, unknown>): Promise<void>;
   };
   /** 0.22 modes: the effective mode, its status item, and whether startup landed on the architecture. */
   experience: {
@@ -225,6 +236,14 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       workOrders.refreshGit(Boolean(id));
     });
   void workOrders.reload();
+
+  // 0.24 (pass AI-3): the Claude & Codex panel and Claude Control's data in the Work orders view (read only while someone looks).
+  const control = new ControlService(session);
+  control.attachWorkOrders(workOrders);
+  workOrders.attachControl({ conversationOf: (id, agent) => control.conversationOf(id, agent), state: () => control.snapshot().state });
+  const agentPanel = new AgentPanelView(session, control, () => flows.codexCliFound());
+  context.subscriptions.push(control, agentPanel, vscode.window.registerWebviewViewProvider(AgentPanelView.viewType, agentPanel));
+  registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
   const visiblePanes = (): Pane[] => {
@@ -401,6 +420,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setDiagramUi: ui => host.applyUi(ui),
     setExportFile: setExportFileForTests,
     startup: () => startup,
+    control: {
+      snapshot: () => control.snapshot(),
+      refresh: async () => { await control.refresh(); return control.snapshot(); },
+      panel: () => agentPanel.state(),
+      panelSend: m => agentPanel.receive(m)
+    },
     experience: {
       current: () => experience.experience(),
       ready: () => experience.ready,

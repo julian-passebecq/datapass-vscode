@@ -238,7 +238,8 @@ test("package.json contributes every registered command and every datapass.* cap
   assert.deepEqual(pkg.contributes.viewsContainers.panel.map((v: { id: string }) => v.id), ["datapass-architecture"]);
   assert.deepEqual(pkg.contributes.viewsContainers.secondarySidebar.map((v: { id: string }) => v.id), ["datapass-details"]);
   assert.deepEqual(pkg.contributes.views["datapass-architecture"].map((v: { id: string }) => v.id), ["datapass.architecture"]);
-  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.aiExchange", "datapass.details"]);
+  // 0.24: the Claude & Codex panel between the AI view and Details.
+  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.aiExchange", "datapass.agentPanel", "datapass.details"]);
   assert.ok(pkg.activationEvents.includes("onView:datapass.aiExchange"));
   assert.equal(pkg.contributes.configuration.properties["datapass.layout.showInSecondarySideBar"].default, true, "DataPass replaces Chat in the secondary side bar by default");
   // The secondary side bar contribution point exists from VS Code 1.106.

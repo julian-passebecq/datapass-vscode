@@ -78,6 +78,14 @@ export function codexArgs(order: WorkOrder, orderMd: string, ws: Workspace): str
   return args;
 }
 
+/**
+ * `codex app <folder>` (0.24, AI-3): the Codex CLI opens the folder in the ChatGPT desktop app, for a
+ * Codex app hand-off when the CLI exists. The prompt is on the clipboard; nothing else is passed.
+ */
+export function codexAppArgs(folder: string): string[] {
+  return ["app", folder];
+}
+
 /** `claude --resume <id>` in the same folder (Claude Code in a terminal only). */
 export function resumeArgs(order: WorkOrder): string[] | undefined {
   return order.agent.tool === "claude-code" && order.agent.sessionId ? ["--resume", order.agent.sessionId] : undefined;

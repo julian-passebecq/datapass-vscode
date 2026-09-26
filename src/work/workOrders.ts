@@ -425,14 +425,22 @@ export class WorkOrderService implements vscode.Disposable {
         canLaunch: !closed && verdict.allowed && !!this.ownDigest(o.id), canResume: Boolean(o.order.agent.sessionId) && (o.state?.launches.some(l => l.how === "launched") ?? false), closed,
         changesCoordination: o.order.repositories.some(x => x.access === "change" && keyOfRef(x.ref, keys) === coordination),
         proposed: o.proposed,
-        timeline: s.timeline
+        timeline: s.timeline,
+        conversation: this.control?.conversationOf(o.id, o.order.agent)
       };
     });
     return {
       allowed: verdict.allowed, why: verdict.why, typeLine: `${type.type} project (${type.source === "machine" ? "this computer's setting" : type.source === "manifest" ? "project.json" : "default"})`,
-      orders, selected: this.selectedId, open: orders.filter(o => !o.closed && o.status !== "error").length, needs: orders.reduce((n, o) => n + o.needs.length, 0)
+      orders, selected: this.selectedId, open: orders.filter(o => !o.closed && o.status !== "error").length, needs: orders.reduce((n, o) => n + o.needs.length, 0),
+      control: this.control?.state()
     };
   }
+
+  /** 0.24 (AI-3): Claude Control's view of each order's conversation (controlService.ts). */
+  private control?: { conversationOf: (id: string, agent: WorkOrder["agent"]) => NonNullable<WbOrder["conversation"]> | undefined; state: () => NonNullable<WbWorkOrders["control"]> };
+  attachControl(control: NonNullable<WorkOrderService["control"]>): void { this.control = control; }
+  /** Control's data changed: the Work orders view and Details repaint. */
+  notifyControlChanged(): void { this.emitter.fire(); }
 
   /** Needs you rule 8, for the Git view. */
   needsYou(): NeedsYou[] {

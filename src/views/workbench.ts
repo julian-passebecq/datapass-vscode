@@ -47,7 +47,7 @@ const ALLOWED = new Set([
   "datapass.workOrders.copyPrompt", "datapass.workOrders.copyForChat", "datapass.workOrders.markDone", "datapass.workOrders.abandon", "datapass.workOrders.archive",
   "datapass.workOrders.followUp", "datapass.workOrders.revise", "datapass.workOrders.checkPrFiles", "datapass.workOrders.importProposed",
   "datapass.workOrders.publishSummary", "datapass.workOrders.exportProject", "datapass.workOrders.openFolder", "datapass.workOrders.openFile",
-  "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision",
+  "datapass.workOrders.refresh", "datapass.workOrders.enable", "datapass.workOrders.newFromCard", "datapass.workOrders.newFromDecision", "datapass.control.openConversation",
   "datapass.workOrders.newForMissingFiles", "datapass.workOrders.openPr",
   // 0.23: the toolkit catalogue.
   "datapass.openToolkit", "datapass.toolkit.openLink", "datapass.toolkit.copyInstall", "datapass.toolkit.copyStep", "datapass.toolkit.openStep", "datapass.toolkit.openFile"
