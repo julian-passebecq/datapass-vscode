@@ -97,8 +97,10 @@ Decisions taken during the build:
   (fragment of the minimal group): a coded alternative in a folder, a not-coded one in a planned
   repository, a scenario.
 
-- Surfaces (package B's presets, Standard / DataPass / Advanced): `project.variantFilter` and
-  `badge.codingState` (singular like `badge.alternatives`; the plan wrote `badges.codingState`, logged
+- Surfaces (package B's presets): `project.variantFilter` (DataPass and Advanced: Standard hides the
+  Project tree, so the release moved it out of Standard; TAMPON 10's finding in testlab 9) and
+  `badge.codingState` (Standard, DataPass, Advanced);
+  (`badge.codingState` is singular like `badge.alternatives`; the plan wrote `badges.codingState`, logged
   in questions.md). Added to `surfaces.ts`, `presets.json`, the overrides setting and the schema.
 - Project tree (`src/views/projectTree.ts`): with `project.variantFilter`, sub-projects and components
   come from the previewed architecture when one is previewed (else graph.json's); a first line

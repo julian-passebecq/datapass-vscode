@@ -54,7 +54,8 @@ uses them). PRs #39 (variants) and #43 (toolkit).
   a section listing every option's components and files, each tagged with its option.
 - **Coding state** of each option and scenario (coded / partly coded / not coded / not checked here),
   derived from the files DataPass finds; shown on the Options table, the preview banner and the
-  Project tree's decisions (surfaces `project.variantFilter`, `badge.codingState`).
+  Project tree's decisions (surfaces `project.variantFilter` in DataPass and Advanced,
+  `badge.codingState` from Standard up).
 - Guide §2.5 "Declaring variants" with a checked example.
 
 ## 0.22.0 — trust repairs, modes, context from any file, format checks, file versions (2026-09-26)
