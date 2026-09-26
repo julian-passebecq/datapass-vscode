@@ -132,4 +132,10 @@ export interface ToolObservation {
   version?: string;
   via?: string;          // which extension ID / command matched
   observedAt: string;
+  /**
+   * ws.mcp (D-22): the server NAMES .vscode/mcp.json registers, nothing else of the file. Undefined
+   * when the file is absent or not plain JSON. A name here means "registered in this workspace",
+   * never "running", "connected" or "signed in".
+   */
+  entries?: string[];
 }

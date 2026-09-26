@@ -114,3 +114,9 @@ test("Ready is never phrased as success", () => {
   assert.equal(r.status, "ready");
   assert.match(r.evidenceNote, /not that the operation will succeed/);
 });
+
+test("D-22: a requirement satisfied by ws.mcp says a registration file is not a connection", () => {
+  const withMcp = CAPABILITIES.flatMap(c => c.requirements).filter(r => r.anyOf.includes("ws.mcp"));
+  assert.ok(withMcp.length > 0);
+  for (const r of withMcp) assert.match(r.why, /never means one is connected or signed in/);
+});

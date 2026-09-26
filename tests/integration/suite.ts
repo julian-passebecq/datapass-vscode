@@ -28,6 +28,7 @@ import { registerFileContextFlows } from "./fileContextFlows";
 import { registerCheckFlows } from "./checkFlows";
 import { registerVariantFlows } from "./variantFlows";
 import { registerActiveVariantFlows } from "./activeVariantFlows";
+import { registerEvidenceFlows } from "./evidenceFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -237,6 +238,7 @@ registerReadinessFlows(() => api);
 // 0.23: before the options flows, which record and apply decisions.
 registerVariantFlows(() => api);
 registerActiveVariantFlows(() => api);
+registerEvidenceFlows(() => api);
 registerOptionsFlows(() => api);
 registerBoardFlows(() => api);
 registerDevopsFlows(() => api);

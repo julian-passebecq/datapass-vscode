@@ -15,6 +15,7 @@ import { anyOf, arr, constOf, enumOf, obj, validateSchema, type Schema, type Sch
 import { parseStrictJson } from "../model/strictJson";
 import { gitHostOf } from "../project/gitHosts";
 import { sensitiveFindings } from "../project/aiExchange";
+import { RECEIPT_CHECK_FIELDS, type ReceiptCheck } from "../evidence/receipts";
 
 export const ORDER_FORMAT = "datapass.work-order";
 export const STATE_FORMAT = "datapass.work-order-state";
@@ -134,7 +135,8 @@ export const WORK_ORDER_RESULT_SCHEMA: Schema = obj({
   summary: S(4000),
   repositories: arr(obj({ ref: REF, branch: BRANCH, commits: arr(COMMIT, 100), pullRequest: S(2000, 1) }, ["ref"]), 30),
   datapassFiles: arr(obj({ kind: enumOf(...DATAPASS_FILE_KINDS), via: enumOf("pull-request", "import") }), 6),
-  checks: arr(obj({ what: S(500), outcome: enumOf("passed", "failed", "not-run"), note: S(1000) }, ["what", "outcome"]), 30),
+  // D-22: field / tool / scope / input are optional (additive); a check naming tool, scope and input is a receipt.
+  checks: arr(obj({ what: S(500), outcome: enumOf("passed", "failed", "not-run"), note: S(1000), ...RECEIPT_CHECK_FIELDS }, ["what", "outcome"]), 30),
   questions: arr(S(1000), 20),
   followUps: arr(obj({ title: S(80), why: S(1000) }, ["title"]), 10),
   agent: obj({ tool: S(60), model: S(100) }, []),
@@ -206,7 +208,7 @@ export interface WorkOrderResult {
   summary: string;
   repositories?: ResultRepository[];
   datapassFiles?: Array<{ kind: DataPassFileKind; via: "pull-request" | "import" }>;
-  checks?: Array<{ what: string; outcome: "passed" | "failed" | "not-run"; note?: string }>;
+  checks?: ReceiptCheck[];
   questions?: string[];
   followUps?: Array<{ title: string; why?: string }>;
   agent?: { tool?: string; model?: string };
@@ -341,7 +343,7 @@ function resultTexts(r: WorkOrderResult): string[] {
   return [
     r.summary, ...(r.questions ?? []),
     ...(r.followUps ?? []).flatMap(f => [f.title, f.why ?? ""]),
-    ...(r.checks ?? []).flatMap(c => [c.what, c.note ?? ""]),
+    ...(r.checks ?? []).flatMap(c => [c.what, c.note ?? "", c.tool ?? "", c.scope ?? "", c.input ?? ""]),
     r.agent?.tool ?? "", r.agent?.model ?? ""
   ];
 }

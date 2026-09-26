@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { defaultProbeRunner, type ProbeRunner } from "../detection";
 import { TOOLS, type ToolObservation } from "./tools";
 import { cliVersion } from "../toolchain/versions";
+import { mcpServerNames } from "../evidence/registration";
 
 const TTL_MS = 5 * 60_000;
 let cache: { at: number; map: Map<string, ToolObservation> } | undefined;
@@ -27,7 +28,11 @@ export async function probeTools(force = false, runner: ProbeRunner = defaultPro
       }
       case "workspace-file": {
         const found = await vscode.workspace.findFiles(".vscode/mcp.json", undefined, 1);
-        return { toolId: tool.id, state: found.length ? "present" : "absent", observedAt: now };
+        if (!found.length) return { toolId: tool.id, state: "absent", observedAt: now };
+        // D-22: the server names only, for the evidence chain's "registered" link.
+        let entries: string[] | undefined;
+        try { entries = mcpServerNames(new TextDecoder().decode(await vscode.workspace.fs.readFile(found[0]!))); } catch { entries = undefined; }
+        return { toolId: tool.id, state: "present", via: ".vscode/mcp.json", observedAt: now, ...(entries ? { entries } : {}) };
       }
       case "desktop-app":
         return { toolId: tool.id, state: "unknown", observedAt: now };

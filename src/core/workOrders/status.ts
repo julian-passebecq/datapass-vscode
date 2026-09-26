@@ -14,6 +14,7 @@ import type { CiState, ClosedPullRequest, ReviewState } from "../git/hostPrs";
 import type { GitRepoReport, NeedsYou } from "../git/gitReport";
 import { shortId, type CheckedResult, type OrderState, type ResultVerdict, type SeenPr, type WorkOrder } from "./format";
 import { CHOICE_LABELS, choiceOf } from "./launch";
+import { checkEvidenceText, resultFields, type ObservedCi, type ResultFieldView } from "../evidence/receipts";
 
 export type ResultInfo =
   | { state: "none" }
@@ -59,6 +60,11 @@ export interface OrderSummary {
   suggestDone: boolean;
   next: string;
   timeline: TimelineEntry[];
+  /**
+   * D-22: one entry per result field (CLI exit, CI, deployed, runtime success, scientific validity):
+   * observed (CI from the Git host), the agent's receipt, asserted, or unknown. Never merged into one.
+   */
+  resultFields: ResultFieldView[];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -178,13 +184,22 @@ export function summarize(i: SummaryInput): OrderSummary {
   if (result.state === "valid") {
     const r = result.checked.result;
     const detail = [r.summary];
-    for (const c of r.checks ?? []) detail.push(`check: ${c.what} ${c.outcome}${c.note ? ` (${c.note})` : ""} — the agent says`);
+    for (const c of r.checks ?? []) detail.push(`check: ${c.what} ${c.outcome}${c.note ? ` (${c.note})` : ""} — the agent says · ${checkEvidenceText(c)}`);
     for (const q of r.questions ?? []) detail.push(`question: ${q}`);
     for (const f of r.followUps ?? []) detail.push(`follow-up: ${f.title}${f.why ? ` — ${f.why}` : ""}`);
     for (const w of result.checked.warnings) detail.push(`⚠ ${w}`);
     timeline.push({ at: r.finishedAt ?? result.at, what: `result: ${r.status} (the agent says)`, detail, tone: r.status === "done" ? "ok" : "warn" });
   } else if (result.state === "refused") {
     timeline.push({ at: result.at, what: "result refused", detail: [result.message], tone: "error" });
+  }
+  const ci: ObservedCi = { passing: 0, failing: 0, running: 0, unknown: 0 };
+  for (const x of changes) if (x.state === "open") {
+    const st = x.pr?.ci;
+    if (st === "passing") ci.passing++; else if (st === "failing") ci.failing++; else if (st === "running") ci.running++; else ci.unknown++;
+  }
+  const fields = resultFields(result.state === "valid" ? result.checked.result.checks : undefined, ci);
+  if (result.state === "valid" || fields.some(f => f.state === "observed")) {
+    timeline.push({ what: "result fields (each on its own)", detail: fields.map(f => f.text), tone: fields.some(f => f.outcome === "failed") ? "warn" : "muted" });
   }
   for (const x of changes) timeline.push({ what: outputText(x), tone: x.state === "open" && x.pr?.ci === "failing" ? "error" : x.state === "merged" && x.pulled === true ? "ok" : x.state === "no-pr" || x.state === "not-checked" ? "muted" : undefined });
   for (const imp of s.imported ?? []) timeline.push({ at: imp.at, what: `imported proposed ${imp.kind}.json`, detail: imp.backup ? [`backup ${imp.backup}`] : [] });
@@ -194,7 +209,7 @@ export function summarize(i: SummaryInput): OrderSummary {
   return {
     id: o.id, short: shortId(o.id), title: o.title, kind: o.kind, createdAt: o.createdAt, status: s.status,
     agent: CHOICE_LABELS[choiceOf(o.agent.tool, o.agent.surface)], scope: scopeText(o),
-    outputs, result, changedAfterLaunch, needs, suggestDone, next, timeline
+    outputs, result, changedAfterLaunch, needs, suggestDone, next, timeline, resultFields: fields
   };
 }
 
