@@ -70,7 +70,7 @@ FOIL side (Julian reviews and merges; DataPass sessions never merge them):
 
 | Id | Package | Repository | Coder | Status | Actual |
 |---|---|---|---|---|---|
-| FB2 | Bridge Q6 (vocabulary from the FOIL AI) + reconciliation with 11 (R-09: manifest version, producer, preparation file) on draft PR #6 | foil-v1-vscode-datapass | TAMPON 17 | GO | |
+| FB2 | Bridge Q6 (vocabulary from the FOIL AI) + reconciliation with 11 (R-09: manifest version, producer, preparation file) on draft PR #6 | foil-v1-vscode-datapass | TAMPON 17 | done: draft PR #6 +2 commits (Q6 vocabulary, study-core + A/B/C adapters, R3 fixes, board.json dropped per D-10), validated on main `299e222`; Q2/Q3 still open; **Julian reviews and merges** | |
 | S1 | foil-study common core + route A, PR for Julian's review | foil-study | TAMPON 18 | GO | |
 
 Merge order (0.26): AI-4a, M1, K1 in any order as each is green (rebase on main first) → X1 last (it touches shared files) → R3 release 0.26.0; C1 joins if merged before R3. Next (0.27, from 11 §4): P1 pack stamps, E1 evidence chain, T10 testlab 10 — **held until the weekly budget reset (1 Oct 14:00) or Julian's go** (SUPERVISOR 2, week at 76 %).
