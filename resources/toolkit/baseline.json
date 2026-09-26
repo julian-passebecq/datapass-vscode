@@ -80,14 +80,17 @@
       ],
       "priceModel": "included",
       "freeTier": "Free community VS Code extension by Gerhard Brueckl for managing a Fabric tenant; needs a Fabric tenant/capacity to connect to.",
-      "note": "Community-maintained (gbrueckl), not an official Microsoft product; free to install, requires Fabric access.",
+      "note": "Community extension by Gerhard Brueckl, not a Microsoft product and not the official Fabric MCP server: its README (checked 2026-09-26) does not mention MCP. For agent access to Fabric use Fabric Core MCP (remote) or Fabric MCP Server (local).",
       "links": {
         "marketplace": "https://marketplace.visualstudio.com/items?itemName=GerhardBrueckl.fabricstudio",
         "repo": "https://github.com/gbrueckl/FabricStudio"
       },
       "useWhen": "Edit an item definition without Git, run REST calls, manage deployment pipelines from VS Code.",
       "avoidWhen": "The workspace is connected to Git: edit the files in the repository instead.",
-      "checkedAt": "2026-09-26"
+      "checkedAt": "2026-09-26",
+      "verified": {
+        "on": "2026-09-26"
+      }
     },
     {
       "id": "ext.onelake",
@@ -357,7 +360,8 @@
       ],
       "priceModel": "free",
       "freeTier": "A plain workspace/config file, no cost.",
-      "checkedAt": "2026-09-26"
+      "checkedAt": "2026-09-26",
+      "note": "The workspace's .vscode/mcp.json (VS Code uses the servers key; other hosts use mcpServers or TOML). A registration is only one step: it does not prove the server is installed, connected, authenticated or allowed to do anything. Toolkit data never adds a server to it."
     },
     {
       "id": "cli.gcx",
@@ -925,13 +929,25 @@
         "develop"
       ],
       "priceModel": "included",
-      "freeTier": "Microsoft's Power BI Modeling MCP server is free and open source; it needs Power BI Desktop locally or a Fabric/Power BI workspace for the remote variant.",
+      "freeTier": "Free, open source (MIT with extra EULA terms). Needs Power BI Desktop or PBIP files locally, or a Fabric workspace model with the XMLA endpoint set to Read Write; Write permission to change a model (Build only runs DAX).",
       "pricingUrl": "https://github.com/microsoft/powerbi-modeling-mcp",
-      "note": "Public preview as of research date; local mode needs Power BI Desktop, remote (hosted) mode needs a Fabric workspace.",
+      "note": "Now named Power BI Authoring MCP server (formerly Power BI Modeling MCP); this is its local option: stdio, VS Code extension or npm package @microsoft/powerbi-modeling-mcp, public preview. Semantic models only: it cannot change report pages or diagram layouts. Writes by default; start it with --readonly on a copy. Local server does not mean local data: metadata and query results reach the client's LLM provider.",
       "links": {
-        "marketplace": "https://marketplace.visualstudio.com/items?itemName=analysis-services.powerbi-modeling-mcp"
+        "marketplace": "https://marketplace.visualstudio.com/items?itemName=analysis-services.powerbi-modeling-mcp",
+        "repo": "https://github.com/microsoft/powerbi-modeling-mcp",
+        "docs": "https://learn.microsoft.com/en-us/power-bi/developer/mcp/power-bi-authoring-mcp"
       },
-      "checkedAt": "2026-09-26"
+      "checkedAt": "2026-09-26",
+      "verified": {
+        "on": "2026-09-26"
+      },
+      "sideEffects": [
+        "reads-remote",
+        "writes-remote",
+        "credential-prompt"
+      ],
+      "useWhen": "An agent must change a semantic model open in Power BI Desktop or stored as PBIP/TMDL files, with the change reviewed as a Git diff.",
+      "avoidWhen": "Report pages, visuals or layout (use the report-authoring skill on PBIR files); read-only business questions (Fabric IQ MCP); the hosted authoring server is also registered for the same agent (Microsoft warns against overlapping tool sets); macOS (not supported locally)."
     },
     {
       "id": "py.fabric-cicd",
@@ -958,8 +974,11 @@
       "priceModel": "free",
       "freeTier": "semantic-link-labs is a free, open-source Python library by Microsoft, installed via pip/PyPI.",
       "pricingUrl": "https://github.com/microsoft/semantic-link-labs",
-      "note": "Runs inside Fabric notebooks, which consume Fabric capacity (billed separately).",
-      "checkedAt": "2026-09-26"
+      "note": "A Python library for Fabric notebooks (%pip install semantic-link-labs), published under Microsoft's GitHub organisation; it is not an MCP server. An agent can write a notebook that uses it. Notebooks consume Fabric capacity (billed separately).",
+      "checkedAt": "2026-09-26",
+      "verified": {
+        "on": "2026-09-26"
+      }
     },
     {
       "id": "plugin.power-bi-agentic-development",
@@ -999,8 +1018,11 @@
           ]
         }
       ],
-      "note": "The plugin itself is free; cost comes from the Claude subscription needed to run Claude Code with adequate usage limits. Re-check claude.com/pricing directly for the exact Max 20x figure before relying on it.",
-      "checkedAt": "2026-09-26"
+      "note": "Community marketplace by data-goblin (GPL-3.0): skills, agents and hooks in 11 plugins for Claude Code and GitHub Copilot CLI (>= 1.0.26). Its README (checked 2026-09-26) says the plugins do not currently ship MCP servers, and versions 26.26 to 26.38 are a deliberate breaking transition: pin a reviewed version. Not the Microsoft powerbi-authoring plugin. The plugin is free; the cost is the Claude plan that runs Claude Code.",
+      "checkedAt": "2026-09-26",
+      "verified": {
+        "on": "2026-09-26"
+      }
     }
   ]
 }

@@ -53,7 +53,7 @@ export function registerToolkitFlows(getApi: () => DataPassTestApi): void {
     assert.deepEqual(k.problems, []);
     assert.equal(k.tools.find(t => t.id === "ext.fabric-studio")?.source, "built-in, changed by the hub");
     assert.equal(k.tools.find(t => t.id === "acc.fabric-toolbox")?.source, "hub");
-    assert.deepEqual(k.requests.map(r => r.title), ["Probe the Tabular Editor 3 version"]);
+    assert.deepEqual(k.requests.map(r => r.title), ["Probe the Tabular Editor 3 version", "Say an MCP server's transport, endpoint and documented hosts", "Mark tools whose results reach the AI model's provider"]);
     const bulk = k.recipes.find(r => r.id === "fabric.item-definition.bulk-edit")!;
     // Sales BI declares the workspace's Git binding: the Git route applies and is suggested.
     assert.equal(bulk.routes.find(r => r.id === "git")?.applies, "yes");

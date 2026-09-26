@@ -69,8 +69,8 @@ test("toolkit: hub files layer over the baseline; built-in probes and kinds stay
   assert.equal(toolbox.probe, false);
   assert.equal(priceText(toolbox).dated, "2026-09-26");
   assert.equal(c.tools.get("cli.pbi-tools")!.replacedBy, "py.fabric-cicd");
-  assert.equal(c.recipes.size, 3);
-  assert.equal(c.requests.length, 1);
+  assert.equal(c.recipes.size, 4);
+  assert.equal(c.requests.length, 3);
   assert.equal(c.requests[0]!.title, "Probe the Tabular Editor 3 version");
   // A hub entry cannot turn a built-in tool into another kind (the kind decides the probe).
   const kindChange = parseToolkitFile(file({ tools: [{ id: "cli.az", kind: "learning", note: "x" }] }), "t.json", V);
@@ -241,7 +241,7 @@ test("toolkit: the Workbench state names tools per component and keeps links on 
   assert.deepEqual(studio.links.map(l => l.id).sort(), ["marketplace", "repo"]);
   assert.ok(!JSON.stringify(studio.links).includes("https://"), "the webview gets link ids, not addresses");
   assert.ok(studio.recipes.includes("fabric.item-definition.bulk-edit"));
-  assert.equal(s.requests.length, 1);
+  assert.equal(s.requests.length, 3);
   assert.equal(s.files.length, 2);
   assert.ok(Object.keys(s.components).length > 0, "the research library's Azure components have catalogue tools");
 });
