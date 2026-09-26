@@ -41,7 +41,7 @@ T4 → T1 → T2 → T3 → R (0.23.0). T5 merges its one repository line whenev
 
 | Id | Package | Size | Model · effort | Depends on |
 |---|---|---|---|---|
-| AI-3 | Claude & Codex panel + Codex hand-off (09 §12) | L | Opus 5.5 · high; panel polish medium | Claude Control pass C-1 is merged (claude-control PR #15). Starts after 0.23.0: it shares the AI view and work-order files with the toolkit pass |
+| AI-3 | Claude & Codex panel + Codex hand-off (09 §12) | L | Opus 5.5 · high; panel polish medium | Claude Control pass C-1 is merged (claude-control PR #15). Starts after 0.23.0: it shares the AI view and work-order files with the toolkit pass · **Status: merged, released in 0.24.0** (PR #46 + release PR) · **Actual: ≈ 1.2 h · ≈ 18 M tokens** (TAMPON 7, one session, AI-3 + release) |
 | AI-4 | Pilot stage 1, read-only: allowlist design per CLI (`az` + `func` first, for the FOIL PDF flow, 09 §13.1 Q8), `requests/` / `responses/`, Pilot tab | L | allowlist design: an "ARCHI xh" consult brief; build: high | toolkit connections (0.18, done); Julian signs in read-only on dev resources |
 | FOIL-PDF | Apply the FOIL bridge preparation (foil-v1-vscode-datapass `docs/DATAPASS_PREPARATION.md` steps 1–3) | M | medium | Julian's answers Q2–Q4 and the FOIL AI's spike (todo.md, 2026-09-26) |
 | 1.0.0 | Release after Julian's acceptance (testlabs 4–9, FOIL on the real repositories, account qualification gate 16) | S | medium | Julian |
