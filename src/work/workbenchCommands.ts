@@ -133,9 +133,10 @@ function isInsideWorkspace(uri: vscode.Uri): boolean {
 
 async function arrange(session: WorkSession): Promise<void> {
   // Left: the Project tree. Bottom: the architecture diagram. Right: details and checklists. Centre: files.
-  await vscode.commands.executeCommand("datapass.project.focus");
-  await vscode.commands.executeCommand("datapass.architecture.focus");
-  await vscode.commands.executeCommand("datapass.details.focus");
+  // V1-STAB: a view the mode hides (the Project tree in Standard) may refuse focus; the others still open.
+  for (const view of ["datapass.project", "datapass.architecture", "datapass.details"]) {
+    try { await vscode.commands.executeCommand(`${view}.focus`); } catch { /* hidden in this mode */ }
+  }
   const c = session.selection().component ? session.projectMap().components.find(x => x.id === session.selection().component) : undefined;
   if (c?.artifacts?.entry?.state === "found") await vscode.commands.executeCommand("datapass.openComponentEntry", c.id);
 }
