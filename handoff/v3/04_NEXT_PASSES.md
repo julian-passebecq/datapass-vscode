@@ -53,6 +53,14 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.27.0 (2026-09-26)
+
+Packages K2 (PR #71), V1-STAB (PR #81, #84), QA-0 to QA-2 and QA-4 (PR #76, #79, #83, #87, #94, #95), V1-PERF (PR #88),
+V1-FLAKE (PR #90, #92), V1-REF (PR #93) and HUB-1 (PR #96): progressive refresh (first paint 1.9 s, full 5.0 s on a
+FOIL-sized fixture, gated in CI); the Codex tests mode (formats, `qa:prepare`, `qa:ui`, `qa-run` orders); Microsoft MCP
+servers in the toolkit baseline; the stabilisation sweep and the `windowFlows` flake; `sync:common`. See
+IMPLEMENTATION_STATUS.md.
+
 ## Done in 0.26.0 (2026-09-26)
 
 Packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61) and X1 (PR #63), from the FOIL MCP

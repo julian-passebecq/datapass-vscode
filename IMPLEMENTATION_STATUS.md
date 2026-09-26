@@ -1,4 +1,312 @@
-# Implementation Status — 0.26.0: pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed
+# Implementation Status — 0.27.0: progressive refresh, Codex tests mode, Microsoft MCP servers, stabilisation
+
+Date: 2026-09-26. Version `0.27.0` — packages K2 (PR #71), V1-STAB (PR #81, #84), QA-0 (PR #76, #94), QA-1 (PR #79, #83),
+QA-2 (PR #87), V1-PERF (PR #88), V1-FLAKE (PR #90, #92), V1-REF (PR #93), QA-4 (PR #95) and HUB-1 (PR #96), released from
+main per [handoff/PLAN.md](handoff/PLAN.md) row R4. The night notes (`handoff/v3/night/v1-k2.md`, `v1-stab.md`,
+`v1-perf.md`, `v1-ref.md`, `v1-qa1.md`) are folded into this section; QA-2, QA-4, V1-FLAKE and HUB-1 had no night note
+(their PR descriptions are summarised in What's new).
+
+### What's new
+
+- **Progressive refresh** (V1-REF, PR #93): a refresh paints the project, its architecture and the tree
+  first (1.9 s on a FOIL-sized fixture, was 8.3 s), then gathers tool probes, readiness, inventory and
+  Galaxy (5.0 s in all). Git reads run side by side (at most 4), probes after the first paint (at most
+  6), a per-clone cache keyed on HEAD + index reuses origin and `ls-files` answers (`git status` is
+  never cached), and file stats use node `fs`. A newer refresh supersedes an older one.
+- **Performance harness** (V1-PERF, PR #88): `npm run perf` launches a real VS Code on a FOIL-sized
+  fixture (8 repositories, 5,000 files, 60 components); CI gates activation, first paint, full refresh
+  (each at twice its budget) and the absence of a refresh storm after `git fetch`.
+- **Microsoft MCP servers in the toolkit baseline** (K2, PR #71): Fabric Core / local / IQ, hosted Power
+  BI Authoring, Azure MCP and the Power BI Authoring plugin, never probed or registered by DataPass. The
+  toolkit format (`datapass.toolkit` 1, additive) gains `transport`, `endpoint`, `hosts[]` and the side
+  effect `sends-to-model`, shown as pills and an *MCP server* section in the Toolkit view.
+- **Codex tests mode** (QA-1 PR #79 and #83, QA-2 PR #87, QA-4 PR #95, PR #92): formats
+  `datapass.codex-tests`, `datapass.test-journey`, `datapass.qa-report` and `datapass.ui-journey` (schemas
+  emitted); `npm run qa:prepare` installs the local VSIX into an isolated profile, writes one workspace
+  per client and `run.json`, and launches VS Code with `--disable-workspace-trust`; `npm run qa:ui`
+  drives the journeys through Playwright `_electron` and writes a qa-report; the `qa-run` work-order
+  kind and *Hand to Codex* in the Work orders view (Advanced) hand a run to the Codex desktop app and
+  close it on a matching report. Guide page [11 — Codex tests](docs/guide/11_CODEX_TESTS.md).
+- **Stabilisation** (V1-STAB PR #81 and #84, V1-FLAKE PR #90): Copy Context and Readiness follow the
+  selected variant; a same-name sibling folder with no or another origin is named, never bound; BOM kept
+  in `.vscode/mcp.json`; evidence cards for the five Microsoft MCP servers; packs stamped; the Power Ops
+  list is written atomically with retries on Windows file locks, and a failed background export warns
+  (the `windowFlows` flake).
+- **Public contracts sync** (HUB-1, PR #96): `npm run sync:common -- --target <common checkout> [--check]`
+  copies the schemas, the examples and the toolkit knowledge into `datapass-vscode-common` through an
+  allowlist that refuses handoff files, FOIL identifiers, secret dot-files and credential-shaped content.
+- The doc-pipeline example's link to guide page 10 is now absolute, so it still resolves once copied
+  into `datapass-vscode-common`.
+
+### Per package (folded night notes)
+
+#### V1 K2 — Microsoft MCP servers in the baseline; MCP fields in the toolkit format (PR #71)
+
+##### What changed
+- **Registry** (`src/core/toolchain/toolchain.ts`, NOT_PROBED): `mcp.fabric-core`, `mcp.fabric-local`, `mcp.fabric-iq`,
+  `mcp.powerbi-authoring-hosted`, `mcp.azure` (new kind `mcp-server`) and `plugin.powerbi-authoring` (agent-plugin). Never
+  probed: DataPass never starts, registers or signs in to an MCP server. The toolchain says so for an `mcp-server` it lists.
+- **Baseline** (`resources/toolkit/baseline.json`): the six K1 entries moved from the example hub, with the new fields;
+  `ext.powerbi-modeling-mcp` gains `transport: stdio`, `hosts` and `sends-to-model`. The example hub no longer repeats
+  them (its K1 recipe still names them) and its two K1 `datapassRequests` are dropped: they are implemented.
+- **Format** (`datapass.toolkit` 1, additive): tool fields `transport` (`stdio` / `streamable-http` / `sse`), `endpoint`
+  (https link, checked like any link, refused with `stdio`), `hosts[]` (closed list + `any`; also for agent plugins);
+  side effect `sends-to-model`. Schema regenerated (`npm run schemas`).
+- **Display**: Toolkit view side panel, section *MCP server* (where it runs, endpoint as text, documented hosts, the
+  model warning, "DataPass never registers…"); component Details (`toolLine`) and the tools list get *MCP · local/remote*
+  and *sends data to the model* pills (`src/views/toolkitState.ts` `mcp`, `sendsToModel`).
+- Docs: guide 09 MCP section, PREPARING_A_PROJECT.md tool ids + section 14 rows (a test keeps the id list complete).
+
+##### Tests
+- `tests/toolkit.test.ts`: the six ids in `baselineTools()` with no hub (kind, transport, endpoint, sends-to-model, not
+  probed), not repeated in the hub, Workbench state carries the MCP facts; negative: unknown transport / host / side
+  effect, endpoint with stdio, http or token endpoint, transport on a CLI; the editor schema accepts / refuses the same.
+- `npm run verify` green.
+
+##### Limits / next
+- E1's evidence chain (`src/core/evidence/integrations.ts`, KNOWN_MCP_SERVERS) still covers only the Fabric Toolbox
+  servers and the local Power BI Modeling server; adding the five remote/local Microsoft servers there (installed = the
+  extension probe for fabric-local / azure; registered = a server name in .vscode/mcp.json) is a small follow-up, not done
+  here (E1's file, not owned by K2).
+- `mcp.fabric-local` and `mcp.azure` carry their Marketplace ids but no probe; a probe would need entries in
+  `src/core/capabilities/tools.ts` with kind `extension`, which would show them as VS Code extensions.
+- Hub files that use the new fields should add `requires.datapass` once the release number is known.
+
+#### V1-STAB — stabilisation sweep (TAMPON 25, 2026-09-26) (PR #81, #84)
+
+Full report: [handoff/v1/STABILISATION.md](handoff/v1/STABILISATION.md): every testlab step PASS / PARTIAL / HUMAN,
+bugs and fixes.
+
+##### What changed (code)
+- `src/adapters/fabric.ts`: label "MCP registration file present (.vscode/mcp.json)" (D-22).
+- **BOM:**
+  - `src/core/mcp.ts` `planMcpFileEdit` keeps a leading BOM;
+  - `src/core/actions.ts` decodes the file with `ignoreBOM`.
+- `src/core/evidence/integrations.ts`: the five K2 Microsoft MCP servers get evidence cards; `registrationReason`.
+- **Copy Context follows the selected variant (D-23):**
+  - `src/core/exchange/fileContext.ts` gets `componentPlaces(map)`;
+  - `src/work/fileContextCommands.ts` uses the selected variant's map.
+- **Readiness follows the selected variant:**
+  - `src/core/readiness/readiness.ts` gets `readinessForVariant` and `Readiness.variant`;
+  - `src/work/session.ts` `readiness()` uses the variant's repositories and hides rows only other variants use;
+  - `src/views/projectTree.ts` shows the "Variant: … · N rows of other variants hidden" line.
+- **A same-name sibling with no or another origin is named:**
+  - `src/core/project/resolve.ts` gets `RepoObservation.nearby` and the wording "folder X found, no remote: identity
+    not verified";
+  - `src/work/projectObserver.ts` fills `nearby`, and never binds the folder.
+- `src/core/capabilities/probe.ts`: workspace-file probes (`.vscode/mcp.json`) are re-read on a cache hit.
+- **Packs stamped:** `src/core/project/{boardPack,preparation}.ts` take a `stamp`, and the commands pass `packStamp()`.
+- `src/work/windowCommands.ts`: Power Ops exports are serialised (the rename race of the `windowFlows` flake).
+- `src/work/activeVariantCommands.ts`: a switch ignores its own preview event; saves are serialised (the second flake).
+- `src/work/workbenchCommands.ts`: *Workbench Layout* focuses each view best-effort (the Project view is hidden in
+  Standard).
+- `scripts/desktop-test.ts`: per fixture, lists the extension host log's error lines that mention DataPass, minus
+  two known harmless patterns.
+
+##### Tests added
+- **Unit:**
+  - `mcp` (BOM kept, never added);
+  - `evidence` (a card for every registry `mcp-server`);
+  - `readiness` (`readinessForVariant`);
+  - `trustRepairs` (the nearby wording);
+  - `board` (card and preparation stamps);
+  - `fileContext` (component from the variant's map).
+- **Desktop:**
+  - `activeVariantFlows`: B's component and stamp in the pack; `factory` in Readiness only under C;
+  - `evidenceFlows`: *Re-inspect Project* sees a new `mcp.json`;
+  - `experienceFlows`: *Workbench Layout* in Standard.
+
+##### Testlabs (outside this repository, D:\PROJ\datapass-testlab)
+- Lab 10 suite: 11/11 (steps 3.1 and 10.4 new, `run.ts` passes the lab's Git rewrites).
+- Lab 9 suite: 12/12 (accepts the 0.25 coding labels).
+- Guides 4–10 updated (install, mode, labels, Mongoku); new `10-parcours-client\ouvre-vscode-labo.ps1`.
+
+##### Decisions taken alone
+- Readiness hides only env files and repositories (and their checks) used only by other variants; toolchain and
+  connection rows are project-wide and stay.
+- A same-name sibling whose origin is another repository gets the same "identity not verified" wording, and is still
+  never bound.
+- **Item 3 is still open.** The final local run failed once more after the export serialisation.
+  - `windowFlows` now asserts the stored name first. If "rename not stored" fires, the input prompt was missed (UI
+    timing); otherwise the list lagged behind the rename.
+  - The flake of item 3 had no surviving CI log. The fix targets the race the code allows (two concurrent exports);
+  if it comes back, the next suspect is the open-view request watcher firing late.
+
+#### V1-PERF — measurement harness (TAMPON 25, 2026-09-26) (PR #88)
+
+**ARCHI DataPass 2 decision:**
+- #88 ships as the harness;
+- CI gates activation (2× 500 ms) and the fetch storm (2× 1 refresh);
+- the first refresh is report-only until V1-REF (the refresh work, another session, high) merges;
+- no lazy imports in V1.
+
+##### What this branch adds
+- `scripts/perf.ts` (`npm run perf`, `-- --runs=N`, `-- --ci`):
+  - builds a FOIL-sized fixture and launches a real VS Code 3 times (fresh profile, no other extensions);
+  - prints and stores the medians (`out/perf/perf-report.json`);
+  - with `--ci`, exits 1 above twice a budget.
+- `tests/fixtures/perf/foilSized.ts`: 8 Git repositories (the hub and 7 others) opened as a multi-root workspace, 5,000
+  files, 60 components with relations. Each origin is a GitHub URL rewritten to a local bare repository. Before every
+  launch one new commit lands in each remote, so the `git fetch` has something to download.
+- `tests/perf/suite.ts`: the runner inside the host. It reads the timings, times a second refresh, runs `git fetch` in
+  the 8 repositories and counts the refreshes during the next 6 s.
+- `src/extension.ts`: timings only. `perf()` in the Test API gives load, activate and the first refresh, plus
+  counters: session refreshes (counted in Test mode only), session changes and Git view updates.
+- `esbuild.mjs`: a one-line banner stamps when the bundle starts evaluating.
+- `.github/workflows/ci.yml`: a `perf` job (Ubuntu and Windows) running `npm run perf -- --ci`.
+
+##### Numbers (Julian's PC, Windows 11, VS Code stable, medians of 3)
+| | Measured | Budget |
+|---|---|---|
+| Activation (bundle evaluation + `activate()`) | **234 ms** (load 79–220, activate 87–155) | < 500 ms ✅ |
+| First project refresh | **12.5 s** (9.6–15.0) | < 3 s ❌ (×4) |
+| Warm refresh (2nd) | 4.4–5.5 s | — |
+| Refreshes after `git fetch` ×8 | **0** (0 Git view updates) | no storm ✅ |
+
+##### Why the first refresh is slow (profiled once, instrumentation not kept)
+One cold `session.refresh` on the fixture took 7.7 s, plus 0.9 s of inventory; `galaxy.refresh` added about 1.6 s.
+- `detectProjectRoot`: 0.3 s.
+- `probeTools`: 2.5 s. It runs in parallel with `loadProjectContext` (1.1 s), and nothing else overlaps it:
+  `observeProject` waits for both.
+- `observeProject`: 4.8 s.
+  - `locateRepositories`: 2.3 s. The Git reads run one repository after another, each with about 4 `git` spawns.
+    Parallelising them (tried) did not measurably help cold; Windows process start is the cost.
+  - Expected-file stats: 1.2 s for 228 entries through `vscode.workspace.fs` (a round trip per stat).
+  - `git ls-files`: 1.3 s, sequential per repository.
+- `scanInventory`: 0.9 s (4 `findFiles` over 5,000 files).
+
+##### Why I stopped (rule: package bigger than estimated)
+The brief assumed the cost was in activation, and planned lazy imports behind the views. Activation is already under
+budget at about 230 ms, so lazy imports would not change a measured number. The cost is the first refresh.
+Reaching 3 s means reworking the refresh pipeline:
+- overlap `probeTools` with `observeProject`;
+- defer the inventory and Galaxy until after the first render;
+- use node `fs` for the stats;
+- run `ls-files` in parallel;
+- possibly render the tree progressively.
+
+That work is in `src/work/session.ts`, `src/work/projectObserver.ts` and the Galaxy view, all outside the owned files.
+It needs ARCHI's go and a new estimate.
+
+##### Open for ARCHI
+1. The CI `perf` job would fail today on the first refresh (above 6 s). Keep it failing, report the refresh without
+   failing until the refresh package lands, or gate only activation and the fetch storm?
+2. A refresh package: the candidates above, in order of gain.
+3. Lazy imports: drop them from V1, since activation is under budget.
+
+#### V1-REF — progressive refresh (TAMPON DATAPASSVSCODE - H 2, 2026-09-26) (PR #93)
+
+Escalated from V1-PERF (#88). Spec: ARCHI DataPass 1's note in `handoff/PLAN.md` (V1-REF row).
+
+##### What changed
+- **Two steps per refresh** (`src/work/session.ts`).
+  1. Step one paints the project, its architecture and the tree: the manifest, the repositories and the component files.
+  2. Step two gathers the tool probes, readiness (env files, `.vscode/extensions.json`, binding folders) and the
+     inventory while the views already show step one.
+  - Each step fires `onDidChange`; `onDidPaint` says which step ended ("first-paint" / "settled").
+  - `refresh()` still resolves when both are done, so callers and tests see a complete session.
+  - A newer refresh supersedes an older one: the older stops writing and resolves with the newer.
+  - Until the first probes answer, the map lists no tool as missing (`toolsPending`).
+  - Readiness shows "not checked" for env files until step two.
+- **Galaxy after the first paint** (`src/extension.ts`).
+  - `refreshState` starts the Galaxy detection once the session has painted, and runs it beside step two.
+  - The cards get their operation readiness when the session settles.
+- **Probes in step two, capped at 6** (`src/core/capabilities/probe.ts`).
+  - On Windows, starting a process holds the extension host's thread, so the probes no longer run beside the
+    first paint's Git reads.
+  - A second refresh waits for a probe run already in progress instead of starting the CLIs again.
+- **Git reads side by side, capped at 4** (`src/work/projectObserver.ts`).
+  - Repositories are located and read in parallel.
+  - The origin is asked once per folder: discovery and `gitState` share the answer, where they each asked before.
+  - The Git folder and FETCH_HEAD are read from disk, where Git used to be run with `rev-parse --git-dir`.
+- **Per-clone cache keyed by HEAD + index mtime** (`src/core/git/repoCache.ts`).
+  - The fingerprint is HEAD, the ref it names (or packed-refs' mtime), the index's mtime and size, and the config's
+    mtime (the common one too, for a linked worktree). All of it is read from disk, never through Git.
+  - While the fingerprint holds, the origin answers and the `ls-files` tracking answers are reused.
+  - `git status` is never cached: editing a file changes it without touching HEAD, the index or the config.
+  - Failed or cut-short answers are not kept.
+- **One `git ls-files` per clone**: the paths when they fit on a command line (6,000 chars), else the whole index
+  read as a membership list. The F03 rule is unchanged: a failed or cut-short answer is "unknown", never "untracked".
+- **node `fs` on disk**. `vscode.workspace.fs` costs a round trip per call and is slow while the window starts, so
+  these now use node `fs`:
+  - the component-file stats and listings, and hashing reads;
+  - the project-root detection (the 8 folders are checked in parallel);
+  - the inventory's head reads (one open and one read, no longer a full read).
+- **Perf harness**.
+  - `firstRefreshMs` is now the first paint; `fullRefreshMs` covers everything, Galaxy included.
+  - Both are gated in CI at twice their budget (3 s and 6 s), with activation and the fetch storm.
+  - The session's per-step timings are in the report (`sessionSteps`).
+
+##### Numbers (Julian's PC, Windows 11, VS Code stable, `npm run perf -- --runs=5`, medians)
+| | Before (#88 harness, main) | After | Budget |
+|---|---|---|---|
+| Activation | 153 ms | 131 ms | < 500 ms |
+| First paint (project, architecture, tree) | 8.3 s (the whole refresh) | **1.9 s** | < 3 s ✅ |
+| Full refresh (probes, readiness, inventory, Galaxy) | 8.3 s + Galaxy | **5.0 s** | < 6 s ✅ |
+| Refreshes after `git fetch` ×8 | 0 | 0 | ≤ 1 ✅ |
+
+A typical first refresh: root 6 ms, context 380 ms, repositories 1.4 s, files 1.5 s, tracking 1.9 s (first paint),
+inventory 3.3 s, probes 5.1 s. Timings on this PC vary ±30 % with other sessions running.
+
+##### Left as is
+- `loadProjectContext` still reads through `vscode.workspace.fs` (about 350 ms cold).
+- The inventory's `findFiles` (search service) is untouched.
+- The Galaxy adapters run their own CLI checks. They now run after the first paint, not before it.
+- A persistent (cross-window) cache would speed the first refresh of a new window further. It is not done: the
+  in-memory cache already covers every refresh after the first one.
+
+#### V1 QA-1 — Codex test formats and `qa:prepare` (PR #79, #83)
+
+##### What changed
+- **Formats** (`src/qa/formats.ts`, handoff/v3/12 §4.1–4.4 with ARCHI's addendum): `datapass.codex-tests` v1
+  (`purpose` app | client; client = `client` + `workspace`, app = `workspaces[]` 1..10; the parser normalises both to a
+  workspace list), `datapass.test-journey` v1 (`kind` app | client, closed feature-tag list `FEATURES`),
+  `datapass.qa-report` v1 (`purpose`, `answers[]` {question, answer, evidence, confidence}, report folder
+  `reports/<purpose>/<runId>`), and `datapass.qa-run` v1 (what qa:prepare writes, not emitted as a schema).
+- **Schemas**: `schemas/datapass-codex-tests.schema.json`, `datapass-test-journey.schema.json`,
+  `datapass-qa-report.schema.json`, emitted by `npm run schemas` (3 lines in `src/core/contracts/schemaFiles.ts`).
+- **`scripts/qa/prepare.ts`** (`npm run qa:prepare`): validate config + journeys, check each folder's origin (never
+  clones), install the local VSIX into `.vscode-user` / `.vscode-ext` under the run root, check the installed version,
+  write one `.code-workspace` per client and `run.json` (VSIX sha256), print the launch command. Exit 0 / 2 with reasons.
+  `--check [--report f]` validates a test repository only (the validator for QA-3).
+- **Codex procedure addendum** (after QA-0, `handoff/briefs/2026-09-27-codex-procedure.md`): report `agent.host` = `app`
+  only; `screens` = `screens/<journey id>-<what>.png` (shell captures), also on `answers[]`; `datapass.commit` = released
+  commit (no tags). run.json gains `host: codex-desktop`, `preconditions[]` (visible unlocked desktop, Computer Use
+  approval for Code.exe, the VSIX is the user's own build), `knownLeaks[]` (~/.vscode-shared), `screenshots {folder,
+  pattern, command}`. `--commit <released commit>` and `--launch` (qa:prepare is the launcher, outside Codex's sandbox).
+- **12 §4.7 alignment**: app `workspaces[]` entries are `{id, title, bridge, repositories}` (no `client` nesting, as
+  first shipped in #79); every folder reference takes an optional `path` (sub-folder inside the clone, checked to exist
+  inside it; the workspace file opens it; run.json/report carry it).
+- CI: the ubuntu validate job runs `tests/qaPrepare.test.ts` with the VSIX it just packaged (`DATAPASS_QA_VSIX`).
+- Docs: `docs/guide/11_CODEX_TESTS.md`.
+
+##### Tests
+- `tests/qa.test.ts`: both configurations parse; negatives for bad purpose / kind, missing `workspaces[]` for app, path
+  escape, absolute path, http and credential remotes, unknown feature tag, bad outcome / severity / area / confidence,
+  oversized fields, duplicates, coverage; run.json closed shape; committed schemas equal the emitted ones and Ajv agrees.
+- `tests/qaPrepare.test.ts`: a fixture in %TEMP% (doc-pipeline as bridge + two native folders, local bare remotes
+  behind their https address): wrong remote → exit 2 with the reason (CLI); missing folder, bad journey, missing VSIX
+  refused; with `DATAPASS_QA_VSIX` the full run installs the VSIX in the isolated dir, writes the workspace (bridge first)
+  and a valid run.json, exit 0 (passed locally on Windows with a freshly packaged VSIX); `--check`.
+
+##### Limits / next
+- The guide README index does not list page 11 yet (not an owned file).
+- `common/testing/FEATURES.md` in the test repositories should copy `FEATURES` from `src/qa/formats.ts` (QA-3).
+- QA-2 (the report reader in DataPass) consumes `parseQaReport`.
+
+### Release checks
+
+- `npm run verify` and the full desktop suite (`npm run test:desktop`) green on the release branch;
+  VSIX built and installed with `code --install-extension <file> --force`.
+- `npm run sync:common` run against `datapass-vscode-common` after the merge, with `common/VERSION` = 0.27.0.
+
+### Not checked here (Julian)
+
+- Install 0.27.0 and open a real multi-repository project: the tree should appear within about 2 s and the
+  tool rows fill in afterwards (≈ 5 min).
+- The in-app Codex run of the Codex tests mode still needs Julian's approvals (already in todo.md).
+
+## 0.26.0 — pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed
 
 Date: 2026-09-26. Version `0.26.0` — packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61)
 and X1 (PR #63), plus the first V1 items E1 (PR #67), V1-ON (PR #68), V1-P1 (PR #66), V1-DOC (PR #64) and V1-T10 (PR #69), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes

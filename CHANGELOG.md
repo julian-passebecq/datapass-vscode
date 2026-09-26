@@ -3,6 +3,42 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.27.0 — Progressive refresh, Codex tests mode, Microsoft MCP servers, stabilisation (2026-09-26)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows K2, V1-STAB, V1-PERF, V1-REF, V1-FLAKE, QA-0 to QA-4, HUB-1, R4.
+New formats `datapass.codex-tests`, `datapass.test-journey`, `datapass.qa-report`, `datapass.ui-journey` (all version 1),
+one new work-order kind (`qa-run`), additive toolkit fields; no manifest, graph, options or sheet version change.
+
+- **Progressive refresh** (V1-REF, PR #93): a refresh paints the project, its architecture and the tree
+  first (1.9 s on a FOIL-sized fixture, was 8.3 s), then gathers tool probes, readiness, inventory and
+  Galaxy (5.0 s in all). Git reads run side by side (at most 4), probes after the first paint (at most
+  6), a per-clone cache keyed on HEAD + index reuses origin and `ls-files` answers (`git status` is
+  never cached), and file stats use node `fs`. A newer refresh supersedes an older one.
+- **Performance harness** (V1-PERF, PR #88): `npm run perf` launches a real VS Code on a FOIL-sized
+  fixture (8 repositories, 5,000 files, 60 components); CI gates activation, first paint, full refresh
+  (each at twice its budget) and the absence of a refresh storm after `git fetch`.
+- **Microsoft MCP servers in the toolkit baseline** (K2, PR #71): Fabric Core / local / IQ, hosted Power
+  BI Authoring, Azure MCP and the Power BI Authoring plugin, never probed or registered by DataPass. The
+  toolkit format (`datapass.toolkit` 1, additive) gains `transport`, `endpoint`, `hosts[]` and the side
+  effect `sends-to-model`, shown as pills and an *MCP server* section in the Toolkit view.
+- **Codex tests mode** (QA-1 PR #79 and #83, QA-2 PR #87, QA-4 PR #95, PR #92): formats
+  `datapass.codex-tests`, `datapass.test-journey`, `datapass.qa-report` and `datapass.ui-journey` (schemas
+  emitted); `npm run qa:prepare` installs the local VSIX into an isolated profile, writes one workspace
+  per client and `run.json`, and launches VS Code with `--disable-workspace-trust`; `npm run qa:ui`
+  drives the journeys through Playwright `_electron` and writes a qa-report; the `qa-run` work-order
+  kind and *Hand to Codex* in the Work orders view (Advanced) hand a run to the Codex desktop app and
+  close it on a matching report. Guide page [11 — Codex tests](docs/guide/11_CODEX_TESTS.md).
+- **Stabilisation** (V1-STAB PR #81 and #84, V1-FLAKE PR #90): Copy Context and Readiness follow the
+  selected variant; a same-name sibling folder with no or another origin is named, never bound; BOM kept
+  in `.vscode/mcp.json`; evidence cards for the five Microsoft MCP servers; packs stamped; the Power Ops
+  list is written atomically with retries on Windows file locks, and a failed background export warns
+  (the `windowFlows` flake).
+- **Public contracts sync** (HUB-1, PR #96): `npm run sync:common -- --target <common checkout> [--check]`
+  copies the schemas, the examples and the toolkit knowledge into `datapass-vscode-common` through an
+  allowlist that refuses handoff files, FOIL identifiers, secret dot-files and credential-shaped content.
+- The doc-pipeline example's link to guide page 10 is now absolute, so it still resolves once copied
+  into `datapass-vscode-common`.
+
 ## 0.26.0 — Pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed (2026-09-26)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3, E1, V1-ON, V1-P1, V1-DOC, V1-T10 (FOIL MCP review
