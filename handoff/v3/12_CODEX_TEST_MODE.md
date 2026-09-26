@@ -200,20 +200,29 @@ Findings are claims (D-22). The ARCHI verifies each one before it becomes a pack
   the order stamp (P1). The order is then done, with a link to the report PR.
 - **Open last report** opens `summary.md`.
 
-### 4.6 What QA-0 must verify on the real Codex (Windows)
+### 4.6 What QA-0 found on the real Codex (Windows)
 
-- **Reach.** Can Codex's desktop control reach a VS Code window, its webviews (Architecture,
-  Workbench), the command palette, quick picks and notifications? Does it need a visible,
-  unlocked desktop session?
-- **Host.** Which Codex host fits: the app, the terminal, or the app with computer use? What do
-  its sandbox and approval settings allow for `code` and `npm`?
-- **Isolation.** Do `--user-data-dir` and `--extensions-dir` isolate completely from Julian's
-  profile? Can the isolated window run next to Julian's own VS Code?
-- **First run.** How is workspace trust handled, and the DataPass first-run walkthrough?
-- **Evidence.** Where does Codex save screenshots, and can it attach them to a report?
-- **Output.** QA-0 writes the working command lines, and what failed, into
-  `handoff/briefs/2026-09-27-codex-procedure.md`. The ARCHI then corrects §4.3–4.5 and
-  `common/testing/CODEX_PROCEDURE.md`.
+The full report is `handoff/briefs/2026-09-27-codex-procedure.md` (QA-0, PR #76).
+`common/testing/CODEX_PROCEDURE.md` uses its verified commands.
+
+- **Host: the Codex desktop app only**, in an interactive thread with Computer Use.
+  - Through `codex exec`, Computer Use sees no apps at all.
+  - Codex's Windows sandbox installs extensions but cannot launch VS Code: the GPU process dies
+    and storage is read-only. So the launch runs outside the sandbox, as an escalated run
+    approved in the app, or by the prepare helper.
+- **Reach.** Windows Computer Use works only in the foreground.
+  - It needs a visible, unlocked desktop and takes over Julian's mouse and keyboard.
+  - It needs a per-app approval ("Always allow" for `Code.exe`).
+  - The prompt must say that the VSIX is the user's own build, or Codex stops to confirm the
+    install.
+- **Isolation.** Install into an isolated profile (`--user-data-dir` + `--extensions-dir`) is
+  **verified**, including from the sandbox. It is not total: VS Code still opens
+  `%USERPROFILE%\.vscode-shared\sharedStorage`, which the run must not delete.
+- **First run.** A trusted run is launched with `--disable-workspace-trust`. The Welcome page
+  opens on a fresh profile.
+- **Evidence.** Computer Use saves no files, so screenshots come from a shell capture (escalated).
+- **Not yet verified:** the in-app run itself (Reach, Evidence). It needs Julian once, to approve
+  `Code.exe` and the escalated launch. This step is in effort-board/todo.md.
 
 ### 4.7 App tests (vsixtest)
 
