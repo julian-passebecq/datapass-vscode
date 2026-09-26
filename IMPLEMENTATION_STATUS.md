@@ -1,3 +1,154 @@
+# Implementation Status — 0.23.0: toolkit catalogue and variants
+
+Date: 2026-09-26. Version `0.23.0` — released from main after package G (variants, PR #39) and the
+toolkit catalogue (packages T1–T4, one session, PR #43), per [handoff/PLAN.md](handoff/PLAN.md). The
+night notes (`handoff/v3/night/0.23-*.md`) are folded into this section. Design of the toolkit:
+[handoff/v3/08_TOOLKIT_AND_AGENTS.md](handoff/v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4; contract:
+[docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md) §14; guide page
+[docs/guide/09_TOOLKIT.md](docs/guide/09_TOOLKIT.md).
+
+### What's new — toolkit catalogue (T1–T4)
+
+- **Catalogue**: every tool DataPass knows (the probe registry plus fabric-cicd, semantic-link-labs
+  and the data-goblin plugins) ships as a **built-in baseline** with what it is for, its modules,
+  and its **free tier and prices** (`priceModel`, `freeTier`, `pricingUrl`, `tiers[]`, `checkedAt`),
+  read on the vendors' pages on 2026-09-26. A figure that could not be confirmed on the official
+  page is written *unknown*, never guessed. Prices are shown as dated claims, never authority.
+- **Hub layer**: DataPass reads the toolkit files of the project folder and of the hubs beside the
+  catalogs of `datapass.catalogs`, after *Get updates* or when they change. Hub entries add tools or
+  change the shown fields of a built-in one ("changed by the hub"); what DataPass probes or runs
+  stays in the extension. Every entry is validated on its own: one this DataPass does not
+  understand is skipped with its reason, never guessed. A file for a newer DataPass
+  (`requires.datapass`) or a newer format version is flagged.
+- **Recipes**: step-by-step routes that name their tools, with checks and risks. Each route is marked
+  *applies here* / *does not apply* / *not checked* from the project's facts (a Fabric Git binding,
+  the coordination repository) and this computer's probes, and the first that applies is suggested.
+  Commands in steps are copied, never run.
+- **Where it shows**: a sixth Workbench view, **Toolkit** (Tools, Recipes, Needs a newer DataPass,
+  Files read; *DataPass: Open the Toolkit*); **Details** of a component ("Tools and what they cost",
+  with the recipes that use them); **board cards** (the card's recipe and route, with the steps);
+  **Options** (the price next to each official tool an option adds); the card **AI pack** (the
+  recipe section).
+- **Needs a newer DataPass**: `datapassRequests` (`title`, `why`, `example`) is how ChatGPT says the
+  format cannot express something, instead of inventing a field; listed in the Toolkit view with the
+  files written for a newer DataPass.
+- **Updating it**: ChatGPT through *Copy a DataPass File for the AI* → toolkit catalogue (check free
+  tiers and prices / add or correct tools and recipes) and *Paste the AI's answer* (strict: any
+  invalid entry refuses the file; diff, backup, confirmation); agents through pull requests. The
+  toolchain (0.18) accepts tool ids the hub describes (not probed).
+- **Modes**: new surfaces `workbench.toolkit`, `project.toolkit` (a Project tree section) and
+  `badge.hubChanged`, shown in DataPass and Advanced, hidden in Vanilla and Standard.
+- **Example**: `examples/v3/hub/.datapass/toolkit/` (Copy Job bulk edit, fabric-cicd dev → prod, PBIP
+  in Git) and a Sales BI board whose cards name those recipes.
+
+Where the code is: `src/core/toolkit/toolkit.ts` (format, per-entry validation, baseline, hub layer,
+recipe routes, price text; imports nothing that runs a program — tested), `resources/toolkit/baseline.json`
+(49 tools, prices read 2026-09-26), `src/work/toolkitFiles.ts` (reads the hub folders),
+`src/work/toolkitCommands.ts` (open a page after a confirmation, copy an install command or a step),
+`src/views/toolkitState.ts` and the Workbench webview (Toolkit view, Details, board card, Options,
+Readiness links), `src/views/projectTree.ts` (Toolkit section).
+
+Decisions taken during the build:
+
+- Prices live in a built-in baseline (`src/core/toolkit/baseline.json`, read 2026-09-26) so a project
+  without hub shows them; the hub's `tools.json` overrides any entry.
+- Prices seen only on aggregators (GitLab Premium/Ultimate, Databricks DBU rates) are written
+  *unknown*; the AI task "Check the free tiers and prices" completes them.
+- A hub entry changes only the shown fields of a built-in tool; its kind and probe stay the extension's.
+- Reading the hub is entry by entry (bad entries listed in Toolkit → Files read); the AI import of
+  `tools.json` is strict (the whole file is refused).
+- The Toolkit view is not added to the saved work views (`WORKBENCH_VIEWS`), so the
+  company-workspaces / Power Ops contract is unchanged.
+- `aiExchange.ts` changes are additive only (kind `toolkit`, 3 new prompts, and the board file for
+  the AI lists the toolkit's recipe ids only when there are some); no existing prompt changed.
+- After merging main (0.22.0 + 0.23 G), acceptance rows T1–T4 of handoff/PLAN.md:
+  - modes: new surface ids `workbench.toolkit` (the view), `project.toolkit` (a Project tree section
+    listing requests and files with problems), `badge.hubChanged`; shown in DataPass and Advanced,
+    hidden in Vanilla and Standard (added, nothing renamed);
+  - a file whose `requires.datapass` or `version` is newer is listed and **none** of its entries is
+    used (PLAN T1; the first build used the entries it understood);
+  - a new hub tool may name `"probe"`: one of the extension's probe ids, else the entry is refused;
+    a built-in tool keeps its own probe;
+  - a recipe step's `capability` is checked against the capability registry (unknown = a problem,
+    shown as text);
+  - baseline moved to `resources/toolkit/baseline.json`; `TOOLKIT_SINCE` = 0.23.0;
+  - the example hub has no `requires` (the running package is 0.22.0 until release R), every tool has
+    `verified.on`, links checked on 2026-09-26 (the fabric-cicd docs site did not answer from this PC,
+    so the recipe step links to the GitHub repository);
+  - Details also lists tools that `complements` the component's official tool (Fabric Studio beside
+    the Fabric extension); Readiness *Tools & versions* rows link to their catalogue entry;
+  - guide page `docs/guide/09_TOOLKIT.md` and a row in the guide README.
+
+### What's new — variants (package G)
+
+- `src/core/project/variants.ts` (pure): `deriveVariants({ options, manifest, graph, coordinationKey,
+  repositories, fileObservations })` → per option (`decision=option`) and per scenario (current,
+  decided, declared) a coding state with its reason, plus every file an option needs tagged with all
+  the options that need it.
+  - States: `coded`, `partly-coded`, `not-coded`, and `unknown` ("not checked here": repository not
+    cloned, Restricted Mode, unverified clone, files not observed). The fourth state follows package
+    A's rule: a gap nobody saw is never claimed.
+  - An alternative is judged on the components it adds or replaces (in the repository each one names,
+    a planned `addRepositories` entry → not coded); a removal-only option is coded; the current option
+    is judged on the baseline components its alternatives change that declare files (a baseline
+    component without files is a resource, not code).
+  - `combineStates`: differing known states → partly coded; otherwise any unknown → unknown.
+- Guide `docs/guide/02_WHAT_THE_AI_PREPARES.md` §2.5 "Declaring variants" with a checked example
+  (fragment of the minimal group): a coded alternative in a folder, a not-coded one in a planned
+  repository, a scenario.
+
+- Surfaces (package B's presets, Standard / DataPass / Advanced): `project.variantFilter` and
+  `badge.codingState` (singular like `badge.alternatives`; the plan wrote `badges.codingState`, logged
+  in questions.md). Added to `surfaces.ts`, `presets.json`, the overrides setting and the schema.
+- Project tree (`src/views/projectTree.ts`): with `project.variantFilter`, sub-projects and components
+  come from the previewed architecture when one is previewed (else graph.json's); a first line
+  "Selected architecture: …" says which one (click: back to current, or compare), with its coding
+  state when `badge.codingState` is shown. View-title toggle *Show All Variants* / *Show Only the
+  Selected Architecture* (context key `datapass.allVariants`, memory only) adds an "All variants"
+  section: decision → option (icon + coding state, reason in the tooltip) → components (added /
+  replaces / graph.json, repository, state) → files tagged with state, option and "also <other
+  option>" for shared files; found files open with `datapass.openVariantFile`; removals listed. With
+  `badge.codingState`, each decision in "Architecture options" says "alternatives: 1 coded, 2 not coded".
+- Workbench: coding pills on the Options table (option and scenario columns) and on the Architecture
+  panel's preview banner (`WorkbenchState.coding`, only when the mode shows the badge).
+- `session.variants()` (cached like the options analysis) and `codingOfPicks` for any previewed picks.
+
+### Verification
+
+| Check | Result |
+|---|---|
+| `npm run verify` | clean; unit 409 / 409 (new `tests/toolkit.test.ts`: baseline valid and dated for every known tool; hub layer, kind and probe kept, first file wins; bad entries skipped with their reason; newer `requires` / format → file listed, no entry used; strict AI import; recipe routes from facts and probes; price summaries; hub tools in the toolchain; board `recipe` / `route` and warnings; card pack recipe; board AI file lists recipe ids only when there are some; probe ids and capability ids; no exec import; example hub valid for runtime and editor schema. `tests/variants.test.ts` 8) |
+| Desktop suite (CI, Windows and Ubuntu) | 319 / 319 on 15 fixtures (`v18-toolchain` 20 with the new `toolkitFlows`: baseline without hub, hub layered, Fabric Studio in Details, a newer-DataPass file listed and unused, Vanilla hides the Toolkit, the card pack's recipe, install commands and steps copied, a page opened only after the confirmation; `v3-research` 52 with `variantFlows`) |
+| Visual check | `scripts/workbench-preview.ts` renders the Toolkit (tools, recipe, requests), a board card with its recipe and the Details tools (no console error) |
+
+### Known limits
+
+- Prices are claims read on the vendors' pages on 2026-09-26; GitLab Premium/Ultimate and the
+  Databricks DBU rates are *unknown* (only aggregators gave them). The AI task "Check the free tiers
+  and prices" is the way to refresh them; there is no "prices older than N days" warning yet.
+- Recipe conditions DataPass evaluates: `fabric.gitBinding`, `git.repository` and "tool installed";
+  other facts are shown as *not checked*.
+- The AI import writes only `toolkit/tools.json` of the project folder (when it is the hub); recipe
+  files are updated through pull requests.
+- The Toolkit view is not a saved work view (the company-workspaces contract is unchanged).
+- The Details side bar has no coding badge yet (the Options table and the preview banner have it).
+- The All variants toggle is not remembered across windows (memory only, by design: no setting written).
+- Files on another branch or tag are not followed (plan J5, V2).
+
+### Proposals (not built)
+
+- Julian's note (SUPERVISOR 1): comparing architecture scenarios with prices is the client AI's job.
+  The catalogue is client-AI-maintainable (dated, sourced, strict import); the per-project scenario
+  comparison already has a home in `.datapass/options.json` (costs with `source` and `asOf`).
+  V2: let an option's cost line name a toolkit tool id so Options shows the catalogue price beside
+  the AI's figure. V2: a "prices older than N days" warning in the Toolkit view. V3: export a recipe
+  as a SKILL.md for agents (08 §6, D4).
+
+### Still needs a human
+
+Install 0.23.0 and run testlab 9 (`D:\PROJ\datapass-testlab\9-modes-contexte-versions`, section 7
+for the toolkit, ≈ 25 minutes).
+
 # Implementation Status — 0.22.0: trust repairs, modes, context from any file, format checks, file versions
 
 Date: 2026-09-26. Version `0.22.0` — released from main after five packages built in parallel on the

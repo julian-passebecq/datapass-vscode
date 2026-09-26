@@ -3,6 +3,60 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.23.0 — toolkit catalogue and variants (2026-09-26)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows G, T1–T4 and R. Toolkit design:
+[handoff/v3/08_TOOLKIT_AND_AGENTS.md](handoff/v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4, with the
+free tier and pricing Julian asked for ([09 §13.1](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)).
+Variants: [10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) D-15 to D-17.
+New files in the **hub repository**: `.datapass/toolkit/tools.json` and `.datapass/toolkit/recipes/*.json`
+(format `datapass.toolkit` 1, schema `schemas/datapass-toolkit.schema.json`). Board items gain the
+optional `recipe` and `route` (`datapass.board` stays version 1; DataPass ≤ 0.22 refuses a board that
+uses them). PRs #39 (variants) and #43 (toolkit).
+
+### Toolkit catalogue
+
+- **Catalogue**: every tool DataPass knows (the probe registry plus fabric-cicd, semantic-link-labs
+  and the data-goblin plugins) ships as a **built-in baseline** with what it is for, its modules,
+  and its **free tier and prices** (`priceModel`, `freeTier`, `pricingUrl`, `tiers[]`, `checkedAt`),
+  read on the vendors' pages on 2026-09-26. A figure that could not be confirmed on the official
+  page is written *unknown*, never guessed. Prices are shown as dated claims, never authority.
+- **Hub layer**: DataPass reads the toolkit files of the project folder and of the hubs beside the
+  catalogs of `datapass.catalogs`, after *Get updates* or when they change. Hub entries add tools or
+  change the shown fields of a built-in one ("changed by the hub"); what DataPass probes or runs
+  stays in the extension. Every entry is validated on its own: one this DataPass does not
+  understand is skipped with its reason, never guessed. A file for a newer DataPass
+  (`requires.datapass`) or a newer format version is flagged.
+- **Recipes**: step-by-step routes that name their tools, with checks and risks. Each route is marked
+  *applies here* / *does not apply* / *not checked* from the project's facts (a Fabric Git binding,
+  the coordination repository) and this computer's probes, and the first that applies is suggested.
+  Commands in steps are copied, never run.
+- **Where it shows**: a sixth Workbench view, **Toolkit** (Tools, Recipes, Needs a newer DataPass,
+  Files read; *DataPass: Open the Toolkit*); **Details** of a component ("Tools and what they cost",
+  with the recipes that use them); **board cards** (the card's recipe and route, with the steps);
+  **Options** (the price next to each official tool an option adds); the card **AI pack** (the
+  recipe section).
+- **Needs a newer DataPass**: `datapassRequests` (`title`, `why`, `example`) is how ChatGPT says the
+  format cannot express something, instead of inventing a field; listed in the Toolkit view with the
+  files written for a newer DataPass.
+- **Updating it**: ChatGPT through *Copy a DataPass File for the AI* → toolkit catalogue (check free
+  tiers and prices / add or correct tools and recipes) and *Paste the AI's answer* (strict: any
+  invalid entry refuses the file; diff, backup, confirmation); agents through pull requests. The
+  toolchain (0.18) accepts tool ids the hub describes (not probed).
+- **Modes**: new surfaces `workbench.toolkit`, `project.toolkit` (a Project tree section) and
+  `badge.hubChanged`, shown in DataPass and Advanced, hidden in Vanilla and Standard.
+- **Example**: `examples/v3/hub/.datapass/toolkit/` (Copy Job bulk edit, fabric-cicd dev → prod, PBIP
+  in Git) and a Sales BI board whose cards name those recipes.
+
+### Variants (package G)
+
+- The Project tree follows the selected architecture (current or previewed); *Show All Variants* adds
+  a section listing every option's components and files, each tagged with its option.
+- **Coding state** of each option and scenario (coded / partly coded / not coded / not checked here),
+  derived from the files DataPass finds; shown on the Options table, the preview banner and the
+  Project tree's decisions (surfaces `project.variantFilter`, `badge.codingState`).
+- Guide §2.5 "Declaring variants" with a checked example.
+
 ## 0.22.0 — trust repairs, modes, context from any file, format checks, file versions (2026-09-26)
 
 Plan: [handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions
