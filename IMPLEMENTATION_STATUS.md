@@ -1,8 +1,8 @@
 # Implementation Status — 0.26.0: pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed
 
 Date: 2026-09-26. Version `0.26.0` — packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61)
-and X1 (PR #63), plus the first V1 items E1 (PR #67), V1-ON (PR #68), V1-DOC (PR #64) and V1-T10 (PR #69), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
-(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`, `0.27-e1.md`, `v1-on.md`, `v1-t10.md`) are folded
+and X1 (PR #63), plus the first V1 items E1 (PR #67), V1-ON (PR #68), V1-P1 (PR #66), V1-DOC (PR #64) and V1-T10 (PR #69), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
+(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`, `0.27-e1.md`, `0.27-p1.md`, `v1-on.md`, `v1-t10.md`) are folded
 into this section. Inputs: the FOIL MCP review ([handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md),
 decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
 
@@ -52,6 +52,13 @@ decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
     or not applicable; nothing is inferred, a registration file never means connected. Work-order
     result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
     Details shows each result field on its own.
+  - **Pack and work-order stamps** (V1-P1, PR #66, D-23): Copy Context for My AI, the options packs
+    and work orders (`order.json` optional `stamp`, `order.md` stamp line) carry the selected variant,
+    the environment and the bridge revision they were built for. The AI view flags a copied pack as
+    **⚠ Stale** when the variant, environment or bridge revision changed since; launching an order
+    stamped for another variant asks *Keep and launch / Rebuild for the selected variant / Cancel*.
+    Pilot cards go stale the same way, and the result format asks agents for `field` / `tool` /
+    `scope` / `input` on each check.
   - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
     [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
     `handoff/archive/`, README top rewritten.
@@ -280,6 +287,29 @@ ROADMAP §1.3 package V1-ON. Coder: TAMPON 20, effort medium.
 - "Operation verified" is never observed yet: no DataPass read-only check runs an operation. A later package can fill it from a DataPass-run check.
 - Hosts other than the workspace `.vscode/mcp.json` (user settings, Claude Code, Copilot CLI, an extension's own provider) are not read: their "registered" is unknown, or "not registered in this workspace" when the workspace file is the source.
 - Toolchain tools other than az / databricks / fab have no chain row (the Tools & versions block already shows installed + version).
+
+#### 0.27 P1 — Pack and work-order stamps (D-23, finding R-06) (PR #66)
+
+##### What changed
+- **Stamp** = selected variant (its title and the picks that differ from the current architecture; the picks are the compared key, so scenario B and the same picks chosen by hand match), environment, bridge revision (HEAD of the coordination repository). Pure module `src/core/exchange/stamp.ts` (ROADMAP V1-P1), called by the pack builders and the order builder; `WorkSession.packStamp()` computes it for the open project (`src/work/packStamps.ts` re-exports it for the commands and views).
+- **Environment**: the only environment project.json declares, else its only non-production one; with none or several, "not declared" (DataPass does not choose).
+- **Pack headers**: Copy Context for My AI (`fileContext.ts`) and the options packs (`optionsReport.ts`: export, compare, apply, and the options attachment of a work order) get a line `Stamp: built for the selected variant **…** (picks) · environment … · bridge revision <12 hex>.`
+- **Work orders**: `order.json` gets an optional `stamp` object (`variant {key, title, picks?}`, `environment?`, `bridge?`), additive in `WORK_ORDER_SCHEMA` and `schemas/datapass-work-order.schema.json`; `order.md` gets the stamp line after the receipt. The marker line (`datapass.work-order-marker/1`) is unchanged and still first.
+- **Stale packs**: every `ai-context` exchange record now keeps the full stamp it was copied with (`session.recordExchange`, additive `ExchangeRecord.stamp`). Copy Context for My AI is now recorded too. The AI view's "Last exchanges" shows `⚠ Stale: built for B …; the selected variant is now C …` (or `the bridge moved from <sha> to <sha>`, or an environment change) and refreshes on a variant switch. A side whose revision is unknown is not judged on it.
+- **Launch confirmation**: launching an order stamped for another variant opens a modal *Keep and launch / Rebuild for the selected variant / Cancel*. Rebuild writes a new revision (the old order is closed as revised, like the base-moved path). Same variant, or an order without a stamp: no question. The Agent tab's order rows say *Built for B …* (warning colour when it is not the selected variant) or *not stamped*.
+
+- **Pilot (after AI-4a)**: pilot-read orders are stamped like every order (same builder), and the stamp confirmation runs before the pilot launch. Pilot request cards show `⚠ Stale: …` when their order's stamp no longer matches the selected variant, environment or bridge HEAD (`withStale` in `stamp.ts`; `PilotCard.stale`).
+
+- **E1 prompt row** (after #67): `attachments/result-format.md` asks the agent to fill `field` / `tool` / `scope` / `input` on every result check (a check with tool, scope and input is shown as its receipt), and its example check carries all four.
+
+##### Tests
+- Unit (`tests/workOrders.test.ts`, `tests/fileContext.test.ts`): stamp from picks/preview, environment rule, stamp line; stale on variant, environment or bridge-revision change; order.json + order.md + Ajv schema; verdict same / other-variant / not-stamped; old unstamped order parses; malformed stamp refused; AI view stale reason; file-context header. `tests/pilot.test.ts`: stamped pilot-read order (order.json, order.md, launch verdict) and stale Pilot cards (variant, bridge HEAD, unstamped not judged).
+- Desktop, fixture `v25-doc-pipeline`: select B, Copy Context (header stamped), write an investigate order (stamped B), switch to C → pack stale with the reason and the row flagged; launch under C → modal with the two buttons, Cancel launches nothing; back on B → no stamp question. `v20-work-orders` fixture re-run for regressions. `npm run verify` green.
+
+##### Limits
+- Stale marking covers packs copied from 0.27 on (older records have no stamp and are not judged).
+- Hooks outside the package's file list: `src/work/session.ts` (`selectionStamp()`/`packStamp()`, stamp on record), `src/core/work/workModel.ts` (optional field), `src/work/fileContextCommands.ts` and `src/work/optionsCommands.ts` (pass the stamp; record the file-context copy), `src/views/agentState.ts` (row label, Pilot cards), `src/work/pilot.ts` (`PilotCard.stale`).
+- Board card packs, preparation packs and Workbench packs are recorded (so they go stale) but their headers are not stamped yet.
 
 #### V1-T10 — Testlab 10 = acceptance journeys (D-28) (PR #69)
 

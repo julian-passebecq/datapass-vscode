@@ -61,7 +61,7 @@ guard rails only in the order folder, Pilot tab with request cards and responses
 `.vscode/mcp.json` edits through the reviewed write path; toolkit refresh for the Fabric and Power BI
 MCP servers and the official agentic route; options.json cost lines `shared` / `use` (DataPass ≥ 0.26);
 Mongoku removed from everything DataPass shows (old manifests still load). First V1 items: Open a
-Client Project + Get started walkthrough (V1-ON), integration evidence chain (E1), DEMARRER / CURRENT
+Client Project + Get started walkthrough (V1-ON), integration evidence chain (E1), pack and work-order stamps (V1-P1), DEMARRER / CURRENT
 docs (V1-DOC), testlab 10 (V1-T10). Unit and desktop suites green. See IMPLEMENTATION_STATUS.md.
 
 ## Done in 0.25.0 (2026-09-26)

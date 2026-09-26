@@ -5,7 +5,7 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## 0.26.0 — Pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed (2026-09-26)
 
-Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3, E1, V1-ON, V1-DOC, V1-T10 (FOIL MCP review
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3, E1, V1-ON, V1-P1, V1-DOC, V1-T10 (FOIL MCP review
 [handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md), decisions D-19 to D-28). One new order kind (`pilot-read`), two new
 optional options.json cost fields; no manifest version change.
 
@@ -53,6 +53,13 @@ optional options.json cost fields; no manifest version change.
     or not applicable; nothing is inferred, a registration file never means connected. Work-order
     result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
     Details shows each result field on its own.
+  - **Pack and work-order stamps** (V1-P1, PR #66, D-23): Copy Context for My AI, the options packs
+    and work orders (`order.json` optional `stamp`, `order.md` stamp line) carry the selected variant,
+    the environment and the bridge revision they were built for. The AI view flags a copied pack as
+    **⚠ Stale** when the variant, environment or bridge revision changed since; launching an order
+    stamped for another variant asks *Keep and launch / Rebuild for the selected variant / Cancel*.
+    Pilot cards go stale the same way, and the result format asks agents for `field` / `tool` /
+    `scope` / `input` on each check.
   - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
     [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
     `handoff/archive/`, README top rewritten.
