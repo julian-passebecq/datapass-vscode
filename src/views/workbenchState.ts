@@ -109,6 +109,8 @@ export interface WorkbenchState {
   git?: WbGit;
   /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
   workOrders?: WbWorkOrders;
+  /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
+  experience?: { hiddenViews: string[]; alternatives: boolean };
 }
 
 /** 0.20: one work order as the Workbench shows it (no local path, no goal text; the agent's words only as "the agent says"). */

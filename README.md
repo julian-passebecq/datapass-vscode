@@ -7,6 +7,25 @@ Grafana, OpenTofu/Terraform, Remote SSH) and you. It shows the architecture, whi
 needs in which repository, what is missing and why, opens the right file or tool, and gets the AI's
 merged work — without ever deploying, pushing or running project code.
 
+## Modes (0.22)
+
+DataPass opens in **Standard** mode. A mode only changes what DataPass shows: the same project
+files in every mode, commands stay in the Command Palette, and safety blockers (untrusted workspace,
+wrong repository, refused secret, manifest errors, readiness errors) show in every mode. Switch with
+the status-bar item **DataPass: Standard** or **DataPass: Switch Mode**; show or hide single surfaces
+with **DataPass: Customize DataPass Mode** (kept when you switch). Both are machine settings
+(`datapass.experience.preset`, `datapass.experience.overrides`): switching writes no file in any
+repository. Third-party extensions are never touched.
+
+| Mode | Shows (each mode adds to the one above) |
+|---|---|
+| **Vanilla** | VS Code's own Explorer, DataPass's Git view, the AI view (DataPass-guided tab), the mode in the status bar |
+| **Standard** (default) | + the Architecture panel, opened when a project opens (a workspace's startup view wins), Details, "alternatives exist" on components an options.json decision can change |
+| **DataPass** | + the Project tree with options, project sheet and readiness; the AI view's Agent and Manual tabs; the Workbench's Options, Project sheet and Work orders views (work orders stay opt-in). The board is available through Customize |
+| **Advanced** | Everything, as in 0.20: + the board, the Work and Galaxy views, the tool-health status item |
+
+The presets are JSON (`resources/experience/presets.json`, schema `schemas/datapass-experience.schema.json`).
+
 ## V3 (0.13.0, env readiness since 0.14.0): the Project Workbench
 
 - **Project** view (left): sub-projects → components → expected files (found / missing / not cloned /

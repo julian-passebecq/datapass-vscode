@@ -470,6 +470,8 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v18-toolchain": setupV18Toolchain,
   "v19-git": setupV19Git,
   "v20-work-orders": setupV20WorkOrders,
+  // 0.22 modes: the research project opened as a new install (no DataPass settings: Standard).
+  "v22-modes": setupV3Research,
   "v22-versions": setupV22Versions
 };
 
@@ -518,6 +520,8 @@ async function main(): Promise<void> {
       git("add", "-A");
       git("commit", "-q", "-m", "fixture");
     }
+    // 0.22 modes: the earlier suites check 0.20's surfaces (Advanced, no landing); v22-modes starts as a new install.
+    if (name !== "v22-modes") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }, null, 2) });
     const reportFile = path.join(out, `report-${name}.json`);
     const launchArgs = [
       ws,

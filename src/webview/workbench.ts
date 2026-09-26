@@ -126,6 +126,8 @@ const DIFF_TEXT: Record<string, string> = { added: "new", replaced: "changed", r
 const pill = (text: string, tone: string, title?: string) => h("span", { class: `pill ${tone}`, text, title });
 const eyebrow = (text: string) => h("div", { class: "eyebrow", text });
 /** A component as the diagram shows it: the previewed architecture's version first (added or changed), else the project's. */
+/** 0.22 modes: decisions of options.json that can change a component (the "alternatives exist" marker). */
+const alternativesOf = (s: WorkbenchState, id: string) => s.experience?.alternatives === false ? [] : (s.options?.decisions ?? []).filter(d => d.concerns.includes(id)).map(d => d.title);
 const comp = (id: string | undefined) => state?.preview?.components.find(c => c.id === id) ?? state?.components.find(c => c.id === id);
 const inPreviewOnly = (id: string | undefined) => Boolean(id && !state?.components.some(c => c.id === id) && state?.preview?.components.some(c => c.id === id));
 const subp = (id: string | undefined) => state?.subprojects.find(s => s.id === id);
@@ -167,14 +169,16 @@ function viewTabs(s: WorkbenchState): HTMLElement {
     class: `vtab ${ui.view === id ? "active" : ""}`, role: "tab", type: "button", "aria-selected": String(ui.view === id),
     onclick: () => { ui.view = id; saveUi(); render(); }
   }, label, badge ? h("span", { class: "vbadge", text: badge }) : undefined);
+  const hidden = s.experience?.hiddenViews ?? [];
+  const shown = (id: View) => id === ui.view || !hidden.includes(id);
   const decisions = s.options?.decisions.length;
   const sheetCount = s.sheet ? s.sheet.datasets.length + s.sheet.formulas.length + s.sheet.runtimes.length : undefined;
   return h("div", { class: "vtabs", role: "tablist", "aria-label": "Workbench views" },
     tab("architecture", "Architecture"),
-    tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined),
-    tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined),
-    tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined),
-    tab("workOrders", "Work orders", s.workOrders?.needs ? `${s.workOrders.needs}!` : s.workOrders?.open ? String(s.workOrders.open) : undefined));
+    shown("options") ? tab("options", "Options", s.optionsError ? "!" : decisions ? String(decisions) : undefined) : undefined,
+    shown("sheet") ? tab("sheet", "Project sheet", s.sheetError ? "!" : sheetCount ? String(sheetCount) : undefined) : undefined,
+    shown("board") ? tab("board", "Board", s.boardError ? "!" : s.board ? String(s.board.summary.open) : undefined) : undefined,
+    shown("workOrders") ? tab("workOrders", "Work orders", s.workOrders?.needs ? `${s.workOrders.needs}!` : s.workOrders?.open ? String(s.workOrders.open) : undefined) : undefined);
 }
 
 function header(s: WorkbenchState): HTMLElement {
@@ -422,7 +426,7 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
         onclick: () => { if (c) select(s.selection.subproject ?? c.subprojects[0], c.id); },
         ondblclick: () => { if (c && !inPreviewOnly(c.id)) command("datapass.openComponentEntry", c.id); }
       },
-        h("span", { class: "nodetop" }, h("span", { class: "glyph", text: c?.providerGlyph ?? ghost!.providerGlyph, "aria-hidden": "true" }), h("span", { class: "provider", text: c?.providerLabel ?? ghost?.providerLabel ?? c?.kind ?? ghost!.kind }), diff ? h("span", { class: `tag ${diff}`, text: DIFF_TEXT[diff] }) : undefined),
+        h("span", { class: "nodetop" }, h("span", { class: "glyph", text: c?.providerGlyph ?? ghost!.providerGlyph, "aria-hidden": "true" }), h("span", { class: "provider", text: c?.providerLabel ?? ghost?.providerLabel ?? c?.kind ?? ghost!.kind }), diff ? h("span", { class: `tag ${diff}`, text: DIFF_TEXT[diff] }) : c && alternativesOf(s, c.id).length ? h("span", { class: "tag alt", text: "alternatives", title: `Alternatives exist (options.json): ${alternativesOf(s, c.id).join("; ")}` }) : undefined),
         h("span", { class: "nodelabel", text: `${c?.label ?? ghost!.label}${folded ? ` (+${m.memberIds.length - 1})` : ""}` }),
         h("span", { class: "nodestatus" }, c ? h("span", { class: `dot h-${c.health}`, "aria-hidden": "true" }) : undefined, h("span", { text: c ? c.headline : "not in this architecture" }))),
       hasKids || folded ? h("button", { class: "foldbtn", type: "button", title: folded ? "Show the components inside" : "Fold the components inside into this box", "aria-expanded": String(!folded), onclick: () => fold(`parent:${m.componentId}`), text: folded ? "▸" : "▾" }) : undefined);
@@ -536,7 +540,8 @@ function componentDetail(c: WbComponent, s: WorkbenchState, withFiles: boolean):
     preview || diff ? h("div", { class: "banner preview small", text: preview ? `Only in the preview "${s.preview?.title}": this component is not in graph.json. Its files are shown as DataPass would check them.` : `In the preview "${s.preview?.title}": ${DIFF_TEXT[diff!] ?? diff}.` }) : undefined,
     eyebrow("Selected component"),
     h("h2", { text: c.label }),
-    h("div", { class: "row tight" }, h("span", { class: "glyph big", text: c.providerGlyph, "aria-hidden": "true" }), h("span", { text: c.providerLabel ?? c.kind }), c.status ? pill(`declared: ${c.status}`, "muted", "What the project files say; DataPass checks the files itself") : undefined, pill(HEALTH_TEXT[c.health] ?? c.health, c.health === "ok" ? "ok" : c.health === "blocked" ? "bad" : c.health === "attention" ? "warn" : "muted")),
+    h("div", { class: "row tight" }, h("span", { class: "glyph big", text: c.providerGlyph, "aria-hidden": "true" }), h("span", { text: c.providerLabel ?? c.kind }), c.status ? pill(`declared: ${c.status}`, "muted", "What the project files say; DataPass checks the files itself") : undefined, pill(HEALTH_TEXT[c.health] ?? c.health, c.health === "ok" ? "ok" : c.health === "blocked" ? "bad" : c.health === "attention" ? "warn" : "muted"),
+      alternativesOf(s, c.id).length ? pill("alternatives exist", "info", `Decisions in options.json that can change it: ${alternativesOf(s, c.id).join("; ")}`) : undefined),
     c.providerAbout ? h("p", { class: "muted small", text: c.providerAbout }) : undefined,
     c.description ? h("p", { text: c.description }) : undefined,
     h("div", { class: "card" },
@@ -1456,12 +1461,21 @@ function renderInner(): void {
 // In the bottom panel the height matters too: redraw when the window (the panel) changes size.
 window.addEventListener("resize", () => { if (MODE === "map") { if (redrawTimer) clearTimeout(redrawTimer); redrawTimer = window.setTimeout(drawDiagrams, 60); } });
 
+/** 0.22 modes: the view a command opened explicitly (shown even when the mode hides its tab). */
+let forcedView: View | undefined;
 window.addEventListener("message", (event: MessageEvent) => {
   const msg = event.data as { type?: string; state?: WorkbenchState; view?: string; focus?: string; ui?: Partial<Ui> };
-  if (msg?.type === "state" && msg.state) { state = msg.state; render(); return; }
+  if (msg?.type === "state" && msg.state) {
+    state = msg.state;
+    // 0.22 modes: a view the mode hides falls back to the architecture, unless a command asked for it.
+    if (MODE === "full" && ui.view !== forcedView && (state.experience?.hiddenViews ?? []).includes(ui.view)) { ui.view = "architecture"; saveUi(); }
+    render();
+    return;
+  }
   if (msg?.type === "ui") { applyHostUi(msg.ui); render(); return; }
   if (msg?.type === "show" && MODE === "full" && (msg.view === "architecture" || msg.view === "options" || msg.view === "sheet" || msg.view === "board" || msg.view === "workOrders")) {
     ui.view = msg.view;
+    forcedView = msg.view;
     if (msg.view === "options") { ui.optFocus = typeof msg.focus === "string" ? msg.focus : ui.optFocus; ui.optOption = undefined; }
     if (msg.view === "board" && typeof msg.focus === "string") revealCard(msg.focus);
     if (msg.view === "sheet" && typeof msg.focus === "string") {

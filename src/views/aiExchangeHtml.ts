@@ -203,6 +203,14 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   let timer = null;
 
   let tab = saved.tab === 'agent' || saved.tab === 'manual' ? saved.tab : 'guided';
+  // 0.22 modes: tabs the mode hides; a tab a command opened explicitly stays until the person leaves it.
+  let hiddenTabs = [];
+  let forced = null;
+  function applyTabs() {
+    for (const x of ['agent', 'manual']) $('t-' + x).hidden = hiddenTabs.includes(x) && forced !== x;
+    document.querySelector('nav.tabs').hidden = ['agent', 'manual'].every(x => $('t-' + x).hidden);
+    if ($('t-' + tab).hidden) showTab('guided');
+  }
   let prefillToken = null;
   const touched = new Set();
   function persist() { vscode.setState({ kind: kind, tasks: tasks, tab: tab }); }
@@ -302,6 +310,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
 
   // ------------------------------------------------------------------ tabs
   function showTab(t) {
+    if (forced && forced !== t) { forced = null; setTimeout(applyTabs, 0); }
     tab = t; persist();
     for (const x of ['guided', 'agent', 'manual']) {
       $('tab-' + x).hidden = x !== t;
@@ -457,7 +466,9 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   });
   function applyPrefill(m) {
     const d = m.draft || {};
+    forced = 'agent';
     showTab('agent');
+    applyTabs();
     touched.clear();
     prefillToken = typeof m.token === 'string' ? m.token : null;
     renderAgent();
@@ -525,6 +536,8 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     const m = event.data || {};
     if (m.type === 'state') {
       state = m.state;
+      hiddenTabs = Array.isArray(state.hiddenTabs) ? state.hiddenTabs : [];
+      applyTabs();
       $('notready').hidden = state.ready;
       $('main').hidden = !state.ready;
       if (state.ready) { renderFiles(); renderRecent(); renderAgent(); renderManual(); }
@@ -532,7 +545,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
     } else if (m.type === 'prefill') {
       if (state && state.ready) applyPrefill(m);
     } else if (m.type === 'tab') {
-      if (m.tab === 'agent' || m.tab === 'manual' || m.tab === 'guided') showTab(m.tab);
+      if (m.tab === 'agent' || m.tab === 'manual' || m.tab === 'guided') { if (m.tab !== 'guided') forced = m.tab; showTab(m.tab); applyTabs(); }
     } else if (m.type === 'wo.done') {
       if (m.error) woStatus(m.error, 'bad');
       else if (m.id) {

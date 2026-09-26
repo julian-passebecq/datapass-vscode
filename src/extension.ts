@@ -37,6 +37,8 @@ import { registerGitCommands } from "./work/gitCommands";
 import { WorkOrderService, type LoadedOrder } from "./work/workOrders";
 import { WorkOrderFlows, registerWorkOrderCommands, type Draft } from "./work/workOrderCommands";
 import type { AiViewState } from "./views/aiExchange";
+import { ExperienceService, landOnArchitecture, registerExperienceCommands } from "./work/experienceCommands";
+import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
 
 /**
@@ -117,11 +119,22 @@ export interface DataPassTestApi {
     lastPrefill(): { token: string; draft: Partial<Draft>; visible: Partial<Draft> } | undefined;
     selected(): string | undefined;
   };
+  /** 0.22 modes: the effective mode, its status item, and whether startup landed on the architecture. */
+  experience: {
+    current(): Experience;
+    ready(): Promise<void>;
+    status(): { text: string; tooltip: string; visible: boolean };
+    landed(): Promise<boolean>;
+  };
 }
 
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
   // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
   const session = new WorkSession(context);
+  // 0.22 modes: the context keys are set before the views render (`when` clauses read them).
+  const experience = new ExperienceService(context);
+  context.subscriptions.push(experience);
+  registerExperienceCommands(context, experience);
   // Galaxy cards show the same operation readiness as the Work view.
   const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()));
   context.subscriptions.push(
@@ -156,6 +169,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const projectTree = new ProjectTreeProvider(session);
   const projectView = vscode.window.createTreeView(ProjectTreeProvider.viewType, { treeDataProvider: projectTree, showCollapseAll: true });
   projectTree.attach(projectView);
+  projectTree.setSurfaces(experience.shows, experience.onDidChange);
+  host.setSurfaces(experience.shows, experience.onDidChange);
+  aiExchange.setSurfaces(experience.shows, experience.onDidChange);
   context.subscriptions.push(
     host, projectTree, projectView,
     vscode.window.registerWebviewViewProvider("datapass.architecture", host.viewProvider("map"), { webviewOptions: { retainContextWhenHidden: true } }),
@@ -219,8 +235,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   status.text = "$(dashboard) DataPass";
   status.tooltip = "Open DataPass Galaxy";
   status.command = "datapass.openGalaxy";
-  status.show();
-  context.subscriptions.push(status);
+  const showStatus = () => { if (experience.shows("status.health")) status.show(); else status.hide(); };
+  showStatus();
+  context.subscriptions.push(status, experience.onDidChange(showStatus));
 
   const refreshState = async (): Promise<GalaxyState> => {
     // The session probes tools first so the Galaxy cards' operation readiness is current.
@@ -322,11 +339,13 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
   );
 
+  let landed: Promise<boolean> = Promise.resolve(false);
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
   const startup = refreshState()
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
+    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied).catch(() => false); await landed; experience.introduce(); return applied; })
     .catch(error => {
       output().appendLine(`[startup] ${error instanceof Error ? error.message : String(error)}`);
       return undefined;
@@ -378,6 +397,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     setDiagramUi: ui => host.applyUi(ui),
     setExportFile: setExportFileForTests,
     startup: () => startup,
+    experience: {
+      current: () => experience.experience(),
+      ready: () => experience.ready,
+      status: () => ({ text: experience.statusText(), tooltip: experience.statusTooltip(), visible: experience.statusVisible() }),
+      landed: async () => { await startup; return landed; }
+    },
     setConnectionRunner: impl => { session.connectionRunner = impl; },
     workOrders: {
       list: () => workOrders.list(),

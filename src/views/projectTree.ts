@@ -19,6 +19,7 @@ import { extensionsJsonText } from "../core/toolchain/extensionsJson";
 import { CONNECTION_STATE_TEXT, SIGN_IN_CHECKS, type ConnectionView } from "../core/toolchain/connections";
 import { openCardsByUrgency, TYPE_LABELS, type BoardItemType, type BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
+import { alternativesByComponent } from "../core/experience/alternatives";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
@@ -59,12 +60,20 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private readonly parents = new Map<string, Node | undefined>();
   private readonly byId = new Map<string, Node>();
   private view?: vscode.TreeView<Node>;
+  /** 0.22 modes: which sections the current mode shows (every section until a mode is attached). */
+  private shows: (surface: string) => boolean = () => true;
 
   constructor(private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.emitter.fire(undefined)), session.onDidChangeSelection(() => void this.revealSelection()));
   }
 
   dispose(): void { for (const s of this.subs) s.dispose(); this.emitter.dispose(); }
+
+  /** 0.22 modes: gate the root sections by surface; blockers show in every mode. */
+  setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
+    this.shows = shows;
+    this.subs.push(changed(() => this.emitter.fire(undefined)));
+  }
 
   attach(view: vscode.TreeView<Node>): void {
     this.view = view;
@@ -136,10 +145,12 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const hasKids = Boolean(c.artifacts?.files.length || c.children.length);
         const item = new vscode.TreeItem(c.label, hasKids ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None);
         item.id = n.id;
-        item.description = `${c.provider?.label ?? c.kind} · ${c.headline}`;
+        const alternatives = this.shows("badge.alternatives") ? alternativesByComponent(this.session.project.options).get(c.id) : undefined;
+        item.description = `${c.provider?.label ?? c.kind} · ${c.headline}${alternatives ? " · alternatives exist" : ""}`;
         item.iconPath = new vscode.ThemeIcon(c.provider?.icon ?? "symbol-misc", new vscode.ThemeColor((HEALTH_ICON[c.health] ?? ["", "foreground"])[1] ?? "foreground"));
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${esc(c.label)}** — ${esc(c.provider?.label ?? c.kind)}\n\n${c.description ? `${esc(c.description)}\n\n` : ""}${esc(c.headline)}\n\nNext: ${esc(c.nextStep)}`);
+        if (alternatives) md.appendMarkdown(`\n\nAlternatives exist (options.json): ${alternatives.map(esc).join("; ")}`);
         item.tooltip = md;
         const repo = c.repoKey ? this.session.projectMap().repositories.find(r => r.key === c.repoKey) : undefined;
         item.contextValue = `component${repo?.state === "local" ? ".local" : ""}${c.artifacts?.entry?.state === "found" ? ".entry" : ""}${c.provider?.nativeTool ? ".tool" : ""}${(c.artifacts?.summary.missing ?? 0) > 0 ? ".missing" : ""}`;
@@ -196,13 +207,14 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     if (s.projectRootCandidates().length > 1) nodes.push({ t: "info", id: "roots", label: `${s.projectRootCandidates().length} project folders in this window`, description: "choose…", icon: ["root-folder"], command: { command: "datapass.selectProjectFolder", title: "Choose" } });
     if (ctx.graphError) nodes.push({ t: "info", id: "graphError", label: `graph.json: ${ctx.graphError}`, icon: ["error", "problemsErrorIcon.foreground"], command: { command: "datapass.openGraph", title: "Open" } });
     if (!map.components.length && !ctx.graphError) nodes.push({ t: "info", id: "nographs", label: "No components yet: describe them in .datapass/graph.json", icon: ["type-hierarchy"], command: { command: "datapass.openGraph", title: "Open" } });
-    for (const sp of map.subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
+    const show = this.shows;
+    if (show("project.subprojects")) for (const sp of map.subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
     // 0.16: the board (tasks, bugs, sprints), when the project has one.
-    const bv = s.boardView();
-    if (bv || ctx.boardError) nodes.push(boardSection(bv, ctx.boardError));
+    const bv = show("project.board") ? s.boardView() : undefined;
+    if (bv || (show("project.board") && ctx.boardError)) nodes.push(boardSection(bv, ctx.boardError));
     // 0.15: architecture options and project sheet, when the project has them.
-    const o = ctx.options;
-    if (o || ctx.optionsError) nodes.push({
+    const o = show("project.options") ? ctx.options : undefined;
+    if (o || (show("project.options") && ctx.optionsError)) nodes.push({
       t: "section", id: "options", label: "Architecture options", icon: "git-compare", collapsed: true,
       description: o ? `${o.decisions.length} decision(s) · ${(o.scenarios?.length ?? 0)} scenario(s)` : "errors in options.json",
       kids: () => o ? [
@@ -214,8 +226,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         })
       ] : [{ t: "info" as const, id: "opt:error", label: ctx.optionsError ?? "", icon: ["error", "problemsErrorIcon.foreground"] as [string, string], command: { command: "datapass.openOptionsFile", title: "Open" } }]
     });
-    const sh = ctx.sheet;
-    if (sh || ctx.sheetError) nodes.push({
+    const sh = show("project.sheet") ? ctx.sheet : undefined;
+    if (sh || (show("project.sheet") && ctx.sheetError)) nodes.push({
       t: "section", id: "sheet", label: "Project sheet", icon: "table", collapsed: true,
       description: sh ? `${sh.datasets?.length ?? 0} data · ${sh.formulas?.length ?? 0} formulas · ${sh.runtimes?.length ?? 0} runtimes` : "errors in sheet.json",
       kids: () => sh ? ([
@@ -226,14 +238,17 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       ] as Array<[string, string, string, number]>).filter(([, , , n]) => n > 0).map(([section, label, icon, n]) => ({ t: "info" as const, id: `sheet:${section}`, label, description: String(n), icon: [icon] as [string], command: { command: "datapass.openSheet", title: "Open", arguments: [{ section }] } }))
         : [{ t: "info" as const, id: "sheet:error", label: ctx.sheetError ?? "", icon: ["error", "problemsErrorIcon.foreground"] as [string, string], command: { command: "datapass.openSheetFile", title: "Open" } }]
     });
-    nodes.push({
+    if (show("project.repositories")) nodes.push({
       t: "section", id: "repositories", label: "Repositories", icon: "repo",
       description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => r.state === "unverified") ? ` · ${map.repositories.filter(r => r.state === "unverified").length} unverified` : ""}${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,
       kids: () => map.repositories.map(r => ({ t: "repo" as const, id: `repo:${r.key}`, r }))
     });
-    nodes.push(...readinessNodes(s.readiness()));
+    // Readiness blockers (errors) show in every mode, even when the mode hides the full sections (D-03).
+    const r = s.readiness();
+    if (show("project.readiness")) nodes.push(...readinessNodes(r));
+    else if (r.summary.errors) nodes.push(...readinessNodes(r).filter(n => n.id === "readiness"));
     const serious = map.problems.filter(p => p.severity !== "info");
-    if (map.problems.length) nodes.push({
+    if (map.problems.length && (show("project.problems") || map.problems.some(p => p.severity === "error"))) nodes.push({
       t: "section", id: "problems", label: "Problems in project files", icon: "warning", collapsed: !serious.length, description: `${serious.length || map.problems.length}`,
       kids: () => map.problems.map((p, i) => ({ t: "info" as const, id: `problem:${i}`, label: p.message, description: p.where, icon: p.severity === "error" ? ["error", "problemsErrorIcon.foreground"] as [string, string] : p.severity === "warning" ? ["warning", "problemsWarningIcon.foreground"] as [string, string] : ["info"] as [string], tooltip: `${p.where}: ${p.message}` }))
     });
