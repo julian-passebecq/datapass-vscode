@@ -36,8 +36,6 @@ file format; one new machine-local state key (`datapass.v25.activeVariant`).
   links and DataPass JSON, never code, and is not part of what a client or auditor receives. Sources
   cited with their check date in [docs/PREPARING_A_PROJECT.md](docs/PREPARING_A_PROJECT.md),
   guide pages 01, 02 and 06.
-- Also on main when 0.25.0 was cut: package 0.26 M1 (PR #57, lossless `.vscode/mcp.json` edits);
-  its notes stay in `handoff/v3/night/0.26-m1.md` for the 0.26.0 release.
 
 ## 0.24.0 — Claude & Codex panel (2026-09-26)
 

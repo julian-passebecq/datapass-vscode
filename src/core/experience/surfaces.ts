@@ -53,7 +53,9 @@ export const SURFACES: readonly Surface[] = [
   // 0.24 (pass AI-3): the Claude & Codex panel.
   // 0.25 (package V-A): the selected variant (a preview on this machine).
   { id: "status.selectedVariant", kind: "statusBar", label: "Status bar: selected variant", detail: "The variant previewed on this machine; click to switch (the tree, Details, the diagram and the packs follow). Not a decision, not a deployment" },
-  { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" }
+  { id: "view.agentPanel", kind: "view", viewId: "datapass.agentPanel", label: "Claude & Codex panel", detail: "Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)" },
+  // 0.26 (AI-4a): pilot stage 1.
+  { id: "ai.pilot", kind: "aiTab", label: "AI view: Pilot tab", detail: "Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

@@ -82,10 +82,11 @@
                 "project.toolkit",
                 "badge.hubChanged",
                 "status.selectedVariant",
-                "view.agentPanel"
+                "view.agentPanel",
+                "ai.pilot"
               ]
             },
-            "maxItems": 31,
+            "maxItems": 32,
             "minItems": 0
           }
         },

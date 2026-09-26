@@ -383,6 +383,21 @@ project says so.
 Keep the current option as it is (no `changes`); at most two alternatives per decision; give every
 price a `source` (https) and an `asOf` date, never invent a number. Applying a decision is its own PR.
 
+**Cost basis (DataPass ≥ 0.26).** Two optional fields on a cost line say what a figure covers:
+
+- `shared`: a key (lowercase, e.g. `"fabric-capacity-f8"`) naming one resource several options
+  use. Put the same key and the same figure on each option's line. Any total that combines options
+  (scenario, preview, active variant) counts that key **once**; if the lines with that key give
+  different figures or currencies, DataPass counts the resource as unpriced and says "figures
+  disagree" (it never picks the higher or lower one). No `shared` = the cost belongs to that option
+  alone.
+- `use`: `"any"` (default, omit it) or `"learning-only"` for an offer not usable for client work
+  (Databricks Free Edition: non-commercial, no SLA). The option and every scenario that picks it
+  show "learning only — not for client work"; nothing is hidden.
+
+Keep tier, region and assumptions in `basis` (free text). An older DataPass refuses these two fields
+as unknown: leave them out if the team is not on 0.26 yet.
+
 ### Declaring variants (versions, proposals, alternatives)
 
 A variant needs no new file and no new field. **A variant is an option** of a decision, and a named

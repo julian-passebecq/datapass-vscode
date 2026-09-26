@@ -772,6 +772,24 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "datapass.pilot.show",
+        "title": "DataPass: Show Pilot Requests",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "datapass.pilot.enable",
+        "title": "DataPass: Switch Pilot Mode On (machine setting)…",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "datapass.pilot.run",
+        "title": "DataPass: Run a Pilot Request"
+      },
+      {
+        "command": "datapass.pilot.decline",
+        "title": "DataPass: Decline a Pilot Request"
+      },
+      {
         "command": "datapass.workOrders.newFromCard",
         "title": "DataPass: Work Order for this Card",
         "icon": "$(tools)"
@@ -1562,6 +1580,14 @@
       ],
       "commandPalette": [
         {
+          "command": "datapass.pilot.run",
+          "when": "false"
+        },
+        {
+          "command": "datapass.pilot.decline",
+          "when": "false"
+        },
+        {
           "command": "datapass.setChecklistState",
           "when": "false"
         },
@@ -1981,6 +2007,18 @@
           "scope": "machine",
           "description": "Absolute path of the Codex CLI for terminal launches; empty = codex from an absolute PATH entry. Machine-level."
         },
+        "datapass.pilot.enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "markdownDescription": "**Pilot mode, stage 1** (0.26): pilot orders let Claude Code or Codex read your **dev** cloud read-only (`az`, `func`) from the order's own folder, where DataPass writes the guard rails (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`), and ask DataPass for VS Code actions you click (*Run it* / *Not now*). Sign the CLIs in with a **Reader** role: it is the real safety net. Machine-level user setting: a cloned repository can never switch this on. Work orders must be on too."
+        },
+        "datapass.pilot.codexAppQualified": {
+          "type": "boolean",
+          "default": false,
+          "scope": "machine",
+          "markdownDescription": "Set **after** the one-time pilot qualification passed on this computer for the Codex app (ChatGPT): until then DataPass refuses to hand a pilot order to the Codex app, because the app may skip an untrusted `.codex/` folder. Codex in a terminal and Claude are not affected."
+        },
         "datapass.ai.workLog.privateRepository": {
           "type": "string",
           "default": "",
@@ -2225,6 +2263,10 @@
             "view.agentPanel": {
               "type": "boolean",
               "description": "Claude & Codex panel: Quick links, Claude Control status, plan usage, this project's conversations and your to-dos (secondary side bar)"
+            },
+            "ai.pilot": {
+              "type": "boolean",
+              "description": "AI view: Pilot tab: Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."

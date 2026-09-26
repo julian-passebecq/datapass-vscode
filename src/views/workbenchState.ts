@@ -190,7 +190,7 @@ export interface WbImpact {
   costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[]; total: CostTotal };
   problems: Array<{ severity: string; message: string }>;
 }
-export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string }
+export interface WbCost { label: string; service?: string; price?: string; monthly?: number; oneTime?: number; currency: string; basis?: string; source?: string; asOf?: string; note?: string; shared?: string; use?: "any" | "learning-only" }
 export interface WbOption {
   id: string; label: string; summary?: string; current: boolean; chosen: boolean; rejected: boolean; note?: string;
   values: Record<string, { text: string; score?: number; note?: string }>;
