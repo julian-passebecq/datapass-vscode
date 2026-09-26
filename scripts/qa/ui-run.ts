@@ -39,12 +39,17 @@ function readInputs(root: string, journeyFile: string): { run: RunFile; journey:
   } catch (e) { throw new CannotRun(e instanceof QaFormatError ? e.issues.map(i => `${e.file}: ${i}`) : [String(e)]); }
 }
 
-/** The first visible match in the workbench or any webview frame, waiting for it up to `timeout`. */
+/**
+ * The first visible match in the workbench or any webview frame, waiting for it up to `timeout`.
+ * Hidden matches are skipped, not just checked: a frame often holds an invisible copy of the text
+ * before the visible one (the diagram's edge `<title>` "PDF inbox → …" precedes the node "PDF inbox";
+ * a hidden view keeps its tree rows), and taking only the first match would never see the node.
+ */
 async function findVisible(page: Page, make: (f: Frame) => Locator, timeout: number): Promise<Locator | undefined> {
   const end = Date.now() + timeout;
   for (;;) {
     for (const frame of page.frames()) {
-      const loc = make(frame).first();
+      const loc = make(frame).filter({ visible: true }).first();
       try { if (await loc.isVisible()) return loc; } catch { /* frame detached meanwhile */ }
     }
     if (Date.now() >= end) return undefined;
