@@ -3,8 +3,7 @@
  *
  *   npm run perf                  3 launches, prints the median against the budgets
  *   npm run perf -- --runs=5      more launches
- *   npm run perf -- --ci          exit 1 when a gated median is above twice its budget
- *                                 (the first refresh is report-only until V1-REF)
+ *   npm run perf -- --ci          exit 1 when a median is above twice its budget
  *
  * The fixture (tests/fixtures/perf/foilSized.ts): 8 Git repositories side by side, 5,000 files, a
  * graph of 60 components, opened as a multi-root workspace. Each repository's origin is its GitHub
@@ -26,10 +25,12 @@ const repo = path.resolve(__dirname, "..");
 const ci = process.argv.includes("--ci");
 const runs = Math.max(1, Number(process.argv.find(a => a.startsWith("--runs="))?.slice("--runs=".length) ?? 3));
 
-/** Budgets (ms, refreshes). CI fails above twice these. */
-export const BUDGET = { activationMs: 500, firstRefreshMs: 3000, fetchRefreshes: 1 };
-/** Budgets that fail the run (ARCHI, V1-PERF): the first refresh is printed only, until V1-REF merges. */
-const GATED: Array<keyof typeof BUDGET> = ["activationMs", "fetchRefreshes"];
+/**
+ * Budgets (ms, refreshes). CI fails above twice these. V1-REF: the first refresh is the first paint
+ * (project, architecture, tree); the full refresh adds probes, readiness, inventory and Galaxy.
+ */
+export const BUDGET = { activationMs: 500, firstRefreshMs: 3000, fullRefreshMs: 6000, fetchRefreshes: 1 };
+const GATED: Array<keyof typeof BUDGET> = ["activationMs", "firstRefreshMs", "fullRefreshMs", "fetchRefreshes"];
 
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", ["-c", "user.name=DataPass perf", "-c", "user.email=perf@example.invalid", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", ...args], { cwd, stdio: "ignore" });
@@ -92,7 +93,8 @@ async function vscodeExecutable(): Promise<string> {
 
 interface Report {
   ok: boolean; error?: string;
-  loadMs: number; activateMs: number; firstRefreshMs: number; warmRefreshMs: number;
+  loadMs: number; activateMs: number; firstRefreshMs: number; fullRefreshMs: number; warmRefreshMs: number;
+  sessionFirstPaintMs: number; sessionSettledMs: number; sessionSteps?: Record<string, number>;
   components: number; repositories: number;
   fetch: { repositories: number; sessionRefreshes: number; sessionChanges: number; gitChanges: number };
 }
@@ -131,8 +133,8 @@ async function main(): Promise<void> {
       const r = JSON.parse(fs.readFileSync(reportFile, "utf8")) as Report;
       if (!r.ok) throw new Error(`run ${i} failed in the extension host:\n${r.error}`);
       reports.push(r);
-      console.log(`run ${i}: activation ${ms(r.loadMs + r.activateMs)} (load ${ms(r.loadMs)} + activate ${ms(r.activateMs)}), first refresh ${ms(r.firstRefreshMs)}, warm refresh ${ms(r.warmRefreshMs)}, ` +
-        `${r.components} components / ${r.repositories} repositories; git fetch ×${r.fetch.repositories} → ${r.fetch.sessionRefreshes} refresh(es), ${r.fetch.gitChanges} Git view update(s)`);
+      console.log(`run ${i}: activation ${ms(r.loadMs + r.activateMs)} (load ${ms(r.loadMs)} + activate ${ms(r.activateMs)}), first paint ${ms(r.firstRefreshMs)}, full refresh ${ms(r.fullRefreshMs)} (session ${ms(r.sessionFirstPaintMs)} / ${ms(r.sessionSettledMs)}), warm refresh ${ms(r.warmRefreshMs)}, ` +
+        `${r.components} components / ${r.repositories} repositories [${Object.entries(r.sessionSteps ?? {}).map(([k, v]) => `${k} ${v}`).join(", ")}]; git fetch ×${r.fetch.repositories} → ${r.fetch.sessionRefreshes} refresh(es), ${r.fetch.gitChanges} Git view update(s)`);
     }
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
@@ -141,12 +143,12 @@ async function main(): Promise<void> {
   const result = {
     activationMs: median(reports.map(r => r.loadMs + r.activateMs)),
     firstRefreshMs: median(reports.map(r => r.firstRefreshMs)),
+    fullRefreshMs: median(reports.map(r => r.fullRefreshMs)),
     fetchRefreshes: median(reports.map(r => r.fetch.sessionRefreshes))
   };
   fs.writeFileSync(path.join(out, "perf-report.json"), JSON.stringify({ generatedAt: new Date().toISOString(), host: { platform: process.platform, cpus: os.cpus().length }, budget: BUDGET, median: result, runs: reports }, null, 2));
-  console.log(`\nmedian of ${runs}: activation ${ms(result.activationMs)} (budget ${BUDGET.activationMs}), first refresh ${ms(result.firstRefreshMs)} (budget ${BUDGET.firstRefreshMs}), refreshes after git fetch ${result.fetchRefreshes} (budget ${BUDGET.fetchRefreshes})`);
+  console.log(`\nmedian of ${runs}: activation ${ms(result.activationMs)} (budget ${BUDGET.activationMs}), first paint ${ms(result.firstRefreshMs)} (budget ${BUDGET.firstRefreshMs}), full refresh ${ms(result.fullRefreshMs)} (budget ${BUDGET.fullRefreshMs}), refreshes after git fetch ${result.fetchRefreshes} (budget ${BUDGET.fetchRefreshes})`);
   const over = GATED.filter(k => result[k] > BUDGET[k] * (ci ? 2 : 1));
-  if (result.firstRefreshMs > BUDGET.firstRefreshMs) console.log(`First refresh above budget (report-only until V1-REF): ${ms(result.firstRefreshMs)}`);
   if (over.length) {
     console.error(`${ci ? "Above twice the budget" : "Above budget"}: ${over.join(", ")}`);
     if (ci) process.exit(1);

@@ -3,9 +3,14 @@ import { defaultProbeRunner, type ProbeRunner } from "../detection";
 import { TOOLS, type ToolObservation } from "./tools";
 import { cliVersion } from "../toolchain/versions";
 import { mcpServerNames } from "../evidence/registration";
+import { runBounded } from "../project/observation";
 
 const TTL_MS = 5 * 60_000;
+/** V1-REF: CLI probes running at once (each starts a process; the rest wait their turn). */
+export const PROBE_CONCURRENCY = 6;
 let cache: { at: number; map: Map<string, ToolObservation> } | undefined;
+/** The probe run in progress: a second refresh waits for it instead of starting the CLIs again. */
+let inflight: Promise<Map<string, ToolObservation>> | undefined;
 
 /** Cached, timestamped tool probes. CLI probes are cheap `--version` calls with a timeout. */
 export async function probeTools(force = false, runner: ProbeRunner = defaultProbeRunner): Promise<Map<string, ToolObservation>> {
@@ -16,8 +21,15 @@ export async function probeTools(force = false, runner: ProbeRunner = defaultPro
     for (const tool of TOOLS.filter(t => t.kind === "workspace-file")) cache.map.set(tool.id, await probeWorkspaceFile(tool.id, now));
     return cache.map;
   }
+  if (!force && inflight) return inflight;
+  const run = probeAll(runner).finally(() => { if (inflight === run) inflight = undefined; });
+  inflight = run;
+  return run;
+}
+
+async function probeAll(runner: ProbeRunner): Promise<Map<string, ToolObservation>> {
   const now = new Date().toISOString();
-  const entries = await Promise.all(TOOLS.map(async (tool): Promise<ToolObservation> => {
+  const entries = await runBounded(TOOLS, PROBE_CONCURRENCY, async (tool): Promise<ToolObservation> => {
     switch (tool.kind) {
       case "extension": {
         for (const id of tool.extensionIds ?? []) {
@@ -37,7 +49,7 @@ export async function probeTools(force = false, runner: ProbeRunner = defaultPro
       case "desktop-app":
         return { toolId: tool.id, state: "unknown", observedAt: now };
     }
-  }));
+  });
   cache = { at: Date.now(), map: new Map(entries.map(e => [e.toolId, e])) };
   return cache.map;
 }

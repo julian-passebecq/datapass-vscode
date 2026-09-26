@@ -26,6 +26,8 @@ export interface ProjectMapInput {
   repoObservations: ReadonlyMap<string, RepoObservation>;
   fileObservations: ReadonlyMap<string, FileObservation>;
   tools: ReadonlyMap<string, ToolObservation>;
+  /** V1-REF: the tool probes have not answered yet (first paint): no tool is called missing. */
+  toolsPending?: boolean;
   facts: ReadonlyMap<string, string | boolean | undefined>;
   factNotes?: ReadonlyMap<string, FactNote>;
   reviewsConfirmed: ReadonlySet<string>;
@@ -335,7 +337,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
     });
     const repoSet = new Map<string, RepoView>();
     for (const c of comps) if (c.repoKey) { const r = repoIndex.get(c.repoKey); if (r && r.state !== "local" && r.state !== "not-a-repo") repoSet.set(r.key, r); }
-    const tools = toolNeeds(comps, input.tools);
+    const tools = input.toolsPending ? [] : toolNeeds(comps, input.tools);
     const ops = comps.flatMap(c => c.operations);
     const summary = {
       components: comps.length,
