@@ -53,6 +53,16 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.23.0 (2026-09-26)
+
+The toolkit catalogue (PLAN T1–T4, PR #43): `datapass.toolkit` 1 files in the hub repository over a
+built-in baseline that dates the free tier and prices of every known tool (read 2026-09-26, *unknown*
+when not confirmed); the Workbench's Toolkit view, tools and recipes in Details, `recipe` / `route` on
+board items with the steps on the card, prices in Options, Readiness links; "Needs a newer DataPass"
+from `datapassRequests` and from files written for a newer DataPass; mode surfaces `workbench.toolkit`,
+`project.toolkit`, `badge.hubChanged`. Variants (package G, PR #39). Unit 409, desktop 319 on 15
+fixtures. See IMPLEMENTATION_STATUS.md.
+
 ## Done in 0.22.0 (night of 2026-09-26)
 
 Five packages of [10_GLOBAL_IMPROVEMENT_PLAN.md](10_GLOBAL_IMPROVEMENT_PLAN.md): A trust repairs

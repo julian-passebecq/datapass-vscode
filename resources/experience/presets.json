@@ -14,7 +14,7 @@
       "id": "standard",
       "label": "Standard",
       "description": "Vanilla plus the architecture: the diagram opens with the project, Details beside it, and components with alternatives are marked.",
-      "show": ["view.git", "view.aiExchange", "view.architecture", "view.details", "project.subprojects", "project.repositories", "project.problems", "status.mode", "landing.architecture", "badge.alternatives", "project.variantFilter", "badge.codingState"]
+      "show": ["view.git", "view.aiExchange", "view.architecture", "view.details", "project.subprojects", "project.repositories", "project.problems", "status.mode", "landing.architecture", "badge.alternatives", "badge.codingState"]
     },
     {
       "id": "datapass",
