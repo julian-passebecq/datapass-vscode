@@ -1,5 +1,5 @@
 /**
- * `npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--code <VS Code executable>]`
+ * `npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--commit <released commit>] [--code <VS Code executable>] [--launch]`
  * `npm run qa:prepare -- --auto <test repository clone> --check [--report <report.json>]` validates a test repository only.
  *
  * The mechanical part of a Codex test run (handoff/v3/12 §4.3, QA-1): validate the configuration and
@@ -14,13 +14,13 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "@vscode/test-electron";
 import { buildCompanyWorkspace } from "../../src/core/windows/company";
 import { isInside } from "../../src/core/exchange/pathSafety";
 import { remoteIdentity } from "../../src/core/project/gitHosts";
 import {
-  CODEX_TESTS_FILE, QA_REPORT_FORMAT, QA_RUN_FILE, QA_RUN_FORMAT, QaFormatError, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, runIdOf,
+  CODEX_TESTS_FILE, QA_REPORT_FORMAT, QA_RUN_FILE, QA_RUN_FORMAT, QaFormatError, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, runIdOf, openPath, SCREEN_PATTERN,
   type ClientWorkspace, type CodexTestsConfig, type FolderRef, type TestJourney
 } from "../../src/qa/formats";
 
@@ -30,7 +30,14 @@ export const EXTENSIONS_DIR = ".vscode-ext";
 /** doc 12 §4.1 named the file datapass-auto.json before the addendum; both are read. */
 const CONFIG_NAMES = [CODEX_TESTS_FILE, "datapass-auto.json"];
 
-export interface PrepareOptions { auto: string; root: string; vsix?: string; code?: string; now?: Date; log?: (line: string) => void }
+export interface PrepareOptions {
+  auto: string; root: string; vsix?: string; code?: string;
+  /** The released commit the VSIX was built from (no tags: PLAN.md records it), recorded in run.json. */
+  commit?: string;
+  /** Also start each client's isolated VS Code (detached): qa:prepare is the launcher, Codex never launches it from its sandbox. */
+  launch?: boolean;
+  now?: Date; log?: (line: string) => void;
+}
 export interface PrepareResult { code: 0 | 2; reasons: string[]; runFile?: string; workspaceFiles: string[]; launch: string[] }
 
 class CannotPrepare extends Error { constructor(readonly reasons: string[]) { super(reasons.join("\n")); } }
@@ -71,6 +78,7 @@ function readJourneys(auto: string, config: CodexTestsConfig): Array<TestJourney
 }
 
 interface CheckedRepo { folder: string; remote: string; commit: string }
+const withPath = (repo: CheckedRepo, ref: FolderRef) => (ref.path ? { folder: repo.folder, path: ref.path, remote: repo.remote, commit: repo.commit } : repo);
 
 /** Each declared folder exists under the root, is a Git clone, and its origin is the declared remote. */
 function checkFolders(root: string, workspaces: ClientWorkspace[]): Map<string, CheckedRepo> {
@@ -78,6 +86,13 @@ function checkFolders(root: string, workspaces: ClientWorkspace[]): Map<string, 
   const out = new Map<string, CheckedRepo>();
   const realRoot = fs.realpathSync(root);
   const check = (who: string, ref: FolderRef) => {
+    cloneOf(who, ref);
+    if (ref.path === undefined || !out.has(ref.folder)) return;
+    const sub = path.join(root, ref.folder, ref.path);
+    if (!fs.existsSync(sub) || !fs.statSync(sub).isDirectory()) reasons.push(`${who}: ${ref.path} is not a folder inside ${ref.folder}`);
+    else if (!isInside(fs.realpathSync(path.join(root, ref.folder)), fs.realpathSync(sub))) reasons.push(`${who}: ${ref.folder}/${ref.path} resolves outside the clone`);
+  };
+  const cloneOf = (who: string, ref: FolderRef) => {
     if (out.has(ref.folder)) return;
     const dir = path.join(root, ref.folder);
     if (!fs.existsSync(dir)) { reasons.push(`${who}: folder ${ref.folder} is missing under the run root (clone ${ref.remote} there)`); return; }
@@ -121,6 +136,13 @@ function cli(executable: string, args: string[]): string {
   return r.stdout;
 }
 
+/** The shell capture the agent runs for each screen (Codex Computer Use saves none); `<file>` = `screens/<journey id>-<what>.png`. */
+export function captureCommand(platform: NodeJS.Platform = process.platform): string {
+  if (platform === "win32") return "powershell -NoProfile -Command \"Add-Type -AssemblyName System.Windows.Forms,System.Drawing; $b=[System.Windows.Forms.SystemInformation]::VirtualScreen; $i=New-Object System.Drawing.Bitmap $b.Width,$b.Height; [System.Drawing.Graphics]::FromImage($i).CopyFromScreen($b.Location,[System.Drawing.Point]::Empty,$b.Size); $i.Save('<file>')\"";
+  if (platform === "darwin") return "screencapture -x <file>";
+  return "import -window root <file>";
+}
+
 const quote = (s: string) => (/[\s"]/.test(s) ? `"${s}"` : s);
 
 export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
@@ -142,6 +164,7 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const vsix = path.resolve(root, vsixRel);
     if (!fs.existsSync(vsix) || !/\.vsix$/i.test(vsix)) throw new CannotPrepare([`VSIX not found: ${vsix}`]);
     const sha256 = createHash("sha256").update(fs.readFileSync(vsix)).digest("hex");
+    if (opts.commit !== undefined && !/^[a-f0-9]{7,40}$/.test(opts.commit)) throw new CannotPrepare([`--commit must be the released commit (7 to 40 lowercase hex), got ${JSON.stringify(opts.commit)}`]);
 
     const executable = await vscodeExecutable(opts.code);
     const userDataDir = path.join(root, USER_DATA_DIR);
@@ -162,19 +185,29 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const launch: string[] = [];
     const clients = config.workspaces.map(w => {
       const file = path.join(root, `${w.client.id}.code-workspace`);
-      const { doc } = buildCompanyWorkspace({ file, company: w.client.title, folders: [w.bridge, ...w.repositories].map(r => path.join(root, r.folder)) });
+      const { doc } = buildCompanyWorkspace({ file, company: w.client.title, folders: [w.bridge, ...w.repositories].map(r => path.join(root, openPath(r))) });
       fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
       workspaceFiles.push(file);
       const command = [executable, ...isolation, file].map(quote).join(" ");
       launch.push(command);
-      return { id: w.client.id, title: w.client.title, workspaceFile: path.basename(file), bridge: repos.get(w.bridge.folder)!, repositories: w.repositories.map(r => repos.get(r.folder)!), launch: command };
+      return { id: w.client.id, title: w.client.title, workspaceFile: path.basename(file), bridge: withPath(repos.get(w.bridge.folder)!, w.bridge), repositories: w.repositories.map(r => withPath(repos.get(r.folder)!, r)), launch: command };
     });
     const run = {
       format: QA_RUN_FORMAT, version: 1, runId, purpose: config.purpose, createdAt: new Date().toISOString(),
-      datapass: { version: installedVersion, sha256, vsix: path.basename(vsix), extension: EXTENSION_ID },
+      datapass: { version: installedVersion, sha256, ...(opts.commit ? { commit: opts.commit } : {}), vsix: path.basename(vsix), extension: EXTENSION_ID },
       vscode: vscodeCommit && /^[a-f0-9]{40}$/.test(vscodeCommit) ? { version: vscodeVersion!, commit: vscodeCommit } : { version: vscodeVersion! },
       os: { platform: process.platform, release: os.release(), arch: process.arch },
+      host: "codex-desktop",
       profile: { userDataDir: USER_DATA_DIR, extensionsDir: EXTENSIONS_DIR },
+      preconditions: [
+        "Run the journeys from the Codex desktop app (Computer Use sees nothing launched from codex exec).",
+        "A visible, unlocked foreground desktop for the whole run; the screen must not lock or sleep.",
+        `Computer Use approved for ${process.platform === "win32" ? "Code.exe" : "VS Code"} (a per-app approval, asked once).`,
+        `The VSIX is the user's own local build of DataPass ${installedVersion}${opts.commit ? ` (released commit ${opts.commit})` : ""}, sha256 ${sha256}: installing it is expected.`,
+        "VS Code is launched by qa:prepare (--launch) or the printed command, outside Codex's sandbox."
+      ],
+      knownLeaks: ["--user-data-dir does not isolate ~/.vscode-shared: state kept there is shared with the person's own VS Code."],
+      screenshots: { folder: "screens", pattern: SCREEN_PATTERN, command: captureCommand() },
       clients,
       journeys: journeys.map(j => ({ id: j.id, kind: j.kind, title: j.title, file: j.file, features: j.features }))
     };
@@ -186,6 +219,10 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     log("");
     log(`Launch ${clients.length > 1 ? "each client's" : "the"} isolated VS Code:`);
     for (const l of launch) log(`  ${l}`);
+    if (opts.launch) {
+      for (const w of workspaceFiles) spawn(executable, [...isolation, w], { detached: true, stdio: "ignore", windowsHide: false }).unref();
+      log(`✓ launched ${workspaceFiles.length} isolated VS Code window(s)`);
+    }
     return { code: 0, reasons: [], runFile, workspaceFiles, launch };
   } catch (e) {
     const reasons = e instanceof CannotPrepare ? e.reasons : [e instanceof Error ? e.message : String(e)];
@@ -234,10 +271,10 @@ if (require.main === module) {
   const root = argValue(argv, "root");
   if (auto && argv.includes("--check")) process.exit(check({ auto, report: argValue(argv, "report") }).code);
   if (!auto || !root) {
-    console.log("Usage: npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--code <VS Code executable>]");
+    console.log("Usage: npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--commit <released commit>] [--code <VS Code executable>] [--launch]");
     console.log("       npm run qa:prepare -- --auto <test repository clone> --check [--report <report.json>]");
     process.exit(2);
   }
-  void prepare({ auto, root, vsix: argValue(argv, "vsix"), code: argValue(argv, "code") }).then(r => process.exit(r.code));
+  void prepare({ auto, root, vsix: argValue(argv, "vsix"), code: argValue(argv, "code"), commit: argValue(argv, "commit"), launch: argv.includes("--launch") }).then(r => process.exit(r.code));
 }
 

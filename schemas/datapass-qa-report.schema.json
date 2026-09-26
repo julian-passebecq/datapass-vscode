@@ -43,6 +43,12 @@
           "minLength": 64,
           "maxLength": 64,
           "pattern": "^[a-f0-9]{64}$"
+        },
+        "commit": {
+          "type": "string",
+          "minLength": 7,
+          "maxLength": 40,
+          "pattern": "^[a-f0-9]{7,40}$"
         }
       },
       "required": [
@@ -124,6 +130,12 @@
                 "maxLength": 400,
                 "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
               },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+              },
               "remote": {
                 "type": "string",
                 "minLength": 1,
@@ -150,6 +162,12 @@
               "additionalProperties": false,
               "properties": {
                 "folder": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                },
+                "path": {
                   "type": "string",
                   "minLength": 1,
                   "maxLength": 400,
@@ -201,10 +219,7 @@
           "maxLength": 80
         },
         "host": {
-          "enum": [
-            "app",
-            "terminal"
-          ]
+          "const": "app"
         }
       },
       "required": [
@@ -288,8 +303,8 @@
             "items": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 400,
-              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+              "maxLength": 120,
+              "pattern": "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$"
             },
             "maxItems": 40,
             "minItems": 0
@@ -388,8 +403,8 @@
             "items": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 400,
-              "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+              "maxLength": 120,
+              "pattern": "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$"
             },
             "maxItems": 20,
             "minItems": 0
@@ -433,6 +448,17 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 1000
+          },
+          "screens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$"
+            },
+            "maxItems": 10,
+            "minItems": 0
           },
           "confidence": {
             "enum": [
