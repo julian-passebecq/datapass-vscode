@@ -1,6 +1,6 @@
 # Preparing a client project for DataPass — the guide
 
-For DataPass VS Code **0.20.0** (manifest `schemaVersion: 5`, graph `0.2`). Written for two readers:
+For DataPass VS Code **0.22.0** (manifest `schemaVersion: 5`, graph `0.2`). Written for two readers:
 the **AI** that prepares a client project from scratch (pages in English) and **the person** who
 uses it (page 3 in French).
 

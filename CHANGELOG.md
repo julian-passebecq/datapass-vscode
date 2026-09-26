@@ -3,6 +3,55 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.22.0 — trust repairs, modes, context from any file, format checks, file versions (2026-09-26)
+
+Plan: [handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md](handoff/v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions
+D-01 to D-18). Five packages built in parallel on the night of 26 September (PRs #36, #37, #34, #35,
+#38). There is no 0.21.0: the toolkit catalogue planned under that number moves to 0.23 with the
+variants (package G). No project-file format changes; new DataPass file `resources/experience/presets.json`
+(format `datapass.experience` 1, schema `schemas/datapass-experience.schema.json`).
+
+- **Trust repairs (FOIL review F01–F08)**: declared costs are added **per currency** and never
+  converted, monthly and one-time apart, and a total with an unpriced option or line says
+  **"partial: n of m priced"** (unknown is never 0) — in the report, the scenario table and the
+  Workbench. A file is identified by its **SHA-256** or, beyond a byte budget, by **size and date
+  only**, which makes the component's digest **weak**: a weak digest never matches a recorded result.
+  Git tracking of files that must not be committed is **tracked / untracked / unknown** ("could not
+  check Git tracking" is never clean). A declared repository whose clone has no origin, or whose
+  origin could not be read, is **unverified**: browsable, but *Get updates*, work orders and
+  operations refuse it (Locate / Retry). Observation is **bounded** (16 reads at once, 2,000 expected
+  files, "inspection incomplete (n skipped)" in Problems). Prompts: a merged PR moves a card to
+  `review`, not done; no fixed sprint or "beginner" assumption. Guide and packs: **one PR per
+  repository plus a cross-linked bridge PR** (a coordinated change set); "bridge repository
+  (coordination repository)".
+- **Modes**: **Vanilla / Standard (default) / DataPass / Advanced** — presentation presets over the
+  same project (`datapass.experience.preset`, machine scope), adjusted surface by surface
+  (`datapass.experience.overrides`, *DataPass: Customize DataPass Mode…*). *DataPass: Switch Mode…*
+  and a status item `DataPass: Standard`. Views, AI tabs, Project tree sections and Workbench views
+  follow the mode; blockers (Restricted Mode, errors in project files, readiness errors, a refused
+  secret) show in every mode; commands stay in the palette. Standard and above open on the
+  architecture; components an options.json decision can change say "alternatives exist". Switching
+  writes no file in any repository.
+- **Copy Context for My AI** from any file (Explorer, editor tab, editor with a selection): the
+  question, the file's repository (bridge or native, branch, HEAD, its Git state), the owning
+  component(s) and scope, the revisions they use, a folder excerpt, the file or selection (24 KB,
+  truncation labelled, unsaved buffer flagged), its diagnostics, and the rules for the answer (a PR
+  in that repository, a separate bridge PR if the architecture changes). Repository-relative paths
+  only, credentials scrubbed, a preview before copying; nothing written.
+- **Format checks without execution → Problems**: JSON and YAML syntax, **Databricks bundles**
+  (`bundle.name`, targets, `include` globs, notebook / Python / wheel paths, `${var.x}` declared),
+  **Dockerfile** (`FROM`, `COPY`/`ADD` sources) and **docker-compose** (`build.context`, `env_file`
+  paths — never read). On save, *Check This File* and *Check This Repository*; a quick fix copies
+  `databricks bundle validate` (never run). No process, works in Restricted Mode, bounded scan
+  (`datapass.checks.*`). Guide page [08_FORMAT_CHECKS.md](docs/guide/08_FORMAT_CHECKS.md).
+- **File versions** (thin commands on native Git): *Open Latest Version* (origin's default branch as
+  of the last fetch — never fetches), *Open Version…* (the file's last 50 commits, renames followed,
+  "from PR #n"), *Compare with Version…*, *Changed by the Last Update…* (the last fast-forward's
+  files grouped by component). Read-only `datapass-rev:` tabs titled with the revision and fetch time.
+
+Tests: unit UNIT_COUNT; desktop DESKTOP_COUNT (new fixtures `v22-modes`, `v22-checks`,
+`v22-versions`). Detail: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+
 ## 0.20.0 — work orders (pass AI-2, 2026-09-25)
 
 Design and Julian's answers: [handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md](handoff/v3/09_AI_MODES_WORK_ORDERS_GIT.md)
