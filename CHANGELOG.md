@@ -3,6 +3,70 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 0.26.0 — Pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed (2026-09-26)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) rows AI-4a, M1, K1, C1, X1, R3, E1, V1-ON, V1-P1, V1-DOC, V1-T10 (FOIL MCP review
+[handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md), decisions D-19 to D-28). One new order kind (`pilot-read`), two new
+optional options.json cost fields; no manifest version change.
+
+- **Pilot stage 1, read-only, no Azure sign-in needed** (package AI-4a, PR #55): a new order kind
+  `pilot-read` (cloud read-only, every repository read-only, permissions always *ask*, no pull
+  requests), written from the new **Pilot** tab of the AI view. DataPass writes the agent's guard rails
+  only inside the order folder (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`,
+  regenerated and compared byte for byte before each launch) and launches Claude or Codex in a terminal
+  with them; the Codex app is refused until `datapass.pilot.codexAppQualified`. The agent asks for a
+  read action by writing `requests/<n>.json`; each valid request becomes a **Pilot card** you run
+  (*Run it*) or decline (*Not now*), and DataPass answers in `responses/<n>.json` (names and states
+  only). Off until the machine setting `datapass.pilot.enabled`.
+- **Lossless `.vscode/mcp.json` edits** (package M1, PR #57, FOIL review R1): *Configure Fabric MCP*
+  keeps `inputs`, unknown keys and every server field (`env`, `envFile`, `cwd`, `type`, remote
+  `url`/`headers`), refuses another host's `mcpServers` dialect and files with comments or trailing
+  commas, and writes through the reviewed path (diff, confirmation, digest check, backup, journal).
+- **Toolkit knowledge refresh** (package K1, PR #60, FOIL review R2): the example hub gains the Fabric
+  Core / local / IQ MCP servers, the hosted Power BI Authoring MCP, the Skills for Fabric plugin and the
+  Azure MCP, each dated with hosts, transport and side effects; baseline corrections (Fabric Studio,
+  Power BI Authoring MCP local option, data-goblin plugin, semantic-link-labs, `ws.mcp` = registration
+  file only); recipe `mcp.fabric-sample.inspect-readonly`; guide page 9 section *MCP servers and the
+  official Power BI agentic route*.
+- **Cost basis in options.json** (package C1, PR #61, D-24): a cost line may carry `shared` (same key
+  across options counts **once** in combined totals; disagreeing figures → unpriced with a message) and
+  `use: "learning-only"` (flagged "learning only — not for client work", never hidden). options.json
+  stays version "1". These two fields require **DataPass ≥ 0.26**: an older DataPass rejects them with
+  the unknown-field message (the cost-basis brief says 0.27; it is a historical record, the guides are
+  right).
+- **Mongoku removed from DataPass** (package X1, PR #63): Mongoku is a separate app with no link to
+  DataPass. Its commands, the `datapass.mongoku.url` setting, the `vscode://…/open?entity=` link, its
+  Work-view and Readiness rows, the `mongoku` module and the context import are gone; new manifests and
+  the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
+  load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
+  `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
+- **First V1 items** (on main when 0.26.0 was cut, so they ship in it):
+  - **DataPass: Open a Client Project…** (V1-ON, PR #68): from the bridge repository's Git address
+    (GitHub, Azure DevOps, GitLab; https or SSH) to a company window in one command — clones what is
+    missing, finds clones already here by remote identity, never clones planned repositories, writes
+    the company workspace file and opens it; idempotent, with Retry on a failed clone. Also in the
+    empty Explorer and Project view, and a walkthrough **Get started with DataPass** (Help → Welcome →
+    Walkthroughs).
+  - **Integration evidence chain** (E1, PR #67, D-22): for az, databricks, fab and the known MCP
+    servers, Readiness, its report and the Workbench show each link — known → installed → registered
+    → connected → authenticated → authorized → operation verified — as observed, unknown (with why)
+    or not applicable; nothing is inferred, a registration file never means connected. Work-order
+    result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
+    Details shows each result field on its own.
+  - **Pack and work-order stamps** (V1-P1, PR #66, D-23): Copy Context for My AI, the options packs
+    and work orders (`order.json` optional `stamp`, `order.md` stamp line) carry the selected variant,
+    the environment and the bridge revision they were built for. The AI view flags a copied pack as
+    **⚠ Stale** when the variant, environment or bridge revision changed since; launching an order
+    stamped for another variant asks *Keep and launch / Rebuild for the selected variant / Cancel*.
+    Pilot cards go stale the same way, and the result format asks agents for `field` / `tool` /
+    `scope` / `input` on each check.
+  - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
+    [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
+    `handoff/archive/`, README top rewritten.
+  - **Testlab 10, acceptance journeys** (V1-T10, PR #69, D-28): outside the repository
+    (`datapass-testlab/10-parcours-client`), 10/10 journeys replayed by Claude; section B7 in
+    `handoff/v3/04_NEXT_PASSES.md`.
+
 ## 0.25.0 — Previewing variants and repository layout (2026-09-26)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) rows V-A, R-L, R2 (Julian's FOIL answers Q1 and Q5). No new

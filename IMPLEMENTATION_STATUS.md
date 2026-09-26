@@ -1,4 +1,375 @@
-# Implementation Status — 0.25.0: previewing variants and repository layout
+# Implementation Status — 0.26.0: pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed
+
+Date: 2026-09-26. Version `0.26.0` — packages AI-4a (PR #55), M1 (PR #57), K1 (PR #60), C1 (PR #61)
+and X1 (PR #63), plus the first V1 items E1 (PR #67), V1-ON (PR #68), V1-P1 (PR #66), V1-DOC (PR #64) and V1-T10 (PR #69), released from main per [handoff/PLAN.md](handoff/PLAN.md) row R3. The night notes
+(`handoff/v3/night/0.26-ai4a.md`, `0.26-m1.md`, `0.26-k1.md`, `0.26-c1.md`, `0.26-x1.md`, `0.27-e1.md`, `0.27-p1.md`, `v1-on.md`, `v1-t10.md`) are folded
+into this section. Inputs: the FOIL MCP review ([handoff/v3/11_FOIL_MCP_REVIEW.md](handoff/v3/11_FOIL_MCP_REVIEW.md),
+decisions D-19 to D-28) and the AI-4 pilot allowlist decision (brief, PR #49).
+
+### What's new
+
+- **Pilot stage 1, read-only, no Azure sign-in needed** (package AI-4a, PR #55): a new order kind
+  `pilot-read` (cloud read-only, every repository read-only, permissions always *ask*, no pull
+  requests), written from the new **Pilot** tab of the AI view. DataPass writes the agent's guard rails
+  only inside the order folder (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`,
+  regenerated and compared byte for byte before each launch) and launches Claude or Codex in a terminal
+  with them; the Codex app is refused until `datapass.pilot.codexAppQualified`. The agent asks for a
+  read action by writing `requests/<n>.json`; each valid request becomes a **Pilot card** you run
+  (*Run it*) or decline (*Not now*), and DataPass answers in `responses/<n>.json` (names and states
+  only). Off until the machine setting `datapass.pilot.enabled`.
+- **Lossless `.vscode/mcp.json` edits** (package M1, PR #57, FOIL review R1): *Configure Fabric MCP*
+  keeps `inputs`, unknown keys and every server field (`env`, `envFile`, `cwd`, `type`, remote
+  `url`/`headers`), refuses another host's `mcpServers` dialect and files with comments or trailing
+  commas, and writes through the reviewed path (diff, confirmation, digest check, backup, journal).
+- **Toolkit knowledge refresh** (package K1, PR #60, FOIL review R2): the example hub gains the Fabric
+  Core / local / IQ MCP servers, the hosted Power BI Authoring MCP, the Skills for Fabric plugin and the
+  Azure MCP, each dated with hosts, transport and side effects; baseline corrections (Fabric Studio,
+  Power BI Authoring MCP local option, data-goblin plugin, semantic-link-labs, `ws.mcp` = registration
+  file only); recipe `mcp.fabric-sample.inspect-readonly`; guide page 9 section *MCP servers and the
+  official Power BI agentic route*.
+- **Cost basis in options.json** (package C1, PR #61, D-24): a cost line may carry `shared` (same key
+  across options counts **once** in combined totals; disagreeing figures → unpriced with a message) and
+  `use: "learning-only"` (flagged "learning only — not for client work", never hidden). options.json
+  stays version "1". These two fields require **DataPass ≥ 0.26**: an older DataPass rejects them with
+  the unknown-field message (the cost-basis brief says 0.27; it is a historical record, the guides are
+  right).
+- **Mongoku removed from DataPass** (package X1, PR #63): Mongoku is a separate app with no link to
+  DataPass. Its commands, the `datapass.mongoku.url` setting, the `vscode://…/open?entity=` link, its
+  Work-view and Readiness rows, the `mongoku` module and the context import are gone; new manifests and
+  the docs no longer mention it. Old manifests with `modules.mongoku` or `companions.mongoku` still
+  load (accepted and ignored). The MongoDB authority-snapshot import moved to the `databases` module.
+  `.datapass/board.json` and `.datapass/work-log.json` are unchanged.
+- **First V1 items** (on main when 0.26.0 was cut, so they ship in it):
+  - **DataPass: Open a Client Project…** (V1-ON, PR #68): from the bridge repository's Git address
+    (GitHub, Azure DevOps, GitLab; https or SSH) to a company window in one command — clones what is
+    missing, finds clones already here by remote identity, never clones planned repositories, writes
+    the company workspace file and opens it; idempotent, with Retry on a failed clone. Also in the
+    empty Explorer and Project view, and a walkthrough **Get started with DataPass** (Help → Welcome →
+    Walkthroughs).
+  - **Integration evidence chain** (E1, PR #67, D-22): for az, databricks, fab and the known MCP
+    servers, Readiness, its report and the Workbench show each link — known → installed → registered
+    → connected → authenticated → authorized → operation verified — as observed, unknown (with why)
+    or not applicable; nothing is inferred, a registration file never means connected. Work-order
+    result.json `checks[]` accept optional `field` / `tool` / `scope` / `input` (receipts), and
+    Details shows each result field on its own.
+  - **Pack and work-order stamps** (V1-P1, PR #66, D-23): Copy Context for My AI, the options packs
+    and work orders (`order.json` optional `stamp`, `order.md` stamp line) carry the selected variant,
+    the environment and the bridge revision they were built for. The AI view flags a copied pack as
+    **⚠ Stale** when the variant, environment or bridge revision changed since; launching an order
+    stamped for another variant asks *Keep and launch / Rebuild for the selected variant / Cancel*.
+    Pilot cards go stale the same way, and the result format asks agents for `field` / `tool` /
+    `scope` / `input` on each check.
+  - **Docs you can read** (V1-DOC, PR #64): [docs/DEMARRER.md](docs/DEMARRER.md) (French quick start),
+    [handoff/CURRENT.md](handoff/CURRENT.md) as the entry point, older handoffs moved to
+    `handoff/archive/`, README top rewritten.
+  - **Testlab 10, acceptance journeys** (V1-T10, PR #69, D-28): outside the repository
+    (`datapass-testlab/10-parcours-client`), 10/10 journeys replayed by Claude; section B7 in
+    `handoff/v3/04_NEXT_PASSES.md`.
+
+### Per package (folded night notes)
+
+#### 0.26 AI-4a — Pilot stage 1, everything that needs no Azure sign-in (PR #55)
+
+Decision implemented: [briefs/2026-09-26-ai4-pilot-allowlist.md](handoff/briefs/2026-09-26-ai4-pilot-allowlist.md) "Decision" (PR #49); design 09 §3.3, §4.2, §4.6, §8.8, §9.
+
+##### What changed
+- **Order kind `pilot-read`** (`src/core/workOrders/format.ts`, `builder.ts`): `policy.cloud: "read-only"` and a `pilot` section `{ stage: 1, environment: "dev", clis: ["az", "func"] }`. Every repository is read-only, `agent.permissions` is always `ask` and `expected.pullRequests` is `none`. The parser refuses any other combination. order.md gets a *Pilot* section and its own rules: read only, no generic API commands or remote shells, no bypass/auto, write only `requests/` and `result.json`. The attachment `attachments/pilot-request-format.md` holds an example that is itself a valid request.
+- **Pilot folder** (`src/core/pilot/folder.ts`): the order folder is the agent's working folder. DataPass writes three files there:
+  - `.claude/settings.json`: `defaultMode: default`, `disableBypassPermissionsMode` and `disableAutoMode` set to `disable`, `additionalDirectories` = the repositories it reads, each rule as both `Bash(…)` and `PowerShell(…)`, `Edit(requests/**)` and `Edit(result.json)` allowed, `Edit(//d/…/**)` denied on every repository it reads.
+  - `.codex/config.toml`: `sandbox_mode = "read-only"`, `approval_policy = "on-request"`.
+  - `.codex/rules/pilot.rules`: `prefix_rule` allow/forbidden, each with `match`/`not_match`. Verb denies are written per command group because Codex has no middle wildcard.
+
+  These files exist only under `.datapass/local/work-orders/<id>/`. DataPass refuses to write them when `.claude/` or `.codex/` already exists there. They are a pure function of the order: they are regenerated and compared byte for byte just before each launch.
+- **Rule tables are code** (`src/core/pilot/rules.ts`): az and func allow and deny lists exactly as decided. fab and databricks are only sketched (not enabled). The module imports nothing from the toolkit or hub.
+- **Launch profiles** (`src/core/pilot/profile.ts`, `WorkOrderFlows.launchPilot`):
+  - Claude terminal: cwd = order folder, `--permission-mode default --settings <order>\.claude\settings.json --add-dir <read repos>`.
+  - Claude app: prompt copied, "Choose this folder: the order folder".
+  - Codex terminal: `-C <order> --sandbox read-only --ask-for-approval on-request`.
+  - Codex app: refused until `datapass.pilot.codexAppQualified`.
+  - Refusals, each with its own message: kind, pilot setting, trust, environment ≠ dev or production, a repository to change, PRs, permissions, Codex app, CLIs other than az/func, guard rails changed, any forbidden argument value.
+- **Channel 2** (`src/core/pilot/requests.ts`, `src/work/pilot.ts`): `requests/<n>.json` is checked per §4.6:
+  - Format: strict JSON ≤ 4 KiB, no unknown fields, order id and receipt must match, n = file name, 1…50, no gap, not already answered, not the same action twice.
+  - Capability: must exist, phase `read`, side effects ⊆ {reads-local, reads-remote, credential-prompt}, action mode open-native or run-readonly, and DataPass must implement it. `infra.remote.ssh` is excluded explicitly (§9).
+  - Target: the component must exist; the environment must be `dev` and not production.
+
+  A valid request becomes a **Pilot card** in the new **Pilot** tab of the AI view. *Run it* re-checks the request, then runs the capability's own DataPass action and writes `responses/<n>.json` (done or failed, names and states only). *Not now* (or *Tell the agent* on a refused card) writes `declined` with the reason.
+- Settings `datapass.pilot.enabled` (machine, default false) and `datapass.pilot.codexAppQualified` (machine). Commands `datapass.pilot.show`, `.enable`, `.run`, `.decline` (run and decline are hidden from the palette). Surface `ai.pilot` is added (never renamed) and shown in the DataPass and Advanced presets. The Agent tab no longer offers the `pilot-read` kind: pilot orders come from the Pilot tab.
+
+##### Tests
+- `tests/pilot.test.ts` (10), acceptance tests 1–6 of the decision:
+  1. Snapshot of the three files (`tests/fixtures/pilot/`, update with `UPDATE_PILOT_SNAPSHOT=1` after a reviewed change).
+  2. Table test with the prefix matcher: 49 write/secret samples denied and matching no allow, "deny wins" samples (a denied flag on an allowed command), allow samples, ask samples, no `*` before a sub-command.
+  3. Codex `match`/`not_match` hold.
+  4. Arguments over every surface, effort and model.
+  5. One refusal per rule.
+  6. No toolkit or hub import.
+
+  The same file covers request validation (good, wrong phase, prod, duplicate, answered, 51st, oversize, unknown capability, action mode, side effects, not implemented, excluded, component, gap, number, unknown field, other order), the pilot order kind and order.md, and responses.
+- Desktop `tests/integration/pilotFlows.ts` on `v20-work-orders` (4 flows):
+  - pilot off until its setting is on, and the Codex app is refused;
+  - an order written from the Pilot tab, with guard rails only in its folder;
+  - a Claude terminal launch with a stub agent, which writes two requests and a result and calls no cloud CLI: cwd, `--permission-mode default`, `--settings`, cards (pending and refused), Run it with a stub action runner, Not now, "already answered";
+  - tampered guard rails → refused, nothing launched; `git status` of every repository unchanged (acceptance 7).
+
+##### Limits
+- **Channel 2 for Azure is thin today.** The FOIL flow's Azure capabilities (`azure-storage.browse`, …) are documentation-only, so they cannot be pilot requests. The real value in stage 1 is channel 1 (az/func read commands). The implemented read capabilities are: Fabric browse/capture, CI runs, ADF Studio, open a component's entry file, Mongo snapshot import, app revision.
+- Codex exact allows (`az version`, `func settings list`) are prefixes in Codex, which has no "exact". Flags that reveal values are forbidden separately.
+- In the Codex read-only sandbox, writing `requests/<n>.json` or `result.json` asks Julian first (no writable roots are set, on purpose).
+- Only Julian can do the one-time qualification after his read-only sign-in (todo.md, "À faire par toi"). `datapass.pilot.codexAppQualified` is to be set only after it passes for the Codex app.
+- Work-log `kind` enum gains `pilot-read` (additive; Galaxy consumer Mongoku to check).
+
+#### 0.26 M1 — MCP settings preservation repair (PR #57)
+
+Source: FOIL review R1, `foil-control-v1/docs/foil-platform-handbook/reviews/2026-09-26-mcp-modular-architecture/06_CODE_REVIEW.md` §6.1–6.4. Every claim was checked against the current source (0.25, `299e222`) before the fix: all four reproduced.
+
+##### What changed
+
+- `src/core/mcp.ts`: `.vscode/mcp.json` is edited losslessly.
+  - `parseMcpConfig` validates and returns a deep copy of the **whole** document: `inputs`, any other top-level key, and every server with all its fields (`env`, `envFile`, `cwd`, `type`, unknown native keys) are kept.
+  - Discriminated entries: stdio (`command`, `args`, `env`, `cwd`, `envFile`) and remote (`type: "http" | "sse"` or a bare `url`, with `url` and optional `headers`). An unknown `type` is refused.
+  - A top-level `mcpServers` (another host's dialect) is refused, never read as empty.
+  - `planMcpFileEdit(currentText, name, server)` parses strict JSON; comments or trailing commas are refused (they could not be kept) with a pointer to "MCP: Add Server…". It keeps the file's indentation and line endings and reports whether an entry is replaced.
+- `src/core/actions.ts::configureFabricMcp`: goes through the existing reviewed-write service — `showProposalDiff` (diff of current ↔ proposed), a modal confirmation, then `writeProjectFile` (digest compared just before writing, backup under `.datapass/local/backups`, journal write with read-back). Any parse/refusal error leaves the file untouched.
+- `src/work/optionsCommands.ts`: `showDiff` exported as `showProposalDiff`; `writeProjectFile` takes `Pick<WorkSession, "root">` (it only used the root). No behaviour change for its existing callers.
+- `src/core/capabilities/tools.ts`: `ws.mcp` is labelled "MCP registration file present (.vscode/mcp.json)" with a note that it says nothing about a server running, connected or signed in.
+
+##### Native route considered
+
+VS Code's native add-server routes (`MCP: Add Server…`, the `vscode:mcp/install` link, an `mcpServerDefinitionProviders` contribution) either are interactive-only, target the user profile rather than the workspace, or would move the Fabric Toolbox servers out of the workspace file into an extension-provided registration. That is a larger direction change than this repair, so the writer stays, now lossless. Logged in `effort-board/questions.md`.
+
+##### Tests
+
+`tests/mcp.test.ts`: MCP-01 (inputs/env/type/cwd/envFile/unknown keys kept, text plan keeps key order and indentation), MCP-02 (http entry parsed, kept, added; missing url refused), MCP-03 (`mcpServers` refused), MCP-04 (comments and trailing commas refused), unknown type refused, plus positive controls (new file, replace, CRLF + BOM, invalid args still refused).
+
+##### Left
+
+- The BOM of an existing file is not re-emitted (VS Code reads both).
+- `src/adapters/fabric.ts` still has its own "Workspace MCP configuration" label (not owned by M1).
+
+#### 0.26 K1 — Toolkit knowledge refresh: MCP servers and the official Power BI agentic route (FOIL review R2) (PR #60)
+
+Data and docs only: no code, schema, version or release change. Every fact below was re-read on the official page on
+2026-09-26 (Microsoft Learn pages dated 2026-09-01 to 2026-09-23, and the repositories' READMEs), not taken from the FOIL
+review alone.
+
+##### What changed
+- **Example hub** (`tests/fixtures/v3/toolkit.ts` → `examples/v3/hub/.datapass/toolkit/`, emitted with
+  `npx tsx scripts/emit-examples.ts`), new `kind: "mcp-server"` / `agent-plugin` entries, each with `verified.on`,
+  `sideEffects`, `useWhen` / `avoidWhen`, and hosts + transport + endpoint + "local server ≠ local data" in `note`:
+  `mcp.fabric-core` (remote, Streamable HTTP, preview), `mcp.fabric-local` (stdio subprocess, VS Code extension
+  `fabric.vscode-fabric-mcp-server` or `@microsoft/fabric-mcp`), `mcp.fabric-iq` (remote, read-only, GA),
+  `mcp.powerbi-authoring-hosted` (remote, Streamable HTTP, preview, tenant setting, session header),
+  `plugin.powerbi-authoring` (Microsoft Skills for Fabric plugin; registers the local Authoring MCP), `mcp.azure`
+  (Azure resources, not Fabric).
+- **Corrections**: built-in baseline (`resources/toolkit/baseline.json`) — `ext.fabric-studio` (community, not the
+  official MCP; README has no MCP), `ext.powerbi-modeling-mcp` (now Power BI Authoring MCP, local option: semantic
+  model only, writes by default, `--readonly`, links, side effects), `plugin.power-bi-agentic-development` (data-goblin,
+  ships no MCP servers, breaking transition 26.26–26.38), `py.semantic-link-labs` (notebook library, not MCP),
+  `ws.mcp` (registration ≠ connected). Hub: `acc.fabric-toolbox` (a best-effort collection with two sample MCP servers).
+- **Recipe** `mcp.fabric-sample.inspect-readonly` (module ai) in `recipes/fabric.json`: routes Fabric IQ, Fabric Core
+  (list only, per-call approval) and local Authoring with `--readonly` on a PBIP copy; each walks known → installed →
+  registered → connected → authenticated → operation verified, then records the evidence.
+- **datapassRequests** (listed as "Needs a newer DataPass"): transport / endpoint / hosts fields for MCP servers; a
+  side effect for "results reach the model provider".
+- Guide `docs/guide/09_TOOLKIT.md`: new section *MCP servers and the official Power BI agentic route*.
+
+##### Tests
+- `tests/toolkit.test.ts` counts: hub recipes 3 → 4, requests 1 → 3; `tests/integration/toolkitFlows.ts` request titles.
+- The existing checks cover the rest: every example entry valid (runtime + editor schema), no unknown tool reference,
+  baseline valid and dated. `npm run verify` green.
+
+##### Limits
+- New MCP entries live in the example hub, not the baseline: `baselineTools()` only shows ids of the extension's tool
+  registry (`src/core/capabilities/tools.ts`, `src/core/toolchain/toolchain.ts`). Moving them into the baseline needs a
+  registry entry per id (a code change, next pass if wanted).
+- Nothing was installed, registered or run: the recipe's evidence chain is to be walked on a real host.
+- Prices: no separate price is published for these servers; `priceModel: "included"` with the prerequisite service
+  named, no figure invented.
+
+#### 0.26 C1 — Cost basis in options.json (PR #61)
+
+Decision: `handoff/briefs/2026-09-26-cost-basis.md` (D-24, option 2).
+
+##### What changed
+- A cost line gains two optional fields (options.json `version` stays `"1"`):
+  - `shared` (key, `^[a-z][a-z0-9_.-]{0,79}$`): lines with the same key count **once** in any total that combines options (scenario table, previewed picks / active variant, Consequences side). Priced lines that agree (same monthly, one-time and currency) → that figure once; they differ → the resource is **unpriced** and the total says ``shared resource `<key>`: figures disagree`` (never max/min). A line without figure does not contradict a priced one; all unpriced → unpriced.
+  - `use`: `"any"` (default) | `"learning-only"` → "learning only — not for client work" on the line, on the option's declared cost and on every scenario total picking it. Never hidden or excluded.
+- `src/core/project/costs.ts`: one `aggregate` behind `sumCostLines` / `sumPickedOptions`; `CostTotal` gains `shared`, `disagree`, `learningOnly`; `costFlags`, `formatCostTotal` and `formatCostLine` carry the labels. An option's own subtotal shows ``shared (`<key>`), counted once per scenario``.
+- `options.ts`: schema + type; `costs.missing` uses the shared resolution. `optionsReport.ts` (packs): labels come through the shared formatters; one rule line for the AI about `shared` / `use`.
+- Webview (Options): declared cost, pricing lines, scenario columns and preview banner show the labels (warn tone for learning-only / disagree). `WbCost` type gains the two fields (`src/views/workbenchState.ts`, one line).
+- Example `examples/v3/doc-pipeline`: the storage account (`shared: "doc-storage"`) on A/B/C, and a 4th option **D — Databricks Free Edition job (to learn)** with a learning-only line (no scenario of its own).
+- Docs: guide 02 §2.5 "Cost basis (DataPass ≥ 0.26)", PREPARING_A_PROJECT options row. Schema regenerated.
+
+##### Tests
+- `tests/costs.test.ts` (10): three options one key counted once; same key different figures / currency → unpriced + message; currencies apart; shared + unpriced; option subtotal label; learning-only flags option and scenario; no new fields = 0.22 results; editor schema and runtime accept both fields and refuse bad key / bad `use`; example; report (packs) labels. `npm run verify` green (434).
+
+##### Limits
+- Desktop (real VS Code) flow not re-run: text-only change covered by unit tests; CI runs the suite.
+- Ships in 0.26.0: the docs say "DataPass ≥ 0.26".
+
+#### 0.26 X1 — Mongoku removed from DataPass (PR #63)
+
+Mongoku is a separate project-management app with no link to DataPass. It was frozen in 0.16; it is now gone from everything DataPass shows, offers and prepares.
+
+##### What changed
+- **Removed**: commands `datapass.mongoku.importContext` and `datapass.mongoku.setUrl`, their Work-view menu entry, the user setting `datapass.mongoku.url`, the `vscode://julian-passebecq.datapass-vscode/open?entity=<id>` URI handler (and the `onUri` activation event), the Mongoku rows under Links in the Work view, the Mongoku row in Readiness › Companions (and its `companion.mongoku.url` note), the `mongoku` module (Choose Project Modules no longer lists it), the imported Mongoku context snapshot (`mongoku.portfolio-context` parser and `.datapass/local/mongoku/`), and `tests/fixtures/mongoku`.
+- **Open Companion Link** is Grafana only: `DataPass: Open Companion Link (Grafana)…`.
+- **New manifests** no longer write `"modules": { "mongoku": false }` (`NEW_MANIFEST_MODULES` is empty); examples, guide pages, README, PREPARING_A_PROJECT and the client-AI prompt no longer mention it.
+- **Old manifests keep loading**: `modules.mongoku` and any `companions` block (including `companions.mongoku` in any old shape) are accepted and ignored, without a message (`LEGACY_MODULE_IDS`, `LEGACY_COMPANION_KEYS`). The editor schema keeps both keys as `deprecated` so old files show no red squiggle. An unknown companion key other than the legacy one is still reported.
+- The generic operation `mongo.snapshot.import` (MongoDB authority snapshot, not Mongoku) moved from the old `mongoku` module to `databases`; `databases: false` now hides it.
+- `.datapass/board.json` and `.datapass/work-log.json` are unchanged; only the wording that named Mongoku as a reader was dropped (board view, board status confirmation, comments).
+
+##### Tests
+- Unit: `tests/modules.test.ts` — an old manifest with `modules.mongoku` + `companions.mongoku` validates and switches nothing off; new manifests never contain "mongoku"; **no contributed command, view, menu, setting or activation event mentions Mongoku** (test over package.json). `tests/companions.test.ts` — legacy companion blocks (even malformed) load and produce only Grafana links; schema and runtime agree.
+- Desktop: fixture `v4-cloudflare` keeps legacy Mongoku fields; `readinessFlows` checks the manifest has no errors and no Project/Work tree row, check or report mentions Mongoku. `companionFlows` lost its Mongoku Lite block.
+- `npm run verify` green; `npm run test:desktop` green.
+
+##### Limits
+- Handoff history (`handoff/`, `CHANGELOG.md`, `IMPLEMENTATION_STATUS.md`, the version history in `CLAUDE.md`) still names Mongoku: it is the record of past releases, not a visible surface.
+- A user who had set `datapass.mongoku.url` keeps the orphan value in their settings (VS Code shows it as unknown); harmless.
+- Mongoku links pointing at `vscode://…/open?entity=` now get VS Code's own "no handler" behaviour; galaxy.json updated and a line added under "À vérifier" for Mongoku.
+
+#### V1-ON — Open a Client Project (PR #68)
+
+ROADMAP §1.3 package V1-ON. Coder: TAMPON 20, effort medium.
+
+##### What landed
+
+- **DataPass: Open a Client Project…** (`datapass.openClientProject`, `src/work/openClientProject.ts`): paste the bridge's Git address (GitHub, Azure DevOps, GitLab; https or SSH) → choose a parent folder → the bridge is cloned (or its existing clone reused) → its `.datapass/project.json` is read → the declared repositories that are missing are offered in a checkbox list with their role (description), ticked by default except `remote-only` → cloned one at a time → the company workspace file (0.17 format, `buildCompanyWorkspace`) `<parent>/<project title>.code-workspace` is written → opened. Standard mode then lands on the Architecture panel (0.22 landing, unchanged).
+- **Clone plan** (`src/core/project/cloneplan.ts`, pure): present / clone / planned / no-remote / conflict. A clone is located by remote identity (`remoteIdentity`: https ≡ SSH, the five Azure DevOps forms) among the parent's sub-folders and the expected folders, whatever its folder name. Planned repositories are never cloned; a folder holding another repository or plain files is never cloned over; a declared path outside the chosen folder is not cloned (clone it yourself); one clone is never claimed by two declarations.
+- **Idempotent**: a re-run finds everything present, asks nothing, leaves the workspace file byte-identical (keeps company name, colour, startup view, other settings of an existing file).
+- **Failures**: the first failed clone stops the run with Git's / the host's own message (progress lines stripped) and a **Retry** (modal); a sign-in refusal adds how to sign in. An empty folder left by a failed clone is removed so Retry can clone again.
+- **Welcome**: "Open a Client Project…" in the empty Explorer (`workbench.explorer.emptyView`) and in the Project view of an empty window.
+- **Walkthrough** "Get started with DataPass" (`datapass.getStarted`, `resources/walkthrough/*.md`): open a client project, the architecture, a file → context for my AI, Get updates, switch mode.
+
+##### Choices (logged in effort-board/questions.md)
+
+- `git clone` runs through the resolved Git executable (`executablePath`, as the Git module does) with `GIT_TERMINAL_PROMPT=0` but **without** `GCM_INTERACTIVE=never` (the observer's setting), so Git Credential Manager can show its own sign-in window on a first clone. DataPass reads and stores no credential.
+- `remote-only` repositories are listed but unticked (the manifest says they are never cloned automatically; ticking them is the person's choice).
+- A clone found under another folder name is used as is (the company workspace lists it as a root, so the project observer finds it as a workspace folder).
+- From an empty window the workspace opens in that window; otherwise a new window (the Test-mode folder seam records it).
+
+##### Tests
+
+- Unit `tests/cloneplan.test.ts` (12): planned skipped, SSH/https equivalence, Azure DevOps `dev.azure.com/org/project/_git/repo` ≡ `org@vs-ssh.visualstudio.com:v3/org/project/repo` (and the other forms, both directions), conflicts, declared paths, bridge declared among repositories, re-run, address parsing, auth failure detection.
+- Desktop fixtures `v26-open-client` and `v26-open-client-window` (`scripts/desktop-test.ts`), flows `tests/integration/openClientProjectFlows.ts`: "GitHub on disk" = bare repositories in a temp folder, real addresses rewritten by `url.<base>.insteadOf` (GIT_CONFIG_* env of the test host), so clones keep `https://github.com/...` / `https://dev.azure.com/...` origins. One command → bridge + pipeline cloned, lab found in `my-lab` (SSH origin), portal (planned) never cloned, workspace file with 3 roots, opened; second run (SSH address of the bridge) clones nothing and leaves the file unchanged; a failing clone shows Git's message and Retry; the opened workspace has the 3 roots and lands on Architecture in Standard. 4/4 pass locally.
+
+##### Release notes (for the release coder)
+
+- New: **DataPass: Open a Client Project…** — from the bridge repository's Git address to a company window in one command (clones what is missing, finds what is already here, never clones planned repositories).
+- New: walkthrough **Get started with DataPass** (Help → Welcome → Walkthroughs).
+
+##### Left
+
+- V1-T10 testlab journey "open from bridge" can now use the command.
+- Not done (out of scope): choosing a title-bar colour or startup view during the command (the company workspace command still does that).
+
+#### 0.27 E1 — Integration evidence chain (D-22, FOIL review R-03) (PR #67)
+
+##### What changed
+- **Evidence chain**, new pure module `src/core/evidence/`:
+  - `chain.ts`: `known → installed → registered in a host → connected → authenticated identity → authorized target → operation verified`. Each link is `observed` (holds or not, source, time), `unknown` (the default, always with a reason) or `not-applicable` (a CLI is not registered in a host). `buildChain` fills only what the caller observed; nothing is inferred from an earlier or a later link. `chainSummary` gives one line ("installed / not registered", "signed in / authorized on the target unknown").
+  - `integrations.ts`: the chains Readiness shows. The three CLIs with a read-only sign-in check (az, databricks, fab), the known MCP servers (Fabric Toolbox: Fabric Management `fabric-mgmt`, Semantic Model, DAX Performance Tuner; Power BI Modeling from its extension), then any other server `.vscode/mcp.json` names. "Connected", "authenticated" and "authorized" of an MCP server are always unknown: DataPass cannot see a host's live connection and never reads a server's credentials.
+  - `registration.ts`: what DataPass reads of `.vscode/mcp.json`: the server names only. A file that is not plain JSON leaves "registered" unknown (never "not registered").
+  - `receipts.ts`: result fields and receipts (below).
+- Probes: the `ws.mcp` observation carries `entries` (server names only) — `src/core/capabilities/{tools,probe}.ts`. The two capability requirements satisfied by `ws.mcp` now say a registration file never means connected or signed in (`registry.ts`).
+- Sign-ins: `signInEvidence()` in `src/core/toolchain/connections.ts` maps the read-only check the person ran (`az account show`, `databricks auth profiles`, `fab auth status`) to the "authenticated identity" link. No check → unknown, with why (no sign-in declared, or not checked yet). Credential files are still never opened.
+- Readiness: `Readiness.evidence` (built in `buildReadiness`), a section *Integration evidence* in the Readiness report (one line per link), and in the Workbench's Local environment card a collapsed *Integration evidence* block: the summary pill (tooltip = every link) and the seven links marked ✓ / ✗ / ? / –.
+- **Receipts** (work-order contract, additive): result.json `checks[]` items accept optional `field` (`cli-exit` · `ci` · `deployed` · `runtime` · `scientific-validity`), `tool`, `scope`, `input`. A check naming tool, scope and input is *the agent's receipt*; without them it stays *asserted, not verified*. `OrderSummary.resultFields` gives one entry per field (observed · receipted · asserted · unknown); CI read from the Git host for the order's open PRs is the only *observed* one and wins over the agent's word. The Details timeline gains *result fields (each on its own)* and each check line says receipt or asserted. The new strings go through the credential check. Schema regenerated (`schemas/datapass-work-order-result.schema.json`).
+
+##### Tests
+- Unit `tests/evidence.test.ts` (13): every link unknown by default; installed + no registration = "installed / not registered", never connected; no inference from a later link; az and the Fabric MCP server unknown past "known" with no observation; a registration file present is not a connection; an unreadable file leaves "registered" unknown; az signed in observed from the check, authorized unknown, no tenant id in the evidence; known server names equal what "Add to MCP" writes; only server names are read from mcp.json; `src/core/evidence/**` imports no fs/os/child_process/vscode, never reaches the home folder and names no credential path; agent assertion alone → "asserted, not verified"; receipt vs assertion, fields separate, observed CI wins; old results load, unknown fields/values still refused.
+- `tests/readiness.test.ts` (+1: az and Fabric MCP chains, report section, Workbench links), `tests/capabilities.test.ts` (+1: ws.mcp wording).
+- Desktop: `tests/integration/evidenceFlows.ts` on fixture `v25-doc-pipeline` (examples/v3/doc-pipeline): az and the Fabric MCP entry with their unknown states and reasons, carried to the Workbench state.
+
+##### Limits
+- The order prompt (`builder.ts`, P1's file) does not yet tell agents about `field / tool / scope / input`: until it does, results carry none and every field shows "unknown" or "asserted". One table row to add after P1 merges.
+- "Operation verified" is never observed yet: no DataPass read-only check runs an operation. A later package can fill it from a DataPass-run check.
+- Hosts other than the workspace `.vscode/mcp.json` (user settings, Claude Code, Copilot CLI, an extension's own provider) are not read: their "registered" is unknown, or "not registered in this workspace" when the workspace file is the source.
+- Toolchain tools other than az / databricks / fab have no chain row (the Tools & versions block already shows installed + version).
+
+#### 0.27 P1 — Pack and work-order stamps (D-23, finding R-06) (PR #66)
+
+##### What changed
+- **Stamp** = selected variant (its title and the picks that differ from the current architecture; the picks are the compared key, so scenario B and the same picks chosen by hand match), environment, bridge revision (HEAD of the coordination repository). Pure module `src/core/exchange/stamp.ts` (ROADMAP V1-P1), called by the pack builders and the order builder; `WorkSession.packStamp()` computes it for the open project (`src/work/packStamps.ts` re-exports it for the commands and views).
+- **Environment**: the only environment project.json declares, else its only non-production one; with none or several, "not declared" (DataPass does not choose).
+- **Pack headers**: Copy Context for My AI (`fileContext.ts`) and the options packs (`optionsReport.ts`: export, compare, apply, and the options attachment of a work order) get a line `Stamp: built for the selected variant **…** (picks) · environment … · bridge revision <12 hex>.`
+- **Work orders**: `order.json` gets an optional `stamp` object (`variant {key, title, picks?}`, `environment?`, `bridge?`), additive in `WORK_ORDER_SCHEMA` and `schemas/datapass-work-order.schema.json`; `order.md` gets the stamp line after the receipt. The marker line (`datapass.work-order-marker/1`) is unchanged and still first.
+- **Stale packs**: every `ai-context` exchange record now keeps the full stamp it was copied with (`session.recordExchange`, additive `ExchangeRecord.stamp`). Copy Context for My AI is now recorded too. The AI view's "Last exchanges" shows `⚠ Stale: built for B …; the selected variant is now C …` (or `the bridge moved from <sha> to <sha>`, or an environment change) and refreshes on a variant switch. A side whose revision is unknown is not judged on it.
+- **Launch confirmation**: launching an order stamped for another variant opens a modal *Keep and launch / Rebuild for the selected variant / Cancel*. Rebuild writes a new revision (the old order is closed as revised, like the base-moved path). Same variant, or an order without a stamp: no question. The Agent tab's order rows say *Built for B …* (warning colour when it is not the selected variant) or *not stamped*.
+
+- **Pilot (after AI-4a)**: pilot-read orders are stamped like every order (same builder), and the stamp confirmation runs before the pilot launch. Pilot request cards show `⚠ Stale: …` when their order's stamp no longer matches the selected variant, environment or bridge HEAD (`withStale` in `stamp.ts`; `PilotCard.stale`).
+
+- **E1 prompt row** (after #67): `attachments/result-format.md` asks the agent to fill `field` / `tool` / `scope` / `input` on every result check (a check with tool, scope and input is shown as its receipt), and its example check carries all four.
+
+##### Tests
+- Unit (`tests/workOrders.test.ts`, `tests/fileContext.test.ts`): stamp from picks/preview, environment rule, stamp line; stale on variant, environment or bridge-revision change; order.json + order.md + Ajv schema; verdict same / other-variant / not-stamped; old unstamped order parses; malformed stamp refused; AI view stale reason; file-context header. `tests/pilot.test.ts`: stamped pilot-read order (order.json, order.md, launch verdict) and stale Pilot cards (variant, bridge HEAD, unstamped not judged).
+- Desktop, fixture `v25-doc-pipeline`: select B, Copy Context (header stamped), write an investigate order (stamped B), switch to C → pack stale with the reason and the row flagged; launch under C → modal with the two buttons, Cancel launches nothing; back on B → no stamp question. `v20-work-orders` fixture re-run for regressions. `npm run verify` green.
+
+##### Limits
+- Stale marking covers packs copied from 0.27 on (older records have no stamp and are not judged).
+- Hooks outside the package's file list: `src/work/session.ts` (`selectionStamp()`/`packStamp()`, stamp on record), `src/core/work/workModel.ts` (optional field), `src/work/fileContextCommands.ts` and `src/work/optionsCommands.ts` (pass the stamp; record the file-context copy), `src/views/agentState.ts` (row label, Pilot cards), `src/work/pilot.ts` (`PilotCard.stale`).
+- Board card packs, preparation packs and Workbench packs are recorded (so they go stale) but their headers are not stamped yet.
+
+#### V1-T10 — Testlab 10 = acceptance journeys (D-28) (PR #69)
+
+##### What was built (outside the repository)
+- `D:\PROJ\datapass-testlab\10-parcours-client\`: `setup.ps1` / `reset.ps1` (fixture from scratch:
+  offline "GitHub" of bare repositories; bridge `doc-pipeline` with only `.datapass/`; native
+  `doc-orchestration` and `doc-processing` cloned next to it; C's `factory` planned; one Google Drive
+  component as the unsupported tool), `ouvre-depuis-bridge.ps1` (manual equivalent of V1-ON, idempotent),
+  `LISEZ-MOI.md` in French (steps 0–10, each with what Julian should see), `verification-claude/`
+  (`lab-suite.ts`, `run.ts`, `report.json`).
+- One row in `D:\PROJ\datapass-testlab\LISEZ-MOI-TESTS.md`; section B7 in `04_NEXT_PASSES.md`.
+
+##### Verification
+- `setup.ps1` twice from scratch (setup, then reset): no error. `ouvre-depuis-bridge.ps1` twice: clones
+  3 then "deja la" 3 times; `factory` never cloned.
+- Desktop VS Code, throwaway profile, **10/10** journeys green twice: on the installed
+  `datapass-vscode-0.25.0.vsix` (unzipped, `DATAPASS_EXT_DIR`, harness from the release branch) and on
+  main `0d52423` (0.24.0 + 0.25 V-A). `git status` of the three repositories unchanged at the end.
+  Evidence in `report.json` (last run: 0.25.0). The suite accepts both vocabularies ("active variant /
+  coded" and "selected variant / files present").
+- Marked 0.27+ because not on main yet: *Open a Client Project…* (V1-ON, PR #68) and the MCP evidence
+  card (E1, PR #67). When they merge, V1-STAB should run LISEZ-MOI steps 3.1 and 10.4 and add them to
+  `lab-suite.ts`. M1 (relabel "MCP registration file present") is in 0.25.0 and checked.
+
+##### Findings for V1-STAB (no source was changed)
+1. **Copy Context ignores the selected variant for the component line.** With B selected, the pack
+   of `orchestration/blob-function/function_app.py` says `Component: none — the bridge declares this
+   repository, but no component's files include this path` (`src/core/exchange/fileContext.ts:258`);
+   `src/work/fileContextCommands.ts:99` passes `session.projectMap()` (the current architecture), not
+   the previewed map. D-19 says packs follow the preview. Small fix, needs a desktop assertion.
+2. **A present folder without origin reads "not cloned".** Sibling auto-discovery requires a matching
+   origin (`locateRepositories`, `src/work/projectObserver.ts`), so `doc-orchestration` without origin is
+   `unbound`: "not cloned on this machine (or not found next to this repository)". Correct on safety,
+   misleading in words; suggest "a folder named doc-orchestration is here but has no Git origin:
+   Locate it". Wording only.
+3. ~~R-04 wording~~: fixed by the 0.25.0 release ("files present", "not a decision, not a deployment",
+   "Live route: not observed"); main before the release still said "coded". Findings 1, 2 and 4 are
+   still present in 0.25.0.
+4. **Tool probes refresh only on "Refresh Work View (re-probe tools)"**: after creating
+   `.vscode/mcp.json`, *Re-inspect Project* leaves `Workspace MCP configuration` absent. Minor; the
+   two refresh commands are easy to confuse.
+
+##### Left for Julian (todo.md, ≈ 20 min)
+The visual steps of LISEZ-MOI: 2 (DataPass disabled, nothing missing; quiet when enabled on a plain
+repository), 3.4 (diagram), 4.5 (does anything read as "it runs"?), 9.2 (the "not built, tested or deployed" tooltip), 6.1 (the "not cloned" wording), 8
+(visibility of "not supported yet"), 10.1–10.2 (can the MCP line be found without help), and whether
+Julian sees findings 1, 2 and 4.
+
+### Release checks
+
+- `npm run verify` and the full desktop suite (`npm run test:desktop`) green on the release branch;
+  VSIX built and installed with `code --install-extension <file> --force`.
+
+### Not checked here (Julian)
+
+- Install 0.26.0: switch on `datapass.pilot.enabled`, write a pilot order from the AI view's Pilot tab
+  and look at its guard-rail files; run *DataPass: Open a Client Project…* on a bridge address; check that no Mongoku command, setting or row is left (≈ 10 min).
+- The pilot's one-time qualification after a read-only Azure sign-in (already in todo.md).
+
+## 0.25.0 — previewing variants and repository layout
 
 Date: 2026-09-26. Version `0.25.0` — packages V-A (selected variant, PR #54 and the preview / test / activate wording in the release PR) and R-L (repository layout
 contract, PR #52), released from main per [handoff/PLAN.md](handoff/PLAN.md). The night note
