@@ -126,6 +126,10 @@ const DIFF_TEXT: Record<string, string> = { added: "new", replaced: "changed", r
 const pill = (text: string, tone: string, title?: string) => h("span", { class: `pill ${tone}`, text, title });
 const eyebrow = (text: string) => h("div", { class: "eyebrow", text });
 /** A component as the diagram shows it: the previewed architecture's version first (added or changed), else the project's. */
+/** 0.23: a coding-state pill (coded / partly coded / not coded / not checked here), when the mode shows it. */
+const CODING_TONE: Record<string, string> = { coded: "ok", "partly-coded": "warn", "not-coded": "muted", unknown: "muted" };
+const codingPill = (c: { state: string; label: string; reason: string } | undefined) => c ? pill(c.label, CODING_TONE[c.state] ?? "muted", c.reason) : undefined;
+
 /** 0.22 modes: decisions of options.json that can change a component (the "alternatives exist" marker). */
 const alternativesOf = (s: WorkbenchState, id: string) => s.experience?.alternatives === false ? [] : (s.options?.decisions ?? []).filter(d => d.concerns.includes(id)).map(d => d.title);
 const comp = (id: string | undefined) => state?.preview?.components.find(c => c.id === id) ?? state?.components.find(c => c.id === id);
@@ -219,6 +223,7 @@ function previewBanner(s: WorkbenchState): HTMLElement | undefined {
   ].filter(Boolean);
   return h("div", { class: "banner preview", role: "status" },
     h("b", { text: `Preview: ${p.title}` }),
+    codingPill(s.coding?.preview),
     h("span", { class: "muted small", text: ` · ${parts.join(" · ")} · a preview only: graph.json is unchanged` }),
     h("span", { class: "grow" }),
     btn("Compare", () => { ui.view = "options"; ui.optFocus = "scenarios"; saveUi(); if (MODE === "full") render(); else command("datapass.openOptions"); }, { kind: "link" }),
@@ -806,7 +811,7 @@ function scenariosTable(s: WorkbenchState): HTMLElement {
   const scen = o.scenarios;
   const previewKey = s.preview?.key;
   const head = h("tr", {}, h("th", { text: "" }), ...scen.map(x => h("th", { class: x.recommended ? "rec" : "" },
-    h("div", { class: "colhead" }, h("b", { text: x.title }), x.recommended ? pill("recommended", "ok") : undefined, x.kind === "decided" ? pill("decided", "info") : undefined),
+    h("div", { class: "colhead" }, h("b", { text: x.title }), x.recommended ? pill("recommended", "ok") : undefined, x.kind === "decided" ? pill("decided", "info") : undefined, codingPill(s.coding?.scenarios[x.id])),
     x.description ? h("div", { class: "muted small", text: x.description }) : undefined,
     x.id === "current" ? (previewKey ? btn("Show current", () => previewScenario("current"), { kind: "link" }) : pill("on the diagram", "muted"))
       : previewKey === `scenario:${x.id}` ? pill("previewed", "info") : btn("Preview on diagram", () => previewScenario(x.id), { kind: "link" }))));
@@ -848,7 +853,7 @@ function decisionTable(s: WorkbenchState, d: WbDecision): HTMLElement {
   const opts = d.options;
   const previewKey = s.preview?.key;
   const head = h("tr", {}, h("th", { text: "" }), ...opts.map(x => h("th", { class: `${x.current ? "cur" : ""} ${ui.optOption === x.id ? "focus" : ""}` },
-    h("div", { class: "colhead" }, h("b", { text: x.label }), x.current ? pill("current", "muted", "What graph.json describes today") : undefined, x.chosen && !x.current ? pill("decided", "info") : undefined, x.rejected ? pill("rejected", "bad") : undefined),
+    h("div", { class: "colhead" }, h("b", { text: x.label }), x.current ? pill("current", "muted", "What graph.json describes today") : undefined, x.chosen && !x.current ? pill("decided", "info") : undefined, x.rejected ? pill("rejected", "bad") : undefined, x.current ? undefined : codingPill(s.coding?.options[`${d.id}=${x.id}`])),
     x.summary ? h("div", { class: "muted small", text: x.summary }) : undefined,
     h("div", { class: "row tight" },
       btn("Consequences", () => { ui.optOption = x.id; saveUi(); render(); }, { kind: "link", title: "Show the consequences in the side column" }),

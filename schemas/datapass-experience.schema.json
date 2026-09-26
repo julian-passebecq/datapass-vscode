@@ -75,10 +75,12 @@
                 "status.mode",
                 "status.health",
                 "landing.architecture",
-                "badge.alternatives"
+                "badge.alternatives",
+                "project.variantFilter",
+                "badge.codingState"
               ]
             },
-            "maxItems": 24,
+            "maxItems": 26,
             "minItems": 0
           }
         },

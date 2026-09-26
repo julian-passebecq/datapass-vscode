@@ -20,13 +20,15 @@ import { CONNECTION_STATE_TEXT, SIGN_IN_CHECKS, type ConnectionView } from "../c
 import { openCardsByUrgency, TYPE_LABELS, type BoardItemType, type BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
 import { alternativesByComponent } from "../core/experience/alternatives";
+import { CODING_LABELS, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
+import type { ProjectMap } from "../core/project/projectMap";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
   | { t: "subproject"; id: string; sp: SubprojectView }
   | { t: "component"; id: string; c: ComponentView; parent: string }
   | { t: "file"; id: string; c: ComponentView; f: ExpectedFile; parent: string }
-  | { t: "section"; id: string; label: string; description?: string; icon: string; kids: () => Node[]; collapsed?: boolean }
+  | { t: "section"; id: string; label: string; description?: string; icon: string; kids: () => Node[]; collapsed?: boolean; tooltip?: string }
   | { t: "repo"; id: string; r: RepoView };
 
 const HEALTH_ICON: Record<string, [string, string?]> = {
@@ -39,6 +41,17 @@ const REPO_ICON: Record<string, [string, string?]> = {
   restricted: ["shield", "disabledForeground"], unverified: ["unverified", "problemsWarningIcon.foreground"]
 };
 const icon = ([id, color]: [string, string?]) => new vscode.ThemeIcon(id, color ? new vscode.ThemeColor(color) : undefined);
+
+// 0.23 variants: icons and words for coding states and variant files.
+const CODING_ICON: Record<CodingState, string> = { coded: "pass", "partly-coded": "circle-large-filled", "not-coded": "circle-large-outline", unknown: "question" };
+const FILE_STATE_TEXT: Record<string, string> = { found: "here", missing: "missing", unbound: "repository not cloned", planned: "repository planned", unknown: "not checked" };
+
+/** "2 alternatives: 1 coded, 1 not coded" for a decision's alternatives. */
+function codingBadge(alternatives: readonly OptionCoding[]): string {
+  if (!alternatives.length) return "";
+  const counts = (["coded", "partly-coded", "not-coded", "unknown"] as const).map(st => [st, alternatives.filter(a => a.state === st).length] as const).filter(([, n]) => n > 0);
+  return `alternatives: ${counts.map(([st, n]) => `${n} ${CODING_LABELS[st]}`).join(", ")}`;
+}
 
 function fileState(f: ExpectedFile): { text: string; icon: [string, string?] } {
   if (f.source === "generated" && f.state === "missing") return { text: `to generate · ${f.generated?.producer ?? "producer"}`, icon: ["gear", "problemsWarningIcon.foreground"] };
@@ -62,6 +75,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private view?: vscode.TreeView<Node>;
   /** 0.22 modes: which sections the current mode shows (every section until a mode is attached). */
   private shows: (surface: string) => boolean = () => true;
+  /** 0.23: the All variants toggle (memory only; the default is the selected architecture). */
+  private allVariants = false;
 
   constructor(private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.emitter.fire(undefined)), session.onDidChangeSelection(() => void this.revealSelection()));
@@ -73,6 +88,20 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
     this.shows = shows;
     this.subs.push(changed(() => this.emitter.fire(undefined)));
+  }
+
+  /** 0.23: list every option's components and files, or only the selected architecture. */
+  setAllVariants(on: boolean): void {
+    this.allVariants = on;
+    this.emitter.fire(undefined);
+  }
+
+  /**
+   * 0.23 (D-17): the architecture the tree shows — the one previewed on the diagram when there is one
+   * and the mode has the variant filter, else graph.json's.
+   */
+  private archMap(): ProjectMap {
+    return (this.shows("project.variantFilter") ? this.session.preview()?.map : undefined) ?? this.session.projectMap();
   }
 
   attach(view: vscode.TreeView<Node>): void {
@@ -104,12 +133,73 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   getParent(node: Node): Node | undefined { return this.parents.get(node.id); }
 
+  /** 0.23: which architecture the tree shows, its coding state, and the way back or to the comparison. */
+  private selectedArchitectureNode(): Node {
+    const s = this.session;
+    const p = s.preview();
+    const v = s.variants();
+    const coding = p && v && s.project.options && this.shows("badge.codingState") ? codingOfPicks(s.project.options, v, p.picks) : undefined;
+    const current = v?.scenarios.find(x => x.kind === "current");
+    const state = coding ?? (current && this.shows("badge.codingState") ? current : undefined);
+    return {
+      t: "info", id: "variants:selected", label: p ? `Selected architecture: ${p.title}` : "Selected architecture: current (graph.json)",
+      description: [state ? CODING_LABELS[state.state] : "", this.allVariants ? "all variants below" : ""].filter(Boolean).join(" · ") || undefined,
+      icon: ["filter"],
+      tooltip: `${p ? `The tree shows the previewed architecture "${p.title}". Back to current: click.` : "The tree shows the current architecture. Preview a scenario on the diagram to see its components here."}${state ? `\nCoding: ${CODING_LABELS[state.state]} — ${state.reason}` : ""}\nAll variants (view title) lists every option's components and files.`,
+      command: p ? { command: "datapass.clearPreview", title: "Back to current" } : { command: "datapass.openOptions", title: "Compare", arguments: ["scenarios"] },
+      contextValue: "variants.selected"
+    };
+  }
+
+  /** 0.23: every option of every decision, its components and files, each tagged with its option and coding state. */
+  private allVariantsSection(): Node {
+    const o = this.session.project.options!;
+    const v = this.session.variants();
+    const optionLabel = new Map<string, string>(o.decisions.flatMap(d => d.options.map(x => [`${d.id}=${x.id}`, x.label] as [string, string])));
+    const users = new Map((v?.files ?? []).map(f => [`${f.repoKey}\u0000${f.repoPath}`, f.options]));
+    const badge = this.shows("badge.codingState");
+    const fileNode = (oc: OptionCoding, cid: string, f: OptionCoding["components"][number]["files"][number]): Node => {
+      const others = (users.get(`${f.repoKey}\u0000${f.repoPath}`) ?? []).filter(k => k !== oc.key).map(k => optionLabel.get(k) ?? k);
+      return {
+        t: "info", id: `variants:f:${oc.key}:${cid}:${f.repoKey}:${f.repoPath}`, label: f.repoPath,
+        description: [FILE_STATE_TEXT[f.state] ?? f.state, optionLabel.get(oc.key) ?? oc.key, others.length ? `also ${others.join(", ")}` : ""].filter(Boolean).join(" · "),
+        icon: f.state === "found" ? ["check", "testing.iconPassed"] : f.state === "missing" ? ["close", "problemsErrorIcon.foreground"] : ["question", "disabledForeground"],
+        tooltip: `${f.repoKey}: ${f.repoPath}${f.optional ? " (optional)" : ""}\nVariant: ${optionLabel.get(oc.key) ?? oc.key}${others.length ? `\nAlso used by: ${others.join(", ")}` : ""}`,
+        command: f.state === "found" ? { command: "datapass.openVariantFile", title: "Open", arguments: [f.repoKey, f.repoPath] } : undefined,
+        contextValue: `variant.file.${f.state}`
+      };
+    };
+    const optionNode = (dId: string, oc: OptionCoding): Node => ({
+      t: "section", id: `variants:o:${oc.key}`, label: oc.label, icon: CODING_ICON[oc.state], collapsed: !oc.components.length || oc.current,
+      description: [oc.current ? "current" : "", badge ? CODING_LABELS[oc.state] : ""].filter(Boolean).join(" · ") || undefined,
+      tooltip: `${oc.label}${oc.current ? " (current)" : ""}\n${CODING_LABELS[oc.state]} — ${oc.reason}`,
+      kids: () => [
+        ...oc.components.map(c => ({
+          t: "section" as const, id: `variants:c:${oc.key}:${c.id}`, label: c.label, icon: CODING_ICON[c.state], collapsed: false,
+          description: `${c.role === "current" ? "graph.json" : c.role === "add" ? "added" : "replaces"} · ${c.repoKey}${badge ? ` · ${CODING_LABELS[c.state]}` : ""}`,
+          tooltip: `${c.label} (${c.repoKey})\n${CODING_LABELS[c.state]} — ${c.reason}`,
+          kids: () => c.files.map(f => fileNode(oc, c.id, f))
+        })),
+        ...oc.removes.map(id => ({ t: "info" as const, id: `variants:r:${oc.key}:${id}`, label: `removes ${id}`, icon: ["remove"] as [string], tooltip: `${oc.label} removes the component ${id}: nothing to code.` }))
+      ]
+    });
+    const count = o.decisions.reduce((n, d) => n + d.options.length, 0);
+    return {
+      t: "section", id: "variants", label: "All variants", icon: "versions", collapsed: false, description: `${count} option(s) in ${o.decisions.length} decision(s)`,
+      tooltip: "Every option of options.json with the components it adds or replaces and their files, tagged with the option and its coding state.",
+      kids: () => o.decisions.map(d => ({
+        t: "section" as const, id: `variants:d:${d.id}`, label: d.title, icon: "git-compare", collapsed: false,
+        kids: () => d.options.map(x => v?.options[`${d.id}=${x.id}`]).filter((x): x is OptionCoding => !!x).map(oc => optionNode(d.id, oc))
+      }))
+    };
+  }
+
   getChildren(node?: Node): Node[] {
     if (!node) return this.remember(this.roots(), undefined);
     switch (node.t) {
-      case "subproject": return this.remember(node.sp.componentIds.map(id => this.session.projectMap().components.find(c => c.id === id)).filter((c): c is ComponentView => !!c && !(c.parent && node.sp.componentIds.includes(c.parent))).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id })), node);
+      case "subproject": return this.remember(node.sp.componentIds.map(id => this.archMap().components.find(c => c.id === id)).filter((c): c is ComponentView => !!c && !(c.parent && node.sp.componentIds.includes(c.parent))).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id })), node);
       case "component": {
-        const map = this.session.projectMap();
+        const map = this.archMap();
         const files = (node.c.artifacts?.files ?? []).map(f => ({ t: "file" as const, id: `${node.id}/f:${f.repoPath}`, c: node.c, f, parent: node.id }));
         const kids = node.c.children.map(id => map.components.find(c => c.id === id)).filter((c): c is ComponentView => !!c).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id }));
         return this.remember([...files, ...kids], node);
@@ -172,7 +262,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       }
       case "section": {
         const item = new vscode.TreeItem(n.label, n.collapsed ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.Expanded);
-        item.id = n.id; item.description = n.description; item.iconPath = new vscode.ThemeIcon(n.icon); item.contextValue = `section.${n.id}`;
+        item.id = n.id; item.description = n.description; item.iconPath = new vscode.ThemeIcon(n.icon); item.contextValue = `section.${n.id}`; item.tooltip = n.tooltip;
         return item;
       }
       case "repo": {
@@ -208,7 +298,11 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     if (ctx.graphError) nodes.push({ t: "info", id: "graphError", label: `graph.json: ${ctx.graphError}`, icon: ["error", "problemsErrorIcon.foreground"], command: { command: "datapass.openGraph", title: "Open" } });
     if (!map.components.length && !ctx.graphError) nodes.push({ t: "info", id: "nographs", label: "No components yet: describe them in .datapass/graph.json", icon: ["type-hierarchy"], command: { command: "datapass.openGraph", title: "Open" } });
     const show = this.shows;
-    if (show("project.subprojects")) for (const sp of map.subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
+    // 0.23 (package G): the tree shows the selected architecture (current or previewed); All variants lists the others.
+    const variants = show("project.variantFilter") && ctx.options ? s.variants() : undefined;
+    if (variants) nodes.push(this.selectedArchitectureNode());
+    if (show("project.subprojects")) for (const sp of this.archMap().subprojects) if (sp.componentIds.length || !sp.implicit) nodes.push({ t: "subproject", id: `sp:${sp.id}`, sp });
+    if (variants && this.allVariants) nodes.push(this.allVariantsSection());
     // 0.16: the board (tasks, bugs, sprints), when the project has one.
     const bv = show("project.board") ? s.boardView() : undefined;
     if (bv || (show("project.board") && ctx.boardError)) nodes.push(boardSection(bv, ctx.boardError));
@@ -222,7 +316,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         ...o.decisions.map(d => {
           const cur = d.options.find(x => x.id === d.current)?.label ?? d.current;
           const chosen = d.chosen && d.chosen !== d.current ? d.options.find(x => x.id === d.chosen)?.label : undefined;
-          return { t: "info" as const, id: `opt:${d.id}`, label: d.title, description: `current: ${cur}${chosen ? ` · decided: ${chosen}` : ""} · ${d.options.length} options`, icon: (chosen ? ["star-full", "charts.yellow"] : ["git-compare"]) as [string, string?], tooltip: d.question ?? d.title, command: { command: "datapass.openOptions", title: "Compare", arguments: [d.id] } };
+          const coding = show("badge.codingState") ? codingBadge(d.options.filter(x => x.id !== d.current).map(x => s.variants()?.options[`${d.id}=${x.id}`]).filter((x): x is OptionCoding => !!x)) : "";
+          return { t: "info" as const, id: `opt:${d.id}`, label: d.title, description: `current: ${cur}${chosen ? ` · decided: ${chosen}` : ""} · ${d.options.length} options${coding ? ` · ${coding}` : ""}`, icon: (chosen ? ["star-full", "charts.yellow"] : ["git-compare"]) as [string, string?], tooltip: d.question ?? d.title, command: { command: "datapass.openOptions", title: "Compare", arguments: [d.id] } };
         })
       ] : [{ t: "info" as const, id: "opt:error", label: ctx.optionsError ?? "", icon: ["error", "problemsErrorIcon.foreground"] as [string, string], command: { command: "datapass.openOptionsFile", title: "Open" } }]
     });

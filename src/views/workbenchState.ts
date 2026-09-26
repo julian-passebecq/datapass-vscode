@@ -111,6 +111,8 @@ export interface WorkbenchState {
   workOrders?: WbWorkOrders;
   /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
   experience?: { hiddenViews: string[]; alternatives: boolean };
+  /** 0.23 (package G): coding state per option ("decision=option"), per scenario and for the preview; absent when the mode hides the badge. */
+  coding?: { options: Record<string, WbCoding>; scenarios: Record<string, WbCoding>; preview?: WbCoding };
 }
 
 /** 0.20: one work order as the Workbench shows it (no local path, no goal text; the agent's words only as "the agent says"). */
@@ -191,6 +193,7 @@ export interface WbDecision {
   id: string; title: string; question?: string; level?: string; subproject?: string; concerns: string[];
   current: string; chosen?: string; decidedOn?: string; decidedBy?: string; rationale?: string; notes?: string; options: WbOption[];
 }
+export interface WbCoding { state: "coded" | "partly-coded" | "not-coded" | "unknown"; label: string; reason: string }
 export interface WbScenario { id: string; title: string; description?: string; recommended: boolean; kind: string; impact: WbImpact }
 export interface WbOptions {
   title?: string; description?: string; currency: string;

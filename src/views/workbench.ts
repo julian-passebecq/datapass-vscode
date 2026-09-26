@@ -16,6 +16,7 @@ import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
 import { workbenchState, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
+import { CODING_LABELS, codingOfPicks, type CodingState } from "../core/project/variants";
 
 /** Commands a webview may ask for (arguments are re-validated by each command). */
 const ALLOWED = new Set([
@@ -113,6 +114,17 @@ export class WorkbenchHost implements vscode.Disposable {
       hiddenViews: (["options", "sheet", "board", "workOrders"] as const).filter(v => !this.shows(`workbench.${v}`)),
       alternatives: this.shows("badge.alternatives")
     };
+    // 0.23: coding state badges (derived from the files; nothing to maintain).
+    const v = this.shows("badge.codingState") ? this.session.variants() : undefined;
+    if (v && ctx.options) {
+      const wb = (c: { state: CodingState; reason: string }) => ({ state: c.state, label: CODING_LABELS[c.state], reason: c.reason });
+      const p = this.session.preview();
+      this.lastState.coding = {
+        options: Object.fromEntries(Object.entries(v.options).map(([k, c]) => [k, wb(c)])),
+        scenarios: Object.fromEntries(v.scenarios.map(sc => [sc.id, wb(sc)])),
+        preview: p ? wb(codingOfPicks(ctx.options, v, p.picks)) : undefined
+      };
+    }
     return this.lastState;
   }
 
