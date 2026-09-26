@@ -25,15 +25,64 @@ Supplier/client rule (Julian, 2026-09-26): we write the extension, common and hu
 | Next | 0.27.0 released ✓ → gate item 6 (low TAMPON) → V1-PAL → 1.0.0-rc · CQ after HUB-1 | free M TAMPON · low TAMPON · ARCHI 2 · TAMPON 24 | queued |
 | FOIL AI (client) | Codex Wind Lab, then FOIL (V1-FOIL-A depends on it and on Julian's FOIL #5/#6 reviews). foil-study#1 is merged as the DataPass reference version; the FOIL AI builds its own on branch `foil-ai/study` (from `12ce138`; V1-FOIL-A may compare the two) | — | client side |
 
+## V1 → 1.0.0 (rules V2 · source: techleadclaudegpt6/datapass-vscode 10-architecture + 20-roadmap, GPT 6 Pro, 2026-09-26)
+
+V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero accepted blocker/major on the roadmap's acceptance matrix AC-01…AC-12 against one pinned packaged VSIX (1.0.0-rc.1), on the synthetic client plus one authorized private pilot. PM closes on evidence.
+
+**Now:** M0 done (#100 merged; main CI green on `cb6c5ee` and `5796a82`) · coders planned 4 + coordinator · waiting on Julian: one batch of chips to click (assistant).
+
+### Milestones
+| # | Milestone | Packages | Tests / audits (GPT) | Done |
+|---|---|---|---|---|
+| M0 | Baseline recovery | FIX-QAUI (#100) | 2 consecutive green CI runs on main, all 6 matrix jobs | |
+| M1 | Understandable surface | V1-SURF | palette snapshots per mode, link and schema validation, common sync `--check` | |
+| M2 | Safety + daily loop | V1-LOAD, V1-FRESH, V1-TEST | acceptance matrix §4 incl. race, invalid-input and timeout cases | |
+| M3 | 1.0.0-rc qualification | V1-RC | frozen SHA, VSIX built once (SHA-256 recorded), `npm run verify`, desktop Win+Ubuntu, perf harness, J01–J10 (fixtures empty = setup blocker, never a silent pass), Restricted Mode, missing tools, upgrade from 0.27.0; Playwright green ≠ Codex Computer Use | |
+| M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | |
+
+### Packages
+| Id | Scope | Depends on | Coder | Est. | PR | State |
+|---|---|---|---|---|---|---|
+| V1-SURF | GPT T2 + A06/A08/A10: palette ~60 entries (V1-PAL), client-named commands/settings off the default surface, `handoff/CURRENT.md` + archive stale handoffs, CLAUDE.md shortened, schema/common parity check | M0 | CODER DataPass SURF | 0.5–1 M | | running |
+| V1-LOAD | GPT T1 + A01: typed, bounded reads in `src/core/workspace/loader.ts` and `src/core/model/**`; a read failure is an error state, never "absent" | M0 | CODER DataPass LOAD | 0.5–1 M | | running |
+| V1-FRESH | GPT T3 + A03/A04: refresh/variant race guard, freshness and stale labels (`src/work/session.ts`, `src/work/projectObserver.ts`, pack stamps) | M0 | CODER DataPass FRESH | 0.5–1.5 M | | running |
+| V1-TEST | GPT T4 + A05: minimal native *Test* route per component (VS Code task declared in the native repo or recipe) with a receipt; truthful tool states (`src/core/checks/**`, `src/work/checkCommands.ts`) | M0 | CODER DataPass TEST | 0.5–1 M | | running |
+| V1-RC | GPT T5: M3 qualification and 1.0.0-rc.1 cut (`scripts/qa/**`, tests, CI, release files) | SURF, LOAD, FRESH, TEST | fresh coder after M2 | 1–2 M | | later |
+
+Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
+
+### Merge order
+FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0.
+
+### Julian-only moments (batched by the assistant)
+| When | What | Duration |
+|---|---|---|
+| now | click one batch of 5 chips (coordinator + 4 coders) | 1 min |
+| M3 | one real-screen / sign-in check on 1.0.0-rc.1 (incl. the deferred per-version checks) | ~20 min |
+
+### § V1-SURF
+Goal: a user finds their way in. Files: `package.json` menus.commandPalette, `src/core/experience/**` presets (add, never rename safety commands), `handoff/CURRENT.md`, `handoff/archive/**`, `CLAUDE.md`, README top. Acceptance: palette ≤ ~60 top-level entries with a consistent prefix, snapshot test per mode; no `foil`-named command or setting in the default surface; links checked; `npm run sync:common -- --check` clean.
+### § V1-LOAD
+Goal: never show a broken file as missing. Acceptance: unit tests for unreadable, oversized, invalid-JSON and permission-denied files → typed error surfaced in Problems/Details; size bound documented; no behaviour change for valid projects (desktop suite green).
+### § V1-FRESH
+Goal: what you see and what you copy are from the same state. Acceptance: a variant switch during a refresh never mixes states (race test); stale badge on packs/orders after HEAD or variant change; freshness time shown; tests for timeout and cancelled refresh.
+### § V1-TEST
+Goal: *Test* on a component runs the client's own test. Acceptance: task found in the native repo (or recipe) → run on click → receipt with commit, time and exit code; no task → honest "no test declared"; tool states never claim "verified" without a probe; desktop flow on `examples/v3/doc-pipeline`.
+
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
-Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). No coordinator: one coder at a time until 1.0.0-rc. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 1** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
 
 | Session | Role | Package / job | GO date | Reports to |
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
 | PM ASSISTANT DataPass 1 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate | 2026-09-26 | PM |
 | TAMPON DATAPASSVSCODE - M 3 | coder (medium) | Release 0.27.0 (#97), then stops | 2026-09-26 | PM |
+| COORD DataPass 1 | coordinator (low) | V1 coders flow, routine merges, context watch | 2026-09-26 · V2 | PM |
+| CODER DataPass SURF | coder (medium) | V1-SURF (§ V1-SURF) | 2026-09-26 · V2 | COORD DataPass 1 |
+| CODER DataPass LOAD | coder (medium) | V1-LOAD (§ V1-LOAD) | 2026-09-26 · V2 | COORD DataPass 1 |
+| CODER DataPass FRESH | coder (medium) | V1-FRESH (§ V1-FRESH) | 2026-09-26 · V2 | COORD DataPass 1 |
+| CODER DataPass TEST | coder (medium) | V1-TEST (§ V1-TEST) | 2026-09-26 · V2 | COORD DataPass 1 |
 
 Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
 
