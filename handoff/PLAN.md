@@ -42,7 +42,7 @@ T4 → T1 → T2 → T3 → R (0.23.0). T5 merges its one repository line whenev
 | Id | Package | Size | Model · effort | Depends on |
 |---|---|---|---|---|
 | AI-3 | Claude & Codex panel + Codex hand-off (09 §12) | L | Opus 5.5 · high; panel polish medium | Claude Control pass C-1 is merged (claude-control PR #15). Starts after 0.23.0: it shares the AI view and work-order files with the toolkit pass · **Status: merged, released in 0.24.0** (PR #46 + release PR) · **Actual: ≈ 1.2 h · ≈ 18 M tokens** (TAMPON 7, one session, AI-3 + release) |
-| AI-4 | Pilot stage 1, read-only: allowlist design per CLI (`az` + `func` first, for the FOIL PDF flow, 09 §13.1 Q8), `requests/` / `responses/`, Pilot tab | L | allowlist design: an "ARCHI xh" consult brief; build: high | toolkit connections (0.18, done); Julian signs in read-only on dev resources · **Status: on hold** (with SUPERVISOR 2, week budget at 71 %) until Julian has run testlab 9 and the panel check and installed `az` / `func` with read-only sign-in |
+| AI-4 | Pilot stage 1, read-only: allowlist design per CLI (`az` + `func` first, for the FOIL PDF flow, 09 §13.1 Q8), `requests/` / `responses/`, Pilot tab | L | allowlist **decided** (xh consult, [brief](briefs/2026-09-26-ai4-pilot-allowlist.md), PR #49: pilot folder with DataPass-written Claude/Codex settings); build: high | toolkit connections (0.18, done); Julian signs in read-only on dev resources · **Status: on hold** (with SUPERVISOR 2, week budget at 71 %) until Julian has run testlab 9 and the panel check and installed `az` / `func` with read-only sign-in |
 | FOIL-PDF | Apply the FOIL bridge preparation (foil-v1-vscode-datapass `docs/DATAPASS_PREPARATION.md` steps 1–3) | M | medium | Julian's answers Q2–Q4 and the FOIL AI's spike (todo.md, 2026-09-26) |
 | 1.0.0 | Release after Julian's acceptance (testlabs 4–9, FOIL on the real repositories, account qualification gate 16) | S | medium | Julian |
 
@@ -54,6 +54,7 @@ Toolkit T1–T4 took ≈ 9 h in one session (estimate 9–14 h): in range. AI-3 
 
 | Date | Package | What happened | Re-run at / consult | Result |
 |---|---|---|---|---|
+| 2026-09-26 | AI-4 | CLI allowlist design (planned xhigh in 09 §11) | ARCHI xh consult, TAMPON 8 | decided, PR #49, ≈ 0.09 M tokens |
 | 2026-09-26 | T1–T4 | a toolkit catalogue session was already running (uncommitted work on 0.20.0) when T1/T2/T4 were staffed | TAMPONs stopped; the running session keeps the packages and rebases | — |
 
 xhigh consult briefs: `handoff/briefs/<date>-<topic>.md` (question, options, files to read, then "## Decision").
