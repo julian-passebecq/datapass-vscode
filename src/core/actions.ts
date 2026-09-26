@@ -600,7 +600,8 @@ async function configureFabricMcp(item: ToolCatalogItem): Promise<void> {
 
   let edit;
   try {
-    edit = planMcpFileEdit(base ? new TextDecoder().decode(base) : undefined, definition.serverName, definition.server);
+    // ignoreBOM keeps a leading BOM in the text, so the rewrite keeps it too.
+    edit = planMcpFileEdit(base ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(base) : undefined, definition.serverName, definition.server);
   } catch (error) {
     void vscode.window.showErrorMessage(`DataPass: ${rel} was left unchanged. ${error instanceof Error ? error.message : String(error)}`);
     return;

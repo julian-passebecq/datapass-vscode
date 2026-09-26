@@ -108,7 +108,12 @@ test("MCP control: a new file, a replaced entry, CRLF and BOM", () => {
   assert.equal(replaced.replaces, true);
   assert.equal((replaced.previous as { command: string }).command, "old");
   assert.ok(!/[^\r]\n/.test(replaced.text), "CRLF line endings kept");
-  assert.equal(JSON.parse(replaced.text).servers.s.command, "new");
+  assert.ok(replaced.text.startsWith("﻿"), "BOM kept");
+  assert.equal(JSON.parse(replaced.text.slice(1)).servers.s.command, "new");
+  assert.ok(!planMcpFileEdit(crlf, "s", { command: "new" }).text.startsWith("﻿"), "no BOM added");
+  // The command decodes with ignoreBOM, so the BOM reaches the planner.
+  const bytes = new TextEncoder().encode("﻿" + crlf);
+  assert.ok(new TextDecoder("utf-8", { ignoreBOM: true }).decode(bytes).startsWith("﻿"));
 });
 
 test("MCP control: invalid argument types are still refused", () => {

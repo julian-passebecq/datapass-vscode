@@ -56,10 +56,12 @@ export class FabricAdapter implements PlatformAdapter {
       ...workflowTools,
       {
         id: "workspace-mcp",
-        label: "Workspace MCP configuration",
+        label: "MCP registration file present (.vscode/mcp.json)",
         available: workspaceMcp,
         optional: true,
-        detail: workspaceMcp ? ".vscode/mcp.json detected" : "No workspace MCP configuration detected"
+        detail: workspaceMcp
+          ? ".vscode/mcp.json found — says nothing about a server running, connected or signed in"
+          : "No .vscode/mcp.json in this workspace"
       },
       {
         id: "fabric-toolbox-catalog",
