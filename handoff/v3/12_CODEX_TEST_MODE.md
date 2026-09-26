@@ -25,6 +25,7 @@ orders) and 11 (evidence chain).
    (here Codex) writes the test settings there, following DataPass's needs. DataPass's Codex test
    mode reads it to launch the tests. For now only the Codex client has one; real clients may get
    one later.
+8. **Codex drives VS Code itself; the procedure lives in common** (Julian, follow-up). Codex can control the desktop the way a person does: it opens VS Code, clicks and reads the screen. So testing has two tracks, API batteries and a UI track (§4.6). The exact procedure (who installs the VSIX, which profile, how Codex launches VS Code) must be **verified on the real Codex** before we rely on it (package QA-0). The procedure is documented in **common** (`testing/CODEX_PROCEDURE.md`) and summarised in the hub. The auto repository stays **settings and code only**, with no prose: the client's AI reads common and fills auto for DataPass.
 7. **Model choice for Codex** (Julian: "your call"). Use Luna medium for exploratory runs and
    report writing, and Luna light for plain reruns of a battery. This is logged in questions.md.
 
@@ -81,7 +82,7 @@ This file is found at the root of the auto repository.
 {
   "format": "datapass.auto-tests", "version": 1,
   "client": { "id": "codex-wind-lab", "title": "Codex Wind Lab (fictional)" },
-  "datapass": { "minVersion": "0.26.0", "ref": "main" },
+  "datapass": { "minVersion": "0.26.0", "ref": "main", "vsix": "https://github.com/julian-passebecq/datapass-vscode/releases/download/v0.26.0/datapass-vscode-0.26.0.vsix" },
   "workspace": {
     "bridge": { "remote": "https://github.com/julian-passebecq/codex-datapass-bridge", "folder": "codex-datapass-bridge" },
     "repositories": [
@@ -191,6 +192,34 @@ are labelled as claims).
   the report PR.
 - **Open last report** opens `summary.md` in a preview.
 
+### 4.6 The UI track: Codex uses DataPass like a person
+
+The API batteries (§4.3) are deterministic, but they run the extension in development mode. The
+UI track tests **the released VSIX**, as Julian would use it. The procedure below is the design
+target. QA-0 verifies it on the real Codex and corrects it.
+
+1. **Get the VSIX.** Codex downloads the release VSIX named in `datapass-auto.json`
+   (`datapass.vsix`: a release asset URL or a local path). If there is no release asset yet, it
+   builds one with `npm run package` in its `datapass-vscode` clone.
+2. **Install into an isolated VS Code**, never Julian's own profile:
+   `code --user-data-dir <run root>/vscode-user --extensions-dir <run root>/vscode-ext --install-extension <vsix>`.
+3. **Launch** with the same two flags on the run's workspace file:
+   `code --user-data-dir … --extensions-dir … <run root>/codex-wind-lab.code-workspace`.
+   The runner writes this workspace file (`npm run qa -- --prepare-only`).
+4. **Drive by hand.** Codex follows the UI checklist in common: *Open a Client Project* from the
+   bridge URL, the Architecture panel, switching variants, Copy Context, modes, Git view, work
+   orders and the Codex tests section. It takes a screenshot at each checkpoint into
+   `reports/<run-id>/screens/`.
+5. **Close** that VS Code window and delete `<run root>/vscode-user` at the end.
+
+QA-0 must also confirm:
+
+- what Codex's desktop control can reach on Windows: the VS Code window, webviews, the command
+  palette and notifications;
+- whether it needs a visible desktop session;
+- how it handles the notification "trust this folder" and the first-run walkthrough;
+- whether the Codex app or the Codex terminal is the right host for the UI track.
+
 ## 5. Test levels and the starter batteries
 
 These are written by QA-3 in the auto repository. Codex may add batteries; the ARCHI reviews them.
@@ -205,28 +234,35 @@ These are written by QA-3 in the auto repository. Codex may add batteries; the A
 | B06-modes | L2 UI state | Vanilla, Standard, DataPass and Advanced: the surfaces listed in `presets.json` are visible or hidden as specified, and safety commands are never hidden. |
 | B07-negative | L3 robustness | The auto repository holds `fixtures/broken-bridge/` (a copy of the bridge with 8 seeded faults: bad JSON, unknown repoRef, duplicate id, a planned repository with files, a secret-looking value, a wrong remote, an unknown toolchain id, a missing required file). Each fault is reported once with a readable message, there is no crash, and `noUnhandledErrors`. |
 | B08-docker-vm | L3 optional | When `docker` is on PATH (otherwise SKIP): the declared "VM" resource shows declared vs **not observed**. DataPass never runs docker; Codex may run `docker compose up` itself and note what DataPass shows. |
-| X (exploratory) | L4 | Not a battery. Codex follows AGENTS.md: onboarding with *Open a Client Project* (once V1-ON lands) on the bridge URL, the DEMARRER.md steps, the modes, and anything confusing. Everything goes into `findings[]`. |
+| X (exploratory) | L4 | Not a battery: the UI track (§4.6). Codex follows common/testing/UI_CHECKLIST.md: onboarding with *Open a Client Project* (once V1-ON lands) on the bridge URL, the DEMARRER.md steps, the modes, and anything confusing. Everything goes into `findings[]`. |
 
-## 6. What Codex needs (AGENTS.md in the auto repository, written by QA-3)
+## 6. Where the procedure lives: common, not auto
 
-- **Role.** You are the external QA tester of DataPass VS Code. Test as a user, not as a code
-  reviewer. Never edit `datapass-vscode`. Never touch the cloud or sign in to anything.
-- **Setup.**
-  1. Use the run root `%TEMP%\datapass-qa\<run-id>` or a folder inside this repository, never a
-     drive root.
-  2. Clone the repositories listed in `datapass-auto.json`.
-  3. Clone `datapass-vscode` at `datapass.ref`, then `npm ci`.
-- **Run.**
-  1. Run `npm run qa -- --auto … --root …`.
-  2. Read `summary.md`.
-  3. For every FAIL, reproduce it once by hand before writing a finding.
-- **Explore.** Follow the checklist §5 X in 30–45 minutes.
-- **Report.**
-  1. Fill `findings[]` and `clientFeedback[]`.
-  2. Push the branch `report/<run-id>` to `datapass-codex-test` and open a PR titled
-     `QA <run-id>: <n> FAIL, <n> blocker`.
-  3. Don't merge; the ARCHI does.
-- **Limits.** Stop after 2 h. When blocked, write a `blocked` finding and stop.
+- **`datapass-vscode-common/testing/CODEX_PROCEDURE.md`** is the full tester procedure: role,
+  setup, both tracks, reproduction rule, report, limits.
+  - **Role.** You are an external QA tester who tests as a user. You never edit `datapass-vscode`,
+    never touch the cloud and never sign in.
+  - **Setup.** The run root is under `%TEMP%\datapass-qa\<run-id>`, never a drive root. Clone
+    the listed repositories and `datapass-vscode` at `datapass.ref`, then `npm ci`.
+  - **API track.** Run `npm run qa -- --auto … --root …`, then read `summary.md`.
+  - **UI track.** Follow §4.6.
+  - **Reproduction rule.** Reproduce every FAIL once by hand before writing a finding.
+  - **Report.** Fill `findings[]` and `clientFeedback[]`, push the branch `report/<run-id>` to the
+    audit repository and open a PR titled `QA <run-id>: <n> FAIL, <n> blocker`. Never merge it.
+  - **Limits.** Stop after 2 h. When blocked, write a `blocked` finding and stop.
+- **`datapass-vscode-common/testing/`** also holds:
+  - `AUTO_FORMAT.md`: `datapass-auto.json` and the battery vocabulary of §4.1–4.2, in client
+    terms;
+  - `BATTERIES.md`: the levels and B01–B08 of §5 as **examples**;
+  - `UI_CHECKLIST.md`: the UI track steps;
+  - `REPORT_FORMAT.md`: §4.4.
+- **The hub** (`datapass-vscode-hub/docs/OPERATING_MANUAL.md`) gets a short French paragraph that
+  links there.
+- **The auto repository** contains only `datapass-auto.json`, `batteries/*.json`, `fixtures/`
+  and a 3-line `AGENTS.md`: "Read https://github.com/julian-passebecq/datapass-vscode-common/tree/main/testing,
+  then run or update the settings in this repository." **The client's AI (Codex) writes these
+  settings** after reading common. We do not pre-write its batteries. QA-3 only adds a minimal
+  valid `datapass-auto.json` so the runner can be tried.
 
 ## 7. The fake client: what the client AI prepares
 
@@ -250,15 +286,14 @@ The request to the client is written as DataPass talking to an external client, 
 
 | Id | Package | Size · effort | Owned files | Acceptance |
 |---|---|---|---|---|
+| **QA-0** | Verify how Codex tests a VSIX (investigation, no product code) | S · medium | a report `handoff/briefs/2026-09-27-codex-procedure.md` | It answers each §4.6 question with a source: the official Codex docs (desktop app, CLI, sandbox and approvals, computer/desktop control on Windows). Where possible, run it on this PC with a throwaway test: Codex installs the current VSIX into an isolated profile, opens the doc-pipeline example, clicks one view and takes a screenshot. The report states the exact working command lines and what failed. The ARCHI then corrects §4.6 and CODEX_PROCEDURE.md. |
 | **QA-1** | Runner + formats | M–L · medium (high if the host executor fights the Test API) | `scripts/qa/**`, `tests/qa/**`, `src/qa/**` (allowlist, battery and auto parsers, report writer), `schemas/datapass-auto-tests.schema.json`, `schemas/datapass-qa-battery.schema.json`, `schemas/datapass-qa-report.schema.json`, `package.json` script `qa` only, `docs/guide/11_CODEX_TESTS.md` | Unit: auto, battery and report validators, including negatives (path escape, unknown action, unknown command, remote mismatch, oversized regex). Desktop: `npm run qa` on a local fixture (`tests/fixtures/qa/` — doc-pipeline as bridge + 2 native folders, with local bare "remotes") runs a 6-step battery, gives exit 0, and `report.json` validates; a battery with one failing expectation gives exit 1 and a readable summary; a bad auto file gives exit 2. |
 | **QA-2** | The mode in DataPass | M · medium | `src/work/codexTests.ts`, the `qa-run` kind (additive schema enum), a Work orders view section, surface `ai.codexTests` in surfaces.ts/presets.json (add only), setting `datapass.codexTests.autoRepository` | Unit: prompt generation from the auto file, receipt check (stamp match). Desktop: the section lists batteries and the last report from a fixture audit folder; *Hand to Codex* writes a `qa-run` order (launcher stubbed); hidden in Standard. Starts after QA-1 merges (shared parsers). |
-| **QA-3** | Seed the auto and audit repositories (works in the two client-side repositories, not in datapass-vscode) | S–M · medium | `datapass-vscode-codex-auto`: AGENTS.md, README, datapass-auto.json, batteries B01–B08, fixtures/broken-bridge, fixtures/proposals; `datapass-codex-test`: README, reports/ layout, a report template, triage labels | Every battery validates with QA-1's validator. B01/B02 run green against the doc-pipeline stand-in until the client's bridge lands. PRs to `main` of both repositories; these are ours, so merge on green. |
-| **HUB-1** | Hub and common seeds | S–M · medium (docs-writer) | `datapass-vscode-hub`: README (repository map §2, client registry: codex-wind-lab, foil), docs/OPERATING_MANUAL.md (French). `datapass-vscode-common`: README, VERSION, formats/ + schemas/ + examples/ copied by `scripts/sync-common.ts` (lives in datapass-vscode, owned by HUB-1), knowledge/ (cloud features, MCP servers from K1/K2), testing/ (§5 in client terms). `datapass-vs-code-archive` and `datapass-vscode-helper`: README. | The sync script is idempotent and copies only public files (no handoff/, no FOIL). Common's README links resolve. The onboarding brief's links into common resolve. |
+| **QA-3** | Testing docs in common + minimal auto/audit skeletons | S–M · medium | `datapass-vscode-common/testing/**` (CODEX_PROCEDURE, AUTO_FORMAT, BATTERIES, UI_CHECKLIST, REPORT_FORMAT); `datapass-vscode-codex-auto`: the 3-line AGENTS.md and one minimal `datapass-auto.json`; `datapass-codex-test`: README and reports/ layout | The example batteries in BATTERIES.md validate with QA-1's validator. The minimal auto file lets `npm run qa -- --prepare-only` succeed. After QA-0, CODEX_PROCEDURE.md matches QA-0's verified commands. PRs to `main` of each repository; these are ours, so merge on green. |
+| **HUB-1** | Hub and common seeds | S–M · medium (docs-writer) | `datapass-vscode-hub`: README (repository map §2, client registry: codex-wind-lab, foil), docs/OPERATING_MANUAL.md (French, including a short Codex testing paragraph that links to common/testing). `datapass-vscode-common`: README, VERSION, formats/ + schemas/ + examples/ copied by `scripts/sync-common.ts` (lives in datapass-vscode, owned by HUB-1), knowledge/ (cloud features, MCP servers from K1/K2); testing/ is owned by QA-3. `datapass-vs-code-archive` and `datapass-vscode-helper`: README. | The sync script is idempotent and copies only public files (no handoff/, no FOIL). Common's README links resolve. The onboarding brief's links into common resolve. |
 | QA-4 (V1.1) | UI steps | M · medium | Playwright `_electron` steps `click`, `screenshot`, `readView` | later |
 
-**Order.** QA-1 and HUB-1 start now in parallel (disjoint files). QA-3 starts now, drafting the
-batteries against the format in §4, and runs them once QA-1 merges. QA-2 follows QA-1. Codex's
-first real run needs QA-1 + QA-3 + the client's bridge; QA-2 is for convenience.
+**Order.** QA-0, QA-1 and HUB-1 start now in parallel (disjoint files). QA-3 starts now on the testing docs and corrects the procedure when QA-0 reports. QA-2 follows QA-1. Codex's first real run needs QA-1, QA-3, QA-0's verified procedure and the client's bridge.
 
 ## 9. Later, not V1
 
