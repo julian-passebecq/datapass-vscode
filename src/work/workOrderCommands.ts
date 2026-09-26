@@ -36,7 +36,7 @@ import {
   COORDINATION_REF, DEFAULT_BRANCH_PREFIX, GUIDE_URL, KIND_LABELS, buildOrder, keyOfRef, oneLine, pilotRequestFormatMd, refOfKey, renderOrderMd, resultFormatMd,
   type OrderMdInfo, type OrderRepositoryInput
 } from "../core/workOrders/builder";
-import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexAppArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, toolOf, type AgentChoice } from "../core/workOrders/launch";
+import { AGENT_CHOICES, APP_URI, CHOICE_LABELS, agentCmdLine, agentWorkspace, choiceOf, claudeArgs, codexAppArgs, codexArgs, copyableCommand, desktopSteps, resumeArgs, stampVerdict, toolOf, type AgentChoice } from "../core/workOrders/launch";
 import { defaultMergePolicy } from "../core/workOrders/projectType";
 import { WORK_LOG_PATH, mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, serializeWorkLog, workLogEntry, type WorkLog } from "../core/workOrders/workLog";
 import { EXPORT_FORMAT, EXPORT_NOTE, EXPORT_SCOPES, exportEntry, exportText, type ExportScope, type ProjectExport } from "../core/workOrders/export";
@@ -46,6 +46,7 @@ import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
 import { activeVariantHeader } from "./activeVariantCommands";
+import { packStamp, selectionStamp } from "./packStamps";
 import type { GitObserver } from "./gitObserver";
 import { machineSetting, orderDigest, type LoadedOrder, type WorkOrderService } from "./workOrders";
 import { importAnswer, importContext, writeProjectFile } from "./optionsCommands";
@@ -274,6 +275,7 @@ export class WorkOrderFlows {
     const attach = (rel: string, text: string | Uint8Array) => files.push({ rel, bytes: typeof text === "string" ? new TextEncoder().encode(text) : text });
     const revisions: Record<string, string> = {};
     for (const r of map.repositories) if (r.state === "local" && r.git?.head) revisions[r.key] = `${r.git.branch ?? "?"}@${r.git.head.slice(0, 7)}${r.git.changes ? " (+local changes)" : ""}`;
+    const stamp = await packStamp(this.session);
     const common = { dataPassVersion: this.version(), generatedAt: new Date().toISOString(), revisions, guideUrl: GUIDE_URL, manifestDigest: ctx.manifestBytes ? sha256Bytes(ctx.manifestBytes).value : undefined };
     const question: PackQuestion = draft.kind === "investigate" ? "explain" : "prepare-missing";
     for (const c of comps.slice(0, 3)) {
@@ -300,7 +302,7 @@ export class WorkOrderFlows {
       const analysis = this.session.optionsAnalysis();
       if (analysis) {
         const apply = Boolean(decision.chosen && decision.chosen !== decision.current);
-        const md = optionsMarkdown({ options: ctx.options, analysis, project: map.project, purpose: apply ? "apply" : "compare", decisionId: decision.id, optionId: apply ? decision.chosen : undefined, generatedAt: common.generatedAt, dataPassVersion: common.dataPassVersion, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(this.session) });
+        const md = optionsMarkdown({ options: ctx.options, analysis, project: map.project, purpose: apply ? "apply" : "compare", decisionId: decision.id, optionId: apply ? decision.chosen : undefined, generatedAt: common.generatedAt, dataPassVersion: common.dataPassVersion, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(this.session), stamp });
         decisionFile = `attachments/decision-${safeName(decision.id)}.md`;
         attach(decisionFile, md.text);
         if (!apply && draft.kind === "apply-decision") notes.push(`Decision ${decision.id} has no chosen option different from the current one: the agent gets the comparison, not an apply plan.`);
@@ -352,6 +354,7 @@ export class WorkOrderFlows {
     const folderFor = (id: string) => path.join(this.service.ordersFolder()!.fsPath, id);
     const columns = this.session.boardView()?.columns.map(c => c.id) ?? [];
     const order = buildOrder({
+      stamp,
       now: new Date(), random: randomBytes(12), sessionId: agent.tool === "claude-code" && agent.surface === "terminal" ? randomUUID() : undefined,
       createdBy: `DataPass ${this.version()}`, kind: draft.kind,
       title: draft.title?.trim() || firstLine(draft.goal) || KIND_LABELS[draft.kind], goal: draft.goal,
@@ -453,6 +456,18 @@ export class WorkOrderFlows {
     if (!verdict.allowed) throw new UserFacingError(verdict.why);
     if (o.state?.status === "done" || o.state?.status === "abandoned") throw new UserFacingError(`Work order ${shortId(o.id)} is closed (${o.state.status}). Write a follow-up order instead.`);
     await this.requireOwn(o);
+    // 0.27 (P1, D-23): an order stamped for another variant asks first (keep / rebuild / cancel).
+    const stampCheck = stampVerdict(order, selectionStamp(this.session));
+    if (stampCheck.kind === "other-variant") {
+      const pick = await vscode.window.showWarningMessage(stampCheck.message, { modal: true, detail: stampCheck.detail }, "Keep and launch", "Rebuild for the selected variant");
+      if (!pick) return;
+      if (pick === "Rebuild for the selected variant") {
+        const next = await this.write({ ...draftOf(order, this.session), revises: order.id });
+        await this.service.updateState(order.id, s => ({ ...s, status: "abandoned", closed: { at: localIso(new Date()), how: "abandoned", note: `revised by ${next.id} for ${next.order?.stamp?.variant.title ?? "the selected variant"}` } }));
+        await this.launch(next.id);
+        return;
+      }
+    }
     if (order.kind === "pilot-read") return this.launchPilot(o);
     const map = this.session.projectMap();
     const choice = choiceOf(order.agent.tool, order.agent.surface);

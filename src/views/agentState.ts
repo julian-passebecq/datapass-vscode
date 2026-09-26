@@ -6,7 +6,9 @@
  */
 import type { WorkOrderService } from "../work/workOrders";
 import type { WorkSession } from "../work/session";
-import { AGENT_CHOICES, CHOICE_LABELS, type AgentChoice } from "../core/workOrders/launch";
+import { AGENT_CHOICES, CHOICE_LABELS, stampLabel, stampVerdict, type AgentChoice } from "../core/workOrders/launch";
+import { selectionStamp } from "../work/packStamps";
+import { withStale, type PackStamp } from "../core/exchange/stamp";
 import { EFFORTS, ORDER_KINDS, shortId, type Effort, type MergePolicy, type OrderKind, type ProjectType } from "../core/workOrders/format";
 import { KIND_LABELS } from "../core/workOrders/builder";
 import { TYPE_DEFAULTS, defaultMergePolicy } from "../core/workOrders/projectType";
@@ -28,6 +30,9 @@ export interface AgentRecent {
   suggestDone: boolean;
   canResume: boolean;
   error?: string;
+  /** 0.27 (P1, D-23): "Built for <variant>" or "not stamped"; `otherVariant` when the selection has changed since. */
+  stamp?: string;
+  otherVariant?: boolean;
 }
 
 export interface AgentTabState {
@@ -65,6 +70,7 @@ export function agentTabState(session: WorkSession, service: WorkOrderService, s
   const verdict = service.verdict();
   const type = service.projectType();
   const list = service.list();
+  const selected = selectionStamp(session);
   const recent: AgentRecent[] = list.slice(0, 6).map(o => {
     const s = o.summary;
     if (!o.order || !s) return { id: o.id, short: shortId(o.id), title: o.error ?? "unreadable order", status: "error", agent: "", createdAt: "", outputs: [], needs: [], next: "Open its folder to see what is wrong.", suggestDone: false, canResume: false, error: o.error };
@@ -73,7 +79,9 @@ export function agentTabState(session: WorkSession, service: WorkOrderService, s
       outputs: s.outputs.filter(x => x.access === "change").map(outputText),
       result: s.result.state === "valid" ? `${s.result.checked.result.status} (the agent says)` : s.result.state === "refused" ? `refused: ${s.result.message}` : undefined,
       needs: s.needs, next: s.next, suggestDone: s.suggestDone,
-      canResume: Boolean(o.order.agent.sessionId) && o.state?.launches.some(l => l.how === "launched") === true
+      canResume: Boolean(o.order.agent.sessionId) && o.state?.launches.some(l => l.how === "launched") === true,
+      stamp: o.order.stamp ? `Built for ${stampLabel(o.order)}` : stampLabel(o.order),
+      ...(stampVerdict(o.order, selected).kind === "other-variant" ? { otherVariant: true } : {})
     };
   });
   const repos = map.repositories.map(r => ({
@@ -133,7 +141,7 @@ export interface PilotTabState {
   pending: number;
 }
 
-export function pilotTabState(session: WorkSession, service: WorkOrderService, pilot: PilotService, settings: { choice: AgentChoice; effort: Effort; enabled: boolean; codexAppQualified: boolean; trusted: boolean }): PilotTabState {
+export function pilotTabState(session: WorkSession, service: WorkOrderService, pilot: PilotService, settings: { choice: AgentChoice; effort: Effort; enabled: boolean; codexAppQualified: boolean; trusted: boolean; now?: PackStamp }): PilotTabState {
   const verdict = service.verdict();
   const allowed = settings.enabled && verdict.allowed;
   const choices = AGENT_CHOICES.map(id => ({ id, label: CHOICE_LABELS[id], ...(id === "codex-desktop" && !settings.codexAppQualified ? { disabled: "not qualified on this computer yet (stage 1)" } : {}) }));
@@ -151,7 +159,8 @@ export function pilotTabState(session: WorkSession, service: WorkOrderService, p
       const closed = o.state?.status === "done" || o.state?.status === "abandoned";
       return { id: o.id, short: shortId(o.id), title: s?.title ?? o.error ?? "unreadable order", status: s?.status ?? "error", agent: s?.agent ?? "", next: s?.next ?? "", canLaunch: allowed && settings.trusted && !closed && Boolean(o.order) && Boolean(service.ownDigest(o.id)) };
     }),
-    cards: [...pilot.list()],
+    // 0.27 (P1, D-23): a card whose order was built for another variant or bridge revision is stale.
+    cards: withStale(pilot.list(), id => service.get(id)?.order?.stamp, settings.now),
     pending: pilot.pending()
   };
 }

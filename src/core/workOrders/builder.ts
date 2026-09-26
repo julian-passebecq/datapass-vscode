@@ -14,6 +14,8 @@ import {
   type AgentTool, type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type OrderRepository, type ProjectType,
   type PilotOrderCli, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
 } from "./format";
+import { stampLine, type PackStamp } from "../exchange/stamp";
+import { RESULT_FIELDS } from "../evidence/receipts";
 
 export const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const DEFAULT_BRANCH_PREFIX = "dp/";
@@ -105,6 +107,8 @@ export interface OrderInput {
   folderFor: (id: string) => string;
   pathJoin: (...parts: string[]) => string;
   links?: { revises?: string | null; followsUp?: string | null };
+  /** 0.27 (P1, D-23): the selected variant, environment and bridge revision this order is built for. */
+  stamp?: PackStamp;
 }
 
 /**
@@ -187,11 +191,21 @@ export function buildOrder(i: OrderInput): WorkOrder {
       permissions: i.agent.permissions
     },
     result: { path: i.pathJoin(folder, "result.json") },
-    links: { revises: i.links?.revises ?? null, followsUp: i.links?.followsUp ?? null }
+    links: { revises: i.links?.revises ?? null, followsUp: i.links?.followsUp ?? null },
+    ...(i.stamp ? { stamp: cleanStamp(i.stamp) } : {})
   };
   const issues = validateSchema(WORK_ORDER_SCHEMA, order);
   if (issues.length) throw new WorkOrderFormatError("The order would be invalid", issues);
   return order;
+}
+
+/** The stamp as order.json keeps it: bounded, and the environment only when it is a plain id. */
+function cleanStamp(s: PackStamp): PackStamp {
+  return {
+    variant: { key: s.variant.key.slice(0, 2000), title: oneLine(s.variant.title, 200) || s.variant.key.slice(0, 200), ...(s.variant.picks?.length ? { picks: s.variant.picks.slice(0, 50) } : {}) },
+    ...(s.environment && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$/.test(s.environment) ? { environment: s.environment } : {}),
+    ...(s.bridge && /^[0-9a-f]{7,40}$/.test(s.bridge) ? { bridge: s.bridge } : {})
+  };
 }
 
 // ------------------------------------------------------------------ order.md
@@ -224,7 +238,9 @@ export function renderOrderMd(o: WorkOrder, info: OrderMdInfo, orderFolder: stri
   const date = o.createdAt.slice(0, 16).replace("T", " ");
   L.push(`DataPass work order ${o.id} — ${o.title}`, "");
   L.push(`Prepared by ${o.createdBy} on ${date} for the project "${oneLine(o.project.title)}" (${o.project.type} project).`);
-  L.push(`Receipt ${o.receipt}: copy it into result.json.`, "");
+  L.push(`Receipt ${o.receipt}: copy it into result.json.`);
+  if (o.stamp) L.push(stampLine(o.stamp).replace(" If the selection has changed since, ask for a fresh pack.", " Work on this variant only."));
+  L.push("");
   L.push("## Goal (from Julian)", o.goal, "");
   L.push(`Kind: ${KIND_LABELS[o.kind]}.`, "");
 
@@ -333,7 +349,10 @@ export function resultFormatMd(o: WorkOrder): string {
     summary: "What you changed, in two or three sentences.",
     repositories: changes.map(r => ({ ref: r.ref, branch: r.branch, commits: ["<short sha>"], pullRequest: "<the pull request's web address>" })),
     ...(o.expected.datapassFiles.length ? { datapassFiles: o.expected.datapassFiles } : {}),
-    checks: o.expected.checks.length ? o.expected.checks.map(c => ({ what: c.text, outcome: "passed" as const, note: "38 passed" })) : [{ what: "<a check you ran>", outcome: "passed", note: "<short note>" }],
+    // 0.27 (E1, D-22): each check names the result field it speaks for and, to count as a receipt, its tool, scope and input identity.
+    checks: o.expected.checks.length
+      ? o.expected.checks.map(c => ({ what: c.text, outcome: "passed" as const, note: "38 passed", field: "cli-exit" as const, tool: "<tool you ran, e.g. pytest>", scope: "<what it ran on: a repository path, workspace or environment>", input: "<input identity: commit sha, file digest or dataset version>" }))
+      : [{ what: "<a check you ran>", outcome: "passed", note: "<short note>", field: "cli-exit", tool: "<tool you ran, e.g. pytest>", scope: "<what it ran on: a repository path, workspace or environment>", input: "<input identity: commit sha, file digest or dataset version>" }],
     questions: ["<a question for Julian, if any>"],
     followUps: [{ title: "<a next step, as a short title>", why: "<why>" }],
     agent: { tool: o.agent.tool, model: "<model id>" },
@@ -354,6 +373,7 @@ export function resultFormatMd(o: WorkOrder): string {
     `| repositories[] | ref (${changes.map(r => r.ref).join(", ") || "none"}), branch, commits (hex, 7 to 40), pullRequest (its web address on that repository's host) |`,
     "| datapassFiles[] | kind (project, graph, options, sheet, board, catalog) and via (pull-request, or import with proposed/<kind>.json in the order folder) |",
     "| checks[] | what, outcome (passed · failed · not-run), note — shown to Julian as \"the agent says\" |",
+    `| checks[] field, tool, scope, input | field: which result it speaks for (${RESULT_FIELDS.join(" · ")}); tool: what ran it (pytest, az, dbt…); scope: what it ran on (repository path, workspace, environment); input: the identity of what it checked (commit sha, file digest, dataset version). Fill all four for every check you ran: with tool, scope and input a check is shown as your receipt, without them as "asserted, not verified" |`,
     "| questions[] | at most 20, each at most 1000 characters |",
     "| followUps[] | at most 10: title (at most 80) and why |",
     "| agent, finishedAt | optional: tool, model; an ISO 8601 time |",

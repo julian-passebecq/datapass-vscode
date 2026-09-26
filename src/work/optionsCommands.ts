@@ -12,6 +12,7 @@
 import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { activeVariantHeader } from "./activeVariantCommands";
+import { packStamp } from "./packStamps";
 import type { WorkbenchHost } from "../views/workbench";
 import { confirmModal, guarded, jsonBytes, readBounded, report, requireRoot, UserFacingError } from "./io";
 import { workspaceJournalFs } from "./commands";
@@ -231,7 +232,7 @@ async function optionsAiContext(session: WorkSession, version: string, arg?: unk
   if (optionId && !decision?.options.some(x => x.id === optionId)) throw new UserFacingError(`Unknown option "${optionId}".`);
   const md = optionsMarkdown({
     options: o, analysis: session.optionsAnalysis()!, project: session.projectMap().project, purpose, decisionId, optionId,
-    generatedAt: new Date().toISOString(), dataPassVersion: version, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(session)
+    generatedAt: new Date().toISOString(), dataPassVersion: version, guideUrl: GUIDE_URL, activeVariant: activeVariantHeader(session), stamp: await packStamp(session)
   });
   const choice = await vscode.window.showInformationMessage(`AI context (${purpose === "apply" ? "apply a decision" : "compare options"}): ${md.bytes} bytes${md.truncated ? ", truncated" : ""}.`, {
     modal: true, detail: "It contains the options (with their declared prices and sources) and DataPass's analysis of the consequences. Never included: local paths, file contents, credentials. Paste it into ChatGPT or Claude yourself."

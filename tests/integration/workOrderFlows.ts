@@ -307,4 +307,51 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
     await cfg().update("ai.projectTypes", undefined, vscode.ConfigurationTarget.Global);
     await cfg().update("ai.workOrders.enabled", undefined, vscode.ConfigurationTarget.Global);
   }, F);
+
+  // ---------------------------------------------------------------- 0.27 (P1, D-23) stamps, fixture v25-doc-pipeline
+
+  test("0.27 stamps: a pack copied for B goes stale under C; an order for B asks before launching under C, not under B", async () => {
+    const wsRoot = vscode.workspace.workspaceFolders![0]!.uri.fsPath;
+    await waitFor("the options file", () => api().project().options, 20_000);
+    await cfg().update("ai.workOrders.enabled", true, vscode.ConfigurationTarget.Global);
+    try {
+      await run("datapass.setActiveVariant", "b-event");
+      // Copy Context for My AI under B: the header carries the stamp.
+      const file = vscode.Uri.file(path.join(wsRoot, "processing", "process.py"));
+      const ui = await withUi([{ input: "" }, { button: "Copy" }], () => run("datapass.copyFileContext", file, [file]));
+      assert.match(ui.clipboard, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision [0-9a-f]{12}\./);
+      let s = await api().workOrders.aiState();
+      const pack = s.recent.find(r => r.label === "Context for my AI: processing/process.py");
+      assert.ok(pack, `the copy is in the AI view: ${JSON.stringify(s.recent)}`);
+      assert.equal(pack!.stale, undefined, "fresh while B is selected");
+
+      // A work order written under B is stamped B.
+      const written = await api().workOrders.write({ kind: "investigate", goal: "Check the Function trigger settings.", repos: { ".": "read" } } as never);
+      assert.equal(written.order?.stamp?.variant.title, "B — Blob event + Function");
+      assert.match(fs.readFileSync(path.join(written.folder.fsPath, "order.md"), "utf8"), /^DataPass work order wo-[^\n]+\n[\s\S]*Stamp: built for the selected variant \*\*B — Blob event/);
+
+      // Switch to C: the copied pack is stale, with what changed; the order row says it was built for B.
+      await run("datapass.setActiveVariant", "c-adf");
+      s = await waitFor("the pack marked stale", async () => { const x = await api().workOrders.aiState(); return x.recent.find(r => r.label === pack!.label)?.stale ? x : undefined; });
+      assert.equal(s.recent.find(r => r.label === pack!.label)!.stale, "built for B — Blob event + Function; the selected variant is now C — Data Factory");
+      const row = s.agent?.recent.find(r => r.id === written.id);
+      assert.deepEqual([row?.stamp, row?.otherVariant], ["Built for B — Blob event + Function", true]);
+
+      // Launching the B order under C asks first; Cancel launches nothing.
+      const asked = await withUi([{ dismiss: true }], () => run("datapass.workOrders.launch", written.id), { allowErrors: true });
+      const stampPrompt = asked.prompts.find(p => p.kind === "message" && /built for another variant/.test(p.text ?? ""));
+      assert.ok(stampPrompt?.modal, `the stamp confirmation is modal: ${JSON.stringify(asked.prompts)}`);
+      assert.deepEqual(stampPrompt!.options, ["Keep and launch", "Rebuild for the selected variant"]);
+      assert.equal(api().workOrders.list().find(o => o.id === written.id)?.state?.launches.length, 0, "nothing launched");
+
+      // Back on B: no stamp question.
+      await run("datapass.setActiveVariant", "b-event");
+      const same = await withUi([{ dismiss: true }], () => run("datapass.workOrders.launch", written.id), { allowErrors: true });
+      assert.ok(!same.prompts.some(p => /built for another variant/.test(p.text ?? "")), `no stamp question under B: ${JSON.stringify(same.prompts)}`);
+      record("stamps", { stale: s.recent.find(r => r.label === pack!.label)!.stale, row: row?.stamp, prompt: stampPrompt!.text });
+    } finally {
+      await run("datapass.setActiveVariant", "current");
+      await cfg().update("ai.workOrders.enabled", undefined, vscode.ConfigurationTarget.Global);
+    }
+  }, ["v25-doc-pipeline"]);
 }

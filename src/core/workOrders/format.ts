@@ -15,6 +15,7 @@ import { anyOf, arr, constOf, enumOf, obj, validateSchema, type Schema, type Sch
 import { parseStrictJson } from "../model/strictJson";
 import { gitHostOf } from "../project/gitHosts";
 import { sensitiveFindings } from "../project/aiExchange";
+import type { PackStamp } from "../exchange/stamp";
 import { RECEIPT_CHECK_FIELDS, type ReceiptCheck } from "../evidence/receipts";
 
 export const ORDER_FORMAT = "datapass.work-order";
@@ -88,6 +89,13 @@ const ORDER_REPOSITORY: Schema = obj({
   base: obj({ branch: BRANCH, commit: BASE_COMMIT }), branch: BRANCH, hadLocalChanges: { type: "boolean" }
 }, ["ref", "localPath", "access"]);
 const REPO_FILE: Schema = obj({ repoRef: REF, path: REL_PATH });
+const PICK: Schema = S(129, 3, "^[A-Za-z0-9._-]{1,64}=[A-Za-z0-9._-]{1,64}$");
+/** 0.27 (P1, D-23): what the order was built for. Optional: orders written before 0.27 have none ("not stamped"). */
+const STAMP: Schema = obj({
+  variant: obj({ key: S(2000), title: S(200), picks: arr(PICK, 50) }, ["key", "title"]),
+  environment: REF,
+  bridge: COMMIT
+}, ["variant"]);
 
 export const WORK_ORDER_SCHEMA: Schema = obj({
   format: constOf(ORDER_FORMAT), version: constOf(FORMAT_VERSION),
@@ -112,7 +120,8 @@ export const WORK_ORDER_SCHEMA: Schema = obj({
   pilot: obj({ stage: constOf(1), environment: REF, clis: arr(enumOf(...PILOT_ORDER_CLIS), 4, 1) }),
   agent: obj({ tool: enumOf(...AGENT_TOOLS), surface: enumOf(...SURFACES), model: MODEL, effort: enumOf(...EFFORTS), sessionId: UUID, permissions: enumOf("usual", "ask") }, ["tool", "surface", "effort", "permissions"]),
   result: obj({ path: ABS_PATH }),
-  links: obj({ revises: NULLABLE_ORDER, followsUp: NULLABLE_ORDER })
+  links: obj({ revises: NULLABLE_ORDER, followsUp: NULLABLE_ORDER }),
+  stamp: STAMP
 }, ["format", "version", "id", "receipt", "title", "createdAt", "createdBy", "kind", "project", "scope", "goal", "repositories", "context", "expected", "policy", "agent", "result", "links"]);
 
 const SEEN_PR: Schema = obj({
@@ -186,6 +195,8 @@ export interface WorkOrder {
   agent: { tool: AgentTool; surface: Surface; model?: string; effort: Effort; sessionId?: string; permissions: "usual" | "ask" };
   result: { path: string };
   links: { revises: string | null; followsUp: string | null };
+  /** 0.27 (P1, D-23): the selected variant, environment and bridge revision the order was built for; absent on older orders. */
+  stamp?: PackStamp;
 }
 
 export interface SeenPr { repoRef: string; url: string; number: number; state: "open" | "merged" | "closed"; ci?: "passing" | "failing" | "running" | "none" | "unknown"; headBranch: string; checkedAt: string }

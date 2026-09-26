@@ -5,6 +5,7 @@
  */
 import { AI_TASKS, EXCHANGE_FILES, type ExchangeKind } from "../core/project/aiExchange";
 import type { ExchangeRecord } from "../core/work/workModel";
+import { staleReason, type PackStamp } from "../core/exchange/stamp";
 
 export interface AiExchangeFile {
   kind: ExchangeKind;
@@ -25,7 +26,8 @@ export interface AiExchangeState {
   hasManifest: boolean;
   projectTitle?: string;
   files: AiExchangeFile[];
-  recent: Array<{ label: string; status: string; at: string }>;
+  /** `stale`: 0.27 (P1, D-23) why a copied pack no longer matches the selected variant or environment. */
+  recent: Array<{ label: string; status: string; at: string; stale?: string }>;
 }
 
 export interface AiExchangeInput {
@@ -38,6 +40,8 @@ export interface AiExchangeInput {
   sizes: Partial<Record<ExchangeKind, number>>;
   problems: Partial<Record<ExchangeKind, string>>;
   exchanges: readonly ExchangeRecord[];
+  /** The selection now (variant and environment), to mark packs copied for another one. */
+  selection?: PackStamp;
 }
 
 const RECENT = 5;
@@ -61,6 +65,9 @@ export function aiExchangeState(input: AiExchangeInput): AiExchangeState {
         tasks: AI_TASKS[kind].map(t => ({ id: t.id, label: t.label }))
       };
     }),
-    recent: input.exchanges.filter(e => e.kind === "ai-context").slice(0, RECENT).map(e => ({ label: e.label.slice(0, 160), status: e.status, at: e.at }))
+    recent: input.exchanges.filter(e => e.kind === "ai-context").slice(0, RECENT).map(e => {
+      const stale = input.selection ? staleReason(e.stamp, input.selection) : undefined;
+      return { label: e.label.slice(0, 160), status: e.status, at: e.at, ...(stale ? { stale: stale.slice(0, 300) } : {}) };
+    })
   };
 }
