@@ -14,6 +14,7 @@
  * offers to copy the command instead.
  */
 import { markerLine, type WorkOrder } from "./format";
+import type { PackStamp } from "../project/packStamp";
 
 export type AgentChoice = "claude-desktop" | "claude-terminal" | "codex-desktop" | "codex-terminal";
 export const AGENT_CHOICES: readonly AgentChoice[] = ["claude-desktop", "claude-terminal", "codex-desktop", "codex-terminal"];
@@ -113,4 +114,32 @@ export function desktopSteps(app: "claude" | "codex", folder: string): string[] 
   return app === "claude"
     ? ["In the Claude app, open Code and start a new session.", `Choose this folder: ${folder}`, "Paste the prompt (Ctrl+V) and send it."]
     : ["In the ChatGPT app, open Codex and start a new task (local).", `Choose this folder: ${folder}`, "Paste the prompt (Ctrl+V) and send it."];
+}
+
+/**
+ * 0.27 (P1, D-23): launching an order stamped for another variant asks first. "same" and
+ * "not-stamped" (orders written before 0.27) launch without a question.
+ */
+export type StampVerdict =
+  | { kind: "same" }
+  | { kind: "not-stamped" }
+  | { kind: "other-variant"; message: string; detail: string };
+
+export function stampVerdict(order: Pick<WorkOrder, "id" | "stamp">, now: PackStamp): StampVerdict {
+  const s = order.stamp;
+  if (!s) return { kind: "not-stamped" };
+  if (s.variant.key === now.variant.key) return { kind: "same" };
+  return {
+    kind: "other-variant",
+    message: `Work order ${order.id.slice(-4)} was built for another variant.`,
+    detail: `It was written for ${s.variant.title}${s.environment ? ` (environment ${s.environment})` : ""}; the selected variant is now ${now.variant.title}.
+
+`
+      + "Keep: launch it as written (the agent works on the variant in the order). Rebuild: write a new revision for the selected variant. Cancel: do nothing."
+  };
+}
+
+/** The stamp column of the order list: what it was built for, or "not stamped". */
+export function stampLabel(order: Pick<WorkOrder, "stamp">): string {
+  return order.stamp ? order.stamp.variant.title : "not stamped";
 }

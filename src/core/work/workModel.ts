@@ -6,6 +6,7 @@
  *
  * Checklist states are user-reported notes, never execution evidence.
  */
+import type { PackStamp } from "../project/packStamp";
 import type { AppDescriptor, DataPassProjectManifest, RepositoryBinding, WorkScope } from "../projectManifestModel";
 import type { ProjectGraph } from "../workspace/graph";
 import { resolveOutputs } from "../workspace/graph";
@@ -35,6 +36,8 @@ export interface ExchangeRecord {
   digest?: string;
   scopeRef: string;
   at: string;
+  /** 0.27 (P1, D-23): an AI pack's selected variant and environment when it was copied (the AI view marks it stale when they change). */
+  stamp?: PackStamp;
 }
 
 export interface WorkModelInput {

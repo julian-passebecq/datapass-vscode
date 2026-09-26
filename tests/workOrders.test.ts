@@ -14,7 +14,9 @@ import {
   WorkOrderFormatError, type WorkOrder
 } from "../src/core/workOrders/format";
 import { buildOrder, cleanGoal, keyOfRef, refOfKey, renderOrderMd, resultFormatMd, type OrderInput } from "../src/core/workOrders/builder";
-import { agentCmdLine, agentWorkspace, claudeArgs, codexArgs, copyableCommand, resumeArgs, sessionName } from "../src/core/workOrders/launch";
+import { agentCmdLine, agentWorkspace, claudeArgs, codexArgs, copyableCommand, resumeArgs, sessionName, stampLabel, stampVerdict } from "../src/core/workOrders/launch";
+import { CURRENT_VARIANT, environmentOf, readStamp, staleReason, stampLine, variantStamp, type PackStamp } from "../src/core/project/packStamp";
+import type { OptionsFile } from "../src/core/project/options";
 import { defaultMergePolicy, resolveProjectType, workOrdersVerdict } from "../src/core/workOrders/projectType";
 import { mergeWorkLog, parseWorkLog, privateLogFile, privateRepoVerdict, publicRemote, publicText, serializeWorkLog, workLogEntry } from "../src/core/workOrders/workLog";
 import { discoverOutputs, summarize, workOrderNeedsYou, type ResultInfo } from "../src/core/workOrders/status";
@@ -414,4 +416,67 @@ test("committed work-order schemas are up to date (npm run schemas)", () => {
     const file = `schemas/${f}.schema.json`;
     assert.deepEqual(JSON.parse(readFileSync(file, "utf8")), emittedSchemaFiles()[file], file);
   }
+});
+
+// ------------------------------------------------------------------ 0.27 (P1, D-23) stamps
+
+const STAMP_B: PackStamp = { variant: { key: "orchestration=blob-function", title: "B — Blob event + Function", picks: ["orchestration=blob-function"] }, environment: "dev", bridge: SHA };
+const STAMP_C: PackStamp = { variant: { key: "orchestration=adf", title: "C — Data Factory", picks: ["orchestration=adf"] }, environment: "dev" };
+
+test("stamps: the selected variant by its changed picks, the environment, the bridge revision", () => {
+  const options = { decisions: [{ id: "orchestration", current: "direct", options: [] }, { id: "store", current: "blob", options: [] }] } as unknown as OptionsFile;
+  assert.deepEqual(variantStamp(options, undefined), CURRENT_VARIANT);
+  assert.deepEqual(variantStamp(options, { title: "A — direct script", picks: new Map([["orchestration", "direct"], ["store", "blob"]]) }), CURRENT_VARIANT, "picks equal to the current architecture: current");
+  const b = variantStamp(options, { title: "B — Blob event + Function", picks: new Map([["store", "blob"], ["orchestration", "blob-function"]]) });
+  assert.deepEqual(b, STAMP_B.variant);
+  assert.equal(environmentOf([{ id: "dev" }]), "dev");
+  assert.equal(environmentOf([{ id: "dev" }, { id: "prod", production: true }]), "dev");
+  assert.equal(environmentOf([{ id: "dev" }, { id: "test" }]), undefined, "several: DataPass does not choose");
+  assert.equal(environmentOf(undefined), undefined);
+  assert.match(stampLine(STAMP_B), /selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision 4e1a9c2f0b7d/);
+  assert.equal(readStamp({ variant: { key: 1 } }), undefined);
+  assert.deepEqual(readStamp(JSON.parse(JSON.stringify(STAMP_B))), STAMP_B);
+});
+
+test("stamps: a pack goes stale when the variant or the environment changes, not when the bridge moves", () => {
+  assert.equal(staleReason(STAMP_B, { ...STAMP_B, bridge: "0123456789ab" }), undefined);
+  assert.equal(staleReason(undefined, STAMP_C), undefined, "packs copied before 0.27 are not judged");
+  assert.equal(staleReason(STAMP_B, STAMP_C), "built for B — Blob event + Function; the selected variant is now C — Data Factory");
+  assert.match(staleReason(STAMP_B, { ...STAMP_B, environment: "test" }) ?? "", /environment dev; now test/);
+});
+
+test("stamps: order.json and order.md carry the stamp; launching under another variant asks, the same one does not; old orders load", () => {
+  const o = buildOrder(input({ stamp: STAMP_B }));
+  assert.deepEqual(o.stamp, STAMP_B);
+  assert.deepEqual(parseWorkOrder(JSON.stringify(o), o.id), o);
+  const ajv = new Ajv2020({ strict: false, validateFormats: false }).compile(emittedSchemaFiles()["schemas/datapass-work-order.schema.json"] as object);
+  assert.equal(ajv(o), true, JSON.stringify(ajv.errors));
+  const md = renderOrderMd(o, { components: [], packs: [], conventions: [], handoffs: [], datapassFiles: [] }, `${ORDERS}\${o.id}`);
+  assert.ok(md.startsWith(`DataPass work order ${o.id}`), "the marker line stays first and unchanged");
+  assert.match(md, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\*.*Work on this variant only\./);
+  assert.deepEqual(stampVerdict(o, STAMP_B), { kind: "same" });
+  const other = stampVerdict(o, STAMP_C);
+  assert.equal(other.kind, "other-variant");
+  assert.match(other.kind === "other-variant" ? other.detail : "", /written for B — Blob event \+ Function \(environment dev\); the selected variant is now C — Data Factory/);
+  assert.equal(stampLabel(o), "B — Blob event + Function");
+  // An order written before 0.27 (no stamp) still parses, launches without a question and reads "not stamped".
+  const old = buildOrder(input());
+  assert.equal(old.stamp, undefined);
+  const parsed = parseWorkOrder(JSON.stringify(old), old.id);
+  assert.deepEqual(stampVerdict(parsed, STAMP_C), { kind: "not-stamped" });
+  assert.equal(stampLabel(parsed), "not stamped");
+  assert.doesNotMatch(renderOrderMd(parsed, { components: [], packs: [], conventions: [], handoffs: [], datapassFiles: [] }, ORDERS), /Stamp:/);
+  // A malformed stamp is refused like any other field.
+  assert.throws(() => parseWorkOrder(JSON.stringify({ ...o, stamp: { variant: { key: "x", title: "y" }, bridge: "not-a-sha" } }), o.id), /stamp/);
+});
+
+test("stamps: the AI view marks a copied pack stale, with what changed", async () => {
+  const { aiExchangeState } = await import("../src/views/aiExchangeState");
+  const rec = (id: string, stamp?: PackStamp) => ({ id, kind: "ai-context" as const, label: `pack ${id}`, status: "copied", scopeRef: "s", at: "2026-09-26T10:00:00Z", ...(stamp ? { stamp } : {}) });
+  const s = aiExchangeState({ version: "0.27.0", hasRoot: true, hasManifest: true, kinds: [], sizes: {}, problems: {}, exchanges: [rec("b", STAMP_B), rec("old"), rec("c", STAMP_C)], selection: STAMP_C });
+  assert.deepEqual(s.recent.map(r => [r.label, r.stale ?? ""]), [
+    ["pack b", "built for B — Blob event + Function; the selected variant is now C — Data Factory"],
+    ["pack old", ""],
+    ["pack c", ""]
+  ]);
 });

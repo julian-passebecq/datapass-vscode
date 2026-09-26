@@ -50,6 +50,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
   li { margin: 1px 0; }
   .recent li { list-style: none; margin-left: -16px; display: flex; gap: 6px; justify-content: space-between; font-size: 12px; }
   .recent .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .recent .staleline { display: block; color: var(--warn); font-size: 11px; margin-top: -2px; white-space: normal; }
   .foot { border-top: 1px solid var(--border); margin-top: 14px; padding-top: 8px; }
   [hidden] { display: none !important; }
   .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin: -2px 0 10px; position: sticky; top: -10px; background: var(--vscode-sideBar-background); z-index: 1; }
@@ -299,6 +300,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       li.appendChild(label);
       li.appendChild(el('span', 'muted', r.status + ' · ' + when(r.at)));
       list.appendChild(li);
+      if (r.stale) { const s = el('li', 'staleline', '⚠ Stale: ' + r.stale + '. Copy a fresh pack.'); s.title = r.stale; list.appendChild(s); }
     }
     $('recentbox').hidden = !state.recent.length;
   }
@@ -520,6 +522,7 @@ export function aiExchangeHtml(cspSource: string, nonce: string): string {
       const title = el('b', '', o.short + ' ' + o.title); title.title = o.id + ' — ' + o.title; head.appendChild(title);
       li.appendChild(head);
       if (o.agent) li.appendChild(el('div', 'muted', o.agent + (o.createdAt ? ' · ' + when(o.createdAt) : '')));
+      if (o.stamp) li.appendChild(el('div', o.otherVariant ? 'warnline' : 'muted', o.stamp + (o.otherVariant ? ' — not the selected variant: launching asks first' : '')));
       for (const line of o.outputs) li.appendChild(el('div', '', line));
       if (o.result) li.appendChild(el('div', o.result.startsWith('refused') ? 'badline' : '', 'Result: ' + o.result));
       for (const n of o.needs) li.appendChild(el('div', 'warnline', '⚑ ' + n));

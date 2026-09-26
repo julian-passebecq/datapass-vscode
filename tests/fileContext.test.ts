@@ -201,3 +201,12 @@ test("fences survive backticks in the content; diagnostics are capped", () => {
   assert.match(pack.text, /````markdown\n```js\nx\n```\n````/);
   assert.match(pack.text, /- … 20 more/);
 });
+
+test("0.27 (P1, D-23): the pack header carries the stamp — selected variant, environment, bridge revision", () => {
+  const stamp = { variant: { key: "orchestration=blob-function", title: "B — Blob event + Function", picks: ["orchestration=blob-function"] }, environment: "dev", bridge: "fedcba9876543210fedcba9876543210fedcba98" };
+  const pack = buildFileContext(base({ stamp }));
+  const head = pack.text.split("\n").slice(0, 4).join("\n");
+  assert.match(head, /Stamp: built for the selected variant \*\*B — Blob event \+ Function\*\* \(orchestration=blob-function\) · environment dev · bridge revision fedcba987654\./);
+  // No project open: no stamp line (there is no selection to stamp).
+  assert.doesNotMatch(buildFileContext(base({ project: undefined, stamp })).text, /Stamp:/);
+});

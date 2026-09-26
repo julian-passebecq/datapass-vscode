@@ -3,6 +3,7 @@
  * user's local, non-committed state (selected scope, checklist notes, review confirmations,
  * exchange history, approvals). Nothing here is written to the repository.
  */
+import { environmentOf, variantStamp } from "../core/project/packStamp";
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
@@ -398,6 +399,11 @@ export class WorkSession implements vscode.Disposable {
   }
 
   async recordExchange(record: ExchangeRecord): Promise<void> {
+    // 0.27 (P1, D-23): every AI pack remembers the selection it was built for.
+    if (record.kind === "ai-context" && !record.stamp) {
+      const environment = environmentOf(this.projectMap().environments);
+      record = { ...record, stamp: { variant: variantStamp(this.ctx.options, this.preview()), ...(environment ? { environment } : {}) } };
+    }
     const list = [record, ...(this.state<ExchangeRecord[]>(KEYS.exchanges) ?? []).filter(e => e.id !== record.id)].slice(0, MAX_EXCHANGES);
     await this.context.workspaceState.update(KEYS.exchanges, list);
     this.changed();

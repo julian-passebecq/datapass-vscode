@@ -14,6 +14,7 @@ import {
   type AgentTool, type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type OrderRepository, type ProjectType,
   type PilotOrderCli, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
 } from "./format";
+import { stampLine, type PackStamp } from "../project/packStamp";
 
 export const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const DEFAULT_BRANCH_PREFIX = "dp/";
@@ -105,6 +106,8 @@ export interface OrderInput {
   folderFor: (id: string) => string;
   pathJoin: (...parts: string[]) => string;
   links?: { revises?: string | null; followsUp?: string | null };
+  /** 0.27 (P1, D-23): the selected variant, environment and bridge revision this order is built for. */
+  stamp?: PackStamp;
 }
 
 /**
@@ -187,11 +190,21 @@ export function buildOrder(i: OrderInput): WorkOrder {
       permissions: i.agent.permissions
     },
     result: { path: i.pathJoin(folder, "result.json") },
-    links: { revises: i.links?.revises ?? null, followsUp: i.links?.followsUp ?? null }
+    links: { revises: i.links?.revises ?? null, followsUp: i.links?.followsUp ?? null },
+    ...(i.stamp ? { stamp: cleanStamp(i.stamp) } : {})
   };
   const issues = validateSchema(WORK_ORDER_SCHEMA, order);
   if (issues.length) throw new WorkOrderFormatError("The order would be invalid", issues);
   return order;
+}
+
+/** The stamp as order.json keeps it: bounded, and the environment only when it is a plain id. */
+function cleanStamp(s: PackStamp): PackStamp {
+  return {
+    variant: { key: s.variant.key.slice(0, 2000), title: oneLine(s.variant.title, 200) || s.variant.key.slice(0, 200), ...(s.variant.picks?.length ? { picks: s.variant.picks.slice(0, 50) } : {}) },
+    ...(s.environment && /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,99}$/.test(s.environment) ? { environment: s.environment } : {}),
+    ...(s.bridge && /^[0-9a-f]{7,40}$/.test(s.bridge) ? { bridge: s.bridge } : {})
+  };
 }
 
 // ------------------------------------------------------------------ order.md
@@ -224,7 +237,9 @@ export function renderOrderMd(o: WorkOrder, info: OrderMdInfo, orderFolder: stri
   const date = o.createdAt.slice(0, 16).replace("T", " ");
   L.push(`DataPass work order ${o.id} — ${o.title}`, "");
   L.push(`Prepared by ${o.createdBy} on ${date} for the project "${oneLine(o.project.title)}" (${o.project.type} project).`);
-  L.push(`Receipt ${o.receipt}: copy it into result.json.`, "");
+  L.push(`Receipt ${o.receipt}: copy it into result.json.`);
+  if (o.stamp) L.push(stampLine(o.stamp).replace(" If the selection has changed since, ask for a fresh pack.", " Work on this variant only."));
+  L.push("");
   L.push("## Goal (from Julian)", o.goal, "");
   L.push(`Kind: ${KIND_LABELS[o.kind]}.`, "");
 

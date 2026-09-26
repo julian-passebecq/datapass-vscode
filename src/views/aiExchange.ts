@@ -7,6 +7,7 @@
  * the pasted text is bounded and validated by the same parser as every other import, and writing
  * still goes through the diff and the modal. The answer is never stored.
  */
+import { selectionStamp } from "../work/packStamps";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { aiExchangeHtml } from "./aiExchangeHtml";
@@ -61,6 +62,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => void this.post()));
+    // 0.27 (P1): a variant switch marks copied packs stale.
+    this.subs.push(session.onDidChangeSelection(() => void this.post()));
   }
 
   /** 0.20: the work-order service behind the Agent tab. */
@@ -142,7 +145,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
       hasRoot: Boolean(this.session.root), hasManifest: c.manifestExists, projectTitle: c.manifest?.project.title, graphPath: c.manifest?.graph,
       kinds: KINDS, sizes: this.sizes,
       problems: { manifest: c.manifestErrors[0], graph: c.graphError, options: c.optionsError, sheet: c.sheetError, board: c.boardError },
-      exchanges: this.session.exchanges()
+      exchanges: this.session.exchanges(),
+      selection: c.manifest ? selectionStamp(this.session) : undefined
     });
     const hiddenTabs = (["agent", "manual", "pilot"] as const).filter(t => !this.shows(`ai.${t}`));
     if (!this.work || !base.ready || !c.manifest) return { ...base, hiddenTabs };
