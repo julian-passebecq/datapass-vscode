@@ -15,6 +15,11 @@ A project is described once, in a **coordination repository**, by a few JSON fil
 them, compares them with what is really on the disk, in Git and on the computer, and shows: the
 architecture, what is missing and why, which official tool to open next, and what the AI should do.
 
+The coordination repository (also called the **bridge**) is a light layer: links to the project's
+repositories and DataPass JSON, never code. It is where the team and its AIs work, not part of what
+the client and its auditor receive; the code lives in the native repositories — preferably one per
+sub-project, or one repository with sub-folders ([Repository layout](../PREPARING_A_PROJECT.md#repository-layout)).
+
 ## 1.2 What DataPass is not
 
 - Not a deployer: it never deploys, never provisions a cloud resource, never runs a pipeline. It

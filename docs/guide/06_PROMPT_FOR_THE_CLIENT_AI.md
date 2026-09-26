@@ -34,6 +34,8 @@ Then, one pull request per native repository with the native files the graph nam
 
 Rules:
 - Follow the order of 02 §2.0. Every id you reference must be declared first.
+- The coordination repository gets links and DataPass files only, never code. Put the code in the
+  native repositories: one per sub-project unless <name> chose one repository with sub-folders.
 - No secret anywhere: no key, token, password, connection string, SAS URL, user@host, IP with
   credentials. Say where each secret belongs (Key Vault, app settings, the person's vault, ~/.ssh).
 - No "$schema" line. Never create .datapass/local/, a .code-workspace file or work-log.json.
