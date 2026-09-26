@@ -112,7 +112,7 @@ function checkFolders(root: string, workspaces: ClientWorkspace[]): Map<string, 
   return out;
 }
 
-async function vscodeExecutable(explicit?: string): Promise<string> {
+export async function vscodeExecutable(explicit?: string): Promise<string> {
   const pick = explicit ?? process.env.VSCODE_EXECUTABLE;
   if (pick) {
     if (!fs.existsSync(pick)) throw new CannotPrepare([`VS Code executable not found: ${pick}`]);

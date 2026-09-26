@@ -115,8 +115,8 @@ test("report negatives: bad outcome, bad severity, unknown area, bad confidence,
   refused(() => parseQaReport(text(coverage)), /coverage\.reached "git" is not in coverage\.listed/);
   const dup = report(); dup.findings.push({ ...dup.findings[0] });
   refused(() => parseQaReport(text(dup)), /same id/);
-  refused(() => parseQaReport(text({ ...report(), agent: { tool: "claude", model: "x", host: "app" } })), /agent\.tool must equal "codex"/);
-  refused(() => parseQaReport(text({ ...report(), agent: { tool: "codex", model: "x", host: "terminal" } })), /agent\.host must equal "app"/);
+  refused(() => parseQaReport(text({ ...report(), agent: { tool: "claude", model: "x", host: "app" } })), /\$\.agent does not match any allowed alternative/);
+  refused(() => parseQaReport(text({ ...report(), agent: { tool: "codex", model: "x", host: "terminal" } })), /\$\.agent does not match any allowed alternative/);
   const badScreen = report(); badScreen.journeys[0].screens = ["shots/one.png"];
   refused(() => parseQaReport(text(badScreen)), /screens\[0\] must match/);
   const answerScreens = report(); answerScreens.answers[0].screens = ["screens/J01-architecture.png"];

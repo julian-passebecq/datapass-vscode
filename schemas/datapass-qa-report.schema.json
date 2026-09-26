@@ -207,25 +207,51 @@
       "minItems": 1
     },
     "agent": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "tool": {
-          "const": "codex"
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tool": {
+              "const": "codex"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "host": {
+              "const": "app"
+            }
+          },
+          "required": [
+            "tool",
+            "model",
+            "host"
+          ]
         },
-        "model": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 80
-        },
-        "host": {
-          "const": "app"
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tool": {
+              "const": "qa-ui"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            },
+            "host": {
+              "const": "playwright"
+            }
+          },
+          "required": [
+            "tool",
+            "model",
+            "host"
+          ]
         }
-      },
-      "required": [
-        "tool",
-        "model",
-        "host"
       ]
     },
     "startedAt": {

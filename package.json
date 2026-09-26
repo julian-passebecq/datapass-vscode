@@ -2479,7 +2479,8 @@
     "test:desktop": "npm run build && tsx scripts/desktop-test.ts",
     "perf": "npm run build && tsx scripts/perf.ts",
     "preview:galaxy": "tsx scripts/galaxy-preview.ts",
-    "qa:prepare": "tsx scripts/qa/prepare.ts"
+    "qa:prepare": "tsx scripts/qa/prepare.ts",
+    "qa:ui": "tsx scripts/qa/ui-run.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -2488,6 +2489,7 @@
     "@vscode/vsce": "^3.6.0",
     "ajv": "^8.20.0",
     "esbuild": "^0.25.9",
+    "playwright-core": "^1.63.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
     "yaml": "^2.9.1",
