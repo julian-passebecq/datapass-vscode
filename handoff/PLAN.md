@@ -2,7 +2,7 @@
 
 Kept by `ARCHI DataPass N` (docs/roles/archi.md in claude-control). Lean on purpose: one screen per version. Estimates are orders of magnitude; fill **Actual** when a package merges (GALAXY Contrôle compares them every week).
 
-Updated: 2026-09-26 (after 0.24.0) by ARCHI DataPass 1 · Sources: [v3/10_GLOBAL_IMPROVEMENT_PLAN.md](v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions D-01…D-18, §3 features by version), [v3/08_TOOLKIT_AND_AGENTS.md](v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4 (toolkit catalogue), [v3/09_AI_MODES_WORK_ORDERS_GIT.md](v3/09_AI_MODES_WORK_ORDERS_GIT.md) §12–13.1 (AI-3, AI-4, pass order), main `3b1635b` (0.24.0 released).
+Updated: 2026-09-26 (after 0.24.0) by ARCHI DataPass 1 · Sources: [v3/11_FOIL_MCP_REVIEW.md](v3/11_FOIL_MCP_REVIEW.md) (FOIL review of 0.24, decisions D-19…D-28, 0.26/0.27 packages), [v3/10_GLOBAL_IMPROVEMENT_PLAN.md](v3/10_GLOBAL_IMPROVEMENT_PLAN.md) (decisions D-01…D-18, §3 features by version), [v3/08_TOOLKIT_AND_AGENTS.md](v3/08_TOOLKIT_AND_AGENTS.md) §5.1, 5.2, 5.4 (toolkit catalogue), [v3/09_AI_MODES_WORK_ORDERS_GIT.md](v3/09_AI_MODES_WORK_ORDERS_GIT.md) §12–13.1 (AI-3, AI-4, pass order), main `3b1635b` (0.24.0 released).
 
 ## Versions
 
