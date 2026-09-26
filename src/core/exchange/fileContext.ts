@@ -199,7 +199,9 @@ function stripLocalPaths(text: string, paths: readonly string[]): string {
   let out = text;
   const forms = paths.filter(p => p && p.length > 3).flatMap(p => [p, p.replace(/\\/g, "/"), p.replace(/\//g, "\\")]);
   for (const p of [...new Set(forms)].sort((a, b) => b.length - a.length)) {
-    const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), process.platform === "win32" ? "gi" : "g");
+    // A Windows path (drive letter or backslash) is case-insensitive whatever machine builds the pack.
+    const windows = /^[A-Za-z]:|\\/.test(p) || process.platform === "win32";
+    const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), windows ? "gi" : "g");
     out = out.replace(re, "<local-path>");
   }
   return out;

@@ -6,6 +6,7 @@
  */
 import * as path from "node:path";
 import * as os from "node:os";
+import { promises as fsp } from "node:fs";
 import * as vscode from "vscode";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
@@ -27,6 +28,14 @@ export function registerFileContextCommands(context: vscode.ExtensionContext, se
   })));
 }
 
+/**
+ * The canonical form of a path: Windows 8.3 short names (C:\Users\RUNNER~1) expanded, symlinks
+ * resolved, so the file, Git's toplevel and the observed folders compare equal.
+ */
+async function real(p: string): Promise<string> {
+  try { return await fsp.realpath(p); } catch { return p; }
+}
+
 const trimOut = (s: string) => s.trim().split(/\r?\n/)[0] ?? "";
 
 async function probeGit(dir: string): Promise<FileGitProbe | undefined> {
@@ -34,7 +43,7 @@ async function probeGit(dir: string): Promise<FileGitProbe | undefined> {
   const top = await gitRunner(["rev-parse", "--show-toplevel"], dir, 10_000);
   if (!top.ok) return undefined;
   const origin = await gitRunner(["config", "--get", "remote.origin.url"], dir, 10_000);
-  return { top: path.normalize(trimOut(top.stdout)), origin: origin.ok ? trimOut(origin.stdout) : undefined };
+  return { top: await real(path.normalize(trimOut(top.stdout))), origin: origin.ok ? trimOut(origin.stdout) : undefined };
 }
 
 async function readGitState(root: string, relPath: string, isGitRepo: boolean): Promise<FileGitState> {
@@ -89,11 +98,12 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
   const map = session.root ? session.projectMap() : undefined;
   const obs = session.projectObservation();
   const repos = map?.repositories ?? [];
-  const candidates = repos.map(r => ({ key: r.key, folder: obs?.folders.get(r.key)?.fsPath, remoteUrl: r.remoteUrl }));
+  const observed = repos.map(r => ({ key: r.key, folder: obs?.folders.get(r.key)?.fsPath, remoteUrl: r.remoteUrl }));
+  const candidates = await Promise.all(observed.map(async c => ({ ...c, folder: c.folder ? await real(c.folder) : undefined })));
   const dir = fsPath ? path.dirname(fsPath) : undefined;
   const git = dir ? await probeGit(dir) : undefined;
   const wsFolder = uri.scheme === "file" ? vscode.workspace.getWorkspaceFolder(uri)?.uri.fsPath : undefined;
-  const loc = fsPath ? locateFile(fsPath, candidates, git, wsFolder) : undefined;
+  const loc = fsPath ? locateFile(await real(fsPath), candidates, git, wsFolder ? await real(wsFolder) : undefined) : undefined;
   const relPath = loc?.relPath || (doc ? `(untitled) ${path.basename(uri.path)}` : path.basename(uri.path));
 
   // ---- the owning components and the repositories they use
@@ -140,7 +150,7 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
   }));
 
   const manifest = session.project.manifest;
-  const localPaths = [...new Set([...(loc ? [loc.root] : []), ...candidates.map(c => c.folder).filter((f): f is string => !!f), ...(wsFolder ? [wsFolder] : []), os.homedir()])];
+  const localPaths = [...new Set([...(loc ? [loc.root] : []), ...[...candidates, ...observed].map(c => c.folder).filter((f): f is string => !!f), ...(wsFolder ? [wsFolder, await real(wsFolder)] : []), os.homedir(), await real(os.homedir())])];
   const pack = buildFileContext({
     question, project: manifest ? { id: manifest.project.id, title: manifest.project.title } : undefined,
     bridge: bridgeRepo ? { key: bridgeRepo.key, label: bridgeRepo.label } : undefined,
