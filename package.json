@@ -246,6 +246,15 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "datapass.switchVariant",
+        "title": "DataPass: Switch the Active Variant",
+        "icon": "$(versions)"
+      },
+      {
+        "command": "datapass.setActiveVariant",
+        "title": "DataPass: Set the Active Variant (scenario id)"
+      },
+      {
         "command": "datapass.showAllVariants",
         "title": "DataPass: Show All Variants in the Project Tree",
         "icon": "$(versions)"
@@ -2180,6 +2189,10 @@
             "status.health": {
               "type": "boolean",
               "description": "Status bar: tool health: Tools and bindings ready (opens the Galaxy view)"
+            },
+            "status.activeVariant": {
+              "type": "boolean",
+              "description": "Status bar: active variant: The variant this machine works on; click to switch (the tree, Details, the diagram and the packs follow)"
             },
             "landing.architecture": {
               "type": "boolean",

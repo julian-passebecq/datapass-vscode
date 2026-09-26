@@ -1,0 +1,74 @@
+{
+  "format": "datapass.options",
+  "version": "1",
+  "title": "Document pipeline — how is the batch orchestrated?",
+  "description": "Three variants of the same pipeline. The processing script is shared; only what starts it changes. Switch the active variant from the status bar: nothing is written. Record decision is what commits a choice.",
+  "currency": "USD",
+  "criteria": [
+    { "id": "cost", "label": "Monthly cost (declared)", "better": "lower" },
+    { "id": "setup", "label": "Setup effort", "description": "5 = quick to set up", "better": "higher" }
+  ],
+  "decisions": [
+    {
+      "id": "orchestration",
+      "title": "What starts the processing of each PDF?",
+      "level": "orchestration",
+      "subproject": "pipeline",
+      "concerns": ["orchestrate"],
+      "current": "direct",
+      "options": [
+        {
+          "id": "direct",
+          "label": "A — direct script",
+          "summary": "A Python script lists the inbox and processes each new PDF, by hand or on a schedule.",
+          "values": { "cost": "≈ 8 EUR", "setup": { "score": 5 } },
+          "pros": ["Nothing to deploy: runs wherever Python runs"],
+          "cons": ["Someone (or a scheduler) must start it"],
+          "costs": [
+            { "label": "A small Linux VM to run it nightly", "service": "Azure Virtual Machines", "price": "B1s pay-as-you-go, order of magnitude", "monthly": 8, "currency": "EUR", "source": "https://azure.microsoft.com/pricing/details/virtual-machines/linux/", "asOf": "2026-09-26", "note": "0 when it runs on a machine you already have" }
+          ]
+        },
+        {
+          "id": "blob-function",
+          "label": "B — Blob event + Function",
+          "summary": "Each new blob triggers an Azure Function that processes it.",
+          "changes": {
+            "replace": [
+              { "id": "orchestrate", "kind": "function", "label": "Blob-triggered Function", "provider": "azure-functions",
+                "artifacts": { "profile": "azure-functions.python", "root": "orchestration/blob-function" } }
+            ]
+          },
+          "values": { "cost": "≈ 0 within the free grant", "setup": { "score": 3 } },
+          "pros": ["Processes each PDF as soon as it arrives"],
+          "cons": ["A Function App to deploy and monitor"],
+          "costs": [
+            { "label": "Functions Consumption plan, a few thousand runs a month", "service": "Azure Functions", "price": "first 1 million executions a month free, then 0.20 USD per million", "monthly": 0, "source": "https://azure.microsoft.com/pricing/details/functions/", "asOf": "2026-09-26" }
+          ]
+        },
+        {
+          "id": "adf",
+          "label": "C — Data Factory pipeline",
+          "summary": "A Data Factory pipeline with a storage event trigger calls the processing.",
+          "changes": {
+            "addRepositories": [ { "key": "factory", "label": "Data Factory (Git folder)", "planned": true } ],
+            "replace": [
+              { "id": "orchestrate", "kind": "pipeline", "label": "Data Factory pipeline", "provider": "azure-data-factory", "status": "planned",
+                "artifacts": { "repoRef": "factory", "profile": "adf.factory", "root": "." } }
+            ]
+          },
+          "values": { "cost": "≈ 5", "setup": { "score": 2 } },
+          "pros": ["Monitoring, retries and lineage in Data Factory Studio"],
+          "cons": ["A factory and its Git folder to create first"],
+          "costs": [
+            { "label": "Orchestration, about 3,000 activity runs a month", "service": "Azure Data Factory", "price": "about 1 USD per 1,000 activity runs (Azure integration runtime)", "monthly": 3, "source": "https://azure.microsoft.com/pricing/details/data-factory/data-pipeline/", "asOf": "2026-09-26" }
+          ]
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    { "id": "a-direct", "title": "A — direct script", "picks": ["orchestration=direct"], "description": "The current architecture: coded." },
+    { "id": "b-event", "title": "B — Blob event + Function", "picks": ["orchestration=blob-function"], "recommended": true, "description": "Partly coded: function_app.py is here, host.json is not." },
+    { "id": "c-adf", "title": "C — Data Factory", "picks": ["orchestration=adf"], "description": "Not coded: its repository is planned." }
+  ]
+}

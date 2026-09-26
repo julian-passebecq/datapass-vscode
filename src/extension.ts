@@ -13,6 +13,7 @@ import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
 import { registerFileContextCommands } from "./work/fileContextCommands";
 import { registerVariantCommands } from "./work/variantCommands";
+import { ActiveVariantService, registerActiveVariantCommands } from "./work/activeVariantCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
 import { registerQualificationCommands } from "./work/qualificationCommands";
@@ -85,6 +86,8 @@ export interface DataPassTestApi {
   /** 0.15: architecture options analysis and the previewed architecture. */
   optionsAnalysis(): ReturnType<WorkSession["optionsAnalysis"]>;
   setPreview(req: Parameters<WorkSession["setPreview"]>[0]): Promise<void>;
+  /** 0.25 (V-A): the active variant's status item and what this machine remembers for the project. */
+  activeVariant: { statusText(): string; statusVisible(): boolean; remembered(): { scenario?: string; picks?: string[] } | undefined };
   /** 0.15.1: the AI exchange view (secondary side bar), driven through its real message handler. */
   aiExchange: {
     /** The view was shown in this window (the secondary side bar displays DataPass). */
@@ -184,6 +187,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   projectTree.attach(projectView);
   projectTree.setSurfaces(experience.shows, experience.onDidChange);
   registerVariantCommands(context, session, projectTree);
+  const activeVariant = new ActiveVariantService(context, session, experience.shows, experience.onDidChange);
+  registerActiveVariantCommands(context, activeVariant, session);
   host.setSurfaces(experience.shows, experience.onDidChange);
   aiExchange.setSurfaces(experience.shows, experience.onDidChange);
   context.subscriptions.push(
@@ -398,6 +403,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     select: sel => session.select(sel),
     optionsAnalysis: () => session.optionsAnalysis(),
     setPreview: req => session.setPreview(req),
+    activeVariant: { statusText: () => activeVariant.statusText(), statusVisible: () => activeVariant.statusVisible(), remembered: () => activeVariant.remembered() },
     aiExchange: {
       resolved: () => aiExchange.resolved(),
       state: () => aiExchange.state(),

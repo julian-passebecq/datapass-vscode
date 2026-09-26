@@ -1,0 +1,23 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    { "id": "inbox", "kind": "storage", "label": "PDF inbox", "provider": "azure-storage", "description": "A private Blob container where PDFs arrive." },
+    {
+      "id": "orchestrate", "kind": "script", "label": "Run the batch (script)", "provider": "python",
+      "description": "Variant A: a script lists the inbox and processes each new PDF.",
+      "artifacts": { "profile": "python.script", "root": "orchestration/direct", "entry": "run.py" }
+    },
+    {
+      "id": "process", "kind": "script", "label": "PDF processing", "provider": "python",
+      "description": "Shared by every variant: reads one PDF, writes one JSON.",
+      "artifacts": { "profile": "python.script", "root": "processing", "entry": "process.py" }
+    },
+    { "id": "results", "kind": "storage", "label": "JSON results", "provider": "azure-storage" }
+  ],
+  "relations": [
+    { "id": "r1", "source": "orchestrate", "target": "inbox", "relation": "consumes" },
+    { "id": "r2", "source": "orchestrate", "target": "process", "relation": "orchestrates" },
+    { "id": "r3", "source": "process", "target": "results", "relation": "produces" }
+  ]
+}

@@ -465,6 +465,14 @@ function setupV20WorkOrders(base: string): { workspace: string; env: Record<stri
   return { workspace: hub, env: { DATAPASS_IT_V20: JSON.stringify({ ghStub: gh, claudeStub: claude, hub, pipeline: pipe, logRepo, other, projects: parent }) } };
 }
 
+/** 0.25 (V-A): the public doc-pipeline example as a Git repository (three orchestration variants). */
+function setupV25DocPipeline(base: string): { workspace: string; env: Record<string, string> } {
+  const ws = path.join(base, "projects", "doc-pipeline");
+  fs.cpSync(path.join(repo, "examples", "v3", "doc-pipeline"), ws, { recursive: true });
+  commitAll(ws, "doc pipeline example");
+  return { workspace: ws, env: {} };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
   "v3-research": setupV3Research,
@@ -476,7 +484,8 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v20-work-orders": setupV20WorkOrders,
   // 0.22 modes: the research project opened as a new install (no DataPass settings: Standard).
   "v22-modes": setupV3Research,
-  "v22-versions": setupV22Versions
+  "v22-versions": setupV22Versions,
+  "v25-doc-pipeline": setupV25DocPipeline
 };
 
 async function vscodeExecutable(): Promise<string> {
