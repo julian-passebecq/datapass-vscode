@@ -2477,6 +2477,7 @@
     "package": "npm run verify && vsce package",
     "schemas": "tsx scripts/emit-schemas.ts",
     "test:desktop": "npm run build && tsx scripts/desktop-test.ts",
+    "perf": "npm run build && tsx scripts/perf.ts",
     "preview:galaxy": "tsx scripts/galaxy-preview.ts",
     "qa:prepare": "tsx scripts/qa/prepare.ts"
   },

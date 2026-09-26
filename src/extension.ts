@@ -159,11 +159,26 @@ export interface DataPassTestApi {
     status(): { text: string; tooltip: string; visible: boolean };
     landed(): Promise<boolean>;
   };
+  /** V1-PERF: this activation's timings (ms) and how many refreshes ran since (scripts/perf.ts). */
+  perf(): PerfCounters;
 }
 
+export interface PerfCounters { loadMs: number; activateMs: number; firstRefreshMs: number; sessionRefreshes: number; sessionChanges: number; gitChanges: number }
+
+// V1-PERF: esbuild's banner stamps the moment the bundle starts evaluating (esbuild.mjs).
+const loadedAt = performance.now();
+const loadStart = (globalThis as { __datapassLoadStart?: number }).__datapassLoadStart ?? loadedAt;
+
 export function activate(context: vscode.ExtensionContext): DataPassTestApi | undefined {
+  const activateStart = performance.now();
+  const perf: PerfCounters = { loadMs: loadedAt - loadStart, activateMs: 0, firstRefreshMs: 0, sessionRefreshes: 0, sessionChanges: 0, gitChanges: 0 };
   // V2.2 Work view: scope → next step → checklist → operation readiness → outputs → exchanges.
   const session = new WorkSession(context);
+  if (context.extensionMode === vscode.ExtensionMode.Test) {
+    const refresh = session.refresh.bind(session);
+    session.refresh = force => { perf.sessionRefreshes++; return refresh(force); };
+    context.subscriptions.push(session.onDidChange(() => { perf.sessionChanges++; }));
+  }
   // 0.22 modes: the context keys are set before the views render (`when` clauses read them).
   const experience = new ExperienceService(context);
   context.subscriptions.push(experience);
@@ -235,7 +250,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   // Refreshed only while visible (cached results are reused): on showing, on window focus, after the project changes.
   const gitIfVisible = () => { if (gitView.visible) void git.refresh(); };
   context.subscriptions.push(
-    git, gitTree, gitView, git.onDidChange(gitBadge), git.onDidChange(() => host.refreshGit()),
+    git, gitTree, gitView, git.onDidChange(gitBadge), git.onDidChange(() => host.refreshGit()), git.onDidChange(() => { perf.gitChanges++; }),
     gitView.onDidChangeVisibility(e => { if (e.visible) void git.refresh(); }),
     vscode.window.onDidChangeWindowState(e => { if (e.focused) gitIfVisible(); }),
     session.onDidChange(gitIfVisible)
@@ -399,7 +414,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   let landed: Promise<boolean> = Promise.resolve(false);
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
+  const firstRefreshStart = performance.now();
   const startup = refreshState()
+    .then(() => { perf.firstRefreshMs = performance.now() - firstRefreshStart; })
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
     .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied).catch(() => false); await landed; experience.introduce(); return applied; })
@@ -408,8 +425,10 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       return undefined;
     });
 
+  perf.activateMs = performance.now() - activateStart;
   if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
   return {
+    perf: () => ({ ...perf }),
     refresh: refreshState,
     workModel: () => session.model(),
     project: () => session.project,

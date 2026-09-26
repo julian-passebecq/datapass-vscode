@@ -9,6 +9,8 @@ await esbuild.build({
   target: "node20",
   external: ["vscode"],
   sourcemap: true,
+  // V1-PERF: when the bundle starts evaluating, so activation timings include module loading.
+  banner: { js: "globalThis.__datapassLoadStart = performance.now();" },
   logLevel: "info"
 });
 
