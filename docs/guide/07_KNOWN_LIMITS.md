@@ -55,3 +55,24 @@ that does not exist.
 Databricks validate/deploy, Fabric browse, Azure Functions run-local/deploy, ADF Studio, VM over
 SSH, and the Claude/Codex desktop-app hand-off have unit and desktop tests but have not been run
 end to end on a real client account. The first client project is that qualification.
+
+## Trust limits (0.22)
+
+- **Costs.** Declared costs are added per currency and never converted; monthly and one-time
+  amounts stay apart. A total with an option or line that has no figure says "partial: n of m
+  priced": it is not the full cost. An unknown cost is never 0.
+- **File identity.** Files up to a byte budget are hashed (SHA-256). Larger files, or files past the
+  budget, are identified by size and modification time only; the component's digest is then
+  "weak" and a recorded result is shown as stale rather than matched (two different contents can
+  share size and time).
+- **Git tracking.** When Git cannot say whether a file that must not be committed is tracked
+  (Restricted Mode, an error, output cut short), DataPass says "could not check Git tracking"; it
+  never reads that as clean.
+- **Repository identity.** A declared repository whose clone has no origin, or whose origin could
+  not be read, is "unverified": its files are shown, but Get updates and work orders refuse it
+  until the right clone is located or the origin is read again (Retry).
+- **Bounded inspection.** At most 16 file reads run at once and at most 2,000 expected files are
+  inspected per refresh; anything left out is reported as "inspection incomplete (n skipped)" in
+  Problems in project files.
+- **Coordinated change sets** (native PR plus bridge PR) are described in the guide; DataPass does
+  not yet show them linked in its views (planned for V2).

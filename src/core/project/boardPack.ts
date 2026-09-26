@@ -15,6 +15,7 @@ import type { OptionsFile } from "./options";
 import { reviewColumn, TYPE_LABELS, type Board, type BoardItemType, type CardView } from "./board";
 import { componentSection, decisionLines, OMITTED, repoLine, sheetLines, type PackExport } from "./preparation";
 import { toolchainContextLines, type Readiness } from "../readiness/readiness";
+import { COORDINATED_CHANGE_RULE } from "./preparation";
 
 export const CARD_QUESTIONS = {
   fix: {
@@ -35,7 +36,7 @@ export const CARD_QUESTIONS = {
   },
   explain: {
     label: "Explain it to me step by step",
-    ask: "Explain this card to me step by step as to a beginner in cloud engineering: what it is about, which components and files are involved, what is already in place, and the next concrete step with the official tool to use."
+    ask: "Explain this card to me step by step, in plain language: what it is about, which components and files are involved, what is already in place, and the next concrete step with the official tool to use."
   },
   plan: {
     label: "Split it into small tasks for the board",
@@ -150,8 +151,9 @@ export function buildCardPack(input: CardPackInput, maxBytes = 24_000): PackExpo
   const review = reviewColumn(board);
   if (input.question === "fix" || input.question === "implement") {
     lines.push("- Files go in the repository and folder named above, in their native format, delivered as a branch or pull request I review.");
-    lines.push(`- In the same pull request, update .datapass/board.json: set the "status" of \`${card.id}\` to \`${review?.id ?? card.status}\`${review?.title ? ` (${review.title})` : ""} and add the pull request's address to its "links". Keep every other card and every id unchanged; never delete a card.`);
-    lines.push("- If you change the architecture, update .datapass/project.json and .datapass/graph.json in the same pull request.");
+    lines.push(`- ${COORDINATED_CHANGE_RULE}`);
+    lines.push(`- In the pull request that holds .datapass (the same one when the work is in the bridge repository, else the bridge pull request), update .datapass/board.json: set the "status" of \`${card.id}\` to \`${review?.id ?? card.status}\`${review?.title ? ` (${review.title})` : ""} and add the pull request's address to its "links". Keep every other card and every id unchanged; never delete a card.`);
+    lines.push("- If you change the architecture, update .datapass/project.json and .datapass/graph.json in that same bridge pull request.");
   } else if (input.question === "plan") {
     lines.push("- Return the complete board.json once, in a single ```json block. Keep \"format\", \"version\", the columns and every existing card unchanged; new ids are lowercase (letters, digits, - . _).");
   } else {

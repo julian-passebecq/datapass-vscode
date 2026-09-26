@@ -71,13 +71,13 @@ export const repoObsA = (): Map<string, RepoObservation> => new Map([
 ]);
 
 export function fileObsA(extra: Record<string, FileObservation> = {}): Map<string, FileObservation> {
-  const found = (sha?: string): FileObservation => ({ state: "found", kind: "file", sha256: sha });
+  const found = (sha?: string): FileObservation => ({ state: "found", kind: "file", fingerprint: sha ? { kind: "sha256", value: sha } : undefined });
   const dir = (count = 1): FileObservation => ({ state: "found", kind: "dir", count });
   const missing: FileObservation = { state: "missing" };
   const entries: Record<string, FileObservation> = {
     "functions/extract": dir(), "functions/extract/function_app.py": found("f1"), "functions/extract/host.json": found("h1"),
     "functions/extract/requirements.txt": missing, "functions/extract/.funcignore": missing, "functions/extract/tests": dir(),
-    "functions/extract/tests/test_extract.py": found("t1"), "functions/extract/local.settings.json": { state: "missing", tracked: false },
+    "functions/extract/tests/test_extract.py": found("t1"), "functions/extract/local.settings.json": { state: "missing", tracking: { state: "untracked" } },
     adf: dir(), "adf/pipeline": dir(2), "adf/pipeline/build_candidates.json": found("p1"), "adf/linkedService": missing, "adf/dataset": missing, "adf/trigger": missing,
     cosmos: dir(), "cosmos/containers": dir(), "cosmos/queries": missing,
     mongo: missing, "mongo/schemas": missing, "mongo/playgrounds": missing,
