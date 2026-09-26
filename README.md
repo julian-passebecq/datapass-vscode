@@ -22,7 +22,7 @@ merged work — without ever deploying, pushing or running project code.
 ## Modes (0.22)
 
 DataPass opens in **Standard** mode. A mode only changes what DataPass shows: the same project
-files in every mode, commands stay in the Command Palette, and safety blockers (untrusted workspace,
+files in every mode, and safety blockers (untrusted workspace,
 wrong repository, refused secret, manifest errors, readiness errors) show in every mode. Switch with
 the status-bar item **DataPass: Standard** or **DataPass: Switch Mode**; show or hide single surfaces
 with **DataPass: Customize DataPass Mode** (kept when you switch). Both are machine settings
@@ -37,6 +37,14 @@ repository. Third-party extensions are never touched.
 | **Advanced** | Everything, as in 0.20: + the board, the Work and Galaxy views, the tool-health status item |
 
 The presets are JSON (`resources/experience/presets.json`, schema `schemas/datapass-experience.schema.json`).
+
+**Command Palette per mode (V1-SURF).** The palette lists the core commands in every mode (29:
+open a client project, copy context for your AI, check files, Git updates, clone, switch mode…) plus
+those of the surfaces the mode shows: about 40 in Standard, 60 in DataPass, all of them in Advanced.
+To list every command in another mode, turn on *Command Palette: every DataPass command* in
+**Customize DataPass Mode**. A command left out of the palette is still registered and works from
+its view, menu or keybinding; nothing is disabled. The V1 FOIL profile commands and settings are
+Advanced-only (the settings are marked deprecated and hidden from the Settings editor unless set).
 
 ## V3 (0.13.0, env readiness since 0.14.0): the Project Workbench
 

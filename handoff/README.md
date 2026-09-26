@@ -6,7 +6,7 @@
 
 ## Archived — V3 (2026-09-25)
 
-- [V3 handoff](V3_HANDOFF.md): what V3 is, the audit reconciled, what changed, FOIL as first consumer, next steps.
+- [V3 handoff](V3_HANDOFF.md) (the V3 record, not the entry point): what V3 is, the audit reconciled, what changed, FOIL as first consumer, next steps.
 - [Audit reconciliation](archive/v3/01_AUDIT_RECONCILIATION.md) · [Architecture](v3/02_ARCHITECTURE.md) · [FOIL consumer](archive/v3/03_FOIL_CONSUMER.md) · [Next passes and acceptance](v3/04_NEXT_PASSES.md) · [Sources](archive/v3/05_SOURCES.md)
 - [Next-pass prompt for Claude](archive/v3/CLAUDE_PROMPT.md).
 - The contract for AIs preparing a project: [docs/PREPARING_A_PROJECT.md](../docs/PREPARING_A_PROJECT.md).

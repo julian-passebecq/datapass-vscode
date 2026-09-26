@@ -1754,6 +1754,470 @@
         {
           "command": "datapass.control.openConversation",
           "when": "false"
+        },
+        {
+          "command": "datapass.refresh",
+          "when": "!datapass.hidden.view.galaxy"
+        },
+        {
+          "command": "datapass.openGalaxy",
+          "when": "!datapass.hidden.view.galaxy"
+        },
+        {
+          "command": "datapass.selectFoilControlRoot",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.selectFoilDatabricksRoot",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.initializeFoilProjectManifest",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.copyEnvironmentSnapshot",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fabric.captureSummary",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fabric.scaffoldDeployConfig",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fabric.copyDeployCommand",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fabric.scaffoldPreflightWorkflow",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.work.refresh",
+          "when": "!datapass.hidden.view.work"
+        },
+        {
+          "command": "datapass.selectScope",
+          "when": "!datapass.hidden.view.work"
+        },
+        {
+          "command": "datapass.showPreflight",
+          "when": "!datapass.hidden.view.work"
+        },
+        {
+          "command": "datapass.createAppRequest",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.importAppResult",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.observeAppRevision",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.createCandidate",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.analyzeImpact",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.prepareBrief",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.approveBrief",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.importOutputManifest",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.importAuthoritySnapshot",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.exportDiagramCloud",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.inspectPowerBiProject",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.copyAiContext",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.diagramCloud.openArchitecture",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.diagramCloud.copyAiContext",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.diagramCloud.importAiPlan",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.diagramCloud.copySummary",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.migrateManifestToV2",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.initGraph",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openCompanionLink",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.chooseModules",
+          "when": "!datapass.hidden.view.project"
+        },
+        {
+          "command": "datapass.openResource",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.copySshCommand",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.recordQualification",
+          "when": "!datapass.hidden.view.galaxy"
+        },
+        {
+          "command": "datapass.exportQualificationReport",
+          "when": "!datapass.hidden.view.galaxy"
+        },
+        {
+          "command": "datapass.clearQualificationResults",
+          "when": "!datapass.hidden.view.galaxy"
+        },
+        {
+          "command": "datapass.openWorkbench",
+          "when": "!datapass.hidden.view.project"
+        },
+        {
+          "command": "datapass.arrangeWorkbench",
+          "when": "!datapass.hidden.view.architecture"
+        },
+        {
+          "command": "datapass.switchVariant",
+          "when": "!datapass.hidden.status.selectedVariant"
+        },
+        {
+          "command": "datapass.setSelectedVariant",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.showAllVariants",
+          "when": "!datapass.hidden.project.variantFilter"
+        },
+        {
+          "command": "datapass.showSelectedArchitecture",
+          "when": "!datapass.hidden.project.variantFilter"
+        },
+        {
+          "command": "datapass.preparationPack",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.openComponentFolder",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.openComponentEntry",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.openNativeTool",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.openAdfStudio",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.showOperation",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.copyComponentCommand",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.recordComponentResult",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openGraph",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.saveWorkView",
+          "when": "!datapass.hidden.view.project"
+        },
+        {
+          "command": "datapass.applyWorkView",
+          "when": "!datapass.hidden.view.project"
+        },
+        {
+          "command": "datapass.manageWorkViews",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.renameWorkView",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.deleteWorkView",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.setStartupView",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openWorkbenchFloating",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.createCompanyWorkspace",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.exportCompanyWorkspaces",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.env.copyKeyName",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.env.openFile",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.env.copyIdentifier",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.copyProjectId",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openPowerOps",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.readinessReport",
+          "when": "!datapass.hidden.project.readiness"
+        },
+        {
+          "command": "datapass.openOptions",
+          "when": "!datapass.hidden.workbench.options"
+        },
+        {
+          "command": "datapass.openSheet",
+          "when": "!datapass.hidden.workbench.sheet"
+        },
+        {
+          "command": "datapass.previewArchitecture",
+          "when": "!datapass.hidden.view.architecture"
+        },
+        {
+          "command": "datapass.clearPreview",
+          "when": "!datapass.hidden.view.architecture"
+        },
+        {
+          "command": "datapass.recordDecision",
+          "when": "!datapass.hidden.workbench.options"
+        },
+        {
+          "command": "datapass.exportOptionsComparison",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.optionsAiContext",
+          "when": "!datapass.hidden.workbench.options"
+        },
+        {
+          "command": "datapass.openOptionsFile",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openSheetFile",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openBoard",
+          "when": "!datapass.hidden.workbench.board"
+        },
+        {
+          "command": "datapass.openBoardFile",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.board.moveCard",
+          "when": "!datapass.hidden.workbench.board"
+        },
+        {
+          "command": "datapass.board.aiPack",
+          "when": "!datapass.hidden.workbench.board"
+        },
+        {
+          "command": "datapass.openToolkit",
+          "when": "!datapass.hidden.workbench.toolkit"
+        },
+        {
+          "command": "datapass.openCiRuns",
+          "when": "!datapass.hidden.view.details"
+        },
+        {
+          "command": "datapass.checkConnections",
+          "when": "!datapass.hidden.project.readiness"
+        },
+        {
+          "command": "datapass.showRecommendedExtensions",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.lookUpId",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.new",
+          "when": "!datapass.hidden.ai.agent"
+        },
+        {
+          "command": "datapass.workOrders.show",
+          "when": "!datapass.hidden.ai.agent"
+        },
+        {
+          "command": "datapass.workOrders.refresh",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.launch",
+          "when": "!datapass.hidden.ai.agent"
+        },
+        {
+          "command": "datapass.workOrders.resume",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.copyPrompt",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.copyForChat",
+          "when": "!datapass.hidden.ai.agent"
+        },
+        {
+          "command": "datapass.workOrders.markDone",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.abandon",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.archive",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.followUp",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.revise",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.checkPrFiles",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.importProposed",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.publishSummary",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.exportProject",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.openFolder",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.enable",
+          "when": "!datapass.hidden.ai.agent"
+        },
+        {
+          "command": "datapass.codexTests.handToCodex",
+          "when": "!datapass.hidden.ai.codexTests"
+        },
+        {
+          "command": "datapass.codexTests.openLastReport",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codexTests.chooseRepository",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codexTests.refresh",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.pilot.show",
+          "when": "!datapass.hidden.ai.pilot"
+        },
+        {
+          "command": "datapass.pilot.enable",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.workOrders.newForMissingFiles",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fileVersions.openLatest",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.fileVersions.lastUpdate",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.experience.resetOverrides",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.control.refresh",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.control.copyStartCommand",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -1836,19 +2300,22 @@
           "type": "string",
           "default": "",
           "scope": "window",
-          "description": "Local path to foil-control-v1. Leave blank for workspace auto-detection."
+          "description": "Local path to foil-control-v1. Leave blank for workspace auto-detection.",
+          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
         },
         "datapass.foil.databricksRoot": {
           "type": "string",
           "default": "",
           "scope": "window",
-          "description": "Local path to foil_databrick_dab. Leave blank for workspace auto-detection."
+          "description": "Local path to foil_databrick_dab. Leave blank for workspace auto-detection.",
+          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
         },
         "datapass.foil.oracleSshHost": {
           "type": "string",
           "default": "",
           "scope": "window",
-          "description": "SSH config host alias for the FOIL Oracle VM. Do not put credentials here."
+          "description": "SSH config host alias for the FOIL Oracle VM. Do not put credentials here.",
+          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
         },
         "datapass.fabric.toolboxRoot": {
           "type": "string",
@@ -2287,6 +2754,10 @@
             "ai.codexTests": {
               "type": "boolean",
               "description": "Work orders: Codex tests: The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)"
+            },
+            "palette.full": {
+              "type": "boolean",
+              "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."

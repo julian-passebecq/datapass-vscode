@@ -1,7 +1,9 @@
 /**
  * Copy the public DataPass contracts into a checkout of datapass-vscode-common (HUB-1,
  * handoff/v3/12 §8). Explicit allowlist; everything else is refused. Idempotent: a file is
- * written only when its bytes differ, and managed folders lose files no longer in the source.
+ * written only when its content differs, and managed folders lose files no longer in the source.
+ * Text is written with LF line endings and compared without regard to CRLF/LF, so a Windows
+ * checkout (core.autocrlf) of either repository does not make every file look stale.
  *
  *   npx tsx scripts/sync-common.ts --target <path to datapass-vscode-common> [--check]
  *
@@ -77,16 +79,19 @@ export function plan(sourceRoot: string): { entries: SyncEntry[]; refused: SyncR
   return { entries, refused };
 }
 
+/** Text with LF line endings; binary content (a NUL byte) unchanged. */
+export const lf = (b: Buffer): Buffer => (b.includes(0) ? b : Buffer.from(b.toString("utf8").replace(/\r\n/g, "\n"), "utf8"));
+
 export function syncCommon(sourceRoot: string, targetRoot: string, check = false): SyncResult {
   const { entries, refused } = plan(sourceRoot);
   const written: string[] = [];
   const removed: string[] = [];
   const version = JSON.parse(readFileSync(join(sourceRoot, "package.json"), "utf8")).version as string;
-  const outputs = new Map<string, Buffer>(entries.map((e) => [e.target, readFileSync(join(sourceRoot, e.source))]));
+  const outputs = new Map<string, Buffer>(entries.map((e) => [e.target, lf(readFileSync(join(sourceRoot, e.source)))]));
   outputs.set("VERSION", Buffer.from(`${version}\n`));
   for (const [target, data] of outputs) {
     const full = join(targetRoot, target);
-    if (existsSync(full) && readFileSync(full).equals(data)) continue;
+    if (existsSync(full) && lf(readFileSync(full)).equals(data)) continue;
     written.push(target);
     if (!check) { mkdirSync(dirname(full), { recursive: true }); writeFileSync(full, data); }
   }
