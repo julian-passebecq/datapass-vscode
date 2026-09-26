@@ -51,6 +51,10 @@ planned 0.22 "modes" pass is **replaced by package B** below.
 | D-12 | **The FOIL bridge files are prepared by the FOIL AI, not by Claude.** DataPass ships the guide; §8 is the message for the FOIL AI. | Julian's principle "the client AI prepares". |
 | D-13 | **Release discipline tonight**: packages A–D do **not** bump the version or edit `CHANGELOG.md`, `IMPLEMENTATION_STATUS.md` or `CLAUDE.md`; each writes `handoff/v3/night/0.22-<letter>.md`. Step E consolidates into **0.22.0**. | Four parallel PRs otherwise collide on the same lines. |
 | D-14 | Julian-dev-v1 (review proposal) is a Claude Control matter, not a DataPass feature; nothing is activated here. | Out of this repository's scope. |
+| D-15 | **Variants need no new concept.** A variant (version, proposal, alternative) is an **option** of a decision in options.json; a named combination is a **scenario**. The client AI declares which components each option adds, replaces or removes, and each component already names its repository and files: that *is* the variant → files map. A variant nobody has coded uses planned repositories / components without files and is still declared and shown. The guide says this explicitly. | options.json 0.15 already carries `changes.add/replace/remove` (graph items with `repoRef` and files) and planned `newRepositories`. |
+| D-16 | **DataPass derives a coding state** per option and scenario — *coded* (every file of its components resolves), *partly coded*, *not coded* (no file, or only planned repositories) — and shows it as a badge. No new field for the AI to maintain. | Deterministic, can't go stale; "not coded" is visible without anyone writing it. |
+| D-17 | **The architecture-scoped tree is DataPass's semantic tree, not the Explorer.** By default it shows the components and main files of the selected architecture (the current one, or the scenario being previewed); a toggle *All variants* adds every option's components and files, each tagged with its option and coding state. Opening any file stays one click. The native Explorer stays complete (D-06). | VS Code cannot filter the Explorer without writing `files.exclude` settings; a filtered semantic tree changes no file. |
+| D-18 | **File versions: thin commands on native Git, no own layer.** VS Code gives the Timeline (a file's commits, *Open Changes* diff per commit), the Source Control Graph, *Git: Open Changes / Open File*, the diff editor and the `vscode.git` API (`toGitUri` opens any revision read-only). It lacks, without GitLens: *open this file at a chosen revision as its own tab*, *open the latest remote version without pulling*, and *what did the last update change, per component*. DataPass adds exactly those three (package F). GitLens stays an optional toolkit entry, never required. | Native covers history and diff; GitLens is heavy with a paid tier; three commands close the gap. |
 
 ## 3. Features by version and mode
 
@@ -67,6 +71,9 @@ DataPass < Advanced). "Useful" is for Julian's daily loop, FOIL first.
 | **Format checks without execution → Problems** (package D) | new | useful | Vanilla | V1 (0.22) |
 | **Modes / presets** (package B) | new | useful | all | V1 (0.22) |
 | **Trust repairs F01–F08** (package A) | new | useful | all | V1 (0.22) |
+| **File versions: Open Latest Version, Open Version…, Compare with Version…, Changed by the last update** (package F) | new | useful | Vanilla | V1 (0.22) |
+| **Variant coding state badges (coded / partly / not coded)** (package G) | new | useful | Standard | V1 (0.23) |
+| **Tree scoped to the selected architecture + *All variants* toggle** (package G) | new | useful | Standard | V1 (0.23) |
 | Architecture panel as the landing view, Details side bar | 0.13/0.15 | useful | Standard | V1 |
 | "Alternatives exist" indicator on a component | new in B | useful | Standard | V1 (0.22) |
 | Project tree by scope / sub-project, repository states | 0.13 | useful | DataPass | V1 |
@@ -86,12 +93,14 @@ DataPass < Advanced). "Useful" is for Julian's daily loop, FOIL first.
 | Coordinated change sets shown (native PR ↔ bridge PR, prepared vs landed) | docs in A | useful | DataPass | V2 |
 | Cost lines linked to toolkit ids, pinned catalogue revision, stale assertions | — | useful | DataPass | V2 |
 | Python syntax check through a vetted parser, notebook formats | — | useful | Vanilla | V2 |
+| Variants living on another branch or tag (file references with a Git `ref`, opened read-only; graph schema change) | — | useful | Standard | V2 |
+| Side-by-side variant comparison of the same component's files (diff across variants) | — | useful | DataPass | V2 |
 | Company-level global view (all projects of a company on one diagram) | — | useful | Standard | V2 |
 | Remote-SSH / WSL qualification | — | useful | all | V2 |
 | Recipes exported as agent skills; read-only DataPass MCP server; Pilot | — | later | Advanced | V3 |
 | FOIL producer routes (generate), diagram editing | — | depends on FOIL / optional | Advanced | V3 |
 
-## 4. Work packages for tonight (A–D in parallel, E after)
+## 4. Work packages for tonight (A–D in parallel, F when a coder is free, E after; G in 0.23)
 
 Each package: its own worktree from up-to-date main, branch `claude/0.22-<letter>-<slug>`, effort
 **high**, `npm run verify` green, its own desktop flows file passing locally, PR merged on green CI.
@@ -102,7 +111,7 @@ Common rules:
   (what changed, tests, limits). In `package.json`, `src/extension.ts` and
   `tests/integration/suite.ts`, add only your own entries (commands, menus, settings, one register
   call, one suite line); before merging, rebase on main and resolve those three files by union.
-- **Merge order** when several are green together: A, C, D, B (B last: it gates every view).
+- **Merge order** when several are green together: A, C, D, F, B (B last: it gates every view).
 - **Ownership** (do not edit another package's files; if you must, keep it to a one-line hook and
   say so in the PR):
 
@@ -112,6 +121,8 @@ Common rules:
 | B | `src/core/experience/**`, `resources/experience/**`, `schemas/datapass-experience.schema.json`, `src/work/experienceCommands.ts`, views `when` clauses in `package.json`, section gating in `src/views/{workbenchHtml,aiExchangeHtml}.ts` and the root children of `src/views/projectTree.ts` |
 | C | `src/core/exchange/fileContext.ts`, `src/work/fileContextCommands.ts`, its menus in `package.json` |
 | D | `src/core/checks/**`, `src/work/checkCommands.ts`, `tests/fixtures/checks/**`, its settings in `package.json` |
+| F | `src/core/git/fileVersions.ts`, `src/work/fileVersionCommands.ts`, its menus in `package.json`; reads `gitSync.ts` (`changedComponents`) without changing it |
+| G (0.23, after A and B) | `src/core/project/variants.ts`, the variant filter in `src/views/projectTree.ts`, a guide section on variants |
 
 ### A — Trust repairs (F01–F08)
 
@@ -211,7 +222,46 @@ diagnostics; a test that `src/core/checks/**` imports nothing from `exec`/`child
 budget stops a 5,000-file repository scan with an "incomplete" diagnostic. Desktop flow: a broken
 `databricks.yml` in a fixture shows in Problems. **Effort: high.**
 
-### E — Release 0.22.0 (after A–D are merged)
+### F — File versions (thin commands on native Git) — tonight, first coder free
+
+**Scope.** D-18. On a file (Explorer, editor title, Details file links, a component's files):
+*Open Latest Version* (the file at `origin/<default branch>` **as of the last fetch**, read-only tab,
+title says the commit and fetch time; never fetches or pulls by itself), *Open Version…* (quick pick of
+`git log --follow` for that file, 50 entries: date, author, subject, and "from PR #n" when the
+0.19 Git observer knows the branch; opens that revision read-only), *Compare with Version…* (the
+native diff editor, working file ↔ chosen revision). After *Get updates*: a **Changed by the last
+update** list (Details and Project view, per component, from `changedComponents`) whose rows open the
+native diff old..new. Revisions open through the `vscode.git` API's `toGitUri`; when the Git extension
+is disabled, a read-only `datapass-rev:` content provider backed by `git show <sha>:<path>`. Never
+checks out, never writes. Works in every mode (Vanilla+).
+
+**Acceptance.** `tests/fileVersions.test.ts`: log parsing with renames (`--follow`), a file with no
+history, a file outside any repository, a revision where the file did not exist, the latest version
+when `origin/<default>` is missing (message, no fetch), path with spaces; the provider refuses a path
+escaping the repository. Desktop flow on a fixture repository with 3 commits: Open Version… opens the
+first commit's content read-only; Compare opens a diff editor; after a simulated update the changed
+list shows the component and opens the diff. **Effort: high.**
+
+### G — Variants: coding state and the architecture-scoped tree — 0.23, after A and B are merged
+
+**Scope.** D-15 to D-17. A pure `variants.ts` deriving, per option and scenario, its components and
+files (from `changes` and the base graph) and its coding state (coded / partly coded / not coded,
+with the reason: planned repository, no files, missing files). Badges in the Options table, the
+Architecture panel's scenario preview and Details. In the Project tree: *Selected architecture*
+filter (current, or the previewed scenario) on by default in Standard and above, and an *All
+variants* toggle listing every option's components and files tagged with the option and its state.
+Surfaces `project.variantFilter` and `badges.codingState` added to package B's presets (Standard+).
+Guide: "Declaring variants" — each option lists the components it adds/replaces/removes, each
+component its repository and files; a variant not coded yet uses planned repositories and components
+without files.
+
+**Acceptance.** Unit: a coded option, a partly coded one (one file missing), a not-coded one
+(planned repository only), a scenario mixing them, an option that only removes components (coded by
+definition), files shared by two options tagged with both. Desktop flow on the research-library
+example: the filter hides the other option's files; *All variants* shows them tagged; the previewed
+scenario changes the filtered list; no file is written. **Effort: high.**
+
+### E — Release 0.22.0 (after A–D and F are merged)
 
 Bump to 0.22.0; `CHANGELOG.md`, the top of `IMPLEMENTATION_STATUS.md` and `CLAUDE.md`'s current-source
 line from `handoff/v3/night/*.md` (then delete that folder's notes into the status); update
@@ -239,6 +289,7 @@ line from `handoff/v3/night/*.md` (then delete that folder's notes into the stat
 | J2 | FOIL's bridge repository: `foil-v1-vscode-datapass` or `foil-control-v1` (the review's suggestion)? | **`foil-v1-vscode-datapass`**: it is already DataPass-shaped, and `foil-control-v1` stays FOIL's own control authority, listed in the bridge as a native repository, free of DataPass files. |
 | J3 | V2: may the bridge recommend a mode and surfaces (manifest v6 `presentation` block), so the client's or DataPass's AI "chooses the 80 %"? | **Yes, in V2**; your local choice always wins. |
 | J4 | Call it "bridge repository" in the UI from 0.22 (older name kept in the docs)? | **Yes.** |
+| J5 | V2: may a variant point to files on another branch or tag (a Git `ref` on file references, graph schema change)? | **Yes, in V2**; in V1 a variant lives in its own folder or repository. |
 
 ## 7. FOIL review reconciliation
 
@@ -263,7 +314,9 @@ a short README/AGENTS, the manifest naming the native repositories with their ro
 (`foil-control-v1`, `foil-streamlit-wind-3d-lcoe`, `foil_databrick_dab`, `reactoracle` with its
 verified branch, the Azure PDF pipeline when it has a home) and real environments, a graph at native
 units (DAB root, Function App, DAG package, model library, dataset contract), and options.json for
-real platform choices with sourced, dated, per-currency prices. No DataPass file in the native
+real platform choices with sourced, dated, per-currency prices; every variant or proposal is an
+option that names the components (and so the repositories and files) it adds, replaces or removes,
+including variants nobody has coded yet (planned repositories, components without files). No DataPass file in the native
 repositories; no board (the PM backlog stays the authority). Your eight findings are all accepted
 and fixed in 0.22 (package A). Julian then runs your three stories (§6 of your chapter 03) in
 Standard mode.

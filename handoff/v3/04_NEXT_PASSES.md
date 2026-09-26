@@ -129,7 +129,8 @@ recorded with *Record result*. Only the steps Julian can do on their accounts; n
 
 **2026-09-26: [10_GLOBAL_IMPROVEMENT_PLAN.md](10_GLOBAL_IMPROVEMENT_PLAN.md) wins over this list.**
 After the toolkit catalogue (0.21.0), 0.22.0 = four parallel packages (A trust repairs F01–F08,
-B modes, C context from any file, D format checks without execution) and a release step; the
+B modes, C context from any file, D format checks without execution), F file versions, and a
+release step; 0.23 = G variants (coding state, architecture-scoped tree); the
 planned 0.22 "modes" pass is replaced by package B. The items below stay as the V2/V3 backlog.
 
 0. **Order (Julian, [09](09_AI_MODES_WORK_ORDERS_GIT.md) §13.1):** 0.19.0 the Git module (AI-1, its
