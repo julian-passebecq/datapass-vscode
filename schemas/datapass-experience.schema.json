@@ -83,10 +83,11 @@
                 "badge.hubChanged",
                 "status.selectedVariant",
                 "view.agentPanel",
-                "ai.pilot"
+                "ai.pilot",
+                "ai.codexTests"
               ]
             },
-            "maxItems": 32,
+            "maxItems": 33,
             "minItems": 0
           }
         },

@@ -7,7 +7,7 @@
  * Safety: text is always set with textContent (never innerHTML); the only messages sent back are
  * select / openFile / preview / command, and the extension validates each against the project.
  */
-import type { WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbOrder, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
+import type { WbCodexTests, WbComponent, WbDecision, WbGit, WbImpact, WbOperation, WbOption, WbOrder, WbReadiness, WbRepository, WbScenario, WbSubproject, WorkbenchState } from "../views/workbenchState";
 import type { CardView } from "../core/project/board";
 import type { WbTool } from "../views/toolkitState";
 import type { RecipeRouteView, RecipeView } from "../core/toolkit/toolkit";
@@ -1352,7 +1352,38 @@ function woNav(s: WorkbenchState): HTMLElement {
       btn("Publish summary", () => command("datapass.workOrders.publishSummary"), { icon: "⇪", title: "Writes .datapass/work-log.json (and your private log repository when set); you commit them" }),
       btn("Export JSON…", () => command("datapass.workOrders.exportProject"), { kind: "link", title: "Names and states of the project, a sub-project or the company" }),
       btn("Re-read the orders", () => command("datapass.workOrders.refresh"), { kind: "link" })),
-    h("p", { class: "muted small", text: "Orders stay on this computer (.datapass/local/work-orders). The durable record is the branches, the pull requests and the summary you publish. DataPass never merges, deploys or deletes." }));
+    h("p", { class: "muted small", text: "Orders stay on this computer (.datapass/local/work-orders). The durable record is the branches, the pull requests and the summary you publish. DataPass never merges, deploys or deletes." }),
+    s.codexTests ? codexTestsSection(s.codexTests) : undefined);
+}
+
+const QA_TONE: Record<string, string> = { waiting: "muted", matches: "ok", refused: "bad" };
+
+/** QA-2: the Codex tests section — the test repository's journeys, the last report, Hand to Codex. */
+function codexTestsSection(c: WbCodexTests): HTMLElement {
+  const r = c.lastReport;
+  return h("section", { class: "codex-tests", "aria-label": "Codex tests" },
+    h("div", { class: "divider" }),
+    eyebrow("Codex tests"),
+    !c.configured ? h("p", { class: "muted small", text: "Point DataPass at your clone of a test repository (a client's auto repository, or codex-datapass-vsixtest) to list its journeys and hand them to the Codex app." })
+      : h("p", { class: "small", text: c.title ? `${c.title} · DataPass ${c.version ?? "?"}` : c.repository ?? "" }),
+    c.error ? h("div", { class: "problem warning", text: c.error }) : undefined,
+    c.journeys.length ? h("ul", { class: "small plain", "aria-label": "Journeys" }, ...c.journeys.map(j => h("li", { title: j.features.join(", ") }, h("b", { text: j.id }), ` ${j.title} `, h("span", { class: "muted", text: j.features.join(" · ") })))) : undefined,
+    ...c.journeyErrors.slice(0, 3).map(e => h("div", { class: "problem warning small", text: e })),
+    r ? h("div", { class: "small", "aria-label": "Last report" },
+      h("div", { text: `Last report ${r.date} · DataPass ${r.version}` }),
+      h("div", { text: `${r.outcomes.reached} reached · ${r.outcomes.partly} partly · ${r.outcomes["not-reached"]} not reached${r.outcomes.blocked ? ` · ${r.outcomes.blocked} blocked` : ""}` }),
+      h("div", { class: r.blockers ? "warn" : "", text: `${r.blockers} blocker${r.blockers === 1 ? "" : "s"} · ${r.majors} major · coverage ${r.coverage.reached}/${r.coverage.listed}` }),
+      btn("Open last report", () => command("datapass.codexTests.openLastReport"), { kind: "link", icon: "↗" }))
+      : c.reportNote ? h("p", { class: "muted small", text: c.reportNote }) : undefined,
+    ...c.runs.slice(-5).map(x => h("div", { class: "envrow small" },
+      h("span", { text: `${x.short} · ${x.runId}` }), pill(x.receipt === "matches" ? "report received" : x.receipt === "refused" ? "report refused" : x.status, QA_TONE[x.receipt] ?? "muted"),
+      x.message ? h("span", { class: "muted", text: x.message }) : undefined,
+      x.pr ? btn("Report PR", () => command("datapass.codexTests.openRunPr", x.id), { kind: "link", icon: "↗" }) : undefined)),
+    h("div", { class: "actions-col" },
+      c.canHand ? btn("Hand to Codex", () => command("datapass.codexTests.handToCodex"), { kind: "primary", icon: "▸", title: "Writes a qa-run work order and opens the Codex app (asks you to confirm first)" })
+        : h("p", { class: "muted small", text: c.why ?? "" }),
+      btn(c.configured ? "Change the test repository…" : "Choose the test repository…", () => command("datapass.codexTests.chooseRepository"), { kind: "link" }),
+      c.configured ? btn("Re-read", () => command("datapass.codexTests.refresh"), { kind: "link" }) : undefined));
 }
 
 /** 0.24 (AI-3): the conversation Claude Control linked to an order, or why none is shown. */

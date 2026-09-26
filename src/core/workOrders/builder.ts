@@ -12,7 +12,7 @@ import { validateSchema } from "../contracts/schemaDsl";
 import {
   FORMAT_VERSION, ORDER_FORMAT, RESULT_FORMAT, WORK_ORDER_SCHEMA, WorkOrderFormatError, localIso, newOrderId, newReceipt,
   type AgentTool, type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type OrderRepository, type ProjectType,
-  type PilotOrderCli, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
+  type PilotOrderCli, type QaRunSection, type RepoFile, type Surface, type WorkOrder, type WorkOrderResult
 } from "./format";
 import { stampLine, type PackStamp } from "../exchange/stamp";
 import { RESULT_FIELDS } from "../evidence/receipts";
@@ -30,7 +30,8 @@ export const KIND_LABELS: Readonly<Record<OrderKind, string>> = {
   "apply-decision": "Apply an architecture decision",
   "fix-card": "Fix a board card",
   "datapass-files": "DataPass files only (.datapass/*.json)",
-  "pilot-read": "Pilot, read-only: look at the dev cloud and report"
+  "pilot-read": "Pilot, read-only: look at the dev cloud and report",
+  "qa-run": "Codex tests: walk the test journeys and report"
 };
 
 /** One line of project-file text shown to the agent as data: no control characters, bounded. */
@@ -102,6 +103,8 @@ export interface OrderInput {
   merge: MergePolicy;
   /** 0.26 (AI-4a): required for `kind: pilot-read` (every repository read, permissions ask, no PR). */
   pilot?: { environment: string; clis: PilotOrderCli[] };
+  /** QA-2: required for `kind: qa-run` (every repository read, Codex only, no PR in the project). */
+  qa?: QaRunSection;
   agent: { tool: AgentTool; surface: Surface; model?: string; effort: Effort; permissions: "usual" | "ask" };
   /** Absolute folder of this order (…/.datapass/local/work-orders/<id>); `folderFor(id)` builds it. */
   folderFor: (id: string) => string;
@@ -149,7 +152,13 @@ export function buildOrder(i: OrderInput): WorkOrder {
     if (changes) throw new WorkOrderFormatError("A pilot order only reads repositories.");
     if (i.agent.permissions !== "ask") throw new WorkOrderFormatError("A pilot order always asks before each action.");
   }
-  if (i.kind !== "investigate" && !pilot && !importOnly && !changes) throw new WorkOrderFormatError("This kind of order changes files: choose at least one repository to change.");
+  const qa = i.kind === "qa-run";
+  if (qa) {
+    if (!i.qa) throw new WorkOrderFormatError("A Codex test order needs its run (id, version, test repository).");
+    if (changes) throw new WorkOrderFormatError("A Codex test order only reads repositories.");
+    if (i.agent.tool !== "codex") throw new WorkOrderFormatError("A Codex test order is for Codex.");
+  }
+  if (i.kind !== "investigate" && !pilot && !qa && !importOnly && !changes) throw new WorkOrderFormatError("This kind of order changes files: choose at least one repository to change.");
   for (const f of [...i.context.conventions, ...i.context.handoffs, ...(i.expected.checks ?? []).filter(c => c.repoRef).map(c => ({ repoRef: c.repoRef!, path: "" }))]) {
     if (!refs.has(f.repoRef)) throw new WorkOrderFormatError(`"${f.repoRef}" is not a repository of this order.`);
   }
@@ -177,7 +186,7 @@ export function buildOrder(i: OrderInput): WorkOrder {
       attachments: unique(i.context.attachments).slice(0, 40)
     },
     expected: {
-      pullRequests: i.kind === "investigate" || pilot || (importOnly && !changes) ? "none" : "one-per-changed-repository",
+      pullRequests: i.kind === "investigate" || pilot || qa || (importOnly && !changes) ? "none" : "one-per-changed-repository",
       datapassFiles: i.expected.datapassFiles ?? [],
       boardMoves: i.expected.boardMoves ?? [],
       checks: (i.expected.checks ?? []).map(c => ({ ...(c.repoRef ? { repoRef: c.repoRef } : {}), text: oneLine(scrubSecrets(c.text), 500) })).filter(c => c.text),
@@ -185,6 +194,7 @@ export function buildOrder(i: OrderInput): WorkOrder {
     },
     policy: { merge: i.merge, cloud: pilot ? "read-only" : "none", secrets: "never", stayInRepositories: true },
     ...(pilot ? { pilot: { stage: 1 as const, environment: i.pilot!.environment, clis: [...new Set(i.pilot!.clis)] } } : {}),
+    ...(qa ? { qa: { ...i.qa!, report: { ...i.qa!.report } } } : {}),
     agent: {
       tool: i.agent.tool, surface: i.agent.surface, ...(i.agent.model ? { model: i.agent.model } : {}), effort: i.agent.effort,
       ...(i.agent.tool === "claude-code" && i.agent.surface === "terminal" && i.sessionId ? { sessionId: i.sessionId } : {}),

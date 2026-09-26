@@ -20,6 +20,7 @@ import type { ProjectSheet, SheetDataset, SheetFormula, SheetRuntime } from "../
 import type { BoardView } from "../core/project/board";
 import { gitHostOf, repositoryWebLinks, type WebLinkId } from "../core/project/gitHosts";
 import type { CostTotal } from "../core/project/costs";
+import type { QaReportSummary } from "../qa/runOrder";
 
 /** 0.16: the board as the kanban shows it (built by the session; plain data). */
 export type WbBoard = BoardView;
@@ -113,6 +114,8 @@ export interface WorkbenchState {
   git?: WbGit;
   /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
   workOrders?: WbWorkOrders;
+  /** QA-2: the Codex tests section (only in the modes that show ai.codexTests). */
+  codexTests?: WbCodexTests;
   /** 0.23: the toolkit catalogue (built-in baseline + the hub's files). */
   toolkit?: WbToolkit;
   /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
@@ -154,7 +157,27 @@ export interface WbWorkOrders {
   control?: "on" | "off" | "disabled" | "unknown" | "bad-url";
 }
 
-/** 0.19: what the Workbench overview says about Git (no path, no branch content, only counts and one sentence). */
+/** QA-2: the Codex tests section of the Work orders view (src/work/codexTests.ts). */
+export interface WbCodexTests {
+  /** The setting is set to an absolute folder. */
+  configured: boolean;
+  repository?: string;
+  /** The test repository cannot be read (the reason, shown as is). */
+  error?: string;
+  purpose?: "app" | "client";
+  title?: string;
+  version?: string;
+  journeys: Array<{ id: string; title: string; features: string[] }>;
+  journeyErrors: string[];
+  auditFolder?: string;
+  lastReport?: QaReportSummary & { folder: string };
+  reportNote?: string;
+  runs: Array<{ id: string; short: string; runId: string; status: string; receipt: "waiting" | "matches" | "refused"; message?: string; pr?: string }>;
+  canHand: boolean;
+  why?: string;
+}
+/** 0.19: what the Workbench overview says about Git
+ (no path, no branch content, only counts and one sentence). */
 export interface WbGit { needsYou: number; repositories: number; checked: number; openPrs: number; failing: number; oldestFetch?: string; top?: string; restricted: boolean }
 
 

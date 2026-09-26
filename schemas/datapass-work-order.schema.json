@@ -45,7 +45,8 @@
         "apply-decision",
         "fix-card",
         "datapass-files",
-        "pilot-read"
+        "pilot-read",
+        "qa-run"
       ]
     },
     "project": {
@@ -459,6 +460,71 @@
         "stage",
         "environment",
         "clis"
+      ]
+    },
+    "qa": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "purpose": {
+          "enum": [
+            "app",
+            "client"
+          ]
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "pattern": "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 40,
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"
+        },
+        "autoRepository": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 400,
+          "pattern": "^(?:[A-Za-z]:[\\\\/]|/)[^\\u0000-\\u001f\\u007f]*$"
+        },
+        "runRoot": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 400,
+          "pattern": "^(?:[A-Za-z]:[\\\\/]|/)[^\\u0000-\\u001f\\u007f]*$"
+        },
+        "report": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "remote": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000,
+              "pattern": "^https://\\S+$"
+            },
+            "folder": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 400
+            }
+          },
+          "required": [
+            "remote",
+            "folder"
+          ]
+        }
+      },
+      "required": [
+        "purpose",
+        "runId",
+        "version",
+        "autoRepository",
+        "runRoot",
+        "report"
       ]
     },
     "agent": {

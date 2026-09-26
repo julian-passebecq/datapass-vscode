@@ -38,7 +38,7 @@ export const MAX_ORDER_BYTES = 256 * 1024;
 export const MAX_RESULT_BYTES = 256 * 1024;
 export const MAX_STATE_BYTES = 256 * 1024;
 
-export const ORDER_KINDS = ["change", "investigate", "prepare-files", "apply-decision", "fix-card", "datapass-files", "pilot-read"] as const;
+export const ORDER_KINDS = ["change", "investigate", "prepare-files", "apply-decision", "fix-card", "datapass-files", "pilot-read", "qa-run"] as const;
 export type OrderKind = typeof ORDER_KINDS[number];
 export const AGENT_TOOLS = ["claude-code", "codex"] as const;
 export type AgentTool = typeof AGENT_TOOLS[number];
@@ -91,6 +91,15 @@ const ORDER_REPOSITORY: Schema = obj({
 const REPO_FILE: Schema = obj({ repoRef: REF, path: REL_PATH });
 const PICK: Schema = S(129, 3, "^[A-Za-z0-9._-]{1,64}=[A-Za-z0-9._-]{1,64}$");
 /** 0.27 (P1, D-23): what the order was built for. Optional: orders written before 0.27 have none ("not stamped"). */
+/** QA-2 (12 §4.5): what a qa-run order is for; its report must repeat runId and version (the receipt check). */
+const QA_RUN: Schema = obj({
+  purpose: enumOf("app", "client"),
+  runId: S(120, 1, "^[0-9]{8}-[0-9]{4}-[a-z][a-z0-9-]{0,79}$"),
+  version: S(40, 5, "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"),
+  autoRepository: ABS_PATH,
+  runRoot: ABS_PATH,
+  report: obj({ remote: HTTPS, folder: S(400) })
+});
 const STAMP: Schema = obj({
   variant: obj({ key: S(2000), title: S(200), picks: arr(PICK, 50) }, ["key", "title"]),
   environment: REF,
@@ -118,6 +127,7 @@ export const WORK_ORDER_SCHEMA: Schema = obj({
   }),
   policy: obj({ merge: enumOf(...MERGE_POLICIES), cloud: enumOf("none", "read-only"), secrets: constOf("never"), stayInRepositories: constOf(true) }),
   pilot: obj({ stage: constOf(1), environment: REF, clis: arr(enumOf(...PILOT_ORDER_CLIS), 4, 1) }),
+  qa: QA_RUN,
   agent: obj({ tool: enumOf(...AGENT_TOOLS), surface: enumOf(...SURFACES), model: MODEL, effort: enumOf(...EFFORTS), sessionId: UUID, permissions: enumOf("usual", "ask") }, ["tool", "surface", "effort", "permissions"]),
   result: obj({ path: ABS_PATH }),
   links: obj({ revises: NULLABLE_ORDER, followsUp: NULLABLE_ORDER }),
@@ -192,11 +202,26 @@ export interface WorkOrder {
   policy: { merge: MergePolicy; cloud: "none" | "read-only"; secrets: "never"; stayInRepositories: true };
   /** 0.26 (AI-4a): only on `kind: pilot-read` (stage 1: read-only, one environment, the CLIs the agent may run). */
   pilot?: { stage: 1; environment: string; clis: PilotOrderCli[] };
+  /** QA-2: only on `kind: qa-run` (a Codex test run; the report's runId and version must match). */
+  qa?: QaRunSection;
   agent: { tool: AgentTool; surface: Surface; model?: string; effort: Effort; sessionId?: string; permissions: "usual" | "ask" };
   result: { path: string };
   links: { revises: string | null; followsUp: string | null };
   /** 0.27 (P1, D-23): the selected variant, environment and bridge revision the order was built for; absent on older orders. */
   stamp?: PackStamp;
+}
+
+export interface QaRunSection {
+  purpose: "app" | "client";
+  runId: string;
+  /** The DataPass version under test: the report's datapass.version must equal it. */
+  version: string;
+  /** The clone of the test repository (datapass-codex-tests.json), on this machine. */
+  autoRepository: string;
+  /** Where Codex prepares the run (under %TEMP%\datapass-qa, never a drive root). */
+  runRoot: string;
+  /** The audit repository and the folder the report goes to (reports/<purpose>/<runId>). */
+  report: { remote: string; folder: string };
 }
 
 export interface SeenPr { repoRef: string; url: string; number: number; state: "open" | "merged" | "closed"; ci?: "passing" | "failing" | "running" | "none" | "unknown"; headBranch: string; checkedAt: string }
@@ -330,6 +355,13 @@ export function parseWorkOrder(raw: string | Uint8Array, folderId?: string): Wor
     if (o.repositories.some(r => r.access !== "read")) throw new WorkOrderFormatError("a pilot order only reads repositories");
     if (o.expected.pullRequests !== "none") throw new WorkOrderFormatError("a pilot order opens no pull request");
     if (o.agent.permissions !== "ask") throw new WorkOrderFormatError("a pilot order always asks before each action (permissions: ask)");
+  }
+  const qa = o.kind === "qa-run";
+  if (qa !== Boolean(o.qa)) throw new WorkOrderFormatError("only a qa-run order has a qa section");
+  if (qa) {
+    if (o.repositories.some(r => r.access !== "read")) throw new WorkOrderFormatError("a qa-run order only reads repositories");
+    if (o.expected.pullRequests !== "none") throw new WorkOrderFormatError("a qa-run order opens no pull request in the project (the report PR goes to the audit repository)");
+    if (o.agent.tool !== "codex") throw new WorkOrderFormatError("a qa-run order is for Codex");
   }
   if (o.links.revises === o.id || o.links.followsUp === o.id) throw new WorkOrderFormatError("an order cannot revise or follow itself");
   return o;

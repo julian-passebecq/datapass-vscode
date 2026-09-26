@@ -768,6 +768,27 @@
         "icon": "$(settings-gear)"
       },
       {
+        "command": "datapass.codexTests.handToCodex",
+        "title": "DataPass: Hand the Codex Tests to Codex…",
+        "icon": "$(beaker)"
+      },
+      {
+        "command": "datapass.codexTests.openLastReport",
+        "title": "DataPass: Open the Last Codex Test Report"
+      },
+      {
+        "command": "datapass.codexTests.openRunPr",
+        "title": "DataPass: Open a Codex Test Report Pull Request"
+      },
+      {
+        "command": "datapass.codexTests.chooseRepository",
+        "title": "DataPass: Choose the Codex Test Repository (machine setting)…"
+      },
+      {
+        "command": "datapass.codexTests.refresh",
+        "title": "DataPass: Re-read the Codex Tests"
+      },
+      {
         "command": "datapass.pilot.show",
         "title": "DataPass: Show Pilot Requests",
         "icon": "$(eye)"
@@ -1707,6 +1728,10 @@
           "when": "false"
         },
         {
+          "command": "datapass.codexTests.openRunPr",
+          "when": "false"
+        },
+        {
           "command": "datapass.workOrders.openApp",
           "when": "false"
         },
@@ -1998,6 +2023,12 @@
           "scope": "machine",
           "markdownDescription": "**Pilot mode, stage 1** (0.26): pilot orders let Claude Code or Codex read your **dev** cloud read-only (`az`, `func`) from the order's own folder, where DataPass writes the guard rails (`.claude/settings.json`, `.codex/config.toml`, `.codex/rules/pilot.rules`), and ask DataPass for VS Code actions you click (*Run it* / *Not now*). Sign the CLIs in with a **Reader** role: it is the real safety net. Machine-level user setting: a cloned repository can never switch this on. Work orders must be on too."
         },
+        "datapass.codexTests.autoRepository": {
+          "type": "string",
+          "default": "",
+          "scope": "machine",
+          "markdownDescription": "**Codex tests** (QA-2): the absolute path of your clone of a test repository (`datapass-codex-tests.json` and its journeys: a client's auto repository, or `codex-datapass-vsixtest` for the app tests). The Work orders view then lists its journeys and the last report of the audit clone beside it (the folder named after the report remote, e.g. `datapass-codex-test`), and *Hand to Codex* writes a `qa-run` work order for the Codex desktop app. Machine-level user setting: a cloned repository can never set it."
+        },
         "datapass.pilot.codexAppQualified": {
           "type": "boolean",
           "default": false,
@@ -2252,6 +2283,10 @@
             "ai.pilot": {
               "type": "boolean",
               "description": "AI view: Pilot tab: Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)"
+            },
+            "ai.codexTests": {
+              "type": "boolean",
+              "description": "Work orders: Codex tests: The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."

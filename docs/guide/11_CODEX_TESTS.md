@@ -102,3 +102,32 @@ npm run qa:prepare -- --auto <test repository clone> --check [--report <report.j
 
 Validates the configuration and the journeys (and a report, path relative to the test repository)
 with no run root, no VS Code and no network. Exit 0 valid, 2 not, reasons printed.
+
+## The mode in DataPass: *Codex tests* in the Work orders view
+
+Shown in the **DataPass** and **Advanced** modes (surface `ai.codexTests`), hidden in Standard and Vanilla.
+
+1. Set the machine setting `datapass.codexTests.autoRepository` to your clone of the test repository
+   (*Choose the test repository…* in the section opens it). A workspace can never set it.
+2. The section lists the client (or the app workspaces), the DataPass version under test and each
+   journey with its feature tags. It reads the **audit clone beside it**, the folder named after the
+   report remote (for example `datapass-codex-test` next to the test repository), and shows the
+   newest report under `reports/<purpose>/`: date, version, reached / partly / not reached, blocker
+   and major counts, coverage. *Open last report* opens `summary.md` (else `report.json`).
+3. **Hand to Codex** (work orders must be on for the project) asks you to confirm, then:
+   - writes a work order of kind `qa-run` in the project's `.datapass/local/work-orders/<id>/`
+     (the test repository read-only, no pull request in the project, Codex only);
+   - creates the run root `%TEMP%\datapass-qa\<run id>` with `.codex/config.toml` (workspace-write
+     there, the order folder writable, approvals on request);
+   - copies the one-line prompt and opens the **Codex desktop app** on the run root (`codex app`
+     when the Codex CLI is found, else the app is brought to the front). Paste the prompt into a new
+     thread. Only the desktop app can drive VS Code (QA-0): the order says so, and it also says that
+     the VSIX is your own build, that the VS Code launch needs one escalated run you approve, that
+     Computer Use takes the visible foreground desktop (leave the PC alone), that
+     `%USERPROFILE%\.vscode-shared` is not isolated, and that screenshots come from a shell capture.
+4. **The receipt.** Codex writes `report.json` to the audit repository, opens the pull request
+   `report/<run id>`, copies the report into the order folder and writes `result.json`. DataPass
+   accepts the report only if it is a valid `datapass.qa-report` whose `runId`, `datapass.version`
+   and `purpose` match the order. The order is then **done**, with the report pull request (found in
+   the result's summary, rebuilt from the audit remote). A report for another run or version is shown
+   as *report refused* with the reason.
