@@ -200,7 +200,7 @@ export function registerWindowFlows(getApi: () => DataPassTestApi): void {
     const stored = (await api().workViews()).views.find(v => v.id === "papers-review")?.name;
     assert.equal(stored, "Papers review", `rename not stored; prompts: ${JSON.stringify(renameUi.prompts)}`);
     const again = JSON.parse(fs.readFileSync(out, "utf8"));
-    assert.equal(again.companies.find((c: { name: string }) => c.name === "Research Co").projects[0].views[0].name, "Papers review");
+    assert.equal(again.companies.find((c: { name: string }) => c.name === "Research Co").projects[0].views[0].name, "Papers review", `list not rewritten; notices: ${JSON.stringify(renameUi.notices)}`);
     record("powerOpsList", doc);
   }, ["v3-research"]);
 
