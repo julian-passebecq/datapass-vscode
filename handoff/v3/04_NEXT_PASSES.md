@@ -53,6 +53,13 @@ declared, not checked). Tools & versions and Connections in the Project view and
 `examples/v3/sales-bi`. Design: [08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) section 8;
 contract: `docs/PREPARING_A_PROJECT.md` section 12.
 
+## Done in 0.22.0 (night of 2026-09-26)
+
+Five packages of [10_GLOBAL_IMPROVEMENT_PLAN.md](10_GLOBAL_IMPROVEMENT_PLAN.md): A trust repairs
+F01–F08 (#36), B modes Vanilla / Standard / DataPass / Advanced (#37), C Copy Context for My AI from
+any file (#34), D format checks without execution (#35), F file versions (#38). No 0.21.0: the toolkit
+catalogue moves to 0.23. Detail: IMPLEMENTATION_STATUS.md.
+
 ## Acceptance with Julian (before 1.0.0)
 
 Run by Julian, reported with *Export Qualification Report* and a short note per step.
@@ -128,13 +135,16 @@ recorded with *Record result*. Only the steps Julian can do on their accounts; n
 ## Next implementation passes
 
 **2026-09-26: [10_GLOBAL_IMPROVEMENT_PLAN.md](10_GLOBAL_IMPROVEMENT_PLAN.md) wins over this list.**
-After the toolkit catalogue (0.21.0), 0.22.0 = four parallel packages (A trust repairs F01–F08,
-B modes, C context from any file, D format checks without execution), F file versions, and a
-release step; 0.23 = G variants (coding state, architecture-scoped tree); the
-planned 0.22 "modes" pass is replaced by package B. The items below stay as the V2/V3 backlog.
+0.22.0 is done (A, B, C, D, F; see above). **0.23** = G variants (coding state per option and
+scenario, the architecture-scoped tree with *All variants*; PR #39) **and the toolkit catalogue**
+(item 0 below; it missed the 0.22 cut-off and there is no 0.21.0). V2 from the plan's §3: the bridge
+recommends a preset and surfaces (manifest v6 `presentation`), presets and checklists shipped from the
+hub, check plans with evidence rows, coordinated change sets shown linked (native PR ↔ bridge PR),
+cost lines linked to toolkit ids, a vetted Python syntax check, a company-level diagram, Remote-SSH /
+WSL qualification, variants on another branch or tag (J5). The items below stay as the V2/V3 backlog.
 
 0. **Order (Julian, [09](09_AI_MODES_WORK_ORDERS_GIT.md) §13.1):** 0.19.0 the Git module (AI-1, its
-   own session), AI-2 work orders, then the **toolkit catalogue**
+   own session), AI-2 work orders, then the **toolkit catalogue** (now 0.23)
    ([08_TOOLKIT_AND_AGENTS.md](08_TOOLKIT_AND_AGENTS.md) sections 5.1, 5.2, 5.4): the catalogue and
    recipes as dated data in the hub repository (`.datapass/toolkit/tools.json`, `recipes/*.json`)
    over the built-in baseline of 0.18, with each tool's free tier and pricing (`freeTier`,
