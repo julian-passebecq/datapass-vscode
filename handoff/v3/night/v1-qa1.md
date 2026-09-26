@@ -12,6 +12,14 @@
   clones), install the local VSIX into `.vscode-user` / `.vscode-ext` under the run root, check the installed version,
   write one `.code-workspace` per client and `run.json` (VSIX sha256), print the launch command. Exit 0 / 2 with reasons.
   `--check [--report f]` validates a test repository only (the validator for QA-3).
+- **Codex procedure addendum** (after QA-0, `handoff/briefs/2026-09-27-codex-procedure.md`): report `agent.host` = `app`
+  only; `screens` = `screens/<journey id>-<what>.png` (shell captures), also on `answers[]`; `datapass.commit` = released
+  commit (no tags). run.json gains `host: codex-desktop`, `preconditions[]` (visible unlocked desktop, Computer Use
+  approval for Code.exe, the VSIX is the user's own build), `knownLeaks[]` (~/.vscode-shared), `screenshots {folder,
+  pattern, command}`. `--commit <released commit>` and `--launch` (qa:prepare is the launcher, outside Codex's sandbox).
+- **12 §4.7 alignment**: app `workspaces[]` entries are `{id, title, bridge, repositories}` (no `client` nesting, as
+  first shipped in #79); every folder reference takes an optional `path` (sub-folder inside the clone, checked to exist
+  inside it; the workspace file opens it; run.json/report carry it).
 - CI: the ubuntu validate job runs `tests/qaPrepare.test.ts` with the VSIX it just packaged (`DATAPASS_QA_VSIX`).
 - Docs: `docs/guide/11_CODEX_TESTS.md`.
 

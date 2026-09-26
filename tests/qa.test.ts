@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import Ajv2020 from "ajv/dist/2020";
 import { emittedSchemaFiles } from "../src/core/contracts/schemaFiles";
 import {
-  FEATURES, QaFormatError, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, reportFolder, runIdOf
+  FEATURES, QaFormatError, SCREEN_PATTERN, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, reportFolder, runIdOf
 } from "../src/qa/formats";
 
 const fixture = (rel: string) => readFileSync(`tests/fixtures/qa/${rel}`, "utf8");
@@ -38,6 +38,7 @@ test("the client and app configurations parse into the same workspace list", () 
   const a = parseCodexTests(fixture("app/datapass-codex-tests.json"));
   assert.equal(a.purpose, "app");
   assert.deepEqual(a.workspaces.map(w => w.client.id), ["doc-pipeline-lab", "codex-wind-lab"]);
+  assert.equal(a.workspaces[0]!.bridge.path, "examples/v3/doc-pipeline");
   assert.equal(runIdOf(a, new Date("2026-09-27T09:05:00Z")), "20260927-0905-app");
   assert.equal(runIdOf(c, new Date("2026-09-27T09:05:00Z")), "20260927-0905-doc-pipeline-lab");
   assert.equal(reportFolder(a, "20260927-0905-app"), "reports/app/20260927-0905-app");
@@ -63,6 +64,12 @@ test("config negatives: bad purpose, missing workspaces for app, path escape, ht
   refused(() => parseCodexTests(text({ ...client(), datapass: { version: "0.26.0", vsix: "C:/Users/me/datapass.vsix" } })), /datapass\.vsix must match/);
   refused(() => parseCodexTests(text({ ...client(), datapass: { version: "0.26.0", vsix: "build/datapass.zip" } })), /must end in \.vsix/);
   refused(() => parseCodexTests(text({ ...client(), client: { id: "doc-pipeline-lab", title: "x".repeat(121) } })), /client\.title must have at most 120/);
+  const pathEscape = app(); pathEscape.workspaces[0].bridge.path = "../../elsewhere";
+  refused(() => parseCodexTests(text(pathEscape)), /bridge\.path must match/);
+  const clientNesting = app(); clientNesting.workspaces[0] = { client: { id: "x", title: "X" }, bridge: clientNesting.workspaces[0].bridge, repositories: [] };
+  refused(() => parseCodexTests(text(clientNesting)), /workspaces\[0\]\.id is required|workspaces\[0\]\.client is not an allowed property/);
+  const twoExamples = app(); twoExamples.workspaces[1].bridge = { ...twoExamples.workspaces[0].bridge, path: "examples/v3/codex-wind" };
+  assert.equal(parseCodexTests(text(twoExamples)).workspaces[1]!.bridge.folder, "datapass-vscode", "one clone, two examples");
   const dupFolder = client(); dupFolder.workspace.repositories[1].folder = "doc-orchestration";
   refused(() => parseCodexTests(text(dupFolder)), /is also used by/);
   const twoRemotes = app(); twoRemotes.workspaces[1].repositories[0] = { remote: "https://github.com/other/x", folder: "doc-processing" };
@@ -109,14 +116,21 @@ test("report negatives: bad outcome, bad severity, unknown area, bad confidence,
   const dup = report(); dup.findings.push({ ...dup.findings[0] });
   refused(() => parseQaReport(text(dup)), /same id/);
   refused(() => parseQaReport(text({ ...report(), agent: { tool: "claude", model: "x", host: "app" } })), /agent\.tool must equal "codex"/);
+  refused(() => parseQaReport(text({ ...report(), agent: { tool: "codex", model: "x", host: "terminal" } })), /agent\.host must equal "app"/);
+  const badScreen = report(); badScreen.journeys[0].screens = ["shots/one.png"];
+  refused(() => parseQaReport(text(badScreen)), /screens\[0\] must match/);
+  const answerScreens = report(); answerScreens.answers[0].screens = ["screens/J01-architecture.png"];
+  assert.equal(parseQaReport(text(answerScreens)).purpose, "client");
 });
 
 test("run.json: what qa:prepare writes has a closed shape", () => {
   const run = {
     format: "datapass.qa-run", version: 1, runId: "20260927-0930-doc-pipeline-lab", purpose: "client", createdAt: "2026-09-27T09:30:00.000Z",
     datapass: { version: "0.26.0", sha256: "a".repeat(64), vsix: "datapass-vscode-0.26.0.vsix", extension: "julian-passebecq.datapass-vscode" },
-    vscode: { version: "1.105.0" }, os: { platform: "win32", release: "10.0.26200", arch: "x64" },
+    vscode: { version: "1.105.0" }, os: { platform: "win32", release: "10.0.26200", arch: "x64" }, host: "codex-desktop",
     profile: { userDataDir: ".vscode-user", extensionsDir: ".vscode-ext" },
+    preconditions: ["A visible, unlocked foreground desktop"], knownLeaks: ["~/.vscode-shared"],
+    screenshots: { folder: "screens", pattern: SCREEN_PATTERN, command: "screencapture -x <file>" },
     clients: [{ id: "doc-pipeline-lab", title: "Doc Pipeline Lab", workspaceFile: "doc-pipeline-lab.code-workspace",
       bridge: { folder: "doc-pipeline", remote: "https://github.com/example-org/doc-pipeline", commit: "1".repeat(40) }, repositories: [], launch: "code --user-data-dir x" }],
     journeys: [{ id: "J01", kind: "client", title: "Open", file: "journeys/J01.json", features: ["onboarding"] }]
@@ -124,6 +138,10 @@ test("run.json: what qa:prepare writes has a closed shape", () => {
   assert.equal(parseQaRun(text(run)).runId, run.runId);
   refused(() => parseQaRun(text({ ...run, profile: { userDataDir: "/home/me/.vscode", extensionsDir: ".vscode-ext" } })), /profile\.userDataDir must equal/);
   refused(() => parseQaRun(text({ ...run, clients: [] })), /clients must have at least 1 items/);
+  refused(() => parseQaRun(text({ ...run, host: "codex-exec" })), /\$\.host must equal "codex-desktop"/);
+  refused(() => parseQaRun(text({ ...run, preconditions: [] })), /preconditions must have at least 1 items/);
+  assert.equal(parseQaRun(text({ ...run, datapass: { ...run.datapass, commit: "c78f01f" } })).runId, run.runId);
+  refused(() => parseQaRun(text({ ...run, datapass: { ...run.datapass, commit: "v0.26.0" } })), /datapass\.commit must match/);
 });
 
 test("the emitted schemas are committed and agree with the parsers (Ajv)", () => {
