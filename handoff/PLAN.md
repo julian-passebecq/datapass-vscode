@@ -29,7 +29,7 @@ Supplier/client rule (Julian, 2026-09-26): we write the extension, common and hu
 
 V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero accepted blocker/major on the roadmap's acceptance matrix AC-01…AC-12 against one pinned packaged VSIX (1.0.0-rc.1), on the synthetic client plus one authorized private pilot. PM closes on evidence.
 
-**Now:** M0, M1, M2 done (main green on `0d9cb45`) · next: V1-RC (CODER DataPass RC, chip opened by the PM) → M3.
+**Now:** M0–M4 done: **1.0.0 released** (2026-09-27, V1-REL100) · next: M5 (product vision session with Julian), V1.0.x-CU.
 
 ### Milestones
 | # | Milestone | Packages | Tests / audits (GPT) | Done |
@@ -37,8 +37,8 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | M0 | Baseline recovery | FIX-QAUI (#100) | 2 consecutive green CI runs on main, all 6 matrix jobs | ✓ #100 (main green `cb6c5ee`, `5796a82`) |
 | M1 | Understandable surface | V1-SURF | palette snapshots per mode, link and schema validation, common sync `--check` | ✓ #105 + #108 (main green `0d9cb45`) |
 | M2 | Safety + daily loop | V1-LOAD, V1-FRESH, V1-TEST | acceptance matrix §4 incl. race, invalid-input and timeout cases | ✓ #102, #103, #104 (main green `0d9cb45`) |
-| M3 | 1.0.0-rc qualification | V1-RC | frozen SHA, VSIX built once (SHA-256 recorded), `npm run verify`, desktop Win+Ubuntu, perf harness, J01–J10 (fixtures empty = setup blocker, never a silent pass), Restricted Mode, missing tools, upgrade from 0.27.0; Playwright green ≠ Codex Computer Use | |
-| M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | |
+| M3 | 1.0.0-rc qualification | V1-RC | frozen SHA, VSIX built once (SHA-256 recorded), `npm run verify`, desktop Win+Ubuntu, perf harness, J01–J10 (fixtures empty = setup blocker, never a silent pass), Restricted Mode, missing tools, upgrade from 0.27.0; Playwright green ≠ Codex Computer Use | ✓ rc.3 `83e8926` (qa:ui 13 reached / 0 not reached / 4 not automatable) + Julian's real-screen check 2026-09-27 18:30, no blocker |
+| M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | ✓ V1-GAPS `715a790` (#140), 1.0.0 cut by V1-REL100 ([release v1.0.0](https://github.com/julian-passebecq/datapass-vscode/releases/tag/v1.0.0); rollback = v1.0.0-rc.3 VSIX) |
 | M5 | Product vision session with Julian | after M4 (1.0.0): the PM asks Julian directly in its own conversation, in multiple-choice questions (AskUserQuestion, recommended option first): (1) what was vague or contradictory on his side (decisions that changed, open areas); (2) what working with the FOIL AI brought up (feedback, the xhigh opinion in techleadclaudegpt6 `45-external-feedback/`, QUESTIONS.md); (3) short-, mid- and long-term vision | answers recorded in `handoff/` and in the V2 roadmap | |
 | M6 | Global UI pass | after M5: bring the UI-POLISH principles to ALL of DataPass — official colours and icons, cloud-inspired shapes, 3 reading levels, configurable legends and presets, close to VS Code. Prepared by a request to GPT 6 Pro (tech-lead report) and discussed with Julian in the M5 vision session. Tonight (2026-09-27) only the diagram (V1-UI-POLISH) | M6 packages in PLAN | |
 
@@ -99,6 +99,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
 | CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
 | CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
+| CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 | 2026-09-27 · V2 | PM |
 | CODER DataPass UI-POLISH | coder (medium) | V1-UI-POLISH (diagram look) — done (#130) | 2026-09-27 · V2 | PM |
 
 Retired on 2026-09-27: PM ASSISTANT DataPass 1 (hand-off handoff/sessions/2026-09-27-1641-pm-assistant.md).
@@ -111,11 +112,11 @@ Julian-only moments: one ~20 min check at 1.0.0-rc (batched by the assistant). F
 
 ## Versions
 
-"V1 / V2 / V3" are the feature tiers of plan 10 §3, not extension releases (current release: **0.27.0**; next: **1.0.0-rc**).
+"V1 / V2 / V3" are the feature tiers of plan 10 §3, not extension releases (current release: **1.0.0**; next: 1.0.x).
 
 | Version | Goal (one line) | Useful? | Status |
 |---|---|---|---|
-| V1 — up to 1.0.0 | The daily loop on real projects: bridge repository, architecture first, modes, context from any file, format checks, file versions, variants, toolkit catalogue, AI work orders | yes: it is what Julian and FOIL use now | in progress: 0.22.0, 0.23.0 (variants + toolkit catalogue) and 0.24.0 (AI-3) released; 0.25.0 (selected variant, repository layout) and 0.26.0 (pilot without sign-in, Open a Client Project, MCP and cost repairs, Mongoku removed) released; V1 packages of [ROADMAP.md](ROADMAP.md) running toward 1.0.0-rc (K2 merged after the 0.26.0 cut: ships in 0.27.0) |
+| V1 — up to 1.0.0 | The daily loop on real projects: bridge repository, architecture first, modes, context from any file, format checks, file versions, variants, toolkit catalogue, AI work orders | yes: it is what Julian and FOIL use now | released: **1.0.0** (2026-09-27, after 1.0.0-rc.1 → rc.3; rollback = rc.3 VSIX) |
 | V2 | Bridge recommends a mode (manifest v6 `presentation`), presets from the hub, check plan / evidence rows, coordinated change sets shown, cost lines linked to toolkit ids, Python syntax check, variants on another branch/tag, side-by-side variant diff, company-level global view, Remote-SSH/WSL, Readiness rows filtered by the selected variant (from 0.25.0; V1-STAB may do it if small) | yes, after 1.0: each item comes from a real gap seen in V1 | later (J3, J5 recommended "yes, in V2") |
 | V3 | Recipes as agent skills, read-only MCP server, Pilot stages 2–3, FOIL producer routes, diagram editing | no for now: depends on V1 used for real and on FOIL | parked |
 
