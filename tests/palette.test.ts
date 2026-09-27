@@ -60,9 +60,8 @@ test("palette: lighter modes stay short, grow towards Advanced, and Advanced lis
 
 test("palette: no client-named command or setting on the default surface", () => {
   for (const p of PRESET_IDS.filter(x => x !== "advanced")) for (const t of paletteOf(p)) assert.doesNotMatch(t, /foil/i, `${p}: ${t}`);
-  for (const [k, v] of Object.entries(pkg.contributes.configuration.properties as Record<string, { markdownDeprecationMessage?: string; deprecationMessage?: string }>)) {
-    if (/foil/i.test(k)) assert.ok(v.markdownDeprecationMessage || v.deprecationMessage, `${k} is deprecated (hidden from the Settings editor unless set)`);
-  }
+  // V1-FOILSURF (journey R04): no setting is client-named, even in advanced mode.
+  for (const k of Object.keys(pkg.contributes.configuration.properties)) assert.doesNotMatch(k, /foil/i, k);
 });
 
 test("palette: the list per mode matches the committed snapshot", () => {

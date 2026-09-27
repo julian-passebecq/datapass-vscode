@@ -41,20 +41,8 @@
         "title": "DataPass: Open Galaxy"
       },
       {
-        "command": "datapass.selectFoilControlRoot",
-        "title": "DataPass: Select FOIL Control Repository"
-      },
-      {
-        "command": "datapass.selectFoilDatabricksRoot",
-        "title": "DataPass: Select FOIL Databricks Repository"
-      },
-      {
         "command": "datapass.initializeProjectManifest",
         "title": "DataPass: Initialize Project Manifest"
-      },
-      {
-        "command": "datapass.initializeFoilProjectManifest",
-        "title": "DataPass: Initialize FOIL Project Manifest"
       },
       {
         "command": "datapass.openProjectManifest",
@@ -1779,18 +1767,6 @@
           "when": "!datapass.hidden.view.galaxy"
         },
         {
-          "command": "datapass.selectFoilControlRoot",
-          "when": "!datapass.hidden.palette.full"
-        },
-        {
-          "command": "datapass.selectFoilDatabricksRoot",
-          "when": "!datapass.hidden.palette.full"
-        },
-        {
-          "command": "datapass.initializeFoilProjectManifest",
-          "when": "!datapass.hidden.palette.full"
-        },
-        {
           "command": "datapass.copyEnvironmentSnapshot",
           "when": "!datapass.hidden.palette.full"
         },
@@ -2319,27 +2295,6 @@
           "scope": "application",
           "description": "Where DiagramCloud runs (https://…, or http://localhost for a dev server). Opened by \"Open Architecture in DiagramCloud\"; no project data is ever put in the URL."
         },
-        "datapass.foil.controlRoot": {
-          "type": "string",
-          "default": "",
-          "scope": "window",
-          "description": "Local path to foil-control-v1. Leave blank for workspace auto-detection.",
-          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
-        },
-        "datapass.foil.databricksRoot": {
-          "type": "string",
-          "default": "",
-          "scope": "window",
-          "description": "Local path to foil_databrick_dab. Leave blank for workspace auto-detection.",
-          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
-        },
-        "datapass.foil.oracleSshHost": {
-          "type": "string",
-          "default": "",
-          "scope": "window",
-          "description": "SSH config host alias for the FOIL Oracle VM. Do not put credentials here.",
-          "markdownDeprecationMessage": "Kept for configurations from DataPass 0.x (V1 FOIL profile); new projects link their repositories through the bridge's `.datapass/project.json`. Hidden from the Settings editor unless set."
-        },
         "datapass.fabric.toolboxRoot": {
           "type": "string",
           "default": "",
@@ -2392,7 +2347,7 @@
           "type": "string",
           "default": "",
           "scope": "window",
-          "markdownDescription": "Company this window stands for (FOIL, DataPass, a client), shown in the status-bar switcher. Set in the company's `.code-workspace` file by *DataPass: Create the Company Workspace File*. Empty: the project's title."
+          "markdownDescription": "Company this window stands for (your company, DataPass, a client), shown in the status-bar switcher. Set in the company's `.code-workspace` file by *DataPass: Create the Company Workspace File*. Empty: the project's title."
         },
         "datapass.startupView": {
           "type": "string",
@@ -2429,7 +2384,7 @@
               "perso"
             ]
           },
-          "markdownDescription": "Project types on this computer, by project id (`{\"foil-v1\": \"work\"}`). Wins over `project.type` in the project's manifest. **dev** and **perso**: work orders on, the agent merges its PRs when CI is green. **work** (FOIL, clients): work orders off unless the project turns them on, and you merge."
+          "markdownDescription": "Project types on this computer, by project id (`{\"client-v1\": \"work\"}`). Wins over `project.type` in the project's manifest. **dev** and **perso**: work orders on, the agent merges its PRs when CI is green. **work** (client projects): work orders off unless the project turns them on, and you merge."
         },
         "datapass.ai.defaultTool": {
           "type": "string",

@@ -43,10 +43,10 @@ const GATED: Record<string, readonly string[]> = {
   "workbench.board": ["openBoard", "board.moveCard", "board.aiPack"],
   "view.galaxy": ["openGalaxy", "refresh", "recordQualification", "exportQualificationReport", "clearQualificationResults"],
   "view.work": ["work.refresh", "selectScope", "showPreflight"],
-  // Advanced only (or switched on by the person): every other command, including the client-named
-  // V1 FOIL profile commands, the V2 app/publication flows and the second-level variants of core ones.
+  // Advanced only (or switched on by the person): every other command, including the V2
+  // app/publication flows and the second-level variants of core ones. (The client-named V1 FOIL
+  // profile commands and settings were removed in V1-FOILSURF.)
   "palette.full": [
-    "selectFoilControlRoot", "selectFoilDatabricksRoot", "initializeFoilProjectManifest",
     "copyEnvironmentSnapshot", "fabric.captureSummary", "fabric.scaffoldDeployConfig", "fabric.copyDeployCommand", "fabric.scaffoldPreflightWorkflow",
     "createAppRequest", "importAppResult", "observeAppRevision", "createCandidate", "analyzeImpact", "prepareBrief", "approveBrief",
     "importOutputManifest", "importAuthoritySnapshot", "exportDiagramCloud", "inspectPowerBiProject", "copyAiContext",
