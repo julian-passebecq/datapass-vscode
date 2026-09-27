@@ -86,6 +86,21 @@ test("qa:prepare refuses a VSIX whose sha256 is not the pinned one, and a bad --
   } finally { cleanup(base); }
 });
 
+test("V1-RC3: qa:prepare --vsix <relative path> is read from the current folder, not the run root", async () => {
+  const { base, root, auto } = fixture();
+  const cwd = process.cwd();
+  try {
+    const elsewhere = path.join(base, "builds");
+    fs.mkdirSync(elsewhere, { recursive: true });
+    fs.writeFileSync(path.join(elsewhere, "local.vsix"), "not really a vsix");
+    process.chdir(elsewhere);
+    const r = await prepare({ auto, root, vsix: "local.vsix", sha256: "b".repeat(64), vendor: RC_JOURNEYS_DIR, log: () => {} });
+    assert.equal(r.code, 2);
+    // Found (it reached the hash check) at the path typed, relative to the current folder.
+    assert.ok(r.reasons.some(x => x.includes(path.join(elsewhere, "local.vsix")) && /has sha256/.test(x)), r.reasons.join("\n"));
+  } finally { process.chdir(cwd); cleanup(base); }
+});
+
 test("qa:prepare --clone clones a missing declared folder and leaves existing ones alone", async () => {
   const { base, root, auto } = fixture();
   const saved = { ...process.env };

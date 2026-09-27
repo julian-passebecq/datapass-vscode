@@ -161,6 +161,8 @@ export interface DataPassTestApi {
     ready(): Promise<void>;
     status(): { text: string; tooltip: string; visible: boolean };
     landed(): Promise<boolean>;
+    /** Run the startup landing again (V1-RC3: it must not take the keyboard). */
+    land(): Promise<boolean>;
   };
   /** V1-PERF: this activation's timings (ms) and how many refreshes ran since (scripts/perf.ts). V1-REF: first paint and full refresh. */
   perf(): PerfCounters;
@@ -501,7 +503,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       current: () => experience.experience(),
       ready: () => experience.ready,
       status: () => ({ text: experience.statusText(), tooltip: experience.statusTooltip(), visible: experience.statusVisible() }),
-      landed: async () => { await startup; return landed; }
+      landed: async () => { await startup; return landed; },
+      land: () => landOnArchitecture(experience, session.project.manifestExists, undefined)
     },
     setConnectionRunner: impl => { session.connectionRunner = impl; },
     workOrders: {
@@ -589,10 +592,8 @@ async function showDataPassSideBar(context: vscode.ExtensionContext, session: Wo
   if (!session.project.manifestExists || context.workspaceState.get<boolean>(SIDE_BAR_SHOWN)) return;
   if (!vscode.workspace.getConfiguration("datapass").get<boolean>("layout.showInSecondarySideBar", true)) return;
   await context.workspaceState.update(SIDE_BAR_SHOWN, true);
-  const editor = vscode.window.activeTextEditor;
-  await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`);
-  // Give the keyboard back to the file being edited.
-  if (editor) await vscode.commands.executeCommand("workbench.action.focusActiveEditorGroup");
+  // Show the view without taking the keyboard (an open Quick Pick stays open).
+  await vscode.commands.executeCommand(`${AiExchangeView.viewType}.focus`, { preserveFocus: true });
 }
 
 function updateStatusBar(status: vscode.StatusBarItem, state: GalaxyState): void {

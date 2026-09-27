@@ -288,10 +288,10 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const repos = checkFolders(root, config.workspaces);
     log(`✓ ${repos.size} folder(s) under the run root, each with the declared origin`);
 
-    // The VSIX: an explicit file, else the configuration's path relative to the run root.
-    const vsixRel = opts.vsix ?? config.datapass.vsix;
-    if (!vsixRel) throw new CannotPrepare(["no VSIX: pass --vsix <file> or set datapass.vsix (a path under the run root)"]);
-    const vsix = path.resolve(root, vsixRel);
+    // The VSIX: an explicit file (relative to the current folder, as typed), else the configuration's
+    // path relative to the run root.
+    if (!opts.vsix && !config.datapass.vsix) throw new CannotPrepare(["no VSIX: pass --vsix <file> or set datapass.vsix (a path under the run root)"]);
+    const vsix = opts.vsix ? path.resolve(opts.vsix) : path.resolve(root, config.datapass.vsix!);
     if (!fs.existsSync(vsix) || !/\.vsix$/i.test(vsix)) throw new CannotPrepare([`VSIX not found: ${vsix}`]);
     const sha256 = createHash("sha256").update(fs.readFileSync(vsix)).digest("hex");
     if (opts.sha256 !== undefined && opts.sha256.toLowerCase() !== sha256) throw new CannotPrepare([`the VSIX ${vsix} has sha256 ${sha256}, not the pinned ${opts.sha256.toLowerCase()}`]);

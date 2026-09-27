@@ -19,8 +19,6 @@ import { ASSERTIONS, describeStep, MAX_UI_STEPS, parseStep, UI_JOURNEY_FORMAT, t
 export const UI_STEPS_FORMAT = "datapass.ui-steps";
 /** The label of the mode picker and its rows (the presets of src/core/experience). */
 export const SWITCH_MODE_LABEL = "DataPass: Switch Mode…";
-/** The views a mode shows or hides settle before the journey's own steps. */
-export const MODE_SETTLE_MS = 6_000;
 
 /** One journey of a `datapass.ui-steps` file: its steps, or why it cannot be driven through the UI. */
 export interface UiStepsEntry { id: string; ui?: unknown[]; notAutomatable?: string }
@@ -94,7 +92,7 @@ export function compileJourney(j: TestJourney, opts: { file?: string; vendor?: U
 
   const notes: string[] = [];
   const setupSteps: Array<Record<string, unknown>> = [];
-  if (j.setup?.mode) setupSteps.push({ run: SWITCH_MODE_LABEL }, { quickPick: j.setup.mode }, { wait: MODE_SETTLE_MS });
+  if (j.setup?.mode) setupSteps.push({ run: SWITCH_MODE_LABEL }, { quickPick: j.setup.mode });
   // A scenario id is not the label its picker shows: the steps select a variant themselves when it matters.
   if (j.setup?.variant) notes.push(`setup.variant ${j.setup.variant} is left to the steps`);
   if (j.setup?.environment) notes.push(`setup.environment ${j.setup.environment} is not applied (the project's default)`);

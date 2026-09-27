@@ -93,11 +93,17 @@ export function planBridge(bridge: BridgeAddress, parent: string, facts: readonl
   return { state: "clone", folder: target, detail: `clone into ${target}` };
 }
 
-/** The folder a declared repository is expected in: its declared path (relative to the bridge), else `<parent>/<name>`. */
-export function expectedFolder(repo: { path?: string; remote?: { url: string } }, bridgeFolder: string, parent: string, p: PathApi = nodePath): string | undefined {
+/**
+ * The folder a declared repository is expected in: its declared path (relative to the bridge), else
+ * `<parent>/<key>` — the name the manifest gives it (`wind-study-2d`), when that is a plain folder
+ * name — else `<parent>/<repository name>`. A clone already made under another name is still found
+ * by its origin (the chosen folder's sub-folders are observed too).
+ */
+export function expectedFolder(repo: { path?: string; remote?: { url: string } }, bridgeFolder: string, parent: string, p: PathApi = nodePath, key?: string): string | undefined {
   if (repo.path) return p.isAbsolute(repo.path) ? p.resolve(repo.path) : p.resolve(bridgeFolder, repo.path);
   const name = repositoryName(repo.remote?.url);
-  return name ? p.join(parent, name) : undefined;
+  if (!name) return undefined;
+  return p.join(parent, key && /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/.test(key) && !/\.$/.test(key) ? key : name);
 }
 
 /**
@@ -106,9 +112,9 @@ export function expectedFolder(repo: { path?: string; remote?: { url: string } }
  */
 export function candidateFolders(manifest: DataPassProjectManifest, bridgeFolder: string, parent: string, p: PathApi = nodePath): string[] {
   const out: string[] = [];
-  for (const repo of Object.values(manifest.repositories ?? {})) {
+  for (const [key, repo] of Object.entries(manifest.repositories ?? {})) {
     if (repo.planned) continue;
-    const f = expectedFolder(repo, bridgeFolder, parent, p);
+    const f = expectedFolder(repo, bridgeFolder, parent, p, key);
     if (f && !out.some(o => sameFolder(o, f, p))) out.push(f);
   }
   return out;
@@ -120,6 +126,7 @@ export function planClones(manifest: DataPassProjectManifest, o: { bridgeFolder:
   const bridgeId = remoteIdentity(o.bridgeUrl);
   const entries: CloneEntry[] = [];
   const claimed: string[] = [o.bridgeFolder];
+  const seen = new Map<string, string>(); // remote identity → the folder already serving it
   for (const [key, repo] of Object.entries(manifest.repositories ?? {})) {
     const base = { key, label: repo.label ?? key, role: repo.description, remoteUrl: repo.remote?.url };
     if (repo.planned) { entries.push({ ...base, state: "planned", detail: "planned: the repository does not exist yet, never cloned", picked: false }); continue; }
@@ -127,9 +134,12 @@ export function planClones(manifest: DataPassProjectManifest, o: { bridgeFolder:
     const id = remoteIdentity(url);
     // The bridge itself, declared among the repositories.
     if ((id && id === bridgeId) || repo.path === ".") { entries.push({ ...base, state: "present", folder: o.bridgeFolder, detail: "the bridge repository", picked: false }); continue; }
-    const expected = expectedFolder(repo, o.bridgeFolder, o.parent, p);
+    const expected = expectedFolder(repo, o.bridgeFolder, o.parent, p, key);
     const found = locateClone(url, o.facts.filter(f => !claimed.some(c => sameFolder(c, f.folder, p))), expected, p);
-    if (found) { claimed.push(found); entries.push({ ...base, state: "present", folder: found, detail: `already cloned in ${found}`, picked: false }); continue; }
+    if (found) { claimed.push(found); if (id) seen.set(id, found); entries.push({ ...base, state: "present", folder: found, detail: `already cloned in ${found}`, picked: false }); continue; }
+    // The same repository declared twice: one clone serves the first declaration, never a second copy.
+    const twice = id ? seen.get(id) : undefined;
+    if (twice) { entries.push({ ...base, state: "conflict", folder: twice, detail: `the same repository is declared twice: it is already planned in ${twice}`, picked: false }); continue; }
     if (url && (!id || !/^(https:\/\/|ssh:\/\/|[A-Za-z0-9._-]+@[A-Za-z0-9.-]+:)/i.test(url) || url.startsWith("-"))) { entries.push({ ...base, state: "conflict", detail: `the declared address is not an https or SSH Git address: ${url}`, picked: false }); continue; }
     if (!url) {
       const fact = expected ? o.facts.find(f => sameFolder(f.folder, expected, p)) : undefined;
@@ -146,6 +156,7 @@ export function planClones(manifest: DataPassProjectManifest, o: { bridgeFolder:
       continue;
     }
     claimed.push(expected);
+    if (id) seen.set(id, expected);
     entries.push({ ...base, state: "clone", folder: expected, detail: `clone into ${expected}`, picked: repo.management !== "remote-only" });
   }
   return entries;

@@ -41,6 +41,27 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     record("modes.standard", { panes: panes(), status: status.text });
   }, ONLY);
 
+  test("V1-RC3: an open Quick Pick stays open through the landing, a mode switch and a refresh", async () => {
+    const pick = vscode.window.createQuickPick();
+    pick.items = [{ label: "one" }, { label: "two" }];
+    let hidden = false;
+    pick.onDidHide(() => { hidden = true; });
+    pick.show();
+    try {
+      await new Promise(r => setTimeout(r, 300));
+      assert.equal(await api().experience.land(), true, "Standard lands on the architecture panel");
+      await waitFor("the architecture panel is shown", () => panes().includes("architecture"));
+      assert.equal(hidden, false, "the landing took the keyboard and closed the picker");
+      await mode("advanced");
+      await run("datapass.refreshProject");
+      await new Promise(r => setTimeout(r, 1_500));
+      assert.equal(hidden, false, "a mode switch or a refresh took the keyboard and closed the picker");
+    } finally {
+      pick.dispose();
+      await mode("standard");
+    }
+  }, ONLY);
+
   test("0.22 modes: Standard hides the Project, Work and Galaxy views (when clauses) and shows Git, AI, Details", async () => {
     await tryRun("datapass.project.focus");
     await tryRun("datapass.galaxy.focus");

@@ -120,10 +120,9 @@ export async function landOnArchitecture(experience: ExperienceService, hasProje
   if (!hasProject || applied || !experience.shows("landing.architecture") || !experience.shows("view.architecture")) return false;
   const startup = vscode.workspace.getConfiguration("datapass").inspect<string>("startupView");
   if (startup?.workspaceValue || startup?.workspaceFolderValue) return false;
-  const editor = vscode.window.activeTextEditor;
-  await vscode.commands.executeCommand("datapass.architecture.focus");
-  // Give the keyboard back to the file being edited.
-  if (editor) await vscode.commands.executeCommand("workbench.action.focusActiveEditorGroup");
+  // Show the panel without taking the keyboard: taking it (or handing it back to the editor) closes
+  // a Quick Pick the user opened while the window was starting.
+  await vscode.commands.executeCommand("datapass.architecture.focus", { preserveFocus: true });
   return true;
 }
 
