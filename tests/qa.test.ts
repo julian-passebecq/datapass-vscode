@@ -80,6 +80,20 @@ test("config negatives: bad purpose, missing workspaces for app, path escape, ht
   refused(() => parseCodexTests(" ".repeat(300 * 1024) + "{}"), /not valid JSON/);
 });
 
+test("Q08: repository entries take an optional pinned ref/commit, additive to the schema", () => {
+  const pinned = client();
+  pinned.workspace.bridge = { ...pinned.workspace.bridge, ref: "main", commit: "5a4f8d9" };
+  pinned.workspace.repositories[0] = { ...pinned.workspace.repositories[0], ref: "release/1.0", commit: "5a4f8d9cb1e160e68893dc546ae7aa3eb3db26d1" };
+  const parsed = parseCodexTests(text(pinned));
+  assert.equal(parsed.workspaces[0]!.bridge.ref, "main");
+  assert.equal(parsed.workspaces[0]!.bridge.commit, "5a4f8d9");
+  assert.equal(parsed.workspaces[0]!.repositories[0]!.commit, "5a4f8d9cb1e160e68893dc546ae7aa3eb3db26d1");
+  // unpinned entries (no ref/commit) still parse: the fields stay optional.
+  assert.equal(parseCodexTests(fixture("client/datapass-codex-tests.json")).workspaces[0]!.bridge.commit, undefined);
+  refused(() => parseCodexTests(text({ ...client(), workspace: { ...client().workspace, bridge: { ...client().workspace.bridge, commit: "not-hex" } } })), /bridge\.commit must match/);
+  refused(() => parseCodexTests(text({ ...client(), workspace: { ...client().workspace, bridge: { ...client().workspace.bridge, commit: "abc" } } })), /bridge\.commit must have at least 7/);
+});
+
 test("journey negatives: unknown feature tag, bad kind, bad mode, empty expectations, oversized goal", () => {
   assert.equal(parseTestJourney(fixture("client/journeys/J01-open-my-project.json"), "J01.json").id, "J01");
   assert.equal(parseTestJourney(fixture("app/journeys/A01-install-and-first-open.json"), "A01.json").questions?.length, 2);
