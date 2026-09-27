@@ -8,6 +8,22 @@ import type { RepoGitState, TrackingObservation } from "./resolve";
 
 export interface GitAnswer { ok: boolean; stdout: string; stderr?: string }
 
+/**
+ * V1-FLAKE2: on Windows, Git reading the config while another Git process replaces it (a lock file
+ * renamed over it when an agent creates a branch or runs `push -u` in the same clone) fails with
+ * "unable to access '.git/config': Permission denied". That answer says nothing about the clone: a
+ * refresh read it as "not a Git repository" (or an unverified origin) until the next refresh.
+ */
+export const CONFIG_BEING_REPLACED = /unable to access '[^'\n]*config[^'\n]*': Permission denied/i;
+
+/** A Git read asked once more (after a short pause) when the config was being replaced; any other answer as is. */
+export async function gitRead(git: (args: string[], cwd: string, timeoutMs: number) => Promise<GitAnswer>, args: string[], cwd: string, timeoutMs: number, pauseMs = 100): Promise<GitAnswer> {
+  const first = await git(args, cwd, timeoutMs);
+  if (first.ok || !CONFIG_BEING_REPLACED.test(first.stderr ?? "")) return first;
+  await new Promise(resolve => setTimeout(resolve, pauseMs));
+  return git(args, cwd, timeoutMs);
+}
+
 /** At most this many file observations run at once. */
 export const OBSERVE_CONCURRENCY = 16;
 /** At most this many expected files are observed per refresh; the rest are reported as skipped. */

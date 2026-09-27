@@ -10,7 +10,7 @@ import { join } from "node:path";
 import Ajv2020 from "ajv/dist/2020";
 import {
   activeVariantLine, activeVariantView, changedPicks, MAX_REMEMBERED_PROJECTS, readStore, resolveActiveVariant,
-  sameRequest, statusBarText, variantChoices, withEntry
+  sameRequest, statusBarText, variantChoices, withEntry, withOwn
 } from "../src/core/project/activeVariant";
 import { optionsProblems, parseOptions, picksFrom, scenarioPicks, type OptionsFile } from "../src/core/project/options";
 import { validateProjectManifest } from "../src/core/projectManifestModel";
@@ -179,4 +179,16 @@ test("selected variant: no contributed id says \"active variant\" (preview, not 
   }
   assert.match(presets, /"status\.selectedVariant"/);
   assert.match(pkg, /"datapass\.setSelectedVariant"/);
+});
+
+test("V1-FLAKE2: an older write's echo in the global state never brings back what this window forgot", () => {
+  // The echo of the B save arrives after C and then "current" were saved in this window.
+  const echo = withEntry(withEntry({}, "doc-pipeline", { scenario: "b-event" }, "2026-09-26T10:00:00Z"), "other", { scenario: "x" }, "2026-09-26T09:00:00Z");
+  const own = new Map([["doc-pipeline", withEntry({}, "doc-pipeline", undefined, "2026-09-26T10:00:02Z")["doc-pipeline"]]]);
+  const store = withOwn(echo, own);
+  assert.equal(store["doc-pipeline"], undefined, "back to current forgets the entry");
+  assert.equal(store.other?.scenario, "x", "another project's entry (another window) is kept");
+  own.set("doc-pipeline", withEntry({}, "doc-pipeline", { scenario: "c-adf" }, "2026-09-26T10:00:01Z")["doc-pipeline"]);
+  assert.equal(withOwn(echo, own)["doc-pipeline"]?.scenario, "c-adf", "this window's save wins over the echo");
+  assert.deepEqual(echo["doc-pipeline"]?.scenario, "b-event", "withOwn never mutates");
 });

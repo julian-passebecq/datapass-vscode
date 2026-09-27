@@ -12,7 +12,7 @@ import { buildProjectMap } from "../src/core/project/projectMap";
 import { buildPreparationPack, COORDINATED_CHANGE_RULE } from "../src/core/project/preparation";
 import { AI_TASKS, exportForAi } from "../src/core/project/aiExchange";
 import { COORDINATION_KEY, resolveRepositories, type FileObservation, type RepoObservation } from "../src/core/project/resolve";
-import { ByteBudget, HASH_BYTE_BUDGET, hashMode, incompleteness, incompleteText, interpretLsFiles, interpretOrigin, MAX_INLINE_HASH_BYTES, MAX_PLANNED_ENTRIES, MAX_STREAM_HASH_BYTES, OBSERVE_CONCURRENCY, runBounded } from "../src/core/project/observation";
+import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, incompleteText, interpretLsFiles, interpretOrigin, MAX_INLINE_HASH_BYTES, MAX_PLANNED_ENTRIES, MAX_STREAM_HASH_BYTES, OBSERVE_CONCURRENCY, runBounded } from "../src/core/project/observation";
 import { upsertQualification } from "../src/core/qualification/qualification";
 import type { DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { fileObsA, inputA } from "./fixtures/v3/research";
@@ -249,4 +249,23 @@ test("V1-STAB: a sibling of the right name with no origin is named, never bound"
   assert.match(none.detail ?? "", /folder code found, no remote: identity not verified/);
   assert.match(none.nextStep ?? "", /Locate an Existing Clone/);
   assert.match(view({ folderName: "code", origin: "other" }).detail ?? "", /folder code found, its remote is another repository: identity not verified/);
+});
+
+test("V1-FLAKE2: a Git read that met the config being replaced (Windows) is asked once more; other failures are kept", async () => {
+  const replaced = { ok: false, stdout: "", stderr: "warning: unable to access '.git/config': Permission denied\nfatal: unknown error occurred while reading the configuration files" };
+  const answers = [replaced, { ok: true, stdout: "# branch.oid abc\n" }];
+  const calls: string[][] = [];
+  const git = async (args: string[]) => { calls.push(args); return answers.shift()!; };
+  const r = await gitRead(git, ["status", "--porcelain=v2"], "/repo", 1000, 1);
+  assert.equal(r.ok, true, "the second answer is the clone's state");
+  assert.equal(calls.length, 2);
+  // Asked once more only: a config still being replaced stays a failure, and so does any other error.
+  let n = 0;
+  const always = async () => { n++; return replaced; };
+  assert.equal((await gitRead(always, ["status"], "/repo", 1000, 1)).ok, false);
+  assert.equal(n, 2);
+  n = 0;
+  const notRepo = async () => { n++; return { ok: false, stdout: "", stderr: "fatal: not a git repository (or any of the parent directories): .git" }; };
+  assert.equal((await gitRead(notRepo, ["status"], "/repo", 1000, 1)).ok, false);
+  assert.equal(n, 1, "a real answer is never asked again");
 });

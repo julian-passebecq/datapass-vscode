@@ -44,6 +44,16 @@ export function readStore(raw: unknown): ActiveVariantStore {
   return out;
 }
 
+/**
+ * V1-FLAKE2: the stored entries with this window's own saves over them (undefined = forgotten). The
+ * global state read back can briefly be an older write's echo; what this window saved wins over it.
+ */
+export function withOwn(stored: ActiveVariantStore, own: ReadonlyMap<string, ActiveVariantEntry | undefined>): ActiveVariantStore {
+  const next: ActiveVariantStore = { ...stored };
+  for (const [k, e] of own) { if (e) next[k] = e; else delete next[k]; }
+  return next;
+}
+
 /** The store with this project's entry set (or removed for the current architecture). Never mutates. */
 export function withEntry(store: ActiveVariantStore, projectKey: string, req: VariantRequest | undefined, now: string): ActiveVariantStore {
   const next: ActiveVariantStore = { ...store };

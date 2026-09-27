@@ -34,11 +34,13 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
   const api = () => getApi();
   const F = ["v20-work-orders"];
   const ids: Record<string, string> = {};
+  /** Each repository's state, for a failure message (why an order left one out). */
+  const repoStates = () => JSON.stringify(api().projectMap().repositories.map(r => [r.key, r.state, r.detail]));
   const order = (id: string): LoadedOrder => { const o = api().workOrders.list().find(x => x.id === id); assert.ok(o, `order ${id} listed`); return o!; };
   const write = async (draft: Record<string, unknown>, token?: string): Promise<string> => {
     const replies = await api().aiExchange.send({ type: "wo.write", draft, launch: false, token });
     const done = replies.find(r => r.type === "wo.done") as { id?: string; error?: string } | undefined;
-    assert.ok(done?.id, `the order was written: ${JSON.stringify(replies)}`);
+    assert.ok(done?.id, `the order was written: ${JSON.stringify(replies)}; repositories: ${repoStates()}`);
     return done!.id!;
   };
   const launchTerminal = async (id: string) => {
@@ -197,7 +199,7 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
     assert.deepEqual(p.draft.baseBranches, { pipeline: "claude/fix-lint" });
     assert.equal(p.draft.extra?.[0]?.name, "failing-pr-38.md");
     const failing = await api().aiExchange.send({ type: "wo.write", draft: { ...p.visible, choice: "claude-terminal" }, launch: false, token: p.token });
-    assert.match(String(failing[0]?.error), /origin\/claude\/fix-lint is not known here/, "a PR branch that was never fetched cannot be a base");
+    assert.match(String(failing[0]?.error), /origin\/claude\/fix-lint is not known here/, `a PR branch that was never fetched cannot be a base: ${JSON.stringify(failing)}; repositories: ${repoStates()}`);
 
     await run("datapass.workOrders.followUp", ids.first);
     p = api().workOrders.lastPrefill()!;
