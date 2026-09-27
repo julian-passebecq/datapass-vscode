@@ -48,12 +48,18 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | V1-LOAD | GPT T1 + A01: typed, bounded reads in `src/core/workspace/loader.ts` and `src/core/model/**`; a read failure is an error state, never "absent" | M0 | CODER DataPass LOAD | 0.5–1 M | #102 | done |
 | V1-FRESH | GPT T3 + A03/A04: refresh/variant race guard, freshness and stale labels (`src/work/session.ts`, `src/work/projectObserver.ts`, pack stamps) | M0 | CODER DataPass FRESH | 0.5–1.5 M | #103 | done |
 | V1-TEST | GPT T4 + A05: minimal native *Test* route per component (VS Code task declared in the native repo or recipe) with a receipt; truthful tool states (`src/core/checks/**`, `src/work/checkCommands.ts`) | M0 | CODER DataPass TEST | 0.5–1 M | #104 | done |
-| V1-RC | GPT T5: M3 qualification and 1.0.0-rc.1 cut (`scripts/qa/**`, tests, CI, release files) | SURF, LOAD, FRESH, TEST | CODER DataPass RC | 1–2 M | #110 | in review: dry run done ([RC_QUALIFICATION.md](v1/RC_QUALIFICATION.md)); after merge `npm run qa:rc` on main pins the VSIX, then RC_CHECK |
+| V1-RC | GPT T5: M3 qualification and 1.0.0-rc.1 cut (`scripts/qa/**`, tests, CI, release files) | SURF, LOAD, FRESH, TEST | CODER DataPass RC | 1–2 M | #110 | merged (1.0.0-rc.1); dry run done ([RC_QUALIFICATION.md](v1/RC_QUALIFICATION.md)); after merge `npm run qa:rc` on main pins the VSIX, then RC_CHECK |
+| V1-FLAKE2 | M3: the v25 "back to current forgets the entry" race (Ubuntu, still alive after #103) and v20-work-orders (Windows, once). Acceptance: both pass 10 times in a row locally on the failing platform; the cause is fixed, never masked by a retry | V1-RC | chip after #110 | 0.3–0.5 M | #112 | merged (PM: Windows 10× + unit test + CI Ubuntu green). Watch: if v25 fails on Ubuntu in any of the next 5 main/PR runs, reopen FLAKE2 with the trace; blocking for rc.2 |
+| V1-Q | M3: answers Q01–Q09 (FOIL AI feedback); prerelease v1.0.0-rc.1 with VSIX and SHA-256 | V1-RC | PM agent | S | #113, #114, codex-bridge #5/#6, common #11 | done (prerelease v1.0.0-rc.1 at 5a4f8d9, VSIX + SHA-256). Q10 → V1-HONEST with F06; sync-common drift → V1-RC2 (`sync:common -- --check` clean is an rc.2 criterion) |
+| V1-FOILDOC | M3: F03, F05 (generic common docs) today; **tomorrow** (Julian 2026-09-27: no work or tests on FOIL / foil-study today, the 3 Codex Wind Lab fake clients first): F02 (#116) and ANSWERS.md in the FOIL bridge (low) | V1-Q | chip pending | S | | running |
+| V1-HONEST | M3: F01, F04, F06, F08 (code, medium) | V1-Q | chip pending | 0.5–1 M | #121, common #15 | running |
+| V1-AUTO | M3 (Julian: everything automatable goes to Codex): vendor journey for RC_CHECK steps 1–4, one Codex prompt produced by `qa:prepare`, RC_CHECK reduced to Julian's approvals (~5 min). Julian: every Codex auto test runs on the FAKE client Codex Wind Lab (codex-datapass-bridge, datapass-codex-fakeclient 1–3, datapass-vscode-codex-auto), never FOIL or foil-study; RC_CHECK step 3 uses the Codex Wind Lab bridge, not the real FOIL project | V1-RC | chip opened (medium) | S–M | #120, common #14 | running |
+| V1-RC2 | M3: 1.0.0-rc.2 + provenance, then the Codex run J01–J12 and Julian's check, batched as one moment; CHANGELOG line for FLAKE2; unit test that a second EACCES (or any other error) in gitRead still surfaces as an error (PM, v20 fix) | FLAKE2, Q, FOILDOC, HONEST, AUTO | later | S–M | | later |
 
 Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
 
 ### Merge order
-FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0.
+FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0. Then (M3, Julian's FOIL feedback, PM 2026-09-27): V1-FLAKE2 → V1-Q → V1-FOILDOC → V1-HONEST → V1-AUTO → V1-RC2. PRs (PM, 2026-09-27): #121 → #117 → common#15 → #120 → common#14 (regenerated with `npm run sync:common` from main after #117; `-- --check` clean); RC2 only after those 5.
 
 ### Julian-only moments (batched by the assistant)
 | When | What | Duration |
@@ -80,7 +86,11 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
 | PM ASSISTANT DataPass 1 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate | 2026-09-26 | PM |
 | COORD DataPass 1 | coordinator (low) | V1 coders flow, routine merges, context watch | 2026-09-26 · V2 | PM |
-| CODER DataPass RC | coder (medium) | V1-RC (§ V1-RC, #110) | 2026-09-27 · V2 | COORD DataPass 1 |
+| CODER DataPass FLAKE2 | coder (medium) | V1-FLAKE2 (§ V1-FLAKE2, #112) | 2026-09-27 · V2 | COORD DataPass 1 |
+| CODER DataPass FOILDOC | coder (low) | V1-FOILDOC (§ V1-FOILDOC, #116) | 2026-09-27 · V2 | COORD DataPass 1 |
+| CODER DataPass HONEST | coder (medium) | V1-HONEST (§ V1-HONEST) | 2026-09-27 · V2 | COORD DataPass 1 |
+| CODER DataPass AUTO | coder (medium) | V1-AUTO (§ V1-AUTO, #120) | 2026-09-27 · V2 | COORD DataPass 1 |
+| SYNC · sync-common drift | coder (Julian's chip) | #117 (`sync-common`: examples' .vscode/tasks.json) | 2026-09-27 · V2 | COORD DataPass 1 |
 
 Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
 
