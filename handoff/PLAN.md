@@ -93,7 +93,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 | Package | Scope | Wave / depends on | Owner | State |
 |---|---|---|---|---|
-| V3-SHELL | Left-tree lenses, thin right rail, bottom panel | wave 1 | PM agent · V3-SHELL | running (#154) |
+| V3-SHELL | Left-tree lenses, thin right rail, bottom panel | wave 1 | PM agent · V3-SHELL | done (#154) |
 | V3-HOME | Module dashboard, saved layouts, `.datapass/links.json` + links page | wave 1 | PM agent · V3-HOME | done (#153) |
 | V3-HOP1 | `datapass.understanding` v1 format, `.datapass/understanding/<repo>/<path>.json`, validator, `examples/v3/hop` | wave 1 | PM agent · V3-HOP1 | done (#151) |
 | V3-THEME | Lighter / switchable DataPass palette, fewer tree colours, light/dark diagram themes, code font | wave 1 | PM agent · V3-THEME | done (#152) |
@@ -103,6 +103,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
 | V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | running |
+| V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width | after HOP2 and GITDIAG | — | to do |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
@@ -116,7 +117,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
 | PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
 | PM agent · QATMP | PM agent (medium) | V1.0.x-QATMP (branch claude/qatmp; merges its own PRs) | 2026-09-27 · V2 | PM |
-| PM agent · V3-SHELL | PM agent (medium) | V3-SHELL (merges its own PRs) | 2026-09-27 · V2 | PM |
+| PM agent · V3-SHELL | PM agent (medium) | V3-SHELL — done (#154) | 2026-09-27 · V2 | PM |
 | PM agent · V3-HOME | PM agent (medium) | V3-HOME — done (#153) | 2026-09-27 · V2 | PM |
 | PM agent · V3-HOP1 | PM agent (medium) | V3-HOP1 — done (#151) | 2026-09-27 · V2 | PM |
 | PM agent · V3-THEME | PM agent (medium) | V3-THEME — done (#152) | 2026-09-27 · V2 | PM |
