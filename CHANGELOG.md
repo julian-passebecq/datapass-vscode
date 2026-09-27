@@ -3,6 +3,14 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## Unreleased
+
+- **Tests for the journeys qa:ui cannot drive** (V1-GAPS): J12 (with prod selected no run/deploy is ready,
+  DataPass never runs one and no task or terminal starts), J09 (Open Version / Compare leave files, HEAD,
+  refs and the working tree unchanged; a file outside Git is refused with a reason) and J04 (an AI proposal
+  is reviewed as a diff and cancelled with nothing written; unsupported proposals are refused). Unit:
+  `tests/journeyGaps.test.ts`; desktop: `tests/integration/journeyGapFlows.ts`. No product change.
+
 ## 1.0.0-rc.3 — V1 release candidate 3: qa:ui is the gate, no client-named settings, readable diagram, the keyboard stays yours (2026-09-27)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M3 (packages V1-FLAKE3, V1-FOILSURF,

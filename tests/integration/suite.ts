@@ -34,6 +34,7 @@ import { registerOpenClientProjectFlows } from "./openClientProjectFlows";
 import { registerEvidenceFlows } from "./evidenceFlows";
 import { registerNativeTestFlows } from "./nativeTestFlows";
 import { registerHonestFlows } from "./honestFlows";
+import { registerJourneyGapFlows } from "./journeyGapFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -278,6 +279,7 @@ registerCodexTestsFlows(() => api);
 registerFileVersionFlows(() => api);
 registerFileContextFlows(() => api);
 registerCheckFlows(() => api);
+registerJourneyGapFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);
