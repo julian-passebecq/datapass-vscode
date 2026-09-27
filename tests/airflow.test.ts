@@ -327,3 +327,15 @@ test("airflow: the V3-HOP1 example DAG is read, and its DataPass Hop explanation
   assert.equal(found, resolve("examples/v3/hop/bridge/.datapass/understanding/pipelines/dags/daily_sales_dag.py.json"));
   assert.equal(await findUnderstanding(resolve("tests/fixtures/airflow/etl_dag.py"), [resolve("examples/v3/hop/bridge")], [resolve(".")]), undefined);
 });
+
+test("airflow: a DAG guarded by an optional import (V3-DEMO) is read; a comprehension inside an argument is not dynamic", () => {
+  const x = extractDag(readFileSync("examples/v3/etl-demo/ingest/dags/meter_readings_daily.py", "utf8"));
+  assert.deepEqual(x.dags.map(d => [d.dagId, d.schedule]), [["meter_readings_daily", "30 5 * * *"]]);
+  assert.deepEqual(ids(x), ["wait_for_drop", "extract_to_raw", "run_spark_jobs", "build_models", "check_quality", "publish"]);
+  assert.equal(x.edges.length, 5);
+  assert.deepEqual(x.unresolved, []);
+  // An `if` that does not guard the DAG itself and creates a task stays unresolved.
+  const c = extractDag(`from airflow import DAG\nfrom airflow.operators.empty import EmptyOperator\nwith DAG("c") as dag:\n    a = EmptyOperator(task_id="a")\n    if ENV == "prod":\n        b = EmptyOperator(task_id="b")\n        a >> b\n`);
+  assert.deepEqual(ids(c), ["a"]);
+  assert.ok(c.unresolved.some(u => /under `if`/.test(u.reason) && u.startLine === 5 && u.endLine === 7));
+});

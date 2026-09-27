@@ -361,6 +361,11 @@ class Extractor {
       if (kw === "with") { this.withBlock(ln, i + 1, end, ctx); i = end; continue; }
       if (kw && DYNAMIC_HEADERS.has(kw)) {
         const isMain = kw === "if" && ln.toks.some(t => t.t === "name" && t.v === "__name__");
+        // A `try:` body, or an `if` that guards the whole DAG (`if DAG is not None:` when Airflow is
+        // an optional import), is read as written: the DAG exists only there anyway.
+        const guardsDag = (kw === "if" || kw === "else" || kw === "elif") && this.lines.slice(i + 1, end).some(l => l.toks.some((t, k) =>
+          t.t === "name" && ((t.v === "DAG" && l.toks[k + 1]?.v === "(") || (t.v === "dag" && l.toks[k - 1]?.v === "@"))));
+        if (kw === "try" || kw === "finally" || guardsDag) { this.block(i + 1, end, ctx); i = end; continue; }
         if (!isMain && this.buildsTasks(i, end, ctx.env)) {
           const loop = kw === "for" || kw === "while";
           this.unresolvedAt(ln.start, lastLine, loop ? `Tasks or dependencies built in a \`${kw}\` loop` : `Tasks or dependencies under \`${kw}\``);
@@ -460,7 +465,7 @@ class Extractor {
 
   private statement(ln: Line, ctx: Ctx): void {
     const toks = ln.toks;
-    if (toks.some(t => t.t === "name" && (t.v === "for" || t.v === "lambda")) && tokensBuildTasks(toks, ctx.env)) {
+    if (comprehensionBuildsTasks(toks, ctx.env)) {
       this.unresolvedAt(ln.start, ln.end, "Tasks built in a comprehension or lambda");
       return;
     }
@@ -683,6 +688,30 @@ function tokensBuildTasks(toks: readonly Tok[], env: Env): boolean {
     if (t.t === "name" && (t.v === "task_id" || LINK_FUNCS.has(t.v) || t.v === "set_upstream" || t.v === "set_downstream" || t.v === "TaskGroup" || t.v === "expand")) return true;
     if (t.t === "op" && (t.v === ">>" || t.v === "<<")) return true;
     if (t.t === "name") { const v = env.get(t.v); if (v && (v.k === "tfn" || v.k === "gfn" || v.k === "factory")) return true; }
+  }
+  return false;
+}
+
+/** Whether a comprehension or lambda of this statement creates or wires tasks (a list of SQL files does not). */
+function comprehensionBuildsTasks(toks: readonly Tok[], env: Env): boolean {
+  for (let k = 0; k < toks.length; k++) {
+    const t = toks[k]!;
+    if (t.t !== "name" || (t.v !== "for" && t.v !== "lambda")) continue;
+    let o = k, depth = 0;
+    for (; o >= 0; o--) {
+      const x = toks[o]!;
+      if (x.t !== "op") continue;
+      if (CLOSERS.has(x.v)) depth++;
+      else if (x.v === "(" || x.v === "[" || x.v === "{") { if (depth === 0) break; depth--; }
+    }
+    let c = k;
+    for (depth = 0; c < toks.length; c++) {
+      const x = toks[c]!;
+      if (x.t !== "op") continue;
+      if (x.v === "(" || x.v === "[" || x.v === "{") depth++;
+      else if (CLOSERS.has(x.v)) { if (depth === 0) break; depth--; }
+    }
+    if (tokensBuildTasks(toks.slice(Math.max(0, o), c + 1), env)) return true;
   }
   return false;
 }
