@@ -42,9 +42,9 @@ that does not exist.
    by design.
 9. **`project.type` can be overridden per machine** (`datapass.ai.projectTypes` wins). Two people
    can see different defaults for the same project.
-10. **FOIL-specific settings remain in the generic extension**: `datapass.foil.controlRoot`,
-    `datapass.foil.databricksRoot`, `datapass.foil.oracleSshHost` (from the V1 FOIL profile). Other
-    clients ignore them; a later pass should move them behind the FOIL domain pack or retire them.
+10. **(Resolved in 1.0.0, V1-FOILSURF)** The V1 FOIL settings `datapass.foil.controlRoot`,
+    `datapass.foil.databricksRoot`, `datapass.foil.oracleSshHost` and the FOIL commands are gone;
+    old configurations that still set them load with no error and the values are ignored.
 11. **Planned repositories cannot hold a local path.** "A folder of this repository during the
     pilot" is declared as a repository with `path` (not `planned`), and moved to a `remote` later.
 12. **DataPass 0.14–0.17 refuse a v5 manifest.** A person still on those versions needs a v4 file

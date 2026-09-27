@@ -122,8 +122,6 @@ export async function executeGalaxyAction(action: string, extensionUri: vscode.U
     case "infra.copyTofuValidate": await copyIaC("validate"); return;
     case "infra.copyTofuPlan": await copyIaC("plan"); return;
     case "infra.openRemoteSsh": await openRemoteSsh(); return;
-    case "foil.selectControl": await vscode.commands.executeCommand("datapass.selectFoilControlRoot"); return;
-    case "foil.selectDatabricks": await vscode.commands.executeCommand("datapass.selectFoilDatabricksRoot"); return;
     case "foil.openControl": await openFoilRoot("control"); return;
     case "foil.openDatabricks": await openFoilRoot("databricks"); return;
     case "foil.openOracle": await openFoilOracle(); return;
@@ -912,11 +910,10 @@ async function openFoilRoot(id: "control" | "databricks"): Promise<void> {
 }
 
 async function openFoilOracle(): Promise<void> {
-  const localOverride = vscode.workspace.getConfiguration("datapass").get<string>("foil.oracleSshHost", "").trim();
   const projectConfig = await getProjectPlatformConfig();
-  const host = localOverride || projectConfig?.oracle?.sshHost?.trim() || "";
+  const host = projectConfig?.oracle?.sshHost?.trim() || "";
   if (!host) {
-    void vscode.window.showWarningMessage("DataPass: configure an SSH config host alias in settings or .datapass/project.json first.");
+    void vscode.window.showWarningMessage("DataPass: configure an SSH config host alias in .datapass/project.json first.");
     return;
   }
   const command = `ssh ${quoteShellArg(host)}`;
