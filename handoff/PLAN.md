@@ -97,9 +97,9 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-HOME | Module dashboard, saved layouts, `.datapass/links.json` + links page | wave 1 | PM agent · V3-HOME | running |
 | V3-HOP1 | `datapass.understanding` v1 format, `.datapass/understanding/<repo>/<path>.json`, validator, `examples/v3/hop` | wave 1 | PM agent · V3-HOP1 | running |
 | V3-THEME | Lighter / switchable DataPass palette, fewer tree colours, light/dark diagram themes, code font | wave 1 | PM agent · V3-THEME | running |
-| V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2, after HOP1 (only wave-2 package before the quota reset) | one PM agent | later |
-| V3-DEMO | Realistic demo client | wave 2 | — | after quota reset (Oct 1, 13:00) |
-| V3-GITDIAG | Git on the diagram + file history | wave 2 | — | after quota reset (Oct 1, 13:00) |
+| V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2, after HOP1 | — | later |
+| V3-DEMO | Realistic demo client | wave 2, after HOP1 | — | later |
+| V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
@@ -117,6 +117,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · V3-HOME | PM agent (medium) | V3-HOME (merges its own PRs) | 2026-09-27 · V2 | PM |
 | PM agent · V3-HOP1 | PM agent (medium) | V3-HOP1 (merges its own PRs) | 2026-09-27 · V2 | PM |
 | PM agent · V3-THEME | PM agent (medium) | V3-THEME (merges its own PRs) | 2026-09-27 · V2 | PM |
+| PM agent · V3-GITDIAG | PM agent (medium) | V3-GITDIAG (merges its own PRs) | 2026-09-28 · V2 | PM |
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
 | CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
 | CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
