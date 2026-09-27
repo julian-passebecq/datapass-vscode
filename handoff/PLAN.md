@@ -93,25 +93,25 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 | Package | Scope | Wave / depends on | Owner | State |
 |---|---|---|---|---|
-| V3-SHELL | Left-tree lenses, thin right rail, bottom panel | wave 1 | PM agent · V3-SHELL | running |
+| V3-SHELL | Left-tree lenses, thin right rail, bottom panel | wave 1 | PM agent · V3-SHELL | running (#154) |
 | V3-HOME | Module dashboard, saved layouts, `.datapass/links.json` + links page | wave 1 | PM agent · V3-HOME | done (#153) |
 | V3-HOP1 | `datapass.understanding` v1 format, `.datapass/understanding/<repo>/<path>.json`, validator, `examples/v3/hop` | wave 1 | PM agent · V3-HOP1 | done (#151) |
 | V3-THEME | Lighter / switchable DataPass palette, fewer tree colours, light/dark diagram themes, code font | wave 1 | PM agent · V3-THEME | done (#152) |
 | V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-HOP2 | running (#159) |
 | V3-DEMO | Realistic demo client | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-DEMO | done (#156) |
-| V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running |
+| V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
 | V3-FIX-DOCKER | Small fix: Docker icon (`si:docker`) has a broken path in `src/webview/diagramIcons.ts` | logged 2026-09-28 | — | to do |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
-Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 2** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 3** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
 
 | Session | Role | Package / job | GO date | Reports to |
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
 | PM ASSISTANT DataPass 2 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate (took over from ASSISTANT 1, hand-off #137) | 2026-09-27 · V2 | PM |
-| COORD DataPass 2 | coordinator (low) | V1 coders flow, routine merges, context watch (took over from COORD 1, 2026-09-27 03:30) | 2026-09-27 · V2 | PM |
+| COORD DataPass 3 | coordinator (low) | V3 flow, routine merges, context watch (took over from COORD 2, hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md) | 2026-09-28 · V2 | PM |
 | PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
 | PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
 | PM agent · QATMP | PM agent (medium) | V1.0.x-QATMP (branch claude/qatmp; merges its own PRs) | 2026-09-27 · V2 | PM |
@@ -128,6 +128,8 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
 | CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 — done (#143, common #19; v1.0.0 at d8772d4) | 2026-09-27 · V2 | PM |
 | CODER DataPass UI-POLISH | coder (medium) | V1-UI-POLISH (diagram look) — done (#130) | 2026-09-27 · V2 | PM |
+
+Retired on 2026-09-28: COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
 Retired on 2026-09-27: PM ASSISTANT DataPass 1 (hand-off handoff/sessions/2026-09-27-1641-pm-assistant.md).
 
