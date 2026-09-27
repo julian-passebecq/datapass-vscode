@@ -12,6 +12,7 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
   opens a company workspace on it). New optional bridge file `.datapass/links.json` (`datapass.links` v1, schema
   `schemas/datapass-links.schema.json`) and a *Project links* page; links open in the browser after the usual
   confirmation, never fetched or checked by DataPass.
+- V3-HOP1: DataPass Hop contract `datapass.understanding` v1 (one bridge JSON per native file, at `.datapass/understanding/<repository key>/<native path>.json`: steps tied to line ranges, links, SQL joins, provenance), its validator and loader (states ok / stale / orphan / invalid; names indexed at refresh, files read on demand), step ↔ line helpers for V3-HOP2, schema `schemas/datapass-understanding.schema.json`, examples `examples/v3/hop` (PySpark, SQL with two joins, Airflow), docs §17 and guide page 12. No UI yet.
 
 ## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
 

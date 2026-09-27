@@ -1,0 +1,31 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "pipelines",
+    "path": "sql/customer_orders.sql",
+    "sha256": "3147069082ea203ccd866b55b1f6ae792a4aa410d3fc8148d98c2917f49446ea",
+    "language": "sql"
+  },
+  "title": "Customer order lines",
+  "summary": "Completed order lines since 2026-01-01 with the customer's segment and the current product details, one row per order line.",
+  "steps": [
+    { "id": "select", "title": "Columns returned", "kind": "transform", "lines": [3, 11], "outputs": ["order_id", "order_date", "customer_id", "segment", "quantity", "product_name", "category", "line_amount"], "columns": [
+      { "name": "line_amount", "from": ["o.quantity", "o.unit_price"], "note": "quantity times unit price" }
+    ], "provenance": "declared" },
+    { "id": "lines", "title": "Order lines", "kind": "source", "lines": [12, 12], "inputs": ["sales.order_lines"], "outputs": ["o"], "provenance": "declared" },
+    { "id": "customers", "title": "Join the customer", "kind": "join", "lines": [13, 14], "inputs": ["o", "sales.customers"], "outputs": ["o + c"], "provenance": "declared" },
+    { "id": "products", "title": "Join the current product", "kind": "join", "lines": [15, 17], "inputs": ["o + c", "catalog.products"], "outputs": ["o + c + p"], "note": "Left join: a line whose product is missing keeps empty product columns.", "provenance": "declared" },
+    { "id": "where", "title": "Completed lines since 2026", "kind": "filter", "lines": [18, 19], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "lines", "to": "customers", "kind": "data" },
+    { "from": "customers", "to": "products", "kind": "data" },
+    { "from": "products", "to": "where", "kind": "data" },
+    { "from": "where", "to": "select", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "lines-customers", "step": "customers", "left": "sales.order_lines o", "right": "sales.customers c", "type": "inner", "keys": [["o.customer_id", "c.customer_id"]], "provenance": "declared" },
+    { "id": "lines-products", "step": "products", "left": "sales.order_lines o", "right": "catalog.products p", "type": "left", "keys": [["o.product_id", "p.product_id"]], "note": "Only the current product version (p.valid_to IS NULL).", "provenance": "declared" }
+  ]
+}

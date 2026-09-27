@@ -7,7 +7,7 @@
  *   <!-- refused: <kind> -->           a complete file DataPass must refuse (parser or editor schema)
  *   <!-- problem: <group> <kind> -->   replaces the group's file; the project map must report a problem
  *
- * Kinds: project, graph, options, sheet, board, work-log, catalog, extensions.
+ * Kinds: project, graph, options, sheet, board, work-log, catalog, extensions, understanding.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -23,6 +23,7 @@ import { boardProblems, parseBoard } from "../src/core/project/board";
 import { parseWorkLog } from "../src/core/workOrders/workLog";
 import { parseExtensionsJson, compareExtensionsJson } from "../src/core/toolchain/extensionsJson";
 import { buildProjectMap } from "../src/core/project/projectMap";
+import { parseUnderstanding } from "../src/core/understanding/contract";
 
 const ROOT = join(__dirname, "..");
 const GUIDE = join(ROOT, "docs", "guide");
@@ -32,7 +33,7 @@ const schema = (f: string) => { if (!compiled.has(f)) compiled.set(f, ajv.compil
 const SCHEMAS: Record<string, string | undefined> = {
   project: "datapass-project.schema.json", graph: "datapass-graph.schema.json", options: "datapass-options.schema.json",
   sheet: "datapass-sheet.schema.json", board: "datapass-board.schema.json", "work-log": "datapass-work-log.schema.json",
-  catalog: "datapass-catalog.schema.json", extensions: undefined
+  catalog: "datapass-catalog.schema.json", extensions: undefined, understanding: "datapass-understanding.schema.json"
 };
 
 interface Block { file: string; line: number; marker: "example" | "fragment" | "refused" | "problem"; group: string; kind: string; text: string }
@@ -71,6 +72,7 @@ function check(kind: string, text: string): { runtime: string[]; editor: boolean
   else if (kind === "board") run(() => parseBoard(text));
   else if (kind === "work-log") run(() => parseWorkLog(text));
   else if (kind === "catalog") run(() => parseCatalog(text));
+  else if (kind === "understanding") runtime.push(...parseUnderstanding(text).diagnostics.filter(d => d.severity === "error").map(d => `${d.code}: ${d.message}`));
   else if (kind === "extensions") { const o = parseExtensionsJson(text); if (o.state !== "found") runtime.push(o.state === "invalid" ? o.reason : o.state); }
   return { runtime, editor };
 }

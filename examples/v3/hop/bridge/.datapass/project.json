@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "id": "hop-demo",
+    "title": "DataPass Hop demo",
+    "description": "A bridge that explains three native files: a PySpark job, a SQL query with two joins and an Airflow DAG."
+  },
+  "repositories": {
+    "bridge": {
+      "path": ".",
+      "label": "Bridge (DataPass files)"
+    },
+    "pipelines": {
+      "path": "../pipelines",
+      "label": "Pipelines (native code)"
+    }
+  }
+}

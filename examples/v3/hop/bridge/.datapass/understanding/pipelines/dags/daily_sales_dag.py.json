@@ -1,0 +1,25 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "pipelines",
+    "path": "dags/daily_sales_dag.py",
+    "sha256": "601c4385ee33efb85a7ac849c52606e595a5d10fd5f022f49d34668d6f06b6e3",
+    "language": "airflow"
+  },
+  "title": "Daily sales DAG",
+  "summary": "Every day at 06:00: wait for the orders, run the daily sales job on Databricks, check the reporting table has rows for the day, then notify the team.",
+  "steps": [
+    { "id": "dag", "title": "Schedule: every day at 06:00", "kind": "config", "lines": [9, 15], "note": "No catch-up: a missed day is not replayed automatically.", "provenance": "declared" },
+    { "id": "wait_for_orders", "title": "Wait for the orders", "kind": "task", "lines": [16, 16], "note": "A placeholder today; a sensor on raw.orders would go here.", "provenance": "inferred" },
+    { "id": "run_daily_sales", "title": "Run the daily sales job", "kind": "task", "lines": [18, 22], "inputs": ["raw.orders", "ref.stores"], "outputs": ["reporting.daily_sales_by_region"], "note": "Runs jobs/daily_sales.py through the Databricks job daily-sales.", "provenance": "inferred" },
+    { "id": "check_rows", "title": "Check the day has rows", "kind": "test", "lines": [24, 28], "inputs": ["reporting.daily_sales_by_region"], "provenance": "declared" },
+    { "id": "notify_team", "title": "Notify the team", "kind": "task", "lines": [30, 30], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "dag", "to": "wait_for_orders", "kind": "control" },
+    { "from": "wait_for_orders", "to": "run_daily_sales", "kind": "control" },
+    { "from": "run_daily_sales", "to": "check_rows", "kind": "control" },
+    { "from": "check_rows", "to": "notify_team", "kind": "control" }
+  ]
+}

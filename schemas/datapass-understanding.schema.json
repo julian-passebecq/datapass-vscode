@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-understanding.schema.json",
+  "title": "DataPass Hop: the visual explanation of one native file (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "datapass.understanding"
+    },
+    "version": {
+      "const": 1
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "language": {
+          "enum": [
+            "pyspark",
+            "python",
+            "sql",
+            "airflow",
+            "adf",
+            "fabric-pipeline",
+            "dockerfile",
+            "bicep",
+            "opentofu",
+            "other"
+          ]
+        }
+      },
+      "required": [
+        "repository",
+        "path",
+        "sha256",
+        "language"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "component": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "kind": {
+            "enum": [
+              "source",
+              "read",
+              "filter",
+              "transform",
+              "join",
+              "aggregate",
+              "write",
+              "task",
+              "branch",
+              "config",
+              "test",
+              "other"
+            ]
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            },
+            "maxItems": 2,
+            "minItems": 2
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "maxItems": 100,
+            "minItems": 0
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "from": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "maxItems": 100,
+                  "minItems": 0
+                },
+                "note": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2000
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "maxItems": 200,
+            "minItems": 0
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "provenance": {
+            "enum": [
+              "declared",
+              "inferred",
+              "estimated",
+              "illustrative"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "lines",
+          "provenance"
+        ]
+      },
+      "maxItems": 300,
+      "minItems": 1
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "kind": {
+            "enum": [
+              "data",
+              "control",
+              "dependency"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "kind"
+        ]
+      },
+      "maxItems": 1000,
+      "minItems": 0
+    },
+    "joins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "step": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "left": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "right": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "enum": [
+              "inner",
+              "left",
+              "right",
+              "full",
+              "cross",
+              "semi",
+              "anti"
+            ]
+          },
+          "keys": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "maxItems": 2,
+              "minItems": 2
+            },
+            "maxItems": 20,
+            "minItems": 0
+          },
+          "note": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "provenance": {
+            "enum": [
+              "declared",
+              "inferred",
+              "estimated",
+              "illustrative"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "step",
+          "left",
+          "right",
+          "type",
+          "keys",
+          "provenance"
+        ]
+      },
+      "maxItems": 200,
+      "minItems": 0
+    },
+    "milestoneLabels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "step": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24
+          }
+        },
+        "required": [
+          "step",
+          "label"
+        ]
+      },
+      "maxItems": 300,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "target",
+    "title",
+    "summary",
+    "steps"
+  ]
+}

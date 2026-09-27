@@ -84,6 +84,7 @@ const MAX_PY_FILES = 3000;
 const QUALIFICATION_KEY = "datapass.qualification.v1";
 const RECENT_KEY = "datapass.v3.recentProjects";
 import { resolveCompanions, type ResolvedCompanions } from "../core/companions/companions";
+import { indexUnderstanding, UnderstandingCatalog, type UnderstandingEntry, type UnderstandingIndex } from "../core/understanding/load";
 
 const KEYS = {
   root: "datapass.v3.root",
@@ -153,6 +154,9 @@ export class WorkSession implements vscode.Disposable {
   private variantsCache?: VariantsAnalysis;
   private previewCache?: Preview;
   private boardCache?: BoardView;
+  /** V3-HOP1: the bridge's DataPass Hop files, indexed by name at refresh and read on demand. */
+  private understandingCatalog?: UnderstandingCatalog;
+  private understandingGeneration = 0;
   /** The person accepted, in this window, that moving a card writes its status in board.json. */
   boardMovesConfirmed = false;
   private rootCandidates: vscode.Uri[] = [];
@@ -252,13 +256,15 @@ export class WorkSession implements vscode.Disposable {
     // which would slow the first paint's own Git reads.
     const incomplete: IncompleteStep[] = [];
     const bounded = <T>(name: string, p: Promise<T>, fallback: T) => settleWithin(name, p, REFRESH_STEP_TIMEOUT_MS, fallback, incomplete);
-    const [tools, envObs, extensionsObs, bindingObs, inv] = await Promise.all([
+    const [tools, envObs, extensionsObs, bindingObs, inv, understandingIndex] = await Promise.all([
       bounded("tool probes", step("probes", probeTools(forceProbe)), this.tools),
       bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs),
       bounded("extensions.json", ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined), this.extensionsObs),
       bounded("binding folders", ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()), this.bindingObs),
       bounded("inventory", step("inventory", inventoryDue ? this.scanInventory(ctx) : Promise.resolve(this.inv)), this.inv?.root === ctx.root?.toString() ? this.inv : undefined),
-      bounded("recent projects", this.rememberProject(), undefined)
+      bounded("recent projects", this.rememberProject(), undefined),
+      // V3-HOP1: names only (bounded walk); a file is read when its native file is shown.
+      bounded("understanding index", ctx.root?.scheme === "file" ? step("understanding", indexUnderstanding(ctx.root.fsPath)) : Promise.resolve(undefined), this.understandingCatalog?.index.bridgeRoot === ctx.root?.fsPath ? this.understandingCatalog?.index : undefined)
     ]);
     if (superseded()) return this.latest;
     this.tools = tools;
@@ -266,10 +272,30 @@ export class WorkSession implements vscode.Disposable {
     this.extensionsObs = extensionsObs;
     this.bindingObs = bindingObs;
     this.inv = inv;
+    this.understandingCatalog = understandingIndex && ctx.root ? this.buildUnderstanding(understandingIndex, ctx, coordinationKey, folders) : undefined;
     this.lastRefreshTimings.settledMs = performance.now() - started;
     this.tracker.publish(token, "settled", { project: ctx.root?.toString(), incomplete });
     this.changed();
     this.paintEmitter.fire("settled");
+  }
+
+  private buildUnderstanding(index: UnderstandingIndex, ctx: ProjectContext, coordinationKey: string, folders: ReadonlyMap<string, vscode.Uri>): UnderstandingCatalog {
+    const repos = new Map<string, string | undefined>();
+    for (const key of Object.keys(ctx.manifest?.repositories ?? {})) {
+      const folder = folders.get(key);
+      repos.set(key, folder?.scheme === "file" ? folder.fsPath : undefined);
+    }
+    if (!repos.has(coordinationKey) && ctx.root?.scheme === "file") repos.set(coordinationKey, ctx.root.fsPath);
+    return new UnderstandingCatalog(index, repos, ++this.understandingGeneration);
+  }
+
+  /** V3-HOP1: the bridge's DataPass Hop files (names only) and the index's own problems. */
+  understandingIndex(): UnderstandingIndex | undefined { return this.understandingCatalog?.index; }
+
+  /** V3-HOP1: the explanation of a native file, read and checked now (ok, stale, orphan or invalid); undefined when none. */
+  async understandingFor(uri: vscode.Uri): Promise<UnderstandingEntry | undefined> {
+    if (uri.scheme !== "file" || !this.understandingCatalog) return undefined;
+    return this.understandingCatalog.forNativeFile(uri.fsPath);
   }
 
   // ------------------------------------------------------------ qualification (per user, all projects)
