@@ -17,7 +17,7 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
 <style>
   :root { color-scheme: light dark; --gap: 12px; --radius: 6px; --border: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128,128,128,.35)));
     --ok: var(--vscode-testing-iconPassed, #3fb950); --warn: var(--vscode-editorWarning-foreground, #d29922); --bad: var(--vscode-errorForeground, #f85149);
-    --info: var(--vscode-textLink-foreground, #58a6ff); --muted: var(--vscode-descriptionForeground, #8b949e); --card: var(--vscode-editorWidget-background, rgba(128,128,128,.08)); }
+    --info: var(--vscode-textLink-foreground, #58a6ff); --muted: var(--vscode-descriptionForeground, #8b949e); --unverified: var(--vscode-charts-purple, #b180d7); --card: var(--vscode-editorWidget-background, rgba(128,128,128,.08)); }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 0; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size, 13px); line-height: 1.45; }
   body[data-mode="detail"] { background: var(--vscode-sideBar-background); }
@@ -99,7 +99,23 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .node { position: absolute; display: grid; grid-template-rows: auto 1fr auto; gap: 1px; text-align: left; padding: 6px 9px 6px 10px; border-radius: 7px; cursor: pointer;
     background: var(--vscode-editor-background); border: 1px solid var(--border); border-left: 4px solid var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,.12); overflow: hidden; }
   .node:hover { border-color: var(--vscode-focusBorder); }
-  .node.h-ok { border-left-color: var(--ok); } .node.h-attention { border-left-color: var(--warn); } .node.h-blocked { border-left-color: var(--bad); } .node.h-planned { border-style: dashed; } .node.h-info { border-left-color: var(--info); }
+  /* V1-UI-POLISH: side band + icon = provider (--prov), top edge + symbol = state. */
+  .node { border-left-color: var(--prov, var(--muted)); border-top: 3px solid var(--st, var(--border)); }
+  .node.st-available { --st: var(--ok); } .node.st-prepared { --st: var(--warn); } .node.st-choice { --st: var(--muted); border-style: dashed; border-left-style: solid; }
+  .node.st-unverified { --st: var(--unverified); } .node.st-blocked { --st: var(--bad); }
+  .picon { width: 14px; height: 14px; flex: none; fill: var(--prov, var(--muted)); }
+  .stsym { display: inline-block; min-width: 12px; text-align: center; font-weight: 700; color: var(--st, var(--muted)); }
+  .st-available .stsym, .lgst.st-available .stsym { color: var(--ok); } .st-prepared .stsym, .lgst.st-prepared .stsym { color: var(--warn); } .st-choice .stsym, .lgst.st-choice .stsym { color: var(--muted); }
+  .st-unverified .stsym, .lgst.st-unverified .stsym { color: var(--unverified); } .st-blocked .stsym, .lgst.st-blocked .stsym { color: var(--bad); }
+  .ext { flex: none; font-family: var(--vscode-editor-font-family); font-size: 10px; color: var(--vscode-foreground); padding: 0 4px; border-radius: 3px; border: 1px solid var(--border); border-left: 3px solid var(--ft, var(--muted)); }
+  .looklegend { border-top: 1px solid var(--border); gap: 10px; }
+  .lgfam::before { content: ""; display: inline-block; width: 4px; height: 12px; margin-right: 4px; vertical-align: -2px; background: var(--prov); border-radius: 1px; }
+  .lgst { display: inline-flex; gap: 3px; align-items: center; }
+  .lgsep { margin-left: 6px; }
+  body.vscode-high-contrast .node, body.vscode-high-contrast-light .node { border-left-color: var(--vscode-contrastBorder, currentColor); }
+  body.vscode-high-contrast .picon, body.vscode-high-contrast-light .picon { fill: var(--vscode-foreground); }
+  body.vscode-high-contrast .lgfam::before, body.vscode-high-contrast-light .lgfam::before { background: var(--vscode-contrastBorder, currentColor); }
+  body.vscode-high-contrast .ext, body.vscode-high-contrast-light .ext { border-left-color: var(--vscode-contrastBorder, currentColor); }
   .node.active { outline: 2px solid var(--vscode-focusBorder); outline-offset: 0; }
   .nodetop { display: flex; gap: 5px; align-items: center; font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; }
   .nodelabel { font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -187,8 +203,8 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .foldbtn { position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; background: var(--vscode-editor-background); cursor: pointer; font-size: 10px; line-height: 14px; padding: 0; color: var(--muted); }
   .node.group { border-style: dashed; border-left: 4px dashed var(--info); background: var(--card); }
   .node.parent { box-shadow: 3px 3px 0 -1px var(--vscode-editor-background), 3px 3px 0 0 var(--border); }
-  .node.diff-added { border-color: var(--ok); border-style: dashed; }
-  .node.diff-replaced { border-color: var(--info); }
+  .node.diff-added { border-right-color: var(--ok); border-bottom-color: var(--ok); border-style: dashed; }
+  .node.diff-replaced { border-right-color: var(--info); border-bottom-color: var(--info); }
   .node.diff-removed { opacity: .45; border-style: dotted; }
   .node.diff-removed .nodelabel { text-decoration: line-through; }
   .tag { font-size: 9.5px; text-transform: uppercase; letter-spacing: .6px; border-radius: 3px; padding: 0 4px; margin-left: auto; }

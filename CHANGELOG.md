@@ -5,6 +5,14 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **Architecture diagram readable at a glance** (V1-UI-POLISH, diagram only): each node's side band
+  and icon show its provider (Azure blue, Microsoft Fabric green, Power BI yellow, Databricks
+  orange-red, Python, Git/CI, SQL; unknown → neutral), and its top edge and symbol show one state
+  (✓ available, ◐ prepared/planned, ○ choice only, ? unverified, ✕ blocked). The entry file shows
+  its type in VS Code's default (Seti) file colours, and a legend under the diagram explains both.
+  Icons are bundled (Simple Icons CC0, codicons CC BY 4.0, see THIRD_PARTY_NOTICES.md; about 30 KB,
+  never fetched). High-contrast themes keep the icons and symbols with theme colours. No format,
+  schema or model change.
 - **No client-named settings or commands** (V1-FOILSURF, journey R04): the settings
   `datapass.foil.controlRoot`, `datapass.foil.databricksRoot`, `datapass.foil.oracleSshHost` and the
   commands *Select FOIL Control Repository*, *Select FOIL Databricks Repository* and *Initialize FOIL
