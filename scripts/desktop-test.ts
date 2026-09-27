@@ -22,6 +22,7 @@ import { foilProjectManifest, genericProjectManifest, migrateManifestToLatest, m
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
 import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
 import { boardAJson } from "../tests/fixtures/v3/researchBoard";
+import { linksAJson } from "../tests/fixtures/v3/researchLinks";
 import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from "../tests/fixtures/v3/devops";
 import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
@@ -179,6 +180,7 @@ function setupV3Research(base: string): { workspace: string; env: Record<string,
     ".datapass/options.json": JSON.stringify(optionsAJson(), null, 2) + "\n",
     ".datapass/sheet.json": JSON.stringify(sheetAJson(), null, 2) + "\n",
     ".datapass/board.json": JSON.stringify(boardAJson(), null, 2) + "\n",
+    ".datapass/links.json": JSON.stringify(linksAJson(), null, 2) + "\n",
     "README.md": "# Research library (coordination)\n\nSynthetic DataPass V3 fixture.\n"
   });
   commitAll(hub, "coordination");

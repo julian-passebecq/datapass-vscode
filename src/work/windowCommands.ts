@@ -67,7 +67,10 @@ export interface WindowControls {
   company(): string;
 }
 
-export function registerWindowCommands(context: vscode.ExtensionContext, session: WorkSession, host: WorkbenchHost, views: WorkViews): WindowControls {
+/** V3-HOME: `datapass.startupView` set to this opens the DataPass Home (unless a saved view has that name). */
+export const HOME_STARTUP = "home";
+
+export function registerWindowCommands(context: vscode.ExtensionContext, session: WorkSession, host: WorkbenchHost, views: WorkViews, openHome?: () => Promise<unknown>): WindowControls {
   const reg = (id: string, fn: (...args: any[]) => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(fn)));
   const version = String(context.extension.packageJSON.version ?? "unknown");
   const config = () => vscode.workspace.getConfiguration("datapass");
@@ -211,6 +214,7 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
     if (!file) throw new UserFacingError("This window has no workspace file. Create the company workspace file first (DataPass: Create the Company Workspace File…); a single folder's settings are part of its repository.");
     let id: string | undefined;
     if (arg === "") id = undefined;
+    else if (typeof arg === "string" && arg.toLowerCase() === HOME_STARTUP && openHome && !(await locate(arg))) id = HOME_STARTUP;
     else if (typeof arg === "string") {
       const target = await locate(arg);
       if (!target) throw new UserFacingError(`No work view "${arg}".`);
@@ -218,6 +222,7 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
     } else {
       const all = await views.all();
       const items = [{ label: "$(circle-slash) No startup view", description: "DataPass leaves the window as VS Code restores it", id: undefined as string | undefined },
+        ...(openHome ? [{ label: "$(home) DataPass Home", description: startupSetting()?.toLowerCase() === HOME_STARTUP ? "current" : undefined, detail: "The module dashboard: Architecture, Git, AI, Board, Readiness, Project links, your layouts", id: HOME_STARTUP as string | undefined }] : []),
         ...all.flatMap(s => s.file.views.map(v => ({ label: v.name, description: isStartup(v) ? "current" : undefined, detail: describeView(v, labels()), id: v.id as string | undefined })))];
       const pick = await vscode.window.showQuickPick(items, { title: `Open ${path.basename(file.fsPath)} with which work view?` });
       if (!pick) return;
@@ -282,6 +287,7 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
     if (session.projectRootCandidates().length > 1) items.push({ label: "$(folder-library) Another DataPass project of this window…", run: run("datapass.selectProjectFolder") });
     items.push({ label: "$(arrow-swap) Switch project…", description: "opens it in its own window", run: run("datapass.switchProject") });
     items.push({ label: "Window", kind: vscode.QuickPickItemKind.Separator });
+    if (openHome) items.push({ label: "$(home) DataPass Home", description: "modules, layouts, project links", run: () => openHome() });
     items.push({ label: "$(multiple-windows) Open the Workbench in a floating window", description: "for a second screen", run: run("datapass.openWorkbenchFloating") });
     items.push({ label: "$(file-code) Create the company workspace file…", description: "one window per company", run: run("datapass.createCompanyWorkspace") });
     items.push({ label: "$(export) Export company workspaces for Power Ops", run: run("datapass.exportCompanyWorkspaces") });
@@ -521,7 +527,9 @@ export function registerWindowCommands(context: vscode.ExtensionContext, session
       const wanted = startupSetting();
       if (!applied && wanted) {
         const found = await locate(wanted);
-        if (!found) {
+        if (!found && wanted.toLowerCase() === HOME_STARTUP && openHome) {
+          try { await openHome(); applied = HOME_STARTUP; } catch (e) { report("Startup Home", [errorMessage(e)]); }
+        } else if (!found) {
           void vscode.window.showWarningMessage(`This workspace opens with the work view "${wanted}", but there is no work view with that name on this computer. Work views are saved per computer: arrange the window and save one with that name (DataPass: Save Work View…).`);
         } else {
           try { await applyAndReport(found.view, found.root, " (startup view of this workspace)"); applied = found.view.id; }

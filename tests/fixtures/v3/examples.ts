@@ -6,6 +6,7 @@ import { hubToolkitFiles } from "./toolkit";
 import { graphAJson, manifestA } from "./research";
 import { optionsAJson, sheetAJson } from "./researchOptions";
 import { boardAJson } from "./researchBoard";
+import { linksAJson } from "./researchLinks";
 import { graphDevopsJson, manifestDevops } from "./devops";
 import { filesB } from "./monorepo";
 import { filesSales } from "./salesBi";
@@ -31,6 +32,9 @@ several repositories. Open this folder in VS Code with DataPass installed.
 - \`.datapass/board.json\` — the board: tasks, bugs, a decision and a question, two sprints and a
   milestone; each card names the components and files it concerns. Moving a card in DataPass
   changes only its status line.
+- \`.datapass/links.json\` — the project links page: workspaces, dashboards, portal pages, repositories
+  and docs, grouped, each with its kind and environment. DataPass opens them in the browser after a
+  confirmation; it never calls them itself.
 - \`AGENTS.md\` — what an AI assistant must respect when it prepares files for this project.
 
 Flow of the "Papers pipeline" sub-project:
@@ -117,6 +121,7 @@ export function exampleFiles(): Record<string, string> {
   out["examples/v3/research-library/.datapass/options.json"] = json(optionsAJson());
   out["examples/v3/research-library/.datapass/sheet.json"] = json(sheetAJson());
   out["examples/v3/research-library/.datapass/board.json"] = json(boardAJson());
+  out["examples/v3/research-library/.datapass/links.json"] = json(linksAJson());
   out["examples/v3/research-library/README.md"] = RESEARCH_README;
   out["examples/v3/research-library/AGENTS.md"] = RESEARCH_AGENTS;
   for (const [rel, content] of Object.entries(filesB())) out[`examples/v3/catalog-import/${rel}`] = content;

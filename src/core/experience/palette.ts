@@ -20,7 +20,9 @@ const CORE = [
   "validateContract", "checkThisFile", "checkThisRepository", "fileVersions.openVersion", "fileVersions.compare",
   "git.refresh", "git.fetchAll", "checkForUpdates", "getUpdates",
   "cloneRepository", "locateRepository", "openRepositoryWindow", "openRepositoryWeb",
-  "experience.switchMode", "experience.customize"
+  "experience.switchMode", "experience.customize",
+  // V3-HOME: the module dashboard.
+  "openHome"
 ] as const;
 
 /** Gated on a surface: listed while the mode shows it. */
@@ -63,7 +65,8 @@ const GATED: Record<string, readonly string[]> = {
     "workOrders.exportProject", "workOrders.openFolder", "workOrders.newForMissingFiles",
     "codexTests.openLastReport", "codexTests.chooseRepository", "codexTests.refresh", "pilot.enable",
     "fileVersions.openLatest", "fileVersions.lastUpdate", "experience.resetOverrides",
-    "control.refresh", "control.copyStartCommand"
+    "control.refresh", "control.copyStartCommand",
+    "openProjectLinks", "openLinksFile"
   ]
 };
 

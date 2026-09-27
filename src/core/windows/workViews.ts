@@ -7,6 +7,7 @@
  *   - the editor grid of the main window (`vscode.getEditorLayout` / `vscode.setEditorLayout`,
  *     sizes as fractions) and the files of each group, as repository-relative paths;
  *   - the Workbench tab: in a group of that grid, or in a floating window of its own;
+ *   - (V3-HOME) the DataPass Home tab, in a group of that grid;
  *   - which DataPass views were visible (Project, Work, Galaxy, Architecture, Details);
  *   - the diagram settings of the Workbench tab and of the Architecture panel (orientation, lanes,
  *     folded lanes, zoom) and the previewed architecture.
@@ -68,7 +69,11 @@ export interface RepoTab { repo: string; path: string }
 /** A file in a workspace folder that is not one of the project's repositories. */
 export interface FolderTab { folder: string; path: string }
 export interface WorkbenchTab { workbench: true }
-export type ViewTab = RepoTab | FolderTab | WorkbenchTab;
+/** V3-HOME: the DataPass Home tab (the module dashboard). */
+export interface HomeTab { home: true }
+export type ViewTab = RepoTab | FolderTab | WorkbenchTab | HomeTab;
+/** A tab that is a file (not the Workbench or the Home). */
+export const isFileTab = (t: ViewTab): t is RepoTab | FolderTab => "path" in t;
 export interface ViewGroup { tabs: ViewTab[]; active?: number }
 
 export interface WorkView {
@@ -113,7 +118,7 @@ const DIAGRAM_UI: Schema = obj({
   zoom: enumOf("fit", "100")
 }, ["dir", "groupBy", "folded", "zoom"]);
 
-const TAB: Schema = { anyOf: [obj({ repo: REPO_KEY, path: REL }), obj({ folder: FOLDER_NAME, path: REL }), obj({ workbench: constOf(true) })] };
+const TAB: Schema = { anyOf: [obj({ repo: REPO_KEY, path: REL }), obj({ folder: FOLDER_NAME, path: REL }), obj({ workbench: constOf(true) }), obj({ home: constOf(true) })] };
 
 const VIEW: Schema = obj({
   id: VIEW_ID, name: NAME, savedAt: TIME,
@@ -164,13 +169,14 @@ export function viewProblem(v: WorkView): string | undefined {
       if (g.active !== undefined && g.active >= g.tabs.length) return "an active tab does not exist";
       if (g.tabs.filter(t => "workbench" in t).length > 1) return "the Workbench appears twice in a group";
       for (const t of g.tabs) {
-        if ("workbench" in t) continue;
+        if (!isFileTab(t)) continue;
         const vet = vetRelativePath(t.path);
         if (!vet.ok) return `${t.path}: ${vet.reason}`;
         if (vet.relative !== t.path) return `${t.path}: write it as ${vet.relative}`;
       }
     }
     if (e.groups.flatMap(g => g.tabs).filter(t => "workbench" in t).length > 1) return "the Workbench appears in two groups";
+    if (e.groups.flatMap(g => g.tabs).filter(t => "home" in t).length > 1) return "the Home appears twice";
     if (v.floatingWorkbench && e.groups.some(g => g.tabs.some(t => "workbench" in t))) return "the Workbench cannot be both floating and in a group";
   }
   if (v.preview?.scenario && v.preview.picks?.length) return "a preview is a scenario or picks, not both";
@@ -256,11 +262,12 @@ export function describeView(v: WorkView, labels: { subproject?: (id: string) =>
   else if (sp) parts.push(labels.subproject?.(sp) ?? sp);
   else parts.push("whole project");
   if (v.editors) {
-    const files = v.editors.groups.reduce((n, g) => n + g.tabs.filter(t => !("workbench" in t)).length, 0);
+    const files = v.editors.groups.reduce((n, g) => n + g.tabs.filter(isFileTab).length, 0);
     parts.push(`${v.editors.groups.length} group${v.editors.groups.length === 1 ? "" : "s"}, ${files} file${files === 1 ? "" : "s"}`);
   }
   if (v.floatingWorkbench) parts.push("Workbench in its own window");
   else if (v.editors?.groups.some(g => g.tabs.some(t => "workbench" in t))) parts.push("Workbench tab");
+  if (v.editors?.groups.some(g => g.tabs.some(t => "home" in t))) parts.push("Home tab");
   const d = v.diagram?.full ?? v.diagram?.map;
   if (d) parts.push([`diagram ${d.dir === "TB" ? "vertical" : "horizontal"}`, GROUP_TEXT[d.groupBy]].filter(Boolean).join(", "));
   if (v.preview?.scenario || v.preview?.picks?.length) parts.push(`preview ${v.preview.scenario ?? "custom"}`);

@@ -3,6 +3,7 @@
  * user's local, non-committed state (selected scope, checklist notes, review confirmations,
  * exchange history, approvals). Nothing here is written to the repository.
  */
+import { linksProblems } from "../core/project/links";
 import { environmentOf, variantStamp, type PackStamp } from "../core/exchange/stamp";
 import * as vscode from "vscode";
 import * as path from "node:path";
@@ -596,6 +597,8 @@ export class WorkSession implements vscode.Disposable {
     if (c.sheet) map.problems.push(...sheetProblems(c.sheet, c.manifest, c.graph, c.options?.decisions.map(d => d.id) ?? []));
     if (c.boardError) map.problems.push({ severity: "error", where: "board.json", message: c.boardError });
     if (c.board) map.problems.push(...boardProblems(c.board, c.manifest, c.graph, c.options, this.catalogue().hub ? this.catalogue().recipes : undefined));
+    if (c.linksError) map.problems.push({ severity: "error", where: "links.json", message: c.linksError });
+    if (c.links) map.problems.push(...linksProblems(c.links, c.manifest?.environments?.map(e => e.id)).map(message => ({ severity: "warning" as const, where: "links.json", message })));
     this.mapCache = map;
     return this.mapCache;
   }

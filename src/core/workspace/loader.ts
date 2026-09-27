@@ -14,6 +14,7 @@ import { DOMAIN_PACK_MAX_BYTES, PROJECT_FILE_MAX_BYTES } from "../model/boundedR
 import { OPTIONS_PATH, parseOptions, type OptionsFile } from "../project/options";
 import { SHEET_PATH, parseSheet, type ProjectSheet } from "../project/sheet";
 import { BOARD_PATH, parseBoard, type Board } from "../project/board";
+import { LINKS_PATH, parseLinks, type LinksFile } from "../project/links";
 export { projectFacts } from "./facts";
 
 export interface ProjectContext {
@@ -39,6 +40,9 @@ export interface ProjectContext {
   board?: Board;
   boardBytes?: Uint8Array;
   boardError?: string;
+  /** V3-HOME: the project links page (.datapass/links.json, optional). */
+  links?: LinksFile;
+  linksError?: string;
 }
 
 export const LOCAL_DIR = ".datapass/local";
@@ -80,6 +84,11 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   else if (board.kind === "ok") {
     ctx.boardBytes = board.bytes;
     try { ctx.board = parseBoard(board.bytes); } catch (error) { ctx.boardError = message(error); }
+  }
+  const links = await readProjectFile(vscode.Uri.joinPath(root, ...LINKS_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
+  if (links.kind === "error") ctx.linksError = `cannot read ${LINKS_PATH}: ${links.message}`;
+  else if (links.kind === "ok") {
+    try { ctx.links = parseLinks(links.bytes); } catch (error) { ctx.linksError = message(error); }
   }
 
   for (const ref of read.manifest?.domainPacks ?? []) {

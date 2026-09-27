@@ -33,6 +33,9 @@ import type { AiExchangeState } from "./views/aiExchangeState";
 import type { ExchangeKind } from "./core/project/aiExchange";
 import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
+import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
+import type { HomeState } from "./views/homeState";
+import type { HomePage } from "./views/homeHtml";
 import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";
 import { output } from "./work/io";
 import { GitObserver, type GitObservation } from "./work/gitObserver";
@@ -103,6 +106,13 @@ export interface DataPassTestApi {
   };
   /** 0.16: the board as the kanban shows it. */
   boardView(): ReturnType<WorkSession["boardView"]>;
+  /** V3-HOME: the Home and Project links pages — state, open, a webview message, the last action handled. */
+  home: {
+    state(): Promise<HomeState>;
+    open(page?: HomePage): Promise<void>;
+    isOpen(page?: HomePage): boolean;
+    send(message: Record<string, unknown>): Promise<HomeHost["lastAction"]>;
+  };
   /** 0.17: this project's work views, the switcher, diagram settings, the floating Workbench, startup. */
   workViews(): Promise<WorkViewsFile>;
   windowInfo(): { switcherText: string; switcherTooltip: string; company: string; diagramUi: Partial<Record<DiagramMode, DiagramUi>>; lastApplied?: string; panes: Pane[] };
@@ -323,7 +333,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   };
   const views = new WorkViews(session, host, visiblePanes);
   context.subscriptions.push(views);
-  const windows = registerWindowCommands(context, session, host, views);
+  // V3-HOME: the module dashboard and the project links page; work views save and restore the Home tab.
+  const home = new HomeHost(context, session, views, experience.shows);
+  context.subscriptions.push(home);
+  registerHomeCommands(context, session, home);
+  views.attachHome({ isHomeTab, open: column => home.open("home", column, true), panel: () => home.panel("home") });
+  const windows = registerWindowCommands(context, session, host, views, () => home.open("home"));
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -390,7 +405,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 
   // Graph, packs and claims only affect the Work view; .datapass/local is private session data.
   const workRefresh = () => void session.refresh();
-  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,options.json,sheet.json,board.json,claims.json,packs/*.json,queries/*.json,toolkit/*.json,toolkit/recipes/*.json}");
+  const workWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/{graph.json,options.json,sheet.json,board.json,links.json,claims.json,packs/*.json,queries/*.json,toolkit/*.json,toolkit/recipes/*.json}");
   workWatcher.onDidCreate(workRefresh);
   workWatcher.onDidChange(workRefresh);
   workWatcher.onDidDelete(workRefresh);
@@ -481,6 +496,12 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       }
     },
     boardView: () => session.boardView(),
+    home: {
+      state: () => home.state(),
+      open: async page => { await home.open(page ?? "home"); },
+      isOpen: page => home.isOpen(page ?? "home"),
+      send: async message => { home.lastAction = undefined; await home.receive(message); return home.lastAction; }
+    },
     workViews: async () => (await views.load()).file,
     windowInfo: () => {
       const full = session.diagramUi("full"), map = session.diagramUi("map");

@@ -14,6 +14,7 @@ import { parseCatalog } from "../src/core/project/catalog";
 import { optionsProblems, parseOptions } from "../src/core/project/options";
 import { parseSheet, sheetProblems } from "../src/core/project/sheet";
 import { boardProblems, parseBoard } from "../src/core/project/board";
+import { parseLinks } from "../src/core/project/links";
 
 const ROOT = join(__dirname, "..");
 const ajv = new Ajv2020({ strict: false, validateFormats: false });
@@ -46,6 +47,10 @@ test("examples: manifests, graphs and the catalog are valid for the runtime and 
     } else if (rel.endsWith(".datapass/board.json")) {
       assert.ok(parseBoard(content), rel);
       assert.ok(board(JSON.parse(content)), `${rel}: ${JSON.stringify(board.errors)}`);
+    } else if (rel.endsWith(".datapass/links.json")) {
+      const links = schema("datapass-links.schema.json");
+      assert.ok(parseLinks(content), rel);
+      assert.ok(links(JSON.parse(content)), `${rel}: ${JSON.stringify(links.errors)}`);
     } else if (rel.endsWith(".datapass/catalog.json")) {
       assert.ok(parseCatalog(content), rel);
       assert.ok(catalog(JSON.parse(content)), `${rel}: ${JSON.stringify(catalog.errors)}`);
