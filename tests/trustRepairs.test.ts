@@ -269,3 +269,34 @@ test("V1-FLAKE2: a Git read that met the config being replaced (Windows) is aske
   assert.equal((await gitRead(notRepo, ["status"], "/repo", 1000, 1)).ok, false);
   assert.equal(n, 1, "a real answer is never asked again");
 });
+
+test("V1-RC2: gitRead's single re-read never hides an error — a second EACCES, or any other error, still surfaces", async () => {
+  const replaced = (n: number) => ({ ok: false, stdout: "", stderr: `warning: unable to access '.git/config': Permission denied (${n})` });
+  // A second config EACCES: the caller gets the second failure itself, not a success or an empty answer.
+  let n = 0;
+  const twice = async () => replaced(++n);
+  const second = await gitRead(twice, ["status"], "/repo", 1000, 1);
+  assert.equal(second.ok, false);
+  assert.match(second.stderr ?? "", /Permission denied \(2\)/, "the second EACCES is the answer returned");
+  assert.equal(n, 2, "asked exactly once more, never a third time");
+  // Re-read that meets a different error: that error surfaces as is.
+  n = 0;
+  const thenOther = async () => (++n === 1 ? replaced(1) : { ok: false, stdout: "", stderr: "fatal: index file corrupt" });
+  const other = await gitRead(thenOther, ["status"], "/repo", 1000, 1);
+  assert.equal(other.ok, false);
+  assert.match(other.stderr ?? "", /index file corrupt/);
+  assert.equal(n, 2);
+  // Any other first error (an EACCES that is not the config being replaced, no stderr at all) is not re-read.
+  for (const stderr of ["error: spawn git EACCES", "fatal: unable to access 'refs/heads/main': Permission denied", undefined]) {
+    n = 0;
+    const once = async () => { n++; return { ok: false, stdout: "", stderr }; };
+    const r = await gitRead(once, ["status"], "/repo", 1000, 1);
+    assert.equal(r.ok, false);
+    assert.equal(r.stderr, stderr);
+    assert.equal(n, 1, `not re-read: ${stderr ?? "(no stderr)"}`);
+  }
+  // A Git call that throws propagates on either read; nothing is swallowed.
+  await assert.rejects(gitRead(async () => { throw new Error("spawn git EACCES"); }, ["status"], "/repo", 1000, 1), /spawn git EACCES/);
+  n = 0;
+  await assert.rejects(gitRead(async () => { if (++n === 1) return replaced(1); throw new Error("timeout"); }, ["status"], "/repo", 1000, 1), /timeout/);
+});
