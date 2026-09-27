@@ -270,6 +270,7 @@
     "DataPass: Select Work Scope",
     "DataPass: Set Code Font Size…",
     "DataPass: Set the Selected Variant (scenario id)",
+    "DataPass: Show Airflow DAG",
     "DataPass: Show All Variants in the Project Tree",
     "DataPass: Show Component Test Receipts",
     "DataPass: Show Only the Selected Architecture",

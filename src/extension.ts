@@ -50,6 +50,9 @@ import type { WbCodexTests } from "./views/workbenchState";
 import { ControlService, type ControlSnapshot } from "./work/controlService";
 import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
 import type { AgentPanelState } from "./views/agentPanelState";
+import { registerAirflowDag } from "./views/airflowDag";
+import type { AirflowViewState } from "./views/airflowDagHtml";
+import { isVisible } from "./core/experience/presets";
 import type { AiViewState } from "./views/aiExchange";
 import { ExperienceService, landOnArchitecture, registerExperienceCommands } from "./work/experienceCommands";
 import { registerCodeFontCommand } from "./work/codeFontCommand";
@@ -165,6 +168,12 @@ export interface DataPassTestApi {
     panel(): AgentPanelState;
     /** Send one message as the panel's webview would (open a link, open a row, copy the start command). */
     panelSend(message: Record<string, unknown>): Promise<void>;
+  };
+  /** V3-AIRFLOW: the Airflow DAG view's state, one webview message, and how often it was revealed by itself. */
+  airflow: {
+    state(): AirflowViewState;
+    send(message: Record<string, unknown>): Promise<void>;
+    autoReveals(): number;
   };
   /** 0.22 modes: the effective mode, its status item, and whether startup landed on the architecture. */
   experience: {
@@ -326,6 +335,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   workOrders.attachControl({ conversationOf: (id, agent) => control.conversationOf(id, agent), state: () => control.snapshot().state });
   const agentPanel = new AgentPanelView(session, control, () => flows.codexCliFound());
   context.subscriptions.push(control, agentPanel, vscode.window.registerWebviewViewProvider(AgentPanelView.viewType, agentPanel));
+  const airflowDag = registerAirflowDag(context, () => session.root?.fsPath, () => isVisible(experience.experience(), "view.airflowDag"));
   registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
@@ -521,6 +531,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       refresh: async () => { await control.refresh(); return control.snapshot(); },
       panel: () => agentPanel.state(),
       panelSend: m => agentPanel.receive(m)
+    },
+    airflow: {
+      state: () => airflowDag.state(),
+      send: m => airflowDag.receive(m),
+      autoReveals: () => airflowDag.autoReveals
     },
     experience: {
       current: () => experience.experience(),

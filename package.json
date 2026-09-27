@@ -902,6 +902,14 @@
         "title": "DataPass: Copy the Claude Control Start Command"
       },
       {
+        "command": "datapass.showAirflowDag",
+        "title": "DataPass: Show Airflow DAG"
+      },
+      {
+        "command": "datapass.airflow.openExplanation",
+        "title": "DataPass: Open the DataPass Hop Explanation of this Airflow DAG"
+      },
+      {
         "command": "datapass.control.openConversation",
         "title": "DataPass: Open a Work Order's Conversation in Claude"
       }
@@ -988,6 +996,14 @@
           "type": "webview",
           "initialSize": 1,
           "when": "!datapass.hidden.view.details"
+        },
+        {
+          "id": "datapass.airflowDag",
+          "name": "Airflow DAG",
+          "type": "webview",
+          "visibility": "collapsed",
+          "initialSize": 2,
+          "when": "!datapass.hidden.view.airflowDag"
         }
       ]
     },
@@ -2261,6 +2277,14 @@
         {
           "command": "datapass.setCodeFontSize",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.showAirflowDag",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.airflow.openExplanation",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -2327,6 +2351,11 @@
           "command": "datapass.copyFileContext",
           "when": "resourceScheme == file || resourceScheme == untitled",
           "group": "7_datapass"
+        },
+        {
+          "command": "datapass.showAirflowDag",
+          "when": "resourceLangId == python && !datapass.hidden.view.airflowDag",
+          "group": "7_datapass"
         }
       ]
     },
@@ -2380,6 +2409,12 @@
           "default": "",
           "scope": "machine",
           "description": "Absolute path of the Power Ops program (JUtilityPalette.exe) started by \"Open Power Ops\". Machine-level user setting: a workspace can never choose which program DataPass starts. Nothing is passed to it."
+        },
+        "datapass.airflow.autoShow": {
+          "type": "boolean",
+          "default": true,
+          "scope": "window",
+          "description": "When the active editor is an Airflow DAG file (Python), show its DAG in the Airflow DAG view of the secondary side bar, without taking the keyboard. The DAG is read from the file's text; nothing is run."
         },
         "datapass.layout.showInSecondarySideBar": {
           "type": "boolean",
@@ -2833,6 +2868,10 @@
             "ai.codexTests": {
               "type": "boolean",
               "description": "Work orders: Codex tests: The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)"
+            },
+            "view.airflowDag": {
+              "type": "boolean",
+              "description": "Airflow DAG view: The DAG of the open Airflow file, read statically, never run (secondary side bar)"
             },
             "palette.full": {
               "type": "boolean",
