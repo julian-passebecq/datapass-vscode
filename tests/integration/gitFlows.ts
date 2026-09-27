@@ -122,7 +122,7 @@ export function registerGitFlows(getApi: () => DataPassTestApi): void {
     const o = await api().git.loadOthers();
     assert.deepEqual(o.others!.map(r => `${r.label}:${r.state}:${r.detached}`), ["side-project:ok:true"], "the project's own repositories are not repeated");
     assert.deepEqual(o.othersNeedsYou.map(n => n.kind), ["detached"]);
-    assert.equal(api().git.badge(), 6, "other repositories do not change the project's badge");
+    assert.equal(api().git.badge(), 6, `other repositories do not change the project's badge (${api().git.observation().needsYou.map(n => n.kind).join(", ")})`);
     const rows = await api().git.renderTree(true);
     assert.ok(rows.some(r => r.id === "repo:other:0:side-project"), rows.map(r => r.id).join(" | "));
   }, F);

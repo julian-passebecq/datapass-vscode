@@ -185,6 +185,17 @@ test("F04: interpreting the origin lookup", () => {
   assert.deepEqual(interpretOrigin({ ok: false, stdout: "" }), { originLookup: "failed" });
 });
 
+test("V1-FLAKE3: a config being replaced (Windows) is a failed origin lookup, never \"no origin\"", () => {
+  const denied = "warning: unable to access 'C:/r/.git/config': Permission denied\n";
+  // `git config --get` exits 1 as for a missing key; `git remote` exits 0 with an empty list: both warned.
+  assert.deepEqual(interpretOrigin({ ok: false, stdout: "", stderr: denied }, { ok: true, stdout: "", stderr: denied }), { originLookup: "failed" });
+  assert.deepEqual(interpretOrigin({ ok: false, stdout: "", stderr: denied }, { ok: true, stdout: "" }), { originLookup: "failed" });
+  assert.deepEqual(interpretOrigin({ ok: false, stdout: "" }, { ok: true, stdout: "", stderr: denied }), { originLookup: "failed" });
+  // A URL that was read is an answer; any other warning does not change "absent".
+  assert.deepEqual(interpretOrigin({ ok: true, stdout: "https://x/y.git\n", stderr: denied }), { originUrl: "https://x/y.git", originLookup: "ok" });
+  assert.deepEqual(interpretOrigin({ ok: false, stdout: "", stderr: "warning: something else\n" }, { ok: true, stdout: "" }), { originLookup: "absent" });
+});
+
 // ------------------------------------------------------------------ F05: bounded observation
 
 test("F05: 2,000+ planned entries run through a bounded queue and the rest is reported", async () => {

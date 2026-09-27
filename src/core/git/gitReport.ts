@@ -107,6 +107,17 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 const changes = (c: StatusCounts | undefined) => c ? c.staged + c.unstaged + c.untracked + c.conflicted : 0;
 
+/**
+ * V1-FLAKE3: whether a clone has a remote, for the rules that need one (unpushed work, merges).
+ * An origin lookup Git could not answer ("failed": the config was being replaced on Windows) is not
+ * "no remote": `known` (the declared remote, else the last definite answer) stands. Taking it as "no
+ * remote" dropped a worktree's unpushed item for one refresh, and the badge with it.
+ */
+export function hasRemoteFor(originUrl: string | undefined, lookup: "ok" | "absent" | "failed" | undefined, known: boolean | undefined): boolean {
+  if (originUrl) return true;
+  return lookup === "failed" ? known ?? false : false;
+}
+
 export function needsYou(reports: readonly GitRepoReport[], now = Date.now()): NeedsYou[] {
   const out: NeedsYou[] = [];
   const add = (r: GitRepoReport, n: Omit<NeedsYou, "repoKey" | "section" | "repoLabel">) => out.push({ ...n, repoKey: r.key, section: r.section, repoLabel: r.label });

@@ -23,10 +23,11 @@ import { execFile } from "node:child_process";
 import { executablePath, resolveCommandOrScript } from "../core/exec";
 import { gitHostOf, remoteIdentity, type GitHostRepo } from "../core/project/gitHosts";
 import type { RepoView } from "../core/project/resolve";
+import { interpretOrigin } from "../core/project/observation";
 import { isBranchName, isSha, oldestDate, parseDefaultBranch, parseMergeLog, parseRefList, parseWorktrees, statusCounts, type StatusCounts } from "../core/git/porcelain";
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, parseGhOpen, parseGlabMrs, recentMerged, type HostPrs } from "../core/git/hostPrs";
-import { gitSummary, needsYou, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
+import { gitSummary, hasRemoteFor, needsYou, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
 import { cmdLine, Limiter } from "../core/git/run";
 import type { WorkSession } from "./session";
 import { cloneParents } from "./session";
@@ -141,6 +142,8 @@ export class GitObserver implements vscode.Disposable {
   private project: GitRepoReport[] = [];
   private others?: GitRepoReport[];
   private readonly folders = new Map<string, string>();
+  /** The last definite answer to "does this clone have a remote?" (a failed origin lookup keeps it). */
+  private readonly remoteKnown = new Map<string, boolean>();
   private running?: Promise<void>;
   private rerun = false;
   private othersRunning?: Promise<void>;
@@ -287,13 +290,15 @@ export class GitObserver implements vscode.Disposable {
     // Status: the project observation's, when it is recent (the Project tree shows the same), else our own.
     const obs = t.section === "project" ? this.session.projectObservation() : undefined;
     const fresh = obs && Date.now() - Date.parse(obs.observedAt) < GIT_TTL_MS ? obs.repos.get(t.key)?.git : undefined;
-    let st: { branch?: string; head?: string; upstream?: string; ahead?: number; behind?: number; counts?: StatusCounts; originUrl?: string; lastFetch?: string };
+    let st: { branch?: string; head?: string; upstream?: string; ahead?: number; behind?: number; counts?: StatusCounts; originUrl?: string; originLookup?: "ok" | "absent" | "failed"; lastFetch?: string };
     if (fresh?.counts) st = fresh;
     else {
       const status = await this.git(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], folder);
       if (!status.ok) return { ...base, state: status.timedOut ? "not-checked" : "not-a-repo", detail: status.timedOut ? "not checked (Git took more than 5 s)" : status.missing ? "git was not found on PATH" : "not a Git repository" };
       const origin = await this.git(["config", "--get", "remote.origin.url"], folder);
-      st = { ...parseStatusV2(status.stdout), counts: statusCounts(status.stdout), originUrl: origin.ok ? origin.stdout.trim() || undefined : undefined, lastFetch: await this.lastFetch(folder) };
+      // Exit 1 is also "no such key": `git remote` tells the two apart (never cached: it is asked only then).
+      const remotes = origin.ok ? undefined : await this.git(["remote"], folder, 0);
+      st = { ...parseStatusV2(status.stdout), counts: statusCounts(status.stdout), ...interpretOrigin(origin, remotes), lastFetch: await this.lastFetch(folder) };
     }
     const detached = st.branch === "(detached)";
     const r: GitRepoReport = {
@@ -303,7 +308,8 @@ export class GitObserver implements vscode.Disposable {
     const host = declaredHost ?? gitHostOf(st.originUrl);
     if (host) r.host = { kind: host.kind, label: host.label, web: host.web };
     r.remote ??= remoteIdentity(st.originUrl);
-    const hasRemote = Boolean(st.originUrl);
+    const hasRemote = hasRemoteFor(st.originUrl, st.originLookup, Boolean(t.remoteUrl) || this.remoteKnown.get(t.key));
+    if (st.originLookup !== "failed") this.remoteKnown.set(t.key, hasRemote);
 
     const def = await this.git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], folder);
     r.defaultBranch = (def.ok ? parseDefaultBranch(def.stdout) : undefined) ?? (t.defaultHint && isBranchName(t.defaultHint) ? t.defaultHint : "main");

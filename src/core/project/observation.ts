@@ -91,10 +91,15 @@ export function incompleteText(i: Incompleteness): string {
  * The origin of a clone from `git config --get remote.origin.url` and, when that failed, `git remote`
  * (which tells "no origin" from "Git could not answer"). `git config --get` exits 1 for a missing key,
  * so its failure alone proves nothing.
+ *
+ * V1-FLAKE3: on Windows, while another Git process replaces the config, `git config --get` exits 1
+ * (as for a missing key) and `git remote` can exit 0 with an empty list, both with "unable to access
+ * '…config': Permission denied" on stderr. Git could not read the config: that is "failed", never "absent".
  */
 export function interpretOrigin(config: GitAnswer, remotes?: GitAnswer): Pick<RepoGitState, "originUrl" | "originLookup"> {
   const url = config.ok ? config.stdout.trim() : "";
   if (url) return { originUrl: url, originLookup: "ok" };
+  if ([config, remotes].some(a => a && CONFIG_BEING_REPLACED.test(a.stderr ?? ""))) return { originLookup: "failed" };
   if (config.ok) return { originLookup: "absent" };
   if (!remotes?.ok) return { originLookup: "failed" };
   const names = remotes.stdout.split(/\r?\n/).map(l => l.trim()).filter(Boolean);

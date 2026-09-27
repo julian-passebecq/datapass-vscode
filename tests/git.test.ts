@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { isBranchName, oldestDate, parseDefaultBranch, parseMergeLog, parseRefList, parseWorktrees, statusCounts, clean, MAX_WORKTREES } from "../src/core/git/porcelain";
 import { azPrListArgs, ciRollup, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, parseGhOpen, parseGlabMrs, recentMerged, MAX_PRS, type PullRequest } from "../src/core/git/hostPrs";
-import { ago, cleanupCommand, gitSummary, needsYou, repoLine, type GitRepoReport, type WorktreeReport } from "../src/core/git/gitReport";
+import { ago, cleanupCommand, gitSummary, hasRemoteFor, needsYou, repoLine, type GitRepoReport, type WorktreeReport } from "../src/core/git/gitReport";
 import { cmdLine, Limiter } from "../src/core/git/run";
 import { resolveCommandOrScript } from "../src/core/exec";
 import { gitHostOf } from "../src/core/project/gitHosts";
@@ -282,4 +282,14 @@ test("az resolves to its .cmd from absolute PATH entries on Windows only; an exe
   assert.deepEqual(resolveCommandOrScript("az", env, "win32", p => files.has(p)), { path: "C:\\bin\\az.exe", script: false });
   assert.equal(resolveCommandOrScript("az", { PATH: "/usr/bin" }, "linux", () => false), undefined);
   assert.equal(resolveCommandOrScript("..\\az", env, "win32", () => true), undefined);
+});
+
+test("V1-FLAKE3: a failed origin lookup keeps the known remote, so unpushed work does not vanish for a refresh", () => {
+  assert.equal(hasRemoteFor("https://github.com/o/r", "ok", false), true);
+  assert.equal(hasRemoteFor(undefined, "absent", true), false, "Git answered: no origin");
+  // The config was being replaced (Windows): the declared remote, or the last definite answer, stands.
+  assert.equal(hasRemoteFor(undefined, "failed", true), true);
+  assert.equal(hasRemoteFor(undefined, "failed", false), false);
+  assert.equal(hasRemoteFor(undefined, "failed", undefined), false, "nothing known: no remote, as before");
+  assert.equal(hasRemoteFor(undefined, undefined, true), false, "an observation without a lookup result is read as before");
 });
