@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 5,
+  "project": {
+    "id": "etl-demo",
+    "title": "Energy ETL demo",
+    "description": "Synthetic demo client (Harbourlight Energy Analytics, fictional): smart-meter readings landed in Azure Storage, copied by Data Factory, cleaned and aggregated by two PySpark jobs on Databricks, modelled in SQL and orchestrated by Airflow.",
+    "type": "dev"
+  },
+  "repositories": {
+    "bridge": { "path": ".", "label": "Bridge (DataPass files)" },
+    "ingest": { "path": "../ingest", "label": "Airflow DAGs" },
+    "spark-jobs": { "path": "../spark-jobs", "label": "PySpark jobs (Databricks bundle)" },
+    "warehouse": { "path": "../warehouse", "label": "SQL models" },
+    "infra": { "path": "../infra", "label": "Infrastructure (Bicep)" },
+    "api": { "path": "../api", "label": "Energy API (container)" }
+  },
+  "environments": [
+    { "id": "dev", "title": "Development" },
+    { "id": "prod", "title": "Production", "production": true }
+  ],
+  "graph": ".datapass/graph.json",
+  "scopes": [
+    {
+      "id": "daily-energy",
+      "title": "Daily energy per site",
+      "objective": "Every morning, yesterday's meter readings become one row per site in the warehouse, checked and published",
+      "itemRefs": ["landing", "adf-copy", "dag", "clean-job", "energy-job", "lakehouse", "models", "api", "report", "infra"],
+      "checklist": [
+        { "id": "tests", "label": "Run the pytest suites of ingest and spark-jobs (no Spark or Airflow needed)" },
+        { "id": "validate", "label": "Validate the bundle (databricks bundle validate) and the Bicep (az deployment group what-if)" }
+      ]
+    }
+  ],
+  "identifiers": [
+    { "id": "tenant", "label": "Entra tenant", "provider": "azure", "kind": "tenant", "value": "3b9d6c1e-7a42-4f0d-9e15-6c2a8b4d0e71" },
+    {
+      "id": "sub-data",
+      "label": "Data platform subscription",
+      "provider": "azure",
+      "kind": "subscription",
+      "values": { "dev": "d4e5f6a7-0000-4000-8000-00000000d0e1", "prod": "d4e5f6a7-0000-4000-8000-00000000f0e1" }
+    }
+  ],
+  "toolchain": {
+    "tools": [
+      { "tool": "cli.git", "version": ">=2.40" },
+      { "tool": "cli.python", "version": ">=3.10" },
+      { "tool": "ext.python" },
+      { "tool": "cli.az", "version": "^2.60" },
+      { "tool": "cli.databricks", "version": ">=0.230", "variants": ["databricks"] },
+      { "tool": "ext.databricks", "variants": ["databricks"] },
+      { "tool": "cli.fab", "variants": ["fabric"] },
+      { "tool": "ext.fabric-data-engineering", "variants": ["fabric"] },
+      { "tool": "cli.docker", "optional": true }
+    ]
+  },
+  "connections": [
+    { "id": "azure-dev", "kind": "sign-in", "label": "Azure CLI (dev subscription)", "tool": "cli.az", "identifier": "tenant", "subscription": "sub-data", "environment": "dev" },
+    { "id": "databricks-dev", "kind": "sign-in", "label": "Databricks CLI (dev workspace)", "tool": "cli.databricks", "profile": "hl-energy-dev", "environment": "dev", "variants": ["databricks"] }
+  ]
+}

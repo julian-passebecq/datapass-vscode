@@ -1,0 +1,36 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "warehouse",
+    "path": "models/dim_site.sql",
+    "sha256": "da71318858e8000c285e139f36159ad1eaf7473ef9d5e5f357f56b6f6b7fe4fd",
+    "language": "sql"
+  },
+  "title": "Site dimension",
+  "summary": "One row per open site with its region and its current supply contract. Both joins are left joins, so a site without a region or a contract is kept and COALESCE gives it a readable default.",
+  "component": "models",
+  "steps": [
+    { "id": "sites", "title": "Open sites", "kind": "source", "lines": [12, 12], "inputs": ["ref.sites"], "outputs": ["s"], "provenance": "declared" },
+    { "id": "regions", "title": "Join the region", "kind": "join", "lines": [13, 14], "inputs": ["s", "ref.regions"], "outputs": ["s + r"], "provenance": "declared" },
+    { "id": "contracts", "title": "Join the current contract", "kind": "join", "lines": [15, 17], "inputs": ["s + r", "ref.supply_contracts"], "outputs": ["s + r + c"], "note": "Only the contract still in force (valid_to IS NULL).", "provenance": "declared" },
+    { "id": "where", "title": "Closed sites left out", "kind": "filter", "lines": [18, 18], "provenance": "declared" },
+    { "id": "select", "title": "Columns with defaults", "kind": "transform", "lines": [4, 11], "outputs": ["site_id", "site_name", "region_name", "grid_operator", "contract_kw", "tariff_code", "opened_on"], "columns": [
+      { "name": "region_name", "from": ["r.region_name"], "note": "'Unassigned' when the site has no region" },
+      { "name": "grid_operator", "from": ["r.grid_operator"], "note": "'Unknown' when missing" },
+      { "name": "contract_kw", "from": ["c.contract_kw"], "note": "0 when the site has no current contract" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Replace gold.dim_site", "kind": "write", "lines": [3, 3], "outputs": ["gold.dim_site"], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "sites", "to": "regions", "kind": "data" },
+    { "from": "regions", "to": "contracts", "kind": "data" },
+    { "from": "contracts", "to": "where", "kind": "data" },
+    { "from": "where", "to": "select", "kind": "data" },
+    { "from": "select", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "sites-regions", "step": "regions", "left": "ref.sites s", "right": "ref.regions r", "type": "left", "keys": [["s.region", "r.region_code"]], "note": "COALESCE(r.region_name, 'Unassigned')", "provenance": "declared" },
+    { "id": "sites-contracts", "step": "contracts", "left": "ref.sites s", "right": "ref.supply_contracts c", "type": "left", "keys": [["s.site_id", "c.site_id"]], "note": "Current contract only; COALESCE(c.contract_kw, 0)", "provenance": "declared" }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "warehouse",
+    "path": "models/rpt_sites_over_contract.sql",
+    "sha256": "a1e0fbe078efb35142a5b6f320b01a9fe9e9051c34336ce6822497c696cbfdf7",
+    "language": "sql"
+  },
+  "title": "Sites over their contract",
+  "summary": "The last 30 days per site, only for sites whose peak demand went over their contract at least once. The filter is a semi-join: it keeps matching rows without adding columns or duplicating them.",
+  "component": "models",
+  "steps": [
+    { "id": "fact", "title": "Daily energy fact", "kind": "source", "lines": [12, 12], "inputs": ["gold.fct_site_energy_daily"], "outputs": ["f"], "provenance": "declared" },
+    { "id": "site", "title": "Join the site", "kind": "join", "lines": [13, 14], "inputs": ["f", "gold.dim_site"], "outputs": ["f + s"], "provenance": "declared" },
+    { "id": "breaches", "title": "Sites that breached once", "kind": "filter", "lines": [16, 19], "inputs": ["gold.fct_site_energy_daily"], "outputs": ["breaches"], "note": "Any day, not only the last 30.", "provenance": "declared" },
+    { "id": "semi", "title": "Keep only those sites", "kind": "join", "lines": [15, 21], "inputs": ["f + s", "breaches"], "outputs": ["f + s (filtered)"], "provenance": "declared" },
+    { "id": "where", "title": "Last 30 days", "kind": "filter", "lines": [22, 22], "provenance": "declared" },
+    { "id": "aggregate", "title": "One row per site", "kind": "aggregate", "lines": [4, 11], "columns": [
+      { "name": "max_demand_kw", "from": ["f.peak_demand_kw"], "note": "max" },
+      { "name": "kwh_30d", "from": ["f.kwh_total"], "note": "sum" },
+      { "name": "days_over", "from": ["f.peak_demand_kw", "f.contract_kw"], "note": "days above the contract" }
+    ], "provenance": "declared" },
+    { "id": "group", "title": "Grouped by site", "kind": "aggregate", "lines": [23, 23], "provenance": "declared" },
+    { "id": "write", "title": "Replace the report view", "kind": "write", "lines": [3, 3], "outputs": ["gold.rpt_sites_over_contract"], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "fact", "to": "site", "kind": "data" },
+    { "from": "site", "to": "semi", "kind": "data" },
+    { "from": "breaches", "to": "semi", "kind": "data" },
+    { "from": "semi", "to": "where", "kind": "data" },
+    { "from": "where", "to": "group", "kind": "data" },
+    { "from": "group", "to": "aggregate", "kind": "data" },
+    { "from": "aggregate", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "fact-site", "step": "site", "left": "gold.fct_site_energy_daily f", "right": "gold.dim_site s", "type": "inner", "keys": [["f.site_id", "s.site_id"]], "provenance": "declared" },
+    { "id": "fact-breaches", "step": "semi", "left": "gold.fct_site_energy_daily f", "right": "breaches", "type": "semi", "keys": [["f.site_id", "breaches.site_id"]], "note": "LEFT SEMI JOIN, the same as WHERE f.site_id IN (SELECT site_id FROM breaches).", "provenance": "declared" }
+  ]
+}

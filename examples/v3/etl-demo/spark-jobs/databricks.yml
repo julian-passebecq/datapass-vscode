@@ -1,0 +1,43 @@
+# Databricks Asset Bundle: one job, two tasks (clean, then aggregate). Validate with
+# `databricks bundle validate -t dev`; deploying stays a person's action in the official CLI.
+bundle:
+  name: meter-energy
+
+variables:
+  reading_date:
+    description: Day to process (YYYY-MM-DD); the Airflow DAG passes its run date.
+    default: "2026-09-01"
+
+resources:
+  jobs:
+    meter_energy:
+      name: meter-energy
+      parameters:
+        - name: reading_date
+          default: ${var.reading_date}
+      job_clusters:
+        - job_cluster_key: small
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: Standard_D4ds_v5
+            num_workers: 2
+      tasks:
+        - task_key: clean_meter_readings
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./jobs/clean_meter_readings.py
+            parameters: ["--reading-date", "{{job.parameters.reading_date}}"]
+        - task_key: daily_site_energy
+          depends_on:
+            - task_key: clean_meter_readings
+          job_cluster_key: small
+          spark_python_task:
+            python_file: ./jobs/daily_site_energy.py
+            parameters: ["--reading-date", "{{job.parameters.reading_date}}"]
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-1111111111111111.1.azuredatabricks.net

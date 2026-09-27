@@ -1,0 +1,67 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "landing", "kind": "storage", "label": "Landing and raw containers", "provider": "azure-storage",
+      "description": "The meter vendor drops one CSV folder per day in landing/; Data Factory copies it to raw/ as parquet."
+    },
+    {
+      "id": "adf-copy", "kind": "pipeline", "label": "Copy the drop to raw", "provider": "azure-data-factory", "status": "planned",
+      "description": "Pipeline pl_copy_meter_drop (landing CSV to raw parquet). The factory is declared in infra; its pipeline JSON is not in Git yet."
+    },
+    {
+      "id": "dag", "kind": "workflow", "label": "Daily meter readings (DAG)", "provider": "airflow",
+      "description": "Sensor, copy, Spark jobs, SQL models, quality check, publish.",
+      "artifacts": { "repoRef": "ingest", "profile": "airflow.dags", "root": ".", "entry": "dags/meter_readings_daily.py", "files": [{ "path": "tests/test_meter_readings_daily.py", "role": "test" }] }
+    },
+    {
+      "id": "clean-job", "kind": "script", "label": "Clean meter readings (PySpark)", "provider": "databricks",
+      "description": "Raw parquet to silver.meter_readings: types, invalid readings dropped, resends deduplicated, meter joined to site.",
+      "artifacts": { "repoRef": "spark-jobs", "profile": "databricks.bundle", "root": ".", "entry": "jobs/clean_meter_readings.py", "files": ["databricks.yml", "jobs/rules.py", { "path": "tests/test_rules.py", "role": "test" }] }
+    },
+    {
+      "id": "energy-job", "kind": "script", "label": "Daily site energy (PySpark)", "provider": "databricks",
+      "description": "silver.meter_readings to gold.site_energy_daily: per-band energy, 7-day rolling average, rank per region.",
+      "artifacts": { "repoRef": "spark-jobs", "profile": "databricks.bundle", "root": ".", "entry": "jobs/daily_site_energy.py", "files": ["databricks.yml", "jobs/rules.py"] }
+    },
+    {
+      "id": "lakehouse", "kind": "storage", "label": "Delta tables (silver, gold)", "provider": "databricks",
+      "description": "Unity Catalog tables stored in the lakehouse container."
+    },
+    {
+      "id": "models", "kind": "script", "label": "Warehouse models (SQL)", "provider": "sql",
+      "description": "dim_site, fct_site_energy_daily and rpt_sites_over_contract, run on the Databricks SQL warehouse.",
+      "artifacts": { "repoRef": "warehouse", "profile": "generic", "root": "models" }
+    },
+    {
+      "id": "api", "kind": "application", "label": "Energy API (container)", "provider": "docker",
+      "description": "Read-only FastAPI over the published extract.",
+      "artifacts": { "repoRef": "api", "profile": "generic", "root": ".", "entry": "Dockerfile", "files": ["app.py", "requirements.txt"] }
+    },
+    {
+      "id": "report", "kind": "dashboard", "label": "Energy report (placeholder)", "provider": "powerbi", "status": "planned",
+      "description": "A Power BI report over the gold tables; nothing built yet."
+    },
+    {
+      "id": "infra", "kind": "infrastructure-definition", "label": "Storage, Databricks, Data Factory (Bicep)", "provider": "bicep",
+      "description": "Declarations only; checked with what-if, deployed by a person.",
+      "artifacts": { "repoRef": "infra", "profile": "bicep", "root": ".", "entry": "main.bicep" }
+    }
+  ],
+  "relations": [
+    { "id": "r1", "source": "dag", "target": "adf-copy", "relation": "orchestrates" },
+    { "id": "r2", "source": "dag", "target": "clean-job", "relation": "orchestrates" },
+    { "id": "r3", "source": "dag", "target": "energy-job", "relation": "orchestrates" },
+    { "id": "r4", "source": "dag", "target": "models", "relation": "orchestrates" },
+    { "id": "r5", "source": "adf-copy", "target": "landing", "relation": "consumes" },
+    { "id": "r6", "source": "clean-job", "target": "landing", "relation": "consumes" },
+    { "id": "r7", "source": "clean-job", "target": "lakehouse", "relation": "produces" },
+    { "id": "r8", "source": "energy-job", "target": "lakehouse", "relation": "produces" },
+    { "id": "r9", "source": "models", "target": "lakehouse", "relation": "consumes" },
+    { "id": "r10", "source": "api", "target": "lakehouse", "relation": "consumes" },
+    { "id": "r11", "source": "report", "target": "lakehouse", "relation": "consumes" },
+    { "id": "r12", "source": "landing", "target": "infra", "relation": "deployedFrom" },
+    { "id": "r13", "source": "clean-job", "target": "energy-job", "relation": "feeds" }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "spark-jobs",
+    "path": "jobs/daily_site_energy.py",
+    "sha256": "bff326b02a55811b294c9edf075230b4f4a2fbacf134ceec2bca8df4eb5a282d",
+    "language": "pyspark"
+  },
+  "title": "Daily site energy",
+  "summary": "Reads the last 7 days of clean readings, sums energy per site and day by tariff band, attaches the site's region and contract, adds a 7-day rolling average and the day's rank within the region, and overwrites the day in gold.site_energy_daily.",
+  "component": "energy-job",
+  "steps": [
+    { "id": "config", "title": "Run date and 7-day window", "kind": "config", "lines": [25, 29], "outputs": ["day", "first_day", "last_day"], "note": "rules.rolling_window: the window ends on the run date, both ends included.", "provenance": "declared" },
+    { "id": "read", "title": "Read readings and sites", "kind": "read", "lines": [31, 37], "inputs": ["silver.meter_readings", "ref.sites"], "outputs": ["readings", "sites"], "note": "Readings without a site (unknown meters) are left out here.", "provenance": "declared" },
+    { "id": "per-day", "title": "Energy per site and day", "kind": "aggregate", "lines": [39, 47], "inputs": ["readings"], "outputs": ["per_day"], "columns": [
+      { "name": "kwh_total", "from": ["kwh"], "note": "sum" },
+      { "name": "kwh_peak", "from": ["kwh", "tariff_band"], "note": "sum where band = peak; same for shoulder and offpeak" },
+      { "name": "peak_demand_kw", "from": ["demand_kw"], "note": "max" },
+      { "name": "intervals", "note": "count of quarter hours" }
+    ], "provenance": "declared" },
+    { "id": "join-site", "title": "Attach region and contract", "kind": "join", "lines": [49, 50], "inputs": ["per_day", "sites"], "outputs": ["with_site"], "note": "Inner join: only known sites are reported.", "provenance": "declared" },
+    { "id": "windows", "title": "Rolling average and rank", "kind": "transform", "lines": [52, 64], "inputs": ["with_site"], "outputs": ["enriched"], "columns": [
+      { "name": "kwh_rolling_avg", "from": ["kwh_total"], "note": "average over the site's last 7 days" },
+      { "name": "rank_in_region", "from": ["kwh_total", "region"], "note": "dense rank, highest first" },
+      { "name": "over_contract", "from": ["peak_demand_kw", "contract_kw"] },
+      { "name": "complete_day", "from": ["intervals"], "note": "96 quarter hours" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Overwrite the day in gold", "kind": "write", "lines": [66, 78], "inputs": ["enriched"], "outputs": ["gold.site_energy_daily"], "note": "Only the run date is written; the 6 earlier days were read for the average.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "config", "to": "read", "kind": "dependency" },
+    { "from": "read", "to": "per-day", "kind": "data" },
+    { "from": "per-day", "to": "join-site", "kind": "data" },
+    { "from": "read", "to": "join-site", "kind": "data", "note": "sites" },
+    { "from": "join-site", "to": "windows", "kind": "data" },
+    { "from": "windows", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "energy-sites", "step": "join-site", "left": "per_day", "right": "ref.sites", "type": "inner", "keys": [["site_id", "site_id"]], "provenance": "declared" }
+  ],
+  "milestoneLabels": [
+    { "step": "read", "label": "1 Read" },
+    { "step": "per-day", "label": "2 Aggregate" },
+    { "step": "windows", "label": "3 Windows" },
+    { "step": "write", "label": "4 Write" }
+  ]
+}
