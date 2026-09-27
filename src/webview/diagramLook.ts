@@ -9,11 +9,13 @@
  *   shape              storage, processing or orchestration (as Data Factory and Fabric draw them)
  *   entry chip         the entry file's type, in the colour of VS Code's default file icon theme (Seti)
  *
- * Provider colours are fixed brand-like hex values; state colours are VS Code theme colours, so the two are
- * never the same value, and a state always carries its symbol. High-contrast themes drop the provider colours
+ * Provider colours are fixed brand-like hex values; state colours are the DataPass overlay hues (V3-THEME, below),
+ * never a provider colour, and a state always carries its symbol. High-contrast themes drop the provider colours
  * (CSS) and keep the icon and the symbol.
  */
 import { DIAGRAM_ICONS, type DiagramIcon } from "./diagramIcons";
+import type { OverlayHue } from "./overlayPalette";
+export * from "./overlayPalette";
 
 export interface ProviderLook { family: string; label: string; color: string; icon: string }
 
@@ -115,11 +117,11 @@ export const KNOWN_FILE_TYPES = Object.keys(FILE_COLORS);
 
 export type DiagramState = "available" | "prepared" | "choice" | "unverified" | "blocked";
 export const STATES: Record<DiagramState, { symbol: string; label: string; about: string; color: string }> = {
-  available: { symbol: "✓", label: "available", about: "its files are here and an operation is ready", color: "var(--ok)" },
-  prepared: { symbol: "◐", label: "prepared / planned", about: "declared or partly prepared: a step is left", color: "var(--warn)" },
-  choice: { symbol: "○", label: "choice only", about: "a choice on paper: only in a variant or option, or declared with nothing DataPass can check or run yet", color: "var(--muted)" },
-  unverified: { symbol: "?", label: "unverified", about: "DataPass could not check it here (not cloned, origin unverified, Restricted Mode)", color: "var(--unverified)" },
-  blocked: { symbol: "✕", label: "blocked", about: "required files are missing, or an operation cannot run", color: "var(--bad)" }
+  available: { symbol: "✓", label: "available", about: "its files are here and an operation is ready", color: "var(--dp-green)" },
+  prepared: { symbol: "◐", label: "prepared / planned", about: "declared or partly prepared: a step is left", color: "var(--dp-orange)" },
+  choice: { symbol: "○", label: "choice only", about: "a choice on paper: only in a variant or option, or declared with nothing DataPass can check or run yet", color: "var(--dp-muted)" },
+  unverified: { symbol: "?", label: "unverified", about: "DataPass could not check it here (not cloned, origin unverified, Restricted Mode)", color: "var(--dp-violet)" },
+  blocked: { symbol: "✕", label: "blocked", about: "required files are missing, or an operation cannot run", color: "var(--dp-rose)" }
 };
 
 export interface StateInput { health?: string; availability?: string; repoState?: string; previewOnly?: boolean; ghost?: boolean }
@@ -190,3 +192,12 @@ export function nodeShape(providerId: string | undefined, kind: string | undefin
   if (providerId && ORCHESTRATION_PROVIDERS.has(providerId)) return "orchestration";
   return "processing";
 }
+
+// ------------------------------------------------------------------ V3-THEME: overlay hue of each state
+
+/** Which hue draws which state. Ready = electric blue: the one mark that says "this is DataPass". */
+export const OVERLAY_ROLES = {
+  dp: { ready: "blue", "not-ready": "violet", none: "muted" } as Record<DataPassState, OverlayHue>,
+  capability: { available: "green", prepared: "orange", choice: "muted", unverified: "violet", blocked: "rose" } as Record<DiagramState, OverlayHue>,
+  step: { validated: "green", redo: "orange", never: "muted" } as Record<StepState, OverlayHue>
+};

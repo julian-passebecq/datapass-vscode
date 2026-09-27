@@ -3,6 +3,8 @@
  * dist/workbench.js, allowed by nonce; styles follow the VS Code theme variables so the workbench
  * reads like the rest of the editor in light, dark and high-contrast themes.
  */
+import { diagramThemeCss, overlayCss } from "../webview/overlayPalette";
+
 export type WorkbenchMode = "full" | "map" | "detail";
 
 export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUri: string; mode: WorkbenchMode; title: string }): string {
@@ -18,6 +20,8 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   :root { color-scheme: light dark; --gap: 12px; --radius: 6px; --border: var(--vscode-widget-border, var(--vscode-panel-border, rgba(128,128,128,.35)));
     --ok: var(--vscode-testing-iconPassed, #3fb950); --warn: var(--vscode-editorWarning-foreground, #d29922); --bad: var(--vscode-errorForeground, #f85149);
     --info: var(--vscode-textLink-foreground, #58a6ff); --muted: var(--vscode-descriptionForeground, #8b949e); --unverified: var(--vscode-charts-purple, #b180d7); --card: var(--vscode-editorWidget-background, rgba(128,128,128,.08)); }
+  ${overlayCss()}
+  ${diagramThemeCss()}
   * { box-sizing: border-box; }
   body { margin: 0; padding: 0; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size, 13px); line-height: 1.45; }
   body[data-mode="detail"] { background: var(--vscode-sideBar-background); }
@@ -83,41 +87,43 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .breadcrumb { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
   .objective { max-width: 420px; }
 
-  .diagram { border: 1px solid var(--border); border-radius: 8px; background: var(--card); margin: 10px 0 14px; display: grid; }
+  .diagram { border: 1px solid var(--dg-border, var(--border)); border-radius: 8px; background: var(--dg-canvas, var(--card)); color: var(--dg-text, inherit); margin: 10px 0 14px; display: grid; }
   .diagram .scroller { overflow: auto; }
   .empty-diagram { padding: 18px; gap: 6px; }
   .sizer { position: relative; overflow: hidden; }
   .canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
   .legend .grow { flex: 1; }
   .edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-  .edge { fill: none; stroke: var(--muted); stroke-width: 1.4; opacity: .8; }
+  .edge { fill: none; stroke: var(--dg-edge, var(--muted)); stroke-width: 1.4; opacity: .8; }
   .edge.control { stroke-dasharray: 6 4; stroke: var(--info); }
   .edge.dependency { stroke-dasharray: 2 4; }
   .edge.deployment { stroke-dasharray: 8 3 2 3; }
   .edge.hot { stroke: var(--vscode-focusBorder); stroke-width: 2.2; opacity: 1; }
-  .arrow { fill: var(--muted); } .arrow.control { fill: var(--info); }
+  .arrow { fill: var(--dg-edge, var(--muted)); } .arrow.control { fill: var(--info); }
   .node { position: absolute; display: grid; grid-template-rows: auto 1fr auto; gap: 1px; text-align: left; padding: 6px 9px 6px 10px; border-radius: 7px; cursor: pointer;
-    background: var(--vscode-editor-background); border: 1px solid var(--border); border-left: 4px solid var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,.12); overflow: hidden; }
+    background: var(--dg-node, var(--vscode-editor-background)); color: var(--dg-text, var(--vscode-foreground)); border: 1px solid var(--dg-border, var(--border)); border-left: 4px solid var(--muted); box-shadow: 0 1px 2px rgba(0,0,0,.12); overflow: hidden; }
   .node:hover { border-color: var(--vscode-focusBorder); }
   /* V1-UI-POLISH: icon badge = provider (--prov); thin left band = DataPass state; short top edge = capability
      state (with its symbol); light bottom line = client step (only from recorded results); shape = storage,
      processing or orchestration. Each level can be switched off (datapass.diagram.*). */
-  .node { border-left: 3px solid var(--muted); border-radius: 4px; }
-  .node.dp-ready { border-left: 3px solid var(--ok); } .node.dp-not-ready { border-left: 3px dashed var(--warn); } .node.dp-none { border-left: 3px dotted var(--muted); }
-  .canvas.no-band .node { border-left: 1px solid var(--border); }
+  /* V3-THEME: the overlay uses its own hues (--dp-*: electric blue, violet, green, orange, rose), drawn thinner
+     than before (2px); never a provider colour, never VS Code's pass/warning/error colours. */
+  .node { border-left: 2px solid var(--dp-muted); border-radius: 4px; }
+  .node.dp-ready { border-left: 2px solid var(--dp-blue); } .node.dp-not-ready { border-left: 2px dashed var(--dp-violet); } .node.dp-none { border-left: 2px dotted var(--dp-muted); }
+  .canvas.no-band .node { border-left: 1px solid var(--dg-border, var(--border)); }
   .node.shape-storage { border-radius: 24px 24px 5px 5px / 9px 9px 5px 5px; } .node.shape-orchestration { border-radius: 13px; }
-  .node::before { content: ""; position: absolute; top: 0; left: 16px; width: 44px; height: 3px; border-radius: 0 0 3px 3px; background: var(--st, transparent); opacity: .85; }
-  .node.st-available { --st: var(--ok); } .node.st-prepared { --st: var(--warn); } .node.st-choice { --st: var(--muted); }
-  .node.st-unverified { --st: var(--unverified); } .node.st-blocked { --st: var(--bad); }
+  .node::before { content: ""; position: absolute; top: 0; left: 16px; width: 36px; height: 2px; border-radius: 0 0 2px 2px; background: var(--st, transparent); }
+  .node.st-available { --st: var(--dp-green); } .node.st-prepared { --st: var(--dp-orange); } .node.st-choice { --st: var(--dp-muted); }
+  .node.st-unverified { --st: var(--dp-violet); } .node.st-blocked { --st: var(--dp-rose); }
   .canvas.no-edge .node::before, .canvas.no-edge .nodestatus .stsym { display: none; }
-  .stepline { position: absolute; left: 12px; right: 24px; bottom: 3px; height: 0; border-bottom: 2px solid var(--step, var(--muted)); opacity: .55; }
+  .stepline { position: absolute; left: 12px; right: 24px; bottom: 3px; height: 0; border-bottom: 1.5px solid var(--step, var(--dp-muted)); opacity: .7; }
   .stepline .stepsym { position: absolute; right: -14px; bottom: -5px; font-size: 10px; line-height: 1; color: var(--step, var(--muted)); }
-  .step-validated { --step: var(--ok); } .step-redo { --step: var(--warn); } .stepline.step-redo { border-bottom-style: dashed; } .step-never { --step: var(--muted); } .stepline.step-never { border-bottom-style: dotted; }
+  .step-validated { --step: var(--dp-green); } .step-redo { --step: var(--dp-orange); } .stepline.step-redo { border-bottom-style: dashed; } .step-never { --step: var(--dp-muted); } .stepline.step-never { border-bottom-style: dotted; }
   .pbadge { display: inline-flex; align-items: center; justify-content: center; padding: 2px; border-radius: 4px; flex: none; background: color-mix(in srgb, var(--prov, var(--muted)) 16%, transparent); }
   .pbadge.small { width: 10px; height: 10px; padding: 0; border-radius: 3px; background: var(--prov); vertical-align: -1px; margin-right: 4px; display: inline-block; }
-  .picon { width: 14px; height: 14px; flex: none; fill: var(--prov, var(--muted)); }
+  .picon { width: 12px; height: 12px; flex: none; fill: var(--prov, var(--muted)); }
   .stsym { display: inline-block; min-width: 12px; text-align: center; font-weight: 700; color: var(--st, var(--muted)); }
-  .lgst.st-available { --st: var(--ok); } .lgst.st-prepared { --st: var(--warn); } .lgst.st-choice { --st: var(--muted); } .lgst.st-unverified { --st: var(--unverified); } .lgst.st-blocked { --st: var(--bad); }
+  .lgst.st-available { --st: var(--dp-green); } .lgst.st-prepared { --st: var(--dp-orange); } .lgst.st-choice { --st: var(--dp-muted); } .lgst.st-unverified { --st: var(--dp-violet); } .lgst.st-blocked { --st: var(--dp-rose); }
   .ext { flex: none; font-family: var(--vscode-editor-font-family); font-size: 10px; color: var(--vscode-foreground); padding: 0 4px; border-radius: 3px; border: 1px solid var(--border); border-left: 3px solid var(--ft, var(--muted)); }
   .legends.pos-top-left .legend, .legends.pos-top-right .legend { border-top: 0; border-bottom: 1px solid var(--border); }
   .legends.pos-bottom-right .legend, .legends.pos-top-right .legend { justify-content: flex-end; }
@@ -126,8 +132,8 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .lgst, .lgdp, .lgshape, .lgstep, .lgfam { display: inline-flex; gap: 3px; align-items: center; }
   .swatch { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--muted); border-radius: 2px; margin-right: 2px; }
   .lgshape.shape-storage .swatch { border-radius: 7px 7px 2px 2px / 5px 5px 2px 2px; } .lgshape.shape-orchestration .swatch { border-radius: 5px; }
-  .lgdp .swatch { width: 0; height: 12px; border: 0; border-left: 3px solid var(--muted); border-radius: 0; }
-  .lgdp.dp-ready .swatch { border-left-color: var(--ok); } .lgdp.dp-not-ready .swatch { border-left: 3px dashed var(--warn); } .lgdp.dp-none .swatch { border-left-style: dotted; }
+  .lgdp .swatch { width: 0; height: 12px; border: 0; border-left: 2px solid var(--dp-muted); border-radius: 0; }
+  .lgdp.dp-ready .swatch { border-left-color: var(--dp-blue); } .lgdp.dp-not-ready .swatch { border-left: 2px dashed var(--dp-violet); } .lgdp.dp-none .swatch { border-left-style: dotted; }
   .lgstep .stepsym { color: var(--step, var(--muted)); font-size: 10px; }
   body.vscode-high-contrast .pbadge, body.vscode-high-contrast-light .pbadge { background: none; }
   body.vscode-high-contrast .pbadge.small, body.vscode-high-contrast-light .pbadge.small { background: none; border: 1px solid var(--vscode-contrastBorder, currentColor); }
@@ -135,9 +141,11 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   body.vscode-high-contrast .ext, body.vscode-high-contrast-light .ext { border-left-color: var(--vscode-contrastBorder, currentColor); }
   body.vscode-high-contrast .stepline, body.vscode-high-contrast-light .stepline { opacity: 1; }
   .node.active { outline: 2px solid var(--vscode-focusBorder); outline-offset: 0; }
-  .nodetop { display: flex; gap: 5px; align-items: center; font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; }
+  /* V3-THEME: "DataPass overlay off" (datapass.overlay.enabled = false) hides every validated / not validated mark. */
+  body.no-overlay .node .stsym, body.no-overlay .stepline, body.no-overlay .dot[class*="h-"], body.no-overlay .lgdp, body.no-overlay .lgst, body.no-overlay .lgstep { display: none !important; }
+  .nodetop { display: flex; gap: 5px; align-items: center; font-size: 10.5px; color: var(--dg-subtle, var(--muted)); overflow: hidden; white-space: nowrap; }
   .nodelabel { font-weight: 600; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .nodestatus { display: flex; gap: 5px; align-items: center; font-size: 10.5px; color: var(--muted); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .nodestatus { display: flex; gap: 5px; align-items: center; font-size: 10.5px; color: var(--dg-subtle, var(--muted)); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .canvas.compact .nodelabel { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; font-size: 12px; }
   .canvas.compact .nodetop .provider { overflow: hidden; text-overflow: ellipsis; }
   .legend { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 6px 10px; border-top: 1px solid var(--border); font-size: 11px; }

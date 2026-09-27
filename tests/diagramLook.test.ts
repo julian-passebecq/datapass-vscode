@@ -123,14 +123,18 @@ test("shape: storage, processing or orchestration", () => {
 });
 
 test("diagram settings: every level on by default, legend bottom-left; wrong values fall back", () => {
-  assert.deepEqual(readDiagramSettings(() => undefined), { stateBand: true, capabilityEdge: true, clientStepLine: true, legend: true, legendPosition: "bottom-left" });
+  const v3 = { theme: "microsoft", overlay: true, overlayColors: {} };
+  assert.deepEqual(readDiagramSettings(() => undefined), { stateBand: true, capabilityEdge: true, clientStepLine: true, legend: true, legendPosition: "bottom-left", ...v3 });
   assert.deepEqual(readDiagramSettings(() => undefined), DIAGRAM_SETTING_DEFAULTS);
   const set: Record<string, unknown> = { stateBand: false, capabilityEdge: "no", clientStepLine: false, legend: false, legendPosition: "top-right" };
-  assert.deepEqual(readDiagramSettings(k => set[k]), { stateBand: false, capabilityEdge: true, clientStepLine: false, legend: false, legendPosition: "top-right" });
+  assert.deepEqual(readDiagramSettings(k => set[k]), { stateBand: false, capabilityEdge: true, clientStepLine: false, legend: false, legendPosition: "top-right", ...v3 });
   assert.equal(readDiagramSettings(k => k === "legendPosition" ? "middle" : undefined).legendPosition, "bottom-left");
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
   const props = pkg.contributes.configuration.properties ?? Object.assign({}, ...pkg.contributes.configuration.map((c: { properties: object }) => c.properties));
-  for (const [k, v] of Object.entries(DIAGRAM_SETTING_DEFAULTS)) {
+  const { overlay, overlayColors, ...diagramKeys } = DIAGRAM_SETTING_DEFAULTS;
+  assert.equal(props["datapass.overlay.enabled"]?.default, overlay);
+  assert.deepEqual(props["datapass.overlay.colors"]?.default, overlayColors);
+  for (const [k, v] of Object.entries(diagramKeys)) {
     assert.equal(props[`datapass.diagram.${k}`]?.default, v, `package.json default of datapass.diagram.${k}`);
     assert.doesNotMatch(JSON.stringify(props[`datapass.diagram.${k}`]), /foil/i, "settings stay neutral");
   }

@@ -13,6 +13,7 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
   `schemas/datapass-links.schema.json`) and a *Project links* page; links open in the browser after the usual
   confirmation, never fetched or checked by DataPass.
 - V3-HOP1: DataPass Hop contract `datapass.understanding` v1 (one bridge JSON per native file, at `.datapass/understanding/<repository key>/<native path>.json`: steps tied to line ranges, links, SQL joins, provenance), its validator and loader (states ok / stale / orphan / invalid; names indexed at refresh, files read on demand), step ↔ line helpers for V3-HOP2, schema `schemas/datapass-understanding.schema.json`, examples `examples/v3/hop` (PySpark, SQL with two joins, Airflow), docs §17 and guide page 12. No UI yet.
+- V3-THEME: the DataPass overlay has its own lighter palette (electric blue, violet, green, orange, rose; contrast-tested in light, dark and high contrast), drawn thinner, with provider icons ~15 % smaller; `datapass.overlay.enabled` hides every validated / not-validated mark and `datapass.overlay.colors` customises the hues; the Project tree uses neutral icons except where attention is needed (`datapass.tree.coloredIcons` restores colours); `datapass.diagram.theme` gives the diagram Microsoft-style light and dark surfaces; new command "DataPass: Set Code Font Size…" writes `editor.fontSize` after confirmation.
 
 ## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
 

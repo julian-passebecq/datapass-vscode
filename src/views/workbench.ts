@@ -98,7 +98,7 @@ export class WorkbenchHost implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()),
-      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.diagram")) void this.post(); }));
+      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.diagram") || e.affectsConfiguration("datapass.overlay")) void this.post(); }));
   }
 
   dispose(): void {
@@ -126,7 +126,8 @@ export class WorkbenchHost implements vscode.Disposable {
       alternatives: this.shows("badge.alternatives")
     };
     const diagramConfig = vscode.workspace.getConfiguration("datapass.diagram");
-    this.lastState.diagramSettings = readDiagramSettings(k => diagramConfig.get(k));
+    const overlayConfig = vscode.workspace.getConfiguration("datapass.overlay");
+    this.lastState.diagramSettings = readDiagramSettings(k => diagramConfig.get(k), k => overlayConfig.get(k));
     // QA-2: the Codex tests section, only in the modes that show it (DataPass, Advanced).
     if (this.codexTestsSource && this.shows("ai.codexTests") && this.lastState.workOrders) this.lastState.codexTests = this.codexTestsSource();
     // 0.23: coding state badges (derived from the files; nothing to maintain).

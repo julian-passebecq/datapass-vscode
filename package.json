@@ -888,6 +888,11 @@
         "title": "DataPass: Reset Mode Customization"
       },
       {
+        "command": "datapass.setCodeFontSize",
+        "title": "DataPass: Set Code Font Size…",
+        "icon": "$(text-size)"
+      },
+      {
         "command": "datapass.control.refresh",
         "title": "DataPass: Refresh Claude Control Status",
         "icon": "$(refresh)"
@@ -2252,6 +2257,10 @@
         {
           "command": "datapass.control.copyStartCommand",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.setCodeFontSize",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -2403,6 +2412,37 @@
           "enum": ["bottom-left", "bottom-right", "top-left", "top-right", "hidden"],
           "default": "bottom-left",
           "description": "Architecture diagram: where the legend sits (above or below the diagram, left or right), or hidden."
+        },
+        "datapass.diagram.theme": {
+          "type": "string",
+          "enum": ["microsoft", "vscode"],
+          "enumDescriptions": ["Microsoft-style light or dark surfaces (as in the Azure portal, Data Factory and Fabric), following your theme's kind. High-contrast themes keep their own colours.", "The colours of your VS Code theme."],
+          "default": "microsoft",
+          "description": "Architecture diagram: the look of the canvas, blocks, borders and text. Provider colours and icons stay the official ones."
+        },
+        "datapass.overlay.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Show the **DataPass overlay**: the validated / not validated marks drawn over the project (the diagram's left band, top edge and bottom line with their symbols and legend, the health dots, and the state icons and colours in the Project tree). Off: DataPass shows the architecture and files only. The per-level switches `datapass.diagram.stateBand`, `capabilityEdge` and `clientStepLine` apply while this is on."
+        },
+        "datapass.overlay.colors": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "blue": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "DataPass state: an operation ready (left band)." },
+            "violet": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "DataPass state: none ready yet (left band); capability unverified." },
+            "green": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability available; client step validated." },
+            "orange": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability prepared or planned; client step to redo." },
+            "rose": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability blocked." },
+            "muted": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "No operation; choice only; never run." }
+          },
+          "additionalProperties": false,
+          "markdownDescription": "Your own colours for the DataPass overlay (`#rrggbb`), in every theme. By default the overlay uses its own light tones (electric blue, violet, green, orange and rose), distinct from provider colours and from VS Code's pass / warning / error colours: deeper in light themes, fluorescent in dark ones."
+        },
+        "datapass.tree.coloredIcons": {
+          "type": "boolean",
+          "default": false,
+          "description": "Project tree: colour every icon by its state (the 1.0 look). Off (default): icons use the theme's text colour and only items that need attention (an error or a warning) are coloured."
         },
         "datapass.company": {
           "type": "string",

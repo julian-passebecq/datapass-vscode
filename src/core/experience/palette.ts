@@ -66,7 +66,7 @@ const GATED: Record<string, readonly string[]> = {
     "codexTests.openLastReport", "codexTests.chooseRepository", "codexTests.refresh", "pilot.enable",
     "fileVersions.openLatest", "fileVersions.lastUpdate", "experience.resetOverrides",
     "control.refresh", "control.copyStartCommand",
-    "openProjectLinks", "openLinksFile"
+    "openProjectLinks", "openLinksFile", "setCodeFontSize"
   ]
 };
 
