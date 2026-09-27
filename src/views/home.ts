@@ -62,6 +62,7 @@ export class HomeHost implements vscode.Disposable {
       links: ctx.links, linksError: ctx.linksError,
       optionsDecisions: ctx.options?.decisions.length,
       workOrdersEnabled: workOrdersEnabled(),
+      explained: this.session.understandingIndex()?.files,
       layouts, layoutsError: errors[0],
       shows: this.shows
     });
@@ -114,6 +115,12 @@ export class HomeHost implements vscode.Disposable {
         if (!all.some(s => s.file.views.some(v => v.id === m.id))) throw new UserFacingError("That layout no longer exists.");
         this.lastAction = { type: "layout", id: m.id, command: "datapass.applyWorkView" };
         await vscode.commands.executeCommand("datapass.applyWorkView", m.id);
+      } else if (m.type === "hop" && Number.isInteger(m.index)) {
+        // V3-HOP2: re-read from the index by position (the page only names a position).
+        const f = this.session.understandingIndex()?.files[m.index as number];
+        if (!f) throw new UserFacingError("That explained file is no longer listed (the project was refreshed).");
+        this.lastAction = { type: "hop", id: `${f.repositoryKey}/${f.nativePath}`, command: "datapass.hop.open" };
+        await vscode.commands.executeCommand("datapass.hop.open", { repositoryKey: f.repositoryKey, nativePath: f.nativePath });
       } else if (m.type === "link" && Number.isInteger(m.group) && Number.isInteger(m.index)) {
         this.lastAction = { type: "link", id: `${m.group}:${m.index}`, command: "datapass.openProjectLink" };
         await vscode.commands.executeCommand("datapass.openProjectLink", { group: m.group, index: m.index });

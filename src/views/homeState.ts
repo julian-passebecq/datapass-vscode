@@ -13,6 +13,7 @@
  */
 import type { ProjectMap } from "../core/project/projectMap";
 import type { BoardView } from "../core/project/board";
+import { explainedFiles } from "./hopState";
 import { KIND_LABELS, linkHost, linksProblems, LINKS_PATH, type LinkKind, type LinksFile } from "../core/project/links";
 
 /** Home action id → the existing command it runs (and its fixed arguments). */
@@ -35,11 +36,19 @@ export const HOME_ACTIONS: Readonly<Record<string, { command: string; args?: rea
   "layout.save": { command: "datapass.saveWorkView" },
   "layout.manage": { command: "datapass.manageWorkViews" },
   "project.open": { command: "datapass.openClientProject" },
-  "project.guide": { command: "datapass.openPreparationGuide" }
+  "project.guide": { command: "datapass.openPreparationGuide" },
+  // V3-HOP2: DataPass Hop.
+  "hop.explained": { command: "datapass.hop.showExplained" },
+  "hop.explain": { command: "datapass.hop.explain" }
 };
 
 export interface HomeAction { id: string; label: string; /** Why it cannot run here (shown instead of running). */ disabled?: string }
-export interface HomeTile { id: string; title: string; summary: string; actions: HomeAction[]; coming?: boolean; attention?: boolean }
+export interface HomeTile {
+  id: string; title: string; summary: string; actions: HomeAction[]; coming?: boolean; attention?: boolean;
+  /** V3-HOP2: files listed in the tile (the explained files); clicking one sends { type: "hop", index }. */
+  items?: Array<{ index: number; label: string; detail: string }>;
+  more?: number;
+}
 export interface HomeArea { id: string; title: string; tiles: HomeTile[] }
 
 export interface HomeLink { group: number; index: number; label: string; host: string; kind: LinkKind; kindLabel: string; environment?: string; description?: string; local: boolean }
@@ -77,6 +86,8 @@ export interface HomeInput {
   linksError?: string;
   optionsDecisions?: number;
   workOrdersEnabled: boolean;
+  /** V3-HOP2: the bridge's explained files (names only). */
+  explained?: ReadonlyArray<{ repositoryKey: string; nativePath: string }>;
   layouts: HomeLayout[];
   layoutsError?: string;
   /** Surfaces the current DataPass mode shows (a tile action whose surface is hidden says so). */
@@ -110,6 +121,21 @@ export function homePreview(map: ProjectMap): HomePreview | undefined {
   return { lanes, components: map.components.length, relations: map.relations.length };
 }
 
+/** V3-HOP2: the DataPass Hop tile — the explained files, each opening beside its code. */
+function hopTile(files: ReadonlyArray<{ repositoryKey: string; nativePath: string }>, noProject: string | undefined): HomeTile {
+  const list = explainedFiles(files);
+  return {
+    id: "understand", title: "Understand a file — DataPass Hop",
+    summary: files.length
+      ? `${plural(files.length, "explained file")}: the code on the right, its visual explanation on the left, in sync.`
+      : "No file explained yet. The client AI writes the explanations with the code (.datapass/understanding/); open a file and choose Explain this file.",
+    items: list.items, more: list.more,
+    actions: files.length
+      ? [{ id: "hop.explained", label: "All explained files…", ...(noProject ? { disabled: noProject } : {}) }, { id: "hop.explain", label: "Explain the current file" }]
+      : [{ id: "hop.explain", label: "Explain the current file", ...(noProject ? { disabled: noProject } : {}) }]
+  };
+}
+
 export function homeState(input: HomeInput): HomeState {
   const { map, shows } = input;
   const act = (id: string, label: string, extra?: string): HomeAction => {
@@ -136,11 +162,7 @@ export function homeState(input: HomeInput): HomeState {
             : input.hasProject ? "No components yet (.datapass/graph.json)" : "No DataPass project in this window",
           actions: [act("architecture.workbench", "Open the diagram", noProject), act("architecture.panel", "Architecture panel", noProject), act("architecture.options", "Compare options", noProject), act("architecture.tree", "Project tree")]
         },
-        {
-          id: "understand", title: "Understand a file — DataPass Hop", coming: true,
-          summary: "Coming: a file's code beside its visual explanation (PySpark and SQL first).",
-          actions: []
-        }
+        hopTile(input.explained ?? [], noProject)
       ]
     },
     {

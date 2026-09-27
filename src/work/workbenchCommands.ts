@@ -53,7 +53,12 @@ const NATIVE_VIEWS: Record<string, { command: string; extensionId: string }> = {
   docker: { command: "workbench.view.extension.containersView", extensionId: "ms-azuretools.vscode-containers" }
 };
 
-export function registerWorkbenchCommands(context: vscode.ExtensionContext, session: WorkSession, host: WorkbenchHost): void {
+/** V3-HOP2: shows an explained file in the DataPass Hop view (code right, visual left); false when the file has no explanation. */
+export type ExplainedOpener = (uri: vscode.Uri) => Promise<boolean>;
+let explainedOpener: ExplainedOpener | undefined;
+
+export function registerWorkbenchCommands(context: vscode.ExtensionContext, session: WorkSession, host: WorkbenchHost, openExplained?: ExplainedOpener): void {
+  explainedOpener = openExplained;
   const reg = (id: string, fn: (...args: any[]) => Promise<void>) => context.subscriptions.push(vscode.commands.registerCommand(id, guarded(fn)));
   const version = String(context.extension.packageJSON.version ?? "unknown");
 
@@ -162,7 +167,7 @@ async function openComponentFile(session: WorkSession, host: WorkbenchHost, comp
     if (!names.length) return explainMissing(session, c.id, f.repoPath);
     const name = names.length === 1 ? names[0] : (await vscode.window.showQuickPick(names, { title: `${c.label}: open which ${f.path}?` }));
     if (!name) return;
-    return openFileBesideWorkbench(host, vscode.Uri.joinPath(dir, name));
+    return openCodeOf(host, vscode.Uri.joinPath(dir, name));
   }
   const uri = repoUri(session, a.repoKey, f.repoPath);
   if (f.kind !== "file") {
@@ -170,6 +175,12 @@ async function openComponentFile(session: WorkSession, host: WorkbenchHost, comp
     if (await confirmModal(`${f.path} is a folder outside this window.`, `Open ${a.root === "." ? "the repository" : a.root} in a new window?`, "Open in new window")) await openFolderWindow(uri);
     return;
   }
+  await openCodeOf(host, uri);
+}
+
+/** V3-HOP2: an explained file opens with its visual explanation in place of the diagram; any other file beside the Workbench. */
+async function openCodeOf(host: WorkbenchHost, uri: vscode.Uri): Promise<void> {
+  if (explainedOpener && await explainedOpener(uri)) return;
   await openFileBesideWorkbench(host, uri);
 }
 

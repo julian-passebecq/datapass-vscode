@@ -51,6 +51,10 @@ const STYLE = `
   .kind { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--vscode-descriptionForeground); margin-right: 6px; }
   .env { font-size: 10px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border)); margin-left: 6px; }
   ul.problems { margin: 6px 0 0; padding-left: 18px; }
+  ul.files { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  button.file { width: 100%; text-align: left; background: none; border: 0; padding: 2px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--vscode-textLink-foreground); }
+  button.file:hover { background: var(--vscode-list-hoverBackground); }
+  button.file .muted { font-size: 11px; }
   @media (max-width: 520px) { body { padding: 12px; } .lane { grid-template-columns: 1fr; } }
 `;
 
@@ -60,6 +64,7 @@ const SCRIPT = `
     const b = e.target instanceof Element ? e.target.closest("button") : null;
     if (!b || b.disabled) return;
     if (b.dataset.action) vscode.postMessage({ type: "action", id: b.dataset.action });
+    else if (b.dataset.hop !== undefined) vscode.postMessage({ type: "hop", index: Number(b.dataset.hop) });
     else if (b.dataset.layout) vscode.postMessage({ type: "layout", id: b.dataset.layout });
     else if (b.dataset.group !== undefined) vscode.postMessage({ type: "link", group: Number(b.dataset.group), index: Number(b.dataset.index) });
   });
@@ -73,6 +78,7 @@ function tileHtml(t: HomeTile): string {
   return `<section class="tile${t.coming ? " coming" : ""}${t.attention ? " attention" : ""}" data-tile="${esc(t.id)}">
   <h3>${esc(t.title)}${t.coming ? `<span class="badge">coming</span>` : ""}</h3>
   <p class="summary">${esc(t.summary)}</p>
+  ${t.items?.length ? `<ul class="files">${t.items.map(f => `<li><button type="button" class="file" data-hop="${f.index}" title="${esc(f.detail)}"><strong>${esc(f.label)}</strong><span class="muted"> ${esc(f.detail)}</span></button></li>`).join("")}${t.more ? `<li class="muted">+${t.more} more</li>` : ""}</ul>` : ""}
   ${t.actions.length ? `<div class="actions">${t.actions.map((a, i) => actionButton(a, i === 0)).join("")}</div>` : ""}
 </section>`;
 }

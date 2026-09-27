@@ -54,6 +54,9 @@ import { pilotArgs, pilotRefusals, pilotWorkspace } from "../core/pilot/profile"
 import { PILOT_CLIS } from "../core/pilot/rules";
 import { codexAppQualified, guardRailsMatch, pilotEnabled, projectEnvironments, writeGuardRails } from "./pilot";
 import { UserFacingError, confirmModal, errorMessage, guarded, jsonBytes, readBounded, report, requireRoot } from "./io";
+import { MAX_NATIVE_BYTES, understandingSha256 } from "../core/understanding/load";
+import { lineCount, normaliseNativeText } from "../core/understanding/contract";
+import { explanationOrderDraft, explanationPathOf } from "../views/hopState";
 
 // ------------------------------------------------------------------ drafts
 
@@ -1096,6 +1099,29 @@ export function registerWorkOrderCommands(context: vscode.ExtensionContext, sess
       title: `Prepare the missing files of ${c.label}`.slice(0, 80),
       goal: missing.length ? `Prepare the missing files of the component ${c.id} in their native format:\n${missing.slice(0, 30).map(m => `- ${m}`).join("\n")}` : `Prepare the files the component ${c.id} still needs (see the attached pack).`
     } });
+  });
+  // V3-HOP2: "Explain this file" in the Hop view — the client AI writes the explanation JSON; DataPass never does.
+  reg("datapass.workOrders.newForExplanation", async (arg?: unknown) => {
+    const a = arg && typeof arg === "object" ? arg as { repositoryKey?: unknown; nativePath?: unknown } : undefined;
+    let uri: vscode.Uri | undefined;
+    if (typeof arg === "string" && arg.length <= 4096) { try { uri = vscode.Uri.parse(arg, true); } catch { /* refused below */ } }
+    else if (!a) uri = vscode.window.activeTextEditor?.document.uri;
+    const vet = typeof a?.nativePath === "string" ? vetRelativePath(a.nativePath) : undefined;
+    const at = typeof a?.repositoryKey === "string" && vet?.ok ? { repositoryKey: a.repositoryKey.slice(0, 80), nativePath: vet.relative } : uri ? session.understandingLocate(uri) : undefined;
+    if (!at) throw new UserFacingError("Choose a file of the project's repositories (open it, then run DataPass: Explain This File).");
+    const folder = session.repoFolder(at.repositoryKey);
+    const file = uri ?? (folder ? vscode.Uri.joinPath(folder, ...at.nativePath.split("/")) : undefined);
+    let native: { sha256: string; lines: number } | undefined;
+    try {
+      if (file && (await vscode.workspace.fs.stat(file)).size <= MAX_NATIVE_BYTES) {
+        const bytes = await vscode.workspace.fs.readFile(file);
+        native = { sha256: understandingSha256(bytes), lines: lineCount(normaliseNativeText(bytes)) };
+      }
+    } catch { /* not on this computer: the AI computes the hash */ }
+    const d = explanationOrderDraft(at, native);
+    const component = session.projectMap().components.find(c => c.artifacts?.repoKey === at.repositoryKey && c.artifacts.files.some(f => f.repoPath === at.nativePath));
+    await prefill({ draft: { kind: "prepare-files", title: d.title, goal: d.goal, doneWhen: d.doneWhen, components: component ? [component.id] : undefined, subproject: component?.subprojects[0] },
+      note: `DataPass Hop: the AI writes ${explanationPathOf(at.repositoryKey, at.nativePath)}; nothing is written until you confirm the order.` });
   });
   reg("datapass.workOrders.newFromFailingPr", async (repoKey?: unknown, prNumber?: unknown) => {
     // From the Git view: a PR node, a "needs you" node, or (key, number).

@@ -524,6 +524,29 @@
         "icon": "$(project)"
       },
       {
+        "command": "datapass.hop.explain",
+        "title": "DataPass: Explain This File (DataPass Hop)",
+        "icon": "$(symbol-structure)"
+      },
+      {
+        "command": "datapass.hop.showExplained",
+        "title": "DataPass: Explained Files (DataPass Hop)",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "datapass.hop.open",
+        "title": "DataPass: Open an Explained File (DataPass Hop)"
+      },
+      {
+        "command": "datapass.hop.showStep",
+        "title": "DataPass: Show This Step (DataPass Hop)"
+      },
+      {
+        "command": "datapass.workOrders.newForExplanation",
+        "title": "DataPass: Ask the AI to Explain This File (Work Order)",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "datapass.openHome",
         "title": "DataPass: Open Home (modules, layouts, project links)",
         "icon": "$(home)"
@@ -1789,6 +1812,26 @@
       ],
       "commandPalette": [
         {
+          "command": "datapass.hop.explain",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hop.showExplained",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hop.open",
+          "when": "false"
+        },
+        {
+          "command": "datapass.hop.showStep",
+          "when": "false"
+        },
+        {
+          "command": "datapass.workOrders.newForExplanation",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.pilot.run",
           "when": "false"
         },
@@ -2577,7 +2620,19 @@
           "group": "7_datapass_versions@3"
         }
       ],
+      "editor/title": [
+        {
+          "command": "datapass.hop.explain",
+          "when": "resourceScheme == file && datapass.hop.explained",
+          "group": "navigation@90"
+        }
+      ],
       "editor/context": [
+        {
+          "command": "datapass.hop.explain",
+          "when": "resourceScheme == file",
+          "group": "7_datapass@0"
+        },
         {
           "command": "datapass.copyFileContext",
           "when": "resourceScheme == file || resourceScheme == untitled",
