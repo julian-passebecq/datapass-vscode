@@ -3,6 +3,30 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## 1.0.0-rc.1 — V1 release candidate: understandable surface, safe reads, fresh state, native Test (2026-09-27)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestones M0–M3 (packages FIX-QAUI, V1-SURF, V1-LOAD,
+V1-FRESH, V1-TEST, V1-RC). No new feature wave and no format version change. A release candidate: 1.0.0 is cut by
+the PM only after the M3 gates in [handoff/v1/RC_QUALIFICATION.md](handoff/v1/RC_QUALIFICATION.md) are closed.
+
+- **Command Palette per mode** (V1-SURF, PR #105): about 60 top-level entries under one prefix, a palette
+  snapshot per mode, no client-named (FOIL) command or setting on the default surface, doc links checked,
+  one current entry point ([handoff/CURRENT.md](handoff/CURRENT.md)) and older handoffs archived.
+- **Typed, bounded project-file reads** (V1-LOAD, PR #102): an unreadable, oversized, invalid-JSON or
+  permission-denied project file is an error shown in Problems and Details, never "absent".
+- **Refresh and variant race guard** (V1-FRESH, PR #103): a variant switch during a refresh never mixes
+  states; packs and orders show a stale label after a HEAD or variant change; the freshness time is shown;
+  the late save of the remembered variant after "back to current" is fixed.
+- **Native Test route per component** (V1-TEST, PR #104, #108): *Test* runs the task the native repository
+  (or its recipe) declares, after a confirmation, and keeps a receipt with commit, time and exit code; no
+  task → "no test declared"; tool states never say "verified" without a probe.
+- **Release-candidate qualification** (V1-RC): `npm run qa:rc` builds the VSIX once from a clean commit,
+  records its SHA-256, the lockfile hash, Node, OS and VS Code in `out/rc/<version>/manifest.json`,
+  installs it in an isolated profile (over the previous release with `--upgrade-from`) and checks the
+  version VS Code reports; with `--auto` it checks that the synthetic client's repositories are filled
+  (an empty one is a setup blocker for J01–J10, never a pass). Gates it cannot run stay open.
+- Baseline (M0): qa:ui `expect`/`click` take the first visible match (PR #100); text stored as LF (PR #106, #107).
+
 ## 0.27.0 — Progressive refresh, Codex tests mode, Microsoft MCP servers, stabilisation (2026-09-26)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) rows K2, V1-STAB, V1-PERF, V1-REF, V1-FLAKE, QA-0 to QA-4, HUB-1, R4.

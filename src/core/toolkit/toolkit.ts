@@ -20,7 +20,7 @@
  */
 import { anyOf, arr, constOf, enumOf, ID, obj, TEXT, validateSchema, type Schema, type SchemaIssue } from "../contracts/schemaDsl";
 import { parseStrictJson } from "../model/strictJson";
-import { isRangeError, parseRange, satisfies, extractVersion } from "../toolchain/versions";
+import { isRangeError, parseRange, satisfies, extractVersion, productVersion } from "../toolchain/versions";
 import { TOOL_ID, knownTools, type ToolchainTool } from "../toolchain/toolchain";
 import { CAPABILITIES } from "../capabilities/registry";
 import { TOOLS } from "../capabilities/tools";
@@ -223,11 +223,13 @@ export function parseToolkitFile(raw: string | Uint8Array, path: string, dataPas
   if (req) {
     result.requires = req;
     const range = parseRange(req);
-    const v = extractVersion(dataPassVersion);
+    // 1.0.0-rc.1 satisfies >=0.27.0 but not >=1.0.0 (semver: a pre-release sorts before its release).
+    const pv = productVersion(dataPassVersion);
+    const v = pv?.v ?? extractVersion(dataPassVersion);
     if (isRangeError(range)) {
       if (strict) throw new ToolkitError(`requires.datapass ${range.error}`);
       result.newer = { what: "datapass", text: `requires.datapass "${req}" is not a version range this DataPass reads` };
-    } else if (v && !satisfies(v, range)) {
+    } else if (v && !satisfies(v, range, pv?.prerelease ?? false)) {
       if (strict) throw new ToolkitError(`This file requires DataPass ${req}; this is ${dataPassVersion}`);
       result.newer = { what: "datapass", text: `needs DataPass ${req} (this is ${dataPassVersion}): its entries are skipped, never guessed` };
     }

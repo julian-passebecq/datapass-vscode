@@ -10,7 +10,8 @@
  *   alternatives: "^1.4 || ^2.0"
  *
  * A bare version (1.4, ==1.4) means that release line: 1.4 accepts 1.4.0 and 1.4.9, not 1.5.0.
- * Pre-release tags are not part of the grammar. An observed version is the first dotted number
+ * Pre-release tags are not part of the range grammar; a pre-release product version is compared
+ * with `productVersion` + `satisfies(…, prerelease)`. An observed version is the first dotted number
  * found in a tool's version output ("git version 2.46.0.windows.1" → 2.46.0).
  */
 
@@ -137,10 +138,21 @@ export function parseRange(text: unknown): VersionRange | { error: string } {
 
 export const isRangeError = (r: VersionRange | { error: string }): r is { error: string } => "error" in r;
 
-export function satisfies(v: Version, range: VersionRange): boolean {
+/**
+ * A product version such as DataPass's own ("0.27.0", "1.0.0-rc.1"): its numbers, and whether it is a
+ * semver pre-release, which sorts before its release (1.0.0-rc.1 < 1.0.0, so it does not satisfy >=1.0.0).
+ */
+export function productVersion(text: string): { v: Version; prerelease: boolean } | undefined {
+  const m = /^v?(\d{1,6})\.(\d{1,6})\.(\d{1,6})(-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.exec(text.trim());
+  return m ? { v: [Number(m[1]), Number(m[2]), Number(m[3])], prerelease: m[4] !== undefined } : undefined;
+}
+
+/** `prerelease`: v is a pre-release of that number, just below it (never equal to the release). */
+export function satisfies(v: Version, range: VersionRange, prerelease = false): boolean {
   return range.sets.some(set => set.every(c => {
     if (c.op === "any") return true;
-    const d = compare(v, c.v);
+    const raw = compare(v, c.v);
+    const d = raw === 0 && prerelease ? -1 : raw;
     switch (c.op) {
       case ">=": return d >= 0;
       case ">": return d > 0;
