@@ -7,6 +7,7 @@
  * and nothing is run for it. Install commands are shown to copy, never run.
  */
 import { TOOLS, type InstallHint, type ProbeState, type ToolDefinition, type ToolObservation } from "../capabilities/tools";
+import { onlyForText, outOfRoute, validateVariantRefs } from "../readiness/variantScope";
 import { extractVersion, isRangeError, parseRange, satisfies, versionText, type VersionRange } from "./versions";
 
 export const MAX_TOOLCHAIN_TOOLS = 60;
@@ -24,6 +25,8 @@ export interface ToolchainEntry {
   optional?: boolean;
   /** Where the tool runs: this computer (default), the CI pipeline, or Fabric notebooks. */
   where?: ToolWhere;
+  /** V1-HONEST (F04): the routes (options or scenarios of options.json) that need it; omitted = every route. */
+  variants?: string[];
 }
 export interface ToolchainDecl { tools: ToolchainEntry[] }
 
@@ -119,6 +122,7 @@ export function validateToolchain(doc: Record<string, unknown>): string[] {
     }
     if (e.optional !== undefined && typeof e.optional !== "boolean") issues.push(`${at}.optional must be true or false.`);
     if (e.where !== undefined && !TOOL_WHERE.includes(e.where as ToolWhere)) issues.push(`${at}.where must be local, ci or fabric.`);
+    issues.push(...validateVariantRefs(e.variants, at));
     const key = `${e.tool}@${typeof e.where === "string" ? e.where : "local"}`;
     if (seen.has(key)) issues.push(`${at}: ${e.tool} is listed twice for the same place (where).`);
     seen.add(key);
@@ -153,6 +157,9 @@ export interface ToolchainEntryView {
   /** First Marketplace id of an extension tool. */
   extensionId?: string;
   suggestions?: string[];
+  /** V1-HONEST (F04): the routes that need it (omitted = every route), and whether the route in view is not one of them. */
+  variants?: string[];
+  outOfRoute?: boolean;
 }
 export interface ToolchainView {
   declared: boolean;
@@ -166,6 +173,8 @@ export interface ToolchainInput {
   platform: NodeJS.Platform | string;
   /** 0.23: tools the hub's toolkit describes (known, never probed). The extension's registry wins. */
   hubTools?: ReadonlyMap<string, ToolchainTool>;
+  /** V1-HONEST (F04): the variant names of the architecture in view (selectedVariantKeys). */
+  selected?: ReadonlySet<string>;
 }
 
 /** The install command for a platform: platform-specific first, then the one for every platform. */
@@ -184,7 +193,18 @@ const WHERE_TEXT: Record<ToolWhere, string> = { local: "this computer", ci: "the
 
 export function buildToolchain(input: ToolchainInput): ToolchainView {
   const catalog = knownTools();
-  const entries: ToolchainEntryView[] = (input.toolchain?.tools ?? []).map(e => {
+  const entries: ToolchainEntryView[] = (input.toolchain?.tools ?? []).map((e): ToolchainEntryView => {
+    const scope = e.variants?.length ? { variants: e.variants, outOfRoute: outOfRoute(e.variants, input.selected) } : {};
+    return { ...entryView(e), ...scope };
+  });
+  const attention = entries.filter(e => !e.optional && !e.outOfRoute && (e.state === "missing" || e.state === "outside-range" || e.state === "unknown-tool")).length;
+  return {
+    declared: Boolean(input.toolchain),
+    entries,
+    summary: { ok: entries.filter(e => e.state === "ok").length, attention, notChecked: entries.filter(e => e.state === "not-checked" || e.state === "version-unknown").length, total: entries.length }
+  };
+
+  function entryView(e: ToolchainEntry): ToolchainEntryView {
     const where = e.where ?? "local";
     const optional = e.optional === true;
     const parsed = e.version !== undefined ? parseRange(e.version) : undefined;
@@ -204,13 +224,7 @@ export function buildToolchain(input: ToolchainInput): ToolchainView {
     }
     const obs = input.tools.get(tool.id);
     return { ...base, ...compareObserved(obs?.state, obs?.version, range), install };
-  });
-  const attention = entries.filter(e => !e.optional && (e.state === "missing" || e.state === "outside-range" || e.state === "unknown-tool")).length;
-  return {
-    declared: Boolean(input.toolchain),
-    entries,
-    summary: { ok: entries.filter(e => e.state === "ok").length, attention, notChecked: entries.filter(e => e.state === "not-checked" || e.state === "version-unknown").length, total: entries.length }
-  };
+  }
 }
 
 function compareObserved(state: ProbeState | undefined, raw: string | undefined, range: VersionRange | undefined): Pick<ToolchainEntryView, "state" | "detail" | "version"> {
@@ -227,7 +241,7 @@ function compareObserved(state: ProbeState | undefined, raw: string | undefined,
 
 export function toolStateText(e: ToolchainEntryView): string {
   const where = e.where === "local" ? "" : ` · ${e.where === "ci" ? "CI" : "Fabric"}`;
-  const opt = e.optional ? " · optional" : "";
+  const opt = `${e.optional ? " · optional" : ""}${e.variants?.length ? ` · ${onlyForText(e.variants)}` : ""}`;
   switch (e.state) {
     case "ok": return `${e.version ?? "found"}${e.range ? ` ✓ ${e.range}` : ""}${where}${opt}`;
     case "outside-range": return `${e.version} ✗ needs ${e.range}${where}${opt}`;

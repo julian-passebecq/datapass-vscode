@@ -149,7 +149,7 @@ async function copyIdentifier(session: WorkSession, id: unknown, environment: un
   }
   // The manifest was validated on load: each value is a plain id that does not look like a credential.
   const value = env ? ident.values![env] : ident.value;
-  if (!value) throw new UserFacingError(`${ident.label} has no value to copy.`);
+  if (!value) throw new UserFacingError(ident.value === undefined && !ident.values ? `${ident.label} is pending: no value is declared yet in .datapass/project.json.` : `${ident.label} has no value to copy.`);
   await clipboard.writeText(value);
   void vscode.window.showInformationMessage(`Copied ${ident.label}${env ? ` for ${env}` : ""}${ident.envKey ? ` (for ${ident.envKey})` : ""}, a non-secret id declared in the manifest.`);
 }

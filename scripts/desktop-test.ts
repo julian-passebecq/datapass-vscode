@@ -470,6 +470,31 @@ function setupV25DocPipeline(base: string): { workspace: string; env: Record<str
   return { workspace: ws, env: {} };
 }
 
+/**
+ * V1-HONEST: the public doc-pipeline example, plus a docs-only adapter folder for the results storage
+ * (declared planned), an empty localEnv, a pending id and route-scoped tools (manifest v5).
+ */
+function setupV1HonestDocPipeline(base: string): { workspace: string; env: Record<string, string> } {
+  const ws = path.join(base, "projects", "doc-pipeline-honest");
+  fs.cpSync(path.join(repo, "examples", "v3", "doc-pipeline"), ws, { recursive: true });
+  const graphFile = path.join(ws, ".datapass", "graph.json");
+  const graph = JSON.parse(fs.readFileSync(graphFile, "utf8")) as { items: Array<Record<string, unknown>> };
+  const results = graph.items.find(i => i.id === "results")!;
+  Object.assign(results, { status: "planned", artifacts: { profile: "docs", root: "storage/results", files: ["README.md"] } });
+  fs.writeFileSync(graphFile, JSON.stringify(graph, null, 2));
+  writeTree(ws, { "storage/results/README.md": "# JSON results\n\nPlanned: this folder only documents the adapter.\n" });
+  const projectFile = path.join(ws, ".datapass", "project.json");
+  const manifest = migrateManifestToLatest(JSON.parse(fs.readFileSync(projectFile, "utf8")) as DataPassProjectManifest);
+  Object.assign(manifest, {
+    localEnv: { files: [], requiredKeys: [] },
+    identifiers: [{ id: "function-app", label: "Function app name", kind: "item", envKey: "FUNCTION_APP_NAME", variants: ["blob-function"] }],
+    toolchain: { tools: [{ tool: "cli.git" }, { tool: "cli.func", variants: ["blob-function"] }, { tool: "cli.az", variants: ["blob-function", "adf"] }] }
+  });
+  fs.writeFileSync(projectFile, JSON.stringify(manifest, null, 2));
+  commitAll(ws, "doc pipeline example (V1-HONEST)");
+  return { workspace: ws, env: {} };
+}
+
 /** Fixtures that need more than a file map (Git history, sibling clones, a local remote). */
 /**
  * V1-ON Open a Client Project: "GitHub on disk". Bare repositories in a temp folder stand for
@@ -536,6 +561,7 @@ const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<
   "v22-modes": setupV3Research,
   "v22-versions": setupV22Versions,
   "v25-doc-pipeline": setupV25DocPipeline,
+  "v1-honest-doc-pipeline": setupV1HonestDocPipeline,
   // V1-ON: the command in an empty window, then the window it opens (Standard, as a new install).
   "v26-open-client": setupV26OpenClient,
   "v26-open-client-window": setupV26OpenClientWindow

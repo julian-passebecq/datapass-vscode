@@ -53,7 +53,7 @@ test("C1: shared and unpriced lines — a line without figure does not contradic
   assert.deepEqual(unknown.monthly, { USD: 1 });
   assert.deepEqual([unknown.priced, unknown.total, unknown.shared.length], [0, 2, 0]);
   // One option alone: an unpriced shared line is unpriced there.
-  assert.equal(formatCostTotal(sumCostLines([{ shared: "k" }], "USD")), "not priced (0 of 1 line)");
+  assert.equal(formatCostTotal(sumCostLines([{ shared: "k" }], "USD")), "unknown · not priced (0 of 1 line)");
 });
 
 test("C1: an option's own subtotal shows the shared line with its label", () => {

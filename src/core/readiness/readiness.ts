@@ -32,6 +32,7 @@ import { compareExtensionsJson, extensionsJsonText, EXTENSIONS_JSON, type Extens
 import { buildConnections, CONNECTION_STATE_TEXT, validateConnections, type ConnectionProbe, type ConnectionView } from "../toolchain/connections";
 import { buildIntegrationEvidence, type IntegrationEvidence } from "../evidence/integrations";
 import { linkText } from "../evidence/chain";
+import { onlyForText, outOfRoute, validateVariantRefs } from "./variantScope";
 
 export const MAX_ENV_FILES = 10;
 export const MAX_REQUIRED_KEYS = 100;
@@ -67,7 +68,10 @@ export interface LocalEnvDecl {
 export interface IdentifierDecl {
   id: string;
   label: string;
-  /** Explicitly non-secret value (account, subscription, workspace or project id). Exactly one of value / values. */
+  /**
+   * Explicitly non-secret value (account, subscription, workspace or project id). At most one of
+   * value / values; V1-HONEST (F08): with neither, the identifier is pending (not resolved yet).
+   */
   value?: string;
   /** v5: one non-secret value per declared environment (the ID map): { "dev": "…", "prod": "…" }. */
   values?: Record<string, string>;
@@ -76,6 +80,8 @@ export interface IdentifierDecl {
   kind?: string;
   /** The env variable this identifier fills, when there is one. */
   envKey?: string;
+  /** V1-HONEST (F04): the routes (options or scenarios of options.json) that need it; omitted = every route. */
+  variants?: string[];
 }
 
 export const normalizeEnvFile = (f: string | EnvFileDecl): EnvFileDecl => typeof f === "string" ? { path: f } : f;
@@ -98,7 +104,8 @@ export function validateReadinessSections(doc: Record<string, unknown>, repoKeys
     const e = doc.localEnv as Record<string, unknown> | null;
     if (!e || typeof e !== "object" || Array.isArray(e)) issues.push("localEnv must be an object with files and requiredKeys.");
     else {
-      if (!Array.isArray(e.files) || !e.files.length || e.files.length > MAX_ENV_FILES) issues.push(`localEnv.files must list 1 to ${MAX_ENV_FILES} env files.`);
+      // V1-HONEST (F08): an empty list is valid (a project that needs no env file yet).
+      if (!Array.isArray(e.files) || e.files.length > MAX_ENV_FILES) issues.push(`localEnv.files must list at most ${MAX_ENV_FILES} env files.`);
       else {
         const seen = new Set<string>();
         e.files.forEach((raw, i) => {
@@ -157,7 +164,8 @@ export function validateReadinessSections(doc: Record<string, unknown>, repoKeys
             if (!envIds.has(env)) issues.push(`${at}.values names environment "${envName}", which environments does not declare.`);
             checkValue(v, `${at}.values.${envName}`);
           }
-        } else checkValue(d.value, `${at}.value`);
+        } else if (d.value !== undefined) checkValue(d.value, `${at}.value`);
+        issues.push(...validateVariantRefs(d.variants, at));
         const secretLabel = [d.id, d.label].some(v => typeof v === "string" && looksSecretName(v.replace(/[\s.:-]+/g, "_")));
         if (secretLabel) issues.push(`${at} is named like a secret (key, token, password, URL…). identifiers holds non-secret ids only; keep secrets in your local vault (Power Ops).`);
         if (d.envKey !== undefined) {
@@ -209,6 +217,11 @@ export interface IdentifierView {
   id: string; label: string; provider?: string; kind?: string; envKey?: string;
   /** Environments with their own value (v5 `values`); empty for a single `value`. Names only. */
   environments: string[];
+  /** V1-HONEST (F08): no value declared yet (label and envKey only): shown "pending", never copied, never ready. */
+  pending: boolean;
+  /** V1-HONEST (F04): the routes that need it (omitted = every route), and whether the route in view is not one of them. */
+  variants?: string[];
+  outOfRoute?: boolean;
 }
 export type CompanionState = "disabled" | "not-configured" | "needs-url" | "configured";
 export interface CompanionView { module: "diagramcloud"; label: string; state: CompanionState; detail: string }
@@ -265,6 +278,8 @@ export interface ReadinessInput {
   extensionsJson?: ExtensionsJsonObservation;
   /** v5: git-binding folders seen in local clones, by connection id. */
   bindingFolders?: ReadonlyMap<string, "found" | "missing" | "not-cloned">;
+  /** V1-HONEST (F04): the variant names of the architecture in view (selectedVariantKeys); omitted = none. */
+  selected?: ReadonlySet<string>;
 }
 
 const VAULT_STEP = "Fetch the value from your local vault (Power Ops) and put it in the env file. DataPass never reads, stores or shows values.";
@@ -284,7 +299,11 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     const keysDefined = obs?.presence ? obs.presence.size : 0;
     return { id, path: f.path, repoKey: f.repoRef, repoLabel: repoLabel(f.repoRef), optional: f.optional === true, state, git: obs?.git ?? "unknown", reason: obs?.reason, keysDefined };
   });
-  const identifiers: IdentifierView[] = (m?.identifiers ?? []).map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: d.values ? Object.keys(d.values) : [] }));
+  const identifiers: IdentifierView[] = (m?.identifiers ?? []).map(d => ({
+    id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: d.values ? Object.keys(d.values) : [],
+    pending: d.value === undefined && d.values === undefined,
+    ...(d.variants?.length ? { variants: d.variants, outOfRoute: outOfRoute(d.variants, input.selected) } : {})
+  }));
   const byEnvKey = new Map(identifiers.filter(d => d.envKey).map(d => [d.envKey!, d]));
   const anyChecked = files.some(f => f.state === "found" || f.state === "missing");
   const keys: EnvKeyView[] = (decl?.requiredKeys ?? []).map(name => {
@@ -310,8 +329,12 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     else if (f.state === "found" && f.git === "not-ignored") add({ id: `env.file.notignored:${f.id}`, severity: "warning", area: "environment", message: `${where} is not ignored by Git and could be committed by mistake.`, nextStep: `Add ${f.path} to .gitignore.` });
   }
   for (const k of keys) {
-    if (k.state === "missing") add({ id: `env.key.missing:${k.name}`, severity: "warning", area: "environment", message: `${k.name} is not set in any expected env file.`, nextStep: k.source === "identifier" ? `It is the non-secret id "${k.identifierLabel}" declared in the manifest: copy it from DataPass into the env file.` : VAULT_STEP });
-    else if (k.state === "empty") add({ id: `env.key.empty:${k.name}`, severity: "warning", area: "environment", message: `${k.name} is empty in ${k.definedIn[k.definedIn.length - 1]}.`, nextStep: k.source === "identifier" ? `Copy the declared id "${k.identifierLabel}" from DataPass.` : VAULT_STEP });
+    const ident = k.identifierId ? identifiers.find(d => d.id === k.identifierId) : undefined;
+    const identStep = ident?.pending ? `It is the id "${k.identifierLabel}", still pending in the manifest: declare its value once it is known.` : undefined;
+    const severity: CheckSeverity = ident?.outOfRoute ? "info" : "warning";
+    const only = ident?.outOfRoute ? ` (${onlyForText(ident.variants!)})` : "";
+    if (k.state === "missing") add({ id: `env.key.missing:${k.name}`, severity, area: "environment", message: `${k.name} is not set in any expected env file${only}.`, nextStep: identStep ?? (k.source === "identifier" ? `It is the non-secret id "${k.identifierLabel}" declared in the manifest: copy it from DataPass into the env file.` : VAULT_STEP) });
+    else if (k.state === "empty") add({ id: `env.key.empty:${k.name}`, severity, area: "environment", message: `${k.name} is empty in ${k.definedIn[k.definedIn.length - 1]}${only}.`, nextStep: identStep ?? (k.source === "identifier" ? `Copy the declared id "${k.identifierLabel}" from DataPass.` : VAULT_STEP) });
   }
 
   // Optional companions: a disabled module yields exactly one "optional module disabled" row and nothing else.
@@ -328,13 +351,15 @@ export function buildReadiness(input: ReadinessInput): Readiness {
 
   // v5: tools & versions, extensions.json, connections.
   const tools = input.tools ?? new Map<string, ToolObservation>();
-  const toolchain = buildToolchain({ toolchain: m?.toolchain, tools, platform: input.platform ?? "linux", hubTools: input.hubTools });
+  const toolchain = buildToolchain({ toolchain: m?.toolchain, tools, platform: input.platform ?? "linux", hubTools: input.hubTools, selected: input.selected });
   for (const e of toolchain.entries) {
-    const at = `${e.label}${e.where !== "local" ? ` (${e.where})` : ""}`;
+    // V1-HONEST (F04): a tool only other routes need is a note, never a warning on the route in view.
+    const at = `${e.label}${e.where !== "local" ? ` (${e.where})` : ""}${e.outOfRoute ? ` (${onlyForText(e.variants!)})` : ""}`;
+    const soft = e.optional || e.outOfRoute;
     const install = e.install?.command ? `Install it: ${e.install.command}${e.install.where ? ` in ${e.install.where}` : ""} (copy it from DataPass; DataPass installs nothing).` : e.install?.docs ? `Install it from ${e.install.docs}.` : undefined;
     if (e.state === "unknown-tool") add({ id: `tools.unknown:${e.tool}`, severity: "warning", area: "tools", message: `toolchain names "${e.tool}", a tool DataPass does not know: nothing is checked for it.`, nextStep: e.suggestions?.length ? `Check the id in .datapass/project.json (did you mean ${e.suggestions.join(", ")}?).` : "Check the id in .datapass/project.json (docs/PREPARING_A_PROJECT.md lists the known ids)." });
-    else if (e.state === "missing") add({ id: `tools.missing:${e.tool}`, severity: e.optional ? "info" : "warning", area: "tools", message: `${at} is ${e.optional ? "optional and " : ""}not installed here${e.range ? ` (the project needs ${e.range})` : ""}.`, nextStep: install });
-    else if (e.state === "outside-range") add({ id: `tools.range:${e.tool}`, severity: e.optional ? "info" : "warning", area: "tools", message: `${at} ${e.version} is outside the project's range ${e.range}.`, nextStep: `Update it${e.install?.command ? ` (${e.install.command} installs the current version)` : ""}, or ask for the range to change in .datapass/project.json.` });
+    else if (e.state === "missing") add({ id: `tools.missing:${e.tool}`, severity: soft ? "info" : "warning", area: "tools", message: `${at} is ${e.optional ? "optional and " : ""}not installed here${e.range ? ` (the project needs ${e.range})` : ""}.`, nextStep: install });
+    else if (e.state === "outside-range") add({ id: `tools.range:${e.tool}`, severity: soft ? "info" : "warning", area: "tools", message: `${at} ${e.version} is outside the project's range ${e.range}.`, nextStep: `Update it${e.install?.command ? ` (${e.install.command} installs the current version)` : ""}, or ask for the range to change in .datapass/project.json.` });
     else if (e.state === "version-unknown") add({ id: `tools.version:${e.tool}`, severity: "info", area: "tools", message: `${at} is installed, but DataPass could not read its version to compare with ${e.range}.` });
   }
   const extensions = compareExtensionsJson(m?.toolchain, input.extensionsJson);
@@ -345,12 +370,12 @@ export function buildReadiness(input: ReadinessInput): Readiness {
     for (const x of extensions.expected.filter(y => y.unwanted)) add({ id: `tools.extensionsJson.unwanted:${x.tool}`, severity: "warning", area: "tools", message: `${EXTENSIONS_JSON} lists ${x.extensionId} as unwanted, but the toolchain needs ${x.label}.` });
   }
   const connections = buildConnections({
-    connections: m?.connections, identifiers: m?.identifiers, probes: input.connectionProbes ?? new Map(),
+    connections: m?.connections, identifiers: m?.identifiers, probes: input.connectionProbes ?? new Map(), selected: input.selected,
     present: tool => { const o = tools.get(tool); return o ? o.state === "present" : undefined; }, bindingFolders: input.bindingFolders
   });
   for (const c of connections) {
-    const attention = c.state === "mismatch" || c.state === "signed-out" || c.state === "profile-missing" || c.state === "profile-invalid" || c.state === "tool-missing" || c.state === "check-failed";
-    if (attention) add({ id: `connection.${c.state}:${c.id}`, severity: "warning", area: "connection", message: `${c.label}: ${c.detail}.`, nextStep: c.nextStep });
+    const attention = c.state === "mismatch" || c.state === "signed-out" || c.state === "profile-missing" || c.state === "profile-invalid" || c.state === "tool-missing" || c.state === "check-failed" || c.state === "identifier-pending";
+    if (attention) add({ id: `connection.${c.state}:${c.id}`, severity: c.outOfRoute ? "info" : "warning", area: "connection", message: `${c.label}: ${c.detail}${c.outOfRoute ? ` (${onlyForText(c.variants!)})` : ""}.`, nextStep: c.nextStep });
     if (c.folderState === "missing") add({ id: `connection.folder:${c.id}`, severity: "info", area: "connection", message: `${c.label}: the bound folder is not in the local clone.` });
   }
 
@@ -362,6 +387,8 @@ export function buildReadiness(input: ReadinessInput): Readiness {
   if (m && m.schemaVersion >= 4 && !decl) add({ id: "manifest.localEnv", severity: "info", area: "manifest", message: "No localEnv declared: DataPass cannot tell which env files and variables this project needs." });
   if (m && m.schemaVersion >= 5 && !m.toolchain) add({ id: "manifest.toolchain", severity: "info", area: "manifest", message: "No toolchain declared: DataPass cannot tell which tools and versions this project needs." });
   for (const d of identifiers) {
+    // V1-HONEST (F08): a pending id is never ready; a warning only on the routes that need it.
+    if (d.pending) add({ id: `identifier.pending:${d.id}`, severity: d.outOfRoute ? "info" : "warning", area: "manifest", message: `Identifier "${d.label}" is pending: no value is declared yet${d.variants?.length ? ` (${onlyForText(d.variants)})` : ""}.`, nextStep: "Declare its value (or values per environment) in .datapass/project.json once it is known. Nothing that needs it can be ready before." });
     if (d.envKey && !(decl?.requiredKeys ?? []).includes(d.envKey)) add({ id: `manifest.identifier.unused:${d.id}`, severity: "info", area: "manifest", message: `Identifier "${d.label}" fills ${d.envKey}, which localEnv.requiredKeys does not list.` });
   }
   const serious = input.problems.filter(p => p.severity !== "info");
@@ -464,7 +491,7 @@ export interface ReadinessSnapshot {
   declared: boolean;
   files: Array<{ path: string; repository?: string; optional: boolean; state: EnvFileState; git: EnvFileGit }>;
   keys: Array<{ name: string; state: EnvKeyState; source: "identifier" | "vault" }>;
-  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments?: string[] }>;
+  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments?: string[]; pending?: true }>;
   tools?: Array<{ tool: string; where: string; optional: boolean; range?: string; version?: string; state: string }>;
   connections?: Array<{ id: string; kind: string; tool?: string; provider?: string; environment?: string; state: string }>;
   companions: Array<{ module: string; state: CompanionState }>;
@@ -477,7 +504,7 @@ export function readinessSnapshot(r: Readiness): ReadinessSnapshot {
     declared: r.declared,
     files: r.files.map(f => ({ path: f.path, repository: f.repoKey, optional: f.optional, state: f.state, git: f.git })),
     keys: r.keys.map(k => ({ name: k.name, state: k.state, source: k.source })),
-    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, ...(d.environments.length ? { environments: d.environments } : {}) })),
+    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, ...(d.environments.length ? { environments: d.environments } : {}), ...(d.pending ? { pending: true as const } : {}) })),
     ...(r.toolchain.declared ? { tools: r.toolchain.entries.map(e => ({ tool: e.tool, where: e.where, optional: e.optional, range: e.range, version: e.version, state: e.state })) } : {}),
     ...(r.connections.length ? { connections: r.connections.map(c => ({ id: c.id, kind: c.kind, tool: c.tool, provider: c.provider, environment: c.environment, state: c.state })) } : {}),
     companions: r.companions.map(c => ({ module: c.module, state: c.state })),

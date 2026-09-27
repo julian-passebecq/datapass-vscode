@@ -158,7 +158,7 @@ export function sheetLines(sheet: ProjectSheet | undefined, componentIds: readon
   const lines: string[] = [];
   for (const d of merged.datasets.slice(0, 12)) {
     const cols = (d.columns ?? []).slice(0, 12).map(c => `${c.name}${c.type ? `:${c.type}` : ""}${c.unit ? ` [${c.unit}]` : ""}${c.role ? ` (${c.role})` : ""}`).join(", ");
-    lines.push(`- Data "${d.label}" (${d.kind ?? "data"} in ${label(d.componentId)}): ${volumeLine(d) || "volume not declared"}${d.asOf ? `, as of ${d.asOf}` : ""}${cols ? `; columns that matter: ${cols}` : ""}`);
+    lines.push(`- Data "${d.label}" (${d.kind ?? "data"} in ${label(d.componentId)}): ${volumeLine(d) || "volume unknown (not declared)"}${d.asOf ? `, as of ${d.asOf}` : ""}${cols ? `; columns that matter: ${cols}` : ""}`);
   }
   for (const f of merged.formulas.slice(0, 12)) {
     const vars = (f.variables ?? []).slice(0, 12).map(v => `${v.symbol}${v.unit ? ` [${v.unit}]` : ""}${v.meaning ? ` = ${v.meaning}` : ""}`).join("; ");

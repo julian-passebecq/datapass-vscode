@@ -24,6 +24,7 @@ import { safeAppUrl } from "../model/safeUrl";
 import type { IdentifierDecl } from "../readiness/readiness";
 import { TOOL_ID } from "./toolchain";
 import { observed, unknown, type EvidenceLink } from "../evidence/chain";
+import { outOfRoute, validateVariantRefs } from "../readiness/variantScope";
 
 export const MAX_CONNECTIONS = 30;
 const ID_RE = /^[a-z][a-z0-9_.-]{0,79}$/;
@@ -59,6 +60,8 @@ export interface ConnectionDecl {
   name?: string;
   /** Page where the person verifies it (https). */
   portal?: string;
+  /** V1-HONEST (F04): the routes (options or scenarios of options.json) that need it; omitted = every route. */
+  variants?: string[];
 }
 
 /** Sign-in tools DataPass can check read-only, and the fixed command each runs (nothing from the manifest). */
@@ -122,6 +125,7 @@ export function validateConnections(doc: Record<string, unknown>, repoKeys: Read
       else if (scrub(c.name) !== c.name || /[=;]/.test(c.name)) issues.push(`${at}.name looks like a connection string or a credential; give the connection's display name only.`);
     }
     if (kind === "cloud-connection" && c.name === undefined) issues.push(`${at}.name is required for a cloud-connection (its display name in the service).`);
+    issues.push(...validateVariantRefs(c.variants, at));
     if (c.portal !== undefined && (typeof c.portal !== "string" || !safeAppUrl(c.portal) || !/^https:\/\//i.test(c.portal))) issues.push(`${at}.portal must be an https:// page without credentials.`);
   });
   return issues;
@@ -216,6 +220,7 @@ export type ConnectionState =
   | "tool-missing"   // the CLI is not installed
   | "check-failed"   // the check ran and failed (reason from DataPass)
   | "not-checked-yet"
+  | "identifier-pending" // V1-HONEST (F08): an identifier it names has no value yet: never ok
   | "declared";      // DataPass cannot observe it: declared, not checked
 
 export interface ConnectionView {
@@ -242,6 +247,9 @@ export interface ConnectionView {
   checkedAt?: string;
   /** git-binding: the folder in the local clone, when DataPass could look. */
   folderState?: "found" | "missing" | "not-cloned";
+  /** V1-HONEST (F04): the routes that need it (omitted = every route), and whether the route in view is not one of them. */
+  variants?: string[];
+  outOfRoute?: boolean;
 }
 
 export type SignInAction = "az-login" | "az-subscription" | "databricks-create" | "databricks-login" | "fab-login";
@@ -254,6 +262,8 @@ export interface ConnectionsInput {
   present: (tool: string) => boolean | undefined;
   /** git-binding folders observed in local clones, by connection id. */
   bindingFolders?: ReadonlyMap<string, "found" | "missing" | "not-cloned">;
+  /** V1-HONEST (F04): the variant names of the architecture in view (selectedVariantKeys). */
+  selected?: ReadonlySet<string>;
 }
 
 /** The identifier's value for an environment (a per-environment value, else the single value). */
@@ -286,8 +296,23 @@ const PORTAL_HINT: Partial<Record<string, string>> = {
 
 export function buildConnections(input: ConnectionsInput): ConnectionView[] {
   const idents = input.identifiers ?? [];
-  const labelOf = (id?: string) => idents.find(d => d.id === id)?.label ?? id;
   return (input.connections ?? []).map((c): ConnectionView => {
+    const v = connectionView(c, input);
+    const scope = c.variants?.length ? { variants: c.variants, outOfRoute: outOfRoute(c.variants, input.selected) } : {};
+    // V1-HONEST (F08): an identifier it names is pending: whatever was observed, it cannot be ok yet.
+    const pending = [c.identifier, c.subscription].map(id => idents.find(d => d.id === id)).filter((d): d is IdentifierDecl => Boolean(d) && d!.value === undefined && d!.values === undefined);
+    if (pending.length && (v.state === "ok" || v.state === "declared" || v.state === "not-checked-yet")) {
+      return { ...v, ...scope, state: "identifier-pending", signIn: undefined,
+        detail: `${pending.map(d => `"${d.label}"`).join(", ")} pending (no value declared yet)`,
+        nextStep: "Declare the identifier's value in .datapass/project.json once it is known; this connection cannot be ready before." };
+    }
+    return { ...v, ...scope };
+  });
+}
+
+function connectionView(c: ConnectionDecl, input: ConnectionsInput): ConnectionView {
+  const idents = input.identifiers ?? [];
+  const labelOf = (id?: string) => idents.find(d => d.id === id)?.label ?? id;
     const label = c.label ?? c.id;
     const base = { id: c.id, kind: c.kind, label, tool: c.tool, environment: c.environment, provider: c.provider };
     const envText = c.environment ? ` (${c.environment})` : "";
@@ -336,12 +361,11 @@ export function buildConnections(input: ConnectionsInput): ConnectionView[] {
     if (!probe.signedIn) return { ...base, state: "signed-out", checkedAt, detail: "the Fabric CLI is not signed in", nextStep: "Sign in: fab auth login (copy it from here).", signIn: "fab-login" };
     if (tenant && tenantValue && probe.tenantId && probe.tenantId !== tenantValue) return { ...base, state: "mismatch", checkedAt, detail: `signed in to another tenant, not "${tenant.label}"`, nextStep: "Sign in to the project's tenant (copy the command from here).", signIn: "fab-login" };
     return { ...base, state: "ok", checkedAt, detail: ["signed in", tenant && tenantValue && probe.tenantId ? `tenant "${tenant.label}" ✓` : undefined].filter(Boolean).join(" · ") };
-  });
 }
 
 export const CONNECTION_STATE_TEXT: Record<ConnectionState, string> = {
   "ok": "ok", "mismatch": "signed in elsewhere", "signed-out": "signed out", "profile-missing": "profile missing", "profile-invalid": "profile invalid",
-  "tool-missing": "tool missing", "check-failed": "check failed", "not-checked-yet": "not checked yet", "declared": "declared, not checked"
+  "tool-missing": "tool missing", "check-failed": "check failed", "not-checked-yet": "not checked yet", "identifier-pending": "pending", "declared": "declared, not checked"
 };
 
 /**

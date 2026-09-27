@@ -518,7 +518,7 @@ function sheetBlock(c: WbComponent, s: WorkbenchState): HTMLElement | undefined 
   return h("section", { class: "sheetbits" }, eyebrow("Project sheet"),
     ...ds.map(d => h("button", { class: "comprow", type: "button", title: "Open in the project sheet", onclick: () => open("datasets", d.id) },
       h("span", { class: "glyph", text: "▤", "aria-hidden": "true" }),
-      h("span", { class: "label" }, h("b", { text: d.label }), h("span", { class: "muted small", text: `  ${[d.componentId === c.id ? "held here" : d.producedBy?.includes(c.id) ? "produced here" : "read here", volume(d)].filter(Boolean).join(" · ")}` })),
+      h("span", { class: "label" }, h("b", { text: d.label }), h("span", { class: "muted small", text: `  ${[d.componentId === c.id ? "held here" : d.producedBy?.includes(c.id) ? "produced here" : "read here", volume(d) || "volume unknown"].filter(Boolean).join(" · ")}` })),
       h("span", { class: "muted small", text: (d.columns ?? []).filter(k => k.role && k.role !== "text").slice(0, 3).map(k => k.name).join(", ") }))),
     ...fs.map(f => h("button", { class: "comprow", type: "button", title: "Open in the project sheet", onclick: () => open("formulas", f.id) },
       h("span", { class: "glyph", text: "ƒx", "aria-hidden": "true" }), h("span", { class: "label" }, h("b", { text: f.label }), h("code", { class: "formula inline", text: `  ${f.expression}` })))),
@@ -700,8 +700,10 @@ function readinessCard(r: WbReadiness): HTMLElement {
       h("code", { text: k.name }), pill(k.stateText, KEY_TONE[k.state] ?? "muted"), h("span", { class: "muted small", text: k.sourceText }),
       btn("Copy name", () => command("datapass.env.copyKeyName", k.name), { kind: "link", title: "Copies the variable name, never its value" }))),
     ...r.identifiers.map(d => h("div", { class: "envrow" },
-      h("span", { text: d.label }), h("span", { class: "muted small", text: ["non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined].filter(Boolean).join(" · ") }),
-      d.environments.length > 1
+      h("span", { text: d.label }), h("span", { class: "muted small", text: ["non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined, d.onlyFor?.length ? `only for ${d.onlyFor.join(", ")}` : undefined].filter(Boolean).join(" · ") }),
+      // V1-HONEST (F08): a pending id has no value: nothing to copy, never shown as ready.
+      d.pending ? pill("pending", d.outOfRoute ? "muted" : "warn", "No value declared yet in .datapass/project.json")
+      : d.environments.length > 1
         ? h("span", { class: "row" }, ...d.environments.map(env => btn(`Copy ${env}`, () => command("datapass.env.copyIdentifier", d.id, env), { kind: "link", title: `Copies the ${env} id declared in the manifest` })))
         : btn("Copy", () => command("datapass.env.copyIdentifier", d.id), { kind: "link", title: "Copies the id declared in the manifest" }))),
     r.tools ? toolsBlock(r.tools) : undefined,
@@ -716,7 +718,7 @@ function readinessCard(r: WbReadiness): HTMLElement {
 }
 
 const TOOL_TONE: Record<string, string> = { "ok": "ok", "outside-range": "warn", "missing": "warn", "unknown-tool": "bad", "version-unknown": "muted", "not-checked": "muted" };
-const CONNECTION_TONE: Record<string, string> = { "ok": "ok", "declared": "muted", "not-checked-yet": "muted" };
+const CONNECTION_TONE: Record<string, string> = { "ok": "ok", "declared": "muted", "not-checked-yet": "muted", "identifier-pending": "muted" };
 
 /** Tools & versions (manifest v5): the version against the declared range; install commands are copied, never run. */
 function toolsBlock(t: NonNullable<WbReadiness["tools"]>): HTMLElement {
@@ -744,7 +746,7 @@ function connectionsBlock(list: WbReadiness["connections"]): HTMLElement {
       signIns.length ? btn("Check connections", () => command("datapass.checkConnections"), { icon: "⇄", title: "az account show, databricks auth profiles, fab auth status: read-only, no prompt" }) : undefined),
     ...list.map(c => h("div", { class: "envrow" },
       h("span", { text: c.label }), h("span", { class: "muted small", text: `${c.kind}${c.environment ? ` · ${c.environment}` : ""}` }),
-      pill(c.stateText, CONNECTION_TONE[c.state] ?? "warn", c.nextStep ? `${c.detail}. Next: ${c.nextStep}` : c.detail),
+      pill(c.stateText, c.outOfRoute ? "muted" : CONNECTION_TONE[c.state] ?? "warn", c.nextStep ? `${c.detail}. Next: ${c.nextStep}` : c.detail),
       c.signIn ? btn("Copy sign-in command", () => command("datapass.connections.copySignIn", c.id), { kind: "link", title: "You run it; DataPass never signs in" })
         : c.hasPortal ? btn("Open portal page", () => command("datapass.connections.openPortal", c.id), { kind: "link", title: "Where to verify it: DataPass cannot see this binding" })
         : undefined)));
@@ -796,13 +798,13 @@ function impactCell(i: WbImpact, what: "components" | "tools" | "missing" | "sup
     case "missing":
       return h("div", { class: `small ${i.tools.missing.length ? "warn" : "ok"}`, text: i.tools.missing.length ? `${i.tools.missing.length} not installed here` : "all installed" });
     case "support":
-      return h("div", { class: "small" }, h("div", { text: `${i.support.operations} with operations` }), i.support.files ? h("div", { class: "muted", text: `${i.support.files} files only` }) : undefined, i.support.unsupported ? h("div", { class: "warn", text: `${i.support.unsupported} not supported by DataPass` }) : undefined);
+      return h("div", { class: "small" }, h("div", { text: `${i.support.operations} with operations` }), i.support.files ? h("div", { class: "muted", text: `${i.support.files} files only` }) : undefined, i.support.unsupported ? h("div", { class: "warn", text: `${i.support.unsupported} not supported by DataPass` }) : undefined, i.support.planned ? h("div", { class: "muted", text: `${i.support.planned} planned (not implemented yet)` }) : undefined);
     case "repos":
       return h("div", { class: "small", text: [i.repositories.newlyUsed.length ? `new: ${i.repositories.newlyUsed.join(", ")}` : "", i.repositories.planned.length ? `planned: ${i.repositories.planned.join(", ")}` : ""].filter(Boolean).join(" · ") || `${i.repositories.used.length} used` });
     case "monthly":
-      return h("div", { class: `small money ${partialLabel(i.costs.total) || costFlags(i.costs.total).length ? "warn" : ""}`, text: withPartial(money(i.costs.monthly, "/month"), i.costs.total) || "not priced", title: i.costs.missing.length ? `Not fully priced: ${i.costs.missing.join(", ")} (unknown, not zero)` : "Sum of the monthly figures declared in options.json, per currency" });
+      return h("div", { class: `small money ${partialLabel(i.costs.total) || costFlags(i.costs.total).length ? "warn" : ""}`, text: withPartial(money(i.costs.monthly, "/month"), i.costs.total) || "unknown", title: i.costs.missing.length ? `Not fully priced: ${i.costs.missing.join(", ")} (unknown, not zero)` : "Sum of the monthly figures declared in options.json, per currency" });
     case "oneTime":
-      return h("div", { class: "small money", text: withPartial(money(i.costs.oneTime, ""), i.costs.total) || "not priced" });
+      return h("div", { class: "small money", text: withPartial(money(i.costs.oneTime, ""), i.costs.total) || "unknown" });
     case "problems":
       return i.problems.length ? h("div", { class: "small" }, ...i.problems.slice(0, 3).map(p => h("div", { class: p.severity === "error" ? "bad" : "warn", text: p.message }))) : h("div", { class: "muted small", text: "none" });
   }
@@ -1060,7 +1062,7 @@ function sheetCenter(s: WorkbenchState): HTMLElement {
           h("td", {}, h("b", { text: d.label }), d.classification ? h("div", { class: "muted small", text: d.classification }) : undefined),
           h("td", {}, compLink(d.componentId)),
           h("td", { class: "small", text: d.kind ?? "—" }),
-          h("td", { class: "small", text: volume(d) || "—" }),
+          h("td", { class: "small", text: volume(d) || "unknown" }),
           h("td", {}, ...(d.columns ?? []).filter(c => c.role && c.role !== "text").slice(0, 6).map(c => h("span", { class: "chip", title: c.meaning ?? "", text: `${c.name}${c.unit ? ` [${c.unit}]` : ""} · ${c.role}` })))))));
       break;
     case "formulas":
@@ -1097,7 +1099,7 @@ function sheetSide(s: WorkbenchState): HTMLElement {
   const f = ui.sheetSection === "formulas" ? sh.formulas.find(x => x.id === id) : undefined;
   const r = ui.sheetSection === "runtimes" ? sh.runtimes.find(x => x.id === id) : undefined;
   if (d) return h("div", { class: "detail" }, eyebrow("Data"), h("h2", { text: d.label }),
-    h("div", { class: "card" }, kv("Where", comp(d.componentId)?.label ?? d.componentId ?? "—"), kv("Kind", d.kind ?? "—"), kv("Volume", volume(d) || "—"), d.refresh ? kv("Refresh", d.refresh) : undefined, d.asOf ? kv("As of", d.asOf) : undefined,
+    h("div", { class: "card" }, kv("Where", comp(d.componentId)?.label ?? d.componentId ?? "—"), kv("Kind", d.kind ?? "—"), kv("Volume", volume(d) || "unknown"), d.refresh ? kv("Refresh", d.refresh) : undefined, d.asOf ? kv("As of", d.asOf) : undefined,
       d.producedBy?.length ? kv("Produced by", d.producedBy.map(x => comp(x)?.label ?? x).join(", ")) : undefined,
       d.consumedBy?.length ? kv("Read by", d.consumedBy.map(x => comp(x)?.label ?? x).join(", ")) : undefined),
     (d.columns ?? []).length ? h("table", { class: "cmp cols" }, h("thead", {}, h("tr", {}, ...["Column", "Type", "Role", "Meaning"].map(t => h("th", { text: t })))),
@@ -1116,7 +1118,7 @@ function sheetSide(s: WorkbenchState): HTMLElement {
       f.reference ? btn("Open the reference", () => command("datapass.openOptionSource", f.reference), { kind: "link" }) : undefined),
     h("p", { class: "muted small evidence", text: "Shown as the project writes it. DataPass never evaluates a formula: the project's own code and tools do." }));
   if (r) return h("div", { class: "detail" }, eyebrow("Where code runs"), h("h2", { text: r.label }),
-    h("div", { class: "card" }, kv("Host", r.host ?? "—"), r.region ? kv("Region", r.region) : undefined, kv("Specs", r.specs ?? "—"), r.os ? kv("OS", r.os) : undefined, kv("Access", r.access ?? "—"), r.cost ? kv("Cost", r.cost) : undefined,
+    h("div", { class: "card" }, kv("Host", r.host ?? "—"), r.region ? kv("Region", r.region) : undefined, kv("Specs", r.specs ?? "—"), r.os ? kv("OS", r.os) : undefined, kv("Access", r.access ?? "—"), kv("Cost", r.cost ?? "unknown"),
       kv("Runs", (r.runs ?? []).map(x => comp(x)?.label ?? x).join(", ") || "—")),
     r.notes ? h("p", { class: "small", text: r.notes }) : undefined,
     r.decisionRef ? btn("Compare the alternatives", () => command("datapass.openOptions", r.decisionRef), { kind: "primary", icon: "⑂" }) : undefined);

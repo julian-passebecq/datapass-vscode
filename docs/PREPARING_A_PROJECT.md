@@ -172,6 +172,18 @@ variable **names** a project needs, without ever touching a value.
 - `localEnv` and `identifiers` require `schemaVersion: 4`; a v3 manifest (still accepted) cannot use them.
 - v5 adds `toolchain`, `connections`, and per-environment `values` and a `kind` for identifiers:
   section 12.
+- **Not known yet?** Declare the identifier without `value` or `values` (its `id`, `label`, `kind` and
+  `envKey` only): it is **pending**. DataPass shows it "pending", never copies it, and a pending id is
+  a Readiness warning, so nothing that needs it looks ready. Never invent a placeholder value.
+  `localEnv.files` may be an empty list when the project needs no env file yet.
+- **Needed by one route only?** A `toolchain.tools[]` entry, an identifier or a connection may say
+  `"variants": ["cloud"]` (options or scenarios of `options.json`, `"option"` or `"decision=option"`).
+  It is then needed only when one of those variants is in view: a missing `cli.az` or `cli.func`, or a
+  pending cloud id, is a note on the local route and a warning on the cloud route. Without `variants`
+  it is needed by every route.
+- A component whose adapter is not implemented yet (a folder with only a README) says
+  `"status": "planned"` in graph.json: DataPass shows it "planned · partial", never ready, and offers
+  no deploy or run on it.
 
 ## 3. `.datapass/graph.json` (graph 0.2)
 
@@ -381,7 +393,7 @@ consequences with its own model; the person decides; the AI applies the decision
 | `decisions[].chosen`, `decidedOn`, `decidedBy`, `rationale` | The person's decision, written by *Record an Architecture Decision* (or by hand). When `chosen` differs from `current`, the AI still has to apply it. |
 | `options[].changes` | How the option differs from graph.json: `add` (new components, graph 0.2 items), `replace` (a component with the same id, for example another provider), `remove` (component ids), `addRelations`, `removeRelations` (relation ids), `addRepositories` (`{ "key", "label", "remote": { "url" } }` or `"planned": true`). Links to a removed component disappear with it. |
 | `options[].values` | Criterion id → short text, a number, or `{ "text", "score": 1–5, "note" }`. Every key is declared in `criteria`. |
-| `options[].costs` | Pricing lines: `label`, `service`, `price` (the list price as text), `monthly` / `oneTime` (numbers used for totals), `currency`, `basis`, **`source` (https) and `asOf` (date)**, `note`; DataPass ≥ 0.26: `shared` (a key: lines of several options with the same key count once in a scenario; different figures → unpriced, "figures disagree") and `use` (`"learning-only"` flags an offer not for client work). Orders of magnitude, not quotes. |
+| `options[].costs` | Pricing lines: `label`, `service`, `price` (the list price as text), `monthly` / `oneTime` (numbers used for totals), `currency`, `basis`, **`source` (https) and `asOf` (date)**, `note`; DataPass ≥ 0.26: `shared` (a key: lines of several options with the same key count once in a scenario; different figures → unpriced, "figures disagree") and `use` (`"learning-only"` flags an offer not for client work); DataPass ≥ 1.0: `none` (a reason, e.g. `"local only"`) declares a route with no cloud cost on purpose, shown "no cloud cost", never with a figure. A missing declaration is "unknown", never 0. Orders of magnitude, not quotes. |
 | `options[].pros`, `cons`, `consequences` | Plain sentences. |
 | `options[].requires`, `excludes` | `"decision=option"`: combinations that need or exclude each other (BigQuery on documents requires them in Cloud Storage). DataPass warns on incompatible picks. |
 | `scenarios[].picks` | Named combinations (`"decision=option"`); unlisted decisions stay current. Ids `current`, `decided` and `custom` are reserved. |

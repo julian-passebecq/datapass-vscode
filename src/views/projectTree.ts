@@ -438,10 +438,10 @@ function readinessNodes(r: Readiness): Node[] {
       });
       for (const d of r.identifiers) rows.push({
         t: "info", id: `env:id:${d.id}`, label: d.label,
-        description: ["non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined, "click to copy"].filter(Boolean).join(" · "),
-        icon: ["symbol-constant"],
-        tooltip: `${d.label} (${d.id}): declared in .datapass/project.json as non-secret.${d.environments.length ? ` One value per environment: ${d.environments.join(", ")}.` : ""} Click to copy its value${d.environments.length > 1 ? " (DataPass asks which environment)" : ""}. Hover an id in any file, or run "Look Up an Id…", to see which one it is.`,
-        command: { command: "datapass.env.copyIdentifier", title: "Copy", arguments: [d.id] }, contextValue: "identifier"
+        description: [d.pending ? "pending" : "non-secret id", [d.provider, d.kind].filter(Boolean).join(" ") || undefined, d.environments.length ? d.environments.join(" / ") : undefined, d.envKey ? `→ ${d.envKey}` : undefined, d.variants?.length ? `only for ${d.variants.join(", ")}` : undefined, d.pending ? undefined : "click to copy"].filter(Boolean).join(" · "),
+        icon: d.pending ? (d.outOfRoute ? MUTED : WARN) : ["symbol-constant"],
+        tooltip: d.pending ? `${d.label} (${d.id}): pending, no value declared yet in .datapass/project.json. Nothing that needs it can be ready before.` : `${d.label} (${d.id}): declared in .datapass/project.json as non-secret.${d.environments.length ? ` One value per environment: ${d.environments.join(", ")}.` : ""} Click to copy its value${d.environments.length > 1 ? " (DataPass asks which environment)" : ""}. Hover an id in any file, or run "Look Up an Id…", to see which one it is.`,
+        command: d.pending ? undefined : { command: "datapass.env.copyIdentifier", title: "Copy", arguments: [d.id] }, contextValue: d.pending ? "identifier.pending" : "identifier"
       });
       rows.push({ t: "info", id: "env:projectId", label: "Copy project ID", description: "to find this project in Power Ops", icon: ["copy"], command: { command: "datapass.copyProjectId", title: "Copy" } });
       rows.push({ t: "info", id: "env:powerOps", label: "Open Power Ops", description: "secrets live in your local vault", icon: ["lock"], tooltip: "Starts Power Ops (datapass.powerOps.path). Nothing is passed to it; DataPass never handles secret values.", command: { command: "datapass.openPowerOps", title: "Open" } });
@@ -515,7 +515,7 @@ function toolsSection(r: Readiness): Node {
 
 const CONNECTION_ICON: Record<ConnectionView["state"], [string, string?]> = {
   "ok": OK, "mismatch": WARN, "signed-out": WARN, "profile-missing": WARN, "profile-invalid": WARN, "tool-missing": WARN, "check-failed": WARN,
-  "not-checked-yet": ["question", "disabledForeground"], "declared": ["circle-large-outline", "disabledForeground"]
+  "not-checked-yet": ["question", "disabledForeground"], "identifier-pending": ["circle-large-outline", "disabledForeground"], "declared": ["circle-large-outline", "disabledForeground"]
 };
 
 /** "Connections" (manifest v5): sign-ins checked read-only on request, bindings declared, not checked. */
