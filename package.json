@@ -2868,6 +2868,12 @@
       },
       {
         "fileMatch": [
+          "**/.datapass/understanding/**/*.json"
+        ],
+        "url": "./schemas/datapass-understanding.schema.json"
+      },
+      {
+        "fileMatch": [
           "**/.datapass/local/work-orders/*/order.json"
         ],
         "url": "./schemas/datapass-work-order.schema.json"

@@ -1,0 +1,45 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "pipelines",
+    "path": "jobs/daily_sales.py",
+    "sha256": "fd53cba8a33520a656280d11396bcb71e6679f6c8a83ee42f7ed2be8009027dd",
+    "language": "pyspark"
+  },
+  "title": "Daily sales by region",
+  "summary": "Reads the day's orders and the store list, keeps completed orders, attaches each order to its region, sums revenue and orders per region and overwrites that day's partition of the reporting table.",
+  "steps": [
+    { "id": "config", "title": "Spark session and run date", "kind": "config", "lines": [5, 6], "outputs": ["run_date"], "note": "run_date comes from the job parameter job.run_date (the Airflow DAG passes the run's date).", "provenance": "declared" },
+    { "id": "read", "title": "Read orders and stores", "kind": "read", "lines": [8, 10], "inputs": ["raw.orders", "ref.stores"], "outputs": ["orders", "stores"], "provenance": "declared" },
+    { "id": "filter", "title": "Completed orders of the day", "kind": "filter", "lines": [12, 18], "inputs": ["orders"], "outputs": ["completed"], "columns": [
+      { "name": "order_id", "from": ["orders.order_id"] },
+      { "name": "store_id", "from": ["orders.store_id"] },
+      { "name": "amount", "from": ["orders.amount"] },
+      { "name": "order_date", "from": ["orders.order_date"], "note": "equal to run_date after the filter" }
+    ], "provenance": "declared" },
+    { "id": "join", "title": "Attach the store's region", "kind": "join", "lines": [20, 25], "inputs": ["completed", "stores"], "outputs": ["with_region"], "note": "Inner join: an order whose store is unknown is dropped.", "provenance": "declared" },
+    { "id": "aggregate", "title": "Revenue and orders per region", "kind": "aggregate", "lines": [27, 35], "inputs": ["with_region"], "outputs": ["by_region"], "columns": [
+      { "name": "region", "from": ["stores.region"] },
+      { "name": "revenue", "from": ["orders.amount"], "note": "sum" },
+      { "name": "orders", "from": ["orders.order_id"], "note": "distinct count" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Overwrite the day in the reporting table", "kind": "write", "lines": [37, 43], "inputs": ["by_region"], "outputs": ["reporting.daily_sales_by_region"], "note": "replaceWhere limits the overwrite to one order_date, so a rerun replaces the day instead of doubling it.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "config", "to": "filter", "kind": "dependency" },
+    { "from": "read", "to": "filter", "kind": "data" },
+    { "from": "read", "to": "join", "kind": "data" },
+    { "from": "filter", "to": "join", "kind": "data" },
+    { "from": "join", "to": "aggregate", "kind": "data" },
+    { "from": "aggregate", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "orders-stores", "step": "join", "left": "completed", "right": "stores", "type": "inner", "keys": [["store_id", "store_id"]], "provenance": "declared" }
+  ],
+  "milestoneLabels": [
+    { "step": "read", "label": "1 Read" },
+    { "step": "join", "label": "2 Join" },
+    { "step": "write", "label": "3 Write" }
+  ]
+}

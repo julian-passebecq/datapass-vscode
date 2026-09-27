@@ -11,6 +11,7 @@ import { WORK_ORDER_RESULT_SCHEMA, WORK_ORDER_SCHEMA, WORK_ORDER_STATE_SCHEMA } 
 import { WORK_LOG_SCHEMA } from "../workOrders/workLog";
 import { TOOLKIT_SCHEMA } from "../toolkit/toolkit";
 import { EXPERIENCE_SCHEMA } from "../experience/presets";
+import { UNDERSTANDING_SCHEMA } from "../understanding/contract";
 import { CODEX_TESTS_SCHEMA, QA_REPORT_SCHEMA, TEST_JOURNEY_SCHEMA } from "../../qa/formats";
 import type { Schema } from "./schemaDsl";
 
@@ -35,6 +36,7 @@ export function emittedSchemaFiles(): Record<string, unknown> {
   out["schemas/datapass-toolkit.schema.json"] = withMeta(TOOLKIT_SCHEMA, "datapass-toolkit.schema.json", "DataPass toolkit catalogue and recipes (1)");
   out["schemas/datapass-work-log.schema.json"] = withMeta(WORK_LOG_SCHEMA, "datapass-work-log.schema.json", "DataPass work log (1)");
   out["schemas/datapass-experience.schema.json"] = withMeta(EXPERIENCE_SCHEMA, "datapass-experience.schema.json", "DataPass experience presets (1)");
+  out["schemas/datapass-understanding.schema.json"] = withMeta(UNDERSTANDING_SCHEMA, "datapass-understanding.schema.json", "DataPass Hop: the visual explanation of one native file (1)");
   out["schemas/datapass-codex-tests.schema.json"] = withMeta(CODEX_TESTS_SCHEMA, "datapass-codex-tests.schema.json", "DataPass Codex tests configuration (1)");
   out["schemas/datapass-test-journey.schema.json"] = withMeta(TEST_JOURNEY_SCHEMA, "datapass-test-journey.schema.json", "DataPass test journey (1)");
   out["schemas/datapass-qa-report.schema.json"] = withMeta(QA_REPORT_SCHEMA, "datapass-qa-report.schema.json", "DataPass QA report (1)");

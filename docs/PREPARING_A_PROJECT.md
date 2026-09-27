@@ -926,3 +926,108 @@ area — Architecture, Understand (DataPass Hop, coming), Git, AI & work orders,
 tools, Project links — each opening on its own, with a preview of the architecture and your saved
 layouts (work views, which now also keep the Home tab). A company workspace opens on the Home when
 its `datapass.startupView` is `home`.
+
+## 17. DataPass Hop — the visual explanation of one file (`datapass.understanding` v1, DataPass V3)
+
+The client AI writes, **together with the code**, a JSON that explains one native file visually:
+vertical steps (milestones) tied to line ranges, the links between steps and, for SQL, the joins.
+DataPass validates it and (from V3-HOP2) draws it beside the code, synchronised both ways: the
+cursor in the code selects a step, a step selects its lines. Apache Hop is only a visual reference:
+DataPass never parses the native file as code and never runs anything to draw it.
+
+**Where.** In the bridge: `.datapass/understanding/<repository key>/<native path>.json`, where the
+repository key is a key of the manifest's `repositories` and the native path is relative to that
+repository. `pipelines/jobs/daily_sales.py` is explained by
+`.datapass/understanding/pipelines/jobs/daily_sales.py.json`; an ADF pipeline `pipeline/load.json`
+by `…/pipeline/load.json.json`. Editors validate these files with
+`schemas/datapass-understanding.schema.json`.
+
+**Fields.**
+
+| Field | Meaning |
+|---|---|
+| `format`, `version` | `"datapass.understanding"`, `1` |
+| `target` | `repository` (the key, same as the folder), `path` (same as the file's place), `sha256` of the native file when the JSON was written, `language`: `pyspark`, `python`, `sql`, `airflow`, `adf`, `fabric-pipeline`, `dockerfile`, `bicep`, `opentofu`, `other` |
+| `title`, `summary` | What the file does, in plain words |
+| `steps[]` | `id` (lowercase), `title`, `kind` (`source`, `read`, `filter`, `transform`, `join`, `aggregate`, `write`, `task`, `branch`, `config`, `test`, `other`), `lines` `[start, end]` (1-based, inclusive), optional `inputs[]` / `outputs[]` (dataset, table or column names), `columns[]` (`name`, `from[]`, `note`), `note`, and `provenance` |
+| `links[]` | `from`, `to` (step ids), `kind`: `data`, `control` or `dependency`; optional `note` |
+| `joins[]` | For SQL (and joins in PySpark): `id`, `step` (a `join` step), `left`, `right`, `type` (`inner`, `left`, `right`, `full`, `cross`, `semi`, `anti`), `keys` `[[left, right], …]` (none for `cross`), `note`, `provenance` |
+| `component` | Optional: the ProjectMap component id this file belongs to |
+| `milestoneLabels[]` | Optional short labels (≤ 24 characters) for some steps: `{ "step", "label" }` |
+
+`provenance` says where a statement comes from: `declared` (the code says it), `inferred` (the AI
+deduced it), `estimated` (a guess, e.g. a size) or `illustrative` (a drawing aid only).
+
+**The hash.** `target.sha256` is the SHA-256 of the native file's text with a leading BOM removed
+and line endings normalised to LF (so a Windows checkout with CRLF still matches). For example
+`python -c "import hashlib,sys;t=open(sys.argv[1],encoding='utf-8-sig',newline='').read().replace('
+','
+').replace('
+','
+');print(hashlib.sha256(t.encode()).hexdigest())" jobs/daily_sales.py`.
+
+**States DataPass shows.**
+- **ok**: the native file's current hash equals `target.sha256`.
+- **stale**: the code changed since the JSON was written. Still shown, clearly labelled; the AI
+  rewrites the JSON (new lines, new hash) in the same pull request as the code change.
+- **orphan**: the native file is missing (renamed or deleted), or its repository is not cloned here.
+- **invalid**: refused, with the reason: strict JSON (no duplicate keys), unknown field, a step id
+  used twice, a link or join or label naming an unknown step, a join without keys (or a cross join
+  with keys), `lines` that start after they end or go beyond the file's length, a `target` that
+  does not match the file's place, a path with `..` or an absolute path, a repository key the
+  manifest does not declare, credential-shaped text, a file over 512 KB. A native file reached
+  through a symbolic link outside its repository is refused; symbolic links inside
+  `.datapass/understanding` are not followed.
+
+Warnings keep the file usable: the same link twice, links that loop, a join attached to a step
+whose kind is not `join`.
+
+**Example** (`examples/v3/hop`: a PySpark job, a SQL query with two joins, an Airflow DAG):
+
+```json
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "pipelines",
+    "path": "jobs/daily_sales.py",
+    "sha256": "fd53cba8a33520a656280d11396bcb71e6679f6c8a83ee42f7ed2be8009027dd",
+    "language": "pyspark"
+  },
+  "title": "Daily sales by region",
+  "summary": "Reads the day's orders and the store list, keeps completed orders, attaches each order to its region, sums revenue and orders per region and overwrites that day's partition of the reporting table.",
+  "steps": [
+    { "id": "config", "title": "Spark session and run date", "kind": "config", "lines": [5, 6], "outputs": ["run_date"], "note": "run_date comes from the job parameter job.run_date (the Airflow DAG passes the run's date).", "provenance": "declared" },
+    { "id": "read", "title": "Read orders and stores", "kind": "read", "lines": [8, 10], "inputs": ["raw.orders", "ref.stores"], "outputs": ["orders", "stores"], "provenance": "declared" },
+    { "id": "filter", "title": "Completed orders of the day", "kind": "filter", "lines": [12, 18], "inputs": ["orders"], "outputs": ["completed"], "columns": [
+      { "name": "order_id", "from": ["orders.order_id"] },
+      { "name": "store_id", "from": ["orders.store_id"] },
+      { "name": "amount", "from": ["orders.amount"] },
+      { "name": "order_date", "from": ["orders.order_date"], "note": "equal to run_date after the filter" }
+    ], "provenance": "declared" },
+    { "id": "join", "title": "Attach the store's region", "kind": "join", "lines": [20, 25], "inputs": ["completed", "stores"], "outputs": ["with_region"], "note": "Inner join: an order whose store is unknown is dropped.", "provenance": "declared" },
+    { "id": "aggregate", "title": "Revenue and orders per region", "kind": "aggregate", "lines": [27, 35], "inputs": ["with_region"], "outputs": ["by_region"], "columns": [
+      { "name": "region", "from": ["stores.region"] },
+      { "name": "revenue", "from": ["orders.amount"], "note": "sum" },
+      { "name": "orders", "from": ["orders.order_id"], "note": "distinct count" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Overwrite the day in the reporting table", "kind": "write", "lines": [37, 43], "inputs": ["by_region"], "outputs": ["reporting.daily_sales_by_region"], "note": "replaceWhere limits the overwrite to one order_date, so a rerun replaces the day instead of doubling it.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "config", "to": "filter", "kind": "dependency" },
+    { "from": "read", "to": "filter", "kind": "data" },
+    { "from": "read", "to": "join", "kind": "data" },
+    { "from": "filter", "to": "join", "kind": "data" },
+    { "from": "join", "to": "aggregate", "kind": "data" },
+    { "from": "aggregate", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "orders-stores", "step": "join", "left": "completed", "right": "stores", "type": "inner", "keys": [["store_id", "store_id"]], "provenance": "declared" }
+  ],
+  "milestoneLabels": [
+    { "step": "read", "label": "1 Read" },
+    { "step": "join", "label": "2 Join" },
+    { "step": "write", "label": "3 Write" }
+  ]
+}
+```
