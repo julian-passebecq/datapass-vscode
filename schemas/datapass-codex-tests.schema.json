@@ -138,6 +138,18 @@
                   "minLength": 1,
                   "maxLength": 400,
                   "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                },
+                "ref": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 400,
+                  "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                },
+                "commit": {
+                  "type": "string",
+                  "minLength": 7,
+                  "maxLength": 40,
+                  "pattern": "^[a-f0-9]{7,40}$"
                 }
               },
               "required": [
@@ -168,6 +180,18 @@
                     "minLength": 1,
                     "maxLength": 400,
                     "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "ref": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 7,
+                    "maxLength": 40,
+                    "pattern": "^[a-f0-9]{7,40}$"
                   }
                 },
                 "required": [
@@ -323,6 +347,18 @@
                     "minLength": 1,
                     "maxLength": 400,
                     "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "ref": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 400,
+                    "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                  },
+                  "commit": {
+                    "type": "string",
+                    "minLength": 7,
+                    "maxLength": 40,
+                    "pattern": "^[a-f0-9]{7,40}$"
                   }
                 },
                 "required": [
@@ -353,6 +389,18 @@
                       "minLength": 1,
                       "maxLength": 400,
                       "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                    },
+                    "ref": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 400,
+                      "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
+                    },
+                    "commit": {
+                      "type": "string",
+                      "minLength": 7,
+                      "maxLength": 40,
+                      "pattern": "^[a-f0-9]{7,40}$"
                     }
                   },
                   "required": [

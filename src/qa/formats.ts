@@ -55,13 +55,20 @@ const REL_PATH: Schema = S(400, 1, `^${SEGMENT}(/${SEGMENT}){0,11}$`);
 const HTTPS_REMOTE: Schema = S(500, 1, "^https://[A-Za-z0-9.-]+(:[0-9]{1,5})?/[^\\s@?#]+$");
 const SHA256: Schema = S(64, 64, "^[a-f0-9]{64}$");
 const COMMIT: Schema = S(40, 40, "^[a-f0-9]{40}$");
+/** The released commit the VSIX was built from (the repository has no tags; PLAN.md records it), short or full. */
+const RELEASED_COMMIT: Schema = S(40, 7, "^[a-f0-9]{7,40}$");
 const VERSION: Schema = S(40, 5, "^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$");
 const JOURNEY_ID: Schema = S(20, 2, "^[A-Z][A-Z0-9-]{1,19}$");
 const TEXT = (max: number) => S(max);
 const LINES = (maxItems: number, maxLength: number, minItems = 0) => arr(S(maxLength), maxItems, minItems);
 
-/** `folder` = the clone under the run root; `path` = a sub-folder inside it (an `examples/v3/*` of a datapass-vscode clone). */
-const FOLDER_REF: Schema = obj({ remote: HTTPS_REMOTE, folder: REL_PATH, path: REL_PATH }, ["remote", "folder"]);
+/**
+ * `folder` = the clone under the run root; `path` = a sub-folder inside it (an `examples/v3/*` of a
+ * datapass-vscode clone). `ref` and `commit` are optional and additive (Q08): a branch/tag and a
+ * pinned commit the tester expects checked out. The tester records the actual checked-out SHA in
+ * `run.json` (`REPO_COMMIT`, required `commit`) and reports drift instead of assuming the pin holds.
+ */
+const FOLDER_REF: Schema = obj({ remote: HTTPS_REMOTE, folder: REL_PATH, path: REL_PATH, ref: REL_PATH, commit: RELEASED_COMMIT }, ["remote", "folder"]);
 const CLIENT: Schema = obj({ id: CLIENT_ID, title: TEXT(120) });
 const WORKSPACE_FIELDS = { bridge: FOLDER_REF, repositories: arr(FOLDER_REF, 20) };
 const WORKSPACE: Schema = obj(WORKSPACE_FIELDS);
@@ -98,8 +105,6 @@ export const TEST_JOURNEY_SCHEMA: Schema = obj({
 
 const REPO_COMMIT: Schema = obj({ folder: REL_PATH, path: REL_PATH, remote: HTTPS_REMOTE, commit: COMMIT }, ["folder", "remote", "commit"]);
 const CLIENT_RUN: Schema = obj({ id: CLIENT_ID, title: TEXT(120), bridge: REPO_COMMIT, repositories: arr(REPO_COMMIT, 20) });
-/** The released commit the VSIX was built from (the repository has no tags; PLAN.md records it), short or full. */
-const RELEASED_COMMIT: Schema = S(40, 7, "^[a-f0-9]{7,40}$");
 const DATAPASS_BUILD: Schema = obj({ version: VERSION, sha256: SHA256, commit: RELEASED_COMMIT }, ["version", "sha256"]);
 /** Screens are shell captures (Codex Computer Use saves none): `screens/<journey id>-<what>.png` in the report folder. */
 export const SCREEN_PATTERN = "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$";
@@ -160,7 +165,7 @@ export class QaFormatError extends Error {
   }
 }
 
-export interface FolderRef { remote: string; folder: string; path?: string }
+export interface FolderRef { remote: string; folder: string; path?: string; ref?: string; commit?: string }
 /** Where a reference opens: the clone folder, or the sub-folder inside it. */
 export const openPath = (ref: FolderRef): string => (ref.path ? `${ref.folder}/${ref.path}` : ref.folder);
 export interface ClientWorkspace { client: { id: string; title: string }; bridge: FolderRef; repositories: FolderRef[] }
