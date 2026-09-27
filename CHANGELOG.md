@@ -3,7 +3,28 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
-## Unreleased
+## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M4. Same code as the release candidates plus
+the V1-GAPS tests; gate met: `npm run qa:ui` on rc.3 13 reached / 0 not reached / 4 not automatable (J04, J09,
+J12 now covered by V1-GAPS tests, J11 belongs to the client CI) and Julian's real-screen check on 2026-09-27
+(no blocker). No project schema change (`schemaVersion` stays 5). Rollback: the v1.0.0-rc.3 VSIX.
+
+What V1 brings, across 1.0.0-rc.1 → rc.3 (details in the rc entries below):
+- **Surface diet**: a palette of about 60 entries, client-named commands and settings off the default surface.
+- **Honest states**: a read failure is an error, never "absent"; planned components are "planned · partial",
+  never ready; unknown costs read "unknown"; freshness and stale labels on refresh.
+- **Native Test receipts**: *Test* runs the client's own test and records commit, time and exit code, or
+  says honestly "no test declared".
+- **qa:ui is the release gate**: J01–J12 and R01–R05 compiled into UI journeys against the packaged VSIX;
+  the Codex Computer Use pass is exploratory and fills a UX opinion.
+- **Diagram polish**: provider icons, shapes, three reading levels and a legend on the architecture diagram.
+- **FOIL settings removed**: no `datapass.foil.*` setting or FOIL command; old configurations still load.
+- **Flakes fixed**: the v25 selected-variant race, the v20 `.git/config` lock and the v19 Git badge race,
+  each fixed at the cause, never masked by a retry; DataPass views never take the keyboard.
+
+Merged since 1.0.0-rc.3: PRs #133–#141 (#133 focus and clone fixes, #134 rc.3 cut, #135–#139 plan and
+hand-off updates, #140 V1-GAPS, #141 roadmap notes for M6).
 
 - **Tests for the journeys qa:ui cannot drive** (V1-GAPS): J12 (with prod selected no run/deploy is ready,
   DataPass never runs one and no task or terminal starts), J09 (Open Version / Compare leave files, HEAD,
