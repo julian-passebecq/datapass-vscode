@@ -3,7 +3,28 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
-## Unreleased
+## 1.0.0-rc.3 — V1 release candidate 3: qa:ui is the gate, no client-named settings, readable diagram, the keyboard stays yours (2026-09-27)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M3 (packages V1-FLAKE3, V1-FOILSURF,
+V1-UI-POLISH, V1-AUTO-2, V1-RC3). Merged since 1.0.0-rc.2: PRs #126, #127, #130, #131, #133. No project
+schema change (`schemaVersion` stays 5); the qa formats change is additive. 1.0.0 is still cut by the PM
+only after the M3 gates are closed.
+
+- **The keyboard stays yours** (V1-RC3, PR #133, found by V1-AUTO-2): DataPass no longer takes the focus
+  at startup, on its first side-bar opening, after a mode switch or after a refresh, so an open Quick
+  Pick or Command Palette is no longer closed under you. The views are shown with `preserveFocus`, and
+  the Workbench webview restores its own focus only when it has it (desktop test). `qa:ui` drops the 5 s
+  startup and 6 s mode-switch waits it needed around this.
+- **Open a Client Project clones under the declared name** (PR #133): a repository declared as
+  `wind-study-2d` is cloned into `wind-study-2d`, not under its remote's name; a clone already made under
+  the remote's name is still found by its origin, and the same repository declared twice is flagged,
+  never cloned twice. `qa:prepare --vsix <relative path>` now resolves against the current folder.
+- **qa:ui is the functional release gate** (V1-AUTO-2, PR #131): a journey compiler turns J01–J12 and
+  R01–R05 into `datapass.ui-journey` steps (from the journey's own `ui` list or DataPass's proposal for
+  that client, never guessed from prose); a journey that cannot be driven is reported "not automatable",
+  never passed. The Codex Computer Use pass stays mandatory but exploratory and fills the report's new
+  UX opinion section (`datapass.qa-report`: optional `runPaths` and `uxOpinion`).
+- **Git view** (V1-FLAKE3, PR #127): a failed origin lookup no longer drops a worktree's "unpushed" item.
 
 - **Architecture diagram readable at a glance** (V1-UI-POLISH, diagram only): each block shows its
   provider as a coloured icon on a light tint (Azure blue, Microsoft Fabric green, Power BI yellow,
