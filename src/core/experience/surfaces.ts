@@ -59,6 +59,8 @@ export const SURFACES: readonly Surface[] = [
   { id: "ai.pilot", kind: "aiTab", label: "AI view: Pilot tab", detail: "Read-only pilot orders on dev and the agent's requests as cards (still opt-in per machine)" },
   // QA-2: the Codex tests mode (handoff/v3/12 §4.5).
   { id: "ai.codexTests", kind: "workbenchView", label: "Work orders: Codex tests", detail: "The test repository's journeys, the last report of the audit clone, and Hand to Codex (a qa-run work order)" },
+  // V3-AIRFLOW: the DAG of the open Airflow file (read statically).
+  { id: "view.airflowDag", kind: "view", viewId: "datapass.airflowDag", label: "Airflow DAG view", detail: "The DAG of the open Airflow file, read statically, never run (secondary side bar)" },
   // V1-SURF: the palette lists the core commands and those of the shown surfaces; this adds the rest.
   { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" }
 ];

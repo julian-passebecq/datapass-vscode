@@ -5,6 +5,14 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-AIRFLOW**: opening an Airflow DAG file (Python) shows its DAG in a new **Airflow DAG** view in the secondary
+  side bar (revealed without taking the keyboard; `datapass.airflow.autoShow`, default on): dag_id, schedule, tasks
+  with operator icons in layers (top to bottom or left to right), dependencies from `>>`/`<<`, lists, `chain()`,
+  `cross_downstream()`, `set_upstream/downstream`, TaskFlow calls, XCom arguments and task groups. Read statically
+  from the editor's text — nothing is run; loops, conditions, helper functions and computed ids are listed as "not
+  resolved statically" with their lines, never guessed (files ≤ 512 KB, ≤ 500 tasks). Click a task to select its
+  lines; the cursor in a task's code highlights it; a link opens the file's DataPass Hop explanation when the bridge
+  has one. *DataPass: Show Airflow DAG* (editor context menu of Python files, and the palette in Advanced).
 - **V3-DEMO**: `examples/v3/etl-demo`, a synthetic data-engineering demo client (fictional company, no network,
   no credentials): an Airflow DAG, two PySpark jobs with pytest tests, three SQL models (fact + dimensions, left
   join with COALESCE, semi-join), Bicep, a Dockerfile, and a bridge (manifest v5, graph per provider, variants

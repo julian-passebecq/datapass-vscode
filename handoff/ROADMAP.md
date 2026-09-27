@@ -168,6 +168,7 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | An entry dashboard that shows everything at once, with the architecture diagram | M6 global UI pass |
 | Clicking a feature in the diagram highlights its folders in the tree: keep it and extend it | M6 global UI pass |
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
+| Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
 ## 4c. Julian's decisions (2026-09-27, after 1.0)
 
