@@ -97,12 +97,12 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-HOME | Module dashboard, saved layouts, `.datapass/links.json` + links page | wave 1 | PM agent · V3-HOME | done (#153) |
 | V3-HOP1 | `datapass.understanding` v1 format, `.datapass/understanding/<repo>/<path>.json`, validator, `examples/v3/hop` | wave 1 | PM agent · V3-HOP1 | done (#151) |
 | V3-THEME | Lighter / switchable DataPass palette, fewer tree colours, light/dark diagram themes, code font | wave 1 | PM agent · V3-THEME | done (#152) |
-| V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-HOP2 | running (#159) |
+| V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-HOP2 | done (#159) |
 | V3-DEMO | Realistic demo client | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-DEMO | done (#156) |
 | V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | done (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
 | V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | done (#162) |
-| V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width | after HOP2 and GITDIAG | — | to do |
+| V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width; (4) qa:ui journeys for Home, Hop and the diagram badges; (5) visual re-check of the Git badges after SHELL; (6) watch `.datapass/understanding` for changes; (7) Airflow "Open explanation" → Hop view; (8) `npm run sync:common -- --check` (HOP1 schema/example may need syncing to common). Started by chip: `set_session_effort` medium, named in the GO (rules V2.2) | after HOP2 and GITDIAG (both done) | — | to do (next) |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
@@ -120,9 +120,9 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · V3-HOME | PM agent (medium) | V3-HOME — done (#153) | 2026-09-27 · V2 | PM |
 | PM agent · V3-HOP1 | PM agent (medium) | V3-HOP1 — done (#151) | 2026-09-27 · V2 | PM |
 | PM agent · V3-THEME | PM agent (medium) | V3-THEME — done (#152) | 2026-09-27 · V2 | PM |
-| PM agent · V3-GITDIAG | PM agent (medium) | V3-GITDIAG — done (#157) | 2026-09-28 · V2 | PM |
+| PM agent · V3-GITDIAG | PM agent (medium, agent of PM DataPass 1) | V3-GITDIAG — done (#157) | 2026-09-28 · V2.2 | PM |
 | PM agent · V3-AIRFLOW | PM agent (medium) | V3-AIRFLOW — done (#158) | 2026-09-28 · V2 | PM |
-| PM agent · V3-HOP2 | PM agent (medium) | V3-HOP2 (on claude/v3-hop1; merges its own PR after HOP1) | 2026-09-28 · V2 | PM |
+| PM agent · V3-HOP2 | PM agent (medium, agent of PM DataPass 1) | V3-HOP2 — done (#159) | 2026-09-28 · V2.2 | PM |
 | PM agent · V3-DEMO | PM agent (medium) | V3-DEMO — done (#156) | 2026-09-28 · V2 | PM |
 | PM agent · FIX-ICONS | PM agent (medium) | V3-FIX-ICONS — done (#162) | 2026-09-28 · V2 | PM |
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
