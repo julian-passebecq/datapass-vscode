@@ -3,6 +3,10 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## Unreleased
+
+- QA (V1.0.x-QATMP): `qa:ui` waits for VS Code's whole process tree (extension host, shared process, pty host, utility processes) to exit after closing it, killing survivors after 15 s, so removing the run root no longer races a writer (`ENOTEMPTY` on Ubuntu CI in `qa-ui.smoke`). Unit test `tests/qaProcessTree.test.ts`.
+
 ## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M4. Same code as the release candidates plus

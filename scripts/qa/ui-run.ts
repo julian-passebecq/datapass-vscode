@@ -21,6 +21,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { _electron, type ElectronApplication, type Frame, type Locator, type Page } from "playwright-core";
+import { listProcesses, processTree, waitForExit } from "./processTree";
 import { EXTENSIONS_DIR, journeyTarget, UI_INDEX_FILE, USER_DATA_DIR, vscodeExecutable, type UiIndexEntry } from "./prepare";
 import { parseQaReport, parseQaRun, QaFormatError } from "../../src/qa/formats";
 import { buildUiReport, describeStep, mergeUiReports, parseUiJourney, screenPath, type RunInfo, type StepResult, type UiJourney, type UiStep } from "../../src/qa/ui/journey";
@@ -328,7 +329,12 @@ async function driveJourney(root: string, run: RunFile, journey: UiJourney, outD
       }
     }
   } finally {
+    // The main process exits first; its children still write into the run root for a moment (QATMP).
+    const pid = app?.process().pid;
+    const tree = pid ? processTree(pid, listProcesses()) : [];
     await app?.close().catch(() => undefined);
+    const killed = await waitForExit(tree);
+    if (killed.length) log(`  (killed ${killed.length} VS Code process(es) still running after close)`);
   }
   return { results, blocked, startedAt, finishedAt: new Date() };
 }
