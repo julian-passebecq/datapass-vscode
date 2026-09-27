@@ -18,5 +18,28 @@
     "Searching Settings for mongoku finds no DataPass setting; searching for foil finds none either."
   ],
   "features": ["onboarding", "workspace", "modes"],
-  "outOfScope": ["Cloud sign-in or any cloud command offered by the opened project"]
+  "outOfScope": ["Cloud sign-in or any cloud command offered by the opened project"],
+  "ui": [
+    { "chooseFolder": "scratch" },
+    { "run": "DataPass: Open a Client Project…" },
+    { "type": "https://github.com/julian-passebecq/codex-datapass-bridge" },
+    { "press": "Enter" },
+    { "expect": "repositories to clone", "timeoutMs": 120000 },
+    { "screenshot": "repositories" },
+    { "press": "Enter" },
+    { "expect": "Codex Wind Lab", "timeoutMs": 120000 },
+    { "wait": 5000 },
+    { "screenshot": "client-open" },
+    { "commandPaletteSearch": "FOIL" },
+    { "expectAbsent": "FOIL" },
+    { "screenshot": "palette-foil" },
+    { "commandPaletteSearch": "Mongoku" },
+    { "expectAbsent": "Mongoku" },
+    { "press": "Escape" },
+    { "settingsSearch": "@ext:julian-passebecq.datapass-vscode mongoku" },
+    { "expect": "No Settings Found" },
+    { "settingsSearch": "@ext:julian-passebecq.datapass-vscode foil" },
+    { "screenshot": "settings-foil" },
+    { "expect": "No Settings Found" }
+  ]
 }

@@ -154,6 +154,44 @@ that the mode they test shows (the smoke journey uses the Architecture panel).
 CI packages the VSIX on Ubuntu and runs the smoke journey (`tests/qa-ui.smoke.test.ts`) under `xvfb-run`;
 its report and screenshot are uploaded as the `qa-ui-evidence` artifact.
 
+### The functional gate: compiled journeys (V1-AUTO-2)
+
+`qa:ui` is the release gate; Codex Computer Use is a mandatory exploratory pass on top of it, not the
+gate. `qa:prepare` compiles every journey of the run (`src/qa/ui/compile.ts`) into
+`<run root>/ui-journeys/` (one `<id>.json` per journey, and `index.json` in run order), and one command
+runs them all:
+
+```
+npm run qa:ui -- <run root> <run root>/ui-journeys
+```
+
+Each journey gets a fresh VS Code launched as its `setup` says (trusted or Restricted Mode; the client
+workspace, a fresh fixture copy, or an empty window with its scratch folder) and a reset profile (no user
+settings, no workspace state, no hot-exit backups, and a home of its own under `<run root>/.qa-home`, so
+the person's trusted folders in `~/.vscode-shared` do not leak in). One merged report goes to
+`<run root>/qa-ui/<run id>/report.json`. Exit 0 only when every journey is reached.
+
+The compiler never guesses steps from a journey's prose. The steps come from the test-journey's own
+`ui` field (additive to test-journey v1: the ui-journey step vocabulary), else from DataPass's proposal
+for that client, `qa/ui/<client id>.json` (`datapass.ui-steps`), which the client's AI may copy into its
+journeys. `setup.mode` becomes two leading steps (Switch Mode…, then the mode). A journey without steps,
+with a step outside the vocabulary or without any check (`expect`, `expectAbsent`) is **not automatable**:
+it is in the report as `blocked` with the reason, never a pass, and the Codex pass judges it. A journey
+can say why itself with `"notAutomatable": "<reason>"`.
+
+The steps added for the release and client journeys:
+
+| Step | Does |
+|---|---|
+| `{"type": "<text>"}` | fills the input box a command opened (or types where the focus is) |
+| `{"quickPick": "<text>"}` | filters the picker a command opened and picks the first row showing the text |
+| `{"expectAbsent": "<text>", "timeoutMs"?: 3000}` | passes if the text is still not visible after the settle time |
+| `{"wait": 2000}` | waits (100 to 120000 ms) |
+| `{"commandPaletteSearch": "<query>"}` | opens the Command Palette on `>query` and leaves it open for expect / expectAbsent |
+| `{"settingsSearch": "<query>"}` | opens the Settings editor and searches it |
+| `{"openFile": ".datapass/graph.json"}` | Go to File on a workspace-relative path |
+| `{"chooseFolder": "scratch" \| "fixture"}` | the next native folder dialog answers the journey's own folder |
+
 ## Codex procedure notes (from the in-app runs)
 
 - Start Codex's shell **without the user's PowerShell profile**: a profile that starts Anaconda

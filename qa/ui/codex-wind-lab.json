@@ -1,0 +1,142 @@
+{
+  "format": "datapass.ui-steps",
+  "version": 1,
+  "client": "codex-wind-lab",
+  "journeys": [
+    {
+      "id": "J01",
+      "ui": [
+        { "run": "DataPass: Focus on Git View" },
+        { "expect": "codex-datapass-bridge", "timeoutMs": 30000 },
+        { "expect": "wind-study-2d" },
+        { "expect": "wind-blade-3d" },
+        { "expect": "wind-platform" },
+        { "expect": "Future operations dashboard" },
+        { "screenshot": "repositories" },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "Local publish handler", "timeoutMs": 30000 },
+        { "screenshot": "architecture" },
+        { "expectAbsent": "wants to sign in", "timeoutMs": 5000 }
+      ]
+    },
+    {
+      "id": "J02",
+      "ui": [
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "expect": "A - local scripts" },
+        { "expect": "B - Docker VM simulation" },
+        { "expect": "C - managed-pipeline simulation" },
+        { "quickPick": "B - Docker VM simulation" },
+        { "expect": "Variant: B - Docker VM simulation", "timeoutMs": 30000 },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "Selected variant: B - Docker VM simulation", "timeoutMs": 30000 },
+        { "expect": "USD/month" },
+        { "screenshot": "preview-b" },
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "quickPick": "Current architecture" },
+        { "expectAbsent": "Selected variant:" },
+        { "screenshot": "back-to-current" }
+      ]
+    },
+    {
+      "id": "J03",
+      "ui": [
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "quickPick": "C - managed-pipeline simulation" },
+        { "expect": "Variant: C - managed-pipeline simulation", "timeoutMs": 30000 },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "Selected variant: C - managed-pipeline simulation", "timeoutMs": 30000 },
+        { "expect": "Local publish handler (not an Azure runtime)" },
+        { "expect": "C - ADF-shaped local runner" },
+        { "expect": "a preview on this machine" },
+        { "screenshot": "variant-c" },
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "quickPick": "Current architecture" },
+        { "expectAbsent": "Selected variant:" }
+      ]
+    },
+    {
+      "id": "J04",
+      "notAutomatable": "the context pack goes to the clipboard and the proposal review needs a pasted vendor-format answer; qa:ui reads neither the clipboard nor a pasted answer"
+    },
+    {
+      "id": "J05",
+      "ui": [
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "quickPick": "B - Docker VM simulation" },
+        { "expect": "Variant: B - Docker VM simulation", "timeoutMs": 30000 },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "Selected variant: B - Docker VM simulation", "timeoutMs": 30000 },
+        { "expect": "Docker VM simulation declaration" },
+        { "expect": "planned" },
+        { "screenshot": "variant-b" },
+        { "expectAbsent": "wants to sign in", "timeoutMs": 3000 },
+        { "run": "DataPass: Switch the Selected Variant" },
+        { "quickPick": "Current architecture" },
+        { "expectAbsent": "Selected variant:" }
+      ]
+    },
+    {
+      "id": "J06",
+      "ui": [
+        { "run": "DataPass: Focus on Git View" },
+        { "expect": "Nothing needs you", "timeoutMs": 30000 },
+        { "expect": "codex-datapass-bridge" },
+        { "expect": "wind-study-2d" },
+        { "expect": "wind-blade-3d" },
+        { "expect": "wind-platform" },
+        { "expect": "checked" },
+        { "screenshot": "git-view" },
+        { "expectAbsent": "wants to sign in", "timeoutMs": 3000 }
+      ]
+    },
+    {
+      "id": "J07",
+      "ui": [
+        { "run": "DataPass: Validate DataPass JSON (contract/pack/graph/claims)" },
+        { "wait": 3000 },
+        { "screenshot": "validate" },
+        { "press": "Escape" },
+        { "press": "Control+Shift+M" },
+        { "wait": 3000 },
+        { "screenshot": "problems" },
+        { "expectAbsent": "is not valid JSON" },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "planned · partial", "timeoutMs": 30000 }
+      ]
+    },
+    {
+      "id": "J08",
+      "ui": [
+        { "expect": "DataPass: Vanilla", "timeoutMs": 30000 },
+        { "screenshot": "vanilla" },
+        { "run": "DataPass: Switch Mode…" },
+        { "quickPick": "Standard" },
+        { "expect": "DataPass: Standard", "timeoutMs": 30000 },
+        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "expect": "Whole project", "timeoutMs": 30000 },
+        { "expect": "Codex Wind Lab" },
+        { "screenshot": "standard" }
+      ]
+    },
+    { "id": "J09", "notAutomatable": "a kept version must first be made from the fixture in the client repository, which qa:ui must not write" },
+    {
+      "id": "J10",
+      "ui": [
+        { "run": "DataPass: Show Readiness Report" },
+        { "wait": 3000 },
+        { "screenshot": "readiness" },
+        { "expect": "Python", "timeoutMs": 30000 },
+        { "expect": "Git" },
+        { "expect": "optional" },
+        { "expect": "Remote - SSH" },
+        { "expectAbsent": "Installing" }
+      ]
+    },
+    { "id": "J11", "notAutomatable": "runs the native pytest suites and CLIs in a terminal, outside DataPass's UI" },
+    {
+      "id": "J12",
+      "notAutomatable": "runs the native pipeline in a terminal and judges its exit code; DataPass has no command that switches the environment to prod"
+    }
+  ]
+}

@@ -18,5 +18,24 @@
     "Clicking a component in the Architecture view makes the Details view show its files and the repository it lives in."
   ],
   "features": ["workspace", "architecture", "variants", "performance"],
-  "outOfScope": ["Editing any file of the client's repositories"]
+  "outOfScope": ["Editing any file of the client's repositories"],
+  "ui": [
+    { "run": "DataPass: Focus on Git View" },
+    { "expect": "Other repositories", "timeoutMs": 30000 },
+    { "expect": "checked", "timeoutMs": 30000 },
+    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "expect": "Whole project", "timeoutMs": 30000 },
+    { "screenshot": "project" },
+    { "run": "DataPass: Switch the Selected Variant" },
+    { "quickPick": "Current architecture" },
+    { "expectAbsent": "Selected variant:" },
+    { "run": "DataPass: Switch the Selected Variant" },
+    { "quickPick": "B - Docker VM simulation" },
+    { "expect": "Selected variant:" },
+    { "screenshot": "other-variant" },
+    { "run": "DataPass: Switch the Selected Variant" },
+    { "quickPick": "Current architecture" },
+    { "expectAbsent": "Selected variant:" },
+    { "screenshot": "back-to-current" }
+  ]
 }

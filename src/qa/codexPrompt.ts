@@ -34,6 +34,11 @@ export interface CodexRunPromptInput {
   captureCommand: string;
   journeys: PromptJourney[];
   platform?: NodeJS.Platform;
+  /**
+   * V1-AUTO-2: the functional gate. qa:prepare compiled the journeys into `journeysDir`; the DataPass
+   * checkout that prepared the run runs them with `npm run qa:ui` (Playwright on the isolated VSIX).
+   */
+  qaUi?: { checkout: string; journeysDir: string; reportDir: string; notAutomatable: Array<{ id: string; reason: string }> };
 }
 
 const sepOf = (p: string) => (/^[A-Za-z]:/.test(p) || p.includes("\\") ? "\\" : "/");
@@ -72,27 +77,40 @@ export function codexRunPrompt(i: CodexRunPromptInput): string {
     L.push(`The client's journeys were written for DataPass ${dataLine(i.configuredVersion, 40)}; this run tests ${i.datapass.version} with them. A journey that no longer fits is "partly", with the reason.`, "");
   }
 
+  const gate = i.qaUi;
+  const qaUiCommand = gate ? `npm run qa:ui -- "${i.runRoot}" "${gate.journeysDir}"` : undefined;
+  L.push("## Two paths, both in this run",
+    gate
+      ? `- **The gate: qa:ui** (Playwright on the isolated VSIX). It drives every journey that has UI steps and writes ${join(gate.reportDir, "report.json")} with one outcome per journey. It decides reached / not-reached for the release. Journeys it cannot drive are listed as "not automatable": those are judged by your exploratory pass only.`
+      : "- **The gate: qa:ui** is not prepared for this run (no ui-journeys): your exploratory pass is the only path; say so in the report.",
+    "- **The exploratory pass: Codex Computer Use** (mandatory, not the gate). You use DataPass as the person each journey names: click everywhere in the DataPass views, chain realistic actions (open, switch, select, go back), and note what a real user would find impractical, confusing or slow.",
+    "- If Computer Use reports no visible application, treat it as a Computer Use / session infrastructure failure, not a DataPass failure: do not abort, skip the exploratory pass, rely on the qa:ui report, and say so.",
+    "");
+
   L.push("## Where this runs (verified on this PC, QA-0)",
     "1. Host: the Codex desktop app, in this interactive thread, with the Computer Use plugin. `codex exec` and the terminal cannot see any window: never use them for the UI part.",
-    "2. Launching VS Code does not work inside your sandbox: run each launch command below as one escalated (unsandboxed) command. The person approves it once (they may approve the same command prefix for the whole thread).",
-    `3. ${win ? "Windows " : ""}Computer Use works on the visible, unlocked foreground desktop only and asks once for ${win ? "Code.exe" : "VS Code"} (the person chooses Always allow). Never lock the screen or minimise the window; if it is not visible, stop and say so.`,
-    `4. \`--user-data-dir\` and \`--extensions-dir\` isolate settings and extensions, not ${win ? "%USERPROFILE%\\.vscode-shared" : "~/.vscode-shared"}. Never delete that folder.`,
+    "2. Launching VS Code does not work inside your sandbox: run each launch command below, and the qa:ui command, as one escalated (unsandboxed) command. The person approves it once (they may approve the same command prefix for the whole thread).",
+    `3. ${win ? "Windows " : ""}Computer Use works on the visible, unlocked foreground desktop only and asks once for ${win ? "Code.exe" : "VS Code"} (the person chooses Always allow). Never lock the screen or minimise the window. VS Code may already be open: use the existing Code.exe window of the run root rather than launching a second instance of the same journey.`,
+    `4. \`--user-data-dir\` and \`--extensions-dir\` isolate settings and extensions, not ${win ? "%USERPROFILE%\\.vscode-shared" : "~/.vscode-shared"} (qa:ui gives VS Code its own home; your launches do not). Never delete that folder.`,
     "5. Computer Use saves no file. Take each screenshot with the capture command below (escalated if the sandbox sees no screen).",
     "");
 
   L.push("## The run root is already prepared",
-    `Run root: ${i.runRoot} (work only there). It holds run.json (read it for the report: runId, datapass, vscode, os, clients), the clones, the isolated profile (.vscode-user, .vscode-ext) and one folder per journey that needs one. Do not re-run qa:prepare, do not rebuild or reinstall the VSIX, do not clone again.`,
+    `Run root: ${i.runRoot} (work only there). It holds run.json (read it for the report: runId, datapass, vscode, os, clients), the clones, the isolated profile (.vscode-user, .vscode-ext), ui-journeys/ (the compiled journeys) and one folder per journey that needs one. Do not re-run qa:prepare, do not rebuild or reinstall the VSIX, do not clone again.`,
     "");
 
   L.push("## Steps");
   const steps = [
-    `Verify the VSIX: \`${hashCommand(i.datapass.vsixPath, platform)}\` must print ${i.datapass.sha256}. If it does not, stop: write only a "blocked" finding (step 5) and say so.`,
+    `Verify the VSIX: \`${hashCommand(i.datapass.vsixPath, platform)}\` must print ${i.datapass.sha256}. If it does not, stop: write only a "blocked" finding (step 6) and say so.`,
     `Clone ${c.report.remote} into ${auditDir} if it is not there, and create the branch report/${i.runId} from its default branch.`,
-    `Walk the journeys in the order of the table below. For each: close every isolated VS Code window, run its launch command (escalated), wait for the window, then walk the journey with Computer Use as the person it names. At most ${c.limits.journeyMinutes ?? 20} minutes per journey${c.limits.runMinutes ? `, ${c.limits.runMinutes} for the whole run` : ""}; retry a not-reached journey once.`,
-    `Screenshots: for each expectation you judge, one capture into ${join(reportDir, "screens")}, named <journey id>-<what>.png (lowercase letters, digits and -, e.g. R02-restricted-git.png; pattern ${SCREEN_PATTERN}). Capture command (replace <file>): \`${i.captureCommand}\``,
-    `Write ${join(reportDir, "report.json")} in the format datapass.qa-report 1 (common/testing/REPORT_FORMAT.md): purpose "${c.purpose}", runId "${i.runId}", datapass {version "${i.datapass.version}", sha256 "${i.datapass.sha256}"${i.datapass.commit ? `, commit "${i.datapass.commit}"` : ""}}, vscode, os and clients copied from run.json, agent {tool "codex", model <your model>, host "app"}, one entry per journey (all ${i.journeys.length}, the R journeys too), findings, answers, and coverage (listed = every feature of the journeys, reached = those of the reached journeys).`,
+    gate
+      ? `The gate: from ${gate.checkout}, run \`${qaUiCommand}\` (escalated; about 2 minutes per journey; close every isolated VS Code window first). Keep its report and screens: copy ${join(gate.reportDir, "screens")} into ${join(reportDir, "screens")}. If it cannot start (exit 2), record why and go on.${gate.notAutomatable.length ? ` Not automatable (your pass only): ${gate.notAutomatable.map(n => n.id).join(", ")}.` : ""}`
+      : "The gate: none prepared for this run (see above).",
+    `The exploratory pass: walk the journeys in the order of the table below. For each: close every isolated VS Code window, run its launch command (escalated), wait for the window, then use DataPass with Computer Use as the person the journey names — follow the goal, then click every DataPass view, tab and button that is safe (never a cloud sign-in or deploy), and chain realistic actions. At most ${c.limits.journeyMinutes ?? 20} minutes per journey${c.limits.runMinutes ? `, ${c.limits.runMinutes} for the whole run` : ""}.`,
+    `Screenshots: for each expectation you judge and each UX opinion, one capture into ${join(reportDir, "screens")}, named <journey id>-<what>.png (lowercase letters, digits and -, e.g. R02-restricted-git.png; pattern ${SCREEN_PATTERN}). Capture command (replace <file>): \`${i.captureCommand}\``,
+    `Write ${join(reportDir, "report.json")} in the format datapass.qa-report 1 (common/testing/REPORT_FORMAT.md): purpose "${c.purpose}", runId "${i.runId}", datapass {version "${i.datapass.version}", sha256 "${i.datapass.sha256}"${i.datapass.commit ? `, commit "${i.datapass.commit}"` : ""}}, vscode, os and clients copied from run.json, agent {tool "codex", model <your model>, host "app"}, one entry per journey (all ${i.journeys.length}, the R journeys too: the qa:ui outcome for a journey it drove, yours for the others), findings (the qa:ui ones and yours), answers, coverage (listed = every feature of the journeys, reached = those of the reached journeys), **runPaths** {qaUi "ran" | "failed" | "not-run", computerUse "ran" | "no-apps" | "not-run", note} and **uxOpinion**: one entry per thing a user would find impractical, confusing or slow — {id "U1"…, kind "impractical" | "confusing" | "slow", journey, title, detail, screens (at least one), suggestion}.`,
     `Commit only the report folder ${folder}, push the branch report/${i.runId} and open a pull request on ${c.report.remote}. Do not merge it.`,
-    "Close the isolated VS Code windows. Finish with one line: \"DataPass run done: <pull request address>\" and the count of reached / partly / not-reached / blocked journeys."
+    "Close the isolated VS Code windows. Finish with one line: \"DataPass run done: <pull request address>\", the count of reached / partly / not-reached / blocked journeys, and which paths ran (qa:ui, Computer Use or \"Computer Use saw no apps\")."
   ];
   L.push(...steps.map((t, n) => `${n + 1}. ${t}`), "");
 

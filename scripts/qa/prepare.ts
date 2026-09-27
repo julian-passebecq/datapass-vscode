@@ -14,6 +14,10 @@
  * the declared folders that are missing. It then writes `CODEX_PROMPT.md`: the one prompt to paste into
  * a Codex desktop thread.
  *
+ * V1-AUTO-2: it also compiles every journey (src/qa/ui/compile.ts) into `<run root>/ui-journeys/`, the
+ * functional gate that `npm run qa:ui -- <run root> <run root>/ui-journeys` runs; a journey without UI
+ * steps (its own `ui`, or DataPass's proposal in `qa/ui/<client id>.json`) is listed "not automatable".
+ *
  * Exit 0 = ready; 2 = cannot prepare (every reason is printed). It never touches the person's own VS
  * Code profile, never pushes, publishes or calls a cloud CLI, and writes only under the run root.
  */
@@ -27,6 +31,8 @@ import { buildCompanyWorkspace } from "../../src/core/windows/company";
 import { isInside } from "../../src/core/exchange/pathSafety";
 import { remoteIdentity } from "../../src/core/project/gitHosts";
 import { codexRunPrompt, CODEX_PROMPT_FILE, type PromptJourney } from "../../src/qa/codexPrompt";
+import { compileJourney, compileSummary, parseUiSteps, type UiStepsFile } from "../../src/qa/ui/compile";
+import { parseUiJourney } from "../../src/qa/ui/journey";
 import {
   CODEX_TESTS_FILE, QA_REPORT_FORMAT, QA_RUN_FILE, QA_RUN_FORMAT, QaFormatError, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, runIdOf, openPath, SCREEN_PATTERN,
   type ClientWorkspace, type CodexTestsConfig, type FolderRef, type TestJourney
@@ -206,6 +212,63 @@ export function captureCommand(platform: NodeJS.Platform = process.platform): st
 
 const quote = (s: string) => (/[\s"]/.test(s) ? `"${s}"` : s);
 
+/**
+ * What a journey's VS Code opens (the launch arguments after the isolation flags), making its folder
+ * fresh: a copy of a public example under `fixtures/<id>` (never trusted before, disposable), an empty
+ * `scratch/<id>` beside an empty window, or the client's `.code-workspace`. qa:prepare and qa:ui both call it.
+ */
+export function journeyTarget(root: string, id: string, setup: { open?: string; fixture?: string }, clientId: string): { target: string[]; folder?: string } {
+  if (setup.open === "fixture" && setup.fixture) {
+    const folder = path.join(root, "fixtures", id);
+    fs.rmSync(folder, { recursive: true, force: true });
+    fs.cpSync(path.join(EXAMPLES_DIR, setup.fixture), folder, { recursive: true });
+    return { target: ["--new-window", folder], folder };
+  }
+  if (setup.open === "empty") {
+    const folder = path.join(root, "scratch", id);
+    fs.rmSync(folder, { recursive: true, force: true });
+    fs.mkdirSync(folder, { recursive: true });
+    return { target: ["--new-window"], folder };
+  }
+  return { target: [path.join(root, `${clientId}.code-workspace`)] };
+}
+
+/** `<run root>/ui-journeys/`: one `<id>.json` (datapass.ui-journey) per automatable journey, and index.json in run order. */
+export const UI_JOURNEYS_DIR = "ui-journeys";
+export const UI_INDEX_FILE = "index.json";
+/** DataPass's proposed UI steps for a client's journeys: `qa/ui/<client id>.json` (datapass.ui-steps). */
+export const VENDOR_STEPS_DIR = path.join(REPO_ROOT, "qa", "ui");
+export interface UiIndexEntry { id: string; title: string; features: string[]; source: "client" | "vendor"; file?: string; notAutomatable?: string }
+
+export function compileRun(root: string, list: Array<{ j: TestJourney & { file: string }; source: "client" | "vendor" }>, clientId: string, stepsDir = VENDOR_STEPS_DIR): { total: number; automatable: number; lines: string[]; notAutomatable: Array<{ id: string; reason: string }> } {
+  const dir = path.join(root, UI_JOURNEYS_DIR);
+  fs.rmSync(dir, { recursive: true, force: true });
+  fs.mkdirSync(dir, { recursive: true });
+  const stepsFile = path.join(stepsDir, `${clientId}.json`);
+  let vendor: UiStepsFile | undefined;
+  if (fs.existsSync(stepsFile)) {
+    try { vendor = parseUiSteps(fs.readFileSync(stepsFile), path.basename(stepsFile)); }
+    catch (e) { throw new CannotPrepare(e instanceof QaFormatError ? e.issues.map(i => `qa/ui/${path.basename(stepsFile)}: ${i}`) : [String(e)]); }
+    if (vendor.client !== clientId) throw new CannotPrepare([`qa/ui/${path.basename(stepsFile)} is for client ${vendor.client}, not ${clientId}`]);
+  }
+  const index: UiIndexEntry[] = [];
+  const lines: string[] = [];
+  for (const { j, source } of list) {
+    const r = compileJourney(j, { file: j.file, ...(source === "client" && vendor ? { vendor: vendor.journeys.find(e => e.id === j.id) } : {}) });
+    lines.push(compileSummary(r));
+    const entry: UiIndexEntry = { id: j.id, title: j.title, features: j.features, source };
+    if (r.ok) {
+      const text = JSON.stringify(r.journey, null, 2) + "\n";
+      parseUiJourney(text, `${j.id}.json`); // what we write must read back
+      fs.writeFileSync(path.join(dir, `${j.id}.json`), text);
+      entry.file = `${j.id}.json`;
+    } else entry.notAutomatable = r.reason;
+    index.push(entry);
+  }
+  fs.writeFileSync(path.join(dir, UI_INDEX_FILE), JSON.stringify({ journeys: index }, null, 2) + "\n");
+  return { total: index.length, automatable: index.filter(e => e.file).length, lines, notAutomatable: index.filter(e => e.notAutomatable).map(e => ({ id: e.id, reason: e.notAutomatable! })) };
+}
+
 export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
   const log = opts.log ?? (line => console.log(line));
   const root = path.resolve(opts.root);
@@ -289,28 +352,17 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     for (const [source, list] of [["vendor", vendor], ["client", journeys]] as const) {
       for (const j of list) {
         const s = j.setup ?? {};
-        let target: string[];
-        let folder: string | undefined;
-        if (s.open === "fixture" && s.fixture) {
-          // A fresh copy for this journey only: never trusted before, disposable, not a clone.
-          folder = path.join(root, "fixtures", j.id);
-          fs.rmSync(folder, { recursive: true, force: true });
-          fs.cpSync(path.join(EXAMPLES_DIR, s.fixture), folder, { recursive: true });
-          target = ["--new-window", folder];
-        } else if (s.open === "empty") {
-          folder = path.join(root, "scratch", j.id);
-          fs.rmSync(folder, { recursive: true, force: true });
-          fs.mkdirSync(folder, { recursive: true });
-          target = ["--new-window"];
-        } else {
-          const own = config.workspaces.find(w => w.client.id === s.client) ?? config.workspaces[0]!;
-          target = [path.join(root, `${own.client.id}.code-workspace`)];
-        }
+        const own = config.workspaces.find(w => w.client.id === s.client) ?? config.workspaces[0]!;
+        const { target, folder } = journeyTarget(root, j.id, s, own.client.id);
         const command = commandOf([...isolation, ...(s.trust === "restricted" ? [] : ["--disable-workspace-trust"]), ...target]);
         run.journeys.push({ id: j.id, kind: j.kind, title: j.title, file: j.file, features: j.features, source, launch: command });
         prompted.push({ journey: j, source, launch: command, ...(folder ? { folder } : {}) });
       }
     }
+    // V1-AUTO-2: every journey compiled for qa:ui (the gate), in the same order; the others say why not.
+    const compiled = compileRun(root, [...vendor.map(j => ({ j, source: "vendor" as const })), ...journeys.map(j => ({ j, source: "client" as const }))], config.workspaces[0]!.client.id);
+    for (const line of compiled.lines) log(`  ${line}`);
+    log(`✓ ${compiled.automatable} of ${compiled.total} journey(s) compiled for qa:ui into ${UI_JOURNEYS_DIR}/ (${compiled.total - compiled.automatable} not automatable)`);
     const text = JSON.stringify(run, null, 2) + "\n";
     parseQaRun(text); // what we write must read back
     const runFile = path.join(root, QA_RUN_FILE);
@@ -321,7 +373,8 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
       runRoot: root, runId, config,
       datapass: { version: installedVersion, sha256, ...(opts.commit ? { commit: opts.commit } : {}), vsixPath: vsix },
       ...(expectedVersion !== config.datapass.version ? { configuredVersion: config.datapass.version } : {}),
-      captureCommand: captureCommand(), journeys: prompted, platform: process.platform
+      captureCommand: captureCommand(), journeys: prompted, platform: process.platform,
+      qaUi: { checkout: REPO_ROOT, journeysDir: path.join(root, UI_JOURNEYS_DIR), reportDir: path.join(root, "qa-ui", runId), notAutomatable: compiled.notAutomatable }
     }));
     log(`✓ ${CODEX_PROMPT_FILE} written: paste it into a new Codex desktop thread (${prompted.length} journeys)`);
     log("");

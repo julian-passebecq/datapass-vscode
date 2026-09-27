@@ -164,6 +164,241 @@
       },
       "maxItems": 10,
       "minItems": 0
+    },
+    "ui": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "run": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "run"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "openView": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "openView"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "click": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "role": {
+                "enum": [
+                  "button",
+                  "link",
+                  "tab",
+                  "treeitem",
+                  "menuitem",
+                  "checkbox",
+                  "option"
+                ]
+              }
+            },
+            "required": [
+              "click"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "expect": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 120000
+              }
+            },
+            "required": [
+              "expect"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "expectAbsent": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 120000
+              }
+            },
+            "required": [
+              "expectAbsent"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "press": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60,
+                "pattern": "^[A-Za-z0-9]+(\\+[A-Za-z0-9]+){0,3}$"
+              }
+            },
+            "required": [
+              "press"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "screenshot": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60,
+                "pattern": "^[a-z0-9][a-z0-9-]{0,59}$"
+              }
+            },
+            "required": [
+              "screenshot"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "quickPick": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "quickPick"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "wait": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 120000
+              }
+            },
+            "required": [
+              "wait"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "commandPaletteSearch": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "commandPaletteSearch"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "settingsSearch": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "settingsSearch"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "openFile": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 400,
+                "pattern": "^(?!(.*/)?\\.\\.(/|$))[A-Za-z0-9_.][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_.][A-Za-z0-9_.-]{0,99}){0,11}$"
+              }
+            },
+            "required": [
+              "openFile"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "chooseFolder": {
+                "enum": [
+                  "scratch",
+                  "fixture"
+                ]
+              }
+            },
+            "required": [
+              "chooseFolder"
+            ]
+          }
+        ]
+      },
+      "maxItems": 40,
+      "minItems": 1
+    },
+    "notAutomatable": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
     }
   },
   "required": [
