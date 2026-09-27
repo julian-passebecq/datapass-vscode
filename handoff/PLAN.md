@@ -55,7 +55,9 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | V1-HONEST | M3: F01, F04, F06, F08 (code, medium) | V1-Q | chip pending | 0.5–1 M | #121, common #15 | done |
 | V1-AUTO | M3 (Julian: everything automatable goes to Codex): vendor journey for RC_CHECK steps 1–4, one Codex prompt produced by `qa:prepare`, RC_CHECK reduced to Julian's approvals (~5 min). Julian: every Codex auto test runs on the FAKE client Codex Wind Lab (codex-datapass-bridge, datapass-codex-fakeclient 1–3, datapass-vscode-codex-auto), never FOIL or foil-study; RC_CHECK step 3 uses the Codex Wind Lab bridge, not the real FOIL project | V1-RC | chip opened (medium) | S–M | #120, common #14 | done |
 | V1-RC2 | M3: 1.0.0-rc.2 + provenance, then the Codex run J01–J12 and Julian's check, batched as one moment; CHANGELOG line for FLAKE2; unit test that a second EACCES (or any other error) in gitRead still surfaces as an error (PM, v20 fix) | FLAKE2, Q, FOILDOC, HONEST, AUTO | later | S–M | #123, #124, common #16 | rc.2 cut (651957f, [prerelease v1.0.0-rc.2](https://github.com/julian-passebecq/datapass-vscode/releases/tag/v1.0.0-rc.2), VSIX SHA-256 d06e09d2…57c7a9); next: Codex run J01–J12 + Julian moment (assistant) |
-| V1-FOILSURF | M4: journey R04 — no FOIL-named setting or command (the 3 `datapass.foil.*` settings, Select FOIL Control/Databricks Repository, Initialize FOIL Project Manifest removed; old keys ignored, unit test) | RC2 | CODER DataPass FOILSURF | S | | PR open |
+| V1-AUTO-2 | M3 (blocks M3; final version, Julian 2026-09-27): (1) `qa:ui` (Playwright Electron on the VSIX) is the functional gate: J01–J12 + R01–R05 through a test-journey → ui-journey compiler and only the primitives they need. (2) A mandatory, exploratory Codex Computer Use pass (click everywhere, chain actions like a user), not pass/fail: it fills a new "UX opinion" section of the qa report (impractical / confusing / slow, each with screenshot and journey). Add that section to the `datapass.qa-report` schema and to the Codex prompt; CODEX_PROCEDURE.md in common updated. UX points are reviewed by the PM before 1.0.0 and block rc.3 only if one is major | RC2 | PM agent (night mode) | M | | running |
+| V1-FOILSURF | M3, in parallel with AUTO-2: remove the 3 `datapass.foil.*` settings and the 3 FOIL commands from package.json; old configurations keep loading without errors (legacy settings ignored or migrated, unit test); R04 passes | RC2 | PM agent (night mode) | S | #126 | done (923fcbd). V2 debt: the core still finds FOIL repos by folder name when there is no project.json (fallback kept on purpose; remove in V2) |
+| V1-RC3 | M3: cut 1.0.0-rc.3 like RC2 (provenance, common VERSION), then `npm run qa:ui` on the compiled journeys against the rc.3 VSIX, report in datapass-codex-test; Julian only for the real-screen / sign-in check | AUTO-2, FOILSURF | CODER DataPass RC3 | S | | later |
 | V1-FLAKE3 | M4 (blocks 1.0.0, not rc.2): [v19-git] "other repositories do not change the project's badge" 5 ≠ 6 (Git view badge count race), Windows, once (run 36287425817, main a8e8118). Same rule: cause fixed, 10× on Windows, never a retry. Launch after RC2 merges only if it fails again in the next 5 runs; otherwise one short investigation session at M4 | RC2 | — | TAMPON NUIT DataPass 2 (FLAKE3) | PR open: cause = the Git observer took a failed origin lookup (Windows: .git/config being replaced → `config --get` exits 1 with "Permission denied", reproduced locally) as "no remote", dropping the wip worktree's unpushed item (6→5). interpretOrigin now says "failed"; the observer keeps the declared/last remote (no retry). Unit tests + v19-git 10× on Windows |
 
 Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
@@ -81,14 +83,17 @@ Goal: *Test* on a component runs the client's own test. Acceptance: task found i
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
-Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 1** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 2** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
 
 | Session | Role | Package / job | GO date | Reports to |
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
 | PM ASSISTANT DataPass 1 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate | 2026-09-26 | PM |
-| COORD DataPass 1 | coordinator (low) | V1 coders flow, routine merges, context watch | 2026-09-26 · V2 | PM |
-| PM agent · RC2 | PM agent (medium) | V1-RC2 (branch claude/v1-rc2; merges its own PRs) | 2026-09-27 · V2 | PM |
+| COORD DataPass 2 | coordinator (low) | V1 coders flow, routine merges, context watch (took over from COORD 1, 2026-09-27 03:30) | 2026-09-27 · V2 | PM |
+| PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 (branch claude/v1-auto-2; merges its own PRs) | 2026-09-27 · V2 | PM |
+| PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
+| CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 | 2026-09-27 · V2 | COORD DataPass 2 |
+| CODER DataPass RC3 | coder (medium, chip) | V1-RC3 (waits for AUTO-2; FOILSURF merged) | 2026-09-27 · V2 | PM (cc COORD 2) |
 
 Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
 
