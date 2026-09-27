@@ -99,9 +99,10 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-THEME | Lighter / switchable DataPass palette, fewer tree colours, light/dark diagram themes, code font | wave 1 | PM agent · V3-THEME | done (#152) |
 | V3-HOP2 | Code-right / visual-left render + two-way sync | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-HOP2 | running (#159) |
 | V3-DEMO | Realistic demo client | wave 2; built on claude/v3-hop1, merges only after HOP1 | PM agent · V3-DEMO | done (#156) |
+| PM agent · FIX-ICONS | PM agent (medium) | V3-FIX-ICONS (merges its own PRs) | 2026-09-28 · V2 | PM |
 | V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
-| V3-FIX-DOCKER | Small fix: Docker icon (`si:docker`) has a broken path in `src/webview/diagramIcons.ts` | logged 2026-09-28 | — | to do |
+| V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | running |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
