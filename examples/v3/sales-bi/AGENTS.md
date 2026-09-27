@@ -4,7 +4,9 @@ Read `.datapass/project.json` and `.datapass/graph.json` first. The guide is
 https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md
 
 - Fabric items stay in Fabric's Git format under `fabric/`; the semantic model stays a PBIP under
-  `powerbi/`. Deliver a branch or pull request; a person reviews and merges it.
+  `powerbi/`. Deliver a branch or pull request; this project's `project.type` is `dev` (unset
+  defaults to `dev`), so the owning AI merges it once relevant tests/CI pass — set
+  `project.type: "work"` instead if a person should review and merge every change.
 - Refer to workspaces, lakehouses and subscriptions by their ID map id (`ws-sales`, `lh-sales`,
   `sub-data`), never by pasting a GUID into prose. When an id changes, change it in `identifiers`.
 - Keep `toolchain` and `.vscode/extensions.json` in line: an extension the project needs is in both.

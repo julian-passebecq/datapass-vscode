@@ -5,7 +5,9 @@ folder hold each component, and which files each one needs. The guide is
 https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md
 
 - Put native files (function_app.py, host.json, requirements.txt, ADF JSON, SQL…) in the repository and
-  folder the graph names. Deliver a branch or pull request; a person reviews and merges it.
+  folder the graph names. Deliver a branch or pull request; this project's `project.type` is `dev`
+  (unset defaults to `dev`), so the owning AI merges it once relevant tests/CI pass — set
+  `project.type: "work"` instead if a person should review and merge every change.
 - One pull request per repository. When you add, move or rename files in a native repository, update `.datapass/graph.json` in a separate bridge pull request and link the two.
 - Never write secrets, keys, connection strings or SAS URLs in any file. Say where they belong.
 - Do not mark components "prepared" to look done; DataPass checks the files itself.
