@@ -22,6 +22,9 @@ npx tsx scripts/qa/prepare.ts --auto <clone de datapass-vscode-codex-auto> --roo
 - `--rc` ajoute les 5 parcours DataPass de [qa/rc/journeys/](../../qa/rc/journeys/) aux 12 parcours du client
   fictif (J01–J12) : R01 installation, R02 mode restreint, R03 projet à plusieurs dépôts, R04 « Open a Client
   Project » depuis l'adresse du bridge + palette sans FOIL ni Mongoku, R05 fichier de projet cassé.
+- Règle de Julian : tout le mode auto tourne sur le **client fictif Codex Wind Lab** (`codex-datapass-bridge`,
+  `datapass-codex-fakeclient` 1–3, `datapass-vscode-codex-auto`) et les exemples publics ; jamais sur FOIL ni foil-study.
+  R03 (plusieurs dépôts) et R04 (Open a Client Project) utilisent le bridge Wind Lab.
 - Sortie : `%TEMP%\datapass-qa\rc1\CODEX_PROMPT.md`, **le seul texte à coller**. L'assistant donne son chemin à Julian.
 
 ## 1. Lancer Codex (≈ 2 min, puis laisser le PC)
