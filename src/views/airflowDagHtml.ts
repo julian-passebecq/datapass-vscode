@@ -59,8 +59,7 @@ const KIND_ICON: Record<TaskKind, { icon?: string; glyph?: string; color: string
   spark: { icon: "co:layers", color: "#e8702a", label: "Spark" },
   sql: { icon: "co:database", color: "#2da44e", label: "SQL" },
   sensor: { icon: "co:symbol-event", color: "#a371f7", label: "Sensor" },
-  // co:vm, not si:docker: the bundled Docker path's arcs do not parse (it draws nothing).
-  container: { icon: "co:vm", color: "#2496ed", label: "Container" },
+  container: { icon: "si:docker", color: "#2496ed", label: "Container" },
   notify: { glyph: "✉", color: "#d4a72c", label: "Notification" },
   empty: { glyph: "○", color: "#8c959f", label: "Empty" },
   trigger: { glyph: "↪", color: "#bf3989", label: "Trigger DAG" },

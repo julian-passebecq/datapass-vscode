@@ -5,6 +5,10 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-FIX-ICONS**: twelve bundled Simple Icons paths (Docker, Google Cloud, Google Drive, Python, GitLab, Airflow,
+  Grafana, MongoDB, PostgreSQL, Databricks, BigQuery, GitHub Actions) had been damaged by a minifier that glued numbers
+  together, so Docker drew nothing and others drew wrong shapes. They are restored verbatim from Simple Icons 16.32.0,
+  a new test parses every diagram icon path, and Airflow container tasks show the Docker icon again.
 - **V3-AIRFLOW**: opening an Airflow DAG file (Python) shows its DAG in a new **Airflow DAG** view in the secondary
   side bar (revealed without taking the keyboard; `datapass.airflow.autoShow`, default on): dag_id, schedule, tasks
   with operator icons in layers (top to bottom or left to right), dependencies from `>>`/`<<`, lists, `chain()`,
