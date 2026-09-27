@@ -164,6 +164,10 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | Codex Computer Use keeps an exploratory "like a human" pass that gives a UX opinion (impractical, confusing, slow); Playwright (`qa:ui`) carries the functional gate | V1-AUTO-2 (UX opinion section in the qa report) |
 | Product vision session after 1.0.0: what was vague or contradictory, what the client AI work surfaced, short / mid / long-term vision | M5 |
 | Client AI's informal opinion (low weight, not a review): the internal model is ahead of the user experience; show real capability states; a fluid open → understand → choose variant → see changes → test → activate loop | Input to M5; capability states in V1-HONEST. Private copy in the tech-lead repository (`45-external-feedback/`) |
+| Git and Project in separate columns (today Git is hidden under Project) — from Julian's 1.0.0 check (18:30) | M6 global UI pass |
+| An entry dashboard that shows everything at once, with the architecture diagram | M6 global UI pass |
+| Clicking a feature in the diagram highlights its folders in the tree: keep it and extend it | M6 global UI pass |
+| The commit diff view is hard to discover: make it visible | M6 global UI pass |
 
 ## 5. What we do not build (unchanged)
 
