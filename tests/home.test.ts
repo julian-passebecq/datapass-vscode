@@ -83,14 +83,15 @@ const input = (over: Partial<HomeInput> = {}): HomeInput => {
   };
 };
 
-test("home: tiles grouped by skill area, each action in the fixed table, Hop marked coming", () => {
+test("home: tiles grouped by skill area, each action in the fixed table, Hop lists the explained files", () => {
   const s = homeState(input());
   assert.deepEqual(s.areas.map(a => a.title), ["Build & understand", "Deliver", "Run & reach"]);
   assert.deepEqual(s.areas.flatMap(a => a.tiles.map(t => t.id)), ["architecture", "understand", "git", "ai", "board", "readiness", "links"]);
   for (const t of s.areas.flatMap(a => a.tiles)) for (const a of t.actions) assert.ok(HOME_ACTIONS[a.id], `${t.id}: ${a.id} is in the table`);
+  // V3-HOP2: the Hop tile works (no file explained in this fixture: one action, Explain the current file).
   const hop = s.areas[0]!.tiles[1]!;
-  assert.equal(hop.coming, true);
-  assert.deepEqual(hop.actions, []);
+  assert.equal(hop.coming, undefined);
+  assert.deepEqual(hop.actions.map(a => a.id), ["hop.explain"]);
   assert.match(s.areas[0]!.tiles[0]!.summary, /components? in 2 sub-projects/);
   assert.equal(s.links.count, 7);
   assert.match(s.areas[2]!.tiles[1]!.summary, /7 links in 3 groups/);

@@ -551,7 +551,28 @@ function setupV26OpenClientWindow(base: string): { workspace: string; env: Recor
   return { workspace: base, env: { DATAPASS_IT_V26_MISSING: `v26-open-client-window runs after v26-open-client, which writes ${file}` } };
 }
 
+/**
+ * V3-HOP2: the public DataPass Hop example (bridge + native repository), plus a graph.json whose
+ * PySpark component's entry is the explained job (so a double-click on the block opens the Hop view).
+ */
+function setupV3Hop(base: string): { workspace: string; env: Record<string, string> } {
+  fs.cpSync(path.join(repo, "examples", "v3", "hop"), base, { recursive: true });
+  writeTree(path.join(base, "bridge"), {
+    ".datapass/graph.json": JSON.stringify({
+      format: "datapass.graph", version: "0.2",
+      items: [
+        { id: "daily-sales", kind: "script", label: "Daily sales (PySpark)", provider: "python", artifacts: { repoRef: "pipelines", profile: "python.script", root: "jobs", entry: "daily_sales.py" } },
+        { id: "customer-orders", kind: "script", label: "Customer orders (SQL)", provider: "python", artifacts: { repoRef: "pipelines", profile: "python.script", root: "sql", entry: "customer_orders.sql" } }
+      ],
+      relations: []
+    }, null, 2) + "\n"
+  });
+  writeTree(path.join(base, "pipelines"), { "jobs/unexplained.py": "print(\"no explanation yet\")\n" });
+  return { workspace: path.join(base, "bridge"), env: {} };
+}
+
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
+  "v3-hop": setupV3Hop,
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,
   "v3-devops": setupV3Devops,

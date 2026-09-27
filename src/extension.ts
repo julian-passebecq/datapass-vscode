@@ -63,6 +63,8 @@ import { registerFileVersionCommands } from "./work/fileVersionCommands";
 import { ShellService, registerShellCommands } from "./work/shellCommands";
 import type { TreeLens } from "./core/windows/treeLens";
 import { GitDiagram, registerGitDiagramCommands } from "./work/gitDiagram";
+import { HopHost, registerHopCommands } from "./views/hop";
+import type { HopState } from "./views/hopState";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -122,6 +124,15 @@ export interface DataPassTestApi {
     open(page?: HomePage): Promise<void>;
     isOpen(page?: HomePage): boolean;
     send(message: Record<string, unknown>): Promise<HomeHost["lastAction"]>;
+  };
+  /** V3-HOP2: the DataPass Hop view — what it shows, the highlighted step, a webview message. */
+  hop: {
+    isOpen(): boolean;
+    column(): vscode.ViewColumn | undefined;
+    state(): HopState | undefined;
+    activeStep(): string | undefined;
+    shownUri(): string | undefined;
+    send(message: Record<string, unknown>): Promise<void>;
   };
   /** 0.17: this project's work views, the switcher, diagram settings, the floating Workbench, startup. */
   workViews(): Promise<WorkViewsFile>;
@@ -298,7 +309,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       return aiExchange.reveal(typeof kind === "string" ? kind as ExchangeKind : undefined);
     })
   );
-  registerWorkbenchCommands(context, session, host);
+  // V3-HOP2: DataPass Hop — an explained file's visual explanation beside its code.
+  const hop = new HopHost(context, session, host);
+  context.subscriptions.push(hop, vscode.languages.registerCodeLensProvider({ scheme: "file" }, hop.codeLensProvider()));
+  registerHopCommands(context, session, hop);
+  registerWorkbenchCommands(context, session, host, uri => hop.openIfExplained(uri));
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
   registerToolkitCommands(context, session, host);
@@ -560,6 +575,14 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       open: async page => { await home.open(page ?? "home"); },
       isOpen: page => home.isOpen(page ?? "home"),
       send: async message => { home.lastAction = undefined; await home.receive(message); return home.lastAction; }
+    },
+    hop: {
+      isOpen: () => hop.isOpen(),
+      column: () => hop.column(),
+      state: () => hop.state(),
+      activeStep: () => hop.activeStep(),
+      shownUri: () => hop.shownUri()?.toString(),
+      send: message => hop.receive(message)
     },
     workViews: async () => (await views.load()).file,
     windowInfo: () => {

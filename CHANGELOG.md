@@ -5,6 +5,7 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-HOP2 — DataPass Hop view**: an explained file (`.datapass/understanding/…`) opens with its code on the right and a narrow, vertical visual explanation on the left (steps with kind icons, inputs/outputs, columns, provenance, SQL joins drawn as a small join diagram, stale/orphan/invalid banners), synchronised both ways (cursor → step, step click → lines selected and highlighted, view scroll → lines highlighted, CodeLens `▶ step` per step). Double-clicking a diagram block whose file is explained zooms the diagram's column into the Hop view (`← Diagram` goes back); *DataPass: Explain This File* (editor context menu, editor title on explained files) opens it anywhere; a file without explanation offers *Explain this file*, a work order for the client AI (`datapass.workOrders.newForExplanation`) — DataPass never writes the JSON. The Home's Hop tile now lists the explained files. Also fixes the V3-HOP1 refresh so the understanding index is actually loaded.
 - **V3-GITDIAG** (vision §2.3): *Git on the diagram* — open pull requests whose branch is already fetched and this
   computer's uncommitted or unpushed changes show as a small badge (count, worst CI state) on the blocks whose files
   they touch; hovering lists them, clicking opens the PR (Git module command) or VS Code's diff. Setting

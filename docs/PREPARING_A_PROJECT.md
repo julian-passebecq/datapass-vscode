@@ -922,7 +922,7 @@ Editor schema: `schemas/datapass-links.schema.json` (no `$schema` line — rule 
 Example: `examples/v3/research-library/.datapass/links.json`.
 
 Related, on this computer only: the **Home** (*DataPass: Open Home*) groups the modules by skill
-area — Architecture, Understand (DataPass Hop, coming), Git, AI & work orders, Board, Readiness &
+area — Architecture, Understand (DataPass Hop: the explained files), Git, AI & work orders, Board, Readiness &
 tools, Project links — each opening on its own, with a preview of the architecture and your saved
 layouts (work views, which now also keep the Home tab). A company workspace opens on the Home when
 its `datapass.startupView` is `home`.
@@ -931,7 +931,7 @@ its `datapass.startupView` is `home`.
 
 The client AI writes, **together with the code**, a JSON that explains one native file visually:
 vertical steps (milestones) tied to line ranges, the links between steps and, for SQL, the joins.
-DataPass validates it and (from V3-HOP2) draws it beside the code, synchronised both ways: the
+DataPass validates it and draws it beside the code (the DataPass Hop view: double-click the block, or *DataPass: Explain This File* in the editor), synchronised both ways: the
 cursor in the code selects a step, a step selects its lines. Apache Hop is only a visual reference:
 DataPass never parses the native file as code and never runs anything to draw it.
 

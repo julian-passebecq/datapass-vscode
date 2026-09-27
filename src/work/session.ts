@@ -256,7 +256,8 @@ export class WorkSession implements vscode.Disposable {
     // which would slow the first paint's own Git reads.
     const incomplete: IncompleteStep[] = [];
     const bounded = <T>(name: string, p: Promise<T>, fallback: T) => settleWithin(name, p, REFRESH_STEP_TIMEOUT_MS, fallback, incomplete);
-    const [tools, envObs, extensionsObs, bindingObs, inv, understandingIndex] = await Promise.all([
+    // V3-HOP2: the "recent projects" step sits between the inventory and the understanding index (its result is unused).
+    const [tools, envObs, extensionsObs, bindingObs, inv, , understandingIndex] = await Promise.all([
       bounded("tool probes", step("probes", probeTools(forceProbe)), this.tools),
       bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs),
       bounded("extensions.json", ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined), this.extensionsObs),
@@ -296,6 +297,24 @@ export class WorkSession implements vscode.Disposable {
   async understandingFor(uri: vscode.Uri): Promise<UnderstandingEntry | undefined> {
     if (uri.scheme !== "file" || !this.understandingCatalog) return undefined;
     return this.understandingCatalog.forNativeFile(uri.fsPath);
+  }
+
+  /** V3-HOP2: the repository key and repository-relative path of a file of the project (no read). */
+  understandingLocate(uri: vscode.Uri): { repositoryKey: string; nativePath: string } | undefined {
+    if (uri.scheme !== "file" || !this.understandingCatalog) return undefined;
+    return this.understandingCatalog.locate(uri.fsPath);
+  }
+
+  /** V3-HOP2: whether the bridge holds an explanation for this file (names only, nothing read). */
+  understandingIndexed(uri: vscode.Uri): boolean {
+    const at = this.understandingLocate(uri);
+    return Boolean(at && this.understandingCatalog?.lookup(at.repositoryKey, at.nativePath));
+  }
+
+  /** V3-HOP2: an indexed explanation by repository key and native path, read and checked now (also when the code is not on this machine). */
+  async understandingByPath(repositoryKey: string, nativePath: string): Promise<UnderstandingEntry | undefined> {
+    const f = this.understandingCatalog?.lookup(repositoryKey, nativePath);
+    return f ? this.understandingCatalog!.load(f) : undefined;
   }
 
   // ------------------------------------------------------------ qualification (per user, all projects)
