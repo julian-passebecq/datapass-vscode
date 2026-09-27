@@ -12,7 +12,7 @@ import { guarded, UserFacingError } from "./io";
 import { SwitchCounter } from "../core/refresh/tracker";
 import {
   ACTIVE_VARIANT_KEY, activeVariantLine, activeVariantView, readStore, resolveActiveVariant, sameRequest,
-  statusBarText, variantChoices, withEntry, type ActiveVariantView, type VariantRequest
+  statusBarText, variantChoices, withEntry, withOwn, type ActiveVariantEntry, type ActiveVariantStore, type ActiveVariantView, type VariantRequest
 } from "../core/project/activeVariant";
 import { CODING_LABELS, CODING_NOTE } from "../core/project/variants";
 
@@ -58,7 +58,13 @@ export class ActiveVariantService implements vscode.Disposable {
 
   dispose(): void { for (const s of this.subs) s.dispose(); }
 
-  private store() { return readStore(this.context.globalState.get(ACTIVE_VARIANT_KEY)); }
+  /**
+   * V1-FLAKE2: the entries this window saved, over the global state. Its in-memory copy is replaced
+   * wholesale when a storage change comes back from the workbench, and that echo can be of an older
+   * write (B after C and "current" were saved): read alone, it brought a forgotten variant back.
+   */
+  private readonly own = new Map<string, ActiveVariantEntry | undefined>();
+  private store(): ActiveVariantStore { return withOwn(readStore(this.context.globalState.get(ACTIVE_VARIANT_KEY)), this.own); }
 
   /** After a project (re)load: apply the remembered variant once, and fall back when it vanished. */
   private async sync(): Promise<void> {
@@ -95,11 +101,16 @@ export class ActiveVariantService implements vscode.Disposable {
     this.paint();
   }
 
-  /** Saves run one after the other, each reading the store the previous one wrote. */
+  /** Saves run one after the other; the entry is this window's at once, the global state follows. */
   private saving: Promise<void> = Promise.resolve();
   private readonly switches = new SwitchCounter();
   private save(key: string, req: VariantRequest | undefined): Promise<void> {
-    this.saving = this.saving.catch(() => undefined).then(() => this.context.globalState.update(ACTIVE_VARIANT_KEY, withEntry(this.store(), key, req, new Date().toISOString())));
+    this.own.set(key, withEntry({}, key, req, new Date().toISOString())[key]);
+    this.saving = this.saving.catch(() => undefined).then(() => {
+      const s = this.store();
+      // withEntry with the entry already there: only keeps the store within MAX_REMEMBERED_PROJECTS.
+      return this.context.globalState.update(ACTIVE_VARIANT_KEY, withEntry(s, key, s[key], s[key]?.at ?? ""));
+    });
     return this.saving;
   }
 

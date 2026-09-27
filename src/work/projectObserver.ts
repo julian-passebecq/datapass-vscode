@@ -16,7 +16,7 @@ import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import type { GraphItem, ProjectGraph } from "../core/workspace/graph";
 import { componentRepositories } from "../core/project/projectMap";
 import { artifactPlan, COORDINATION_KEY, globMatcher, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type Fingerprint, type RepoObservation, type TrackingObservation } from "../core/project/resolve";
-import { ByteBudget, HASH_BYTE_BUDGET, hashMode, incompleteness, interpretLsFiles, interpretOrigin, MAX_PLANNED_ENTRIES, OBSERVE_CONCURRENCY, runBounded, type Incompleteness } from "../core/project/observation";
+import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, interpretLsFiles, interpretOrigin, MAX_PLANNED_ENTRIES, OBSERVE_CONCURRENCY, runBounded, type Incompleteness } from "../core/project/observation";
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { statusCounts } from "../core/git/porcelain";
 import { sha256Bytes } from "../core/model/ids";
@@ -39,9 +39,9 @@ async function cacheEntry(folder: string): Promise<{ entry: CachedRepo; gitDir?:
 /** `git config --get remote.origin.url` (and `git remote` when it failed), once per fingerprint. */
 async function originAnswers(git: GitRunner, folder: string, entry: CachedRepo): Promise<Pick<CachedRepo, "config" | "remotes">> {
   if (entry.config) return { config: entry.config, remotes: entry.remotes };
-  const config = await git(["config", "--get", "remote.origin.url"], folder, 5000);
+  const config = await gitRead(git, ["config", "--get", "remote.origin.url"], folder, 5000);
   // A failed `config --get` also means "no such key": `git remote` tells the two apart (F04).
-  const remotes = config.ok ? undefined : await git(["remote"], folder, 5000);
+  const remotes = config.ok ? undefined : await gitRead(git, ["remote"], folder, 5000);
   // A timeout or a failed start is not an answer worth keeping.
   if (config.ok || remotes?.ok) { entry.config = config; entry.remotes = remotes; }
   return { config, remotes };
@@ -88,7 +88,7 @@ export function coordinationKeyOf(manifest: DataPassProjectManifest | undefined,
 
 async function gitState(git: GitRunner, folder: string): Promise<{ isGitRepo: boolean; state?: RepoObservation["git"] }> {
   const [status, { entry, gitDir }] = await Promise.all([
-    git(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], folder, 10000),
+    gitRead(git, ["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], folder, 10000),
     cacheEntry(folder)
   ]);
   if (!status.ok) return { isGitRepo: false };
