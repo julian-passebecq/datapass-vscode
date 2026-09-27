@@ -1719,8 +1719,10 @@ function tkSide(s: WorkbenchState): HTMLElement {
 // ------------------------------------------------------------------ modes
 
 function render(): void {
-  // Keep the keyboard focus (a card moved to another column, the search box) across re-renders.
-  const active = document.activeElement as HTMLElement | null;
+  // Keep the keyboard focus (a card moved to another column, the search box) across re-renders —
+  // only when this webview has it: focusing an element of a background webview (a refresh, a mode
+  // switch) pulls the keyboard into it and closes the user's Quick Pick.
+  const active = document.hasFocus() ? document.activeElement as HTMLElement | null : null;
   const focusId = active?.id;
   const caret = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] as const : undefined;
   renderInner();

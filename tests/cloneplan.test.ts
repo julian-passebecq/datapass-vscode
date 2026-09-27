@@ -115,6 +115,16 @@ test("one clone is never claimed by two declarations", () => {
   assert.equal(plan[1]!.state, "conflict", "the second declaration's folder already holds the first");
 });
 
+test("V1-RC3: a repository is cloned under its declared name, and a clone under its remote name is still found", () => {
+  const named = manifest({ "wind-study-2d": { remote: { url: "https://github.com/acme/fakeclient.git" } }, "../odd": { remote: { url: "https://github.com/acme/odd.git" } } });
+  const fresh = planClones(named, { bridgeFolder, bridgeUrl: BRIDGE, parent, facts: [] });
+  assert.equal(fresh[0]!.folder, path.join(parent, "wind-study-2d"));
+  assert.equal(fresh[1]!.folder, path.join(parent, "odd"), "a key that is not a plain folder name falls back to the remote's name");
+  const old = planClones(named, { bridgeFolder, bridgeUrl: BRIDGE, parent, facts: [gitFact(path.join(parent, "fakeclient"), "https://github.com/acme/fakeclient.git")] });
+  assert.equal(old[0]!.state, "present");
+  assert.equal(old[0]!.folder, path.join(parent, "fakeclient"));
+});
+
 test("the bridge address: https and SSH of the three hosts; http, paths and option-like text refused", () => {
   for (const [url, host, name] of [
     ["https://github.com/acme/acme-bridge.git", "GitHub", "acme-bridge"],

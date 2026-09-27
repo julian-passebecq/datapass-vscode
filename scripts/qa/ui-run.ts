@@ -68,9 +68,6 @@ async function findVisible(page: Page, make: (f: Frame) => Locator, timeout: num
   }
 }
 
-/** How long a fresh window settles before the first step. */
-const STARTUP_SETTLE_MS = 5_000;
-
 const quickInput = (page: Page) => page.locator(".quick-input-widget input.input");
 
 /** Open the Command Palette with `prefix` (">" commands, "view " views, "" files) and type `text`. */
@@ -303,8 +300,6 @@ async function driveJourney(root: string, run: RunFile, journey: UiJourney, outD
       });
       const page = await app.firstWindow({ timeout: 120_000 });
       await page.locator(".monaco-workbench").waitFor({ state: "visible", timeout: 120_000 });
-      // The DataPass webviews load in the first seconds and take the focus, which closes an open picker.
-      await page.waitForTimeout(STARTUP_SETTLE_MS);
     } catch (e) { blocked = e instanceof Error ? e.message.split("\n")[0]! : String(e); }
 
     if (!blocked) {
