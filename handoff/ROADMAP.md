@@ -169,6 +169,15 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | Clicking a feature in the diagram highlights its folders in the tree: keep it and extend it | M6 global UI pass |
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 
+## 4c. Julian's decisions (2026-09-27, after 1.0)
+
+Recorded by the PM. No new package starts before GPT 6 Pro's answer on the V3 architecture.
+
+1. **No monitoring.** DataPass shows only a project page of links (Grafana and similar stay outside DataPass).
+2. **AI pilot = validate / plan only.** No deployment through DataPass; this replaces stage 3 in `v3/09`.
+3. **Next horizon = V3.** Its architecture was requested from GPT 6 Pro (tech-lead repository, `00-report/2026-09-27-v3-request.md`).
+4. **Understanding views.** Clicking the diagram opens a separate sub-task view; any file can be explained, the explanation generated as JSON and rendered with a Hop-like grammar.
+
 ## 5. What we do not build (unchanged)
 
 No MCP gateway or cloud proxy, no own agent shell, no scheduler, no knowledge database or price
