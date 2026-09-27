@@ -102,7 +102,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | PM agent · FIX-ICONS | PM agent (medium) | V3-FIX-ICONS (merges its own PRs) | 2026-09-28 · V2 | PM |
 | V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | running (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
-| V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | running |
+| V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | done (#162) |
 | V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width | after HOP2 and GITDIAG | — | to do |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
