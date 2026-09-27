@@ -15,6 +15,9 @@ several repositories. Open this folder in VS Code with DataPass installed.
 - `.datapass/board.json` — the board: tasks, bugs, a decision and a question, two sprints and a
   milestone; each card names the components and files it concerns. Moving a card in DataPass
   changes only its status line.
+- `.datapass/links.json` — the project links page: workspaces, dashboards, portal pages, repositories
+  and docs, grouped, each with its kind and environment. DataPass opens them in the browser after a
+  confirmation; it never calls them itself.
 - `AGENTS.md` — what an AI assistant must respect when it prepares files for this project.
 
 Flow of the "Papers pipeline" sub-project:

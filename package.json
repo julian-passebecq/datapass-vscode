@@ -523,6 +523,24 @@
         "icon": "$(project)"
       },
       {
+        "command": "datapass.openHome",
+        "title": "DataPass: Open Home (modules, layouts, project links)",
+        "icon": "$(home)"
+      },
+      {
+        "command": "datapass.openProjectLinks",
+        "title": "DataPass: Open Project Links (dashboards, workspaces, portal, docs)",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "datapass.openProjectLink",
+        "title": "DataPass: Open a Project Link"
+      },
+      {
+        "command": "datapass.openLinksFile",
+        "title": "DataPass: Open links.json"
+      },
+      {
         "command": "datapass.openBoardFile",
         "title": "DataPass: Open board.json"
       },
@@ -970,6 +988,11 @@
     },
     "menus": {
       "view/title": [
+        {
+          "command": "datapass.openHome",
+          "when": "view == datapass.project",
+          "group": "navigation@0"
+        },
         {
           "command": "datapass.refreshProject",
           "when": "view == datapass.project",
@@ -1597,6 +1620,18 @@
         {
           "command": "datapass.pilot.run",
           "when": "false"
+        },
+        {
+          "command": "datapass.openProjectLink",
+          "when": "false"
+        },
+        {
+          "command": "datapass.openProjectLinks",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openLinksFile",
+          "when": "!datapass.hidden.palette.full"
         },
         {
           "command": "datapass.pilot.decline",
@@ -2379,7 +2414,7 @@
           "type": "string",
           "default": "",
           "scope": "window",
-          "markdownDescription": "Work view DataPass applies when this workspace opens (the id or name of a view saved in `.datapass/local/views.json`). Read only from a `.code-workspace` file, never from a folder's settings. Work views are saved per computer."
+          "markdownDescription": "Work view DataPass applies when this workspace opens (the id or name of a view saved in `.datapass/local/views.json`), or `home` for the DataPass Home (the module dashboard). Read only from a `.code-workspace` file, never from a folder's settings. Work views are saved per computer."
         },
         "datapass.git.ghPath": {
           "type": "string",
@@ -2824,6 +2859,12 @@
           "**/.datapass/board.json"
         ],
         "url": "./schemas/datapass-board.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/links.json"
+        ],
+        "url": "./schemas/datapass-links.schema.json"
       },
       {
         "fileMatch": [

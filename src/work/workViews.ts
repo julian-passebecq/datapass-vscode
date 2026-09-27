@@ -27,6 +27,9 @@ import {
   type FolderTab, type Pane, type RepoTab, type ViewGroup, type ViewTab, type WorkView, type WorkViewsFile
 } from "../core/windows/workViews";
 
+/** V3-HOME: the Home tab, as work views see it. */
+export interface HomeTabs { isHomeTab(tab: vscode.Tab): boolean; open(column: vscode.ViewColumn): Promise<unknown>; panel(): vscode.WebviewPanel | undefined }
+
 export interface StoredViews { root: vscode.Uri; title: string; file: WorkViewsFile; error?: string }
 
 const isWorkbenchTab = (tab: vscode.Tab) => tab.input instanceof vscode.TabInputWebview && /datapass\.workbench$/.test(tab.input.viewType);
@@ -37,10 +40,14 @@ export class WorkViews implements vscode.Disposable {
   /** Fires when views are saved, renamed, deleted or applied. */
   readonly onDidChange = this.emitter.event;
   private applied?: { root: string; id: string };
+  private home?: HomeTabs;
 
   constructor(private readonly session: WorkSession, private readonly host: WorkbenchHost, private readonly panes: () => Pane[]) {}
 
   dispose(): void { this.emitter.dispose(); }
+
+  /** V3-HOME: let views save and restore the Home tab. */
+  attachHome(home: HomeTabs): void { this.home = home; }
 
   /** The view applied (or saved) last in this window, while nothing else was applied since. */
   lastApplied(): { root: string; id: string } | undefined { return this.applied; }
@@ -144,14 +151,15 @@ export class WorkViews implements vscode.Disposable {
     let skipped = 0;
     if (layout && groups.length >= leaves) {
       const viewGroups: ViewGroup[] = [];
-      let seenWorkbench = false;
+      let seenWorkbench = false, seenHome = false;
       for (const g of groups.slice(0, leaves)) {
         const tabs: ViewTab[] = [];
         let active: number | undefined;
         for (const tab of g.tabs) {
           const t = this.tabOf(tab);
-          if (!t || tabs.length >= MAX_TABS || ("workbench" in t && seenWorkbench)) { skipped++; continue; }
+          if (!t || tabs.length >= MAX_TABS || ("workbench" in t && seenWorkbench) || ("home" in t && seenHome)) { skipped++; continue; }
           if ("workbench" in t) seenWorkbench = true;
+          if ("home" in t) seenHome = true;
           if (tab.isActive) active = tabs.length;
           tabs.push(t);
         }
@@ -180,6 +188,7 @@ export class WorkViews implements vscode.Disposable {
   /** A tab as a view stores it: the Workbench, or a file as a path inside a repository or a workspace folder. */
   private tabOf(tab: vscode.Tab): ViewTab | undefined {
     if (isWorkbenchTab(tab)) return { workbench: true };
+    if (this.home?.isHomeTab(tab)) return { home: true };
     const input = tab.input;
     const uri = input instanceof vscode.TabInputText || input instanceof vscode.TabInputNotebook || input instanceof vscode.TabInputCustom ? input.uri : undefined;
     if (!uri || uri.scheme !== "file") return undefined;
@@ -245,7 +254,8 @@ export class WorkViews implements vscode.Disposable {
     const inGroup = e.groups.findIndex(g => g.tabs.some(t => "workbench" in t));
     const keepWorkbench = inGroup >= 0 || Boolean(view.floatingWorkbench);
     const mainTabs = vscode.window.tabGroups.all.filter(g => g.viewColumn <= leaves).flatMap(g => g.tabs);
-    const closable = mainTabs.filter(t => !t.isDirty && !t.isPinned && !(keepWorkbench && isWorkbenchTab(t)));
+    const keepHome = e.groups.some(g => g.tabs.some(t => "home" in t));
+    const closable = mainTabs.filter(t => !t.isDirty && !t.isPinned && !(keepWorkbench && isWorkbenchTab(t)) && !(keepHome && this.home?.isHomeTab(t)));
     if (closable.length) await vscode.window.tabGroups.close(closable, true);
     const kept = mainTabs.filter(t => (t.isDirty || t.isPinned) && !isWorkbenchTab(t)).length;
     if (kept) notes.push(`${kept} unsaved or pinned tab(s) stayed open.`);
@@ -264,6 +274,11 @@ export class WorkViews implements vscode.Disposable {
       for (const j of order) {
         const t = g.tabs[j]!;
         if ("workbench" in t) { this.host.openPanel(column, view.diagram?.full?.view, undefined, true); continue; }
+        if ("home" in t) {
+          if (this.home) await this.home.open(column);
+          else notes.push("The Home tab of this view could not be opened.");
+          continue;
+        }
         const uri = await this.resolveTab(t, notes);
         if (!uri) continue;
         uris.set(`${i}:${j}`, uri);
@@ -277,6 +292,7 @@ export class WorkViews implements vscode.Disposable {
     const activeIndex = g ? g.active ?? g.tabs.length - 1 : -1;
     const focusTab = g?.tabs[activeIndex];
     if (focusTab && "workbench" in focusTab) this.host.panel()?.reveal(ag! + 1, false);
+    else if (focusTab && "home" in focusTab) this.home?.panel()?.reveal(ag! + 1, false);
     else if (focusTab && uris.get(`${ag}:${activeIndex}`)) await vscode.commands.executeCommand("vscode.open", uris.get(`${ag}:${activeIndex}`), { viewColumn: ag! + 1, preview: false, preserveFocus: false });
 
     // Last, since the move gives the focus to the floating window.

@@ -22,6 +22,7 @@ hub repository (optional)          .datapass/catalog.json → list of projects a
    │
 bridge repository                  .datapass/project.json  repositories, sub-projects, environments, docs
 (one per project)                  .datapass/graph.json    components, their files, operations, links
+                                   .datapass/links.json    (optional) the project's useful pages
                                    AGENTS.md, docs/        instructions for AIs, architecture notes
    │  references by Git remote URL, never by a local path
 native repositories                the real code, in native formats: databricks.yml, function_app.py,
@@ -879,3 +880,49 @@ running in the component's folder. DataPass never writes this file; the native r
   time, exit code: 0 passed, other failed, none unknown, stopped cancelled) stays on this machine;
   *Show Component Test Receipts* lists them. A local test pass is not a deployment and not a check of
   a cloud target. Example: `examples/v3/doc-pipeline` (`processing`).
+
+
+## 16. `.datapass/links.json` — project links (optional, DataPass V3)
+
+The project's useful pages in one place: dashboards, Databricks or Fabric workspaces, Azure portal
+pages, repositories, documentation. DataPass lists them on its **Home** (the *Project links* tile)
+and on the **Project links** page, and opens one in the browser after a confirmation (once per
+address and window). It **never calls these addresses itself**: no link checking, no monitoring, no
+cloud call. The file lives in the bridge repository, next to `board.json`.
+
+```json
+{
+  "format": "datapass.links",
+  "version": 1,
+  "title": "Research library — useful pages",
+  "groups": [
+    { "id": "workspaces", "title": "Workspaces", "links": [
+      { "label": "Databricks workspace (dev)", "url": "https://adb-1234567890123456.7.azuredatabricks.net/?o=1234567890123456",
+        "kind": "workspace", "environment": "dev", "description": "Notebooks and jobs of the simulation lab." } ] },
+    { "id": "dashboards", "title": "Dashboards", "links": [
+      { "label": "Local review app", "url": "http://localhost:8501/", "kind": "dashboard" } ] }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `format`, `version` | `"datapass.links"` and `1`. |
+| `title?`, `description?` | Shown at the top of the Project links page. |
+| `groups[]` (≤ 30) | `title` (≤ 120 chars), `id?` (unique), `description?`, `links[]` (1–60). |
+| `links[]` | `label` (≤ 120 chars), `url`, `kind` (`dashboard`, `workspace`, `portal`, `repository`, `docs`, `other`), `environment?` (an environment id of `project.json`), `description?` (≤ 500 chars). |
+
+Rules: unknown fields are errors; at most 300 links and 256 KB; `url` must be `https://` —
+`http://` only for a local server on `localhost`, `127.0.0.1` or `[::1]`; no user name or password
+in the address, no token or signature in its query (`sig`, `token`, `access_token`, `code`, `key`,
+`password`, `secret`, `se`, …) or fragment. A query without secrets is fine (`?o=<workspace id>`).
+An `environment` the manifest does not declare is a warning in *Problems in project files*, never a
+blocker. Without the file the Home tile says "No links declared" with a one-line how-to.
+Editor schema: `schemas/datapass-links.schema.json` (no `$schema` line — rule 9 of section 4).
+Example: `examples/v3/research-library/.datapass/links.json`.
+
+Related, on this computer only: the **Home** (*DataPass: Open Home*) groups the modules by skill
+area — Architecture, Understand (DataPass Hop, coming), Git, AI & work orders, Board, Readiness &
+tools, Project links — each opening on its own, with a preview of the architecture and your saved
+layouts (work views, which now also keep the Home tab). A company workspace opens on the Home when
+its `datapass.startupView` is `home`.

@@ -6,6 +6,12 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 ## Unreleased
 
 - QA (V1.0.x-QATMP): `qa:ui` waits for VS Code's whole process tree (extension host, shared process, pty host, utility processes) to exit after closing it, killing survivors after 15 s, so removing the run root no longer races a writer (`ENOTEMPTY` on Ubuntu CI in `qa-ui.smoke`). Unit test `tests/qaProcessTree.test.ts`.
+- **V3-HOME**: *DataPass: Open Home* — a module dashboard tab (Architecture, Understand/DataPass Hop coming, Git,
+  AI & work orders, Board, Readiness & tools, Project links), each tile running an existing command, with an
+  architecture preview and your saved layouts (work views now keep the Home tab; `datapass.startupView: "home"`
+  opens a company workspace on it). New optional bridge file `.datapass/links.json` (`datapass.links` v1, schema
+  `schemas/datapass-links.schema.json`) and a *Project links* page; links open in the browser after the usual
+  confirmation, never fetched or checked by DataPass.
 
 ## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
 
