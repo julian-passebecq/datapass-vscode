@@ -62,7 +62,9 @@ export const SURFACES: readonly Surface[] = [
   // V3-AIRFLOW: the DAG of the open Airflow file (read statically).
   { id: "view.airflowDag", kind: "view", viewId: "datapass.airflowDag", label: "Airflow DAG view", detail: "The DAG of the open Airflow file, read statically, never run (secondary side bar)" },
   // V1-SURF: the palette lists the core commands and those of the shown surfaces; this adds the rest.
-  { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" }
+  { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" },
+  // V3-SHELL: the right rail (a thin column of buttons shown instead of the full panel in rail mode).
+  { id: "view.rail", kind: "view", viewId: "datapass.rail", label: "Right rail", detail: "A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

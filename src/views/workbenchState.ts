@@ -123,6 +123,8 @@ export interface WorkbenchState {
   toolkit?: WbToolkit;
   /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
   experience?: { hiddenViews: string[]; alternatives: boolean };
+  /** V3-SHELL: the old Sub-projects / Repositories column of the architecture view (setting, off by default). */
+  layout?: { navColumn: boolean };
   /** V1-UI-POLISH: the diagram's reading levels and legend (settings `datapass.diagram.*`). */
   diagramSettings?: DiagramSettings;
   /** 0.23 (package G): coding state per option ("decision=option"), per scenario and for the preview; absent when the mode hides the badge. */

@@ -639,7 +639,7 @@ async function main(): Promise<void> {
       git("commit", "-q", "-m", "fixture");
     }
     // 0.22 modes: the earlier suites check 0.20's surfaces (Advanced, no landing); v22-modes starts as a new install.
-    if (name !== "v22-modes" && name !== "v26-open-client-window") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }, null, 2) });
+    if (name !== "v22-modes" && name !== "v26-open-client-window") writeTree(path.join(scratch, "profile", name, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false }, "datapass.layout.architectureInPanel": true }, null, 2) });
     const reportFile = path.join(out, `report-${name}.json`);
     const launchArgs = [
       ws,

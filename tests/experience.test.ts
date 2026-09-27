@@ -56,11 +56,13 @@ test("experience: presets grow from Vanilla to Advanced, as the plan's table say
     for (const s of lighter) assert.ok(heavier.has(s), `${PRESET_IDS[i]} keeps ${s} from ${PRESET_IDS[i - 1]}`);
   }
   // Vanilla: Git view and the AI view with the guided tab only.
-  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git"]);
+  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git", "view.rail"]);
   assert.ok(!shown("vanilla").has("ai.agent") && !shown("vanilla").has("ai.manual"));
   // Standard adds the architecture and Details, lands on the architecture and marks alternatives instead of the Options section.
   for (const s of ["view.architecture", "view.details", "landing.architecture", "badge.alternatives"]) assert.ok(shown("standard").has(s), s);
-  assert.ok(!shown("standard").has("project.options") && !shown("standard").has("view.project"));
+  assert.ok(!shown("standard").has("project.options"));
+  // V3-SHELL: one tree, on the left — Standard shows the Project tree (its lenses replace the Workbench's column).
+  assert.ok(shown("standard").has("view.project"));
   // DataPass: the board stays optional (off); work orders only from DataPass up (still opt-in elsewhere).
   assert.ok(!shown("datapass").has("project.board") && !shown("datapass").has("workbench.board"));
   assert.ok(shown("datapass").has("ai.agent") && shown("datapass").has("workbench.workOrders"));
@@ -120,7 +122,9 @@ test("experience: every contributed view has a surface id and is gated by its wh
   assert.deepEqual(views.map(v => v.id).sort(), surfaceViews.map(s => s.viewId).sort(), "the view list and the surface list agree");
   for (const v of views) {
     const s = surfaceViews.find(x => x.viewId === v.id)!;
-    assert.equal(v.when, `!${hiddenKey(s.id)}`, `${v.id} is shown unless its mode hides it (visible before activation)`);
+    // V3-SHELL: a layout key may come first (bottom-panel Architecture off by default; rail mode swaps the right-side views).
+    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && " };
+    assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}`, `${v.id} is shown unless its mode (or the layout) hides it`);
   }
   assert.equal(new Set(SURFACE_IDS).size, SURFACE_IDS.length, "surface ids are unique");
 });
