@@ -16,6 +16,8 @@ test("sync-common refuses handoff/, FOIL content and secret dot-files", () => {
   assert.match(refusal("examples/a/cfg.json", '{"password": "hunter2secret"}') ?? "", /credential/);
   assert.match(refusal("examples/a/.github/workflows/ci.yml", "key: ghp_" + "a".repeat(36)) ?? "", /credential/);
   assert.equal(refusal("examples/a/.datapass/project.json", "{}"), null);
+  assert.equal(refusal("examples/a/.vscode/tasks.json", "{}"), null);
+  assert.match(refusal("examples/a/.vscode/settings.json", "{}") ?? "", /dot-file/);
   assert.equal(refusal("schemas/x.schema.json", '{"description":"work projects (FOIL, clients)"}'), null);
 });
 
@@ -24,6 +26,7 @@ test("sync-common plans only allowlisted public files from this repository", () 
   assert.ok(entries.some((e) => e.target === "schemas/datapass-project.schema.json"));
   assert.ok(entries.some((e) => e.target.startsWith("examples/doc-pipeline/.datapass/")));
   assert.ok(entries.some((e) => e.target === "knowledge/toolkit/baseline.json"));
+  assert.ok(entries.some((e) => e.target === "examples/doc-pipeline/.vscode/tasks.json"));
   assert.ok(entries.every((e) => !/handoff|foil|\.env/i.test(e.source)));
 });
 

@@ -25,8 +25,8 @@ const ALLOW: { from: string; to: string; match: RegExp }[] = [
   { from: "resources/toolkit", to: "knowledge/toolkit", match: /\.json$/ },
 ];
 
-/** Dot-files and dot-folders allowed inside examples (DataPass or native provider files). */
-const ALLOWED_DOT = /^(\.datapass|\.platform|\.vscode\/extensions\.json|\.github\/workflows)(\/|$)/;
+/** Dot-files and dot-folders allowed inside examples (DataPass or native provider files; tasks.json holds a component's native test task). */
+const ALLOWED_DOT = /^(\.datapass|\.platform|\.vscode\/(extensions|tasks)\.json|\.github\/workflows)(\/|$)/;
 const SECRET = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
   /\b(AccountKey|SharedAccessSignature|client_secret|password)["']?\s*[=:]\s*["']?[^\s"'<>{}]{6,}/i,
