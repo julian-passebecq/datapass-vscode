@@ -354,10 +354,6 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       await executeGalaxyAction("project.initializeManifest", context.extensionUri);
       await refreshState();
     }),
-    vscode.commands.registerCommand("datapass.initializeFoilProjectManifest", async () => {
-      await executeGalaxyAction("project.initializeManifestFoil", context.extensionUri);
-      await refreshState();
-    }),
     vscode.commands.registerCommand("datapass.openProjectManifest", async () => {
       await executeGalaxyAction("project.openManifest", context.extensionUri);
     }),
@@ -376,14 +372,6 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     }),
     vscode.commands.registerCommand("datapass.fabric.scaffoldPreflightWorkflow", async () => {
       await executeGalaxyAction("fabric.scaffoldPreflightWorkflow", context.extensionUri);
-    }),
-    vscode.commands.registerCommand("datapass.selectFoilControlRoot", async () => {
-      await selectFoilRoot("foil.controlRoot", "Select foil-control-v1 repository");
-      await refreshState();
-    }),
-    vscode.commands.registerCommand("datapass.selectFoilDatabricksRoot", async () => {
-      await selectFoilRoot("foil.databricksRoot", "Select foil_databrick_dab repository");
-      await refreshState();
     })
   );
 
@@ -630,19 +618,4 @@ function updateStatusBar(status: vscode.StatusBarItem, state: GalaxyState): void
     `Bindings: ${health.bindings.bound}/${health.bindings.total} bound`,
     `Attention: ${health.attention.length}`
   ].join("\n");
-}
-
-async function selectFoilRoot(setting: string, title: string): Promise<void> {
-  const picked = await vscode.window.showOpenDialog({
-    canSelectFiles: false,
-    canSelectFolders: true,
-    canSelectMany: false,
-    title
-  });
-  if (!picked?.[0]) return;
-  await vscode.workspace.getConfiguration("datapass").update(
-    setting,
-    picked[0].fsPath,
-    vscode.ConfigurationTarget.Workspace
-  );
 }

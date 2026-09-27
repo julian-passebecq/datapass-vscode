@@ -451,11 +451,10 @@ The FOIL template intentionally does **not** invent:
 
 Those remain unknown until supplied by real project/runtime configuration.
 
-Legacy local overrides still work:
-
-- `datapass.foil.controlRoot`
-- `datapass.foil.databricksRoot`
-- `datapass.foil.oracleSshHost`
+The V1 local settings `datapass.foil.controlRoot`, `datapass.foil.databricksRoot` and
+`datapass.foil.oracleSshHost` and the three FOIL commands were removed in 1.0.0 (V1-FOILSURF): a
+configuration that still sets them loads with no error and the values are ignored. Link the
+repositories and the Oracle SSH alias in `.datapass/project.json`.
 
 FOIL authoritative engineering/project state remains in existing FOIL authorities and repositories.
 

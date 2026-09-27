@@ -3,6 +3,18 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
+## Unreleased
+
+- **No client-named settings or commands** (V1-FOILSURF, journey R04): the settings
+  `datapass.foil.controlRoot`, `datapass.foil.databricksRoot`, `datapass.foil.oracleSshHost` and the
+  commands *Select FOIL Control Repository*, *Select FOIL Databricks Repository* and *Initialize FOIL
+  Project Manifest* are removed, with their palette entries and the Work view's "Initialize FOIL
+  project manifest" item; two setting descriptions no longer name FOIL. Searching Settings or the
+  Command Palette for "foil" finds nothing. Old configurations that still set those keys load with
+  no error and the values are ignored (unit test); a workspace with no `.datapass/project.json`
+  still finds the V1 FOIL repositories by folder name, and the Oracle SSH alias comes from
+  `.datapass/project.json` only.
+
 ## 1.0.0-rc.2 — V1 release candidate 2: FOIL feedback answers, honest partial states, one Codex RC prompt (2026-09-27)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M3 (packages V1-FLAKE2, V1-Q, V1-FOILDOC,

@@ -190,8 +190,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
     if (!ctx.root) return [{ t: "info", id: "noroot", label: "Open a folder to use DataPass Work.", icon: "folder" }];
     if (!ctx.manifestExists) {
       return [
-        { t: "info", id: "init", label: "Initialize project manifest…", icon: "add", command: { command: "datapass.initializeProjectManifest", title: "Initialize" } },
-        { t: "info", id: "initfoil", label: "Initialize FOIL project manifest…", icon: "add", command: { command: "datapass.initializeFoilProjectManifest", title: "Initialize FOIL" } }
+        { t: "info", id: "init", label: "Initialize project manifest…", icon: "add", command: { command: "datapass.initializeProjectManifest", title: "Initialize" } }
       ];
     }
 
