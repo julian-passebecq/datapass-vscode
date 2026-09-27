@@ -11,7 +11,8 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
   and `connections[]` may name the `variants` (routes) that need them, so a missing `az` or `func`
   warns only on those routes, never on the local one; an identifier with no value (envKey only) is
   valid and shown "pending" (never copied, never ready; a sign-in naming it is never ok);
-  `localEnv.files` may be empty; unknown costs and volumes read "unknown", never 0 or free. The
+  `localEnv.files` may be empty; unknown costs and volumes read "unknown", never 0 or free, and a
+  route declared with a cost line `"none": "local only"` reads "no cloud cost" (Q10). The
   project schema change is additive and relaxing: `schemaVersion` stays 5.
 
 ## 1.0.0-rc.1 — V1 release candidate: understandable surface, safe reads, fresh state, native Test (2026-09-27)

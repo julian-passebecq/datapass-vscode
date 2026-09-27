@@ -16,7 +16,8 @@ import { buildToolchain, toolStateText } from "../src/core/toolchain/toolchain";
 import { buildConnections } from "../src/core/toolchain/connections";
 import { buildReadiness, validateReadinessSections, readinessSnapshot, type ReadinessInput } from "../src/core/readiness/readiness";
 import { outOfRoute, selectedVariantKeys, validateVariantRefs } from "../src/core/readiness/variantScope";
-import { formatCostTotal, sumCostLines, sumPickedOptions } from "../src/core/project/costs";
+import { formatCostLine, formatCostTotal, sumCostLines, sumPickedOptions } from "../src/core/project/costs";
+import { optionsProblems, parseOptions } from "../src/core/project/options";
 import { LATEST_MANIFEST_VERSION, validateProjectManifest, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import type { ToolObservation } from "../src/core/capabilities/tools";
 import { wbReadiness } from "../src/views/workbenchState";
@@ -136,4 +137,28 @@ test("F06: an unknown cost is unknown, never 0 or free", () => {
   assert.doesNotMatch(t, /\b0 USD|free/);
   const partial = formatCostTotal(sumPickedOptions([{ costs: [{ monthly: 10 }] }, {}], "USD"));
   assert.match(partial, /partial: 1 of 2 decisions priced/);
+});
+
+test("Q10: a local route declares none with a reason: \"no cloud cost\", distinct from unknown and never 0", () => {
+  assert.equal(formatCostLine({ none: "local only" }, "EUR"), "no cloud cost (local only)");
+  assert.equal(formatCostLine({}, "EUR"), "unknown · not priced");
+  const local = sumPickedOptions([{ costs: [{ none: "local only" }] }], "EUR");
+  assert.equal(formatCostTotal(local), "no cloud cost");
+  assert.doesNotMatch(formatCostTotal(local), /\b0\b|unknown|free/);
+  // Mixed with a priced cloud decision: the amounts, fully priced; with an undeclared one: partial.
+  assert.equal(formatCostTotal(sumPickedOptions([{ costs: [{ none: "local only" }] }, { costs: [{ monthly: 5 }] }], "EUR")), "≈ 5 EUR/month");
+  assert.match(formatCostTotal(sumPickedOptions([{ costs: [{ none: "local only" }] }, {}], "EUR")), /partial: 1 of 2 decisions priced/);
+});
+
+test("Q10: none together with a figure is a problem in options.json", () => {
+  const file = parseOptions(JSON.stringify({
+    format: "datapass.options", version: "1",
+    decisions: [{ id: "run", title: "Where it runs", current: "local", options: [
+      { id: "local", label: "Local", costs: [{ label: "Laptop", none: "local only" }] },
+      { id: "cloud", label: "Cloud", costs: [{ label: "VM", none: "local only", monthly: 8 }] }
+    ] }]
+  }));
+  const problems = optionsProblems(file, undefined, undefined).filter(p => /says none/.test(p.message));
+  assert.equal(problems.length, 1);
+  assert.match(problems[0]!.where, /run=cloud/);
 });

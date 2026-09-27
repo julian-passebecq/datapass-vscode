@@ -15,6 +15,8 @@ export interface CostFigure {
   shared?: string;
   /** 0.26 (D-24): "learning-only" flags an offer not usable for client work; never hides it. */
   use?: "any" | "learning-only";
+  /** V1-HONEST (Q10): declared on purpose as no cloud cost, with the reason ("local only"). Known, not zero-by-default. */
+  none?: string;
 }
 
 export interface CostTotal {
@@ -32,6 +34,8 @@ export interface CostTotal {
   disagree: string[];
   /** Parts with at least one learning-only line. */
   learningOnly: number;
+  /** V1-HONEST (Q10): parts declared "no cloud cost" (every line of the part says `none`); absent when none is. */
+  none?: number;
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -40,7 +44,10 @@ function add(into: Record<string, number>, currency: string, n: number): void {
   into[currency] = round2((into[currency] ?? 0) + n);
 }
 
-export const isPriced = (l: CostFigure): boolean => l.monthly !== undefined || l.oneTime !== undefined;
+export const isPriced = (l: CostFigure): boolean => l.monthly !== undefined || l.oneTime !== undefined || isNoCloudCost(l);
+/** V1-HONEST (Q10): an explicit "none" with a reason, distinct from a missing declaration (unknown). */
+export const isNoCloudCost = (l: CostFigure): boolean => typeof l.none === "string" && l.none.trim() !== "";
+export const NO_CLOUD_COST_LABEL = "no cloud cost";
 export const isLearningOnly = (l: CostFigure): boolean => l.use === "learning-only";
 
 export const LEARNING_ONLY_LABEL = "learning only — not for client work";
@@ -88,11 +95,12 @@ function aggregate(groups: ReadonlyArray<readonly CostFigure[]>, defaultCurrency
       else if (s.state === "disagree") t.disagree.push(l.shared);
     }
     if (unit === "line") {
-      for (const l of lines) { t.total++; if (linePriced(l)) t.priced++; if (isLearningOnly(l)) t.learningOnly++; }
+      for (const l of lines) { t.total++; if (linePriced(l)) t.priced++; if (isLearningOnly(l)) t.learningOnly++; if (isNoCloudCost(l)) t.none = (t.none ?? 0) + 1; }
     } else {
       t.total++;
       if (lines.length > 0 && lines.every(linePriced)) t.priced++;
       if (lines.some(isLearningOnly)) t.learningOnly++;
+      if (lines.length > 0 && lines.every(isNoCloudCost)) t.none = (t.none ?? 0) + 1;
     }
   }
   return t;
@@ -140,13 +148,16 @@ export function formatCostTotal(t: CostTotal, words: { month?: string; once?: st
   const flags = costFlags(t);
   if (t.priced === 0 && !Object.keys(t.monthly).length && !Object.keys(t.oneTime).length) return [`unknown · not priced (0 of ${t.total} ${t.unit}${t.total === 1 ? "" : "s"})`, ...flags].join(" · ");
   const parts = [formatAmounts(t.monthly, words.month ?? "/month"), formatAmounts(t.oneTime, words.once ?? " one-time")].filter(Boolean);
+  // V1-HONEST (Q10): every part declared "none" on purpose: no cloud cost, never "0" and never "unknown".
+  if (!parts.length && (t.none ?? 0) === t.total) return [NO_CLOUD_COST_LABEL, ...sharedNote, ...flags].join(" · ");
   const partial = partialLabel(t);
   return [...parts, partial, ...sharedNote, ...flags].filter(Boolean).join(" · ");
 }
 
-/** One declared line: its own figures in its own currency, or "not priced". */
+/** One declared line: its own figures in its own currency, or "unknown · not priced"; "no cloud cost (reason)" when declared none (Q10). */
 export function formatCostLine(l: CostFigure, defaultCurrency: string, words: { month?: string; once?: string } = {}): string {
   const cur = l.currency ?? defaultCurrency;
   const parts = [l.monthly !== undefined ? `≈ ${l.monthly} ${cur}${words.month ?? "/month"}` : "", l.oneTime !== undefined ? `≈ ${l.oneTime} ${cur}${words.once ?? " one-time"}` : ""].filter(Boolean);
-  return [parts.join(" · ") || "not priced", l.shared ? sharedLineLabel(l.shared) : "", isLearningOnly(l) ? LEARNING_ONLY_LABEL : ""].filter(Boolean).join(" · ");
+  if (isNoCloudCost(l) && !parts.length) return [`${NO_CLOUD_COST_LABEL} (${l.none!.trim()})`, isLearningOnly(l) ? LEARNING_ONLY_LABEL : ""].filter(Boolean).join(" · ");
+  return [parts.join(" · ") || "unknown · not priced", l.shared ? sharedLineLabel(l.shared) : "", isLearningOnly(l) ? LEARNING_ONLY_LABEL : ""].filter(Boolean).join(" · ");
 }

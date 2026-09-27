@@ -51,7 +51,8 @@ const VALUES_MAP: Schema = { type: "object", additionalProperties: false, proper
 const COST: Schema = obj({
   label: SHORT, service: SHORT, price: SHORT, monthly: MONEY, oneTime: MONEY, currency: enumOf(...CURRENCIES),
   basis: TEXT, source: HTTPS, asOf: DATE, note: TEXT,
-  shared: ID, use: enumOf("any", "learning-only")
+  shared: ID, use: enumOf("any", "learning-only"),
+  none: { type: "string", minLength: 1, maxLength: 120 }
 }, ["label"]);
 const DOC: Schema = obj({ label: SHORT, url: HTTPS, path: REL_PATH, repoRef: ID }, ["label"]);
 const NEW_REPO: Schema = obj({
@@ -92,6 +93,8 @@ export interface CostLine {
   shared?: string;
   /** 0.26 (D-24): "learning-only" = not usable for client work (flagged, never hidden). */
   use?: "any" | "learning-only";
+  /** V1-HONEST (Q10): no cloud cost, with the reason ("local only"); never combined with a figure. */
+  none?: string;
 }
 export interface NewRepository { key: string; label?: string; description?: string; planned?: true; remote?: { url: string; branch?: string } }
 export interface OptionChanges {
@@ -250,6 +253,8 @@ export function optionsProblems(options: OptionsFile, manifest: DataPassProjectM
     for (const id of d.concerns ?? []) if (!items.has(id)) out.push({ severity: "warning", where: where(d), message: `concerns "${id}", which is not a component of graph.json.` });
     if (d.options.length < 2) out.push({ severity: "info", where: where(d), message: "only one option: nothing to compare yet." });
     for (const o of d.options) {
+      // V1-HONEST (Q10): "none" (no cloud cost) and a figure contradict each other.
+      for (const l of o.costs ?? []) if (l.none !== undefined && (l.monthly !== undefined || l.oneTime !== undefined)) out.push({ severity: "warning", where: where(d, o), message: `cost "${l.label}" says none (no cloud cost) and also gives a figure: keep one.` });
       const ch = o.changes ?? {};
       const touches = (ch.add?.length ?? 0) + (ch.replace?.length ?? 0) + (ch.remove?.length ?? 0) + (ch.addRelations?.length ?? 0) + (ch.removeRelations?.length ?? 0);
       if (o.id === d.current) {
