@@ -39,6 +39,7 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | M2 | Safety + daily loop | V1-LOAD, V1-FRESH, V1-TEST | acceptance matrix §4 incl. race, invalid-input and timeout cases | ✓ #102, #103, #104 (main green `0d9cb45`) |
 | M3 | 1.0.0-rc qualification | V1-RC | frozen SHA, VSIX built once (SHA-256 recorded), `npm run verify`, desktop Win+Ubuntu, perf harness, J01–J10 (fixtures empty = setup blocker, never a silent pass), Restricted Mode, missing tools, upgrade from 0.27.0; Playwright green ≠ Codex Computer Use | |
 | M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | |
+| M5 | Product vision session with Julian | after M4 (1.0.0): the PM asks Julian directly in its own conversation, in multiple-choice questions (AskUserQuestion, recommended option first): (1) what was vague or contradictory on his side (decisions that changed, open areas); (2) what working with the FOIL AI brought up (feedback, the xhigh opinion in techleadclaudegpt6 `45-external-feedback/`, QUESTIONS.md); (3) short-, mid- and long-term vision | answers recorded in `handoff/` and in the V2 roadmap | |
 
 ### Packages
 | Id | Scope | Depends on | Coder | Est. | PR | State |
