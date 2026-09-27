@@ -43,6 +43,7 @@ test("the client and app configurations parse into the same workspace list", () 
   assert.equal(runIdOf(c, new Date("2026-09-27T09:05:00Z")), "20260927-0905-doc-pipeline-lab");
   assert.equal(reportFolder(a, "20260927-0905-app"), "reports/app/20260927-0905-app");
   assert.equal(reportFolder(c, "x"), "reports/client/x");
+  assert.equal(reportFolder({ ...c, report: { ...c.report, folder: "reports/client" } }, "x"), "reports/client/x", "not doubled");
 });
 
 test("config negatives: bad purpose, missing workspaces for app, path escape, http remote, absolute paths, oversized", () => {

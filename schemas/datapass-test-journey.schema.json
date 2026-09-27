@@ -71,6 +71,25 @@
           "minLength": 1,
           "maxLength": 40,
           "pattern": "^[a-z][a-z0-9_-]{0,39}$"
+        },
+        "trust": {
+          "enum": [
+            "trusted",
+            "restricted"
+          ]
+        },
+        "open": {
+          "enum": [
+            "workspace",
+            "fixture",
+            "empty"
+          ]
+        },
+        "fixture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400,
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}){0,11}$"
         }
       },
       "required": []
