@@ -36,9 +36,9 @@
     { "commandPaletteSearch": "Mongoku" },
     { "expectAbsent": "Mongoku" },
     { "press": "Escape" },
-    { "settingsSearch": "mongoku" },
+    { "settingsSearch": "@ext:julian-passebecq.datapass-vscode mongoku" },
     { "expect": "No Settings Found" },
-    { "settingsSearch": "foil" },
+    { "settingsSearch": "@ext:julian-passebecq.datapass-vscode foil" },
     { "screenshot": "settings-foil" },
     { "expect": "No Settings Found" }
   ]

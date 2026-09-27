@@ -177,9 +177,22 @@ async function runStep(ctx: StepContext, step: UiStep): Promise<StepResult> {
     case "type": {
       // Into the input box a command opens (it can take a moment to appear: typing earlier loses keystrokes),
       // else where the focus is.
+      // A text field outside the quick input already has the focus (the Extensions search): type there.
+      const ownField = await page.evaluate(() => {
+        const a = document.activeElement as HTMLElement | null;
+        return !!a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && !a.closest(".quick-input-widget");
+      }).catch(() => false);
       const input = quickInput(page);
-      try { await input.waitFor({ state: "visible", timeout: 3_000 }); await input.fill(step.text); }
-      catch { await page.keyboard.type(step.text, { delay: 10 }); }
+      if (!ownField && await input.waitFor({ state: "visible", timeout: 15_000 }).then(() => true, () => false)) {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          await input.fill(step.text, { timeout: 3_000 }).catch(() => undefined);
+          await page.waitForTimeout(200);
+          if ((await input.inputValue({ timeout: 1_000 }).catch(() => "")) === step.text) return { status: "PASS" };
+          await page.waitForTimeout(700);
+        }
+        return { status: "FAIL", detail: `the input box did not keep "${step.text.slice(0, 60)}"` };
+      }
+      await page.keyboard.type(step.text, { delay: 10 });
       return { status: "PASS" };
     }
     case "wait": await page.waitForTimeout(step.ms); return { status: "PASS" };
