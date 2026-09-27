@@ -62,6 +62,7 @@ import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
 import { ShellService, registerShellCommands } from "./work/shellCommands";
 import type { TreeLens } from "./core/windows/treeLens";
+import { GitDiagram, registerGitDiagramCommands } from "./work/gitDiagram";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -69,6 +70,8 @@ import type { TreeLens } from "./core/windows/treeLens";
  */
 export interface DataPassTestApi {
   refresh(): Promise<GalaxyState>;
+  /** V3-GITDIAG: re-read the change sets drawn on the diagram, and those placed on one block. */
+  gitDiagram: { refresh(): Promise<void>; setsOf(componentId: string): ReturnType<GitDiagram["setsOf"]> };
   workModel(): ReturnType<WorkSession["model"]>;
   project(): WorkSession["project"];
   toolObservations(): ReturnType<WorkSession["toolObservations"]>;
@@ -324,6 +327,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerGitCommands(context, session, git);
   // 0.22 file versions (package F): read-only revisions of any file through native Git.
   registerFileVersionCommands(context, session);
+  // V3-GITDIAG: open PRs and local changes drawn on the diagram blocks whose files they touch.
+  const gitDiagram = new GitDiagram(session, git);
+  context.subscriptions.push(gitDiagram);
+  host.setGitDiagramSource(() => gitDiagram.view(), gitDiagram.onDidChange);
+  registerGitDiagramCommands(context, gitDiagram);
 
   // 0.20 work orders (pass AI-2): the Agent tab of the AI view, the Workbench's Work orders view, Details, Needs you rule 8.
   const workOrders = new WorkOrderService(context, session, git);
@@ -514,6 +522,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       railSend: message => shell.onRailMessage(message),
       architectureInPanel: () => shell.architectureInPanel()
     },
+    gitDiagram: { refresh: () => gitDiagram.refresh(), setsOf: (id: string) => gitDiagram.setsOf(id) },
     refresh: refreshState,
     workModel: () => session.model(),
     project: () => session.project,

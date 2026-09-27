@@ -15,7 +15,7 @@ import { toolkitState } from "./toolkitState";
 import * as vscode from "vscode";
 import type { WorkSession } from "../work/session";
 import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
-import { workbenchState, type WbCodexTests, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
+import { workbenchState, type WbCodexTests, type WbGit, type WbGitDiagram, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
 import { readDiagramSettings } from "./diagramSettings";
@@ -44,6 +44,8 @@ const ALLOWED = new Set([
   "datapass.openSwitcher", "datapass.saveWorkView", "datapass.openWorkbenchFloating",
   // 0.19: the Git view (the overview's Git card).
   "datapass.git.focus", "datapass.git.fetchAll",
+  // V3-GITDIAG: Git on the diagram (a block's change sets, the badges' switch).
+  "datapass.diagram.openGitChanges", "datapass.diagram.toggleGitBadges",
   // 0.20: work orders (the Work orders view, Details, entry points).
   "datapass.workOrders.new", "datapass.workOrders.select", "datapass.workOrders.show", "datapass.workOrders.launch", "datapass.workOrders.resume",
   "datapass.workOrders.copyPrompt", "datapass.workOrders.copyForChat", "datapass.workOrders.markDone", "datapass.workOrders.abandon", "datapass.workOrders.archive",
@@ -126,6 +128,7 @@ export class WorkbenchHost implements vscode.Disposable {
       alternatives: this.shows("badge.alternatives")
     };
     this.lastState.layout = { navColumn: vscode.workspace.getConfiguration("datapass.layout").get<boolean>("workbenchNavColumn", false) === true };
+    this.lastState.gitDiagram = this.gitDiagramSource?.();
     const diagramConfig = vscode.workspace.getConfiguration("datapass.diagram");
     const overlayConfig = vscode.workspace.getConfiguration("datapass.overlay");
     this.lastState.diagramSettings = readDiagramSettings(k => diagramConfig.get(k), k => overlayConfig.get(k));
@@ -146,6 +149,12 @@ export class WorkbenchHost implements vscode.Disposable {
   }
 
   setGitSource(source: () => GitObservation): void { this.gitSource = source; }
+  private gitDiagramSource?: () => WbGitDiagram;
+  /** V3-GITDIAG: where the diagram's Git badges come from; `changed` repaints every view. */
+  setGitDiagramSource(source: () => WbGitDiagram, changed: vscode.Event<void>): void {
+    this.gitDiagramSource = source;
+    this.subs.push(changed(() => void this.post()));
+  }
   /** 0.22 modes: gate the Workbench views and the "alternatives exist" marker; repaint on a mode change. */
   setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
     this.shows = shows;

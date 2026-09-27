@@ -876,6 +876,20 @@
         "icon": "$(git-compare)"
       },
       {
+        "command": "datapass.fileVersions.history",
+        "title": "DataPass: Show File History",
+        "icon": "$(history)"
+      },
+      {
+        "command": "datapass.diagram.openGitChanges",
+        "title": "DataPass: Open a Change Set on This Block"
+      },
+      {
+        "command": "datapass.diagram.toggleGitBadges",
+        "title": "DataPass: Show or Hide Git on the Diagram",
+        "icon": "$(git-pull-request)"
+      },
+      {
         "command": "datapass.experience.switchMode",
         "title": "DataPass: Switch Mode…",
         "icon": "$(layers)"
@@ -1763,6 +1777,11 @@
           "group": "7_versions@2"
         },
         {
+          "command": "datapass.fileVersions.history",
+          "when": "view == datapass.project && viewItem == file.found",
+          "group": "7_versions@0"
+        },
+        {
           "command": "datapass.fileVersions.compare",
           "when": "view == datapass.project && viewItem == file.found",
           "group": "7_versions@3"
@@ -1772,6 +1791,18 @@
         {
           "command": "datapass.pilot.run",
           "when": "false"
+        },
+        {
+          "command": "datapass.diagram.openGitChanges",
+          "when": "false"
+        },
+        {
+          "command": "datapass.fileVersions.history",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.diagram.toggleGitBadges",
+          "when": "!datapass.hidden.palette.full"
         },
         {
           "command": "datapass.openProjectLink",
@@ -2502,12 +2533,29 @@
           "group": "7_datapass_versions@2"
         },
         {
+          "command": "datapass.fileVersions.history",
+          "when": "resourceScheme == file && !explorerResourceIsFolder",
+          "group": "7_datapass_versions@0"
+        },
+        {
           "command": "datapass.fileVersions.compare",
           "when": "resourceScheme == file && !explorerResourceIsFolder",
           "group": "7_datapass_versions@3"
         }
       ],
+      "editor/title": [
+        {
+          "command": "datapass.fileVersions.history",
+          "when": "resourceScheme == file && datapass.fileHistory.available",
+          "group": "navigation@90"
+        }
+      ],
       "editor/title/context": [
+        {
+          "command": "datapass.fileVersions.history",
+          "when": "resourceScheme == file",
+          "group": "7_datapass_versions@0"
+        },
         {
           "command": "datapass.copyFileContext",
           "when": "resourceScheme == file || resourceScheme == untitled",
@@ -2673,6 +2721,11 @@
           "type": "boolean",
           "default": false,
           "description": "Project tree: colour every icon by its state (the 1.0 look). Off (default): icons use the theme's text colour and only items that need attention (an error or a warning) are coloured."
+        },
+        "datapass.diagram.gitBadges": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Architecture diagram: show **Git on the diagram** — a small badge on each block whose files are touched by an open pull request (branch already fetched) or by this computer's uncommitted or unpushed changes, with the worst CI state. Read-only; DataPass never fetches for it. Also hidden while `datapass.overlay.enabled` is off."
         },
         "datapass.company": {
           "type": "string",
