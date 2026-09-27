@@ -56,7 +56,7 @@ repository>.json`. The repository key is one of the manifest's `repositories`:
 `sha256` is the hash of the SQL file's text with line endings turned into LF; with the placeholder
 above, DataPass would show the explanation as **stale** (code changed since it was written) until
 the AI writes the real hash. When the AI changes the code, it updates the explanation's lines and
-hash in the same pull request.
+hash in the bridge pull request of the same coordinated change set.
 
 **Refused** — a link to a step that does not exist:
 

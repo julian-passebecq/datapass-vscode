@@ -969,7 +969,8 @@ and line endings normalised to LF (so a Windows checkout with CRLF still matches
 **States DataPass shows.**
 - **ok**: the native file's current hash equals `target.sha256`.
 - **stale**: the code changed since the JSON was written. Still shown, clearly labelled; the AI
-  rewrites the JSON (new lines, new hash) in the same pull request as the code change.
+  rewrites the JSON (new lines, new hash) in the bridge pull request of the same coordinated change set
+  as the code change.
 - **orphan**: the native file is missing (renamed or deleted), or its repository is not cloned here.
 - **invalid**: refused, with the reason: strict JSON (no duplicate keys), unknown field, a step id
   used twice, a link or join or label naming an unknown step, a join without keys (or a cross join
