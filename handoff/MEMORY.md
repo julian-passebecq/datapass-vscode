@@ -8,3 +8,4 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-27 (assistant): low roles must hand off at 150 K; this assistant reached 340 K (≈2× cost per turn) by polling every 15 min in one long conversation.
 - 2026-09-27 (PM): the AskUserQuestion hook blocks product questions whose text contains Git/PR/CI words; phrase feature questions in product terms, or state PM defaults Julian can override.
 - 2026-09-27 (PM): background PM agents (Agent tool) need no chip click and suit night work; chips need Julian awake to click.
+- 2026-09-28 (coordinator): open PLAN-only PRs go DIRTY whenever an agent merges its own PLAN row; stack further PLAN edits on the open PR's branch instead of opening a second PR.
