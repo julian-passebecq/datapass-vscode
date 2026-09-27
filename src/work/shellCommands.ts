@@ -15,6 +15,7 @@ import * as vscode from "vscode";
 import { LENS_CONTEXT_KEY, LENS_INFO, LensStore, TREE_LENSES, parseLens, type TreeLens } from "../core/windows/treeLens";
 import type { ProjectTreeProvider } from "../views/projectTree";
 import { RAIL_BUTTON_IDS, railHtml } from "../views/railHtml";
+import { output } from "./io";
 
 export const RAIL_CONTEXT_KEY = "datapass.rail";
 const RAIL_STATE_KEY = "datapass.rail";
@@ -143,9 +144,13 @@ export class ShellService implements vscode.Disposable {
       await vscode.commands.executeCommand("datapass.rail.focus");
       let width = await first;
       let steps = 0;
-      if (width !== undefined && (await vscode.commands.getCommands(true)).includes("workbench.action.decreaseViewWidth")) {
+      const canResize = (await vscode.commands.getCommands(true)).includes("workbench.action.decreaseViewWidth");
+      output().appendLine(`[rail] resize command ${canResize ? "present" : "absent"}, rail ${width ?? "?"} px`);
+      if (width !== undefined && canResize) {
+        // The part that holds the focus is the one VS Code resizes: the secondary side bar itself.
+        try { await vscode.commands.executeCommand("workbench.action.focusAuxiliaryBar"); } catch { /* older VS Code */ }
         while (steps < MAX_STEPS && width > 90) {
-          const next = this.nextWidth(400);
+          const next = this.nextWidth(600);
           await vscode.commands.executeCommand("workbench.action.decreaseViewWidth");
           const w = await next;
           if (w === undefined || w >= width) break;
@@ -153,6 +158,7 @@ export class ShellService implements vscode.Disposable {
           steps += 1;
         }
       }
+      output().appendLine(`[rail] folded: ${steps} width step(s), rail ${width ?? "?"} px wide`);
       await this.context.workspaceState.update(RAIL_STEPS_KEY, steps + (this.context.workspaceState.get<number>(RAIL_STEPS_KEY) ?? 0));
     } catch { /* the rail still shows; only the width is VS Code's */ } finally {
       this.resizing = false;
@@ -169,6 +175,7 @@ export class ShellService implements vscode.Disposable {
       const steps = Math.min(MAX_STEPS * 2, this.context.workspaceState.get<number>(RAIL_STEPS_KEY) ?? 0);
       await this.context.workspaceState.update(RAIL_STEPS_KEY, 0);
       if (steps && (await vscode.commands.getCommands(true)).includes("workbench.action.increaseViewWidth")) {
+        try { await vscode.commands.executeCommand("workbench.action.focusAuxiliaryBar"); } catch { /* older VS Code */ }
         for (let i = 0; i < steps; i += 1) await vscode.commands.executeCommand("workbench.action.increaseViewWidth");
       }
     } catch { /* the full panel shows; only the width is VS Code's */ } finally {
