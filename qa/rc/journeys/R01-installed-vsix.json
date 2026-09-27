@@ -17,5 +17,15 @@
     "The DataPass activity bar icon is present and its Project view opens."
   ],
   "features": ["install"],
-  "outOfScope": ["Installing over an older DataPass (the AI qualification covers the upgrade)"]
+  "outOfScope": ["Installing over an older DataPass (the AI qualification covers the upgrade)"],
+  "ui": [
+    { "press": "Control+Shift+X" },
+    { "type": "@installed DataPass" },
+    { "expect": "DataPass Control Plane", "timeoutMs": 30000 },
+    { "screenshot": "installed" },
+    { "run": "DataPass: Focus on Git View" },
+    { "expect": "Other repositories", "timeoutMs": 30000 },
+    { "expectAbsent": "wants to sign in", "timeoutMs": 5000 },
+    { "screenshot": "datapass-view" }
+  ]
 }

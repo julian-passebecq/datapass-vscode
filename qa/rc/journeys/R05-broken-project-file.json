@@ -17,5 +17,25 @@
     "After the undo and save, the error disappears and the Architecture view draws the diagram again."
   ],
   "features": ["format-checks", "architecture"],
-  "outOfScope": ["Editing any file outside this disposable copy"]
+  "outOfScope": ["Editing any file outside this disposable copy"],
+  "ui": [
+    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "expect": "PDF inbox", "timeoutMs": 60000 },
+    { "openFile": ".datapass/graph.json" },
+    { "press": "Control+End" },
+    { "press": "Backspace" },
+    { "press": "Backspace" },
+    { "press": "Control+S" },
+    { "press": "Control+Shift+M" },
+    { "expect": "graph.json" },
+    { "wait": 3000 },
+    { "screenshot": "broken" },
+    { "expectAbsent": "no graph" },
+    { "press": "Control+Z" },
+    { "press": "Control+S" },
+    { "wait": 3000 },
+    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "expect": "PDF inbox", "timeoutMs": 30000 },
+    { "screenshot": "repaired" }
+  ]
 }

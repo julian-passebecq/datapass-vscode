@@ -31,6 +31,10 @@ export const PRESETS = ["Vanilla", "Standard", "DataPass", "Advanced"] as const;
 export const OUTCOMES = ["reached", "partly", "not-reached", "blocked"] as const;
 export const SEVERITIES = ["blocker", "major", "minor", "idea"] as const;
 export const CONFIDENCES = ["high", "medium", "low"] as const;
+/** V1-AUTO-2: the report's `runPaths` and `uxOpinion` (additive to qa-report v1). */
+export const RUN_PATH_STATES = ["ran", "not-run", "failed"] as const;
+export const COMPUTER_USE_STATES = ["ran", "no-apps", "not-run"] as const;
+export const UX_KINDS = ["impractical", "confusing", "slow"] as const;
 /** V1-AUTO: how a journey's VS Code is launched (additive to test-journey v1). Default: trusted, the client workspace. */
 export const TRUSTS = ["trusted", "restricted"] as const;
 export const OPENS = ["workspace", "fixture", "empty"] as const;
@@ -95,6 +99,24 @@ export const CLIENT_CONFIG_SCHEMA: Schema = obj({ ...COMMON_CONFIG, purpose: con
 export const APP_CONFIG_SCHEMA: Schema = obj({ ...COMMON_CONFIG, purpose: constOf("app"), workspaces: arr(APP_WORKSPACE, 10, 1) }, [...CONFIG_REQUIRED, "workspaces"]);
 export const CODEX_TESTS_SCHEMA: Schema = anyOf(CLIENT_CONFIG_SCHEMA, APP_CONFIG_SCHEMA);
 
+/**
+ * One UI step of a test-journey's `ui` (V1-AUTO-2): exactly one action, in the closed vocabulary of
+ * `datapass.ui-journey` (src/qa/ui/journey.ts parses and runs them; this is the schema that is emitted).
+ */
+const STEP_TEXT = S(200);
+/** A workspace-relative file (dot-folders such as .datapass allowed; never ".." or a drive). */
+export const OPEN_FILE_PATTERN = "^(?!(.*/)?\\.\\.(/|$))[A-Za-z0-9_.][A-Za-z0-9_.-]{0,99}(/[A-Za-z0-9_.][A-Za-z0-9_.-]{0,99}){0,11}$";
+const TIMEOUT = INT(100, 120_000);
+export const UI_STEP_SCHEMAS: Schema[] = [
+  obj({ run: STEP_TEXT }), obj({ openView: STEP_TEXT }),
+  obj({ click: STEP_TEXT, role: enumOf("button", "link", "tab", "treeitem", "menuitem", "checkbox", "option") }, ["click"]),
+  obj({ expect: STEP_TEXT, timeoutMs: TIMEOUT }, ["expect"]), obj({ expectAbsent: STEP_TEXT, timeoutMs: TIMEOUT }, ["expectAbsent"]),
+  obj({ press: S(60, 1, "^[A-Za-z0-9]+(\\+[A-Za-z0-9]+){0,3}$") }), obj({ screenshot: S(60, 1, "^[a-z0-9][a-z0-9-]{0,59}$") }),
+  obj({ type: STEP_TEXT }), obj({ quickPick: STEP_TEXT }), obj({ wait: TIMEOUT }),
+  obj({ commandPaletteSearch: STEP_TEXT }), obj({ settingsSearch: STEP_TEXT }), obj({ openFile: S(400, 1, OPEN_FILE_PATTERN) }),
+  obj({ chooseFolder: enumOf("scratch", "fixture") })
+];
+
 export const TEST_JOURNEY_SCHEMA: Schema = obj({
   $schema: S(500),
   format: constOf(TEST_JOURNEY_FORMAT), version: constOf(1),
@@ -107,7 +129,11 @@ export const TEST_JOURNEY_SCHEMA: Schema = obj({
   expected: LINES(20, 500, 1),
   questions: LINES(20, 500),
   features: arr(enumOf(...FEATURES), 20, 1),
-  outOfScope: LINES(10, 300)
+  outOfScope: LINES(10, 300),
+  // V1-AUTO-2 (additive): the UI steps qa:compile turns into a datapass.ui-journey for qa:ui (the release gate),
+  // or why the journey cannot be driven that way. Neither: qa:compile reports it "not automatable".
+  ui: arr(anyOf(...UI_STEP_SCHEMAS), 40, 1),
+  notAutomatable: TEXT(300)
 }, ["format", "version", "id", "kind", "title", "goal", "expected", "features"]);
 
 const REPO_COMMIT: Schema = obj({ folder: REL_PATH, path: REL_PATH, remote: HTTPS_REMOTE, commit: COMMIT }, ["folder", "remote", "commit"]);
@@ -143,6 +169,15 @@ export const QA_REPORT_SCHEMA: Schema = obj({
   }, ["id", "severity", "area", "title", "steps", "expected", "actual"]), 200),
   answers: arr(obj({ question: TEXT(500), answer: TEXT(2000), evidence: TEXT(1000), screens: arr(SCREEN, 10), confidence: enumOf(...CONFIDENCES) }, ["question", "answer", "evidence", "confidence"]), 50),
   clientFeedback: LINES(50, 1000),
+  // V1-AUTO-2 (additive): which path ran — qa:ui (the functional gate, Playwright) and the Codex Computer Use
+  // exploratory pass ("no-apps" when Computer Use saw no application: an infrastructure failure, not DataPass's).
+  runPaths: obj({ qaUi: enumOf(...RUN_PATH_STATES), computerUse: enumOf(...COMPUTER_USE_STATES), note: TEXT(500) }, ["qaUi", "computerUse"]),
+  // V1-AUTO-2 (additive): the tester's opinion as a user, apart from the findings — what was impractical,
+  // confusing or slow, each tied to a journey and shown on at least one screenshot.
+  uxOpinion: arr(obj({
+    id: S(20, 1, "^U[0-9]{1,4}$"), kind: enumOf(...UX_KINDS), journey: JOURNEY_ID,
+    title: TEXT(160), detail: TEXT(1000), screens: arr(SCREEN, 10, 1), suggestion: TEXT(1000)
+  }, ["id", "kind", "journey", "title", "detail", "screens"]), 50),
   coverage: obj({ listed: arr(enumOf(...FEATURES), FEATURES.length), reached: arr(enumOf(...FEATURES), FEATURES.length) })
 }, ["format", "version", "purpose", "runId", "datapass", "vscode", "os", "clients", "agent", "journeys", "findings", "answers", "coverage"]);
 
@@ -193,6 +228,8 @@ export interface TestJourney {
   id: string; kind: Purpose; title: string; as?: string; goal: string;
   setup?: { client?: string; mode?: (typeof PRESETS)[number]; variant?: string; environment?: string; trust?: (typeof TRUSTS)[number]; open?: (typeof OPENS)[number]; fixture?: string };
   hints?: string[]; expected: string[]; questions?: string[]; features: Feature[]; outOfScope?: string[];
+  /** V1-AUTO-2: UI steps for qa:ui (datapass.ui-journey vocabulary), or why the journey cannot be driven that way. */
+  ui?: unknown[]; notAutomatable?: string;
 }
 
 const describe = (issues: SchemaIssue[]) => issues.map(i => `${i.path} ${i.message}`);
@@ -265,7 +302,16 @@ export function parseCodexTests(raw: string | Uint8Array, file = CODEX_TESTS_FIL
 export function parseTestJourney(raw: string | Uint8Array, file: string): TestJourney {
   const doc = readJson(file, raw);
   expectFormat(file, doc, TEST_JOURNEY_FORMAT);
-  const issues = describe(validateSchema(TEST_JOURNEY_SCHEMA, doc));
+  // The UI steps are checked one by one below, for a message that names the step (anyOf alone would not).
+  const { ui, ...rest } = doc;
+  const issues = describe(validateSchema(TEST_JOURNEY_SCHEMA, rest));
+  if (ui !== undefined) {
+    if (!Array.isArray(ui) || ui.length < 1 || ui.length > 40) issues.push("$.ui must be a list of 1 to 40 UI steps");
+    else ui.forEach((step, i) => {
+      if (!UI_STEP_SCHEMAS.some(s => validateSchema(s, step).length === 0)) issues.push(`$.ui[${i}] ${JSON.stringify(step)?.slice(0, 80)} is not a UI step: one of run, openView, click (+role), expect (+timeoutMs), expectAbsent (+timeoutMs), press, screenshot, type, quickPick, wait, commandPaletteSearch, settingsSearch, openFile, chooseFolder`);
+    });
+    if (doc.notAutomatable !== undefined) issues.push("$.ui and $.notAutomatable exclude each other");
+  }
   const features = Array.isArray(doc.features) ? doc.features : [];
   const unknown = features.filter(f => !FEATURES.includes(f as Feature));
   if (unknown.length) issues.unshift(`unknown feature tag(s) ${unknown.map(f => JSON.stringify(f)).join(", ")}: use the list in common/testing/FEATURES.md`);
@@ -289,6 +335,10 @@ export function parseQaReport(raw: string | Uint8Array, file = "report.json"): Q
     if (new Set(r.findings.map(f => f.id)).size !== r.findings.length) issues.push("$.findings has two findings with the same id");
     const listed = new Set(r.coverage.listed);
     for (const f of r.coverage.reached) if (!listed.has(f)) issues.push(`$.coverage.reached "${f}" is not in coverage.listed`);
+    const ux = (doc.uxOpinion ?? []) as Array<{ id: string; journey: string }>;
+    if (new Set(ux.map(u => u.id)).size !== ux.length) issues.push("$.uxOpinion has two entries with the same id");
+    const journeyIds = new Set(r.journeys.map(j => j.id));
+    ux.forEach((u, i) => { if (!journeyIds.has(u.journey)) issues.push(`$.uxOpinion[${i}].journey ${u.journey} is not one of the report's journeys`); });
   }
   if (issues.length) throw new QaFormatError(file, issues);
   return doc as unknown as QaReport;

@@ -514,6 +514,99 @@
       "maxItems": 50,
       "minItems": 0
     },
+    "runPaths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "qaUi": {
+          "enum": [
+            "ran",
+            "not-run",
+            "failed"
+          ]
+        },
+        "computerUse": {
+          "enum": [
+            "ran",
+            "no-apps",
+            "not-run"
+          ]
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      },
+      "required": [
+        "qaUi",
+        "computerUse"
+      ]
+    },
+    "uxOpinion": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "pattern": "^U[0-9]{1,4}$"
+          },
+          "kind": {
+            "enum": [
+              "impractical",
+              "confusing",
+              "slow"
+            ]
+          },
+          "journey": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 20,
+            "pattern": "^[A-Z][A-Z0-9-]{1,19}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "screens": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "^screens/[A-Z][A-Z0-9-]{1,19}-[a-z0-9][a-z0-9-]{0,59}\\.png$"
+            },
+            "maxItems": 10,
+            "minItems": 1
+          },
+          "suggestion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "journey",
+          "title",
+          "detail",
+          "screens"
+        ]
+      },
+      "maxItems": 50,
+      "minItems": 0
+    },
     "coverage": {
       "type": "object",
       "additionalProperties": false,

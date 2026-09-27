@@ -20,5 +20,22 @@
     "After trusting the folder, the Restricted Mode message is gone from the DataPass Git view."
   ],
   "features": ["workspace", "git", "architecture"],
-  "outOfScope": ["Running the component's tests after trusting it"]
+  "outOfScope": ["Running the component's tests after trusting it"],
+  "ui": [
+    { "expect": "Restricted Mode" },
+    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "expect": "PDF inbox", "timeoutMs": 60000 },
+    { "run": "DataPass: Focus on Git View" },
+    { "expect": "Restricted Mode: DataPass does not run Git", "timeoutMs": 30000 },
+    { "screenshot": "restricted-git" },
+    { "commandPaletteSearch": "DataPass: Run Component Test" },
+    { "screenshot": "restricted-palette" },
+    { "press": "Escape" },
+    { "run": "Workspaces: Manage Workspace Trust" },
+    { "press": "Control+Enter" },
+    { "wait": 2000 },
+    { "run": "DataPass: Focus on Git View" },
+    { "expectAbsent": "Restricted Mode: DataPass does not run Git", "timeoutMs": 5000 },
+    { "screenshot": "trusted-git" }
+  ]
 }
