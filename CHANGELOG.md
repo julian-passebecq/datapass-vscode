@@ -5,6 +5,19 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **Architecture diagram readable at a glance** (V1-UI-POLISH, diagram only): each block shows its
+  provider as a coloured icon on a light tint (Azure blue, Microsoft Fabric green, Power BI yellow,
+  Databricks orange-red, Python, Git/CI, SQL; unknown → neutral) and its shape says storage, processing
+  or orchestration. Three reading levels, each with its own place and line style: a thin left band for
+  the DataPass state (operation ready, not ready yet, no operation), a short top edge and symbol for
+  the capability state (✓ available, ◐ prepared/planned, ○ choice only, ? unverified, ✕ blocked), and a
+  light bottom line for the client step (validated, to redo, never run), shown only when the project
+  has recorded results. The entry file shows its type in VS Code's default (Seti) file colours; a
+  legend explains all of it. New settings, read live: `datapass.diagram.stateBand`,
+  `datapass.diagram.capabilityEdge`, `datapass.diagram.clientStepLine`, `datapass.diagram.legend`
+  (on by default) and `datapass.diagram.legendPosition`. Icons are bundled (Simple Icons CC0,
+  codicons CC BY 4.0, see THIRD_PARTY_NOTICES.md; about 30 KB, never fetched); high-contrast themes
+  keep icons, symbols and line styles with theme colours. No format, schema or model change.
 - **No client-named settings or commands** (V1-FOILSURF, journey R04): the settings
   `datapass.foil.controlRoot`, `datapass.foil.databricksRoot`, `datapass.foil.oracleSshHost` and the
   commands *Select FOIL Control Repository*, *Select FOIL Databricks Repository* and *Initialize FOIL

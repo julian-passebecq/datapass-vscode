@@ -13,6 +13,8 @@ import type { WbTool } from "../views/toolkitState";
 import type { RecipeRouteView, RecipeView } from "../core/toolkit/toolkit";
 import { costFlags, formatAmounts, formatCostLine, formatCostTotal, partialLabel, sumCostLines, type CostTotal } from "../core/project/costs";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
+import { dataPassState, diagramState, DP_STATES, fileColor, fileExtension, FAMILY_COLORS, hasStepSource, iconOf, nodeShape, providerLook, SHAPES, STATES, STEP_STATES, stepState, type DataPassState, type DiagramState, type NodeShape, type StepState } from "./diagramLook";
+import { DIAGRAM_SETTING_DEFAULTS, type DiagramSettings } from "../views/diagramSettings";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void; getState(): unknown; setState(state: unknown): void };
@@ -109,6 +111,14 @@ const svg = (tag: string, attrs: Record<string, string | number>) => {
   const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
   return el;
+};
+
+/** A bundled diagram icon (diagramIcons.ts), drawn with currentColor. */
+const iconEl = (id: string, cls = "picon"): HTMLElement => {
+  const i = iconOf(id);
+  const el = svg("svg", { class: cls, viewBox: i.vb, width: 14, height: 14, "aria-hidden": "true", focusable: "false" });
+  el.append(svg("path", i.evenodd ? { d: i.d, "fill-rule": "evenodd", "clip-rule": "evenodd" } : { d: i.d }));
+  return el as unknown as HTMLElement;
 };
 
 const send = (message: unknown) => vscode.postMessage(message);
@@ -335,7 +345,29 @@ function diagram(s: WorkbenchState): HTMLElement {
     h("span", { class: "lg data", text: "data" }), h("span", { class: "lg control", text: "orchestration" }), h("span", { class: "lg dependency", text: "dependency" }),
     s.preview ? h("span", { class: "lg-diff" }, h("span", { class: "tag added", text: "new" }), h("span", { class: "tag replaced", text: "changed" }), h("span", { class: "tag removed", text: "removed" })) : undefined,
     h("span", { class: "muted small grow", text: "Click a component to select it; double-click opens its entry file. The diagram never runs anything." }));
-  return h("div", { class: "diagram" }, diagramToolbar(s), h("div", { class: "scroller", "data-diagram": "1" }), legend);
+  const ds = diagramSettingsOf(s);
+  const legends = ds.legend && ds.legendPosition !== "hidden" ? h("div", { class: `legends pos-${ds.legendPosition}` }, lookLegend(s, ids, ds), legend) : undefined;
+  const top = ds.legendPosition.startsWith("top-");
+  return h("div", { class: "diagram" }, diagramToolbar(s), top ? legends : undefined, h("div", { class: "scroller", "data-diagram": "1" }), top ? undefined : legends);
+}
+
+const diagramSettingsOf = (s: WorkbenchState): DiagramSettings => s.diagramSettings ?? DIAGRAM_SETTING_DEFAULTS;
+/** The bottom line exists only when the setting is on and the project has recorded results (never invented). */
+const showsStepLine = (s: WorkbenchState) => diagramSettingsOf(s).clientStepLine && hasStepSource(s.components);
+
+/** Legend of the node look: one group per reading level that is switched on. */
+function lookLegend(s: WorkbenchState, ids: string[], ds: DiagramSettings): HTMLElement {
+  const all = [...s.components, ...(s.preview?.components ?? []), ...(s.preview?.ghosts ?? [])];
+  const shown = ids.map(id => all.find(c => c.id === id)).filter((c): c is NonNullable<typeof c> => Boolean(c));
+  const families = [...new Set(shown.map(c => providerLook(c.providerId, c.kind).family))];
+  const shapes = [...new Set(shown.map(c => nodeShape(c.providerId, c.kind)))];
+  const group = (title: string, ...items: HTMLElement[]) => h("span", { class: "lggroup" }, h("span", { class: "muted", text: title }), ...items);
+  return h("div", { class: "legend looklegend" },
+    group("Icon = provider:", ...families.map(f => h("span", { class: "lgfam", style: `--prov:${FAMILY_COLORS[f]!.color}` }, h("span", { class: "pbadge small", "aria-hidden": "true" }), FAMILY_COLORS[f]!.label))),
+    group("Shape:", ...(Object.keys(SHAPES) as NodeShape[]).filter(k => shapes.includes(k)).map(k => h("span", { class: `lgshape shape-${k}` }, h("span", { class: "swatch", "aria-hidden": "true" }), SHAPES[k].label))),
+    ds.stateBand ? group("Left band = DataPass:", ...(Object.keys(DP_STATES) as DataPassState[]).map(k => h("span", { class: `lgdp dp-${k}`, title: DP_STATES[k].about }, h("span", { class: "swatch", "aria-hidden": "true" }), DP_STATES[k].label))) : undefined,
+    ds.capabilityEdge ? group("Top edge = capability:", ...(Object.keys(STATES) as DiagramState[]).map(k => h("span", { class: `lgst st-${k}`, title: STATES[k].about }, h("span", { class: "stsym", "aria-hidden": "true", text: STATES[k].symbol }), STATES[k].label))) : undefined,
+    showsStepLine(s) ? group("Bottom line = client step:", ...(Object.keys(STEP_STATES) as StepState[]).map(k => h("span", { class: `lgstep step-${k}`, title: STEP_STATES[k].about }, h("span", { class: "stepsym", "aria-hidden": "true", text: STEP_STATES[k].symbol }), STEP_STATES[k].label))) : undefined);
 }
 
 function diagramModel(s: WorkbenchState): DiagramModel {
@@ -390,7 +422,9 @@ function fold(key: string): void {
 
 function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: number): HTMLElement {
   const compact = (L.nodes[0]?.w ?? 184) < 170;
-  const canvas = h("div", { class: `canvas${compact ? " compact" : ""}`, style: `width:${L.width}px;height:${L.height}px;${scale < 1 ? `transform:scale(${scale});` : ""}` });
+  const ds = diagramSettingsOf(s);
+  const stepLine = showsStepLine(s);
+  const canvas = h("div", { class: `canvas${compact ? " compact" : ""}${ds.stateBand ? "" : " no-band"}${ds.capabilityEdge ? "" : " no-edge"}`, style: `width:${L.width}px;height:${L.height}px;${scale < 1 ? `transform:scale(${scale});` : ""}` });
   for (const lane of L.lanes) {
     const info = model.lanes.find(l => l.id === lane.id);
     canvas.append(h("div", { class: `lane dir-${L.direction}`, style: `left:${lane.x}px;top:${lane.y}px;width:${lane.w}px;height:${lane.h}px` },
@@ -432,16 +466,23 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
     const diff = m.diff;
     const hasKids = Boolean(c?.children.some(k => s.diagram.nodeIds.includes(k) || s.preview?.diagram.nodeIds.includes(k)));
     const folded = m.kind === "parent";
+    const look = providerLook(c?.providerId ?? ghost?.providerId, c?.kind ?? ghost?.kind);
+    const st = diagramState({ health: c?.health, availability: c?.artifacts?.availability, repoState: repoOf(c?.repoKey ?? ghost?.repoKey)?.state, previewOnly: Boolean(c && inPreviewOnly(c.id)), ghost: !c });
+    const entryExt = fileExtension(c?.artifacts?.entry);
+    const dps = dataPassState(c?.operations);
+    const shape = nodeShape(c?.providerId ?? ghost?.providerId, c?.kind ?? ghost?.kind);
+    const step = stepLine && c ? stepState(c.operations) : undefined;
     const el = h("div", { class: `nodewrap`, style: pos },
       h("button", {
-        class: `node ${c ? `h-${c.health}` : "h-planned"} ${on ? "active" : ""}${diff ? ` diff-${diff}` : ""}${folded ? " parent" : ""}`, type: "button", style: "left:0;top:0;width:100%;height:100%",
-        "aria-pressed": String(on), title: c ? `${c.label} — ${c.providerLabel ?? c.kind}\n${c.headline}\nNext: ${c.nextStep}${diff ? `\nIn this preview: ${DIFF_TEXT[diff]}` : ""}` : `${ghost!.label}: removed in this preview`,
+        class: `node ${c ? `h-${c.health}` : "h-planned"} st-${st} dp-${dps} shape-${shape} fam-${look.family} ${on ? "active" : ""}${diff ? ` diff-${diff}` : ""}${folded ? " parent" : ""}`, type: "button", style: `left:0;top:0;width:100%;height:100%;--prov:${look.color}`,
+        "aria-pressed": String(on), title: c ? `${c.label} — ${c.providerLabel ?? c.kind}\nCapability: ${STATES[st].symbol} ${STATES[st].label} · DataPass: ${DP_STATES[dps].label}${step ? ` · Client step: ${STEP_STATES[step].label}` : ""}\n${c.headline}\nNext: ${c.nextStep}${diff ? `\nIn this preview: ${DIFF_TEXT[diff]}` : ""}` : `${ghost!.label}: removed in this preview`,
         onclick: () => { if (c) select(s.selection.subproject ?? c.subprojects[0], c.id); },
         ondblclick: () => { if (c && !inPreviewOnly(c.id)) command("datapass.openComponentEntry", c.id); }
       },
-        h("span", { class: "nodetop" }, h("span", { class: "glyph", text: c?.providerGlyph ?? ghost!.providerGlyph, "aria-hidden": "true" }), h("span", { class: "provider", text: c?.providerLabel ?? ghost?.providerLabel ?? c?.kind ?? ghost!.kind }), diff ? h("span", { class: `tag ${diff}`, text: DIFF_TEXT[diff] }) : c && alternativesOf(s, c.id).length ? h("span", { class: "tag alt", text: "alternatives", title: `Alternatives exist (options.json): ${alternativesOf(s, c.id).join("; ")}` }) : undefined),
+        h("span", { class: "nodetop" }, h("span", { class: "pbadge" }, iconEl(look.icon)), h("span", { class: "provider", text: c?.providerLabel ?? ghost?.providerLabel ?? c?.kind ?? ghost!.kind }), entryExt && !compact ? h("span", { class: "ext", style: `--ft:${fileColor(c!.artifacts!.entry)}`, title: `Entry file: ${c!.artifacts!.entry}`, text: entryExt }) : undefined, diff ? h("span", { class: `tag ${diff}`, text: DIFF_TEXT[diff] }) : c && alternativesOf(s, c.id).length ? h("span", { class: "tag alt", text: "alternatives", title: `Alternatives exist (options.json): ${alternativesOf(s, c.id).join("; ")}` }) : undefined),
         h("span", { class: "nodelabel", text: `${c?.label ?? ghost!.label}${folded ? ` (+${m.memberIds.length - 1})` : ""}` }),
-        h("span", { class: "nodestatus" }, c ? h("span", { class: `dot h-${c.health}`, "aria-hidden": "true" }) : undefined, h("span", { text: c ? c.headline : "not in this architecture" }))),
+        h("span", { class: "nodestatus" }, h("span", { class: "stsym", "aria-hidden": "true", text: STATES[st].symbol }), h("span", { text: c ? c.headline : "not in this architecture" })),
+        step ? h("span", { class: `stepline step-${step}`, title: `Client step: ${STEP_STATES[step].label}` }, h("span", { class: "stepsym", "aria-hidden": "true", text: STEP_STATES[step].symbol })) : undefined),
       hasKids || folded ? h("button", { class: "foldbtn", type: "button", title: folded ? "Show the components inside" : "Fold the components inside into this box", "aria-expanded": String(!folded), onclick: () => fold(`parent:${m.componentId}`), text: folded ? "▸" : "▾" }) : undefined);
     canvas.append(el);
   }

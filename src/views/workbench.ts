@@ -18,6 +18,7 @@ import { workbenchHtml, type WorkbenchMode } from "./workbenchHtml";
 import { workbenchState, type WbCodexTests, type WbGit, type WbWorkOrders, type WorkbenchState } from "./workbenchState";
 import type { GitObservation } from "../work/gitObserver";
 import { sameDiagramUi, sanitizeDiagramUi, type DiagramMode, type DiagramUi } from "../core/windows/workViews";
+import { readDiagramSettings } from "./diagramSettings";
 import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState } from "../core/project/variants";
 
 /** Commands a webview may ask for (arguments are re-validated by each command). */
@@ -96,7 +97,8 @@ export class WorkbenchHost implements vscode.Disposable {
   private shows: (surface: string) => boolean = () => true;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
-    this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()));
+    this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()),
+      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.diagram")) void this.post(); }));
   }
 
   dispose(): void {
@@ -123,6 +125,8 @@ export class WorkbenchHost implements vscode.Disposable {
       hiddenViews: (["options", "sheet", "board", "workOrders", "toolkit"] as const).filter(v => !this.shows(`workbench.${v}`)),
       alternatives: this.shows("badge.alternatives")
     };
+    const diagramConfig = vscode.workspace.getConfiguration("datapass.diagram");
+    this.lastState.diagramSettings = readDiagramSettings(k => diagramConfig.get(k));
     // QA-2: the Codex tests section, only in the modes that show it (DataPass, Advanced).
     if (this.codexTestsSource && this.shows("ai.codexTests") && this.lastState.workOrders) this.lastState.codexTests = this.codexTestsSource();
     // 0.23: coding state badges (derived from the files; nothing to maintain).

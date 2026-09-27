@@ -9,6 +9,7 @@
 import { PHASE_LABELS } from "../core/capabilities/registry";
 import type { ComponentView, MapChecklistEntry, OperationView, ProjectMap } from "../core/project/projectMap";
 import type { LayoutEdgeInput } from "../core/project/layout";
+import type { DiagramSettings } from "./diagramSettings";
 import { fileStateText, keySourceText, keyStateText, type Readiness } from "../core/readiness/readiness";
 import type { WbToolkit } from "./toolkitState";
 import { toolStateText } from "../core/toolchain/toolchain";
@@ -122,6 +123,8 @@ export interface WorkbenchState {
   toolkit?: WbToolkit;
   /** 0.22 modes: Workbench views the mode hides, and whether components with alternatives are marked. */
   experience?: { hiddenViews: string[]; alternatives: boolean };
+  /** V1-UI-POLISH: the diagram's reading levels and legend (settings `datapass.diagram.*`). */
+  diagramSettings?: DiagramSettings;
   /** 0.23 (package G): coding state per option ("decision=option"), per scenario and for the preview; absent when the mode hides the badge. */
   coding?: { options: Record<string, WbCoding>; scenarios: Record<string, WbCoding>; preview?: WbCoding };
 }
