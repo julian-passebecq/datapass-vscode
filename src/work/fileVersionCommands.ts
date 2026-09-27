@@ -19,7 +19,7 @@ import { gitRunner } from "./session";
 import { guarded, UserFacingError } from "./io";
 import { changedComponents } from "../core/project/gitSync";
 import {
-  DEFAULT_BRANCH_CANDIDATES, defaultBranchRef, fileLogArgs, lastUpdateFromReflog, parseFileLog, parseRevQuery, REFLOG_ARGS,
+  DEFAULT_BRANCH_CANDIDATES, defaultBranchRef, fileLogArgs, historyLabel, lastUpdateFromReflog, parseFileLog, parseRevQuery, previousPath, REFLOG_ARGS,
   relativeFromPrefix, REV_SCHEME, revisionLabel, revUriParts, shortTime, type FileRevision, type RevRequest
 } from "../core/git/fileVersions";
 
@@ -172,6 +172,44 @@ export function registerFileVersionCommands(context: vscode.ExtensionContext, se
     const left = revUri({ repo, sha: rev.sha, path: rev.path }, `${rev.sha.slice(0, 7)}`);
     await vscode.commands.executeCommand("vscode.diff", left, file, `${path.basename(rel)} (${rev.sha.slice(0, 7)} ↔ working file)`);
   });
+
+  // V3-GITDIAG: the file's recent commits; each opens VS Code's diff of that commit (previous version ↔ that version).
+  reg("datapass.fileVersions.history", async (arg?: unknown) => {
+    requireTrust();
+    const { repo, rel } = await locate(fileArg(session, arg));
+    const revs = await fileLog(repo, rel);
+    if (!revs.length) throw new UserFacingError(`${rel} has no commits yet.`);
+    const picked = await vscode.window.showQuickPick(revs.map((r, i) => ({ ...historyLabel(r, i, revs), i })), {
+      title: `DataPass: History of ${path.basename(rel)}`, placeHolder: `${rel}: last ${revs.length} commit(s), newest first — pick one to see what it changed`, matchOnDescription: true, matchOnDetail: true
+    });
+    if (!picked) return;
+    const rev = revs[picked.i]!;
+    const after = revUri({ repo, sha: rev.sha, path: rev.path }, `${rev.sha.slice(0, 7)} ${rev.date.slice(0, 10)}`);
+    const parent = (await git(["rev-parse", "--verify", "--quiet", `${rev.sha}^`], repo, 5000)).stdout.trim();
+    const prev = previousPath(revs, picked.i);
+    if (!/^[0-9a-f]{40}$/.test(parent) || !(await exists(repo, parent, prev))) {
+      // The commit created the file (or is the first commit): nothing to compare with.
+      await vscode.commands.executeCommand("vscode.open", after, { preview: true });
+      return;
+    }
+    const before = revUri({ repo, sha: parent, path: prev }, `before ${rev.sha.slice(0, 7)}`);
+    await vscode.commands.executeCommand("vscode.diff", before, after, `${path.basename(rev.path)} (${rev.sha.slice(0, 7)}: ${rev.subject.slice(0, 60)})`, { preview: true });
+  });
+
+  // The editor title's History button shows only for files inside a repository DataPass knows.
+  const inKnownRepo = () => {
+    const doc = vscode.window.activeTextEditor?.document.uri;
+    if (doc?.scheme !== "file") return false;
+    const f = path.normalize(doc.fsPath).toLowerCase();
+    const folders = [
+      ...session.projectMap().repositories.map(r => session.repoFolder(r.key)?.fsPath),
+      ...(vscode.workspace.workspaceFolders ?? []).map(w => w.uri.fsPath).filter(p => fs.existsSync(path.join(p, ".git")))
+    ].filter((p): p is string => !!p).map(p => path.normalize(p).replace(/[\\/]+$/, "").toLowerCase());
+    return folders.some(k => f.startsWith(`${k}${path.sep}`));
+  };
+  const setHistoryContext = () => { try { void vscode.commands.executeCommand("setContext", "datapass.fileHistory.available", inKnownRepo()); } catch { /* best effort */ } };
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(setHistoryContext), session.onDidChange(setHistoryContext));
+  setHistoryContext();
 
   reg("datapass.fileVersions.lastUpdate", async () => {
     const rows = await lastUpdateRows(session);

@@ -132,3 +132,21 @@ export function shortTime(d: Date): string {
   const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()];
   return `${d.getDate()} ${m} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
+
+// ------------------------------------------------------------------ V3-GITDIAG: Show File History
+
+/**
+ * The path of the file before commit `i` of a `--follow` log (newest first): the next, older entry's
+ * path, so a rename shows as a diff of the old name against the new one. The oldest listed commit
+ * compares with its parent under the same path (absent there when it created the file).
+ */
+export function previousPath(revs: readonly FileRevision[], i: number): string {
+  return revs[i + 1]?.path ?? revs[i]?.path ?? "";
+}
+
+/** Quick-pick row of Show File History: the commit, and what clicking it does. */
+export function historyLabel(r: FileRevision, i: number, revs: readonly FileRevision[]): { label: string; description: string; detail: string } {
+  const base = revisionLabel(r);
+  const prev = previousPath(revs, i);
+  return { label: base.label, description: base.description, detail: prev && prev !== r.path ? `renamed ${prev} → ${r.path} · opens the diff with the previous version` : "opens the diff with the previous version" };
+}

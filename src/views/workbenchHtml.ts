@@ -230,6 +230,16 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .lanehead { position: absolute; left: 6px; top: 2px; border: none; background: transparent; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--muted); padding: 0 4px; }
   .lanehead:hover { color: var(--vscode-foreground); }
   .nodewrap { position: absolute; }
+  /* V3-GITDIAG: the Git badge hangs off a block's top-right corner, in the overlay's own hues (--dp-*, V3-THEME; fallbacks until then). */
+  .gitbadge { position: absolute; right: -7px; top: -9px; z-index: 3; display: inline-flex; align-items: center; gap: 2px; height: 16px; padding: 0 5px; border-radius: 8px; border: 1px solid var(--gb); background: var(--vscode-editor-background); color: var(--gb); font-size: 10px; line-height: 14px; cursor: pointer; font-weight: 600; }
+  .gitbadge:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
+  .gitbadge { --gbr: #c4124f; --gbo: #b04c00; --gbg: #0b7a3e; --gbb: #0047ff; --gbv: #7a2be2; }
+  body.vscode-dark .gitbadge, body.vscode-high-contrast:not(.vscode-high-contrast-light) .gitbadge { --gbr: #ff7aa3; --gbo: #ffae5c; --gbg: #5ee8a0; --gbb: #3fd0ff; --gbv: #c9a2ff; }
+  .gitbadge.gb-failing { --gb: var(--dp-rose, var(--gbr)); } .gitbadge.gb-running { --gb: var(--dp-orange, var(--gbo)); } .gitbadge.gb-passing { --gb: var(--dp-green, var(--gbg)); }
+  .gitbadge.gb-unknown, .gitbadge.gb-none { --gb: var(--dp-blue, var(--gbb)); } .gitbadge.gb-local { --gb: var(--dp-violet, var(--gbv)); }
+  body.no-overlay .gitbadge, body.no-overlay .lggit { display: none !important; }
+  .lggit { display: inline-flex; gap: 6px; align-items: center; }
+  .lggit .gitbadge { position: static; cursor: default; }
   .foldbtn { position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; background: var(--vscode-editor-background); cursor: pointer; font-size: 10px; line-height: 14px; padding: 0; color: var(--muted); }
   .node.group { border-style: dashed; border-left: 4px dashed var(--info); background: var(--card); }
   .node.parent { box-shadow: 3px 3px 0 -1px var(--vscode-editor-background), 3px 3px 0 0 var(--border); }

@@ -343,6 +343,7 @@ function diagram(s: WorkbenchState): HTMLElement {
   }
   const legend = h("div", { class: "legend" },
     h("span", { class: "lg data", text: "data" }), h("span", { class: "lg control", text: "orchestration" }), h("span", { class: "lg dependency", text: "dependency" }),
+    gitLegend(s),
     s.preview ? h("span", { class: "lg-diff" }, h("span", { class: "tag added", text: "new" }), h("span", { class: "tag replaced", text: "changed" }), h("span", { class: "tag removed", text: "removed" })) : undefined,
     h("span", { class: "muted small grow", text: "Click a component to select it; double-click opens its entry file. The diagram never runs anything." }));
   const ds = diagramSettingsOf(s);
@@ -483,10 +484,38 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
         h("span", { class: "nodelabel", text: `${c?.label ?? ghost!.label}${folded ? ` (+${m.memberIds.length - 1})` : ""}` }),
         h("span", { class: "nodestatus" }, h("span", { class: "stsym", "aria-hidden": "true", text: STATES[st].symbol }), h("span", { text: c ? c.headline : "not in this architecture" })),
         step ? h("span", { class: `stepline step-${step}`, title: `Client step: ${STEP_STATES[step].label}` }, h("span", { class: "stepsym", "aria-hidden": "true", text: STEP_STATES[step].symbol })) : undefined),
+      gitBadge(s, c?.id),
       hasKids || folded ? h("button", { class: "foldbtn", type: "button", title: folded ? "Show the components inside" : "Fold the components inside into this box", "aria-expanded": String(!folded), onclick: () => fold(`parent:${m.componentId}`), text: folded ? "▸" : "▾" }) : undefined);
     canvas.append(el);
   }
   return canvas;
+}
+
+// ------------------------------------------------------------------ V3-GITDIAG: Git on the diagram
+
+const GIT_SYM: Record<string, string> = { failing: "✕", running: "◷", passing: "✓", unknown: "?", none: "", local: "" };
+const gitShown = (s: WorkbenchState) => Boolean(s.gitDiagram?.shown) && !s.preview;
+
+/** A block's Git badge: change sets touching its files (count, worst CI state); click opens one. */
+function gitBadge(s: WorkbenchState, componentId: string | undefined): HTMLElement | undefined {
+  const g = componentId && gitShown(s) ? s.gitDiagram!.byComponent[componentId] : undefined;
+  if (!g) return undefined;
+  return h("button", {
+    class: `gitbadge gb-${g.worst}`, type: "button", title: g.title, "aria-label": g.title.split("\n")[0],
+    onclick: (e: Event) => { e.stopPropagation(); command("datapass.diagram.openGitChanges", componentId); }
+  }, h("span", { "aria-hidden": "true", text: `⎇${g.count}${GIT_SYM[g.worst] ?? ""}` }));
+}
+
+/** The legend's Git entry, with the switch that hides or shows the badges. */
+function gitLegend(s: WorkbenchState): HTMLElement | undefined {
+  const g = s.gitDiagram;
+  if (!g || s.preview) return undefined;
+  const toggle = btn(g.shown ? "hide" : "show Git on the diagram", () => command("datapass.diagram.toggleGitBadges"), { kind: "link", title: "Setting datapass.diagram.gitBadges" });
+  if (!g.shown) return h("span", { class: "lggit" }, toggle);
+  if (!Object.keys(g.byComponent).length) return undefined;
+  return h("span", { class: "lggit", title: "Open pull requests (branch fetched) and this computer's uncommitted or unpushed changes, on the blocks whose files they touch. Read-only: DataPass never fetches for it." },
+    h("span", { class: "gitbadge gb-local", "aria-hidden": "true", text: "⎇" }), "Git: local", h("span", { class: "gitbadge gb-passing", "aria-hidden": "true", text: "✓" }), "PR, CI passing",
+    h("span", { class: "gitbadge gb-failing", "aria-hidden": "true", text: "✕" }), "failing", toggle);
 }
 
 // ------------------------------------------------------------------ files

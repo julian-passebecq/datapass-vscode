@@ -117,6 +117,8 @@ export interface WorkbenchState {
   git?: WbGit;
   /** 0.20: work orders of this project (the Work orders view and the Details timeline). */
   workOrders?: WbWorkOrders;
+  /** V3-GITDIAG: Git badges on the diagram blocks. */
+  gitDiagram?: WbGitDiagram;
   /** QA-2: the Codex tests section (only in the modes that show ai.codexTests). */
   codexTests?: WbCodexTests;
   /** 0.23: the toolkit catalogue (built-in baseline + the hub's files). */
@@ -185,6 +187,14 @@ export interface WbCodexTests {
 }
 /** 0.19: what the Workbench overview says about Git
  (no path, no branch content, only counts and one sentence). */
+/** V3-GITDIAG: Git on the diagram — per block, the change sets touching it (counts, worst CI state, a tooltip; no absolute path). */
+export interface WbGitDiagram {
+  shown: boolean;
+  byComponent: Record<string, { count: number; worst: "failing" | "running" | "unknown" | "passing" | "none" | "local"; title: string }>;
+  /** Change sets touching files outside every component. */
+  outside: number;
+  checkedAt?: string;
+}
 export interface WbGit { needsYou: number; repositories: number; checked: number; openPrs: number; failing: number; oldestFetch?: string; top?: string; restricted: boolean }
 
 

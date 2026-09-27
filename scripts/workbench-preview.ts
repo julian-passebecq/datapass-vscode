@@ -102,6 +102,8 @@ const pages: Page[] = [
   { name: "board", mode: "full", selection: {}, ui: { view: "board", boardFocus: "bug-3" } },
   { name: "board-filtered", mode: "full", selection: {}, ui: { view: "board", boardSub: "papers", boardTypes: ["bug", "task"], boardFocus: "task-review-guide" } },
   { name: "map", mode: "map", selection: { subproject: "papers", component: "extract" } },
+  // V3-GITDIAG: Git badges on the blocks (a failing PR and a local change on "PDF extraction", a passing PR on "Cosmos staging").
+  { name: "map-git", mode: "map", selection: { subproject: "papers", component: "extract" }, git: true },
   { name: "map-vertical", mode: "map", selection: { subproject: "papers" }, ui: { dir: "TB", groupBy: "level" }, preview: true },
   { name: "detail", mode: "detail", selection: { subproject: "papers", component: "extract" } },
   { name: "readiness", mode: "full", selection: {}, readiness: true },
@@ -124,6 +126,11 @@ for (const p of pages) {
     workOrders: p.orders ? workOrders : undefined, toolkit
   });
   state.diagramSettings = { ...DIAGRAM_SETTING_DEFAULTS, overlay: !noOverlay, theme: vscodeLook ? "vscode" : "microsoft" };
+  if (p.git) state.gitDiagram = { shown: true, outside: 1, byComponent: {
+    extract: { count: 2, worst: "failing", title: ["Git: 2 change sets touch this block", "PR #12 — Keep page numbers (CI failing, 1 file)", "Local — Local changes in pipeline (on this computer, 1 file)", "Click to open one."].join("\n") },
+    cosmos: { count: 1, worst: "passing", title: ["Git: 1 change set touches this block", "PR #14 — Partition key (CI passing, 2 files)", "Click to open one."].join("\n") },
+    adf: { count: 1, worst: "local", title: ["Git: 1 change set touches this block", "Local — Local changes in pipeline (on this computer, 1 file)", "Click to open one."].join("\n") }
+  } };
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.
   html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "").replace("<body ", `<body class="${light ? "vscode-light" : "vscode-dark"}" `)

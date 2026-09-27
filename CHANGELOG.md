@@ -5,6 +5,12 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-GITDIAG** (vision §2.3): *Git on the diagram* — open pull requests whose branch is already fetched and this
+  computer's uncommitted or unpushed changes show as a small badge (count, worst CI state) on the blocks whose files
+  they touch; hovering lists them, clicking opens the PR (Git module command) or VS Code's diff. Setting
+  `datapass.diagram.gitBadges` (legend switch; also off with `datapass.overlay.enabled`). *DataPass: Show File
+  History* (editor title button for files of known repositories, Explorer / Project tree menus): the file's last 50
+  commits, each opening the diff with the previous version. Read-only, local Git only (≤ 200 files per change set).
 - **V3-FIX-ICONS**: twelve bundled Simple Icons paths (Docker, Google Cloud, Google Drive, Python, GitLab, Airflow,
   Grafana, MongoDB, PostgreSQL, Databricks, BigQuery, GitHub Actions) had been damaged by a minifier that glued numbers
   together, so Docker drew nothing and others drew wrong shapes. They are restored verbatim from Simple Icons 16.32.0,

@@ -69,7 +69,9 @@ const GATED: Record<string, readonly string[]> = {
     "openProjectLinks", "openLinksFile", "setCodeFontSize",
     // V3-AIRFLOW: also in the editor context menu of Python files (the view opens by itself).
     "showAirflowDag",
-    "layout.toggleArchitecturePanel"
+    "layout.toggleArchitecturePanel",
+    // V3-GITDIAG: reached from the editor title / context menus and the diagram legend in the lighter modes.
+    "fileVersions.history", "diagram.toggleGitBadges"
   ]
 };
 
