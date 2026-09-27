@@ -60,6 +60,8 @@ import { registerCodeFontCommand } from "./work/codeFontCommand";
 import { registerOpenClientProject } from "./work/openClientProject";
 import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
+import { ShellService, registerShellCommands } from "./work/shellCommands";
+import type { TreeLens } from "./core/windows/treeLens";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -187,6 +189,17 @@ export interface DataPassTestApi {
   };
   /** V1-PERF: this activation's timings (ms) and how many refreshes ran since (scripts/perf.ts). V1-REF: first paint and full refresh. */
   perf(): PerfCounters;
+  /** V3-SHELL: the left tree's lens, rail mode, and whether the bottom-panel Architecture view is on. */
+  shell: {
+    lens(): TreeLens;
+    chosenLens(): TreeLens;
+    chooseLens(lens: TreeLens): Promise<void>;
+    rail(): boolean;
+    railResolved(): boolean;
+    /** One message as the rail webview would send it. */
+    railSend(message: Record<string, unknown>): Promise<void>;
+    architectureInPanel(): boolean;
+  };
 }
 
 export interface PerfCounters {
@@ -263,6 +276,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   projectTree.attach(projectView);
   projectTree.setSurfaces(experience.shows, experience.onDidChange);
   registerVariantCommands(context, session, projectTree);
+  // V3-SHELL: tree lenses, rail mode, the bottom-panel Architecture view (off by default), close buttons.
+  const shell = new ShellService(context, projectTree, projectView);
+  registerShellCommands(context, shell);
   const activeVariant = new ActiveVariantService(context, session, experience.shows, experience.onDidChange);
   registerActiveVariantCommands(context, activeVariant, session);
   host.setSurfaces(experience.shows, experience.onDidChange);
@@ -273,7 +289,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     vscode.window.registerWebviewViewProvider("datapass.details", host.viewProvider("detail"), { webviewOptions: { retainContextWhenHidden: true } }),
     // Kept alive while hidden so a pasted answer survives switching to Chat and back (memory only).
     aiExchange, vscode.window.registerWebviewViewProvider(AiExchangeView.viewType, aiExchange, { webviewOptions: { retainContextWhenHidden: true } }),
-    vscode.commands.registerCommand("datapass.showAiExchange", (kind?: unknown) => aiExchange.reveal(typeof kind === "string" ? kind as ExchangeKind : undefined))
+    vscode.commands.registerCommand("datapass.showAiExchange", async (kind?: unknown) => {
+      // V3-SHELL: in rail mode the AI view is folded into the rail: expand the panel first.
+      if (shell.rail()) await shell.expand("datapass.aiExchange");
+      return aiExchange.reveal(typeof kind === "string" ? kind as ExchangeKind : undefined);
+    })
   );
   registerWorkbenchCommands(context, session, host);
   registerOptionsCommands(context, session, host);
@@ -300,6 +320,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     session.onDidChange(gitIfVisible)
   );
   host.setGitSource(() => git.observation());
+  projectTree.attachGit(gitTree, () => void git.refresh());
   registerGitCommands(context, session, git);
   // 0.22 file versions (package F): read-only revisions of any file through native Git.
   registerFileVersionCommands(context, session);
@@ -308,13 +329,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const workOrders = new WorkOrderService(context, session, git);
   const flows = new WorkOrderFlows(context, session, workOrders, git);
   aiExchange.attachWorkOrders(workOrders, flows, git);
+  projectTree.attachWorkOrders(() => workOrders.list(), workOrders.onDidChange);
   host.setWorkOrderSource(() => workOrders.view(), workOrders.onDidChange);
   context.subscriptions.push(workOrders);
   registerWorkOrderCommands(context, session, workOrders, flows, git,
     p => aiExchange.prefill(p),
     async id => {
       host.openPanel(vscode.ViewColumn.Active, "workOrders", id || undefined);
-      if (id) await vscode.commands.executeCommand("datapass.details.focus");
+      if (id && shell.rail()) await shell.expand("datapass.details");
+      else if (id) await vscode.commands.executeCommand("datapass.details.focus");
       workOrders.refreshGit(Boolean(id));
     });
   void workOrders.reload();
@@ -455,6 +478,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
   );
 
+  // V3-SHELL: without the bottom-panel Architecture view, the landing opens the Workbench tab (keyboard stays where it is).
+  const landOnWorkbench = () => { host.openPanel(vscode.ViewColumn.Active, "architecture", undefined, true); };
   let landed: Promise<boolean> = Promise.resolve(false);
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
@@ -470,7 +495,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
-    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied).catch(() => false); await landed; experience.introduce(); return applied; })
+    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied, landOnWorkbench).catch(() => false); await landed; experience.introduce(); return applied; })
     .catch(error => {
       output().appendLine(`[startup] ${error instanceof Error ? error.message : String(error)}`);
       return undefined;
@@ -480,6 +505,15 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
   return {
     perf: () => ({ ...perf }),
+    shell: {
+      lens: () => shell.lens(),
+      chosenLens: () => shell.lenses.chosen,
+      chooseLens: lens => shell.chooseLens(lens),
+      rail: () => shell.rail(),
+      railResolved: () => shell.railResolved(),
+      railSend: message => shell.onRailMessage(message),
+      architectureInPanel: () => shell.architectureInPanel()
+    },
     refresh: refreshState,
     workModel: () => session.model(),
     project: () => session.project,
@@ -546,7 +580,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       ready: () => experience.ready,
       status: () => ({ text: experience.statusText(), tooltip: experience.statusTooltip(), visible: experience.statusVisible() }),
       landed: async () => { await startup; return landed; },
-      land: () => landOnArchitecture(experience, session.project.manifestExists, undefined)
+      land: () => landOnArchitecture(experience, session.project.manifestExists, undefined, landOnWorkbench)
     },
     setConnectionRunner: impl => { session.connectionRunner = impl; },
     workOrders: {

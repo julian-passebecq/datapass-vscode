@@ -23,6 +23,7 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
   const mode = async (id: string) => { await run("datapass.experience.switchMode", id); await waitFor(`mode ${id}`, () => api().experience.current().preset === id); };
   const panes = () => api().windowInfo().panes;
   const treeSections = async () => (await api().renderProjectTree()).filter(r => r.depth === 0).map(r => r.id ?? r.label);
+  const workbenchTab = () => vscode.window.tabGroups.all.some(g => g.tabs.some(t => t.label === "DataPass Workbench"));
   let statusBefore = "";
 
   test("0.22 modes: a new install opens in Standard, on the architecture, with the mode in the status bar", async () => {
@@ -32,8 +33,10 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     const x = api().experience.current();
     assert.equal(x.preset, "standard");
     assert.deepEqual(x.messages, []);
-    assert.equal(await api().experience.landed(), true, "Standard lands on the architecture panel");
-    await waitFor("the architecture panel is shown", () => panes().includes("architecture"));
+    assert.equal(await api().experience.landed(), true, "Standard lands on the architecture");
+    // V3-SHELL: no bottom-panel Architecture by default: the landing opens the Workbench tab.
+    await waitFor("the Workbench tab is open", workbenchTab);
+    assert.ok(!panes().includes("architecture"), `panes: ${panes().join(", ")}`);
     const status = api().experience.status();
     assert.equal(status.visible, true);
     assert.equal(status.text, "$(layers) DataPass: Standard");
@@ -49,8 +52,8 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     pick.show();
     try {
       await new Promise(r => setTimeout(r, 300));
-      assert.equal(await api().experience.land(), true, "Standard lands on the architecture panel");
-      await waitFor("the architecture panel is shown", () => panes().includes("architecture"));
+      assert.equal(await api().experience.land(), true, "Standard lands on the architecture");
+      await waitFor("the Workbench tab is open", workbenchTab);
       assert.equal(hidden, false, "the landing took the keyboard and closed the picker");
       await mode("advanced");
       await run("datapass.refreshProject");
@@ -62,12 +65,12 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     }
   }, ONLY);
 
-  test("0.22 modes: Standard hides the Project, Work and Galaxy views (when clauses) and shows Git, AI, Details", async () => {
-    await tryRun("datapass.project.focus");
+  test("0.22 modes: Standard hides the Work and Galaxy views (when clauses) and shows the Project tree, Git, AI, Details", async () => {
+    await run("datapass.project.focus");
+    await waitFor("the Project tree (V3-SHELL: one tree on the left, in Standard too)", () => panes().includes("project"));
     await tryRun("datapass.galaxy.focus");
     await run("datapass.details.focus");
     await waitFor("Details shown", () => panes().includes("details"));
-    assert.ok(!panes().includes("project"), `panes: ${panes().join(", ")}`);
     assert.ok(!panes().includes("galaxy"), `panes: ${panes().join(", ")}`);
     await run("datapass.git.focus");
     await run("datapass.aiExchange.focus");
@@ -75,7 +78,7 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     // V1-STAB: Workbench Layout in Standard — the hidden Project view does not stop the Architecture and Details.
     await run("datapass.arrangeWorkbench");
     await waitFor("Details after Workbench Layout", () => panes().includes("details"));
-    assert.ok(!panes().includes("project"), "the Project view stays hidden");
+    assert.ok(!panes().includes("architecture"), "Workbench Layout leaves the bottom panel alone while the Architecture view is off");
   }, ONLY);
 
   test("0.22 modes: Standard marks components with alternatives instead of the Options section; Workbench and AI tabs gated", async () => {
@@ -145,6 +148,55 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await run("datapass.experience.resetOverrides");
     await waitFor("the override removed", () => !Object.keys(api().experience.current().overrides).length);
     assert.equal(cfg().inspect("overrides")?.workspaceValue, undefined, "nothing written to the workspace settings");
+  }, ONLY);
+
+  test("V3-SHELL: the default layout — no bottom-panel Architecture, no Workbench column; lenses; rail", async () => {
+    await mode("datapass");
+    // Bottom panel: the Architecture view is off until switched on.
+    assert.equal(api().shell.architectureInPanel(), false);
+    await tryRun("datapass.architecture.focus");
+    await new Promise(r => setTimeout(r, 500));
+    assert.ok(!panes().includes("architecture"), `panes: ${panes().join(", ")}`);
+    // Workbench: no Sub-projects / Repositories column unless the setting asks for it.
+    assert.equal(api().workbenchState().layout?.navColumn, false);
+    await vscode.workspace.getConfiguration("datapass.layout").update("workbenchNavColumn", true, vscode.ConfigurationTarget.Global);
+    await waitFor("the old column back on request", () => api().workbenchState().layout?.navColumn === true);
+    await vscode.workspace.getConfiguration("datapass.layout").update("workbenchNavColumn", undefined, vscode.ConfigurationTarget.Global);
+    // Left tree lenses, remembered per workspace.
+    await run("datapass.project.focus");
+    await waitFor("the Project tree", () => panes().includes("project"));
+    assert.equal(api().shell.lens(), "project");
+    await run("datapass.tree.lens.architecture");
+    assert.equal(api().shell.chosenLens(), "architecture");
+    const arch = await treeSections();
+    assert.ok(arch.some(s => s.startsWith("sp:")) && arch.includes("repositories"), arch.join(", "));
+    assert.ok(!arch.includes("readiness") && !arch.includes("next"), arch.join(", "));
+    await run("datapass.tree.lens.readiness");
+    assert.ok((await treeSections()).includes("readiness"));
+    await run("datapass.tree.lens.ai");
+    assert.ok((await treeSections()).includes("ai:orders"));
+    await run("datapass.tree.lens.git");
+    const git = await api().renderProjectTree();
+    assert.ok(git.length > 0 && git.every(r => r.id?.startsWith("git/")), JSON.stringify(git.slice(0, 3)));
+    // A selection made elsewhere is revealed: the tree follows to the Architecture lens without forgetting Git.
+    await api().select({ component: "extract" });
+    await waitFor("the tree follows the selection", () => api().shell.lens() === "architecture");
+    assert.equal(api().shell.chosenLens(), "git");
+    await api().shell.chooseLens("project");
+    // Right rail: the full panel folds into the rail and comes back on a button.
+    await run("datapass.details.focus");
+    await waitFor("Details", () => panes().includes("details"));
+    await run("datapass.rail.collapse");
+    assert.equal(api().shell.rail(), true);
+    await waitFor("the rail", () => api().shell.railResolved());
+    await waitFor("Details folded", () => !panes().includes("details"));
+    await api().shell.railSend({ type: "rail", id: "details" });
+    assert.equal(api().shell.rail(), false);
+    await waitFor("Details back", () => panes().includes("details"));
+    record("shell.default", { panes: panes(), lens: api().shell.lens() });
+    // The general tests that follow expect the Architecture panel, as in the other fixtures' profiles.
+    await run("datapass.layout.toggleArchitecturePanel", true);
+    await waitFor("the Architecture panel on request", () => panes().includes("architecture"));
   }, ONLY);
 
   // Ends in Advanced: the suite's general tests that follow expect 0.20's surfaces, as in the other fixtures.

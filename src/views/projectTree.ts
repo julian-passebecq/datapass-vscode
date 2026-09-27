@@ -23,6 +23,9 @@ import { alternativesByComponent } from "../core/experience/alternatives";
 import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
 import type { ProjectMap } from "../core/project/projectMap";
 import { PLAIN_STATE_ICONS, readTreeLook, stateIcon, treeIconColor, type TreeLook } from "./treeColors";
+import { LENS_CONTEXT_KEY, LENS_INFO, LENSES_WITH_ARCHITECTURE, lensForScreen, type LensStore, type TreeLens } from "../core/windows/treeLens";
+import type { GitNode, GitTreeProvider } from "./gitTree";
+import type { LoadedOrder } from "../work/workOrders";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
@@ -30,7 +33,9 @@ type Node =
   | { t: "component"; id: string; c: ComponentView; parent: string }
   | { t: "file"; id: string; c: ComponentView; f: ExpectedFile; parent: string }
   | { t: "section"; id: string; label: string; description?: string; icon: string; kids: () => Node[]; collapsed?: boolean; tooltip?: string }
-  | { t: "repo"; id: string; r: RepoView };
+  | { t: "repo"; id: string; r: RepoView }
+  /** V3-SHELL: a Git view node shown through the Git lens. */
+  | { t: "git"; id: string; g: GitNode };
 
 const HEALTH_ICON: Record<string, [string, string?]> = {
   ok: ["pass", "testing.iconPassed"], attention: ["warning", "problemsWarningIcon.foreground"], blocked: ["error", "problemsErrorIcon.foreground"],
@@ -78,6 +83,11 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private shows: (surface: string) => boolean = () => true;
   /** 0.23: the All variants toggle (memory only; the default is the selected architecture). */
   private allVariants = false;
+  /** V3-SHELL: what the tree lists (Project until a lens store is attached). */
+  private lenses?: LensStore;
+  private gitTree?: GitTreeProvider;
+  private gitRefresh?: () => void;
+  private orders?: () => readonly LoadedOrder[];
 
   /** V3-THEME: neutral icons by default, the DataPass overlay switch (settings `datapass.tree.*`, `datapass.overlay.*`). */
   private look: TreeLook = this.readLook();
@@ -111,6 +121,42 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     this.emitter.fire(undefined);
   }
 
+  /** V3-SHELL: the lens the tree shows now. */
+  lens(): TreeLens { return this.lenses?.current ?? "project"; }
+
+  /** V3-SHELL: attach the lens store (per workspace). */
+  setLenses(store: LensStore): void {
+    this.lenses = store;
+    this.updateTitle();
+  }
+
+  /** V3-SHELL: the lens changed (chosen or followed): repaint, and read Git when the Git lens shows. */
+  lensChanged(): void {
+    void vscode.commands.executeCommand("setContext", LENS_CONTEXT_KEY, this.lens());
+    this.updateTitle();
+    if (this.lens() === "git" && this.view?.visible) this.gitRefresh?.();
+    this.emitter.fire(undefined);
+  }
+
+  /** V3-SHELL: the Git lens lists the Git view's nodes (same provider, same routes). */
+  attachGit(tree: GitTreeProvider, refresh: () => void): void {
+    this.gitTree = tree;
+    this.gitRefresh = refresh;
+    this.subs.push(tree.onDidChangeTreeData(() => { if (this.lens() === "git") this.emitter.fire(undefined); }));
+  }
+
+  /** V3-SHELL: the AI lens lists this project's work orders. */
+  attachWorkOrders(list: () => readonly LoadedOrder[], changed: vscode.Event<void>): void {
+    this.orders = list;
+    this.subs.push(changed(() => { if (this.lens() === "ai") this.emitter.fire(undefined); }));
+  }
+
+  private updateTitle(): void {
+    if (!this.view) return;
+    const l = this.lens();
+    this.view.description = l === "project" ? undefined : LENS_INFO[l].label;
+  }
+
   /**
    * 0.23 (D-17): the architecture the tree shows — the one previewed on the diagram when there is one
    * and the mode has the variant filter, else graph.json's.
@@ -121,6 +167,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   attach(view: vscode.TreeView<Node>): void {
     this.view = view;
+    this.updateTitle();
+    this.subs.push(view.onDidChangeVisibility(e => { if (e.visible && this.lens() === "git") this.gitRefresh?.(); }));
     this.subs.push(view.onDidChangeSelection(e => {
       const n = e.selection[0];
       // The tree's own reveals (following a selection made elsewhere) fire this event later; a late one
@@ -209,9 +257,10 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     };
   }
 
-  getChildren(node?: Node): Node[] {
-    if (!node) return this.remember(this.roots(), undefined);
+  getChildren(node?: Node): Node[] | Promise<Node[]> {
+    if (!node) return this.lensRoots();
     switch (node.t) {
+      case "git": return this.gitChildren(node.g, node);
       case "subproject": return this.remember(node.sp.componentIds.map(id => this.archMap().components.find(c => c.id === id)).filter((c): c is ComponentView => !!c && !(c.parent && node.sp.componentIds.includes(c.parent))).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id })), node);
       case "component": {
         const map = this.archMap();
@@ -281,6 +330,11 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         item.id = n.id; item.description = n.description; item.iconPath = new vscode.ThemeIcon(n.icon); item.contextValue = `section.${n.id}`; item.tooltip = n.tooltip;
         return item;
       }
+      case "git": {
+        const item = this.gitTree!.getTreeItem(n.g);
+        item.id = n.id;
+        return item;
+      }
       case "repo": {
         const r = n.r;
         const item = new vscode.TreeItem(r.label, vscode.TreeItemCollapsibleState.None);
@@ -294,6 +348,83 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         return item;
       }
     }
+  }
+
+  /** V3-SHELL: the root nodes of the lens shown now. */
+  private lensRoots(): Node[] | Promise<Node[]> {
+    const lens = this.lens();
+    if (lens === "project") return this.remember(this.roots(), undefined);
+    if (lens === "git") return this.gitChildren(undefined, undefined);
+    const ctx = this.session.project;
+    // Without a readable project, every lens shows the same way in (open, initialize, fix the manifest).
+    if (!ctx.root || !ctx.manifestExists || ctx.manifestErrors.length) return this.remember(this.roots(), undefined);
+    return this.remember(lens === "architecture" ? this.architectureRoots() : lens === "ai" ? this.aiRoots() : this.readinessRoots(), undefined);
+  }
+
+  private async gitChildren(g: GitNode | undefined, parent: Node | undefined): Promise<Node[]> {
+    if (!this.gitTree) return this.remember([{ t: "info", id: "git:none", label: "Git is not ready yet.", icon: ["git-merge"] }], parent);
+    const kids = await this.gitTree.getChildren(g);
+    return this.remember(kids.map(k => ({ t: "git" as const, id: `git/${k.id}`, g: k })), parent);
+  }
+
+  /** Architecture lens: the selected architecture, sub-projects → components → files, variants, options, repositories. */
+  private architectureRoots(): Node[] {
+    const keep = (n: Node) => n.t === "subproject" || ["graphError", "nographs", "variants:selected", "variants", "options", "repositories", "problems"].includes(n.id);
+    const nodes = this.roots().filter(keep).map(n => n.t === "section" && n.id === "repositories" ? { ...n, collapsed: false } : n);
+    // The lens exists to list the architecture: sub-projects show even when the mode leaves them out of the Project lens.
+    if (!nodes.some(n => n.t === "subproject")) {
+      const at = nodes.findIndex(n => ["variants", "options", "repositories", "problems"].includes(n.id));
+      const sps: Node[] = this.archMap().subprojects.filter(sp => sp.componentIds.length || !sp.implicit).map(sp => ({ t: "subproject" as const, id: `sp:${sp.id}`, sp }));
+      nodes.splice(at < 0 ? nodes.length : at, 0, ...sps);
+    }
+    if (!nodes.some(n => n.id === "repositories")) {
+      const map = this.session.projectMap();
+      nodes.push({
+        t: "section", id: "repositories", label: "Repositories", icon: "repo", description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned`,
+        kids: () => map.repositories.map(r => ({ t: "repo" as const, id: `repo:${r.key}`, r }))
+      });
+    }
+    return nodes;
+  }
+
+  /** AI lens: the routes to the AI view and this project's work orders. */
+  private aiRoots(): Node[] {
+    const orders = this.orders?.() ?? [];
+    const open = orders.filter(o => !o.state?.closed);
+    const row = (o: LoadedOrder): Node => ({
+      t: "info", id: `wo:${o.id}`, label: o.order?.title ?? o.id,
+      description: o.error ? "not read" : [o.state?.closed ? o.state.closed.how : o.state?.status, o.order?.kind].filter(Boolean).join(" · ") || undefined,
+      icon: o.error ? ERR : o.state?.closed ? ["pass", "disabledForeground"] : ["checklist"],
+      tooltip: o.error ?? `${o.order?.goal ?? o.id}\n${o.id}`,
+      command: { command: "datapass.workOrders.show", title: "Show the order", arguments: [o.id] }
+    });
+    return [
+      { t: "info", id: "ai:view", label: "Open the AI view", description: "guided · agent · manual", icon: ["sparkle"], command: { command: "datapass.showAiExchange", title: "Open" } },
+      { t: "info", id: "ai:copy", label: "Copy for AI…", description: "a DataPass file with its context", icon: ["copy"], command: { command: "datapass.copyForAi", title: "Copy" } },
+      { t: "info", id: "ai:import", label: "Import from AI…", description: "paste an answer, reviewed first", icon: ["cloud-download"], command: { command: "datapass.importFromAi", title: "Import" } },
+      { t: "info", id: "ai:new", label: "New work order…", description: "for Claude or Codex", icon: ["add"], command: { command: "datapass.workOrders.new", title: "New" } },
+      {
+        t: "section", id: "ai:orders", label: "Work orders", icon: "checklist", collapsed: false,
+        description: `${open.length} open${orders.length > open.length ? ` · ${orders.length - open.length} closed` : ""}`,
+        kids: () => orders.length
+          ? [...open, ...orders.filter(o => o.state?.closed)].slice(0, 50).map(row)
+          : [{ t: "info" as const, id: "wo:none", label: "No work order yet", icon: ["info"] as [string] }]
+      },
+      { t: "info", id: "ai:all", label: "All work orders", description: "Workbench", icon: ["list-flat"], command: { command: "datapass.workOrders.show", title: "Open" } }
+    ];
+  }
+
+  /** Readiness lens: the full readiness sections (whatever the mode) and the problems in project files. */
+  private readinessRoots(): Node[] {
+    const s = this.session;
+    const map = s.projectMap();
+    const nodes: Node[] = [{ t: "info", id: "next", label: map.nextStep, description: "next", icon: ["arrow-right"], tooltip: map.nextStep }];
+    nodes.push(...readinessNodes(s.readiness()));
+    if (map.problems.length) nodes.push({
+      t: "section", id: "problems", label: "Problems in project files", icon: "warning", description: `${map.problems.length}`,
+      kids: () => map.problems.map((p, i) => ({ t: "info" as const, id: `problem:${i}`, label: p.message, description: p.where, icon: p.severity === "error" ? ERR : p.severity === "warning" ? WARN : ["info"] as [string], tooltip: `${p.where}: ${p.message}` }))
+    });
+    return nodes;
   }
 
   private roots(): Node[] {
@@ -387,6 +518,13 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private async revealSelection(): Promise<void> {
     if (!this.view?.visible) return;
     const sel = this.session.selection();
+    // V3-SHELL: follow the screen in use — a selection made elsewhere shows in the Architecture lens (not remembered).
+    const next = this.lenses ? lensForScreen(this.lens(), { selected: Boolean(sel.subproject || sel.component) }) : undefined;
+    if (next && this.lenses!.follow(next)) {
+      this.lensChanged();
+      await new Promise(r => setTimeout(r, 250));
+    }
+    if (!LENSES_WITH_ARCHITECTURE.includes(this.lens())) return;
     const id = sel.component ? `sp:${sel.subproject}/c:${sel.component}` : sel.subproject ? `sp:${sel.subproject}` : undefined;
     const node = id ? this.byId.get(id) : undefined;
     if (node && this.view.selection[0]?.id !== node.id) {

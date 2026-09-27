@@ -85,6 +85,10 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .problem { font-size: 11.5px; border-left: 3px solid var(--warn); padding: 3px 8px; margin: 4px 0; display: grid; gap: 1px; }
   .problem.error { border-color: var(--bad); }
   .breadcrumb { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .breadcrumb .crumb { font: inherit; color: var(--vscode-textLink-foreground); background: none; border: 0; padding: 0; cursor: pointer; }
+  .breadcrumb .crumb:hover { text-decoration: underline; }
+  .shell.nonav { grid-template-columns: minmax(360px, 1fr) 340px; }
+  @media (max-width: 1100px) { .shell.nonav { grid-template-columns: minmax(320px, 1fr); } }
   .objective { max-width: 420px; }
 
   .diagram { border: 1px solid var(--dg-border, var(--border)); border-radius: 8px; background: var(--dg-canvas, var(--card)); color: var(--dg-text, inherit); margin: 10px 0 14px; display: grid; }

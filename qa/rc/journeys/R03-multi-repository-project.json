@@ -23,7 +23,7 @@
     { "run": "DataPass: Focus on Git View" },
     { "expect": "Other repositories", "timeoutMs": 30000 },
     { "expect": "checked", "timeoutMs": 30000 },
-    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "run": "DataPass: Open Project Workbench" },
     { "expect": "Whole project", "timeoutMs": 30000 },
     { "screenshot": "project" },
     { "run": "DataPass: Switch the Selected Variant" },

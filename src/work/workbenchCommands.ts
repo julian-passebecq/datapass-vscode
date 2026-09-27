@@ -33,6 +33,7 @@ import { LOCAL_DIR } from "../core/workspace/loader";
 import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { PHASE_LABELS } from "../core/capabilities/registry";
 import { executeGalaxyAction } from "../core/actions";
+import { architectureInPanel } from "./shellCommands";
 
 const ADF_STUDIO = "https://adf.azure.com/";
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
@@ -135,7 +136,8 @@ function isInsideWorkspace(uri: vscode.Uri): boolean {
 async function arrange(session: WorkSession): Promise<void> {
   // Left: the Project tree. Bottom: the architecture diagram. Right: details and checklists. Centre: files.
   // V1-STAB: a view the mode hides (the Project tree in Standard) may refuse focus; the others still open.
-  for (const view of ["datapass.project", "datapass.architecture", "datapass.details"]) {
+  // V3-SHELL: the bottom-panel Architecture view only when it is switched on (else the Workbench tab shows the diagram).
+  for (const view of ["datapass.project", ...(architectureInPanel() ? ["datapass.architecture"] : []), "datapass.details"]) {
     try { await vscode.commands.executeCommand(`${view}.focus`); } catch { /* hidden in this mode */ }
   }
   const c = session.selection().component ? session.projectMap().components.find(x => x.id === session.selection().component) : undefined;

@@ -239,7 +239,11 @@ test("package.json contributes every registered command and every datapass.* cap
   assert.deepEqual(pkg.contributes.viewsContainers.secondarySidebar.map((v: { id: string }) => v.id), ["datapass-details"]);
   assert.deepEqual(pkg.contributes.views["datapass-architecture"].map((v: { id: string }) => v.id), ["datapass.architecture"]);
   // 0.24: the Claude & Codex panel between the AI view and Details.
-  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.aiExchange", "datapass.agentPanel", "datapass.details", "datapass.airflowDag"]);
+  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.rail", "datapass.aiExchange", "datapass.agentPanel", "datapass.details", "datapass.airflowDag"]);
+  // V3-SHELL: the bottom-panel Architecture view is off until the person switches it on.
+  assert.equal(pkg.contributes.configuration.properties["datapass.layout.architectureInPanel"].default, false);
+  assert.match(pkg.contributes.views["datapass-architecture"][0].when, /^datapass\.layout\.architectureInPanel && /);
+  assert.equal(pkg.contributes.configuration.properties["datapass.layout.workbenchNavColumn"].default, false);
   assert.ok(pkg.activationEvents.includes("onView:datapass.aiExchange"));
   assert.equal(pkg.contributes.configuration.properties["datapass.layout.showInSecondarySideBar"].default, true, "DataPass replaces Chat in the secondary side bar by default");
   // The secondary side bar contribution point exists from VS Code 1.106.

@@ -27,6 +27,7 @@ import { optionsMarkdown } from "../core/project/optionsReport";
 import { SHEET_PATH } from "../core/project/sheet";
 import { AI_TASKS, EXCHANGE_FILES, checkIncoming, exportForAi, reviewIncoming, type ExchangeKind, type IncomingReview, type ProjectContextForImport } from "../core/project/aiExchange";
 import { BACKUP_SUBDIR, backupFileName, backupsToPrune, parseBackupName } from "../core/project/backups";
+import { showArchitecture } from "./shellCommands";
 
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog", "toolkit"];
@@ -154,7 +155,7 @@ async function previewArchitecture(session: WorkSession, arg?: unknown): Promise
   const pick = await vscode.window.showQuickPick(items, { title: "Preview which architecture on the diagram?", placeHolder: "A preview: nothing is written" });
   if (!pick) return;
   await session.setPreview(pick.id === "current" ? undefined : { scenario: pick.id });
-  await vscode.commands.executeCommand("datapass.architecture.focus");
+  await showArchitecture();
 }
 
 /** A decision with its keys in the documented order (chosen, date and rationale after current). */

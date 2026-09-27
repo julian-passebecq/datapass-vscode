@@ -98,8 +98,9 @@ export function registerOpenClientProjectFlows(getApi: () => DataPassTestApi): v
     const roots = (vscode.workspace.workspaceFolders ?? []).map(f => path.basename(f.uri.fsPath));
     assert.deepEqual(roots, ["acme-bridge", "my-lab", "pipeline"]);
     assert.equal(api().experience.current().preset, "standard");
-    assert.equal(await api().experience.landed(), true, "Standard lands on the architecture panel");
-    await waitFor("the architecture panel is shown", () => api().windowInfo().panes.includes("architecture"));
+    assert.equal(await api().experience.landed(), true, "Standard lands on the architecture");
+    // V3-SHELL: no bottom-panel Architecture by default: the landing opens the Workbench tab.
+    await waitFor("the Workbench tab is open", () => vscode.window.tabGroups.all.some(g => g.tabs.some(t => t.label === "DataPass Workbench")));
     assert.equal(api().windowInfo().company, "Acme");
     record("openClientProject.window", { roots, panes: api().windowInfo().panes });
   }, ["v26-open-client-window"]);

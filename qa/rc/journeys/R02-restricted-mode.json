@@ -23,7 +23,7 @@
   "outOfScope": ["Running the component's tests after trusting it"],
   "ui": [
     { "expect": "Restricted Mode" },
-    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "run": "DataPass: Open Project Workbench" },
     { "expect": "PDF inbox", "timeoutMs": 60000 },
     { "run": "DataPass: Focus on Git View" },
     { "expect": "Restricted Mode: DataPass does not run Git", "timeoutMs": 30000 },

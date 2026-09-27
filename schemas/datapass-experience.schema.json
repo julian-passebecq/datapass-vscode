@@ -86,10 +86,11 @@
                 "ai.pilot",
                 "ai.codexTests",
                 "view.airflowDag",
-                "palette.full"
+                "palette.full",
+                "view.rail"
               ]
             },
-            "maxItems": 35,
+            "maxItems": 36,
             "minItems": 0
           }
         },

@@ -19,7 +19,7 @@
   "features": ["format-checks", "architecture"],
   "outOfScope": ["Editing any file outside this disposable copy"],
   "ui": [
-    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "run": "DataPass: Open Project Workbench" },
     { "expect": "PDF inbox", "timeoutMs": 60000 },
     { "openFile": ".datapass/graph.json" },
     { "press": "Control+End" },
@@ -31,10 +31,11 @@
     { "wait": 3000 },
     { "screenshot": "broken" },
     { "expectAbsent": "no graph" },
+    { "openFile": ".datapass/graph.json" },
     { "press": "Control+Z" },
     { "press": "Control+S" },
     { "wait": 3000 },
-    { "run": "DataPass Architecture: Focus on Architecture View" },
+    { "run": "DataPass: Open Project Workbench" },
     { "expect": "PDF inbox", "timeoutMs": 30000 },
     { "screenshot": "repaired" }
   ]

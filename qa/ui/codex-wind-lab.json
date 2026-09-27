@@ -13,7 +13,7 @@
         { "expect": "wind-platform" },
         { "expect": "Future operations dashboard" },
         { "screenshot": "repositories" },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "Local publish handler", "timeoutMs": 30000 },
         { "screenshot": "architecture" },
         { "expectAbsent": "wants to sign in", "timeoutMs": 5000 }
@@ -28,7 +28,7 @@
         { "expect": "C - managed-pipeline simulation" },
         { "quickPick": "B - Docker VM simulation" },
         { "expect": "Variant: B - Docker VM simulation", "timeoutMs": 30000 },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "Selected variant: B - Docker VM simulation", "timeoutMs": 30000 },
         { "expect": "USD/month" },
         { "screenshot": "preview-b" },
@@ -44,7 +44,7 @@
         { "run": "DataPass: Switch the Selected Variant" },
         { "quickPick": "C - managed-pipeline simulation" },
         { "expect": "Variant: C - managed-pipeline simulation", "timeoutMs": 30000 },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "Selected variant: C - managed-pipeline simulation", "timeoutMs": 30000 },
         { "expect": "Local publish handler (not an Azure runtime)" },
         { "expect": "C - ADF-shaped local runner" },
@@ -65,7 +65,7 @@
         { "run": "DataPass: Switch the Selected Variant" },
         { "quickPick": "B - Docker VM simulation" },
         { "expect": "Variant: B - Docker VM simulation", "timeoutMs": 30000 },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "Selected variant: B - Docker VM simulation", "timeoutMs": 30000 },
         { "expect": "Docker VM simulation declaration" },
         { "expect": "planned" },
@@ -101,7 +101,7 @@
         { "wait": 3000 },
         { "screenshot": "problems" },
         { "expectAbsent": "is not valid JSON" },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "planned · partial", "timeoutMs": 30000 }
       ]
     },
@@ -113,7 +113,7 @@
         { "run": "DataPass: Switch Mode…" },
         { "quickPick": "Standard" },
         { "expect": "DataPass: Standard", "timeoutMs": 30000 },
-        { "run": "DataPass Architecture: Focus on Architecture View" },
+        { "run": "DataPass: Open Project Workbench" },
         { "expect": "Whole project", "timeoutMs": 30000 },
         { "expect": "Codex Wind Lab" },
         { "screenshot": "standard" }

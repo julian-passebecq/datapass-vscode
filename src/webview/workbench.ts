@@ -1790,15 +1790,22 @@ function renderInner(): void {
     root.append(header(s), s.board ? h("div", { class: "shell wide board" }, boardNav(s), boardCenter(s), h("aside", { class: "side", "aria-label": "Card details" }, boardSide(s))) : boardEmpty(s));
     return;
   }
-  const crumbs = [s.project?.title ?? "Project", sp && !sp.implicit ? sp.title : undefined, c?.label].filter(Boolean).join(" / ");
+  // V3-SHELL: no second tree inside the Workbench — the left Project tree (Architecture lens) lists
+  // sub-projects and repositories; the breadcrumb goes back up. The old column is a setting for one release.
+  const navColumn = s.layout?.navColumn === true;
+  const crumb = (label: string, onclick?: () => void) => onclick ? h("button", { class: "crumb", type: "button", onclick, text: label }) : h("span", { text: label });
+  const crumbs = h("div", { class: "breadcrumb", "aria-label": "Where you are" },
+    crumb("Whole project", sp || c ? () => select(undefined, undefined) : undefined),
+    ...(sp && !sp.implicit ? [h("span", { class: "sep", text: " / " }), crumb(sp.title, c ? () => select(sp.id, undefined) : undefined)] : []),
+    ...(c ? [h("span", { class: "sep", text: " / " }), crumb(c.label)] : []));
   const center = h("main", { class: "center" },
-    h("div", { class: "breadcrumb", text: crumbs }),
+    crumbs,
     h("div", { class: "bar" }, h("div", {}, eyebrow(sp ? "Architecture of the sub-project" : "Architecture of the project"), h("h2", { text: sp?.title ?? "All components" })),
       sp?.objective ? h("span", { class: "muted small objective", text: sp.objective }) : undefined),
     previewBanner(s),
     diagram(s),
     c ? filesBlock(c) : sp ? undefined : overview(s));
-  root.append(header(s), h("div", { class: "shell" }, nav(s), center, h("aside", { class: "side", "aria-label": "Selection details" }, detailColumn(s, false))));
+  root.append(header(s), h("div", { class: navColumn ? "shell" : "shell nonav" }, navColumn ? nav(s) : undefined, center, h("aside", { class: "side", "aria-label": "Selection details" }, detailColumn(s, false))));
 }
 
 // In the bottom panel the height matters too: redraw when the window (the panel) changes size.

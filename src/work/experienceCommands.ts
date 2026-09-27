@@ -113,13 +113,21 @@ function loadPresets(extensionPath: string): PresetsFile {
 }
 
 /**
- * 0.22 landing: in Standard and above, focus the Architecture panel when a project opens. A work
- * view applied at startup (0.17 `datapass.startupView`, or a launcher's request) wins.
+ * 0.22 landing: in Standard and above, show the architecture when a project opens — the Architecture
+ * panel when it is switched on (V3-SHELL: off by default), else the Workbench tab. A work view
+ * applied at startup (0.17 `datapass.startupView`, or a launcher's request) wins.
  */
-export async function landOnArchitecture(experience: ExperienceService, hasProject: boolean, applied: string | undefined): Promise<boolean> {
-  if (!hasProject || applied || !experience.shows("landing.architecture") || !experience.shows("view.architecture")) return false;
+export async function landOnArchitecture(experience: ExperienceService, hasProject: boolean, applied: string | undefined, openWorkbench?: () => void): Promise<boolean> {
+  if (!hasProject || applied || !experience.shows("landing.architecture")) return false;
   const startup = vscode.workspace.getConfiguration("datapass").inspect<string>("startupView");
   if (startup?.workspaceValue || startup?.workspaceFolderValue) return false;
+  // V3-SHELL: the bottom-panel Architecture view is off by default; the diagram is then the Workbench tab's.
+  const inPanel = experience.shows("view.architecture") && vscode.workspace.getConfiguration("datapass.layout").get<boolean>("architectureInPanel", false) === true;
+  if (!inPanel) {
+    if (!openWorkbench) return false;
+    openWorkbench();
+    return true;
+  }
   // Show the panel without taking the keyboard: taking it (or handing it back to the editor) closes
   // a Quick Pick the user opened while the window was starting.
   await vscode.commands.executeCommand("datapass.architecture.focus", { preserveFocus: true });
