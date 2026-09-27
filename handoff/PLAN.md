@@ -52,12 +52,13 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | V1-Q | M3: answers Q01–Q09 (FOIL AI feedback); prerelease v1.0.0-rc.1 with VSIX and SHA-256 | V1-RC | PM agent | S | | running |
 | V1-FOILDOC | M3: F02, F03, F05 + ANSWERS.md in the FOIL bridge (low) | V1-Q | chip pending | S | | todo |
 | V1-HONEST | M3: F01, F04, F06, F08 (code, medium) | V1-Q | chip pending | 0.5–1 M | | todo |
-| V1-RC2 | M3: 1.0.0-rc.2 + provenance, then the Codex run J01–J12 and Julian's check, batched as one moment | FLAKE2, Q, FOILDOC, HONEST | later | S–M | | later |
+| V1-AUTO | M3 (Julian: everything automatable goes to Codex): vendor journey for RC_CHECK steps 1–4, one Codex prompt produced by `qa:prepare`, RC_CHECK reduced to Julian's approvals (~5 min) | V1-RC | chip opened (medium) | S–M | | todo |
+| V1-RC2 | M3: 1.0.0-rc.2 + provenance, then the Codex run J01–J12 and Julian's check, batched as one moment | FLAKE2, Q, FOILDOC, HONEST, AUTO | later | S–M | | later |
 
 Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
 
 ### Merge order
-FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0. Then (M3, Julian's FOIL feedback, PM 2026-09-27): V1-FLAKE2 → V1-Q → V1-FOILDOC → V1-HONEST → V1-RC2.
+FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0. Then (M3, Julian's FOIL feedback, PM 2026-09-27): V1-FLAKE2 → V1-Q → V1-FOILDOC → V1-HONEST → V1-AUTO → V1-RC2.
 
 ### Julian-only moments (batched by the assistant)
 | When | What | Duration |
