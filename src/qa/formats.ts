@@ -311,5 +311,7 @@ export function runIdOf(config: Pick<CodexTestsConfig, "purpose" | "workspaces">
 
 /** Where Codex pushes the report in the audit repository (addendum 3). */
 export function reportFolder(config: Pick<CodexTestsConfig, "purpose" | "report">, runId: string): string {
-  return `${config.report.folder}/${config.purpose}/${runId}`;
+  // A config whose report folder already ends with its purpose ("reports/client") is not doubled.
+  const base = config.report.folder.replace(/\/+$/, "");
+  return base.split("/").at(-1) === config.purpose ? `${base}/${runId}` : `${base}/${config.purpose}/${runId}`;
 }
