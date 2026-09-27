@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { AIRFLOW_LIMITS, extractDag, kindOf, layoutDag, type DagExtraction } from "../src/core/airflow/dagExtract";
+import { findUnderstanding } from "../src/core/airflow/understandingLink";
+import { resolve } from "node:path";
 
 const edges = (x: DagExtraction) => x.edges.map(e => `${e.from}>${e.to}`).sort();
 const ids = (x: DagExtraction) => x.tasks.map(t => t.id);
@@ -313,4 +315,15 @@ test("airflow: layered layout follows the longest path and survives a cycle", ()
   assert.equal(ax.via[0]!.layer, 1);
   assert.equal(sideLayout.width.get(1), 2);
   assert.notEqual(ax.via[0]!.order, sideLayout.placed.find(p => p.id === "b")!.order);
+});
+
+test("airflow: the V3-HOP1 example DAG is read, and its DataPass Hop explanation is found in the bridge", async () => {
+  const file = "examples/v3/hop/pipelines/dags/daily_sales_dag.py";
+  const x = extractDag(readFileSync(file, "utf8"));
+  assert.equal(x.dags[0]!.dagId, "daily_sales");
+  assert.deepEqual(edges(x), ["check_rows>notify_team", "run_daily_sales>check_rows", "wait_for_orders>run_daily_sales"].sort());
+  assert.equal(task(x, "run_daily_sales").kind, "databricks");
+  const found = await findUnderstanding(resolve(file), [resolve("examples/v3/hop/bridge")], [resolve("examples/v3/hop")]);
+  assert.equal(found, resolve("examples/v3/hop/bridge/.datapass/understanding/pipelines/dags/daily_sales_dag.py.json"));
+  assert.equal(await findUnderstanding(resolve("tests/fixtures/airflow/etl_dag.py"), [resolve("examples/v3/hop/bridge")], [resolve(".")]), undefined);
 });

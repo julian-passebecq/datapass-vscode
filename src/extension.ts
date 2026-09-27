@@ -51,6 +51,7 @@ import { ControlService, type ControlSnapshot } from "./work/controlService";
 import { AgentPanelView, registerControlCommands } from "./views/agentPanel";
 import type { AgentPanelState } from "./views/agentPanelState";
 import { registerAirflowDag } from "./views/airflowDag";
+import { findUnderstanding } from "./core/airflow/understandingLink";
 import type { AirflowViewState } from "./views/airflowDagHtml";
 import { isVisible } from "./core/experience/presets";
 import type { AiViewState } from "./views/aiExchange";
@@ -335,7 +336,10 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   workOrders.attachControl({ conversationOf: (id, agent) => control.conversationOf(id, agent), state: () => control.snapshot().state });
   const agentPanel = new AgentPanelView(session, control, () => flows.codexCliFound());
   context.subscriptions.push(control, agentPanel, vscode.window.registerWebviewViewProvider(AgentPanelView.viewType, agentPanel));
-  const airflowDag = registerAirflowDag(context, () => session.root?.fsPath, () => isVisible(experience.experience(), "view.airflowDag"));
+  const airflowDag = registerAirflowDag(context, async uri => {
+    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
+    return (await session.understandingFor(uri))?.file ?? findUnderstanding(uri.fsPath, [session.root?.fsPath, ...folders].filter((x): x is string => !!x), folders);
+  }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange);
   registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.

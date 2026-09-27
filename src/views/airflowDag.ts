@@ -13,7 +13,6 @@
  */
 import * as vscode from "vscode";
 import { extractDag, type DagExtraction } from "../core/airflow/dagExtract";
-import { findUnderstanding } from "../core/airflow/understandingLink";
 import { airflowDagHtml, airflowViewState, taskAtLine, type AirflowDirection, type AirflowViewState } from "./airflowDagHtml";
 
 const DIRECTION_KEY = "datapass.airflow.direction";
@@ -32,8 +31,10 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
   /** For the desktop tests: how many times the view was revealed automatically. */
   autoReveals = 0;
 
-  constructor(private readonly context: vscode.ExtensionContext, private readonly bridgeRoot: () => string | undefined, private readonly shown: () => boolean) {
+  constructor(private readonly context: vscode.ExtensionContext, private readonly explain: (uri: vscode.Uri) => Promise<string | undefined>, private readonly shown: () => boolean, projectChanged: vscode.Event<void>) {
     this.subs.push(
+      // A refresh may index a new DataPass Hop explanation for the file shown.
+      projectChanged(() => { const c = this.current; if (c) void this.explain(c.uri).then(async f => { if (this.current === c && f !== c.explanation) { this.current = { ...c, ...(f ? { explanation: f } : { explanation: undefined }) }; await this.post(); } }); }),
       vscode.window.onDidChangeActiveTextEditor(e => { if (e) void this.follow(e.document, true); }),
       vscode.workspace.onDidChangeTextDocument(e => {
         if (this.current && e.document.uri.toString() === this.current.uri.toString()) {
@@ -72,9 +73,7 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
     if (same && this.current!.version === doc.version && !switched) return;
     const extraction = extractDag(doc.getText());
     if (!same) { this.dag = 0; this.highlight = undefined; }
-    const explanation = extraction.detected && doc.uri.scheme === "file"
-      ? await findUnderstanding(doc.uri.fsPath, [this.bridgeRoot(), ...(vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath)].filter((x): x is string => !!x), (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath))
-      : undefined;
+    const explanation = extraction.detected && doc.uri.scheme === "file" ? await this.explain(doc.uri).catch(() => undefined) : undefined;
     this.current = { uri: doc.uri, version: doc.version, extraction, ...(explanation ? { explanation } : {}) };
     const editor = vscode.window.activeTextEditor;
     if (editor?.document === doc) this.highlight = taskAtLine(extraction.tasks.filter(t => t.dag === this.dag), editor.selection.active.line + 1)?.id ?? this.highlight;
@@ -175,8 +174,12 @@ function makeNonce(): string {
   return s;
 }
 
-export function registerAirflowDag(context: vscode.ExtensionContext, bridgeRoot: () => string | undefined, shown: () => boolean): AirflowDagView {
-  const view = new AirflowDagView(context, bridgeRoot, shown);
+/**
+ * `explain`: the DataPass Hop file of a native file — the session's index (V3-HOP1) first, then a
+ * name lookup in the bridge for a file the last refresh did not index yet.
+ */
+export function registerAirflowDag(context: vscode.ExtensionContext, explain: (uri: vscode.Uri) => Promise<string | undefined>, shown: () => boolean, projectChanged: vscode.Event<void>): AirflowDagView {
+  const view = new AirflowDagView(context, explain, shown, projectChanged);
   const guard = (fn: () => Promise<void>) => async () => { try { await fn(); } catch (e) { void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e)); } };
   context.subscriptions.push(
     view,
