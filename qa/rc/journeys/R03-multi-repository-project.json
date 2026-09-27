@@ -1,0 +1,22 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "R03",
+  "kind": "app",
+  "title": "A project spread over several repositories stays fast and consistent",
+  "as": "An engineer opening a client project made of a bridge and three repositories",
+  "goal": "Open the client workspace (the bridge and its repositories), check how fast the project appears, switch variant and back, and inspect one component.",
+  "setup": { "open": "workspace" },
+  "hints": [
+    "Measure from the moment the window shows the Explorer to the moment the DataPass Project tree and the Architecture view have content.",
+    "Pick another variant in the Project view, then pick current again."
+  ],
+  "expected": [
+    "The Project tree and the Architecture diagram appear within about 2 seconds; tool and readiness rows fill in afterwards, without blocking the window.",
+    "A time telling when the state was last checked is visible (for example on the Git or readiness rows).",
+    "After switching to another variant and back to current, the diagram and the rows show the current variant again, with no state left over from the other one.",
+    "Clicking a component in the Architecture view makes the Details view show its files and the repository it lives in."
+  ],
+  "features": ["workspace", "architecture", "variants", "performance"],
+  "outOfScope": ["Editing any file of the client's repositories"]
+}

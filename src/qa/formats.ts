@@ -31,6 +31,11 @@ export const PRESETS = ["Vanilla", "Standard", "DataPass", "Advanced"] as const;
 export const OUTCOMES = ["reached", "partly", "not-reached", "blocked"] as const;
 export const SEVERITIES = ["blocker", "major", "minor", "idea"] as const;
 export const CONFIDENCES = ["high", "medium", "low"] as const;
+/** V1-AUTO: how a journey's VS Code is launched (additive to test-journey v1). Default: trusted, the client workspace. */
+export const TRUSTS = ["trusted", "restricted"] as const;
+export const OPENS = ["workspace", "fixture", "empty"] as const;
+/** Where a journey comes from: the client's auto repository, or DataPass's own release journeys (`qa/rc/`). */
+export const SOURCES = ["client", "vendor"] as const;
 /**
  * The feature tags (12 §4.2 and §5): journeys list the features they exercise, findings name one as
  * their area, and the report's coverage compares both. common/testing/FEATURES.md copies this list.
@@ -95,7 +100,9 @@ export const TEST_JOURNEY_SCHEMA: Schema = obj({
   format: constOf(TEST_JOURNEY_FORMAT), version: constOf(1),
   id: JOURNEY_ID, kind: enumOf(...PURPOSES), title: TEXT(160),
   as: TEXT(160), goal: TEXT(1000),
-  setup: obj({ client: CLIENT_ID, mode: enumOf(...PRESETS), variant: S(40), environment: S(40, 1, "^[a-z][a-z0-9_-]{0,39}$") }, []),
+  // trust/open/fixture (V1-AUTO): "restricted" launches without --disable-workspace-trust; "fixture" opens a
+  // fresh copy of a public example (a folder under datapass-vscode's examples/v3/); "empty" opens no folder.
+  setup: obj({ client: CLIENT_ID, mode: enumOf(...PRESETS), variant: S(40), environment: S(40, 1, "^[a-z][a-z0-9_-]{0,39}$"), trust: enumOf(...TRUSTS), open: enumOf(...OPENS), fixture: REL_PATH }, []),
   hints: LINES(10, 300),
   expected: LINES(20, 500, 1),
   questions: LINES(20, 500),
@@ -154,7 +161,11 @@ export const QA_RUN_SCHEMA: Schema = obj({
   knownLeaks: LINES(10, 500),
   screenshots: obj({ folder: constOf("screens"), pattern: constOf(SCREEN_PATTERN), command: S(1000) }),
   clients: arr(obj({ id: CLIENT_ID, title: TEXT(120), workspaceFile: REL_PATH, bridge: REPO_COMMIT, repositories: arr(REPO_COMMIT, 20), launch: S(2000) }), 10, 1),
-  journeys: arr(obj({ id: JOURNEY_ID, kind: enumOf(...PURPOSES), title: TEXT(160), file: REL_PATH, features: arr(enumOf(...FEATURES), 20, 1) }), 50, 1)
+  journeys: arr(obj({
+    id: JOURNEY_ID, kind: enumOf(...PURPOSES), title: TEXT(160), file: REL_PATH, features: arr(enumOf(...FEATURES), 20, 1),
+    // V1-AUTO (optional): where the journey comes from, and the exact command that launches its VS Code.
+    source: enumOf(...SOURCES), launch: S(2000)
+  }, ["id", "kind", "title", "file", "features"]), 80, 1)
 });
 
 // ------------------------------------------------------------------ parsing
@@ -180,7 +191,7 @@ export interface CodexTestsConfig {
 }
 export interface TestJourney {
   id: string; kind: Purpose; title: string; as?: string; goal: string;
-  setup?: { client?: string; mode?: (typeof PRESETS)[number]; variant?: string; environment?: string };
+  setup?: { client?: string; mode?: (typeof PRESETS)[number]; variant?: string; environment?: string; trust?: (typeof TRUSTS)[number]; open?: (typeof OPENS)[number]; fixture?: string };
   hints?: string[]; expected: string[]; questions?: string[]; features: Feature[]; outOfScope?: string[];
 }
 
@@ -259,6 +270,10 @@ export function parseTestJourney(raw: string | Uint8Array, file: string): TestJo
   const unknown = features.filter(f => !FEATURES.includes(f as Feature));
   if (unknown.length) issues.unshift(`unknown feature tag(s) ${unknown.map(f => JSON.stringify(f)).join(", ")}: use the list in common/testing/FEATURES.md`);
   if (new Set(features).size !== features.length) issues.push("$.features lists a tag twice");
+  const setup = (doc.setup ?? {}) as { open?: string; fixture?: string };
+  if (setup.open === "fixture" && setup.fixture === undefined) issues.push("$.setup.open \"fixture\" needs $.setup.fixture (a folder under examples/v3/)");
+  if (setup.fixture !== undefined && setup.open !== "fixture") issues.push("$.setup.fixture is used only with $.setup.open \"fixture\"");
+  if (typeof setup.fixture === "string") { const v = vetRelativePath(setup.fixture); if (!v.ok) issues.push(`$.setup.fixture "${setup.fixture}": ${v.reason}`); }
   if (issues.length) throw new QaFormatError(file, [...new Set(issues)]);
   return doc as unknown as TestJourney;
 }

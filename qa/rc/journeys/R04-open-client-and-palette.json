@@ -1,0 +1,22 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "R04",
+  "kind": "app",
+  "title": "Open a Client Project from its bridge address, and a clean palette",
+  "as": "A consultant starting on a new client from nothing but the bridge's Git address",
+  "goal": "From an empty window, open the synthetic client from its bridge address, then check that the DataPass commands and settings carry no client-specific or retired names.",
+  "setup": { "open": "empty" },
+  "hints": [
+    "Command Palette → DataPass: Open a Client Project… → paste https://github.com/julian-passebecq/codex-datapass-bridge.",
+    "When DataPass asks for a folder, choose this journey's scratch folder named in the prompt (it is empty).",
+    "In the Command Palette type DataPass and scroll the whole list; in Settings (Ctrl+,) search mongoku, then foil."
+  ],
+  "expected": [
+    "DataPass clones the bridge and the client's repositories into the scratch folder and opens one window for the client, with the bridge and its repositories.",
+    "Typing DataPass in the Command Palette gives a short, readable list with no command that mentions FOIL or Mongoku.",
+    "Searching Settings for mongoku finds no DataPass setting; searching for foil finds none either."
+  ],
+  "features": ["onboarding", "workspace", "modes"],
+  "outOfScope": ["Cloud sign-in or any cloud command offered by the opened project"]
+}

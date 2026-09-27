@@ -1,0 +1,21 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "R05",
+  "kind": "app",
+  "title": "A broken project file is an error, not a missing file",
+  "as": "An engineer whose project file was damaged by a bad edit",
+  "goal": "In a disposable copy of the doc-pipeline example, break the project's graph file, check that DataPass reports it as an error, then repair it.",
+  "setup": { "open": "fixture", "fixture": "doc-pipeline" },
+  "hints": [
+    "This folder is a disposable copy made for this journey: editing it is allowed, nothing else.",
+    "Open .datapass/graph.json, delete its last closing brace, save (Ctrl+S). Afterwards undo (Ctrl+Z) and save again."
+  ],
+  "expected": [
+    "The Problems panel (Ctrl+Shift+M) lists an error for .datapass/graph.json.",
+    "DataPass says the graph file is invalid or cannot be read; it never says the file is absent or that the project has no graph.",
+    "After the undo and save, the error disappears and the Architecture view draws the diagram again."
+  ],
+  "features": ["format-checks", "architecture"],
+  "outOfScope": ["Editing any file outside this disposable copy"]
+}

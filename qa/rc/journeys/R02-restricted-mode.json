@@ -1,0 +1,24 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "R02",
+  "kind": "app",
+  "title": "Restricted Mode: DataPass reads but runs nothing",
+  "as": "A person opening a project folder they do not trust yet",
+  "goal": "Open a fresh copy of the doc-pipeline example without trusting it, check that DataPass shows the project but runs neither Git nor tests, then trust it.",
+  "setup": { "open": "fixture", "fixture": "doc-pipeline", "trust": "restricted" },
+  "hints": [
+    "VS Code asks whether you trust the authors: choose \"No, I don't trust the authors\".",
+    "Command Palette (Ctrl+Shift+P) → DataPass: Run Component Test… and pick PDF processing.",
+    "To trust: click \"Restricted Mode\" in the status bar, then Trust."
+  ],
+  "expected": [
+    "\"Restricted Mode\" shows at the left of the status bar.",
+    "The DataPass Architecture view still draws the diagram (PDF inbox, PDF processing, JSON results).",
+    "The DataPass Git view shows \"Restricted Mode: DataPass does not run Git\".",
+    "DataPass: Run Component Test… on PDF processing is refused with a message that starts with \"Restricted Mode\", and no terminal or task starts.",
+    "After trusting the folder, the Restricted Mode message is gone from the DataPass Git view."
+  ],
+  "features": ["workspace", "git", "architecture"],
+  "outOfScope": ["Running the component's tests after trusting it"]
+}

@@ -1,11 +1,18 @@
 /**
- * `npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--commit <released commit>] [--code <VS Code executable>] [--launch]`
+ * `npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--sha256 <hex>] [--datapass-version <v>] [--commit <released commit>] [--rc] [--clone] [--code <VS Code executable>] [--launch]`
  * `npm run qa:prepare -- --auto <test repository clone> --check [--report <report.json>]` validates a test repository only.
  *
  * The mechanical part of a Codex test run (handoff/v3/12 §4.3, QA-1): validate the configuration and
  * every journey, check that each declared folder is under the run root with the declared origin (it
  * never clones), install the VSIX into an isolated VS Code profile under the run root, write one
  * `.code-workspace` per client (bridge first) and `run.json`, and print the launch command.
+ *
+ * V1-AUTO: `--rc` adds DataPass's own release journeys (`qa/rc/journeys/`, kind "app") to the client's;
+ * each journey gets its launch command (trusted or Restricted Mode; the client workspace, a fresh copy
+ * of a public example under `fixtures/<id>`, or an empty window with `scratch/<id>`). `--sha256` pins
+ * the VSIX, `--datapass-version` tests another version than the configuration names, `--clone` clones
+ * the declared folders that are missing. It then writes `CODEX_PROMPT.md`: the one prompt to paste into
+ * a Codex desktop thread.
  *
  * Exit 0 = ready; 2 = cannot prepare (every reason is printed). It never touches the person's own VS
  * Code profile, never pushes, publishes or calls a cloud CLI, and writes only under the run root.
@@ -19,6 +26,7 @@ import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "
 import { buildCompanyWorkspace } from "../../src/core/windows/company";
 import { isInside } from "../../src/core/exchange/pathSafety";
 import { remoteIdentity } from "../../src/core/project/gitHosts";
+import { codexRunPrompt, CODEX_PROMPT_FILE, type PromptJourney } from "../../src/qa/codexPrompt";
 import {
   CODEX_TESTS_FILE, QA_REPORT_FORMAT, QA_RUN_FILE, QA_RUN_FORMAT, QaFormatError, parseCodexTests, parseQaReport, parseQaRun, parseTestJourney, runIdOf, openPath, SCREEN_PATTERN,
   type ClientWorkspace, type CodexTestsConfig, type FolderRef, type TestJourney
@@ -27,6 +35,10 @@ import {
 export const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 export const USER_DATA_DIR = ".vscode-user";
 export const EXTENSIONS_DIR = ".vscode-ext";
+/** This checkout: DataPass's release journeys and the public examples their fixtures copy. */
+const REPO_ROOT = path.resolve(__dirname, "..", "..");
+export const RC_JOURNEYS_DIR = path.join(REPO_ROOT, "qa", "rc");
+const EXAMPLES_DIR = path.join(REPO_ROOT, "examples", "v3");
 /** doc 12 §4.1 named the file datapass-auto.json before the addendum; both are read. */
 const CONFIG_NAMES = [CODEX_TESTS_FILE, "datapass-auto.json"];
 
@@ -36,9 +48,17 @@ export interface PrepareOptions {
   commit?: string;
   /** Also start each client's isolated VS Code (detached): qa:prepare is the launcher, Codex never launches it from its sandbox. */
   launch?: boolean;
+  /** A folder of DataPass's own journeys to add (`qa/rc` with `--rc`): `<dir>/journeys/*.json`, kind "app". */
+  vendor?: string;
+  /** The VSIX's expected SHA-256: another file is refused before anything is installed. */
+  sha256?: string;
+  /** The DataPass version this run tests, when it is not the one the configuration names. */
+  datapassVersion?: string;
+  /** Clone the declared folders that are missing under the run root (at their ref and commit). */
+  clone?: boolean;
   now?: Date; log?: (line: string) => void;
 }
-export interface PrepareResult { code: 0 | 2; reasons: string[]; runFile?: string; workspaceFiles: string[]; launch: string[] }
+export interface PrepareResult { code: 0 | 2; reasons: string[]; runFile?: string; promptFile?: string; workspaceFiles: string[]; launch: string[] }
 
 class CannotPrepare extends Error { constructor(readonly reasons: string[]) { super(reasons.join("\n")); } }
 
@@ -75,6 +95,47 @@ function readJourneys(auto: string, config: CodexTestsConfig): Array<TestJourney
   }
   if (reasons.length) throw new CannotPrepare(reasons);
   return out;
+}
+
+/** DataPass's own journeys: every `<dir>/journeys/*.json`, kind "app", no client, ids distinct from the client's. */
+export function readVendorJourneys(dir: string, taken: ReadonlyArray<{ id: string; file: string }> = []): Array<TestJourney & { file: string }> {
+  const reasons: string[] = [];
+  const out: Array<TestJourney & { file: string }> = [];
+  const jdir = path.join(dir, "journeys");
+  if (!fs.existsSync(jdir)) throw new CannotPrepare([`no journeys folder in ${dir}`]);
+  const ids = new Map(taken.map(t => [t.id, t.file]));
+  for (const name of fs.readdirSync(jdir).filter(n => n.endsWith(".json")).sort()) {
+    const rel = `journeys/${name}`;
+    try {
+      const j = parseTestJourney(fs.readFileSync(path.join(jdir, name)), rel);
+      if (j.kind !== "app") reasons.push(`${rel}: a DataPass release journey is kind "app", not "${j.kind}"`);
+      if (j.setup?.client) reasons.push(`${rel}: a DataPass release journey names no client (setup.client)`);
+      if (ids.has(j.id)) reasons.push(`${rel}: journey id ${j.id} is also used by ${ids.get(j.id)}`);
+      ids.set(j.id, rel);
+      if (j.setup?.fixture !== undefined && !fs.existsSync(path.join(EXAMPLES_DIR, j.setup.fixture, ".datapass"))) reasons.push(`${rel}: fixture ${j.setup.fixture} is not an example under examples/v3/`);
+      out.push({ ...j, file: `qa/${path.basename(dir)}/${rel}` });
+    } catch (e) { reasons.push(...(e instanceof QaFormatError ? e.issues.map(i => `${rel}: ${i}`) : [`${rel}: ${String(e)}`])); }
+  }
+  if (!out.length && !reasons.length) reasons.push(`no journeys in ${jdir}`);
+  if (reasons.length) throw new CannotPrepare(reasons);
+  return out;
+}
+
+/** `--clone`: clone each declared folder that is missing; a folder that exists is left alone (checkFolders checks it). */
+function cloneMissing(root: string, workspaces: ClientWorkspace[], log: (line: string) => void): void {
+  const reasons: string[] = [];
+  const seen = new Set<string>();
+  for (const ref of workspaces.flatMap(w => [w.bridge, ...w.repositories])) {
+    if (seen.has(ref.folder.toLowerCase())) continue;
+    seen.add(ref.folder.toLowerCase());
+    const dir = path.join(root, ref.folder);
+    if (fs.existsSync(dir)) continue;
+    const r = spawnSync("git", ["clone", "-q", ...(ref.ref ? ["--branch", ref.ref] : []), "--", ref.remote, dir], { encoding: "utf8", windowsHide: true, timeout: 600_000 });
+    if (r.status !== 0) { reasons.push(`cannot clone ${ref.remote} into ${ref.folder}: ${(r.stderr || String(r.error ?? "")).trim().slice(0, 300)}`); continue; }
+    if (ref.commit && git(dir, "checkout", "-q", ref.commit) === undefined) reasons.push(`${ref.folder}: cloned, but commit ${ref.commit} cannot be checked out`);
+    log(`✓ cloned ${ref.remote} into ${ref.folder}`);
+  }
+  if (reasons.length) throw new CannotPrepare(reasons);
 }
 
 interface CheckedRepo { folder: string; remote: string; commit: string }
@@ -155,6 +216,12 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const { config } = readConfig(auto);
     const journeys = readJourneys(auto, config);
     log(`✓ ${config.purpose} configuration: ${config.workspaces.length} client(s), ${journeys.length} journey(s)`);
+    const vendor = opts.vendor ? readVendorJourneys(path.resolve(opts.vendor), journeys) : [];
+    if (vendor.length) {
+      if (config.purpose !== "client") throw new CannotPrepare(["DataPass release journeys (--rc) run with a client configuration (one client workspace)"]);
+      log(`✓ ${vendor.length} DataPass release journey(s) from ${opts.vendor}`);
+    }
+    if (opts.clone) cloneMissing(root, config.workspaces, log);
     const repos = checkFolders(root, config.workspaces);
     log(`✓ ${repos.size} folder(s) under the run root, each with the declared origin`);
 
@@ -164,6 +231,9 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const vsix = path.resolve(root, vsixRel);
     if (!fs.existsSync(vsix) || !/\.vsix$/i.test(vsix)) throw new CannotPrepare([`VSIX not found: ${vsix}`]);
     const sha256 = createHash("sha256").update(fs.readFileSync(vsix)).digest("hex");
+    if (opts.sha256 !== undefined && opts.sha256.toLowerCase() !== sha256) throw new CannotPrepare([`the VSIX ${vsix} has sha256 ${sha256}, not the pinned ${opts.sha256.toLowerCase()}`]);
+    if (opts.datapassVersion !== undefined && !/^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$/.test(opts.datapassVersion)) throw new CannotPrepare([`--datapass-version must be a version such as 1.0.0-rc.1, got ${JSON.stringify(opts.datapassVersion)}`]);
+    const expectedVersion = opts.datapassVersion ?? config.datapass.version;
     if (opts.commit !== undefined && !/^[a-f0-9]{7,40}$/.test(opts.commit)) throw new CannotPrepare([`--commit must be the released commit (7 to 40 lowercase hex), got ${JSON.stringify(opts.commit)}`]);
 
     const executable = await vscodeExecutable(opts.code);
@@ -177,12 +247,13 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
     const installed = cli(executable, [...isolation, "--list-extensions", "--show-versions"]).split(/\r?\n/).map(s => s.trim()).find(l => l.toLowerCase().startsWith(`${EXTENSION_ID}@`));
     const installedVersion = installed?.split("@")[1];
     if (!installedVersion) throw new CannotPrepare([`the VSIX installed, but ${EXTENSION_ID} is not listed in ${EXTENSIONS_DIR}`]);
-    if (installedVersion !== config.datapass.version) throw new CannotPrepare([`the VSIX is DataPass ${installedVersion}; the configuration expects ${config.datapass.version}`]);
+    if (installedVersion !== expectedVersion) throw new CannotPrepare([`the VSIX is DataPass ${installedVersion}; ${opts.datapassVersion ? "--datapass-version" : "the configuration"} expects ${expectedVersion}`]);
     log(`✓ DataPass ${installedVersion} installed in ${EXTENSIONS_DIR} (VS Code ${vscodeVersion}, isolated profile ${USER_DATA_DIR})`);
 
     const runId = runIdOf(config, opts.now ?? new Date());
     // The test clones are trusted by construction: no Restricted Mode prompt in front of the journeys.
     const launchArgs = (file: string) => [...isolation, "--disable-workspace-trust", file];
+    const commandOf = (args: string[]) => [executable, ...args].map(quote).join(" ");
     const workspaceFiles: string[] = [];
     const launch: string[] = [];
     const clients = config.workspaces.map(w => {
@@ -190,7 +261,7 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
       const { doc } = buildCompanyWorkspace({ file, company: w.client.title, folders: [w.bridge, ...w.repositories].map(r => path.join(root, openPath(r))) });
       fs.writeFileSync(file, JSON.stringify(doc, null, 2) + "\n");
       workspaceFiles.push(file);
-      const command = [executable, ...launchArgs(file)].map(quote).join(" ");
+      const command = commandOf(launchArgs(file));
       launch.push(command);
       return { id: w.client.id, title: w.client.title, workspaceFile: path.basename(file), bridge: withPath(repos.get(w.bridge.folder)!, w.bridge), repositories: w.repositories.map(r => withPath(repos.get(r.folder)!, r)), launch: command };
     });
@@ -211,13 +282,48 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
       knownLeaks: ["--user-data-dir does not isolate ~/.vscode-shared: state kept there is shared with the person's own VS Code."],
       screenshots: { folder: "screens", pattern: SCREEN_PATTERN, command: captureCommand() },
       clients,
-      journeys: journeys.map(j => ({ id: j.id, kind: j.kind, title: j.title, file: j.file, features: j.features }))
+      journeys: [] as Array<Record<string, unknown>>
     };
+    // Each journey's launch: DataPass's release journeys first (the release gate), then the client's, in order.
+    const prompted: PromptJourney[] = [];
+    for (const [source, list] of [["vendor", vendor], ["client", journeys]] as const) {
+      for (const j of list) {
+        const s = j.setup ?? {};
+        let target: string[];
+        let folder: string | undefined;
+        if (s.open === "fixture" && s.fixture) {
+          // A fresh copy for this journey only: never trusted before, disposable, not a clone.
+          folder = path.join(root, "fixtures", j.id);
+          fs.rmSync(folder, { recursive: true, force: true });
+          fs.cpSync(path.join(EXAMPLES_DIR, s.fixture), folder, { recursive: true });
+          target = ["--new-window", folder];
+        } else if (s.open === "empty") {
+          folder = path.join(root, "scratch", j.id);
+          fs.rmSync(folder, { recursive: true, force: true });
+          fs.mkdirSync(folder, { recursive: true });
+          target = ["--new-window"];
+        } else {
+          const own = config.workspaces.find(w => w.client.id === s.client) ?? config.workspaces[0]!;
+          target = [path.join(root, `${own.client.id}.code-workspace`)];
+        }
+        const command = commandOf([...isolation, ...(s.trust === "restricted" ? [] : ["--disable-workspace-trust"]), ...target]);
+        run.journeys.push({ id: j.id, kind: j.kind, title: j.title, file: j.file, features: j.features, source, launch: command });
+        prompted.push({ journey: j, source, launch: command, ...(folder ? { folder } : {}) });
+      }
+    }
     const text = JSON.stringify(run, null, 2) + "\n";
     parseQaRun(text); // what we write must read back
     const runFile = path.join(root, QA_RUN_FILE);
     fs.writeFileSync(runFile, text);
     log(`✓ ${QA_RUN_FILE} written (run ${runId})`);
+    const promptFile = path.join(root, CODEX_PROMPT_FILE);
+    fs.writeFileSync(promptFile, codexRunPrompt({
+      runRoot: root, runId, config,
+      datapass: { version: installedVersion, sha256, ...(opts.commit ? { commit: opts.commit } : {}), vsixPath: vsix },
+      ...(expectedVersion !== config.datapass.version ? { configuredVersion: config.datapass.version } : {}),
+      captureCommand: captureCommand(), journeys: prompted, platform: process.platform
+    }));
+    log(`✓ ${CODEX_PROMPT_FILE} written: paste it into a new Codex desktop thread (${prompted.length} journeys)`);
     log("");
     log(`Launch ${clients.length > 1 ? "each client's" : "the"} isolated VS Code:`);
     for (const l of launch) log(`  ${l}`);
@@ -225,7 +331,7 @@ export async function prepare(opts: PrepareOptions): Promise<PrepareResult> {
       for (const w of workspaceFiles) spawn(executable, launchArgs(w), { detached: true, stdio: "ignore", windowsHide: false }).unref();
       log(`✓ launched ${workspaceFiles.length} isolated VS Code window(s)`);
     }
-    return { code: 0, reasons: [], runFile, workspaceFiles, launch };
+    return { code: 0, reasons: [], runFile, promptFile, workspaceFiles, launch };
   } catch (e) {
     const reasons = e instanceof CannotPrepare ? e.reasons : [e instanceof Error ? e.message : String(e)];
     log("✗ Cannot prepare this run:");
@@ -273,10 +379,14 @@ if (require.main === module) {
   const root = argValue(argv, "root");
   if (auto && argv.includes("--check")) process.exit(check({ auto, report: argValue(argv, "report") }).code);
   if (!auto || !root) {
-    console.log("Usage: npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--commit <released commit>] [--code <VS Code executable>] [--launch]");
+    console.log("Usage: npm run qa:prepare -- --auto <test repository clone> --root <run root> [--vsix <file>] [--sha256 <hex>] [--datapass-version <v>] [--commit <released commit>] [--rc] [--clone] [--code <VS Code executable>] [--launch]");
     console.log("       npm run qa:prepare -- --auto <test repository clone> --check [--report <report.json>]");
     process.exit(2);
   }
-  void prepare({ auto, root, vsix: argValue(argv, "vsix"), code: argValue(argv, "code"), commit: argValue(argv, "commit"), launch: argv.includes("--launch") }).then(r => process.exit(r.code));
+  void prepare({
+    auto, root, vsix: argValue(argv, "vsix"), code: argValue(argv, "code"), commit: argValue(argv, "commit"), launch: argv.includes("--launch"),
+    sha256: argValue(argv, "sha256"), datapassVersion: argValue(argv, "datapass-version"), clone: argv.includes("--clone"),
+    vendor: argValue(argv, "vendor") ?? (argv.includes("--rc") ? RC_JOURNEYS_DIR : undefined)
+  }).then(r => process.exit(r.code));
 }
 

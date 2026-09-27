@@ -1,0 +1,21 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "R01",
+  "kind": "app",
+  "title": "The pinned VSIX is the DataPass that runs",
+  "as": "A person who has just installed the release candidate",
+  "goal": "Check that the isolated VS Code runs exactly the pinned DataPass build and that nothing signs in on its own.",
+  "setup": { "open": "workspace" },
+  "hints": [
+    "Extensions view: Ctrl+Shift+X, then look for DataPass Control Plane under Installed.",
+    "Wait two minutes with the window visible before judging the sign-in expectation."
+  ],
+  "expected": [
+    "The Extensions view lists DataPass Control Plane at exactly the version recorded in run.json (datapass.version), and no second copy of DataPass.",
+    "No sign-in window or browser page (Azure, Microsoft, GitHub) opens by itself.",
+    "The DataPass activity bar icon is present and its Project view opens."
+  ],
+  "features": ["install"],
+  "outOfScope": ["Installing over an older DataPass (the AI qualification covers the upgrade)"]
+}
