@@ -58,7 +58,7 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 Owned files are disjoint except `package.json`, `src/extension.ts`, `tests/integration/suite.ts`: add only your own entries, union on rebase. No version bump before V1-RC. Never `gh pr merge --auto`.
 
 ### Merge order
-FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0. Then (M3, Julian's FOIL feedback, PM 2026-09-27): V1-FLAKE2 → V1-Q → V1-FOILDOC → V1-HONEST → V1-AUTO → V1-RC2.
+FIX-QAUI → (SURF, LOAD, FRESH, TEST in any order, each rebased on main) → V1-RC → 1.0.0. Then (M3, Julian's FOIL feedback, PM 2026-09-27): V1-FLAKE2 → V1-Q → V1-FOILDOC → V1-HONEST → V1-AUTO → V1-RC2. PRs (PM, 2026-09-27): #121 → #117 → common#15 → #120 → common#14 (regenerated with `npm run sync:common` from main after #117; `-- --check` clean); RC2 only after those 5.
 
 ### Julian-only moments (batched by the assistant)
 | When | What | Duration |
@@ -89,6 +89,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | CODER DataPass FOILDOC | coder (low) | V1-FOILDOC (§ V1-FOILDOC, #116) | 2026-09-27 · V2 | COORD DataPass 1 |
 | CODER DataPass HONEST | coder (medium) | V1-HONEST (§ V1-HONEST) | 2026-09-27 · V2 | COORD DataPass 1 |
 | CODER DataPass AUTO | coder (medium) | V1-AUTO (§ V1-AUTO, #120) | 2026-09-27 · V2 | COORD DataPass 1 |
+| SYNC · sync-common drift | coder (Julian's chip) | #117 (`sync-common`: examples' .vscode/tasks.json) | 2026-09-27 · V2 | COORD DataPass 1 |
 
 Retired on 2026-09-26 (work merged or handed over): ARCHI DataPass 1, ARCHI DataPass 2 (tech lead role → GPT 6 Pro; this plan → PM), ASSISTANT ARCHI DataPass 2, TAMPON 17, TAMPON 18 (HUB-1 done: hub#1, common#8, #96), TAMPON 24, TAMPON 19/25 and H 2 / M 5 (already stopped).
 
