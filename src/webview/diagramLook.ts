@@ -2,8 +2,11 @@
  * How the architecture diagram looks (V1-UI-POLISH): one mapping used by the diagram only. It reads the
  * component's provider, kind, entry file and health; it never changes a format, a schema or the model.
  *
- *   side band + icon   the provider (Azure blue, Fabric green, Power BI yellow, Databricks orange-red…)
- *   top edge + symbol  the state (available ✓, prepared or planned ◐, choice only ○, unverified ?, blocked ✕)
+ *   icon badge         the provider (Azure blue, Fabric green, Power BI yellow, Databricks orange-red…)
+ *   thin left band     the DataPass state (an operation ready, none ready yet, no operation)
+ *   top edge + symbol  the capability state (available ✓, prepared or planned ◐, choice only ○, unverified ?, blocked ✕)
+ *   bottom line        the client step state (validated, to redo, never run), only where results are recorded
+ *   shape              storage, processing or orchestration (as Data Factory and Fabric draw them)
  *   entry chip         the entry file's type, in the colour of VS Code's default file icon theme (Seti)
  *
  * Provider colours are fixed brand-like hex values; state colours are VS Code theme colours, so the two are
@@ -132,4 +135,58 @@ export function diagramState(i: StateInput): DiagramState {
     case "info": return "choice";
     default: return "unverified";
   }
+}
+
+// ------------------------------------------------------------------ DataPass state (left band)
+
+export type DataPassState = "ready" | "not-ready" | "none";
+export const DP_STATES: Record<DataPassState, { label: string; about: string; line: "solid" | "dashed" | "dotted" }> = {
+  ready: { label: "operation ready", about: "at least one DataPass operation can run now", line: "solid" },
+  "not-ready": { label: "not ready yet", about: "operations are declared, none can run yet", line: "dashed" },
+  none: { label: "no operation", about: "DataPass has no operation for this block", line: "dotted" }
+};
+
+export function dataPassState(operations: ReadonlyArray<{ status: string }> | undefined): DataPassState {
+  if (!operations?.length) return "none";
+  return operations.some(o => o.status === "ready") ? "ready" : "not-ready";
+}
+
+// ------------------------------------------------------------------ client step state (bottom line)
+
+export type StepState = "validated" | "redo" | "never";
+export const STEP_STATES: Record<StepState, { symbol: string; label: string; about: string }> = {
+  validated: { symbol: "●", label: "validated", about: "the last recorded result worked, on these exact files" },
+  redo: { symbol: "↻", label: "to redo", about: "the last recorded result failed, or the files changed since" },
+  never: { symbol: "·", label: "never run", about: "no result recorded for this block yet" }
+};
+
+type Recorded = { lastResult?: { result: string; stale: boolean } };
+/** True when the project has at least one recorded result: only then does the bottom line exist. */
+export const hasStepSource = (components: ReadonlyArray<{ operations: ReadonlyArray<Recorded> }>): boolean =>
+  components.some(c => c.operations.some(o => o.lastResult));
+
+/** The client step state of one block, from recorded results only (never guessed). */
+export function stepState(operations: ReadonlyArray<Recorded>): StepState {
+  const results = operations.map(o => o.lastResult).filter((r): r is NonNullable<Recorded["lastResult"]> => Boolean(r) && r!.result !== "not-tried");
+  if (!results.length) return "never";
+  return results.some(r => r.result === "failed" || r.stale) ? "redo" : "validated";
+}
+
+// ------------------------------------------------------------------ shape (Data Factory / Fabric style)
+
+export type NodeShape = "storage" | "processing" | "orchestration";
+export const SHAPES: Record<NodeShape, { label: string }> = {
+  storage: { label: "storage (data)" }, processing: { label: "processing" }, orchestration: { label: "orchestration" }
+};
+const STORAGE_KINDS = new Set(["storage", "lakehouse", "files", "database", "collection", "dataset", "dataset-snapshot", "semantic-model", "warehouse", "table"]);
+const ORCHESTRATION_KINDS = new Set(["pipeline", "workflow", "dataflow", "streaming-flow", "trigger", "dag", "schedule"]);
+const STORAGE_PROVIDERS = new Set(["azure-storage", "cosmos-nosql", "mongodb-atlas", "postgres", "neon", "sql", "google-cloud-storage", "google-drive", "bigquery", "aws-s3"]);
+const ORCHESTRATION_PROVIDERS = new Set(["azure-data-factory", "airflow", "github-actions", "azure-pipelines", "gitlab-ci"]);
+
+export function nodeShape(providerId: string | undefined, kind: string | undefined): NodeShape {
+  if (kind && STORAGE_KINDS.has(kind)) return "storage";
+  if (kind && ORCHESTRATION_KINDS.has(kind)) return "orchestration";
+  if (providerId && STORAGE_PROVIDERS.has(providerId)) return "storage";
+  if (providerId && ORCHESTRATION_PROVIDERS.has(providerId)) return "orchestration";
+  return "processing";
 }

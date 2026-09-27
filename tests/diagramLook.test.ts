@@ -7,8 +7,9 @@ import test from "node:test";
 import fs from "node:fs";
 import path from "node:path";
 import { PROVIDERS } from "../src/core/project/providers";
-import { diagramState, fileColor, fileExtension, FAMILY_COLORS, iconOf, providerLook, STATES, type DiagramState } from "../src/webview/diagramLook";
+import { dataPassState, diagramState, fileColor, hasStepSource, nodeShape, stepState, fileExtension, FAMILY_COLORS, iconOf, providerLook, STATES, type DiagramState } from "../src/webview/diagramLook";
 import { DIAGRAM_ICONS } from "../src/webview/diagramIcons";
+import { DIAGRAM_SETTING_DEFAULTS, readDiagramSettings } from "../src/views/diagramSettings";
 
 test("known providers get their family colour and a bundled icon", () => {
   assert.equal(providerLook("azure-storage").family, "azure");
@@ -89,6 +90,49 @@ test("a state colour is never a provider colour, and every state has its own sym
     const [a, b] = [rgb(color), rgb(st)];
     const dist = Math.hypot(a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!);
     assert.ok(dist >= 45, `${fam} ${color} is too close to state colour ${st} (${Math.round(dist)})`);
+  }
+});
+
+test("left band: DataPass state from the operations", () => {
+  assert.equal(dataPassState(undefined), "none");
+  assert.equal(dataPassState([]), "none");
+  assert.equal(dataPassState([{ status: "blocked" }, { status: "needs-config" }]), "not-ready");
+  assert.equal(dataPassState([{ status: "blocked" }, { status: "ready" }]), "ready");
+});
+
+test("bottom line: client step state only from recorded results, never invented", () => {
+  const none = [{ operations: [{}] }, { operations: [] }];
+  assert.equal(hasStepSource(none), false, "no recorded result anywhere: no bottom line at all");
+  assert.equal(hasStepSource([...none, { operations: [{ lastResult: { result: "worked", stale: false } }] }]), true);
+  assert.equal(stepState([]), "never");
+  assert.equal(stepState([{ lastResult: { result: "not-tried", stale: false } }]), "never");
+  assert.equal(stepState([{ lastResult: { result: "worked", stale: false } }]), "validated");
+  assert.equal(stepState([{ lastResult: { result: "worked", stale: true } }]), "redo", "files changed since");
+  assert.equal(stepState([{ lastResult: { result: "worked", stale: false } }, { lastResult: { result: "failed", stale: false } }]), "redo");
+});
+
+test("shape: storage, processing or orchestration", () => {
+  assert.equal(nodeShape("azure-storage", "storage"), "storage");
+  assert.equal(nodeShape("fabric", "lakehouse"), "storage");
+  assert.equal(nodeShape("fabric", "notebook"), "processing");
+  assert.equal(nodeShape("fabric", "pipeline"), "orchestration");
+  assert.equal(nodeShape("azure-data-factory", undefined), "orchestration");
+  assert.equal(nodeShape("python", "script"), "processing");
+  assert.equal(nodeShape("postgres", undefined), "storage");
+  assert.equal(nodeShape(undefined, undefined), "processing");
+});
+
+test("diagram settings: every level on by default, legend bottom-left; wrong values fall back", () => {
+  assert.deepEqual(readDiagramSettings(() => undefined), { stateBand: true, capabilityEdge: true, clientStepLine: true, legend: true, legendPosition: "bottom-left" });
+  assert.deepEqual(readDiagramSettings(() => undefined), DIAGRAM_SETTING_DEFAULTS);
+  const set: Record<string, unknown> = { stateBand: false, capabilityEdge: "no", clientStepLine: false, legend: false, legendPosition: "top-right" };
+  assert.deepEqual(readDiagramSettings(k => set[k]), { stateBand: false, capabilityEdge: true, clientStepLine: false, legend: false, legendPosition: "top-right" });
+  assert.equal(readDiagramSettings(k => k === "legendPosition" ? "middle" : undefined).legendPosition, "bottom-left");
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+  const props = pkg.contributes.configuration.properties ?? Object.assign({}, ...pkg.contributes.configuration.map((c: { properties: object }) => c.properties));
+  for (const [k, v] of Object.entries(DIAGRAM_SETTING_DEFAULTS)) {
+    assert.equal(props[`datapass.diagram.${k}`]?.default, v, `package.json default of datapass.diagram.${k}`);
+    assert.doesNotMatch(JSON.stringify(props[`datapass.diagram.${k}`]), /foil/i, "settings stay neutral");
   }
 });
 

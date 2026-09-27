@@ -2343,6 +2343,32 @@
           "scope": "window",
           "description": "The first time a DataPass project opens in a workspace, show DataPass (AI exchange and Details) in the secondary side bar instead of VS Code's Chat. VS Code then remembers the tab you use there; Chat stays one click away at the top of that side bar."
         },
+        "datapass.diagram.stateBand": {
+          "type": "boolean",
+          "default": true,
+          "description": "Architecture diagram: show the thin left band with the DataPass state of each block (an operation ready, none ready yet, no operation)."
+        },
+        "datapass.diagram.capabilityEdge": {
+          "type": "boolean",
+          "default": true,
+          "description": "Architecture diagram: show the top edge and symbol with the capability state of each block (available, prepared or planned, choice only, unverified, blocked)."
+        },
+        "datapass.diagram.clientStepLine": {
+          "type": "boolean",
+          "default": true,
+          "description": "Architecture diagram: show the bottom line with the result recorded for each block's steps (validated, to redo, never run). Shown only when the project has recorded results; never guessed."
+        },
+        "datapass.diagram.legend": {
+          "type": "boolean",
+          "default": true,
+          "description": "Architecture diagram: show the legend (providers, shapes and states)."
+        },
+        "datapass.diagram.legendPosition": {
+          "type": "string",
+          "enum": ["bottom-left", "bottom-right", "top-left", "top-right", "hidden"],
+          "default": "bottom-left",
+          "description": "Architecture diagram: where the legend sits (above or below the diagram, left or right), or hidden."
+        },
         "datapass.company": {
           "type": "string",
           "default": "",
