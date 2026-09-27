@@ -38,7 +38,7 @@ V1 = qualify 0.27.0 and close narrow gaps, **no new feature wave**. Done = zero 
 | M1 | Understandable surface | V1-SURF | palette snapshots per mode, link and schema validation, common sync `--check` | ✓ #105 + #108 (main green `0d9cb45`) |
 | M2 | Safety + daily loop | V1-LOAD, V1-FRESH, V1-TEST | acceptance matrix §4 incl. race, invalid-input and timeout cases | ✓ #102, #103, #104 (main green `0d9cb45`) |
 | M3 | 1.0.0-rc qualification | V1-RC | frozen SHA, VSIX built once (SHA-256 recorded), `npm run verify`, desktop Win+Ubuntu, perf harness, J01–J10 (fixtures empty = setup blocker, never a silent pass), Restricted Mode, missing tools, upgrade from 0.27.0; Playwright green ≠ Codex Computer Use | ✓ rc.3 `83e8926` (qa:ui 13 reached / 0 not reached / 4 not automatable) + Julian's real-screen check 2026-09-27 18:30, no blocker |
-| M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | ✓ V1-GAPS `715a790` (#140), 1.0.0 cut by V1-REL100 ([release v1.0.0](https://github.com/julian-passebecq/datapass-vscode/releases/tag/v1.0.0); rollback = v1.0.0-rc.3 VSIX) |
+| M4 | 1.0.0 | release by PM after M3 | re-run affected suites on any change; keep the rollback VSIX | ✓ V1-GAPS `715a790` (#140), 1.0.0 cut by V1-REL100 at `d8772d4` (#143, common #19; VSIX SHA-256 3754569f…b01336, [release v1.0.0](https://github.com/julian-passebecq/datapass-vscode/releases/tag/v1.0.0); rollback = v1.0.0-rc.3 VSIX) |
 | M5 | Product vision session with Julian | after M4 (1.0.0): the PM asks Julian directly in its own conversation, in multiple-choice questions (AskUserQuestion, recommended option first): (1) what was vague or contradictory on his side (decisions that changed, open areas); (2) what working with the FOIL AI brought up (feedback, the xhigh opinion in techleadclaudegpt6 `45-external-feedback/`, QUESTIONS.md); (3) short-, mid- and long-term vision | answers recorded in `handoff/` and in the V2 roadmap | |
 | M6 | Global UI pass | after M5: bring the UI-POLISH principles to ALL of DataPass — official colours and icons, cloud-inspired shapes, 3 reading levels, configurable legends and presets, close to VS Code. Prepared by a request to GPT 6 Pro (tech-lead report) and discussed with Julian in the M5 vision session. Tonight (2026-09-27) only the diagram (V1-UI-POLISH) | M6 packages in PLAN | |
 
@@ -99,7 +99,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
 | CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
 | CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
-| CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 | 2026-09-27 · V2 | PM |
+| CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 — done (#143, common #19; v1.0.0 at d8772d4) | 2026-09-27 · V2 | PM |
 | CODER DataPass UI-POLISH | coder (medium) | V1-UI-POLISH (diagram look) — done (#130) | 2026-09-27 · V2 | PM |
 
 Retired on 2026-09-27: PM ASSISTANT DataPass 1 (hand-off handoff/sessions/2026-09-27-1641-pm-assistant.md).
