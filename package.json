@@ -21,6 +21,7 @@
     "onView:datapass.details",
     "onView:datapass.agentPanel",
     "onView:datapass.aiExchange",
+    "onView:datapass.rail",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
     "workspaceContains:**/databricks.yml",
@@ -912,6 +913,75 @@
       {
         "command": "datapass.control.openConversation",
         "title": "DataPass: Open a Work Order's Conversation in Claude"
+      },
+      {
+        "command": "datapass.tree.lens.project",
+        "title": "DataPass: Tree Lens: Project",
+        "icon": "$(home)",
+        "toggled": "datapass.tree.lens == project"
+      },
+      {
+        "command": "datapass.tree.lens.architecture",
+        "title": "DataPass: Tree Lens: Architecture",
+        "icon": "$(type-hierarchy)",
+        "toggled": "datapass.tree.lens == architecture"
+      },
+      {
+        "command": "datapass.tree.lens.git",
+        "title": "DataPass: Tree Lens: Git",
+        "icon": "$(git-merge)",
+        "toggled": "datapass.tree.lens == git"
+      },
+      {
+        "command": "datapass.tree.lens.ai",
+        "title": "DataPass: Tree Lens: AI / Work Orders",
+        "icon": "$(sparkle)",
+        "toggled": "datapass.tree.lens == ai"
+      },
+      {
+        "command": "datapass.tree.lens.readiness",
+        "title": "DataPass: Tree Lens: Readiness",
+        "icon": "$(checklist)",
+        "toggled": "datapass.tree.lens == readiness"
+      },
+      {
+        "command": "datapass.tree.chooseLens",
+        "title": "DataPass: Choose What the Project Tree Lists…",
+        "icon": "$(list-tree)"
+      },
+      {
+        "command": "datapass.tree.showExplorer",
+        "title": "DataPass: Natural Tree (Explorer)",
+        "icon": "$(files)"
+      },
+      {
+        "command": "datapass.layout.toggleArchitecturePanel",
+        "title": "DataPass: Show or Hide the Architecture in the Bottom Panel"
+      },
+      {
+        "command": "datapass.rail.collapse",
+        "title": "DataPass: Collapse to the Rail",
+        "icon": "$(chevron-right)"
+      },
+      {
+        "command": "datapass.rail.expand",
+        "title": "DataPass: Expand the Right Panel",
+        "icon": "$(chevron-left)"
+      },
+      {
+        "command": "datapass.layout.closeRightPanel",
+        "title": "DataPass: Close the Right Side Bar",
+        "icon": "$(close)"
+      },
+      {
+        "command": "datapass.layout.closeLeftBar",
+        "title": "DataPass: Close the Left Side Bar",
+        "icon": "$(close)"
+      },
+      {
+        "command": "datapass.layout.closeBottomPanel",
+        "title": "DataPass: Close the Bottom Panel",
+        "icon": "$(close)"
       }
     ],
     "viewsContainers": {
@@ -971,16 +1041,22 @@
           "id": "datapass.architecture",
           "name": "Architecture",
           "type": "webview",
-          "when": "!datapass.hidden.view.architecture"
+          "when": "datapass.layout.architectureInPanel && !datapass.hidden.view.architecture"
         }
       ],
       "datapass-details": [
+        {
+          "id": "datapass.rail",
+          "name": "Rail",
+          "type": "webview",
+          "when": "datapass.rail && !datapass.hidden.view.rail"
+        },
         {
           "id": "datapass.aiExchange",
           "name": "AI",
           "type": "webview",
           "initialSize": 3,
-          "when": "!datapass.hidden.view.aiExchange"
+          "when": "!datapass.rail && !datapass.hidden.view.aiExchange"
         },
         {
           "id": "datapass.agentPanel",
@@ -988,14 +1064,14 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 1,
-          "when": "!datapass.hidden.view.agentPanel"
+          "when": "!datapass.rail && !datapass.hidden.view.agentPanel"
         },
         {
           "id": "datapass.details",
           "name": "Details",
           "type": "webview",
           "initialSize": 1,
-          "when": "!datapass.hidden.view.details"
+          "when": "!datapass.rail && !datapass.hidden.view.details"
         },
         {
           "id": "datapass.airflowDag",
@@ -1003,7 +1079,7 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 2,
-          "when": "!datapass.hidden.view.airflowDag"
+          "when": "!datapass.rail && !datapass.hidden.view.airflowDag"
         }
       ]
     },
@@ -1017,32 +1093,32 @@
         {
           "command": "datapass.refreshProject",
           "when": "view == datapass.project",
-          "group": "navigation@1"
+          "group": "navigation@20"
         },
         {
           "command": "datapass.showAllVariants",
           "when": "view == datapass.project && !datapass.allVariants && !datapass.hidden.project.variantFilter",
-          "group": "navigation@3"
+          "group": "navigation@22"
         },
         {
           "command": "datapass.showSelectedArchitecture",
           "when": "view == datapass.project && datapass.allVariants && !datapass.hidden.project.variantFilter",
-          "group": "navigation@3"
+          "group": "navigation@22"
         },
         {
           "command": "datapass.checkForUpdates",
           "when": "view == datapass.project",
-          "group": "navigation@2"
+          "group": "2_git@0"
         },
         {
           "command": "datapass.openWorkbench",
           "when": "view == datapass.project",
-          "group": "navigation@3"
+          "group": "navigation@23"
         },
         {
           "command": "datapass.preparationPack",
           "when": "view == datapass.project",
-          "group": "navigation@4"
+          "group": "1_workbench@0"
         },
         {
           "command": "datapass.arrangeWorkbench",
@@ -1297,7 +1373,7 @@
         {
           "command": "datapass.openSwitcher",
           "when": "view == datapass.project",
-          "group": "navigation@5"
+          "group": "1_workbench@7"
         },
         {
           "command": "datapass.saveWorkView",
@@ -1373,6 +1449,61 @@
           "command": "datapass.control.refresh",
           "when": "view == datapass.agentPanel",
           "group": "navigation"
+        },
+        {
+          "command": "datapass.tree.lens.project",
+          "when": "view == datapass.project",
+          "group": "navigation@10"
+        },
+        {
+          "command": "datapass.tree.lens.architecture",
+          "when": "view == datapass.project",
+          "group": "navigation@11"
+        },
+        {
+          "command": "datapass.tree.lens.git",
+          "when": "view == datapass.project",
+          "group": "navigation@12"
+        },
+        {
+          "command": "datapass.tree.lens.ai",
+          "when": "view == datapass.project",
+          "group": "navigation@13"
+        },
+        {
+          "command": "datapass.tree.lens.readiness",
+          "when": "view == datapass.project",
+          "group": "navigation@14"
+        },
+        {
+          "command": "datapass.tree.showExplorer",
+          "when": "view == datapass.project",
+          "group": "navigation@15"
+        },
+        {
+          "command": "datapass.layout.closeLeftBar",
+          "when": "view == datapass.project || view == datapass.git",
+          "group": "navigation@99"
+        },
+        {
+          "command": "datapass.rail.collapse",
+          "when": "view == datapass.aiExchange || view == datapass.details || view == datapass.agentPanel",
+          "group": "navigation@90"
+        },
+        {
+          "command": "datapass.layout.closeRightPanel",
+          "when": "view == datapass.aiExchange || view == datapass.details || view == datapass.agentPanel || view == datapass.rail",
+          "group": "navigation@99"
+        },
+        {
+          "command": "datapass.rail.expand",
+          "when": "view == datapass.rail",
+          "group": "navigation@90"
+        },
+        {
+          "command": "datapass.layout.closeBottomPanel",
+          "when": "view == datapass.architecture",
+          "group": "navigation@99"
         }
       ],
       "view/item/context": [
@@ -2285,6 +2416,58 @@
         {
           "command": "datapass.airflow.openExplanation",
           "when": "false"
+        },
+        {
+          "command": "datapass.tree.lens.project",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.lens.architecture",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.lens.git",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.lens.ai",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.lens.readiness",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.showExplorer",
+          "when": "false"
+        },
+        {
+          "command": "datapass.rail.collapse",
+          "when": "false"
+        },
+        {
+          "command": "datapass.rail.expand",
+          "when": "false"
+        },
+        {
+          "command": "datapass.layout.closeRightPanel",
+          "when": "false"
+        },
+        {
+          "command": "datapass.layout.closeLeftBar",
+          "when": "false"
+        },
+        {
+          "command": "datapass.layout.closeBottomPanel",
+          "when": "false"
+        },
+        {
+          "command": "datapass.tree.chooseLens",
+          "when": "false"
+        },
+        {
+          "command": "datapass.layout.toggleArchitecturePanel",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -2421,6 +2604,18 @@
           "default": true,
           "scope": "window",
           "description": "The first time a DataPass project opens in a workspace, show DataPass (AI exchange and Details) in the secondary side bar instead of VS Code's Chat. VS Code then remembers the tab you use there; Chat stays one click away at the top of that side bar."
+        },
+        "datapass.layout.architectureInPanel": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "description": "Also show the architecture diagram in the bottom panel, next to the terminal (V3: off by default; the diagram lives in the Workbench tab and the left tree lists the architecture)."
+        },
+        "datapass.layout.workbenchNavColumn": {
+          "type": "boolean",
+          "default": false,
+          "scope": "window",
+          "description": "Show the old Sub-projects and Repositories column inside the Workbench tab (V3: off by default; the left Project tree lists them — Architecture lens). Kept for one release."
         },
         "datapass.diagram.stateBand": {
           "type": "boolean",
@@ -2764,6 +2959,10 @@
             "view.details": {
               "type": "boolean",
               "description": "Details: The selected component or sub-project (secondary side bar)"
+            },
+            "view.rail": {
+              "type": "boolean",
+              "description": "Right rail: A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)"
             },
             "ai.agent": {
               "type": "boolean",

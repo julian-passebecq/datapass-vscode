@@ -68,7 +68,8 @@ const GATED: Record<string, readonly string[]> = {
     "control.refresh", "control.copyStartCommand",
     "openProjectLinks", "openLinksFile", "setCodeFontSize",
     // V3-AIRFLOW: also in the editor context menu of Python files (the view opens by itself).
-    "showAirflowDag"
+    "showAirflowDag",
+    "layout.toggleArchitecturePanel"
   ]
 };
 

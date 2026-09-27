@@ -98,7 +98,7 @@ export class WorkbenchHost implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession) {
     this.subs.push(session.onDidChange(() => this.post()), session.onDidChangeSelection(() => this.post()),
-      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.diagram") || e.affectsConfiguration("datapass.overlay")) void this.post(); }));
+      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.diagram") || e.affectsConfiguration("datapass.overlay") || e.affectsConfiguration("datapass.layout.workbenchNavColumn")) void this.post(); }));
   }
 
   dispose(): void {
@@ -125,6 +125,7 @@ export class WorkbenchHost implements vscode.Disposable {
       hiddenViews: (["options", "sheet", "board", "workOrders", "toolkit"] as const).filter(v => !this.shows(`workbench.${v}`)),
       alternatives: this.shows("badge.alternatives")
     };
+    this.lastState.layout = { navColumn: vscode.workspace.getConfiguration("datapass.layout").get<boolean>("workbenchNavColumn", false) === true };
     const diagramConfig = vscode.workspace.getConfiguration("datapass.diagram");
     const overlayConfig = vscode.workspace.getConfiguration("datapass.overlay");
     this.lastState.diagramSettings = readDiagramSettings(k => diagramConfig.get(k), k => overlayConfig.get(k));
