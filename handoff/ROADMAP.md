@@ -150,6 +150,21 @@ needs first.
 | Scope | Mongoku out (X1); DiagramCloud and Grafana optional modules only | 0.26 / V3 |
 | Tests | testlab 10 as the acceptance journey; perf CI job | V1-T10, V1-PERF |
 
+## 4b. Julian's ideas (2026-09-27) and where they land
+
+Recorded by the PM so they live in the repository, not only in session memory. Milestones refer to `handoff/PLAN.md` (M4 = 1.0.0, M5 = product vision session, M6 = global UI pass).
+
+| Idea | Target |
+|---|---|
+| Architecture diagram readable at a glance: provider colours and icons (Azure blue, Fabric green, Power BI yellow, Databricks orange-red, Python), file-type colours aligned with VS Code's file icons | V1-UI-POLISH (1.0.0 if it passes qa:ui) |
+| Three reading levels per block, each in the legend: left band = DataPass state, top edge = capability state (V1-HONEST: validated / planned / unverified / failed), bottom line = client step state (validated / to redo / never run) only when a real source exists | V1-UI-POLISH |
+| "Stay modular": every indicator and the legend can be switched on/off, legend position configurable | V1-UI-POLISH (settings); presets wired into `resources/experience/presets.json` in M6 / V2 |
+| Block shapes inspired by cloud tools (Data Factory, Fabric): storage, processing, orchestration | V1-UI-POLISH if simple, otherwise M6 |
+| Apply all of the above to the whole of DataPass (a UI close to VS Code and the real world) | M6 global UI pass, prepared with GPT 6 Pro and discussed in M5 |
+| Codex Computer Use keeps an exploratory "like a human" pass that gives a UX opinion (impractical, confusing, slow); Playwright (`qa:ui`) carries the functional gate | V1-AUTO-2 (UX opinion section in the qa report) |
+| Product vision session after 1.0.0: what was vague or contradictory, what the client AI work surfaced, short / mid / long-term vision | M5 |
+| Client AI's informal opinion (low weight, not a review): the internal model is ahead of the user experience; show real capability states; a fluid open → understand → choose variant → see changes → test → activate loop | Input to M5; capability states in V1-HONEST. Private copy in the tech-lead repository (`45-external-feedback/`) |
+
 ## 5. What we do not build (unchanged)
 
 No MCP gateway or cloud proxy, no own agent shell, no scheduler, no knowledge database or price
