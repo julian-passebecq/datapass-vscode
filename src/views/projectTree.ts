@@ -22,6 +22,7 @@ import { gitHostOf, repositoryWebLinks } from "../core/project/gitHosts";
 import { alternativesByComponent } from "../core/experience/alternatives";
 import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
 import type { ProjectMap } from "../core/project/projectMap";
+import { PLAIN_STATE_ICONS, readTreeLook, stateIcon, treeIconColor, type TreeLook } from "./treeColors";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
@@ -40,7 +41,7 @@ const REPO_ICON: Record<string, [string, string?]> = {
   missing: ["error", "problemsErrorIcon.foreground"], "wrong-remote": ["error", "problemsErrorIcon.foreground"], "not-a-repo": ["warning", "problemsWarningIcon.foreground"],
   restricted: ["shield", "disabledForeground"], unverified: ["unverified", "problemsWarningIcon.foreground"]
 };
-const icon = ([id, color]: [string, string?]) => new vscode.ThemeIcon(id, color ? new vscode.ThemeColor(color) : undefined);
+const rawIcon = ([id, color]: [string, string?]) => new vscode.ThemeIcon(id, color ? new vscode.ThemeColor(color) : undefined);
 
 // 0.23 variants: icons and words for coding states and variant files.
 const CODING_ICON: Record<CodingState, string> = { coded: "pass", "partly-coded": "circle-large-filled", "not-coded": "circle-large-outline", unknown: "question" };
@@ -78,9 +79,23 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   /** 0.23: the All variants toggle (memory only; the default is the selected architecture). */
   private allVariants = false;
 
+  /** V3-THEME: neutral icons by default, the DataPass overlay switch (settings `datapass.tree.*`, `datapass.overlay.*`). */
+  private look: TreeLook = this.readLook();
+
   constructor(private readonly session: WorkSession) {
-    this.subs.push(session.onDidChange(() => this.emitter.fire(undefined)), session.onDidChangeSelection(() => void this.revealSelection()));
+    this.subs.push(session.onDidChange(() => this.emitter.fire(undefined)), session.onDidChangeSelection(() => void this.revealSelection()),
+      vscode.workspace.onDidChangeConfiguration(e => {
+        if (e.affectsConfiguration("datapass.tree") || e.affectsConfiguration("datapass.overlay")) { this.look = this.readLook(); this.emitter.fire(undefined); }
+      }));
   }
+
+  private readLook(): TreeLook {
+    const tree = vscode.workspace.getConfiguration("datapass.tree"), overlay = vscode.workspace.getConfiguration("datapass.overlay");
+    return readTreeLook(k => tree.get(k), k => overlay.get(k));
+  }
+
+  /** A tree icon with the colour policy applied (neutral unless it needs attention, or coloured icons are on). */
+  private icon([id, color]: [string, string?]): vscode.ThemeIcon { return rawIcon([id, treeIconColor(color, this.look)]); }
 
   dispose(): void { for (const s of this.subs) s.dispose(); this.emitter.dispose(); }
 
@@ -213,7 +228,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     switch (n.t) {
       case "info": {
         const item = new vscode.TreeItem(n.label, vscode.TreeItemCollapsibleState.None);
-        item.id = n.id; item.description = n.description; item.iconPath = icon(n.icon); item.tooltip = n.tooltip ?? n.label; item.command = n.command; item.contextValue = n.contextValue;
+        item.id = n.id; item.description = n.description; item.iconPath = this.icon(n.icon); item.tooltip = n.tooltip ?? n.label; item.command = n.command; item.contextValue = n.contextValue;
         return item;
       }
       case "subproject": {
@@ -221,7 +236,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const item = new vscode.TreeItem(s.title, vscode.TreeItemCollapsibleState.Expanded);
         item.id = n.id;
         item.description = `${s.summary.filesFound}/${s.summary.filesExpected} files · ${s.summary.opsReady}/${s.summary.opsTotal} ops`;
-        item.iconPath = icon(HEALTH_ICON[s.health] ?? ["circle-outline"]);
+        item.iconPath = rawIcon(stateIcon(HEALTH_ICON[s.health] ?? ["circle-outline"], PLAIN_STATE_ICONS.subproject, this.look));
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${esc(s.title)}**${s.objective ? `\n\n${esc(s.objective)}` : ""}\n\nNext: ${esc(s.nextStep)}`);
         if (s.needs.repositories.length) md.appendMarkdown(`\n\nRepositories needed: ${s.needs.repositories.map(r => esc(`${r.label} (${r.state})`)).join(", ")}`);
@@ -237,7 +252,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         item.id = n.id;
         const alternatives = this.shows("badge.alternatives") ? alternativesByComponent(this.session.project.options).get(c.id) : undefined;
         item.description = `${c.provider?.label ?? c.kind} · ${c.headline}${alternatives ? " · alternatives exist" : ""}`;
-        item.iconPath = new vscode.ThemeIcon(c.provider?.icon ?? "symbol-misc", new vscode.ThemeColor((HEALTH_ICON[c.health] ?? ["", "foreground"])[1] ?? "foreground"));
+        // The provider's icon; its colour is the health only when it needs attention (or coloured icons are on).
+        item.iconPath = rawIcon([c.provider?.icon ?? "symbol-misc", this.look.overlay ? treeIconColor(HEALTH_ICON[c.health]?.[1], this.look) : undefined]);
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${esc(c.label)}** — ${esc(c.provider?.label ?? c.kind)}\n\n${c.description ? `${esc(c.description)}\n\n` : ""}${esc(c.headline)}\n\nNext: ${esc(c.nextStep)}`);
         if (alternatives) md.appendMarkdown(`\n\nAlternatives exist (options.json): ${alternatives.map(esc).join("; ")}`);
@@ -252,7 +268,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const item = new vscode.TreeItem(f.path, vscode.TreeItemCollapsibleState.None);
         item.id = n.id;
         item.description = st.text;
-        item.iconPath = icon(st.icon);
+        item.iconPath = rawIcon(stateIcon(st.icon, PLAIN_STATE_ICONS.file, this.look));
         item.tooltip = `${f.repoPath}\n${f.about ?? f.role}${f.generated ? `\nGenerated by ${f.generated.producer}${f.generated.how ? ` (${f.generated.how})` : ""}` : ""}`;
         item.command = f.state === "found"
           ? { command: "datapass.openComponentFile", title: "Open", arguments: [c.id, f.repoPath] }
@@ -270,7 +286,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const item = new vscode.TreeItem(r.label, vscode.TreeItemCollapsibleState.None);
         item.id = n.id;
         item.description = r.state === "local" ? r.detail : r.remote ? `${r.state === "unbound" ? "not cloned" : r.state === "unverified" ? "origin not verified" : r.state} · ${r.remote}` : r.detail;
-        item.iconPath = icon(REPO_ICON[r.state] ?? ["repo"]);
+        item.iconPath = this.icon(REPO_ICON[r.state] ?? ["repo"]);
         const url = r.state === "planned" ? undefined : r.remoteUrl ?? r.git?.originUrl;
         const host = gitHostOf(url)?.label;
         item.tooltip = `${r.label}${r.description ? ` — ${r.description}` : ""}${host ? ` (${host})` : ""}\n${r.detail}${r.nextStep ? `\nNext: ${r.nextStep}` : ""}${r.usedBy.length ? `\nUsed by: ${r.usedBy.join(", ")}` : ""}`;

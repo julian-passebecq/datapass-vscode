@@ -11,6 +11,7 @@ import { buildProjectMap } from "../src/core/project/projectMap";
 import { analyzeOptions, evaluatePicks, scenarioPicks } from "../src/core/project/options";
 import { workbenchState } from "../src/views/workbenchState";
 import { workbenchHtml, type WorkbenchMode } from "../src/views/workbenchHtml";
+import { DIAGRAM_SETTING_DEFAULTS } from "../src/views/diagramSettings";
 import { fileObsA, inputA } from "../tests/fixtures/v3/research";
 import { optionsA, sheetA } from "../tests/fixtures/v3/researchOptions";
 import { boardA } from "../tests/fixtures/v3/researchBoard";
@@ -27,6 +28,9 @@ import { toolkitState } from "../src/views/toolkitState";
 import { hubRecipesJson, hubToolsJson } from "../tests/fixtures/v3/toolkit";
 
 const light = process.argv.includes("--light");
+// V3-THEME: `--no-overlay` previews datapass.overlay.enabled = false; `--vscode-look` previews datapass.diagram.theme = "vscode".
+const noOverlay = process.argv.includes("--no-overlay");
+const vscodeLook = process.argv.includes("--vscode-look");
 const T = new Date().toISOString();
 const present = ["cli.python", "cli.func", "ext.python", "cli.databricks", "ext.mongodb", "ext.azure-functions", "ext.cosmosdb"];
 const tools = new Map<string, ToolObservation>(TOOLS.map(t => [t.id, { toolId: t.id, state: present.includes(t.id) ? "present" : "absent", observedAt: T }]));
@@ -119,9 +123,10 @@ for (const p of pages) {
     options, analysis, sheet: sheetA(), preview: p.preview ? google : undefined, board, readiness: p.readiness ? salesReadiness : undefined,
     workOrders: p.orders ? workOrders : undefined, toolkit
   });
+  state.diagramSettings = { ...DIAGRAM_SETTING_DEFAULTS, overlay: !noOverlay, theme: vscodeLook ? "vscode" : "microsoft" };
   let html = workbenchHtml({ cspSource: "'self'", nonce: "preview", scriptUri: "about:blank", mode: p.mode, title: `DataPass ${p.mode}` });
   // Local preview: no CSP, theme variables inlined, the bundle inlined, a fake VS Code API that logs messages.
-  html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "")
+  html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>/, "").replace("<body ", `<body class="${light ? "vscode-light" : "vscode-dark"}" `)
     .replace("<style>", `<style>:root{${light ? THEME_LIGHT : THEME_DARK}}\n`)
     .replace(/<script nonce="preview" src="about:blank"><\/script>/, `<script>window.acquireVsCodeApi=()=>({postMessage:m=>{console.log("to extension",JSON.stringify(m));const t=document.getElementById("toast");if(t)t.textContent="→ "+JSON.stringify(m)},getState:()=>(${JSON.stringify(p.ui ?? {})}),setState:()=>{}});</script>
 <script>${script}</script>

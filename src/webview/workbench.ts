@@ -13,8 +13,8 @@ import type { WbTool } from "../views/toolkitState";
 import type { RecipeRouteView, RecipeView } from "../core/toolkit/toolkit";
 import { costFlags, formatAmounts, formatCostLine, formatCostTotal, partialLabel, sumCostLines, type CostTotal } from "../core/project/costs";
 import { crossCount, layerCount, layoutGraph, sizeForWidth, sizeForWidthVertical, type Direction, type Layout, type LayoutEdgeInput } from "../core/project/layout";
-import { dataPassState, diagramState, DP_STATES, fileColor, fileExtension, FAMILY_COLORS, hasStepSource, iconOf, nodeShape, providerLook, SHAPES, STATES, STEP_STATES, stepState, type DataPassState, type DiagramState, type NodeShape, type StepState } from "./diagramLook";
-import { DIAGRAM_SETTING_DEFAULTS, type DiagramSettings } from "../views/diagramSettings";
+import { dataPassState, diagramState, DP_STATES, OVERLAY_HUES, fileColor, fileExtension, FAMILY_COLORS, hasStepSource, iconOf, nodeShape, providerLook, SHAPES, STATES, STEP_STATES, stepState, type DataPassState, type DiagramState, type NodeShape, type StepState } from "./diagramLook";
+import { DIAGRAM_SETTING_DEFAULTS, overlayMarks, type DiagramSettings } from "../views/diagramSettings";
 import { buildDiagram, GROUP_BY, GROUP_BY_LABELS, type DiagramComponent, type DiagramModel, type GroupBy } from "../core/project/diagramModel";
 
 declare function acquireVsCodeApi(): { postMessage(message: unknown): void; getState(): unknown; setState(state: unknown): void };
@@ -353,7 +353,7 @@ function diagram(s: WorkbenchState): HTMLElement {
 
 const diagramSettingsOf = (s: WorkbenchState): DiagramSettings => s.diagramSettings ?? DIAGRAM_SETTING_DEFAULTS;
 /** The bottom line exists only when the setting is on and the project has recorded results (never invented). */
-const showsStepLine = (s: WorkbenchState) => diagramSettingsOf(s).clientStepLine && hasStepSource(s.components);
+const showsStepLine = (s: WorkbenchState) => overlayMarks(diagramSettingsOf(s), hasStepSource(s.components)).stepLine;
 
 /** Legend of the node look: one group per reading level that is switched on. */
 function lookLegend(s: WorkbenchState, ids: string[], ds: DiagramSettings): HTMLElement {
@@ -365,8 +365,8 @@ function lookLegend(s: WorkbenchState, ids: string[], ds: DiagramSettings): HTML
   return h("div", { class: "legend looklegend" },
     group("Icon = provider:", ...families.map(f => h("span", { class: "lgfam", style: `--prov:${FAMILY_COLORS[f]!.color}` }, h("span", { class: "pbadge small", "aria-hidden": "true" }), FAMILY_COLORS[f]!.label))),
     group("Shape:", ...(Object.keys(SHAPES) as NodeShape[]).filter(k => shapes.includes(k)).map(k => h("span", { class: `lgshape shape-${k}` }, h("span", { class: "swatch", "aria-hidden": "true" }), SHAPES[k].label))),
-    ds.stateBand ? group("Left band = DataPass:", ...(Object.keys(DP_STATES) as DataPassState[]).map(k => h("span", { class: `lgdp dp-${k}`, title: DP_STATES[k].about }, h("span", { class: "swatch", "aria-hidden": "true" }), DP_STATES[k].label))) : undefined,
-    ds.capabilityEdge ? group("Top edge = capability:", ...(Object.keys(STATES) as DiagramState[]).map(k => h("span", { class: `lgst st-${k}`, title: STATES[k].about }, h("span", { class: "stsym", "aria-hidden": "true", text: STATES[k].symbol }), STATES[k].label))) : undefined,
+    overlayMarks(ds, false).band ? group("Left band = DataPass:", ...(Object.keys(DP_STATES) as DataPassState[]).map(k => h("span", { class: `lgdp dp-${k}`, title: DP_STATES[k].about }, h("span", { class: "swatch", "aria-hidden": "true" }), DP_STATES[k].label))) : undefined,
+    overlayMarks(ds, false).edge ? group("Top edge = capability:", ...(Object.keys(STATES) as DiagramState[]).map(k => h("span", { class: `lgst st-${k}`, title: STATES[k].about }, h("span", { class: "stsym", "aria-hidden": "true", text: STATES[k].symbol }), STATES[k].label))) : undefined,
     showsStepLine(s) ? group("Bottom line = client step:", ...(Object.keys(STEP_STATES) as StepState[]).map(k => h("span", { class: `lgstep step-${k}`, title: STEP_STATES[k].about }, h("span", { class: "stepsym", "aria-hidden": "true", text: STEP_STATES[k].symbol }), STEP_STATES[k].label))) : undefined);
 }
 
@@ -424,7 +424,7 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
   const compact = (L.nodes[0]?.w ?? 184) < 170;
   const ds = diagramSettingsOf(s);
   const stepLine = showsStepLine(s);
-  const canvas = h("div", { class: `canvas${compact ? " compact" : ""}${ds.stateBand ? "" : " no-band"}${ds.capabilityEdge ? "" : " no-edge"}`, style: `width:${L.width}px;height:${L.height}px;${scale < 1 ? `transform:scale(${scale});` : ""}` });
+  const canvas = h("div", { class: `canvas${compact ? " compact" : ""}${overlayMarks(ds, false).band ? "" : " no-band"}${overlayMarks(ds, false).edge ? "" : " no-edge"}`, style: `width:${L.width}px;height:${L.height}px;${scale < 1 ? `transform:scale(${scale});` : ""}` });
   for (const lane of L.lanes) {
     const info = model.lanes.find(l => l.id === lane.id);
     canvas.append(h("div", { class: `lane dir-${L.direction}`, style: `left:${lane.x}px;top:${lane.y}px;width:${lane.w}px;height:${lane.h}px` },
@@ -475,7 +475,7 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
     const el = h("div", { class: `nodewrap`, style: pos },
       h("button", {
         class: `node ${c ? `h-${c.health}` : "h-planned"} st-${st} dp-${dps} shape-${shape} fam-${look.family} ${on ? "active" : ""}${diff ? ` diff-${diff}` : ""}${folded ? " parent" : ""}`, type: "button", style: `left:0;top:0;width:100%;height:100%;--prov:${look.color}`,
-        "aria-pressed": String(on), title: c ? `${c.label} — ${c.providerLabel ?? c.kind}\nCapability: ${STATES[st].symbol} ${STATES[st].label} · DataPass: ${DP_STATES[dps].label}${step ? ` · Client step: ${STEP_STATES[step].label}` : ""}\n${c.headline}\nNext: ${c.nextStep}${diff ? `\nIn this preview: ${DIFF_TEXT[diff]}` : ""}` : `${ghost!.label}: removed in this preview`,
+        "aria-pressed": String(on), title: c ? `${c.label} — ${c.providerLabel ?? c.kind}${overlayMarks(ds, false).tooltip ? `\nCapability: ${STATES[st].symbol} ${STATES[st].label} · DataPass: ${DP_STATES[dps].label}${step ? ` · Client step: ${STEP_STATES[step].label}` : ""}` : ""}\n${c.headline}\nNext: ${c.nextStep}${diff ? `\nIn this preview: ${DIFF_TEXT[diff]}` : ""}` : `${ghost!.label}: removed in this preview`,
         onclick: () => { if (c) select(s.selection.subproject ?? c.subprojects[0], c.id); },
         ondblclick: () => { if (c && !inPreviewOnly(c.id)) command("datapass.openComponentEntry", c.id); }
       },
@@ -1725,6 +1725,7 @@ function render(): void {
   const active = document.hasFocus() ? document.activeElement as HTMLElement | null : null;
   const focusId = active?.id;
   const caret = active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] as const : undefined;
+  applyLook();
   renderInner();
   if (focusId) {
     const el = document.getElementById(focusId);
@@ -1737,6 +1738,20 @@ function render(): void {
   }
   // The DOM is in place: lay out the diagrams for the width they got (reading it forces layout).
   drawDiagrams();
+}
+
+/**
+ * V3-THEME: the diagram theme (Microsoft light/dark surfaces or the VS Code theme's own), the DataPass overlay
+ * switch (`no-overlay` hides every state mark) and the person's overlay colour overrides (`--dp-<hue>`).
+ */
+function applyLook(): void {
+  const ds = state ? diagramSettingsOf(state) : DIAGRAM_SETTING_DEFAULTS;
+  document.body.classList.toggle("dg-microsoft", ds.theme === "microsoft");
+  document.body.classList.toggle("no-overlay", !ds.overlay);
+  for (const hue of OVERLAY_HUES) {
+    const v = ds.overlayColors[hue];
+    if (v) document.body.style.setProperty(`--dp-${hue}`, v); else document.body.style.removeProperty(`--dp-${hue}`);
+  }
 }
 
 function renderInner(): void {
