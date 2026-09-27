@@ -1,0 +1,40 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "ingest",
+    "path": "dags/meter_readings_daily.py",
+    "sha256": "34c6e1beb48471aa96ab251b61daf73be82562d6ad13f34c427e5e975da6801a",
+    "language": "airflow"
+  },
+  "title": "Daily meter readings DAG",
+  "summary": "Every day at 05:30: wait for the vendor's drop in landing, copy it to raw with Data Factory, run the two Spark jobs on Databricks, build the three SQL models, check at least 50 sites have a row, then publish the day for the API.",
+  "component": "dag",
+  "steps": [
+    { "id": "settings", "title": "Names and thresholds", "kind": "config", "lines": [11, 16], "note": "One place for the container, pipeline, job and model names the tasks use.", "provenance": "declared" },
+    { "id": "helpers", "title": "Helpers tested without Airflow", "kind": "config", "lines": [19, 34], "note": "drop_prefix, quality_sql and publish_day are covered by tests/test_meter_readings_daily.py.", "provenance": "declared" },
+    { "id": "schedule", "title": "Schedule: every day at 05:30", "kind": "config", "lines": [50, 59], "note": "No catch-up; 2 retries 10 minutes apart. The SQL files are read from the warehouse checkout.", "provenance": "declared" },
+    { "id": "wait-for-drop", "title": "Wait for the drop", "kind": "task", "lines": [60, 68], "inputs": ["landing/meter-readings/<day>/"], "note": "Reschedule mode: the sensor frees its worker between checks, gives up after 6 hours.", "provenance": "declared" },
+    { "id": "extract-to-raw", "title": "Copy to raw (Data Factory)", "kind": "task", "lines": [70, 75], "inputs": ["landing"], "outputs": ["raw/meter-readings"], "note": "Runs pipeline pl_copy_meter_drop; its JSON is not in Git yet.", "provenance": "inferred" },
+    { "id": "run-spark-jobs", "title": "Run the Spark jobs (Databricks)", "kind": "task", "lines": [77, 82], "inputs": ["raw/meter-readings"], "outputs": ["silver.meter_readings", "gold.site_energy_daily"], "note": "Job meter-energy from spark-jobs/databricks.yml: clean, then daily energy.", "provenance": "inferred" },
+    { "id": "build-models", "title": "Build the SQL models", "kind": "task", "lines": [84, 89], "inputs": ["gold.site_energy_daily"], "outputs": ["gold.dim_site", "gold.fct_site_energy_daily", "gold.rpt_sites_over_contract"], "provenance": "declared" },
+    { "id": "check-quality", "title": "At least 50 sites for the day", "kind": "test", "lines": [91, 95], "inputs": ["gold.fct_site_energy_daily"], "provenance": "declared" },
+    { "id": "publish", "title": "Publish the day", "kind": "task", "lines": [97, 101], "note": "Writes the marker the API reads to know the day is complete.", "provenance": "illustrative" }
+  ],
+  "links": [
+    { "from": "schedule", "to": "wait-for-drop", "kind": "control" },
+    { "from": "wait-for-drop", "to": "extract-to-raw", "kind": "control" },
+    { "from": "extract-to-raw", "to": "run-spark-jobs", "kind": "control" },
+    { "from": "run-spark-jobs", "to": "build-models", "kind": "control" },
+    { "from": "build-models", "to": "check-quality", "kind": "control" },
+    { "from": "check-quality", "to": "publish", "kind": "control" },
+    { "from": "settings", "to": "schedule", "kind": "dependency" },
+    { "from": "helpers", "to": "check-quality", "kind": "dependency", "note": "quality_sql" }
+  ],
+  "milestoneLabels": [
+    { "step": "wait-for-drop", "label": "1 Sensor" },
+    { "step": "run-spark-jobs", "label": "2 Spark" },
+    { "step": "build-models", "label": "3 SQL" },
+    { "step": "publish", "label": "4 Publish" }
+  ]
+}

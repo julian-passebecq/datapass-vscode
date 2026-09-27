@@ -1,0 +1,24 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "api",
+    "path": "Dockerfile",
+    "sha256": "e6a171189f9f2a02e5285adeb818fb6f8dc1284971497cf84eb8b61772a423ba",
+    "language": "dockerfile"
+  },
+  "title": "Energy API image",
+  "summary": "A slim Python image: dependencies installed first so code changes rebuild fast, the app runs as a non-root user on port 8080 with a health check, reading the published extract from a mounted /data folder.",
+  "component": "api",
+  "steps": [
+    { "id": "base", "title": "Base image and settings", "kind": "config", "lines": [3, 9], "outputs": ["DATA_PATH"], "provenance": "declared" },
+    { "id": "deps", "title": "Install dependencies", "kind": "config", "lines": [11, 13], "inputs": ["requirements.txt"], "note": "A separate layer: changing app.py does not reinstall them.", "provenance": "declared" },
+    { "id": "code", "title": "Copy the app, drop root", "kind": "config", "lines": [15, 18], "inputs": ["app.py"], "provenance": "declared" },
+    { "id": "run", "title": "Serve on 8080 with a health check", "kind": "task", "lines": [20, 22], "inputs": ["/data/site_energy_daily.parquet"], "note": "The extract is mounted, not baked into the image.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "base", "to": "deps", "kind": "control" },
+    { "from": "deps", "to": "code", "kind": "control" },
+    { "from": "code", "to": "run", "kind": "control" }
+  ]
+}

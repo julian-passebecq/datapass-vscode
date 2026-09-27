@@ -1,0 +1,52 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "spark-jobs",
+    "path": "jobs/clean_meter_readings.py",
+    "sha256": "db46699b6f7ca4f405252683fe23bb331ebfd26181446dea3ac703d0ecff8a9d",
+    "language": "pyspark"
+  },
+  "title": "Clean meter readings",
+  "summary": "Reads one day of raw readings copied by Data Factory, types them, drops faulty or failed readings, keeps the latest version of each resent interval, attaches each meter to its site, adds the tariff band and overwrites that day in silver.meter_readings.",
+  "component": "clean-job",
+  "steps": [
+    { "id": "config", "title": "Run date and paths", "kind": "config", "lines": [13, 22], "outputs": ["reading_date", "raw_path"], "note": "--reading-date comes from the Databricks job parameter the Airflow DAG sets to its run date.", "provenance": "declared" },
+    { "id": "read", "title": "Read raw readings and meters", "kind": "read", "lines": [29, 31], "inputs": ["raw/meter-readings (parquet)", "ref.meters"], "outputs": ["raw", "meters"], "provenance": "declared" },
+    { "id": "types", "title": "Types and column names", "kind": "transform", "lines": [33, 40], "inputs": ["raw"], "outputs": ["typed"], "columns": [
+      { "name": "meter_id", "from": ["MeterId"] },
+      { "name": "reading_ts_utc", "from": ["IntervalStartUtc"] },
+      { "name": "kwh", "from": ["Kwh"], "note": "cast to double" },
+      { "name": "quality", "from": ["Quality"], "note": "upper case" },
+      { "name": "received_at", "from": ["ReceivedAtUtc"] }
+    ], "provenance": "declared" },
+    { "id": "valid", "title": "Drop faulty and failed readings", "kind": "filter", "lines": [42, 47], "inputs": ["typed"], "outputs": ["valid"], "note": "Keeps 0 to 500 kWh with quality A or E: the rule tested in rules.is_valid_reading.", "provenance": "declared" },
+    { "id": "dedupe", "title": "Latest version of each interval", "kind": "transform", "lines": [49, 55], "inputs": ["valid"], "outputs": ["deduped"], "note": "row_number over (meter_id, reading_ts_utc) ordered by received_at descending: a resent interval replaces the first one.", "provenance": "inferred" },
+    { "id": "join-site", "title": "Attach the meter's site", "kind": "join", "lines": [57, 58], "inputs": ["deduped", "meters"], "outputs": ["with_site"], "note": "Left join with a broadcast register: an unknown meter is kept with an empty site.", "provenance": "declared" },
+    { "id": "band", "title": "Reading date, tariff band, demand", "kind": "transform", "lines": [60, 73], "inputs": ["with_site"], "outputs": ["cleaned"], "columns": [
+      { "name": "reading_date", "from": ["reading_ts_utc"], "note": "UTC day" },
+      { "name": "tariff_band", "from": ["reading_ts_utc", "meters.time_zone"], "note": "peak 17-21, shoulder 7-17, offpeak otherwise, local hour" },
+      { "name": "demand_kw", "from": ["kwh"], "note": "kWh per quarter hour times 4" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Overwrite the day in silver", "kind": "write", "lines": [75, 81], "inputs": ["cleaned"], "outputs": ["silver.meter_readings"], "note": "replaceWhere on reading_date: a rerun replaces the day instead of doubling it.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "config", "to": "read", "kind": "dependency" },
+    { "from": "read", "to": "types", "kind": "data" },
+    { "from": "types", "to": "valid", "kind": "data" },
+    { "from": "valid", "to": "dedupe", "kind": "data" },
+    { "from": "dedupe", "to": "join-site", "kind": "data" },
+    { "from": "read", "to": "join-site", "kind": "data", "note": "meters" },
+    { "from": "join-site", "to": "band", "kind": "data" },
+    { "from": "band", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "readings-meters", "step": "join-site", "left": "deduped", "right": "ref.meters", "type": "left", "keys": [["meter_id", "meter_id"]], "note": "The register is small: broadcast to every executor.", "provenance": "declared" }
+  ],
+  "milestoneLabels": [
+    { "step": "read", "label": "1 Read" },
+    { "step": "valid", "label": "2 Clean" },
+    { "step": "join-site", "label": "3 Join" },
+    { "step": "write", "label": "4 Write" }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "folders": [
+    { "name": "bridge", "path": "bridge" },
+    { "name": "ingest", "path": "ingest" },
+    { "name": "spark-jobs", "path": "spark-jobs" },
+    { "name": "warehouse", "path": "warehouse" },
+    { "name": "infra", "path": "infra" },
+    { "name": "api", "path": "api" }
+  ],
+  "settings": {}
+}

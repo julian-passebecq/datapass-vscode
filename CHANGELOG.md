@@ -5,6 +5,11 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-DEMO**: `examples/v3/etl-demo`, a synthetic data-engineering demo client (fictional company, no network,
+  no credentials): an Airflow DAG, two PySpark jobs with pytest tests, three SQL models (fact + dimensions, left
+  join with COALESCE, semi-join), Bicep, a Dockerfile, and a bridge (manifest v5, graph per provider, variants
+  A local / B Databricks / C Fabric, links) with DataPass Hop explanations for all seven files. Open
+  `etl-demo.code-workspace`; `tests/etlDemo.test.ts` checks it loads with 0 errors, CI runs its pytest.
 - QA (V1.0.x-QATMP): `qa:ui` waits for VS Code's whole process tree (extension host, shared process, pty host, utility processes) to exit after closing it, killing survivors after 15 s, so removing the run root no longer races a writer (`ENOTEMPTY` on Ubuntu CI in `qa-ui.smoke`). Unit test `tests/qaProcessTree.test.ts`.
 - **V3-HOME**: *DataPass: Open Home* — a module dashboard tab (Architecture, Understand/DataPass Hop coming, Git,
   AI & work orders, Board, Readiness & tools, Project links), each tile running an existing command, with an

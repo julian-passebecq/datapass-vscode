@@ -1,0 +1,37 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "warehouse",
+    "path": "models/fct_site_energy_daily.sql",
+    "sha256": "aded12923efd89ce7eb94770290766c42ff2b1a2e6d09d480c9965f7f5acf31e",
+    "language": "sql"
+  },
+  "title": "Daily energy fact",
+  "summary": "The daily energy per site from the Spark job, keyed on the site and date dimensions: a fact table joined to two dimensions, from 2026 onwards.",
+  "component": "models",
+  "steps": [
+    { "id": "energy", "title": "Daily energy (from Spark)", "kind": "source", "lines": [20, 20], "inputs": ["gold.site_energy_daily"], "outputs": ["e"], "provenance": "declared" },
+    { "id": "site", "title": "Join the site dimension", "kind": "join", "lines": [21, 22], "inputs": ["e", "gold.dim_site"], "outputs": ["e + s"], "provenance": "declared" },
+    { "id": "date", "title": "Join the date dimension", "kind": "join", "lines": [23, 24], "inputs": ["e + s", "gold.dim_date"], "outputs": ["e + s + d"], "note": "gold.dim_date is a calendar table maintained outside this repository.", "provenance": "inferred" },
+    { "id": "where", "title": "From 2026 onwards", "kind": "filter", "lines": [25, 25], "provenance": "declared" },
+    { "id": "select", "title": "Fact columns", "kind": "transform", "lines": [4, 19], "columns": [
+      { "name": "date_key", "from": ["d.date_key"] },
+      { "name": "region_name", "from": ["s.region_name"] },
+      { "name": "contract_kw", "from": ["s.contract_kw"] },
+      { "name": "kwh_vs_average", "from": ["e.kwh_total", "e.kwh_rolling_avg"], "note": "difference with the 7-day average" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Replace gold.fct_site_energy_daily", "kind": "write", "lines": [3, 3], "outputs": ["gold.fct_site_energy_daily"], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "energy", "to": "site", "kind": "data" },
+    { "from": "site", "to": "date", "kind": "data" },
+    { "from": "date", "to": "where", "kind": "data" },
+    { "from": "where", "to": "select", "kind": "data" },
+    { "from": "select", "to": "write", "kind": "data" }
+  ],
+  "joins": [
+    { "id": "energy-site", "step": "site", "left": "gold.site_energy_daily e", "right": "gold.dim_site s", "type": "inner", "keys": [["e.site_id", "s.site_id"]], "note": "A day of a closed site (not in dim_site) is not reported.", "provenance": "declared" },
+    { "id": "energy-date", "step": "date", "left": "gold.site_energy_daily e", "right": "gold.dim_date d", "type": "inner", "keys": [["e.reading_date", "d.calendar_date"]], "provenance": "declared" }
+  ]
+}

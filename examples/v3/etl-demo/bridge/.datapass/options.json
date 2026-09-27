@@ -1,0 +1,68 @@
+{
+  "format": "datapass.options",
+  "version": "1",
+  "title": "Energy ETL — where do the Spark jobs run?",
+  "description": "The same two PySpark jobs and SQL models, three places to run them. Preview a variant from the status bar: nothing is written or deployed. Record decision is what commits a choice.",
+  "criteria": [
+    { "id": "cost", "label": "Monthly cost (declared, order of magnitude)", "better": "lower" },
+    { "id": "setup", "label": "Setup effort", "description": "5 = quick to set up", "better": "higher" }
+  ],
+  "decisions": [
+    {
+      "id": "compute",
+      "title": "Where do the Spark jobs run?",
+      "level": "compute",
+      "subproject": "daily-energy",
+      "concerns": ["clean-job", "energy-job"],
+      "current": "databricks",
+      "options": [
+        {
+          "id": "local",
+          "label": "A — local Spark",
+          "summary": "spark-submit on a laptop over the sample CSV: to develop and demo, not to run the daily load.",
+          "changes": {
+            "replace": [
+              { "id": "clean-job", "kind": "script", "label": "Clean meter readings (local Spark)", "provider": "python",
+                "artifacts": { "repoRef": "spark-jobs", "profile": "python.script", "root": "jobs", "entry": "clean_meter_readings.py" } },
+              { "id": "energy-job", "kind": "script", "label": "Daily site energy (local Spark)", "provider": "python",
+                "artifacts": { "repoRef": "spark-jobs", "profile": "python.script", "root": "jobs", "entry": "daily_site_energy.py" } }
+            ]
+          },
+          "values": { "cost": "0", "setup": { "score": 4 } },
+          "pros": ["No cloud account needed", "Runs against spark-jobs/sample/"],
+          "cons": ["No scheduler, no Unity Catalog: tables are local"]
+        },
+        {
+          "id": "databricks",
+          "label": "B — Databricks jobs",
+          "summary": "The current architecture: one Databricks job (bundle meter-energy) with two tasks, started by the Airflow DAG.",
+          "values": { "cost": "≈ 150 USD", "setup": { "score": 3 } },
+          "pros": ["Declared in databricks.yml, checked with databricks bundle validate"],
+          "cons": ["A workspace and a job cluster to pay for"]
+        },
+        {
+          "id": "fabric",
+          "label": "C — Fabric Spark job definitions",
+          "summary": "The same jobs as Fabric Spark job definitions in a Fabric workspace, the tables in a OneLake lakehouse.",
+          "changes": {
+            "addRepositories": [ { "key": "fabric", "label": "Fabric workspace (Git folder)", "planned": true } ],
+            "replace": [
+              { "id": "clean-job", "kind": "script", "label": "Clean meter readings (Fabric Spark job)", "provider": "fabric", "status": "planned",
+                "artifacts": { "repoRef": "fabric", "profile": "fabric.item", "root": "CleanMeterReadings.SparkJobDefinition" } },
+              { "id": "energy-job", "kind": "script", "label": "Daily site energy (Fabric Spark job)", "provider": "fabric", "status": "planned",
+                "artifacts": { "repoRef": "fabric", "profile": "fabric.item", "root": "DailySiteEnergy.SparkJobDefinition" } }
+            ]
+          },
+          "values": { "cost": "≈ 260 USD (F2 capacity)", "setup": { "score": 2 } },
+          "pros": ["Lakehouse, notebooks and Power BI in one workspace"],
+          "cons": ["A capacity to buy; its Git folder does not exist yet"]
+        }
+      ]
+    }
+  ],
+  "scenarios": [
+    { "id": "a-local", "title": "A — local Spark", "picks": ["compute=local"], "description": "Files present: the jobs run with spark-submit over the sample." },
+    { "id": "b-databricks", "title": "B — Databricks", "picks": ["compute=databricks"], "recommended": true, "description": "The current architecture in graph.json." },
+    { "id": "c-fabric", "title": "C — Fabric", "picks": ["compute=fabric"], "description": "No files yet: its repository is planned." }
+  ]
+}
