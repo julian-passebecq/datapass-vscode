@@ -3,17 +3,34 @@
 DataPass Control Plane (VS Code extension). Detail per pass: [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md);
 status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
-## Unreleased
+## 1.0.0-rc.2 — V1 release candidate 2: FOIL feedback answers, honest partial states, one Codex RC prompt (2026-09-27)
 
-- **Honest partial states** (V1-HONEST, client requests F01, F04, F06, F08): a component declared
+Plan: [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0, milestone M3 (packages V1-FLAKE2, V1-Q, V1-FOILDOC,
+V1-HONEST, V1-AUTO, V1-RC2). Merged since 1.0.0-rc.1: PRs #112–#121. The project schema change is additive
+and relaxing (`schemaVersion` stays 5). 1.0.0 is still cut by the PM only after the M3 gates are closed.
+
+- **Honest partial states** (V1-HONEST, PR #121, client requests F01, F04, F06, F08): a component declared
   `planned` (a docs-only adapter folder) is "planned · partial" in Details, sub-projects and Options,
   never ready, and its deploy/run/publish operations are blocked; `toolchain.tools[]`, `identifiers[]`
   and `connections[]` may name the `variants` (routes) that need them, so a missing `az` or `func`
   warns only on those routes, never on the local one; an identifier with no value (envKey only) is
   valid and shown "pending" (never copied, never ready; a sign-in naming it is never ok);
   `localEnv.files` may be empty; unknown costs and volumes read "unknown", never 0 or free, and a
-  route declared with a cost line `"none": "local only"` reads "no cloud cost" (Q10). The
-  project schema change is additive and relaxing: `schemaVersion` stays 5.
+  route declared with a cost line `"none": "local only"` reads "no cloud cost" (Q10).
+- **FLAKE2** (V1-FLAKE2, PR #112): the v25 selected-variant race is fixed (the entries this window saved
+  win over an older storage echo); the v20 Windows `.git/config` lock ("Permission denied" while another Git
+  process replaces the config) is re-read once, and a second failure, or any other error, still surfaces
+  as an error (unit test, V1-RC2).
+- **One Codex prompt for the RC run** (V1-AUTO, PR #120): release journeys R01–R05 (pinned VSIX, Restricted
+  Mode, multi-repository project, Open a Client Project, broken project file); `qa:prepare --rc --sha256
+  --datapass-version --clone` writes `CODEX_PROMPT.md` with one launch command per journey; Julian's part
+  of [handoff/v1/RC_CHECK.md](handoff/v1/RC_CHECK.md) is about 5 minutes.
+- **FOIL feedback answers** (V1-Q, PR #113, #114): dev example projects say the owning AI merges; codex-tests
+  repository entries may pin a ref or commit (Q08).
+- **sync-common** (PR #117): the examples' native `.vscode/tasks.json` (the V1-TEST test task) is synced to
+  datapass-vscode-common; `npm run sync:common -- --check` is clean.
+- Docs and plan: ROADMAP V1-FOIL-A no longer tied to the foil-study S1 contract (PR #116); PLAN M3 packages
+  and the M5 product vision session (PR #115, #118); V1-FOILDOC hand-off (PR #119).
 
 ## 1.0.0-rc.1 — V1 release candidate: understandable surface, safe reads, fresh state, native Test (2026-09-27)
 
