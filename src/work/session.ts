@@ -30,7 +30,7 @@ import { coordinationKeyOf, observeProject, type ProjectObservation } from "./pr
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
 import { incompleteText } from "../core/project/observation";
 import { deriveVariants, type VariantsAnalysis } from "../core/project/variants";
-import { analyzeOptions, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
+import { analyzeOptions, currentPicks, evaluatePicks, optionComponentRepositories, optionsProblems, picksFrom, scenarioPicks, type ArchitectureImpact, type DerivedArchitecture, type OptionsAnalysis } from "../core/project/options";
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
@@ -38,6 +38,7 @@ import { buildCatalogue, hubToolchainTools, recipeView, type Catalogue, type Rec
 import { loadToolkitFiles } from "./toolkitFiles";
 import type { ToolkitFileResult } from "../core/toolkit/toolkit";
 import { buildReadiness, readinessForVariant, type EnvFileObservation, type Readiness } from "../core/readiness/readiness";
+import { selectedVariantKeys } from "../core/readiness/variantScope";
 import { LATEST_MANIFEST_VERSION } from "../core/projectManifestModel";
 import { observeLocalEnv } from "./envObserver";
 import { observeBindingFolders, observeExtensionsJson } from "./toolchainObserver";
@@ -731,7 +732,9 @@ export class WorkSession implements vscode.Disposable {
       manifest: this.ctx.manifest, coordinationKey: map.coordinationKey, envFiles: this.envObs, repositories: (variant?.map ?? map).repositories, problems: map.problems,
       settings: { diagramCloudUrl: config.get<string>("diagramCloud.url") ?? "" },
       diagramCloudSidecar: Boolean(this.ctx.diagramCloudSidecar), latestSchemaVersion: LATEST_MANIFEST_VERSION,
-      tools: this.tools, platform: process.platform, hubTools: hubToolchainTools(this.catalogue()), connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs
+      tools: this.tools, platform: process.platform, hubTools: hubToolchainTools(this.catalogue()), connectionProbes: this.connectionProbes, extensionsJson: this.extensionsObs, bindingFolders: this.bindingObs,
+      // V1-HONEST (F04): tools, ids and connections scoped to other routes are notes, not warnings.
+      selected: selectedVariantKeys(preview?.picks ?? (this.ctx.options ? currentPicks(this.ctx.options) : undefined), preview?.key.startsWith("scenario:") ? preview.key.slice("scenario:".length) : undefined)
     });
     // V1-STAB: with a variant selected, rows of repositories only other variants use leave the view.
     if (variant) {

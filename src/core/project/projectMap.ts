@@ -270,6 +270,8 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
         }
       }
       if (DEPLOYISH.has(cap.phase)) {
+        // V1-HONEST (F01): a planned component (docs-only adapter) has nothing to deploy or run yet.
+        if (item.status === "planned") requirements.push({ kind: "target", id: "status", label: "Component planned", state: "missing", detail: `${item.label} is planned: its adapter is not implemented yet (declared status "planned" in graph.json), so there is nothing to ${cap.phase}.` });
         if (!want.environment) requirements.push({ kind: "target", id: "environment", label: "Environment", state: "missing", detail: `Say which environment this ${cap.phase} targets: give the operation an "environment" (for example dev) in graph.json, declared in project.json environments.` });
         else if (!env) requirements.push({ kind: "target", id: "environment", label: `Environment ${want.environment}`, state: "missing", detail: `Declare environment "${want.environment}" in project.json environments.` });
         else requirements.push({ kind: "target", id: "environment", label: `Environment ${env.title ?? env.id}${env.production ? " (production)" : ""}`, state: "ok", detail: env.production ? "Production: mistakes affect real users or data." : "Declared environment." });
@@ -352,6 +354,8 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
     const health: Health = repos.some(r => r.state === "planned") && !summary.filesFound ? "planned"
       : repos.length || missingFiles ? "attention"
       : comps.some(c => c.health === "blocked") ? "attention"
+      : comps.length && comps.every(c => c.health === "planned") ? "planned"
+      : comps.some(c => c.health === "planned") ? "attention"
       : "ok";
     const open = checklist.find(c => c.state === "blocked" || c.state === "problem") ?? checklist.find(c => c.state === "todo");
     const firstComp = comps.find(c => c.health !== "ok" && c.health !== "info");
@@ -417,6 +421,9 @@ function summarizeComponent(item: GraphItem, a: ArtifactView | undefined, ops: O
   if (a?.availability === "unbound") return { health: "attention", headline: "repository not cloned here", nextStep: repo?.nextStep ?? "Clone or locate the repository." };
   if (a?.availability === "restricted") return { health: "info", headline: "not inspected (Restricted Mode)", nextStep: "Trust this workspace to inspect its files." };
   if (repo && (repo.state === "missing" || repo.state === "wrong-remote" || repo.state === "unverified")) return { health: "attention", headline: repo.detail, nextStep: repo.nextStep ?? repo.detail };
+  if (!a && item.status === "planned") return { health: "planned", headline: "planned", nextStep: "Declare its repository and files (artifacts) in graph.json when it is prepared." };
+  // V1-HONEST (F01): declared "planned" with files declared (a docs-only adapter folder): partial, never ready.
+  if (item.status === "planned") return { health: "planned", headline: `planned · partial · ${files}`, nextStep: "Planned: the adapter is not implemented yet (only some files are prepared). Change its status in graph.json when it is." };
   if (a && a.summary.missing) {
     const missing = a.files.filter(f => !f.optional && f.state === "missing" && f.source !== "generated").map(f => f.path);
     return { health: "blocked", headline: `${files} · missing ${missing.slice(0, 2).join(", ")}${missing.length > 2 ? "…" : ""}`, nextStep: `Missing: ${missing.slice(0, 4).join(", ")}${missing.length > 4 ? "…" : ""}. Ask the AI to prepare ${missing.length === 1 ? "it" : "them"} in the repository, then get the update.` };
@@ -425,7 +432,6 @@ function summarizeComponent(item: GraphItem, a: ArtifactView | undefined, ops: O
     const g = a.files.find(f => f.source === "generated" && f.state === "missing")!;
     return { health: "attention", headline: `${files} · ${g.path} not generated`, nextStep: `Generate ${g.path} with ${g.generated?.producer ?? "its producer"}, then re-inspect.` };
   }
-  if (!a && item.status === "planned") return { health: "planned", headline: "planned", nextStep: "Declare its repository and files (artifacts) in graph.json when it is prepared." };
   if (!a && !ops.length) {
     return { health: "info", headline: provider?.support === "unsupported" ? "not supported yet" : item.status ? `declared ${item.status}` : "no files or operations declared", nextStep: provider?.support === "unsupported" ? `${provider.label} has no DataPass operations yet.` : "No files or operations declared for this component." };
   }

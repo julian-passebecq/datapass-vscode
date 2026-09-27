@@ -172,6 +172,18 @@ variable **names** a project needs, without ever touching a value.
 - `localEnv` and `identifiers` require `schemaVersion: 4`; a v3 manifest (still accepted) cannot use them.
 - v5 adds `toolchain`, `connections`, and per-environment `values` and a `kind` for identifiers:
   section 12.
+- **Not known yet?** Declare the identifier without `value` or `values` (its `id`, `label`, `kind` and
+  `envKey` only): it is **pending**. DataPass shows it "pending", never copies it, and a pending id is
+  a Readiness warning, so nothing that needs it looks ready. Never invent a placeholder value.
+  `localEnv.files` may be an empty list when the project needs no env file yet.
+- **Needed by one route only?** A `toolchain.tools[]` entry, an identifier or a connection may say
+  `"variants": ["cloud"]` (options or scenarios of `options.json`, `"option"` or `"decision=option"`).
+  It is then needed only when one of those variants is in view: a missing `cli.az` or `cli.func`, or a
+  pending cloud id, is a note on the local route and a warning on the cloud route. Without `variants`
+  it is needed by every route.
+- A component whose adapter is not implemented yet (a folder with only a README) says
+  `"status": "planned"` in graph.json: DataPass shows it "planned · partial", never ready, and offers
+  no deploy or run on it.
 
 ## 3. `.datapass/graph.json` (graph 0.2)
 

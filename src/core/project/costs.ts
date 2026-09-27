@@ -132,13 +132,13 @@ export function partialLabel(t: CostTotal): string {
 
 /**
  * One line for a total: amounts per currency, monthly then one-time, then the partial marker.
- * Nothing priced says so ("not priced"), never "0" and never a bare dash.
+ * Nothing priced says so ("unknown"), never "0", "free" or a bare dash (V1-HONEST, F06).
  */
 export function formatCostTotal(t: CostTotal, words: { month?: string; once?: string } = {}): string {
-  if (t.total === 0) return "no cost declared";
+  if (t.total === 0) return "unknown · no cost declared";
   const sharedNote = t.shared.length ? (t.unit === "line" ? t.shared.map(sharedLineLabel) : [`shared counted once: ${t.shared.join(", ")}`]) : [];
   const flags = costFlags(t);
-  if (t.priced === 0 && !Object.keys(t.monthly).length && !Object.keys(t.oneTime).length) return [`not priced (0 of ${t.total} ${t.unit}${t.total === 1 ? "" : "s"})`, ...flags].join(" · ");
+  if (t.priced === 0 && !Object.keys(t.monthly).length && !Object.keys(t.oneTime).length) return [`unknown · not priced (0 of ${t.total} ${t.unit}${t.total === 1 ? "" : "s"})`, ...flags].join(" · ");
   const parts = [formatAmounts(t.monthly, words.month ?? "/month"), formatAmounts(t.oneTime, words.once ?? " one-time")].filter(Boolean);
   const partial = partialLabel(t);
   return [...parts, partial, ...sharedNote, ...flags].filter(Boolean).join(" · ");

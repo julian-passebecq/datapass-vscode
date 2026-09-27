@@ -66,11 +66,11 @@ export interface WbReadiness {
   declared: boolean;
   files: Array<{ id: string; path: string; repoLabel?: string; optional: boolean; state: string; stateText: string; git: string }>;
   keys: Array<{ name: string; state: string; stateText: string; source: string; sourceText: string }>;
-  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments: string[] }>;
+  identifiers: Array<{ id: string; label: string; provider?: string; kind?: string; envKey?: string; environments: string[]; pending: boolean; onlyFor?: string[]; outOfRoute?: boolean }>;
   companions: Array<{ module: string; label: string; state: string; detail: string }>;
   /** 0.18 (manifest v5): names, versions and states only; install commands carry no project value. */
   tools?: { entries: Array<{ tool: string; label: string; state: string; stateText: string; detail: string; optional: boolean; extensionId?: string; install?: "command" | "docs" }>; summary: { ok: number; attention: number; notChecked: number; total: number }; extensionsText: string; extensionsAttention: boolean };
-  connections: Array<{ id: string; label: string; kind: string; environment?: string; state: string; stateText: string; detail: string; nextStep?: string; signIn: boolean; hasPortal: boolean; tool?: string }>;
+  connections: Array<{ id: string; label: string; kind: string; environment?: string; state: string; stateText: string; detail: string; nextStep?: string; signIn: boolean; hasPortal: boolean; tool?: string; outOfRoute?: boolean }>;
   /** D-22: each integration's evidence chain; every link says observed (source, time) or unknown (why). */
   evidence: Array<{ id: string; label: string; kind: string; summary: string; tone: string; links: Array<{ link: string; name: string; state: string; holds?: boolean; text: string }> }>;
   checks: Array<{ severity: string; area: string; message: string; nextStep?: string }>;
@@ -188,14 +188,14 @@ export function wbReadiness(r: Readiness): WbReadiness {
     declared: r.declared,
     files: r.files.map(f => ({ id: f.id, path: f.path, repoLabel: f.repoLabel, optional: f.optional, state: f.state, stateText: fileStateText(f), git: f.git })),
     keys: r.keys.map(k => ({ name: k.name, state: k.state, stateText: keyStateText(k), source: k.source, sourceText: keySourceText(k) })),
-    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: [...d.environments] })),
+    identifiers: r.identifiers.map(d => ({ id: d.id, label: d.label, provider: d.provider, kind: d.kind, envKey: d.envKey, environments: [...d.environments], pending: d.pending, onlyFor: d.variants, outOfRoute: d.outOfRoute })),
     companions: r.companions.map(c => ({ module: c.module, label: c.label, state: c.state, detail: c.detail })),
     tools: r.toolchain.declared ? {
-      entries: r.toolchain.entries.map(e => ({ tool: e.tool, label: e.label, state: e.state, stateText: toolStateText(e), detail: e.detail, optional: e.optional, extensionId: e.extensionId, install: e.install?.command ? "command" as const : e.install?.docs ? "docs" as const : undefined })),
+      entries: r.toolchain.entries.map(e => ({ tool: e.tool, label: e.label, state: e.state, stateText: toolStateText(e), detail: e.detail, optional: e.optional || Boolean(e.outOfRoute) /* V1-HONEST (F04): only other routes need it */, extensionId: e.extensionId, install: e.install?.command ? "command" as const : e.install?.docs ? "docs" as const : undefined })),
       summary: r.toolchain.summary, extensionsText: extensionsJsonText(r.extensions),
       extensionsAttention: r.extensions.state === "invalid" || r.extensions.expected.some(x => (!x.recommended && !x.optional) || x.unwanted)
     } : undefined,
-    connections: r.connections.map(c => ({ id: c.id, label: c.label, kind: c.kind, environment: c.environment, state: c.state, stateText: CONNECTION_STATE_TEXT[c.state], detail: c.detail, nextStep: c.nextStep, signIn: Boolean(c.signIn), hasPortal: Boolean(c.hasPortal), tool: c.tool })),
+    connections: r.connections.map(c => ({ id: c.id, label: c.label, kind: c.kind, environment: c.environment, state: c.state, stateText: CONNECTION_STATE_TEXT[c.state], detail: c.detail, nextStep: c.nextStep, signIn: Boolean(c.signIn), hasPortal: Boolean(c.hasPortal), tool: c.tool, outOfRoute: c.outOfRoute })),
     evidence: r.evidence.map(e => ({ id: e.id, label: e.label, kind: e.kind, summary: e.summary, tone: e.tone,
       links: e.chain.map(l => ({ link: l.link, name: LINK_LABELS[l.link].name, state: l.state, ...(l.state === "observed" ? { holds: l.holds } : {}), text: linkText(l) })) })),
     checks: r.checks.slice(0, 30).map(c => ({ severity: c.severity, area: c.area, message: c.message, nextStep: c.nextStep })),
@@ -214,7 +214,7 @@ export interface WbImpact {
   providersAdded: string[];
   providersRemoved: string[];
   tools: { newlyNeeded: Array<{ label: string; state: string; extensionId?: string; why: string[] }>; noLongerNeeded: string[]; missing: Array<{ label: string; extensionId?: string }> };
-  support: { operations: number; files: number; unsupported: number };
+  support: { operations: number; files: number; unsupported: number; planned: number };
   operations: { total: number; ready: number };
   repositories: { used: string[]; planned: string[]; newlyUsed: string[] };
   costs: { monthly: Record<string, number>; oneTime: Record<string, number>; missing: string[]; total: CostTotal };

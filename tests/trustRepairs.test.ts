@@ -45,8 +45,8 @@ test("F08: a zero line is priced; an unpriced line or option is unknown, never z
   const partial = sumCostLines([{ monthly: 4 }, {}], "USD");
   assert.equal(formatCostTotal(partial), "≈ 4 USD/month · partial: 1 of 2 lines priced");
   const unknown = sumCostLines([{}, {}], "USD");
-  assert.equal(formatCostTotal(unknown), "not priced (0 of 2 lines)");
-  assert.equal(formatCostTotal(sumCostLines([], "USD")), "no cost declared");
+  assert.equal(formatCostTotal(unknown), "unknown · not priced (0 of 2 lines)");
+  assert.equal(formatCostTotal(sumCostLines([], "USD")), "unknown · no cost declared");
   assert.equal(formatCostLine({}, "USD"), "not priced");
   // Scenario: one decision per part; an option without cost lines makes the total partial.
   const s = sumPickedOptions([{ costs: [{ monthly: 3 }] }, { costs: [] }, { costs: [{ monthly: 1, currency: "EUR" }, {}] }], "USD");

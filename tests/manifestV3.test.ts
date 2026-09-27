@@ -78,7 +78,12 @@ const STRUCTURAL: Array<[string, unknown, boolean]> = [
   ["identifier values on a v4 manifest", v3({ schemaVersion: 4, identifiers: [{ id: "ws", label: "WS", values: { dev: "abc123" } }] }), false],
   ["identifier kind on a v4 manifest", v3({ schemaVersion: 4, identifiers: [{ id: "t", label: "T", value: "abc123", kind: "tenant" }] }), false],
   ["v5 identifier with both value and values", v5({ identifiers: [{ id: "ws", label: "WS", value: "abc123", values: { dev: "abc123" } }] }), false],
-  ["v5 identifier with neither value nor values", v5({ identifiers: [{ id: "ws", label: "WS", kind: "workspace" }] }), false],
+  // V1-HONEST (F08): an identifier with neither value nor values is pending, and valid; localEnv.files may be empty.
+  ["v5 pending identifier (envKey only)", v5({ identifiers: [...(v5().identifiers as unknown[]), { id: "ws-pending", label: "Pending workspace", kind: "workspace", envKey: "PENDING_WORKSPACE_ID" }] }), true],
+  ["v5 localEnv with no env file", v5({ localEnv: { files: [] } }), true],
+  ["v5 toolchain tool, identifier and connection scoped to routes", v5({ toolchain: { tools: [{ tool: "cli.az", variants: ["cloud", "hosting=functions"] }] }, identifiers: [...(v5().identifiers as unknown[]), { id: "fn", label: "Function app", variants: ["cloud"] }] }), true],
+  ["v5 route scope with an empty list", v5({ toolchain: { tools: [{ tool: "cli.az", variants: [] }] } }), false],
+  ["v5 route scope naming something that is not an option id", v5({ toolchain: { tools: [{ tool: "cli.az", variants: ["Cloud Route!"] }] } }), false],
   ["v5 identifier value with a connection string in one environment", v5({ identifiers: [{ id: "st", label: "Storage", values: { dev: "abc123", prod: "AccountKey=abc;EndpointSuffix=core" } }] }), false],
   ["v5 toolchain id with shell text", v5({ toolchain: { tools: [{ tool: "cli.az; rm -rf ~" }] } }), false],
   ["v5 toolchain version 'latest'", v5({ toolchain: { tools: [{ tool: "cli.az", version: "latest" }] } }), false],

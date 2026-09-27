@@ -43,7 +43,7 @@ function toolsLine(i: ArchitectureImpact): string {
 }
 
 function supportLine(i: ArchitectureImpact): string {
-  return `${i.support.operations} with operations, ${i.support.files} files only, ${i.support.unsupported} not supported`;
+  return `${i.support.operations} with operations, ${i.support.files} files only, ${i.support.unsupported} not supported${i.support.planned ? `, ${i.support.planned} planned (not implemented yet)` : ""}`;
 }
 
 function componentsLine(i: ArchitectureImpact): string {

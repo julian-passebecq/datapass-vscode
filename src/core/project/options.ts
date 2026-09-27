@@ -480,7 +480,8 @@ export interface ArchitectureImpact {
   providersAdded: string[];
   providersRemoved: string[];
   tools: { needed: ToolStatus[]; newlyNeeded: ToolStatus[]; noLongerNeeded: ToolStatus[] };
-  support: { operations: number; files: number; unsupported: number };
+  /** V1-HONEST (F01): `planned` = how many of those components are declared planned (not implemented yet, never ready). */
+  support: { operations: number; files: number; unsupported: number; planned: number };
   operations: { total: number; ready: number };
   repositories: { used: string[]; planned: string[]; newlyUsed: string[] };
   /** 0.22 (F01/F08): per currency, never converted; `missing` = decisions not fully priced; `total` says how many are. */
@@ -542,8 +543,9 @@ function impactFrom(key: string, options: OptionsFile, derived: DerivedArchitect
   const needs = toolNeeds(map, tools), baseNeeds = toolNeeds(base.map, tools);
   const used = map.repositories.filter(r => r.usedBy.length).map(r => r.key);
   const baseUsed = new Set(base.map.repositories.filter(r => r.usedBy.length).map(r => r.key));
-  const support = { operations: 0, files: 0, unsupported: 0 };
+  const support = { operations: 0, files: 0, unsupported: 0, planned: 0 };
   for (const p of providers) support[p.support] += p.components.length;
+  support.planned = map.components.filter(c => c.status === "planned").length;
   const currency = options.currency ?? "USD";
   const total = sumPickedOptions(derived.picks.map(p => p.option), currency);
   const costs: ArchitectureImpact["costs"] = { monthly: total.monthly, oneTime: total.oneTime, lines: [], missing: [], total };

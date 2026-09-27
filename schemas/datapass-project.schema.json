@@ -801,9 +801,9 @@
       "properties": {
         "files": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "maxItems": 10,
-          "description": "Env files, relative to the repository (default: the one holding this manifest). Only .env, .env.<name>, <name>.env and .dev.vars files are accepted.",
+          "description": "Env files, relative to the repository (default: the one holding this manifest). Only .env, .env.<name>, <name>.env and .dev.vars files are accepted. May be empty when the project needs no env file yet.",
           "items": {
             "anyOf": [
               {
@@ -872,7 +872,7 @@
           "value": {
             "type": "string",
             "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$",
-            "description": "The non-secret id itself (use values instead for one id per environment)."
+            "description": "The non-secret id itself (use values instead for one id per environment). With neither value nor values the identifier is pending: shown \"pending\", never copied, and nothing that needs it is ready."
           },
           "provider": {
             "type": "string",
@@ -901,20 +901,25 @@
             "type": "string",
             "pattern": "^[a-z][a-z0-9_.-]{0,79}$",
             "description": "v5: what the id is: tenant, subscription, resource-group, workspace, capacity, lakehouse, warehouse, item, account, project… An Azure CLI or Fabric CLI sign-in compares its tenant (and az its subscription) with identifiers of kind tenant and subscription."
+          },
+          "variants": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}(=[a-z][a-z0-9_.-]{0,79})?$"
+            },
+            "description": "V1-HONEST: the routes that need it: options (\"cloud\" or \"decision=option\") or scenarios of options.json. Omitted: every route. While another route is in view, a missing tool, pending id or connection is a note, never a warning."
           }
         },
-        "oneOf": [
-          {
-            "required": [
-              "value"
-            ]
-          },
-          {
-            "required": [
-              "values"
-            ]
-          }
-        ]
+        "not": {
+          "required": [
+            "value",
+            "values"
+          ]
+        }
       }
     },
     "toolchain": {
@@ -957,6 +962,17 @@
                   "fabric"
                 ],
                 "description": "local (default): this computer. ci: the CI pipeline. fabric: Fabric notebooks. Only local tools are checked here."
+              },
+              "variants": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 20,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}(=[a-z][a-z0-9_.-]{0,79})?$"
+                },
+                "description": "V1-HONEST: the routes that need it: options (\"cloud\" or \"decision=option\") or scenarios of options.json. Omitted: every route. While another route is in view, a missing tool, pending id or connection is a note, never a warning."
               }
             }
           }
@@ -1044,6 +1060,17 @@
             "type": "string",
             "pattern": "^https://\\S+$",
             "description": "A page where the person verifies it."
+          },
+          "variants": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 20,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}(=[a-z][a-z0-9_.-]{0,79})?$"
+            },
+            "description": "V1-HONEST: the routes that need it: options (\"cloud\" or \"decision=option\") or scenarios of options.json. Omitted: every route. While another route is in view, a missing tool, pending id or connection is a note, never a warning."
           }
         },
         "allOf": [

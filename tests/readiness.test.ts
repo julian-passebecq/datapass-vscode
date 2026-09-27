@@ -104,7 +104,8 @@ test("manifest v4: env files must be env files inside the repository, names must
   assert.match(bad({ files: ["C:/Users/x/.env"] }).join(), /relative path/);
   assert.match(bad({ files: ["config/secrets.json"] }).join(), /must name an env file/);
   assert.match(bad({ files: [{ path: ".env", repoRef: "nope" }] }).join(), /declared repository/);
-  assert.match(bad({ files: [] }).join(), /1 to 10/);
+  assert.deepEqual(bad({ files: [] }), [], "V1-HONEST (F08): a project may need no env file yet");
+  assert.match(bad({ files: Array.from({ length: 11 }, (_, i) => `.env.${i}`) }).join(), /at most 10/);
   assert.match(bad({ files: [".env", ".env"] }).join(), /listed twice/);
   assert.match(bad({ files: [".env"], requiredKeys: ["OK", "1BAD", "OK"] }).join(), /requiredKeys\[1\].*variable name.*requiredKeys\[2\] "OK" is listed twice/);
   assert.deepEqual(bad({ files: [{ path: "apps/web/.dev.vars", repoRef: "web", optional: true }], requiredKeys: ["X"] }), []);

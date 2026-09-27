@@ -33,6 +33,7 @@ import { registerActiveVariantFlows } from "./activeVariantFlows";
 import { registerOpenClientProjectFlows } from "./openClientProjectFlows";
 import { registerEvidenceFlows } from "./evidenceFlows";
 import { registerNativeTestFlows } from "./nativeTestFlows";
+import { registerHonestFlows } from "./honestFlows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -262,6 +263,7 @@ registerVariantFlows(() => api);
 registerActiveVariantFlows(() => api);
 registerEvidenceFlows(() => api);
 registerNativeTestFlows(() => api);
+registerHonestFlows(() => api);
 registerOptionsFlows(() => api);
 registerBoardFlows(() => api);
 registerDevopsFlows(() => api);
