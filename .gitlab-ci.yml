@@ -1,0 +1,97 @@
+stages:
+  - verify
+  - qualify
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+variables:
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
+
+default:
+  image: node:22-bookworm
+  interruptible: true
+  cache:
+    key:
+      files:
+        - package-lock.json
+      prefix: datapass-vscode
+    paths:
+      - .cache/npm/
+      - .cache/pip/
+      - .cache/ms-playwright/
+    policy: pull-push
+
+verify_and_package:
+  stage: verify
+  timeout: 25m
+  script:
+    - npm ci --prefer-offline
+    - npm run verify
+    - npx vsce package --no-dependencies
+  artifacts:
+    name: "datapass-vscode-$CI_COMMIT_SHORT_SHA"
+    when: always
+    expire_in: 14 days
+    paths:
+      - "*.vsix"
+
+demo_fixture_tests:
+  stage: verify
+  image: python:3.12-bookworm
+  timeout: 10m
+  script:
+    - python -m pip install --disable-pip-version-check pytest
+    - python -m pytest -q -p no:cacheprovider examples/v3/etl-demo
+  variables:
+    PYTHONDONTWRITEBYTECODE: "1"
+
+desktop_acceptance:
+  stage: qualify
+  timeout: 30m
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libxss1 ca-certificates
+    - npm ci --prefer-offline
+  script:
+    - xvfb-run -a npm run test:desktop
+  artifacts:
+    name: "datapass-desktop-$CI_COMMIT_SHORT_SHA"
+    when: always
+    expire_in: 14 days
+    paths:
+      - out/integration/
+
+ui_smoke:
+  stage: qualify
+  timeout: 30m
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+  needs:
+    - job: verify_and_package
+      artifacts: true
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libxss1 ca-certificates
+    - npm ci --prefer-offline
+  script:
+    - DATAPASS_QA_VSIX="$(find . -maxdepth 1 -name '*.vsix' -print -quit)" xvfb-run -a npx tsx --test tests/qa-ui.smoke.test.ts
+  artifacts:
+    name: "datapass-ui-smoke-$CI_COMMIT_SHORT_SHA"
+    when: always
+    expire_in: 14 days
+    paths:
+      - out/qa-ui/
+      - out/qa-ui-hop/
