@@ -114,16 +114,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 Waiting for Codex ADRs. No V4 package starts before they are accepted by the PM.
 
-### Coder trial V3.4 (Julian's "custom" xhigh authorization, 4 packages only)
-The first 4 well-scoped V4 packages from Codex's work packets (each ≤ 30 M, no product question, clear done condition) run on **Sonnet 5.5 · xhigh**, each paired with a similar V4 package on **Opus 5.5 · medium**. Every trial package is a top-level coder conversation, not a PM subagent, so its tokens can be measured. Start: as soon as the pause lifts and Codex's packets are accepted. The COORD fills the table below; the PM writes the one-page review in `effort-board/audits/` at the first V4 milestone, and Julian decides.
-
-| Pair | Sonnet xhigh package | Opus medium comparator | Billed tokens (S / O) | Duration (S / O) | Rework (S / O) | Merged untouched (S / O) | Context at end (S / O) |
-|---|---|---|---|---|---|---|---|
-| T0 dummy (Julian, 22:33) | TRIAL-SQLREF (SQL table reads/writes extractor), headless `claude -p` | same | 1.06 M incl. cache ($1.06, 51 K out, 36 K thinking) / 0.78 M ($1.00, 12 K out) | 7 min / 3 min | 0 / 0 (one round each) | 22/22 own tests, passes 17/17 of Opus's / 17/17 own, fails 7/22 of Sonnet's (quotes/escapes, subqueries, EXTRACT…FROM) | n/a (one-shot) |
-| T1 | tbd (Codex packet) | tbd | | | | | |
-| T2 | tbd | tbd | | | | | |
-| T3 | tbd | tbd | | | | | |
-| T4 | tbd | tbd | | | | | |
+Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5.5 medium. Only run, T0 dummy (SQL table extractor): Sonnet xhigh 7 min / $1.06 / 22 tests, more robust; Opus medium 3 min / $1.00 / 17 tests, failed 7 of Sonnet's edge cases.
 
 ## Team (rules V2.3, from 2026-09-26 23:15 — every live session on DataPass)
 
