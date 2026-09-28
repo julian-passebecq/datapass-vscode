@@ -115,8 +115,7 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | Session | Role | Package / job | GO date | Reports to |
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
-| PM ASSISTANT DataPass 2 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate (took over from ASSISTANT 1, hand-off #137) | 2026-09-27 · V2 | PM |
-| COORD DataPass 3 | coordinator (low) | V3 flow, routine merges, context watch (took over from COORD 2, hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md) | 2026-09-28 · V2 | PM |
+| PM ASSISTANT DataPass 4 | assistant (low) | Julian's only contact; rc.1 check session (took over from ASSISTANT 3, #171) | 2026-09-28 · V2.2 | PM |
 | COORD DataPass 4 | coordinator (low) | 1.1.x flow (WORKTREES), routine merges, context and quota watch (took over from COORD 3, hand-off handoff/sessions/2026-09-28-0135-coord-datapass-3.md) | 2026-09-28 · V2.2 | PM |
 | PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
 | PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
@@ -133,12 +132,9 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · V3-POLISH-1 | PM agent (medium, agent of PM DataPass 1) | V3-POLISH-1 — done (#166; common #22) | 2026-09-28 · V2.2 | PM |
 | PM agent · V3-RC1 | PM agent (medium, agent of PM DataPass 1) | V3-RC1 — done (#168; v1.1.0-rc.1) | 2026-09-28 · V2.2 | PM |
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
-| CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
-| CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
 | CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 — done (#143, common #19; v1.0.0 at d8772d4) | 2026-09-27 · V2 | PM |
-| CODER DataPass UI-POLISH | coder (medium) | V1-UI-POLISH (diagram look) — done (#130) | 2026-09-27 · V2 | PM |
 
-Retired on 2026-09-28: COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
+Retired on 2026-09-28: COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
 Retired on 2026-09-27: PM ASSISTANT DataPass 1 (hand-off handoff/sessions/2026-09-27-1641-pm-assistant.md).
 
