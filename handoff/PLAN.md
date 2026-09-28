@@ -102,7 +102,9 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-GITDIAG | Git on the diagram + file history | wave 2, started early (no HOP1 dependency) | PM agent · V3-GITDIAG | done (#157) |
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
 | V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | done (#162) |
-| V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width; (4) qa:ui journeys for Home, Hop and the diagram badges; (5) visual re-check of the Git badges after SHELL; (6) watch `.datapass/understanding` for changes; (7) Airflow "Open explanation" → Hop view; (8) `npm run sync:common -- --check` (HOP1 schema/example may need syncing to common). Started by chip: `set_session_effort` medium, named in the GO (rules V2.2) | after HOP2 and GITDIAG (both done) | PM agent · V3-POLISH-1 | running (branch claude/v3-polish-1) |
+| V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width; (4) qa:ui journeys for Home, Hop and the diagram badges; (5) visual re-check of the Git badges after SHELL; (6) watch `.datapass/understanding` for changes; (7) Airflow "Open explanation" → Hop view; (8) `npm run sync:common -- --check` (HOP1 schema/example may need syncing to common). Started by chip: `set_session_effort` medium, named in the GO (rules V2.2) | after HOP2 and GITDIAG (both done) | PM agent · V3-POLISH-1 | done (#166; common #22) |
+| V3-POLISH-2 | Later polish: hide the right rail's Airflow DAG button when the Airflow module is off | logged 2026-09-28 | — | to do |
+| V3-RC1 | 1.1.0-rc.1 prerelease: version bump, CHANGELOG, full qa:ui | after POLISH-1 | PM agent · V3-RC1 | running |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
@@ -125,7 +127,8 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · V3-HOP2 | PM agent (medium, agent of PM DataPass 1) | V3-HOP2 — done (#159) | 2026-09-28 · V2.2 | PM |
 | PM agent · V3-DEMO | PM agent (medium) | V3-DEMO — done (#156) | 2026-09-28 · V2 | PM |
 | PM agent · FIX-ICONS | PM agent (medium) | V3-FIX-ICONS — done (#162) | 2026-09-28 · V2 | PM |
-| PM agent · V3-POLISH-1 | PM agent (medium, agent of PM DataPass 1) | V3-POLISH-1 (branch claude/v3-polish-1; merges its own PR) | 2026-09-28 · V2.2 | PM |
+| PM agent · V3-POLISH-1 | PM agent (medium, agent of PM DataPass 1) | V3-POLISH-1 — done (#166; common #22) | 2026-09-28 · V2.2 | PM |
+| PM agent · V3-RC1 | PM agent (medium, agent of PM DataPass 1) | V3-RC1: 1.1.0-rc.1 prerelease (merges its own PR) | 2026-09-28 · V2.2 | PM |
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
 | CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
 | CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
