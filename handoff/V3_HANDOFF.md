@@ -253,3 +253,400 @@ Local-first; Git-versioned configuration; manual AI exchange with exact bases an
 official/specialist tools do the work; discovery never executes project code; imported labels never
 approve themselves; no credentials, auto-push, auto-merge, provisioning or authority writes without
 explicit approval; no FOIL private material in this public repository. Full list: [CLAUDE.md](../CLAUDE.md).
+
+## 8. V3 consolidation — semantic project explorer, Airflow and Git evolution (2026-09-27)
+
+> **Status:** accepted product direction from Julian's 2026-09-27 design session. This extends the
+> existing V3 record; it does not restart DataPass, replace the V1 release gates, or make any cloud
+> action implicit. Implementation should land incrementally after the current release baseline stays
+> green.
+
+### 8.1 Product boundary: DataPass and CloudDiagram stay separate
+
+**CloudDiagram stays a standalone reconstruction/presentation product.** Its job is to reconstruct,
+explain and present an existing project even when the original Git repository is unavailable. It can
+work from documents, screenshots, supplied code, plans and human/AI reconstruction, and it owns
+presentation concerns such as PPTX/PDF output.
+
+**DataPass VS Code is Git-first.** Its job is to inspect and explain the project that actually exists
+in the customer's repositories, at exact revisions, and to connect architecture, workflows, native
+artifacts, code, execution evidence and Git history.
+
+Therefore:
+
+- DataPass has **no runtime dependency on CloudDiagram**.
+- Do not make CloudDiagram's schema the canonical DataPass runtime model.
+- Reuse useful concepts (nested detail, join/model/notebook/execution views, provenance discipline),
+  but **reimplement them inside datapass-vscode** for the Git-first use case.
+- Do not create a shared npm/library package now. The model and parsers will evolve quickly. Extract a
+  library only later if two stable products genuinely need the same implementation.
+- DiagramCloud/CloudDiagram remains optional and presentation-oriented; deleting it must not remove a
+  DataPass engineering capability.
+
+### 8.2 The V3 product promise
+
+The next major DataPass development track is a **semantic, temporal, multi-repository explorer of the
+real Git project**.
+
+It must answer four questions continuously:
+
+1. **What is this project?** — architecture and repository/component relationships.
+2. **What does this element actually do?** — drill down from workflow to task, artifact, code and data
+   operation.
+3. **Where does DataPass know that from?** — exact repository, revision, path, line/cell and evidence
+   basis.
+4. **How did it become this?** — Git/PR evolution projected back onto the semantic project model.
+
+The navigation ladder is:
+
+| Level | Current view | Evolution view |
+|---|---|---|
+| G0 Repository | repositories, files, refs | commits, PRs, branches, worktrees |
+| G1 Architecture | services/resources/components | nodes/edges added, removed or rewired |
+| G2 Orchestration | Airflow/Lakeflow workflow DAG | tasks/dependencies/schedule changes |
+| G3 Artifact | notebook/script/dbt model | cells/functions/models changed |
+| G4 Logical dataflow | DataFrames/transforms | operations added, removed or changed |
+| G5 Data semantics | schemas/columns/joins/keys | schema/key/join evolution |
+| G6 Physical execution | Spark physical plan | operator/Exchange/partition-plan evolution |
+| G7 Runtime evidence | observed metrics/results | run-to-run evidence evolution |
+
+G0-G5 should come primarily from deterministic source analysis. G6 requires a captured physical plan.
+G7 requires runtime evidence. Never infer G6/G7 from source syntax alone.
+
+### 8.3 Two golden projects before Fabric
+
+V3 should be driven by two real reference projects rather than by a universal abstract parser.
+
+#### Golden project A — FOIL Databricks
+
+Use the real FOIL Databricks repository as the complex Databricks fixture. The target drill-down is:
+
+    Lakeflow job
+      -> task
+      -> Databricks notebook
+      -> notebook cell / Python block
+      -> PySpark DataFrame
+      -> read / select / withColumn / filter / join / groupBy / agg / write
+      -> Delta Bronze/Silver
+      -> dbt staging/intermediate/marts
+      -> Gold
+      -> MLflow/evidence
+      -> captured Spark plan when supplied
+
+The first concrete workflow already gives a strong fixture: simulate -> gold_models -> verify.
+02_run_experiment.py exercises real reads, cross joins, explicit broadcast, windows, groupBy/agg,
+Delta writes, MLflow and Lakeflow task values. It should become a golden parser/semantic-diff test,
+not a hard-coded FOIL feature.
+
+#### Golden project B — Airflow Studies
+
+Add a small real Airflow example because Airflow is a required first-class orchestration case before
+Fabric:
+
+    local PC: data/studies.csv
+      -> Airflow DAG
+      -> validate local CSV
+      -> upload to a Databricks Unity Catalog Volume
+      -> trigger/observe a Databricks Job
+      -> ingest/clean to Delta
+      -> build text/embedding data
+      -> build/sync a Databricks AI Search (vector search) index
+      -> run a small similarity-search verification
+
+A useful CSV shape is study_id,title,abstract,domain,year,source, so the vector-search step is
+meaningful rather than decorative.
+
+The reference DAG should deliberately cross runtime boundaries:
+
+    Airflow owns the schedule
+      -> local validation
+      -> local-to-cloud transfer
+      -> Databricks native job
+      -> Databricks remains owner of its internal execution
+      -> Airflow observes the native job/result
+
+This fixture validates local files, Airflow, cross-provider edges, Databricks, Delta and a vector
+resource without forcing Fabric into the first implementation.
+
+**Fabric comes after these two golden projects.** It should then arrive as another adapter over a
+stable semantic model, not as another product redesign.
+
+### 8.4 Airflow adapter: static and safe first
+
+The existing airflow.dags artifact profile is not a genuine parser. V3 adds a real internal Airflow
+adapter under datapass-vscode.
+
+Initial static coverage should include:
+
+- DAG(...) and @dag(...);
+- DAG id, schedule/timetable references, timezone where statically visible, catchup and common retry
+  defaults;
+- task_id;
+- PythonOperator, BashOperator, common sensors and Databricks operators needed by the golden
+  fixture;
+- TaskFlow @task where statically resolvable;
+- dependencies expressed with >>, << and chain(...);
+- TaskGroup boundaries where statically resolvable;
+- operator -> referenced native artifact, especially an Airflow task invoking a Databricks Job;
+- source revision/path/line provenance and parse completeness.
+
+**Discovery must never import or execute DAG Python.** A DAG file is untrusted code. Dynamic factories,
+loops driven by runtime data, generated tasks and unresolved imports are shown as partial/opaque
+sections with exact source links, not fabricated edges. A separately approved native parse/test may
+be added later in an isolated environment, but it is not discovery.
+
+### 8.5 Databricks/PySpark analysis: move from lexical hints to semantic tracking
+
+DataPass needs a real Python/PySpark analysis layer, not only token/regex hints.
+
+Start with Python AST plus conservative DataFrame-variable tracking:
+
+    spark.table/read...
+      -> DataFrame variable
+      -> select / selectExpr
+      -> filter / where
+      -> withColumn
+      -> join / crossJoin
+      -> broadcast(...)
+      -> groupBy / agg
+      -> repartition / coalesce
+      -> union / distinct / dropDuplicates
+      -> orderBy / sort / Window
+      -> write / saveAsTable / insert target
+
+Track where possible:
+
+- input/output tables and files;
+- DataFrame variable lineage;
+- referenced/created columns;
+- join left/right inputs, join type and keys/condition when statically expressible;
+- group keys and aggregate outputs;
+- notebook cell/block ownership and exact source ranges;
+- write targets.
+
+Do not pretend to resolve generated SQL, arbitrary Python metaprogramming or runtime-dependent
+DataFrame aliases. Mark unresolved pieces honestly.
+
+A supplied explain/Spark-plan capture is a **separate physical layer**. Source may declare
+broadcast(...); only the plan can show the physical operator chosen. Actual rows/bytes/skew/duration
+remain runtime evidence.
+
+### 8.6 One internal model, implemented in this repository
+
+Keep the implementation inside the single VSIX/repository for now. Suggested internal shape:
+
+    src/
+      analysis/
+        model/
+        provenance/
+        python/
+        semanticDiff/
+
+      adapters/
+        airflow/
+        databricks/
+        dbt/
+
+      core/
+        git/
+          evolution.ts
+          revisions.ts
+          projectTimeline.ts
+
+      views/
+        detail/
+        evolution/
+
+This is a logical module boundary, not a package/distribution boundary.
+
+The model must preserve stable identities for project/component/workflow/task/artifact/operation and
+allow source bindings such as:
+
+    repository + commit + path + line/cell range + evidence basis
+
+Useful evidence bases include at least:
+
+- parsed-source — deterministically extracted from native files;
+- captured-plan — extracted from supplied execution/physical plan text;
+- runtime — observed execution evidence with time/run identity;
+- ai-inferred — AI correlation/explanation that is explicitly weaker than deterministic evidence.
+
+AI may explain, label or correlate ambiguous cross-file meaning after deterministic extraction. It
+must not silently turn an inference into source truth.
+
+### 8.7 Git: keep the existing client, add semantic project history
+
+Do **not** fork or rebuild GitLens.
+
+DataPass already has the important generic Git foundation:
+
+- multi-repository Git view;
+- branch/upstream/ahead/behind and dirty state;
+- worktrees;
+- PRs with CI/review;
+- recent merges and Needs you;
+- explicit Fetch/Get Updates;
+- Open Latest Version;
+- Open Version...;
+- Compare with Version...;
+- Changed by the Last Update, already projected to DataPass components.
+
+That remains the V1/D-18 decision: use native Git/VS Code for generic history and diff.
+
+V3 adds a layer that GitLens and VS Code do not know: **semantic project history**.
+
+Introduce the concept of a **Project Revision Vector**: one exact revision per repository that defines
+a project state at a point in time.
+
+Example:
+
+    {
+      "bridge": "a1832f...",
+      "databricks": "920ab4...",
+      "airflow": "b1201c...",
+      "frontend": "780dd9..."
+    }
+
+This is not a new source of truth and need not be committed by default. It is a derived identity for
+comparison, AI context, saved evidence and evolution views.
+
+For a change A -> B, DataPass should combine native Git diff with the relevant adapters to produce a
+**Semantic Diff**, for example:
+
+    Git diff:
+      2 lines changed
+
+    Source semantic diff:
+      broadcast() added to the right side of a crossJoin
+
+    Dataflow diff:
+      resource_norm edge: normal -> source-declared broadcast hint
+
+    Project impact:
+      Databricks / Simulation / Resource expansion
+
+    Physical implication:
+      unknown until a captured Spark plan confirms the selected operator
+
+    Runtime implication:
+      unknown until run evidence exists
+
+The same mechanism should show Airflow DAG evolution, e.g. build_vector_index added between
+Databricks processing and verify_search, and architecture evolution, e.g. an AI Search resource
+added by a coordinated native + bridge change.
+
+### 8.8 GitLens integration is optional routing, never a dependency
+
+If GitLens is installed, DataPass may expose convenience routes such as:
+
+- open the selected commit in GitLens;
+- open file/line history or blame in GitLens;
+- open a GitLens visual history/graph for the underlying native object.
+
+Without GitLens, every DataPass semantic/evolution feature still works through native Git and VS Code.
+Do not duplicate GitLens's commit graph, blame or generic history UI inside DataPass.
+
+The DataPass-specific value is the mapping:
+
+    commit / PR / file diff
+            ->
+    component / workflow / task / notebook / DataFrame / join / dataset
+
+### 8.9 Evolution is a lens, not a fifth experience mode
+
+Keep the existing presentation presets (vanilla, standard, datapass, advanced). Do not add an
+"Evolution mode".
+
+Evolution is a contextual lens on the same project model:
+
+    Architecture: [ Current ] [ Evolution ]
+    Details:      [ Structure ] [ Evolution ] [ Evidence ]
+
+Selecting an evolution point must never check out a branch automatically. Historical source opens
+read-only, like the existing file-version commands.
+
+A target UI can combine:
+
+- semantic/project tree on the left;
+- native source in the editor;
+- current architecture/dataflow/detail graph on the right/bottom;
+- a compact Git/PR timeline for the selected semantic object;
+- tabs for native file diff, semantic diff and evidence;
+- optional Open in GitLens route.
+
+### 8.10 Bridge responsibility in V3
+
+Do not generate and persist a giant duplicated semantic graph in the customer bridge.
+
+The bridge should primarily describe **where and how to inspect** the project: repository identities,
+scopes/components, entry points and any adapter hints that cannot be discovered safely.
+
+Conceptually:
+
+    repositories:
+      - foildbv
+
+    entrypoints:
+      - type: databricks-job
+        file: deployment/manual/lakeflow_job_spec.yml
+
+    artifacts:
+      - type: databricks-notebooks
+        root: databricks/notebooks
+      - type: dbt
+        root: dbt
+
+DataPass then analyzes the actual native files at the actual Git revision. Derived semantic state can
+be cached locally and invalidated by content/revision changes; it is not another manually maintained
+copy of the customer's code.
+
+### 8.11 Recommended implementation order
+
+Do not mix this work into the current release candidate blindly. Keep the current baseline green and
+land vertical slices with golden fixtures.
+
+1. **Shared internal semantic model + provenance** inside datapass-vscode; no external package.
+2. **FOIL Lakeflow adapter** — parse the real job YAML and map tasks/parameters/native artifacts.
+3. **PySpark AST/DataFrame analyzer** — enough to reconstruct 02_run_experiment.py and the smaller
+   interview-lab fixture with tests.
+4. **dbt adapter** — source/ref/model dependencies and Silver -> staging -> intermediate -> Gold.
+5. **Detail explorer** — source <-> semantic node bidirectional selection, with a lower evidence
+   inspector.
+6. **Airflow static parser** + the Airflow Studies golden project, including the cross-runtime edge to
+   a Databricks Job.
+7. **Git evolution engine** — project revision vector, selected-object commit timeline and
+   A -> B semantic reparse.
+8. **Semantic Diff UI** — file diff + semantic diff + project impact, read-only historical source.
+9. **Physical/runtime overlays** — captured Spark plan first; runtime evidence only when actually
+   supplied/observed.
+10. **Fabric adapters** after the model works on both golden projects.
+11. **Optional GitLens routes** after the native DataPass flow is complete.
+
+### 8.12 Acceptance for the V3 semantic/evolution track
+
+The track is useful only if a person unfamiliar with a project can answer concrete questions from
+the real repositories.
+
+Minimum end-to-end acceptance:
+
+- Open FOIL and navigate Lakeflow -> simulate -> notebook -> PySpark operation -> dataset/join
+  without manually maintained duplicate detail JSON.
+- Click a semantic node and reach the exact native source; click relevant source and select the
+  semantic node.
+- Explain where each displayed fact came from, including commit/path/range and basis.
+- Open the Airflow Studies project and see the real static DAG, the local CSV input, the Databricks
+  boundary and the downstream Delta/vector-search resources.
+- A dynamic/unresolved Airflow construct is visibly partial, never invented.
+- Compare two commits and see both the native diff and a semantic change such as task added, join
+  changed, write target changed or schema/column change.
+- A source-level broadcast hint does not claim a physical broadcast until a captured Spark plan
+  supports it.
+- A previous result/check becomes stale when a relevant semantic input changes.
+- The same semantic object can be reached from architecture, source, Git/PR change and evidence.
+- All of the above works without CloudDiagram and without GitLens installed.
+
+The central V3 principle is therefore:
+
+> **DataPass understands the project in two dimensions: depth (what it does) and time (how Git made
+> it become that), while every claim remains traceable to native source or explicit evidence.**
+
