@@ -53,4 +53,50 @@ export function fixture(): { base: string; root: string; auto: string } {
   fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
   return { base, root, auto };
 }
+/**
+ * V3-POLISH-1: the DataPass Hop example (examples/v3/hop) as a client for the Home, Hop and diagram
+ * Git badge journey: the bridge (with a two-block graph) and its native repository `pipelines`, each
+ * a clone of a local bare "remote", plus one uncommitted change in the SQL file so its block carries
+ * a local Git badge. The test repository lists journey H01 (tests/fixtures/qa/hop-client).
+ */
+export function hopFixture(): { base: string; root: string; auto: string } {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-qa-hop-"));
+  const root = path.join(base, "run");
+  const remotes = path.join(base, "remotes");
+  const example = path.join(repo, "examples", "v3", "hop");
+  const graph = {
+    format: "datapass.graph", version: "0.2",
+    items: [
+      { id: "daily-sales", kind: "script", label: "Daily sales (PySpark)", provider: "python", artifacts: { repoRef: "pipelines", profile: "python.script", root: "jobs", entry: "daily_sales.py" } },
+      { id: "customer-orders", kind: "script", label: "Customer orders (SQL)", provider: "python", artifacts: { repoRef: "pipelines", profile: "python.script", root: "sql", entry: "customer_orders.sql" } }
+    ],
+    relations: []
+  };
+  const seeds: Record<string, (dir: string) => void> = {
+    "hop-bridge": dir => { copy(path.join(example, "bridge"), dir); fs.writeFileSync(path.join(dir, ".datapass", "graph.json"), JSON.stringify(graph, null, 2) + "\n"); },
+    pipelines: dir => copy(path.join(example, "pipelines"), dir)
+  };
+  for (const [name, seed] of Object.entries(seeds)) {
+    const work = path.join(base, "seed", name);
+    seed(work);
+    git(work, "init", "-q", "-b", "main");
+    git(work, "add", "-A");
+    git(work, "commit", "-q", "-m", `seed ${name}`);
+    const bare = path.join(remotes, `${name}.git`);
+    git(base, "clone", "-q", "--bare", work, bare);
+    const https = `https://github.com/example-org/${name}`;
+    const clone = path.join(root, name);
+    git(base, "clone", "-q", bare, clone);
+    git(clone, "remote", "set-url", "origin", https);
+    git(clone, "config", `url.${pathToFileURL(bare).href}.insteadOf`, https);
+  }
+  fs.appendFileSync(path.join(root, "pipelines", "sql", "customer_orders.sql"), "-- local edit, not committed (qa:ui Git badge)\n");
+  const auto = path.join(base, "auto");
+  copy(path.join(repo, "tests", "fixtures", "qa", "hop-client"), auto);
+  const configFile = path.join(auto, "datapass-codex-tests.json");
+  const config = JSON.parse(fs.readFileSync(configFile, "utf8"));
+  config.datapass.version = version;
+  fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
+  return { base, root, auto };
+}
 export const cleanup = (base: string) => fs.rmSync(base, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });

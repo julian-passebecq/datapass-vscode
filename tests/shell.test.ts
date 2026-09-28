@@ -91,7 +91,7 @@ test("shell: close buttons live on the views they close; the rail collapses and 
 });
 
 test("shell: the rail lists its buttons once each, escaped, behind a nonce", () => {
-  assert.deepEqual(RAIL_BUTTON_IDS, ["expand", "details", "ai", "git", "copyForAi", "importFromAi", "workViews", "ownWindow"]);
+  assert.deepEqual(RAIL_BUTTON_IDS, ["expand", "details", "ai", "git", "airflow", "copyForAi", "importFromAi", "workViews", "ownWindow"]);
   assert.equal(new Set(RAIL_BUTTON_IDS).size, RAIL_BUTTONS.length);
   const html = railHtml("vscode-resource:", "abc123");
   assert.match(html, /script-src 'nonce-abc123'/);

@@ -19,7 +19,7 @@ import { clipboard } from "../core/clipboard";
 import { cleanupCommand, type GitRepoReport, type WorktreeReport } from "../core/git/gitReport";
 import { repositoryWebLinks, type WebLinkId } from "../core/project/gitHosts";
 import { openWebPage } from "./gitHostCommands";
-import type { GitNode } from "../views/gitTree";
+import { gitNodeArg, type GitNode } from "../views/gitTree";
 
 const VIEW_PULL_REQUESTS = "workbench.view.extension.github-pull-requests";
 const VIEW_GITHUB_ACTIONS = "workbench.view.extension.github-actions";
@@ -30,6 +30,7 @@ const num = (v: unknown) => (typeof v === "number" && Number.isInteger(v) && v >
 
 /** The repository (and worktree / PR) a command is about, from a tree node or explicit arguments. */
 function target(observer: GitObserver, a: Arg, b?: Arg): { r: GitRepoReport; w?: WorktreeReport; pr?: number } {
+  a = gitNodeArg(a);
   const node = a && typeof a === "object" ? a as GitNode : undefined;
   let key: string | undefined, wt: string | undefined, pr: number | undefined;
   if (node) {

@@ -385,7 +385,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const airflowDag = registerAirflowDag(context, async uri => {
     const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
     return (await session.understandingFor(uri))?.file ?? findUnderstanding(uri.fsPath, [session.root?.fsPath, ...folders].filter((x): x is string => !!x), folders);
-  }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange);
+  }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange, uri => session.understandingIndexed(uri));
   registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
@@ -488,7 +488,13 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   // Env files: a name added or filled changes readiness. Only presence is re-read, never a value.
   const envWatcher = vscode.workspace.createFileSystemWatcher("**/{.env,.env.*,*.env,.dev.vars,.dev.vars.*}");
   envWatcher.onDidChange(soon);
-  context.subscriptions.push(filesWatcher, envWatcher, { dispose: () => { if (pending) clearTimeout(pending); } });
+  // V3-POLISH-1: an explanation edited in the bridge (the client AI's pull request, a hand edit) re-indexes
+  // DataPass Hop: the Hop view, its CodeLens and the explained-files list follow the session refresh.
+  const understandingWatcher = vscode.workspace.createFileSystemWatcher("**/.datapass/understanding/**");
+  understandingWatcher.onDidCreate(soon);
+  understandingWatcher.onDidChange(soon);
+  understandingWatcher.onDidDelete(soon);
+  context.subscriptions.push(filesWatcher, envWatcher, understandingWatcher, { dispose: () => { if (pending) clearTimeout(pending); } });
   // Trusting the workspace enables Git; adding or removing folders may change which one is the project.
   context.subscriptions.push(
     vscode.workspace.onDidGrantWorkspaceTrust(() => void refreshState()),

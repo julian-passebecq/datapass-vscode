@@ -1,0 +1,70 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "H01",
+  "kind": "client",
+  "title": "See local changes on the diagram, then understand a file from Home with DataPass Hop",
+  "as": "A data engineer opening the DataPass Hop demo (a PySpark job, a SQL query and an Airflow DAG)",
+  "goal": "Open the architecture diagram and see which block has local changes, then open DataPass Home, open an explained file from the Understand a file tile and read its visual explanation beside the code.",
+  "setup": {
+    "open": "workspace"
+  },
+  "hints": [
+    "The explained files are listed on the Home tile \"Understand a file — DataPass Hop\".",
+    "The SQL file of the pipelines repository has one uncommitted change."
+  ],
+  "expected": [
+    "The architecture diagram shows a Git badge on the Customer orders (SQL) block and a Git legend.",
+    "Home shows the Understand a file tile with the three explained files.",
+    "Choosing the PySpark job shows its vertical visual explanation on the left and its code on the right."
+  ],
+  "features": [
+    "architecture",
+    "git",
+    "file-context"
+  ],
+  "outOfScope": [
+    "Editing any file",
+    "Running anything"
+  ],
+  "ui": [
+    {
+      "run": "DataPass: Open Project Workbench"
+    },
+    {
+      "expect": "Customer orders (SQL)",
+      "timeoutMs": 60000
+    },
+    {
+      "expect": "Git: local",
+      "timeoutMs": 60000
+    },
+    {
+      "screenshot": "diagram-git-badges"
+    },
+    {
+      "run": "DataPass: Open Home (modules, layouts, project links)"
+    },
+    {
+      "expect": "Understand a file",
+      "timeoutMs": 30000
+    },
+    {
+      "expect": "pipelines / jobs/daily_sales.py",
+      "timeoutMs": 30000
+    },
+    {
+      "screenshot": "home"
+    },
+    {
+      "click": "pipelines / jobs/daily_sales.py"
+    },
+    {
+      "expect": "Attach the store's region",
+      "timeoutMs": 30000
+    },
+    {
+      "screenshot": "hop"
+    }
+  ]
+}

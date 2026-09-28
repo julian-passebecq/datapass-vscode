@@ -232,6 +232,7 @@ export function workbenchHtml(opts: { cspSource: string; nonce: string; scriptUr
   .nodewrap { position: absolute; }
   /* V3-GITDIAG: the Git badge hangs off a block's top-right corner, in the overlay's own hues (--dp-*, V3-THEME; fallbacks until then). */
   .gitbadge { position: absolute; right: -7px; top: -9px; z-index: 3; display: inline-flex; align-items: center; gap: 2px; height: 16px; padding: 0 5px; border-radius: 8px; border: 1px solid var(--gb); background: var(--vscode-editor-background); color: var(--gb); font-size: 10px; line-height: 14px; cursor: pointer; font-weight: 600; }
+  .gitbadge .gbmark { flex: none; display: block; }
   .gitbadge:focus-visible { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
   .gitbadge { --gbr: #c4124f; --gbo: #b04c00; --gbg: #0b7a3e; --gbb: #0047ff; --gbv: #7a2be2; }
   body.vscode-dark .gitbadge, body.vscode-high-contrast:not(.vscode-high-contrast-light) .gitbadge { --gbr: #ff7aa3; --gbo: #ffae5c; --gbg: #5ee8a0; --gbb: #3fd0ff; --gbv: #c9a2ff; }

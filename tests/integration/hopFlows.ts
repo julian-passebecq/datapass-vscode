@@ -6,6 +6,7 @@
  * explanation offers the work order.
  */
 import * as assert from "node:assert/strict";
+import * as fs from "node:fs";
 import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { record, sleep, test, waitFor } from "./harness";
@@ -101,6 +102,33 @@ export function registerHopFlows(getApi: () => DataPassTestApi): void {
     const done = await api().home.send({ type: "hop", index: tile.items![0]!.index });
     assert.equal(done?.command, "datapass.hop.open");
     await waitFor("the DAG explained", () => api().hop.state()?.languageLabel === "Airflow DAG" || undefined);
+    await run("workbench.action.closeAllEditors");
+  }, ["v3-hop"]);
+  test("V3-POLISH-1: the Airflow view's Open explanation link opens the DAG in the Hop view", async () => {
+    await run("workbench.action.closeAllEditors");
+    await vscode.window.showTextDocument(native("dags/daily_sales_dag.py"));
+    await waitFor("the DAG's explanation found", () => api().airflow.state().explanation || undefined);
+    await api().airflow.send({ type: "explain" });
+    await waitFor("the DAG in the Hop view", () => api().hop.state()?.languageLabel === "Airflow DAG" || undefined);
+    assert.ok(String(api().hop.shownUri()).toLowerCase().endsWith("daily_sales_dag.py"), "the DAG file is shown");
+    await run("workbench.action.closeAllEditors");
+  }, ["v3-hop"]);
+
+  test("V3-POLISH-1: an explanation edited in .datapass/understanding refreshes the open Hop view", async () => {
+    await run("workbench.action.closeAllEditors");
+    await vscode.window.showTextDocument(native("jobs/daily_sales.py"));
+    await run("datapass.hop.explain");
+    await waitFor("the explained steps", () => api().hop.state()?.steps.some(s => s.title === "Attach the store's region") || undefined);
+    const file = vscode.Uri.joinPath(root(), ".datapass", "understanding", "pipelines", "jobs", "daily_sales.py.json").fsPath;
+    const before = fs.readFileSync(file, "utf8");
+    try {
+      // Written on disk (as a pulled pull request would), not through an editor.
+      fs.writeFileSync(file, before.replace("Attach the store's region", "Attach the region of the store"));
+      await waitFor("the edited step title", () => api().hop.state()?.steps.some(s => s.title === "Attach the region of the store") || undefined, 20_000);
+    } finally {
+      fs.writeFileSync(file, before);
+    }
+    await waitFor("the original step title back", () => api().hop.state()?.steps.some(s => s.title === "Attach the store's region") || undefined, 20_000);
     await run("workbench.action.closeAllEditors");
   }, ["v3-hop"]);
 }

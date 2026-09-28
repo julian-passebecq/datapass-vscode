@@ -49,6 +49,10 @@ that does not exist.
     pilot" is declared as a repository with `path` (not `planned`), and moved to a `remote` later.
 12. **DataPass 0.14–0.17 refuse a v5 manifest.** A person still on those versions needs a v4 file
     (no `toolchain`, `connections`, identifier `values`/`kind`).
+13. **The right rail cannot set its own width.** VS Code's extension API gives a view no way to
+    set the width of the secondary side bar it sits in. When the full panel folds into the rail,
+    DataPass narrows the side bar with VS Code's own "decrease view width" steps and widens it back
+    by the same steps on Expand; if you resized the side bar by hand in between, drag its edge.
 
 ## 7.3 Open — to qualify with real accounts (unchanged since V1 gate 16)
 

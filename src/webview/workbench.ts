@@ -495,6 +495,13 @@ function canvasFor(s: WorkbenchState, model: DiagramModel, L: Layout, scale: num
 
 const GIT_SYM: Record<string, string> = { failing: "✕", running: "◷", passing: "✓", unknown: "?", none: "", local: "" };
 const gitShown = (s: WorkbenchState) => Boolean(s.gitDiagram?.shown) && !s.preview;
+/** V3-POLISH-1: a drawn branch mark (the "⎇" character was illegible at the badge's 10px). */
+const branchMark = (): SVGElement => {
+  const el = svg("svg", { class: "gbmark", viewBox: "0 0 16 16", width: 10, height: 10, fill: "none", stroke: "currentColor", "stroke-width": 1.8, "stroke-linecap": "round", "aria-hidden": "true", focusable: "false" });
+  for (const [cx, cy] of [[4, 3.5], [4, 12.5], [12, 4.5]] as const) el.append(svg("circle", { cx, cy, r: 1.9 }));
+  el.append(svg("path", { d: "M4 5.4v5.2M12 6.4c0 3.2-8 2.4-8 4.2" }));
+  return el;
+};
 
 /** A block's Git badge: change sets touching its files (count, worst CI state); click opens one. */
 function gitBadge(s: WorkbenchState, componentId: string | undefined): HTMLElement | undefined {
@@ -503,7 +510,7 @@ function gitBadge(s: WorkbenchState, componentId: string | undefined): HTMLEleme
   return h("button", {
     class: `gitbadge gb-${g.worst}`, type: "button", title: g.title, "aria-label": g.title.split("\n")[0],
     onclick: (e: Event) => { e.stopPropagation(); command("datapass.diagram.openGitChanges", componentId); }
-  }, h("span", { "aria-hidden": "true", text: `⎇${g.count}${GIT_SYM[g.worst] ?? ""}` }));
+  }, branchMark(), h("span", { "aria-hidden": "true", text: `${g.count}${GIT_SYM[g.worst] ?? ""}` }));
 }
 
 /** The legend's Git entry, with the switch that hides or shows the badges. */
@@ -514,7 +521,7 @@ function gitLegend(s: WorkbenchState): HTMLElement | undefined {
   if (!g.shown) return h("span", { class: "lggit" }, toggle);
   if (!Object.keys(g.byComponent).length) return undefined;
   return h("span", { class: "lggit", title: "Open pull requests (branch fetched) and this computer's uncommitted or unpushed changes, on the blocks whose files they touch. Read-only: DataPass never fetches for it." },
-    h("span", { class: "gitbadge gb-local", "aria-hidden": "true", text: "⎇" }), "Git: local", h("span", { class: "gitbadge gb-passing", "aria-hidden": "true", text: "✓" }), "PR, CI passing",
+    h("span", { class: "gitbadge gb-local", "aria-hidden": "true" }, branchMark()), "Git: local", h("span", { class: "gitbadge gb-passing", "aria-hidden": "true", text: "✓" }), "PR, CI passing",
     h("span", { class: "gitbadge gb-failing", "aria-hidden": "true", text: "✕" }), "failing", toggle);
 }
 

@@ -48,7 +48,9 @@ jobs:
         if: always() && matrix.os == 'ubuntu-latest'
         with:
           name: qa-ui-evidence
-          path: out/qa-ui/
+          path: |
+            out/qa-ui/
+            out/qa-ui-hop/
           if-no-files-found: warn
       - uses: actions/upload-artifact@v4
         if: matrix.os == 'ubuntu-latest'

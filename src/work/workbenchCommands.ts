@@ -34,6 +34,7 @@ import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { PHASE_LABELS } from "../core/capabilities/registry";
 import { executeGalaxyAction } from "../core/actions";
 import { architectureInPanel } from "./shellCommands";
+import { gitNodeArg } from "../views/gitTree";
 
 const ADF_STUDIO = "https://adf.azure.com/";
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
@@ -96,7 +97,7 @@ export function registerWorkbenchCommands(context: vscode.ExtensionContext, sess
 const str = (v: unknown) => (typeof v === "string" && v.length > 0 && v.length <= 300 ? v : undefined);
 /** Commands get an id from webviews and code, or the tree node itself from the Project tree's menus. */
 type TreeNodeArg = { t?: string; r?: { key?: string }; c?: { id?: string }; sp?: { id?: string } } | undefined;
-const repoArg = (v: unknown) => str(v) ?? ((v as TreeNodeArg)?.t === "repo" ? str((v as TreeNodeArg)!.r?.key) : undefined);
+const repoArg = (u: unknown) => { const v = gitNodeArg(u); return str(v) ?? ((v as TreeNodeArg)?.t === "repo" ? str((v as TreeNodeArg)!.r?.key) : undefined); };
 const componentArg = (v: unknown) => str(v) ?? ((v as TreeNodeArg)?.t === "component" ? str((v as TreeNodeArg)!.c?.id) : undefined);
 function packArg(v: unknown): { componentId?: unknown; subprojectId?: unknown; question?: unknown } | undefined {
   const node = v as TreeNodeArg;

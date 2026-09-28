@@ -1,0 +1,16 @@
+{
+  "format": "datapass.codex-tests",
+  "version": 1,
+  "purpose": "client",
+  "client": { "id": "hop-demo-lab", "title": "DataPass Hop demo (fictional)" },
+  "datapass": { "version": "0.0.0", "vsix": "datapass-vscode.vsix" },
+  "workspace": {
+    "bridge": { "remote": "https://github.com/example-org/hop-bridge", "folder": "hop-bridge" },
+    "repositories": [
+      { "remote": "https://github.com/example-org/pipelines", "folder": "pipelines" }
+    ]
+  },
+  "journeys": ["journeys/H01-home-hop-git-badges.json"],
+  "report": { "remote": "https://github.com/example-org/datapass-codex-test", "folder": "reports" },
+  "limits": { "runMinutes": 30, "journeyMinutes": 10 }
+}
