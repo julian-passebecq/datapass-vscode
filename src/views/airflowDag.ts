@@ -31,7 +31,7 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
   /** For the desktop tests: how many times the view was revealed automatically. */
   autoReveals = 0;
 
-  constructor(private readonly context: vscode.ExtensionContext, private readonly explain: (uri: vscode.Uri) => Promise<string | undefined>, private readonly shown: () => boolean, projectChanged: vscode.Event<void>) {
+  constructor(private readonly context: vscode.ExtensionContext, private readonly explain: (uri: vscode.Uri) => Promise<string | undefined>, private readonly shown: () => boolean, projectChanged: vscode.Event<void>, private readonly indexed: (uri: vscode.Uri) => boolean = () => false) {
     this.subs.push(
       // A refresh may index a new DataPass Hop explanation for the file shown.
       projectChanged(() => { const c = this.current; if (c) void this.explain(c.uri).then(async f => { if (this.current === c && f !== c.explanation) { this.current = { ...c, ...(f ? { explanation: f } : { explanation: undefined }) }; await this.post(); } }); }),
@@ -143,9 +143,9 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
   async openExplanation(): Promise<void> {
     const c = this.current;
     if (!c?.explanation) return;
-    // V3-POLISH-1: the DataPass Hop view (V3-HOP2) — the DAG's visual explanation left, its code right.
-    // Without the Hop command (an older host in tests), the explanation JSON opens beside.
-    if ((await vscode.commands.getCommands(true)).includes("datapass.hop.explain")) {
+    // V3-POLISH-1: the DataPass Hop view (V3-HOP2) — the DAG's visual explanation left, its code right —
+    // when the project's index holds the file; an explanation found by name only (no project open) opens beside as JSON.
+    if (this.indexed(c.uri) && (await vscode.commands.getCommands(true)).includes("datapass.hop.explain")) {
       await vscode.commands.executeCommand("datapass.hop.explain", c.uri);
       return;
     }
@@ -183,8 +183,8 @@ function makeNonce(): string {
  * `explain`: the DataPass Hop file of a native file — the session's index (V3-HOP1) first, then a
  * name lookup in the bridge for a file the last refresh did not index yet.
  */
-export function registerAirflowDag(context: vscode.ExtensionContext, explain: (uri: vscode.Uri) => Promise<string | undefined>, shown: () => boolean, projectChanged: vscode.Event<void>): AirflowDagView {
-  const view = new AirflowDagView(context, explain, shown, projectChanged);
+export function registerAirflowDag(context: vscode.ExtensionContext, explain: (uri: vscode.Uri) => Promise<string | undefined>, shown: () => boolean, projectChanged: vscode.Event<void>, indexed?: (uri: vscode.Uri) => boolean): AirflowDagView {
+  const view = new AirflowDagView(context, explain, shown, projectChanged, indexed);
   const guard = (fn: () => Promise<void>) => async () => { try { await fn(); } catch (e) { void vscode.window.showErrorMessage(e instanceof Error ? e.message : String(e)); } };
   context.subscriptions.push(
     view,

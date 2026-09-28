@@ -385,7 +385,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const airflowDag = registerAirflowDag(context, async uri => {
     const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
     return (await session.understandingFor(uri))?.file ?? findUnderstanding(uri.fsPath, [session.root?.fsPath, ...folders].filter((x): x is string => !!x), folders);
-  }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange);
+  }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange, uri => session.understandingIndexed(uri));
   registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
