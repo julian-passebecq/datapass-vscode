@@ -114,6 +114,16 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 Waiting for Codex ADRs. No V4 package starts before they are accepted by the PM.
 
+### Coder trial V3.4 (Julian's "custom" xhigh authorization, 4 packages only)
+The first 4 well-scoped V4 packages from Codex's work packets (each ≤ 30 M, no product question, clear done condition) run on **Sonnet 5.5 · xhigh**, each paired with a similar V4 package on **Opus 5.5 · medium**. Every trial package is a top-level coder conversation, not a PM subagent, so its tokens can be measured. Start: as soon as the pause lifts and Codex's packets are accepted. The COORD fills the table below; the PM writes the one-page review in `effort-board/audits/` at the first V4 milestone, and Julian decides.
+
+| Pair | Sonnet xhigh package | Opus medium comparator | Billed tokens (S / O) | Duration (S / O) | Rework (S / O) | Merged untouched (S / O) | Context at end (S / O) |
+|---|---|---|---|---|---|---|---|
+| T1 | tbd (Codex packet) | tbd | | | | | |
+| T2 | tbd | tbd | | | | | |
+| T3 | tbd | tbd | | | | | |
+| T4 | tbd | tbd | | | | | |
+
 ## Team (rules V2.3, from 2026-09-26 23:15 — every live session on DataPass)
 
 Kept by **PM DataPass 1** (medium, global PM for all apps since V2.3): every code and merge decision. Tech lead: **Codex** for V4 (GPT 6 Pro was the V1–V3 tech lead). Coordinator: **COORD DataPass 4** (low) runs the coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
