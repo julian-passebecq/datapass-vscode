@@ -119,6 +119,7 @@ The first 4 well-scoped V4 packages from Codex's work packets (each ≤ 30 M, no
 
 | Pair | Sonnet xhigh package | Opus medium comparator | Billed tokens (S / O) | Duration (S / O) | Rework (S / O) | Merged untouched (S / O) | Context at end (S / O) |
 |---|---|---|---|---|---|---|---|
+| T0 dummy (Julian, 22:33) | TRIAL-SQLREF (SQL table reads/writes extractor), headless `claude -p` | same | 1.06 M incl. cache ($1.06, 51 K out, 36 K thinking) / 0.78 M ($1.00, 12 K out) | 7 min / 3 min | 0 / 0 (one round each) | 22/22 own tests, passes 17/17 of Opus's / 17/17 own, fails 7/22 of Sonnet's (quotes/escapes, subqueries, EXTRACT…FROM) | n/a (one-shot) |
 | T1 | tbd (Codex packet) | tbd | | | | | |
 | T2 | tbd | tbd | | | | | |
 | T3 | tbd | tbd | | | | | |
