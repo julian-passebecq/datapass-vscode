@@ -61,6 +61,8 @@ import { registerOpenClientProject } from "./work/openClientProject";
 import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
 import { ShellService, registerShellCommands } from "./work/shellCommands";
+import { railButtonsShown } from "./views/railHtml";
+import { moduleEnabled } from "./core/modules";
 import type { TreeLens } from "./core/windows/treeLens";
 import { GitDiagram, registerGitDiagramCommands } from "./work/gitDiagram";
 import { HopHost, registerHopCommands } from "./views/hop";
@@ -212,6 +214,7 @@ export interface DataPassTestApi {
     railResolved(): boolean;
     /** One message as the rail webview would send it. */
     railSend(message: Record<string, unknown>): Promise<void>;
+    railButtons(): readonly string[];
     architectureInPanel(): boolean;
   };
 }
@@ -293,6 +296,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   // V3-SHELL: tree lenses, rail mode, the bottom-panel Architecture view (off by default), close buttons.
   const shell = new ShellService(context, projectTree, projectView);
   registerShellCommands(context, shell);
+  // V3-POLISH-2: the rail's DAG button follows the Airflow DAG view (mode) and the project's Airflow module.
+  shell.setRailButtons(() => railButtonsShown({ shows: experience.shows, airflowModule: moduleEnabled(session.project.manifest, "airflow") }), [experience.onDidChange, session.onDidChange]);
   const activeVariant = new ActiveVariantService(context, session, experience.shows, experience.onDidChange);
   registerActiveVariantCommands(context, activeVariant, session);
   host.setSurfaces(experience.shows, experience.onDidChange);
@@ -541,6 +546,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       rail: () => shell.rail(),
       railResolved: () => shell.railResolved(),
       railSend: message => shell.onRailMessage(message),
+      railButtons: () => shell.railButtons(),
       architectureInPanel: () => shell.architectureInPanel()
     },
     gitDiagram: { refresh: () => gitDiagram.refresh(), setsOf: (id: string) => gitDiagram.setsOf(id) },

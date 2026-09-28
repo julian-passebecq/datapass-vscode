@@ -15,7 +15,8 @@
  * compiled is "blocked" with "not automatable: <reason>" — never a pass.
  *
  * Exit 0 = every journey was reached; 1 = one was not (failed, partly run, blocked or not automatable;
- * the report says which); 2 = cannot start (bad run root or journey). It writes only in the report
+ * the report says which — and also when the run ends early, without a report holding every journey, or on
+ * an unhandled rejection); 2 = cannot start (bad run root or journey). It writes only in the report
  * folder and the journey's own fixture/scratch folders, and never touches the person's own VS Code profile.
  */
 import * as fs from "node:fs";
@@ -33,6 +34,15 @@ const DRIVER = `playwright-core ${(require("playwright-core/package.json") as { 
 const PALETTE_TIMEOUT_MS = 15_000;
 /** The home qa:ui gives VS Code (HOME and USERPROFILE), so ~/.vscode-shared is the run's own too. */
 export const QA_HOME_DIR = ".qa-home";
+
+const CLOSE_TIMEOUT_MS = 30_000;
+
+/** `p`, or undefined after `ms` (the timer also keeps the event loop alive while `p` is pending). */
+export async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: NodeJS.Timeout | undefined;
+  try { return await Promise.race([p, new Promise<undefined>(r => { timer = setTimeout(() => r(undefined), ms); })]); }
+  finally { clearTimeout(timer); }
+}
 
 class CannotRun extends Error { constructor(readonly reasons: string[]) { super(reasons.join("\n")); } }
 
@@ -332,7 +342,9 @@ async function driveJourney(root: string, run: RunFile, journey: UiJourney, outD
     // The main process exits first; its children still write into the run root for a moment (QATMP).
     const pid = app?.process().pid;
     const tree = pid ? processTree(pid, listProcesses()) : [];
-    await app?.close().catch(() => undefined);
+    // QAEXIT: Playwright's close() can stay pending forever on Windows once the Electron pipes are gone;
+    // with no timer left, Node then drains its event loop and exits 0 without a report. Bound it.
+    if (app) await withTimeout(app.close().catch(() => undefined), CLOSE_TIMEOUT_MS);
     const killed = await waitForExit(tree);
     if (killed.length) log(`  (killed ${killed.length} VS Code process(es) still running after close)`);
   }
@@ -406,6 +418,48 @@ export async function runUi(opts: UiRunOptions): Promise<UiRunResult> {
   }
 }
 
+/**
+ * Why a run that claims success is not one: the report is missing, unreadable, lacks a journey
+ * the run went through, or holds a journey that was not reached. Undefined when the report is sound.
+ */
+export function reportProblem(result: UiRunResult): string | undefined {
+  if (!result.reportFile) return "no report file was written";
+  if (!fs.existsSync(result.reportFile)) return `the report ${result.reportFile} does not exist`;
+  let journeys: Array<{ id?: string; outcome?: string }>;
+  try { journeys = (JSON.parse(fs.readFileSync(result.reportFile, "utf8")) as { journeys?: Array<{ id?: string; outcome?: string }> }).journeys ?? []; }
+  catch (e) { return `the report ${result.reportFile} cannot be read: ${e instanceof Error ? e.message : String(e)}`; }
+  if (!journeys.length) return `the report ${result.reportFile} has no journey`;
+  const ids = new Set(journeys.map(j => j.id));
+  const missing = Object.keys(result.outcomes ?? {}).filter(id => !ids.has(id));
+  if (missing.length) return `the report lacks journey(s) ${missing.join(", ")}`;
+  const notReached = journeys.filter(j => j.outcome !== "reached").map(j => j.id);
+  if (notReached.length) return `journey(s) ${notReached.join(", ")} not reached`;
+  return undefined;
+}
+
+type ExitProcess = { on(event: string, listener: (...args: any[]) => void): unknown; exit(code?: number): unknown };
+
+/**
+ * QAEXIT: the process exits 0 only when `run` settled with code 0 and its report holds every journey,
+ * reached. An unhandled rejection or uncaught exception exits 1; so does the event loop draining while
+ * `run` is still pending (a promise that never settles: Node would otherwise end with 0 and no report).
+ */
+export function runCli(run: () => Promise<UiRunResult>, proc: ExitProcess = process, log: (line: string) => void = line => console.error(line)): Promise<void> {
+  let settled = false;
+  const fail = (why: string) => { log(`✗ qa:ui ${why}`); proc.exit(1); };
+  proc.on("unhandledRejection", (reason: unknown) => fail(`stopped on an unhandled rejection: ${reason instanceof Error ? reason.message : String(reason)}`));
+  proc.on("uncaughtException", (err: Error) => fail(`stopped on an uncaught exception: ${err.message}`));
+  proc.on("beforeExit", () => { if (!settled) fail("ended early: a step never finished and no report was written"); });
+  return run().then(
+    r => {
+      settled = true;
+      const problem = r.code === 0 ? reportProblem(r) : undefined;
+      if (problem) fail(`reported success but ${problem}`);
+      else proc.exit(r.code);
+    },
+    e => { settled = true; fail(`failed: ${e instanceof Error ? e.message : String(e)}`); });
+}
+
 if (require.main === module) {
   const argv = process.argv.slice(2);
   const value = (name: string) => { const i = argv.indexOf(`--${name}`); return i >= 0 ? argv[i + 1] : undefined; };
@@ -414,5 +468,5 @@ if (require.main === module) {
     console.log("Usage: npm run qa:ui -- <run root> <journey.json | <run root>/ui-journeys> [--code <VS Code executable>] [--out <report folder>]");
     process.exit(2);
   }
-  void runUi({ root: positional[0]!, journey: positional[1]!, code: value("code"), out: value("out") }).then(r => process.exit(r.code));
+  void runCli(() => runUi({ root: positional[0]!, journey: positional[1]!, code: value("code"), out: value("out") }));
 }

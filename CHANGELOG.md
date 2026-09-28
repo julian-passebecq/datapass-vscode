@@ -5,6 +5,8 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- qa:ui exits non-zero on every outcome other than a report holding every journey (an early end, a missing or partial report, an unhandled rejection); VS Code's close is bounded so a stuck close no longer lets Node drain and exit 0 (V1.1.x-QAEXIT). The right rail hides its DAG button when the mode hides the Airflow DAG view or the project switches the Airflow module off (V3-POLISH-2).
+
 ## 1.1.0-rc.1 — V3 release candidate 1: one tree, DataPass Hop, Git on the diagram, a lighter look (2026-09-28)
 
 Plan: [handoff/PLAN.md](handoff/PLAN.md) § V3; product intent: [handoff/V3_PRODUCT_VISION.md](handoff/V3_PRODUCT_VISION.md).

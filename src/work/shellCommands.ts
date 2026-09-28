@@ -39,6 +39,8 @@ export class ShellService implements vscode.Disposable {
   private railWidth?: number;
   private widthWaiters: Array<(w: number | undefined) => void> = [];
   private resizing = false;
+  /** V3-POLISH-2: the rail buttons to show (all until setRailButtons is called). */
+  private railShown: () => readonly string[] = () => RAIL_BUTTON_IDS;
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly tree: ProjectTreeProvider, private readonly treeView: vscode.TreeView<unknown>) {
     this.lenses = new LensStore(context.workspaceState);
@@ -83,6 +85,23 @@ export class ShellService implements vscode.Disposable {
 
   // ---------------------------------------------------------------- rail
 
+  /** The rail shows `shown()` and repaints whenever one of `changes` fires (mode, project modules). */
+  setRailButtons(shown: () => readonly string[], changes: ReadonlyArray<vscode.Event<unknown>>): void {
+    this.railShown = shown;
+    for (const change of changes) this.subs.push(change(() => this.paintRail()));
+    this.paintRail();
+  }
+
+  /** The rail buttons shown now (also read by the desktop tests). */
+  railButtons(): readonly string[] { return this.railShown(); }
+
+  private paintRail(): void {
+    const view = this.railView;
+    if (!view) return;
+    const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
+    view.webview.html = railHtml(view.webview.cspSource, nonce, this.railShown());
+  }
+
   rail(): boolean { return this.context.workspaceState.get<boolean>(RAIL_STATE_KEY) === true; }
   railResolved(): boolean { return Boolean(this.railView); }
 
@@ -90,9 +109,8 @@ export class ShellService implements vscode.Disposable {
     return {
       resolveWebviewView: view => {
         view.webview.options = { enableScripts: true, localResourceRoots: [] };
-        const nonce = Array.from({ length: 24 }, () => Math.floor(Math.random() * 36).toString(36)).join("");
-        view.webview.html = railHtml(view.webview.cspSource, nonce);
         this.railView = view;
+        this.paintRail();
         view.onDidDispose(() => { if (this.railView === view) this.railView = undefined; });
         view.webview.onDidReceiveMessage(m => void this.onRailMessage(m));
       }
@@ -108,7 +126,7 @@ export class ShellService implements vscode.Disposable {
       for (const w of waiters) w(msg.width);
       return;
     }
-    if (msg?.type !== "rail" || typeof msg.id !== "string" || !RAIL_BUTTON_IDS.includes(msg.id)) return;
+    if (msg?.type !== "rail" || typeof msg.id !== "string" || !this.railShown().includes(msg.id)) return;
     switch (msg.id) {
       case "expand": return this.expand();
       case "details": return this.expand("datapass.details");

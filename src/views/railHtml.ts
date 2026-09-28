@@ -27,10 +27,19 @@ export const RAIL_BUTTONS: readonly RailButton[] = [
 
 export const RAIL_BUTTON_IDS: readonly string[] = RAIL_BUTTONS.map(b => b.id);
 
+/**
+ * V3-POLISH-2: the buttons a rail offers. The DAG button follows the Airflow DAG view: hidden when the
+ * mode hides that surface (the view's own `!datapass.hidden.view.airflowDag`) or the project switches
+ * the Airflow module off. Every other button is always shown.
+ */
+export function railButtonsShown(o: { shows: (surface: string) => boolean; airflowModule: boolean }): string[] {
+  return RAIL_BUTTON_IDS.filter(id => id !== "airflow" || (o.airflowModule && o.shows("view.airflowDag")));
+}
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export function railHtml(cspSource: string, nonce: string): string {
-  const buttons = RAIL_BUTTONS.map(b => `<button type="button" data-id="${esc(b.id)}" title="${esc(b.title)}" aria-label="${esc(`${b.label}: ${b.title}`)}"><span class="g" aria-hidden="true">${esc(b.glyph)}</span><span class="l">${esc(b.label)}</span></button>`).join("\n");
+export function railHtml(cspSource: string, nonce: string, shown: readonly string[] = RAIL_BUTTON_IDS): string {
+  const buttons = RAIL_BUTTONS.filter(b => shown.includes(b.id)).map(b => `<button type="button" data-id="${esc(b.id)}" title="${esc(b.title)}" aria-label="${esc(`${b.label}: ${b.title}`)}"><span class="g" aria-hidden="true">${esc(b.glyph)}</span><span class="l">${esc(b.label)}</span></button>`).join("\n");
   return String.raw`<!doctype html>
 <html lang="en">
 <head>
