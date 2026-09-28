@@ -103,20 +103,20 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-AIRFLOW | Static extraction of the Airflow DAG (no Python executed), "Airflow DAG" view in the right side bar that opens with the DAG file, task ↔ code sync; adds its line to ROADMAP §4b | added 2026-09-28 (Julian) | PM agent · V3-AIRFLOW | done (#158) |
 | V3-FIX-ICONS | Mangled Simple Icons paths (docker, googlecloud, googledrive…) in `src/webview/diagramIcons.ts`: path-syntax test, restore from official sources, remove the Airflow VM-icon workaround | logged 2026-09-28 | PM agent · FIX-ICONS | done (#162) |
 | V3-POLISH-1 | Small follow-ups: (1) right-click menus in the left tree's Git lens; (2) Airflow DAG button in the right rail; (3) document in the guide that VS Code's API does not let the right rail set its own width; (4) qa:ui journeys for Home, Hop and the diagram badges; (5) visual re-check of the Git badges after SHELL; (6) watch `.datapass/understanding` for changes; (7) Airflow "Open explanation" → Hop view; (8) `npm run sync:common -- --check` (HOP1 schema/example may need syncing to common). Started by chip: `set_session_effort` medium, named in the GO (rules V2.2) | after HOP2 and GITDIAG (both done) | PM agent · V3-POLISH-1 | done (#166; common #22) |
-| V3-POLISH-2 | Later polish: hide the right rail's Airflow DAG button when the Airflow module is off | 1.1.x, logged 2026-09-28 | — | to do |
+| V3-POLISH-2 | Later polish: hide the right rail's Airflow DAG button when the Airflow module is off | 1.1.x, logged 2026-09-28 | PM agent | done (#170) |
 | V3-RC1 | 1.1.0-rc.1 prerelease: version bump, CHANGELOG, full qa:ui | after POLISH-1 | PM agent · V3-RC1 | done (#168; prerelease v1.1.0-rc.1) |
-| V1.1.x-QAEXIT | qa:ui full run once exited 0 after J10 without writing a report: every non-pass must exit non-zero | 1.1.x, logged 2026-09-28 | — | to do |
+| V1.1.x-QAEXIT | qa:ui full run once exited 0 after J10 without writing a report: every non-pass must exit non-zero | 1.1.x, logged 2026-09-28 | PM agent | done (#170) |
 | V1.1.x-WORKTREES | Prune stale worktrees under `.claude/worktrees`; first check that no live session owns them (lucid-lewin-3d1d9c holds main) | 1.1.x, logged 2026-09-28 | — | to do |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
-Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 3** (low) runs the V1 coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **GPT 6 Pro** (initial report pending, see below). Coordinator: **COORD DataPass 4** (low) runs the coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
 
 | Session | Role | Package / job | GO date | Reports to |
 |---|---|---|---|---|
 | PM DataPass 1 | PM | plan, merges, tech-lead report | 2026-09-26 | Julian (via assistant) |
-| PM ASSISTANT DataPass 2 | assistant (low) | Julian's only contact; todo clean-up, orphaned PRs, FOIL gate (took over from ASSISTANT 1, hand-off #137) | 2026-09-27 · V2 | PM |
-| COORD DataPass 3 | coordinator (low) | V3 flow, routine merges, context watch (took over from COORD 2, hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md) | 2026-09-28 · V2 | PM |
+| PM ASSISTANT DataPass 4 | assistant (low) | Julian's only contact; rc.1 check session (took over from ASSISTANT 3, #171) | 2026-09-28 · V2.2 | PM |
+| COORD DataPass 4 | coordinator (low) | 1.1.x flow (WORKTREES), routine merges, context and quota watch (took over from COORD 3, hand-off handoff/sessions/2026-09-28-0135-coord-datapass-3.md) | 2026-09-28 · V2.2 | PM |
 | PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
 | PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
 | PM agent · QATMP | PM agent (medium) | V1.0.x-QATMP (branch claude/qatmp; merges its own PRs) | 2026-09-27 · V2 | PM |
@@ -132,12 +132,9 @@ Kept by **PM DataPass 1** (medium): every code and merge decision. Tech lead: **
 | PM agent · V3-POLISH-1 | PM agent (medium, agent of PM DataPass 1) | V3-POLISH-1 — done (#166; common #22) | 2026-09-28 · V2.2 | PM |
 | PM agent · V3-RC1 | PM agent (medium, agent of PM DataPass 1) | V3-RC1 — done (#168; v1.1.0-rc.1) | 2026-09-28 · V2.2 | PM |
 | PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
-| CODER DataPass FLAKE3 | coder (medium, chip) | V1-FLAKE3 — done (#127) | 2026-09-27 · V2 | COORD DataPass 2 |
-| CODER DataPass RC3 | coder (medium, chip) | V1-RC3 — done (#133, #134, #135; rc.3 at 83e8926) | 2026-09-27 · V2 | PM (cc COORD 2) |
 | CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 — done (#143, common #19; v1.0.0 at d8772d4) | 2026-09-27 · V2 | PM |
-| CODER DataPass UI-POLISH | coder (medium) | V1-UI-POLISH (diagram look) — done (#130) | 2026-09-27 · V2 | PM |
 
-Retired on 2026-09-28: COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
+Retired on 2026-09-28: COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
 Retired on 2026-09-27: PM ASSISTANT DataPass 1 (hand-off handoff/sessions/2026-09-27-1641-pm-assistant.md).
 
