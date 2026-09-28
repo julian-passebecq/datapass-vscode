@@ -193,6 +193,8 @@ export interface DataPassTestApi {
     state(): AirflowViewState;
     send(message: Record<string, unknown>): Promise<void>;
     autoReveals(): number;
+    /** V1.1.x-POLISH-3: what the rail's DAG button opens (the active DAG, else the project's). */
+    dagForRail(): Promise<vscode.Uri | undefined>;
   };
   /** 0.22 modes: the effective mode, its status item, and whether startup landed on the architecture. */
   experience: {
@@ -215,6 +217,11 @@ export interface DataPassTestApi {
     /** One message as the rail webview would send it. */
     railSend(message: Record<string, unknown>): Promise<void>;
     railButtons(): readonly string[];
+    /** V1.1.x-POLISH-3: the lens status-bar text, the separate Git view on screen. */
+    lensStatus(): string;
+    gitViewVisible(): boolean;
+    /** V1.1.x-POLISH-3: the right-side view a rail button unfolded alone, if any. */
+    solo(): string | undefined;
     architectureInPanel(): boolean;
   };
 }
@@ -391,6 +398,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
     return (await session.understandingFor(uri))?.file ?? findUnderstanding(uri.fsPath, [session.root?.fsPath, ...folders].filter((x): x is string => !!x), folders);
   }, () => isVisible(experience.experience(), "view.airflowDag"), session.onDidChange, uri => session.understandingIndexed(uri));
+  shell.setDagOpener(() => airflowDag.openDagForRail());
   registerControlCommands(context, control, workOrders);
 
   // 0.17 windows and work views: status-bar switcher, saved layouts, company workspace file, Power Ops list.
@@ -535,6 +543,14 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       return undefined;
     });
 
+  // V1.1.x-POLISH-3: once per install, point to the DataPass tree when a project opens while the Explorer shows.
+  if (context.extensionMode !== vscode.ExtensionMode.Test) {
+    void startup.then(() => new Promise(r => setTimeout(r, 4000))).then(() => {
+      const p = session.project;
+      return shell.hintTree(Boolean(p.root && p.manifestExists && !p.manifestErrors.length));
+    }).catch(() => undefined);
+  }
+
   perf.activateMs = performance.now() - activateStart;
   if (context.extensionMode !== vscode.ExtensionMode.Test) return undefined;
   return {
@@ -547,6 +563,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       railResolved: () => shell.railResolved(),
       railSend: message => shell.onRailMessage(message),
       railButtons: () => shell.railButtons(),
+      lensStatus: () => shell.lensStatusText(),
+      gitViewVisible: () => gitView.visible,
+      solo: () => shell.solo(),
       architectureInPanel: () => shell.architectureInPanel()
     },
     gitDiagram: { refresh: () => gitDiagram.refresh(), setsOf: (id: string) => gitDiagram.setsOf(id) },
@@ -617,7 +636,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     airflow: {
       state: () => airflowDag.state(),
       send: m => airflowDag.receive(m),
-      autoReveals: () => airflowDag.autoReveals
+      autoReveals: () => airflowDag.autoReveals,
+      dagForRail: () => airflowDag.openDagForRail()
     },
     experience: {
       current: () => experience.experience(),

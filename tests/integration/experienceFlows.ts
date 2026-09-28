@@ -169,7 +169,16 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await run("datapass.project.focus");
     await waitFor("the Project tree", () => panes().includes("project"));
     assert.equal(api().shell.lens(), "project");
+    // V1.1.x-POLISH-3: the lens is named without hovering — first tree row and status bar.
+    const first = (await api().renderProjectTree())[0];
+    assert.equal(first?.id, "lens");
+    assert.equal(first?.label, "Showing: Project ▾");
+    assert.equal(first?.command, "datapass.tree.chooseLens");
+    assert.equal(api().shell.lensStatus(), "$(list-tree) DataPass tree: Project");
+    await run("datapass.git.focus");
+    await waitFor("the Git view beside the Project lens", () => api().shell.gitViewVisible());
     await run("datapass.tree.lens.architecture");
+    assert.equal(api().shell.lensStatus(), "$(list-tree) DataPass tree: Architecture");
     assert.equal(api().shell.chosenLens(), "architecture");
     const arch = await treeSections();
     assert.ok(arch.some(s => s.startsWith("sp:")) && arch.includes("repositories"), arch.join(", "));
@@ -180,12 +189,17 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     assert.ok((await treeSections()).includes("ai:orders"));
     await run("datapass.tree.lens.git");
     const git = await api().renderProjectTree();
-    assert.ok(git.length > 0 && git.every(r => r.id?.startsWith("git/")), JSON.stringify(git.slice(0, 3)));
+    assert.equal(git[0]?.label, "Showing: Git ▾");
+    assert.ok(git.length > 1 && git.slice(1).every(r => r.id?.startsWith("git/")), JSON.stringify(git.slice(0, 3)));
+    // V1.1.x-POLISH-3: the separate Git view would repeat the Git lens: it hides while the lens shows.
+    await waitFor("the Git view hidden under the Git lens", () => !api().shell.gitViewVisible());
     // A selection made elsewhere is revealed: the tree follows to the Architecture lens without forgetting Git.
     await api().select({ component: "extract" });
     await waitFor("the tree follows the selection", () => api().shell.lens() === "architecture");
     assert.equal(api().shell.chosenLens(), "git");
     await api().shell.chooseLens("project");
+    await run("datapass.git.focus");
+    await waitFor("the Git view back with the Project lens", () => api().shell.gitViewVisible());
     // Right rail: the full panel folds into the rail and comes back on a button.
     await run("datapass.details.focus");
     await waitFor("Details", () => panes().includes("details"));
@@ -196,6 +210,12 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await api().shell.railSend({ type: "rail", id: "details" });
     assert.equal(api().shell.rail(), false);
     await waitFor("Details back", () => panes().includes("details"));
+    // V1.1.x-POLISH-3: the Details button unfolds Details alone; Expand brings the full panel back.
+    assert.equal(api().shell.solo(), "details");
+    await waitFor("the AI view folded while Details shows alone", () => !panes().includes("aiExchange"));
+    await run("datapass.rail.expand");
+    assert.equal(api().shell.solo(), undefined);
+    await waitFor("the AI view back with the full panel", () => panes().includes("aiExchange"));
     record("shell.default", { panes: panes(), lens: api().shell.lens() });
     // The general tests that follow expect the Architecture panel, as in the other fixtures' profiles.
     await run("datapass.layout.toggleArchitecturePanel", true);

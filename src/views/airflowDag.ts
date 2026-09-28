@@ -112,6 +112,30 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
     else if (c && !c.extraction.detected) void vscode.window.showInformationMessage(`${vscode.workspace.asRelativePath(doc.uri)} is not an Airflow DAG: ${c.extraction.reason ?? ""}`);
   }
 
+  /**
+   * V1.1.x-POLISH-3 (Julian's check of rc.1: the DAG button showed "Not an Airflow DAG" for rules.py):
+   * the rail's DAG button shows the active file when it is a DAG, else the project's DAG files, found by
+   * reading the Python files statically (never running them): one is opened, several are offered in a
+   * Quick Pick, none is said in plain words. Returns the DAG file shown in the editor, or undefined.
+   */
+  async openDagForRail(): Promise<vscode.Uri | undefined> {
+    const doc = vscode.window.activeTextEditor?.document;
+    if (doc && isPython(doc) && extractDag(doc.getText()).detected) return doc.uri;
+    const dags = await findDagFiles();
+    if (!dags.length) {
+      void vscode.window.showInformationMessage("This project has no Airflow DAG: no Python file in the workspace declares one. (DataPass reads the files to find DAGs; it never runs them.)");
+      return undefined;
+    }
+    let uri = dags[0]!;
+    if (dags.length > 1) {
+      const pick = await vscode.window.showQuickPick(dags.map(u => ({ label: vscode.workspace.asRelativePath(u), uri: u })), { title: "Which Airflow DAG should the DAG view show?", placeHolder: `${dags.length} Airflow DAG files in this project` });
+      if (!pick) return undefined;
+      uri = pick.uri;
+    }
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(uri), { preview: true });
+    return uri;
+  }
+
   /** One message from the webview (public for the desktop tests, which have no webview to click). */
   async receive(raw: unknown): Promise<void> {
     const m = raw && typeof raw === "object" ? raw as Record<string, unknown> : {};
@@ -166,6 +190,26 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
     if (this.timer) clearTimeout(this.timer);
     for (const s of this.subs) s.dispose();
   }
+}
+
+/** Folders never searched for DAG files. */
+const DAG_SEARCH_EXCLUDE = "**/{node_modules,.git,dist,out,.venv,venv,env,__pycache__,site-packages,.datapass}/**";
+/** Bigger files are not read (a DAG file is small). */
+const DAG_FILE_MAX_BYTES = 512 * 1024;
+
+/** V1.1.x-POLISH-3: the workspace's Airflow DAG files, read statically (never run), sorted by path. */
+export async function findDagFiles(limit = 400): Promise<vscode.Uri[]> {
+  const files = await vscode.workspace.findFiles("**/*.py", DAG_SEARCH_EXCLUDE, limit);
+  const dags: vscode.Uri[] = [];
+  for (const f of files) {
+    try {
+      const bytes = await vscode.workspace.fs.readFile(f);
+      if (bytes.byteLength > DAG_FILE_MAX_BYTES) continue;
+      const text = Buffer.from(bytes).toString("utf8");
+      if (/airflow/.test(text) && extractDag(text).detected) dags.push(f);
+    } catch { /* unreadable: not offered */ }
+  }
+  return dags.sort((a, b) => vscode.workspace.asRelativePath(a).localeCompare(vscode.workspace.asRelativePath(b)));
 }
 
 function isPython(doc: vscode.TextDocument): boolean {

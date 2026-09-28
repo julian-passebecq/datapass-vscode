@@ -23,7 +23,7 @@ import { alternativesByComponent } from "../core/experience/alternatives";
 import { CODING_LABELS, CODING_NOTE, codingOfPicks, type CodingState, type OptionCoding } from "../core/project/variants";
 import type { ProjectMap } from "../core/project/projectMap";
 import { PLAIN_STATE_ICONS, readTreeLook, stateIcon, treeIconColor, type TreeLook } from "./treeColors";
-import { LENS_CONTEXT_KEY, LENS_INFO, LENSES_WITH_ARCHITECTURE, lensForScreen, type LensStore, type TreeLens } from "../core/windows/treeLens";
+import { LENS_CONTEXT_KEY, LENS_INFO, LENSES_WITH_ARCHITECTURE, lensForScreen, lensRow, type LensStore, type TreeLens } from "../core/windows/treeLens";
 import type { GitNode, GitTreeProvider } from "./gitTree";
 import type { LoadedOrder } from "../work/workOrders";
 
@@ -351,14 +351,19 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   }
 
   /** V3-SHELL: the root nodes of the lens shown now. */
-  private lensRoots(): Node[] | Promise<Node[]> {
+  private async lensRoots(): Promise<Node[]> {
     const lens = this.lens();
-    if (lens === "project") return this.remember(this.roots(), undefined);
-    if (lens === "git") return this.gitChildren(undefined, undefined);
     const ctx = this.session.project;
-    // Without a readable project, every lens shows the same way in (open, initialize, fix the manifest).
-    if (!ctx.root || !ctx.manifestExists || ctx.manifestErrors.length) return this.remember(this.roots(), undefined);
-    return this.remember(lens === "architecture" ? this.architectureRoots() : lens === "ai" ? this.aiRoots() : this.readinessRoots(), undefined);
+    // Without a readable project, every lens but Git shows the same way in (open, initialize, fix the manifest).
+    const readable = Boolean(ctx.root && ctx.manifestExists && !ctx.manifestErrors.length);
+    if (!readable && lens === "git") return this.gitChildren(undefined, undefined);
+    if (!readable) return this.remember(this.roots(), undefined);
+    // V1.1.x-POLISH-3: the first row names the lens shown and switches it (always visible, unlike the title buttons).
+    const r = lensRow(lens);
+    const row: Node = { t: "info", id: r.id, label: r.label, description: r.description, icon: [r.icon], tooltip: r.tooltip, command: { command: r.command, title: "Switch" }, contextValue: "lens" };
+    const rest = lens === "project" ? this.roots() : lens === "git" ? await this.gitChildren(undefined, undefined)
+      : lens === "architecture" ? this.architectureRoots() : lens === "ai" ? this.aiRoots() : this.readinessRoots();
+    return this.remember([row, ...rest], undefined);
   }
 
   private async gitChildren(g: GitNode | undefined, parent: Node | undefined): Promise<Node[]> {

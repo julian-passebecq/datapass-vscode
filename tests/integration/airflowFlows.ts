@@ -8,6 +8,7 @@ import * as assert from "node:assert/strict";
 import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { record, test, waitFor } from "./harness";
+import { withUi } from "./ui";
 
 const DAG = `from datetime import datetime
 
@@ -39,6 +40,7 @@ export function registerAirflowFlows(getApi: () => DataPassTestApi): void {
     const root = vscode.workspace.workspaceFolders![0]!.uri;
     const dagUri = vscode.Uri.joinPath(root, "pipelines", "dags", "etl_dag.py");
     const plainUri = vscode.Uri.joinPath(root, "pipelines", "helpers.py");
+    const secondUri = vscode.Uri.joinPath(root, "pipelines", "dags", "weekly_dag.py");
     const explanation = vscode.Uri.joinPath(root, ".datapass", "understanding", "pipelines", "dags", "etl_dag.py.json");
     const hadDataPass = await vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".datapass")).then(() => true, () => false);
     await vscode.workspace.fs.writeFile(dagUri, Buffer.from(DAG, "utf8"));
@@ -84,10 +86,29 @@ export function registerAirflowFlows(getApi: () => DataPassTestApi): void {
       await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(plainUri));
       const n = await waitFor("the plain file read", () => { const x = api().airflow.state(); return x.status === "not-dag" ? x : undefined; });
       assert.match(n.reason ?? "", /No `airflow` import/);
+      // V1.1.x-POLISH-3: the rail's DAG button with a plain file active finds the project's DAG (read, never run).
+      const found = await api().airflow.dagForRail();
+      assert.equal(found?.toString(), dagUri.toString());
+      await waitFor("the DAG opened in the editor", () => vscode.window.activeTextEditor?.document.uri.toString() === dagUri.toString() || undefined);
+      // Several DAGs: the person picks one.
+      await vscode.workspace.fs.writeFile(secondUri, Buffer.from(DAG.replace("etl_daily", "etl_weekly"), "utf8"));
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(plainUri));
+      let picked: vscode.Uri | undefined;
+      const ui = await withUi([{ pick: "weekly_dag.py" }], async () => { picked = await api().airflow.dagForRail(); });
+      assert.deepEqual(ui.prompts[0]?.options, ["pipelines/dags/etl_dag.py", "pipelines/dags/weekly_dag.py"]);
+      assert.equal(picked?.toString(), secondUri.toString());
+      // No DAG: said in plain words, nothing opened.
+      await vscode.workspace.fs.delete(dagUri);
+      await vscode.workspace.fs.delete(secondUri);
+      await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(plainUri));
+      let none: vscode.Uri | undefined;
+      const said = await withUi([], async () => { none = await api().airflow.dagForRail(); });
+      assert.equal(none, undefined);
+      assert.ok(said.prompts.some(x => x.kind === "message" && /has no Airflow DAG/.test(x.text ?? "")), JSON.stringify(said.prompts));
       record("airflowDag", { tasks: s.tasks.map(t => `${t.id} (${t.operator}, lines ${t.startLine}-${t.endLine}, layer ${t.layer})`), autoReveals: api().airflow.autoReveals() - before });
     } finally {
       await vscode.commands.executeCommand("workbench.action.closeAllEditors");
-      for (const u of [dagUri, plainUri, explanation]) { try { await vscode.workspace.fs.delete(u); } catch { /* gone */ } }
+      for (const u of [dagUri, secondUri, plainUri, explanation]) { try { await vscode.workspace.fs.delete(u); } catch { /* gone */ } }
       try { await vscode.workspace.fs.delete(vscode.Uri.joinPath(root, ".datapass", ...(hadDataPass ? ["understanding"] : [])), { recursive: true }); } catch { /* gone */ }
       try { await vscode.workspace.fs.delete(vscode.Uri.joinPath(root, "pipelines"), { recursive: true }); } catch { /* gone */ }
     }
