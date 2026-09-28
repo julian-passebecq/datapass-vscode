@@ -107,6 +107,8 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-RC1 | 1.1.0-rc.1 prerelease: version bump, CHANGELOG, full qa:ui | after POLISH-1 | PM agent · V3-RC1 | done (#168; prerelease v1.1.0-rc.1) |
 | V1.1.x-QAEXIT | qa:ui full run once exited 0 after J10 without writing a report: every non-pass must exit non-zero | 1.1.x, logged 2026-09-28 | PM agent | done (#170) |
 | V1.1.x-WORKTREES | Prune stale worktrees under `.claude/worktrees`; first check that no live session owns them (lucid-lewin-3d1d9c holds main) | 1.1.x, logged 2026-09-28 | COORD 4 + PM | done (15 under .claude + wt-e/perf/qa1 removed) |
+| V1.1.x-POLISH-3 | Lenses, rail, single Git section, DAG button | 1.1.x | PM agent · V1.1.x-POLISH-3 | done (#177) |
+| V1.1.x-POLISH-4 | Activity-bar icon, one-click zoom, Appearance picker, Home layout-restore button | 1.1.x | PM agent · V1.1.x-POLISH-4 | running |
 
 ## V4 (rules V2.3 · source: [V4_VISION.md](V4_VISION.md), #178; tech lead: Codex)
 
@@ -120,7 +122,8 @@ Kept by **PM DataPass 1** (medium, global PM for all apps since V2.3): every cod
 |---|---|---|---|---|
 | PM DataPass 1 | global PM (all apps) | plan, merges, tech-lead (Codex) exchange | 2026-09-26 · V2.3 | Julian (via assistant) |
 | PM ASSISTANT DataPass 5 | assistant (low) | Julian's only contact; rc.1 test session (takes over from ASSISTANT 4) | 2026-09-28 · V2.2 | PM |
-| PM agent · V1.1.x-POLISH-3 | PM agent (medium, agent of PM DataPass 1) | V1.1.x-POLISH-3: lenses, rail, single Git section, DAG button — running | 2026-09-28 · V2.3 | PM |
+| PM agent · V1.1.x-POLISH-3 | PM agent (medium, agent of PM DataPass 1) | V1.1.x-POLISH-3: lenses, rail, single Git section, DAG button — done (#177) | 2026-09-28 · V2.3 | PM |
+| PM agent · V1.1.x-POLISH-4 | PM agent (medium, agent of PM DataPass 1) | V1.1.x-POLISH-4: activity-bar icon, one-click zoom, Appearance picker, Home layout-restore — running | 2026-09-28 · V2.3 | PM |
 | COORD DataPass 4 | coordinator (low) | 1.1.x flow (WORKTREES), routine merges, context and quota watch (took over from COORD 3, hand-off handoff/sessions/2026-09-28-0135-coord-datapass-3.md) | 2026-09-28 · V2.2 | PM |
 | PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
 | PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
