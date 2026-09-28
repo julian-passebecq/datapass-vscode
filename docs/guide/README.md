@@ -8,7 +8,7 @@ uses it (page 3 in French).
 |---|---|---|
 | 1 | [Overview and vocabulary](01_OVERVIEW.md) — what DataPass is and is not; coordination repository, sub-project, component, artifact, operation, environment, module, profile, provider, pack | both |
 | 2 | [What the client's AI prepares, in order](02_WHAT_THE_AI_PREPARES.md) — AGENTS.md, project.json v5, graph.json 0.2, board, options, sheet, extensions.json, catalog, work log; minimal and full examples; mistakes DataPass refuses | the AI |
-| 3 | [Ce que Julian prépare](03_CE_QUE_JULIAN_PREPARE.md) — comptes, outils, connexions, SSH, clones, réglages, espace de travail, check-list | la personne |
+| 3 | [Ce que Julian prépare](03_CE_QUE_JULIAN_PREPARE.md) — comptes, outils, connexions, SSH, clones, réglages, espace de travail, te repérer (Home, zoom, apparence, icône DataPass), check-list | la personne |
 | 4 | [Customization](04_CUSTOMIZATION.md) — profiles, providers, domain packs, environments and the ID map, resources such as VMs (worked example with two VMs) | the AI |
 | 5 | [The loops](05_THE_LOOPS.md) — DataPass-guided JSON exchange, work orders, pull requests and Check / Get updates, the Git view | both |
 | 6 | [Ready-to-paste prompt for the client's AI](06_PROMPT_FOR_THE_CLIENT_AI.md) | the person |
