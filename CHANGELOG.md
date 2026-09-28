@@ -5,46 +5,67 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
-- **V3-POLISH-1**: the left tree's Git lens has the Git view's right-click menus (repositories, worktrees, pull
-  requests, Needs you); the right rail has an Airflow **DAG** button; the Airflow view's *Open explanation* opens the
-  DAG in the DataPass Hop view; editing a file under `.datapass/understanding/` refreshes the Hop view, its CodeLens
-  and the explained-files list; the diagram's Git badge draws its branch mark (the `⎇` character was illegible at
-  10px); the guide's known limits say VS Code does not let the rail set its own width; qa:ui journey H01 (Home, Hop,
-  diagram Git badges) on the public Hop example runs in CI.
-- **V3-HOP2 — DataPass Hop view**: an explained file (`.datapass/understanding/…`) opens with its code on the right and a narrow, vertical visual explanation on the left (steps with kind icons, inputs/outputs, columns, provenance, SQL joins drawn as a small join diagram, stale/orphan/invalid banners), synchronised both ways (cursor → step, step click → lines selected and highlighted, view scroll → lines highlighted, CodeLens `▶ step` per step). Double-clicking a diagram block whose file is explained zooms the diagram's column into the Hop view (`← Diagram` goes back); *DataPass: Explain This File* (editor context menu, editor title on explained files) opens it anywhere; a file without explanation offers *Explain this file*, a work order for the client AI (`datapass.workOrders.newForExplanation`) — DataPass never writes the JSON. The Home's Hop tile now lists the explained files. Also fixes the V3-HOP1 refresh so the understanding index is actually loaded.
-- **V3-GITDIAG** (vision §2.3): *Git on the diagram* — open pull requests whose branch is already fetched and this
-  computer's uncommitted or unpushed changes show as a small badge (count, worst CI state) on the blocks whose files
-  they touch; hovering lists them, clicking opens the PR (Git module command) or VS Code's diff. Setting
-  `datapass.diagram.gitBadges` (legend switch; also off with `datapass.overlay.enabled`). *DataPass: Show File
-  History* (editor title button for files of known repositories, Explorer / Project tree menus): the file's last 50
-  commits, each opening the diff with the previous version. Read-only, local Git only (≤ 200 files per change set).
-- **V3-FIX-ICONS**: twelve bundled Simple Icons paths (Docker, Google Cloud, Google Drive, Python, GitLab, Airflow,
-  Grafana, MongoDB, PostgreSQL, Databricks, BigQuery, GitHub Actions) had been damaged by a minifier that glued numbers
-  together, so Docker drew nothing and others drew wrong shapes. They are restored verbatim from Simple Icons 16.32.0,
-  a new test parses every diagram icon path, and Airflow container tasks show the Docker icon again.
-- **V3-AIRFLOW**: opening an Airflow DAG file (Python) shows its DAG in a new **Airflow DAG** view in the secondary
-  side bar (revealed without taking the keyboard; `datapass.airflow.autoShow`, default on): dag_id, schedule, tasks
-  with operator icons in layers (top to bottom or left to right), dependencies from `>>`/`<<`, lists, `chain()`,
-  `cross_downstream()`, `set_upstream/downstream`, TaskFlow calls, XCom arguments and task groups. Read statically
-  from the editor's text — nothing is run; loops, conditions, helper functions and computed ids are listed as "not
-  resolved statically" with their lines, never guessed (files ≤ 512 KB, ≤ 500 tasks). Click a task to select its
-  lines; the cursor in a task's code highlights it; a link opens the file's DataPass Hop explanation when the bridge
-  has one. *DataPass: Show Airflow DAG* (editor context menu of Python files, and the palette in Advanced).
-- **V3-DEMO**: `examples/v3/etl-demo`, a synthetic data-engineering demo client (fictional company, no network,
-  no credentials): an Airflow DAG, two PySpark jobs with pytest tests, three SQL models (fact + dimensions, left
-  join with COALESCE, semi-join), Bicep, a Dockerfile, and a bridge (manifest v5, graph per provider, variants
-  A local / B Databricks / C Fabric, links) with DataPass Hop explanations for all seven files. Open
-  `etl-demo.code-workspace`; `tests/etlDemo.test.ts` checks it loads with 0 errors, CI runs its pytest.
-- QA (V1.0.x-QATMP): `qa:ui` waits for VS Code's whole process tree (extension host, shared process, pty host, utility processes) to exit after closing it, killing survivors after 15 s, so removing the run root no longer races a writer (`ENOTEMPTY` on Ubuntu CI in `qa-ui.smoke`). Unit test `tests/qaProcessTree.test.ts`.
-- **V3-HOME**: *DataPass: Open Home* — a module dashboard tab (Architecture, Understand/DataPass Hop coming, Git,
-  AI & work orders, Board, Readiness & tools, Project links), each tile running an existing command, with an
-  architecture preview and your saved layouts (work views now keep the Home tab; `datapass.startupView: "home"`
-  opens a company workspace on it). New optional bridge file `.datapass/links.json` (`datapass.links` v1, schema
-  `schemas/datapass-links.schema.json`) and a *Project links* page; links open in the browser after the usual
-  confirmation, never fetched or checked by DataPass.
-- V3-HOP1: DataPass Hop contract `datapass.understanding` v1 (one bridge JSON per native file, at `.datapass/understanding/<repository key>/<native path>.json`: steps tied to line ranges, links, SQL joins, provenance), its validator and loader (states ok / stale / orphan / invalid; names indexed at refresh, files read on demand), step ↔ line helpers for V3-HOP2, schema `schemas/datapass-understanding.schema.json`, examples `examples/v3/hop` (PySpark, SQL with two joins, Airflow), docs §17 and guide page 12. No UI yet.
-- V3-THEME: the DataPass overlay has its own lighter palette (electric blue, violet, green, orange, rose; contrast-tested in light, dark and high contrast), drawn thinner, with provider icons ~15 % smaller; `datapass.overlay.enabled` hides every validated / not-validated mark and `datapass.overlay.colors` customises the hues; the Project tree uses neutral icons except where attention is needed (`datapass.tree.coloredIcons` restores colours); `datapass.diagram.theme` gives the diagram Microsoft-style light and dark surfaces; new command "DataPass: Set Code Font Size…" writes `editor.fontSize` after confirmation.
-- V3-SHELL (navigation, vision §2.1): one tree on the left with lenses (Project, Architecture, Git, AI / Work orders, Readiness, remembered per workspace; Natural tree opens the Explorer; a selection made elsewhere is revealed there), no Sub-projects/Repositories column in the Workbench (`datapass.layout.workbenchNavColumn` restores it for one release), no bottom-panel Architecture by default (`datapass.layout.architectureInPanel`; the landing opens the Workbench), a right rail mode, close buttons on the panels they close; Standard now shows the Project tree.
+## 1.1.0-rc.1 — V3 release candidate 1: one tree, DataPass Hop, Git on the diagram, a lighter look (2026-09-28)
+
+Plan: [handoff/PLAN.md](handoff/PLAN.md) § V3; product intent: [handoff/V3_PRODUCT_VISION.md](handoff/V3_PRODUCT_VISION.md).
+Merged since 1.0.0: PRs #142, #150–#154, #156–#159, #162, #166 (plus plan and hand-off PRs). No project schema
+change (`schemaVersion` stays 5); two new optional bridge files (`.datapass/links.json`,
+`.datapass/understanding/…`). Rollback: the v1.0.0 VSIX.
+
+### Navigation — find your way with one tree
+- **One tree on the left, with lenses** (V3-SHELL, PR #154): buttons switch what it lists (Project, Architecture,
+  Git, AI / Work orders, Readiness); *Natural tree* goes back to the Explorer. The Workbench no longer has its own
+  Sub-projects/Repositories column, and the bottom panel no longer shows an Architecture tab by default (settings
+  `datapass.layout.workbenchNavColumn` and `datapass.layout.architectureInPanel` bring them back for one release).
+  A thin **right rail** of icon buttons opens the details, AI and Git panels; close buttons sit on the panel they close.
+- **DataPass Home** (V3-HOME, PR #153): *DataPass: Open Home* shows one tile per module (Architecture, DataPass Hop,
+  Git, AI & work orders, Board, Readiness & tools, Project links) with a preview of the diagram and your saved
+  layouts. `datapass.startupView: "home"` opens a company workspace on it.
+- The Git lens has the same right-click menus as the Git view (PR #166).
+
+### DataPass Hop — understand a file
+- **Code on the right, its visual explanation on the left** (V3-HOP1 #151, V3-HOP2 #159): a file explained by the
+  client AI (`.datapass/understanding/…`, contract `datapass.understanding` v1) opens with a narrow, vertical
+  picture of its steps — inputs and outputs, columns, provenance, SQL joins drawn as a small join diagram. The two
+  sides follow each other: move the cursor and the step lights up; click a step and its lines are selected.
+  DataPass says when an explanation is out of date or no longer matches a file.
+- Double-click a diagram block whose file is explained to zoom into it; *DataPass: Explain This File* opens it from
+  the editor. A file without an explanation offers *Explain this file*, a work order for the client AI — DataPass
+  never writes the explanation itself. Editing an explanation refreshes the view at once (PR #166).
+- **Airflow DAGs** (V3-AIRFLOW, PR #158): opening an Airflow Python file shows its tasks and dependencies in an
+  **Airflow DAG** view, read from the text without running anything; what cannot be read safely is listed, never
+  guessed. The right rail has a **DAG** button, and *Open explanation* jumps to the file's Hop view (PR #166).
+
+### Git — see changes where they land
+- **Git on the diagram** (V3-GITDIAG, PR #157): open pull requests and this computer's uncommitted or unpushed
+  changes show as a small badge on the blocks whose files they touch; hover to list them, click to open the pull
+  request or the diff (`datapass.diagram.gitBadges`). The badge now draws a clear branch mark (PR #166).
+- **Show File History**: a file's last 50 commits, each opening the diff with the previous version. The editor title
+  button for it was dropped by a duplicated menu entry in the manifest; it is back in this release (V3-RC1).
+
+### Appearance — lighter and switchable
+- **A lighter DataPass overlay** (V3-THEME, PR #152): its own colours (electric blue, violet, green, orange, rose),
+  thinner lines, smaller provider icons; `datapass.overlay.enabled` hides every validated / not-validated mark and
+  `datapass.overlay.colors` changes the hues. The Project tree uses neutral icons except where something needs you
+  (`datapass.tree.coloredIcons` restores colours). `datapass.diagram.theme` gives the diagram Microsoft-style light
+  and dark surfaces. *DataPass: Set Code Font Size…* changes the editor font after asking.
+- **Provider icons fixed** (V3-FIX-ICONS, PR #162): twelve bundled icons (Docker, Python, GitLab, Airflow, Grafana,
+  MongoDB, PostgreSQL, Databricks and others) drew wrong shapes or nothing; they are restored and tested.
+
+### Links — one page for a project's addresses
+- **Project links page** (V3-HOME, PR #153): an optional `.datapass/links.json` (`datapass.links` v1) lists a
+  project's web addresses (portals, dashboards, documentation). Links open in the browser after the usual
+  confirmation; DataPass never fetches or checks them.
+
+### Demo — a project to try it all
+- **ETL demo client** (V3-DEMO, PR #156): `examples/v3/etl-demo`, a fictional data-engineering project (an Airflow
+  DAG, PySpark jobs with tests, SQL models, Bicep, a Dockerfile) with a bridge and Hop explanations for all seven
+  files. Open `etl-demo.code-workspace`; no network or credentials needed.
+
+### Quality
+- `qa:ui` waits for VS Code's whole process tree to exit before cleaning up (V1.0.x-QATMP, PR #150), and runs a new
+  journey H01 (Home, Hop, Git badges on the diagram) in CI (PR #166). The V3 direction for the semantic explorer and
+  Git is recorded in [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md) (PR #142).
 
 ## 1.0.0 — V1: the daily loop on real projects, qualified (2026-09-27)
 
