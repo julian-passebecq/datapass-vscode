@@ -106,7 +106,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 | V3-POLISH-2 | Later polish: hide the right rail's Airflow DAG button when the Airflow module is off | 1.1.x, logged 2026-09-28 | PM agent | done (#170) |
 | V3-RC1 | 1.1.0-rc.1 prerelease: version bump, CHANGELOG, full qa:ui | after POLISH-1 | PM agent · V3-RC1 | done (#168; prerelease v1.1.0-rc.1) |
 | V1.1.x-QAEXIT | qa:ui full run once exited 0 after J10 without writing a report: every non-pass must exit non-zero | 1.1.x, logged 2026-09-28 | PM agent | done (#170) |
-| V1.1.x-WORKTREES | Prune stale worktrees under `.claude/worktrees`; first check that no live session owns them (lucid-lewin-3d1d9c holds main) | 1.1.x, logged 2026-09-28 | — | to do |
+| V1.1.x-WORKTREES | Prune stale worktrees under `.claude/worktrees`; first check that no live session owns them (lucid-lewin-3d1d9c holds main) | 1.1.x, logged 2026-09-28 | COORD 4 + PM | done (15 under .claude + wt-e/perf/qa1 removed) |
 
 ## Team (rules V2, from 2026-09-26 23:15 — every live session on DataPass)
 
