@@ -32,6 +32,12 @@ export type GitNode =
   | { t: "link"; id: string; r: GitRepoReport; linkId: "pull-requests" | "pipelines"; label: string; description?: string }
   | { t: "others"; id: string };
 
+/** V3-POLISH-1: the left tree's Git lens wraps a Git node as `{ t: "git", g }`; its right-click commands unwrap it. */
+export function gitNodeArg(v: unknown): unknown {
+  const o = v && typeof v === "object" ? v as { t?: unknown; g?: unknown } : undefined;
+  return o?.t === "git" && o.g && typeof o.g === "object" ? o.g : v;
+}
+
 const icon = ([id, color]: [string, string?]) => new vscode.ThemeIcon(id, color ? new vscode.ThemeColor(color) : undefined);
 const ERR = "problemsErrorIcon.foreground", WARN = "problemsWarningIcon.foreground", OK = "testing.iconPassed", MUTED = "disabledForeground";
 

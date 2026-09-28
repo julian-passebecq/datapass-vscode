@@ -1686,102 +1686,102 @@
         },
         {
           "command": "datapass.getUpdates",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok.behind/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo.project.ok.behind/",
           "group": "inline@1"
         },
         {
           "command": "datapass.git.openSourceControl",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo..*.ok/",
           "group": "inline@2"
         },
         {
           "command": "datapass.git.openOnWeb",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.web/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo..*.web/",
           "group": "inline@3"
         },
         {
           "command": "datapass.checkForUpdates",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo.project.ok/",
           "group": "1_git@1"
         },
         {
           "command": "datapass.getUpdates",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo.project.ok.behind/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo.project.ok.behind/",
           "group": "1_git@2"
         },
         {
           "command": "datapass.git.fetchRepository",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo..*.ok/",
           "group": "1_git@3"
         },
         {
           "command": "datapass.git.openInNewWindow",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.ok/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo..*.ok/",
           "group": "1_git@4"
         },
         {
           "command": "datapass.git.copyBranch",
-          "when": "view == datapass.git && viewItem =~ /^gitRepo..*.branch/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo..*.branch/",
           "group": "2_copy@1"
         },
         {
           "command": "datapass.git.copyCleanupCommand",
-          "when": "view == datapass.git && viewItem =~ /^gitWorktree.cleanup/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitWorktree.cleanup/",
           "group": "inline@1"
         },
         {
           "command": "datapass.git.openSourceControl",
-          "when": "view == datapass.git && viewItem =~ /^gitWorktree/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitWorktree/",
           "group": "1_git@1"
         },
         {
           "command": "datapass.git.openInNewWindow",
-          "when": "view == datapass.git && viewItem =~ /^gitWorktree/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitWorktree/",
           "group": "inline@2"
         },
         {
           "command": "datapass.git.copyCleanupCommand",
-          "when": "view == datapass.git && viewItem =~ /^gitWorktree.cleanup/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitWorktree.cleanup/",
           "group": "1_git@2"
         },
         {
           "command": "datapass.git.copyBranch",
-          "when": "view == datapass.git && viewItem =~ /^gitWorktree.*.branch/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitWorktree.*.branch/",
           "group": "2_copy@1"
         },
         {
           "command": "datapass.git.openCiRun",
-          "when": "view == datapass.git && viewItem =~ /^gitPr.failing/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr.failing/",
           "group": "inline@1"
         },
         {
           "command": "datapass.git.openPullRequest",
-          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr/",
           "group": "inline@2"
         },
         {
           "command": "datapass.git.openCiRun",
-          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr/",
           "group": "1_git@1"
         },
         {
           "command": "datapass.git.copyBranch",
-          "when": "view == datapass.git && viewItem =~ /^gitPr/",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr/",
           "group": "2_copy@1"
         },
         {
           "command": "datapass.workOrders.newFromFailingPr",
-          "when": "view == datapass.git && viewItem =~ /^gitPr\\.failing/ && !datapass.hidden.ai.agent",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr\\.failing/ && !datapass.hidden.ai.agent",
           "group": "2_workorder@1"
         },
         {
           "command": "datapass.workOrders.newFromFailingPr",
-          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-ci\\.project/ && !datapass.hidden.ai.agent",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitNeed\\.open-ci\\.project/ && !datapass.hidden.ai.agent",
           "group": "2_workorder@1"
         },
         {
           "command": "datapass.workOrders.show",
-          "when": "view == datapass.git && viewItem =~ /^gitNeed\\.open-work-order/ && !datapass.hidden.ai.agent",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitNeed\\.open-work-order/ && !datapass.hidden.ai.agent",
           "group": "inline@1"
         },
         {

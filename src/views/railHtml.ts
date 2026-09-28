@@ -18,6 +18,7 @@ export const RAIL_BUTTONS: readonly RailButton[] = [
   { id: "details", glyph: "ⓘ", label: "Details", title: "The selected component or sub-project" },
   { id: "ai", glyph: "✦", label: "AI", title: "The AI view: guided exchange, work orders, manual routes" },
   { id: "git", glyph: "⑂", label: "Git", title: "The Git lens of the left tree: Needs you, repositories, pull requests" },
+  { id: "airflow", glyph: "⋔", label: "DAG", title: "The Airflow DAG view: the tasks and dependencies of the Airflow file in the editor" },
   { id: "copyForAi", glyph: "⇪", label: "Export", title: "Copy a DataPass file with its context for your AI" },
   { id: "importFromAi", glyph: "⇩", label: "Import", title: "Paste your AI's answer (reviewed before anything is written)" },
   { id: "workViews", glyph: "▤", label: "Views", title: "Work views: saved layouts, sub-projects and other projects" },

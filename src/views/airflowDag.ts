@@ -6,7 +6,7 @@
  * nothing is run). With `datapass.airflow.autoShow` (default on) the view is revealed without
  * taking the keyboard (`preserveFocus`, handoff/MEMORY.md). Clicking a task selects its lines in
  * the editor; moving the cursor into a task's code highlights the task. When the bridge holds a
- * DataPass Hop explanation for the file (V3-HOP1), a link opens it.
+ * DataPass Hop explanation for the file (V3-HOP1), a link opens it in the Hop view (V3-HOP2).
  *
  * Messages from the webview are untrusted: they carry a task id or line numbers, which are looked
  * up again in this reading of the file.
@@ -141,10 +141,15 @@ export class AirflowDagView implements vscode.WebviewViewProvider, vscode.Dispos
   }
 
   async openExplanation(): Promise<void> {
-    const file = this.current?.explanation;
-    if (!file) return;
-    // V3-HOP2 renders the explanation beside the code; until then the JSON opens beside.
-    await vscode.window.showTextDocument(vscode.Uri.file(file), { viewColumn: vscode.ViewColumn.Beside, preview: true });
+    const c = this.current;
+    if (!c?.explanation) return;
+    // V3-POLISH-1: the DataPass Hop view (V3-HOP2) — the DAG's visual explanation left, its code right.
+    // Without the Hop command (an older host in tests), the explanation JSON opens beside.
+    if ((await vscode.commands.getCommands(true)).includes("datapass.hop.explain")) {
+      await vscode.commands.executeCommand("datapass.hop.explain", c.uri);
+      return;
+    }
+    await vscode.window.showTextDocument(vscode.Uri.file(c.explanation), { viewColumn: vscode.ViewColumn.Beside, preview: true });
   }
 
   private async revealLines(uri: vscode.Uri, start: number, end: number): Promise<void> {

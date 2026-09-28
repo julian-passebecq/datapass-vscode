@@ -5,6 +5,12 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- **V3-POLISH-1**: the left tree's Git lens has the Git view's right-click menus (repositories, worktrees, pull
+  requests, Needs you); the right rail has an Airflow **DAG** button; the Airflow view's *Open explanation* opens the
+  DAG in the DataPass Hop view; editing a file under `.datapass/understanding/` refreshes the Hop view, its CodeLens
+  and the explained-files list; the diagram's Git badge draws its branch mark (the `⎇` character was illegible at
+  10px); the guide's known limits say VS Code does not let the rail set its own width; qa:ui journey H01 (Home, Hop,
+  diagram Git badges) on the public Hop example runs in CI.
 - **V3-HOP2 — DataPass Hop view**: an explained file (`.datapass/understanding/…`) opens with its code on the right and a narrow, vertical visual explanation on the left (steps with kind icons, inputs/outputs, columns, provenance, SQL joins drawn as a small join diagram, stale/orphan/invalid banners), synchronised both ways (cursor → step, step click → lines selected and highlighted, view scroll → lines highlighted, CodeLens `▶ step` per step). Double-clicking a diagram block whose file is explained zooms the diagram's column into the Hop view (`← Diagram` goes back); *DataPass: Explain This File* (editor context menu, editor title on explained files) opens it anywhere; a file without explanation offers *Explain this file*, a work order for the client AI (`datapass.workOrders.newForExplanation`) — DataPass never writes the JSON. The Home's Hop tile now lists the explained files. Also fixes the V3-HOP1 refresh so the understanding index is actually loaded.
 - **V3-GITDIAG** (vision §2.3): *Git on the diagram* — open pull requests whose branch is already fetched and this
   computer's uncommitted or unpushed changes show as a small badge (count, worst CI state) on the blocks whose files

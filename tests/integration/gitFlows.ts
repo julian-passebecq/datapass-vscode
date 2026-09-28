@@ -88,6 +88,9 @@ export function registerGitFlows(getApi: () => DataPassTestApi): void {
     assert.equal(real(vscode.Uri.parse(win.openedFolders[0]!).fsPath), real(env().wip), win.openedFolders[0]);
     const branch = await withUi([], () => run("datapass.git.copyBranch", "pipeline", 38));
     assert.equal(branch.clipboard, "claude/fix-lint");
+    // V3-POLISH-1: the left tree's Git lens hands its right-click commands a wrapped Git node.
+    const lensed = await withUi([], () => run("datapass.git.copyBranch", { t: "git", id: "git/pr", g: { t: "pr", id: "pr", r: { key: "pipeline" }, pr: { number: 38 } } }));
+    assert.equal(lensed.clipboard, "claude/fix-lint");
     await withUi([], () => run("datapass.git.openSourceControl", "pipeline"));
     const bad = await withUi([], () => run("datapass.git.openPullRequest", "pipeline", 999), { allowErrors: true });
     assert.ok(bad.errors.some(e => /not listed/.test(e)), bad.errors.join(" / "));

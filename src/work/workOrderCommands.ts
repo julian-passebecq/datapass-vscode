@@ -57,6 +57,7 @@ import { UserFacingError, confirmModal, errorMessage, guarded, jsonBytes, readBo
 import { MAX_NATIVE_BYTES, understandingSha256 } from "../core/understanding/load";
 import { lineCount, normaliseNativeText } from "../core/understanding/contract";
 import { explanationOrderDraft, explanationPathOf } from "../views/hopState";
+import { gitNodeArg } from "../views/gitTree";
 
 // ------------------------------------------------------------------ drafts
 
@@ -1013,6 +1014,7 @@ export function registerWorkOrderCommands(context: vscode.ExtensionContext, sess
   reg("datapass.workOrders.refresh", async () => { await service.reload(); });
   reg("datapass.workOrders.show", async (arg?: unknown) => {
     // An order id, or the Git view's "needs you" node (rule 8) whose order it names.
+    arg = gitNodeArg(arg);
     const node = arg && typeof arg === "object" ? arg as { t?: string; n?: { order?: unknown } } : undefined;
     const id = node?.t === "need" ? node.n?.order : arg;
     if (typeof id === "string" && ORDER_ID_RE.test(id)) { await service.reload(); await service.select(id); }
@@ -1124,7 +1126,8 @@ export function registerWorkOrderCommands(context: vscode.ExtensionContext, sess
       note: `DataPass Hop: the AI writes ${explanationPathOf(at.repositoryKey, at.nativePath)}; nothing is written until you confirm the order.` });
   });
   reg("datapass.workOrders.newFromFailingPr", async (repoKey?: unknown, prNumber?: unknown) => {
-    // From the Git view: a PR node, a "needs you" node, or (key, number).
+    // From the Git view (or the left tree's Git lens): a PR node, a "needs you" node, or (key, number).
+    repoKey = gitNodeArg(repoKey);
     const node = repoKey && typeof repoKey === "object" ? repoKey as { t?: string; r?: { key?: string }; pr?: { number?: number }; n?: { repoKey?: string; pr?: number } } : undefined;
     const key = node?.t === "pr" ? node.r?.key : node?.t === "need" ? node.n?.repoKey : typeof repoKey === "string" ? repoKey : undefined;
     const number = node?.t === "pr" ? node.pr?.number : node?.t === "need" ? node.n?.pr : typeof prNumber === "number" ? prNumber : Number(prNumber);

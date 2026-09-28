@@ -114,6 +114,8 @@ export class ShellService implements vscode.Disposable {
       case "details": return this.expand("datapass.details");
       case "ai": return this.expand("datapass.aiExchange");
       case "git": return this.chooseLens("git");
+      // V3-POLISH-1: unfold the panel on the Airflow DAG view, then read the active editor.
+      case "airflow": await this.expand("datapass.airflowDag"); await vscode.commands.executeCommand("datapass.showAirflowDag"); return;
       case "copyForAi": await vscode.commands.executeCommand("datapass.copyForAi"); return;
       case "importFromAi": await vscode.commands.executeCommand("datapass.importFromAi"); return;
       case "workViews": await vscode.commands.executeCommand("datapass.openSwitcher"); return;
