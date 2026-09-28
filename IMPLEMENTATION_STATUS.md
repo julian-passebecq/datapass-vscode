@@ -1,4 +1,20 @@
-# Implementation Status — 1.0.0-rc.1: V1 release candidate
+# Implementation Status — 1.1.0-rc.1: V3 release candidate 1
+
+Date: 2026-09-28. Version `1.1.0-rc.1` (prerelease; 1.0.0 is the current release) — the V3 wave merged since 1.0.0:
+V3-SHELL (#154), V3-HOME (#153), V3-HOP1 (#151), V3-HOP2 (#159), V3-THEME (#152), V3-AIRFLOW (#158), V3-GITDIAG (#157),
+V3-FIX-ICONS (#162), V3-DEMO (#156), V3-POLISH-1 (#166), QATMP (#150) and V3-RC1. Plan: [handoff/PLAN.md](handoff/PLAN.md)
+§ V3; intent: [handoff/V3_PRODUCT_VISION.md](handoff/V3_PRODUCT_VISION.md); user-facing detail: [CHANGELOG.md](CHANGELOG.md)
+§ 1.1.0-rc.1.
+
+- **Navigation**: one left tree with lenses, a right rail, DataPass Home (module tiles, saved layouts).
+- **DataPass Hop**: `datapass.understanding` v1 explanations shown beside the code, synced both ways; Airflow DAG view.
+- **Git**: PR and local-change badges on diagram blocks; Show File History.
+- **Appearance**: lighter switchable overlay, neutral tree icons, diagram light/dark themes, code font preset, icons fixed.
+- **Links and demo**: `.datapass/links.json` project links page; `examples/v3/etl-demo`.
+- V3-RC1: merged a duplicated `editor/title` menu in `package.json` that hid the Show File History button;
+  `tests/packageManifestKeys.test.ts` now rejects duplicate manifest keys.
+
+## 1.0.0-rc.1: V1 release candidate
 
 Date: 2026-09-27. Version `1.0.0-rc.1` — packages FIX-QAUI (PR #100), V1-SURF (PR #105), V1-LOAD (PR #102),
 V1-FRESH (PR #103), V1-TEST (PR #104, #108) and V1-RC, from main per [handoff/PLAN.md](handoff/PLAN.md) § V1 → 1.0.0.
