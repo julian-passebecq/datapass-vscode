@@ -170,6 +170,32 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-09-28 (retour rc.1)
+
+From Julian's check of 1.1.0-rc.1 (screenshots relayed by the PM). Praise first: DataPass Hop "makes much more sense" — keep that direction.
+
+| Idée | Target | Status |
+|---|---|---|
+| The tree lenses are hard to find: the buttons only show while hovering the view title, some fall into "…", and from VS Code's Explorer nothing points to them | 1.1.0 | V1.1.x-POLISH-3: a first tree row "Showing: <lens> ▾" (click to switch), a status-bar item "DataPass tree: <lens>" that works from any view (opens the DataPass side bar and the lens picker), a one-time hint when a project opens while the Explorer shows |
+| The right rail cannot really be collapsed | 1.1.0 | V1.1.x-POLISH-3: the rail folds down to VS Code's minimum side-bar width (170 px) and Expand gives ~470 px back. Not possible from an extension: a thinner rail, reading or restoring an exact width (see `src/core/windows/railFold.ts`) |
+| Two "Git" sections open at once (Git lens + separate Git view), "why same icons?" | 1.1.0 | V1.1.x-POLISH-3: the separate Git view hides while the Git lens shows; commands unchanged |
+| The rail's DAG button showed "Not an Airflow DAG" for the file in the editor and unfolded the whole panel stack | 1.1.0 | V1.1.x-POLISH-3: the button finds the project's DAG files statically (one: opened; several: picked; none: said plainly) and unfolds the DAG view alone |
+| "Je tombe toujours sur IA": every rail button showed the AI view first | 1.1.0 | V1.1.x-POLISH-3: each rail button unfolds its own view alone (Details, AI, DAG); Expand brings the full panel |
+| A thin icon bar on the **left** as well; keep the thin one on the right, or optionally replace the right rail with a top button that opens the AI menu — all configurable (modular) | V4 | idea |
+| Full rail redesign (what each button opens, order, placement) | V4 | idea |
+| Airflow DAG tasks with shapes and icons per operator type (sensor, branch, transfer, compute…) instead of identical rectangles, possibly a horizontal layout — configurable | V4 | idea |
+| Choose where the Airflow DAG view lives: its own editor tab, the bottom panel or the right rail (a built-in "placement" option, part of the modular layout) | V4 | idea |
+| Remaining rc.1 remarks: the DataPass activity-bar icon disappeared and is too discreet; code zoom and the theme setting are hard to find; a Home button that restores the project layout | later package | to fix |
+| Preset window layouts per project step, opened from a task in Home | V4 | idea |
+| The Airflow DAG view works but is "pas très pratique": improve its UX | V4 | idea |
+| **Standing test gate:** before any test session Julian runs, deliver a guided tutorial with screenshots showing where everything is (theme, zoom, Home, lenses…) and every shortcut; for V4, once V4 ships and before his test | every test session; V4 before Julian's test | rule |
+
+## Décisions de Julian — 2026-09-28 (V4)
+
+1. **V4 starts now**, without waiting for a final 1.1.0: 1.1.0-rc.1 stays the working version and fixes land along the way.
+2. **First V4 product: DataPass V4 = understanding a real project** (file roles, milestones, lineage, findings, SQL then PySpark analyzers), extending DataPass Hop.
+3. **Codex is the V4 tech lead**; coding waits for its first ADRs.
+
 ## 4c. Julian's decisions (2026-09-27, after 1.0)
 
 Recorded by the PM. No new package starts before GPT 6 Pro's answer on the V3 architecture.

@@ -1056,7 +1056,7 @@
           "id": "datapass.git",
           "name": "Git",
           "type": "tree",
-          "when": "!datapass.hidden.view.git"
+          "when": "!datapass.hidden.view.git && datapass.tree.lens != git"
         },
         {
           "id": "datapass.work",
@@ -1085,7 +1085,7 @@
         {
           "id": "datapass.rail",
           "name": "Rail",
-          "type": "webview",
+          "type": "tree",
           "when": "datapass.rail && !datapass.hidden.view.rail"
         },
         {
@@ -1093,7 +1093,7 @@
           "name": "AI",
           "type": "webview",
           "initialSize": 3,
-          "when": "!datapass.rail && !datapass.hidden.view.aiExchange"
+          "when": "!datapass.rail && !datapass.hidden.view.aiExchange && !datapass.rail.hide.aiExchange"
         },
         {
           "id": "datapass.agentPanel",
@@ -1101,14 +1101,14 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 1,
-          "when": "!datapass.rail && !datapass.hidden.view.agentPanel"
+          "when": "!datapass.rail && !datapass.hidden.view.agentPanel && !datapass.rail.hide.agentPanel"
         },
         {
           "id": "datapass.details",
           "name": "Details",
           "type": "webview",
           "initialSize": 1,
-          "when": "!datapass.rail && !datapass.hidden.view.details"
+          "when": "!datapass.rail && !datapass.hidden.view.details && !datapass.rail.hide.details"
         },
         {
           "id": "datapass.airflowDag",
@@ -1116,7 +1116,7 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 2,
-          "when": "!datapass.rail && !datapass.hidden.view.airflowDag"
+          "when": "!datapass.rail && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag"
         }
       ]
     },
@@ -1524,8 +1524,13 @@
         },
         {
           "command": "datapass.rail.collapse",
-          "when": "view == datapass.aiExchange || view == datapass.details || view == datapass.agentPanel",
+          "when": "view == datapass.aiExchange || view == datapass.details || view == datapass.agentPanel || view == datapass.airflowDag",
           "group": "navigation@90"
+        },
+        {
+          "command": "datapass.rail.expand",
+          "when": "view == datapass.aiExchange && datapass.rail.solo || view == datapass.details && datapass.rail.solo || view == datapass.airflowDag && datapass.rail.solo",
+          "group": "navigation@91"
         },
         {
           "command": "datapass.layout.closeRightPanel",

@@ -5,6 +5,7 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- Julian's rc.1 check (V1.1.x-POLISH-3): the tree's lens is named in a first row "Showing: <lens> ▾" and in a status-bar item "DataPass tree: <lens>" (both switch it, from any view), with a one-time hint when a project opens while the Explorer shows; the separate Git view hides while the Git lens shows; the right rail is a native tree that folds down to VS Code's minimum width (170 px) and each of its buttons unfolds its own view alone; the DAG button finds the project's Airflow DAG files (read, never run) when the file in the editor is not one.
 - qa:ui exits non-zero on every outcome other than a report holding every journey (an early end, a missing or partial report, an unhandled rejection); VS Code's close is bounded so a stuck close no longer lets Node drain and exit 0 (V1.1.x-QAEXIT). The right rail hides its DAG button when the mode hides the Airflow DAG view or the project switches the Airflow module off (V3-POLISH-2).
 
 ## 1.1.0-rc.1 — V3 release candidate 1: one tree, DataPass Hop, Git on the diagram, a lighter look (2026-09-28)

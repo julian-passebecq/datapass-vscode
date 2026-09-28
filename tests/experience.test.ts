@@ -13,6 +13,7 @@ import { experienceTooltip, hiddenSurfaces, isVisible, overridesFor, parsePreset
 import { DEFAULT_PRESET, hiddenKey, PRESET_IDS, SURFACES, SURFACE_IDS } from "../src/core/experience/surfaces";
 import { alternativesByComponent } from "../src/core/experience/alternatives";
 import { optionsA } from "./fixtures/v3/researchOptions";
+import { RAIL_PANEL_VIEWS, soloWhenSuffix } from "../src/core/windows/railSolo";
 
 const RAW = readFileSync("resources/experience/presets.json", "utf8");
 const presets = () => parsePresets(RAW);
@@ -124,7 +125,9 @@ test("experience: every contributed view has a surface id and is gated by its wh
     const s = surfaceViews.find(x => x.viewId === v.id)!;
     // V3-SHELL: a layout key may come first (bottom-panel Architecture off by default; rail mode swaps the right-side views).
     const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && " };
-    assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}`, `${v.id} is shown unless its mode (or the layout) hides it`);
+    // V1.1.x-POLISH-3: a layout key may also come last (the Git view hides while the Git lens repeats it; a rail button unfolds its own view alone).
+    const after: Record<string, string> = { "datapass.git": " && datapass.tree.lens != git", ...Object.fromEntries(RAIL_PANEL_VIEWS.map(x => [`datapass.${x}`, soloWhenSuffix(x)])) };
+    assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}${after[v.id] ?? ""}`, `${v.id} is shown unless its mode (or the layout) hides it`);
   }
   assert.equal(new Set(SURFACE_IDS).size, SURFACE_IDS.length, "surface ids are unique");
 });
