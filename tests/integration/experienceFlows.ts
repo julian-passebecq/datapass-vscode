@@ -121,11 +121,14 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     // The Git view (visible in Vanilla) is where Restricted Mode and repository blockers show.
     const git = await api().git.renderTree();
     assert.ok(git.length > 0);
+    // V3-POLISH-2: Vanilla hides the Airflow DAG view, so the rail offers no DAG button.
+    assert.ok(!api().shell.railButtons().includes("airflow"), api().shell.railButtons().join(", "));
     record("modes.vanilla", { panes: panes(), sections });
   }, ONLY);
 
   test("0.22 modes: Advanced shows everything as in 0.20", async () => {
     await mode("advanced");
+    assert.ok(api().shell.railButtons().includes("airflow"), "Advanced shows the DAG button");
     await run("datapass.project.focus");
     await waitFor("the Project tree", () => panes().includes("project"));
     await run("datapass.galaxy.focus");

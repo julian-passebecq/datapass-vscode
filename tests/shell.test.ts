@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { DEFAULT_LENS, LENS_INFO, LENS_STATE_KEY, LensStore, TREE_LENSES, lensForScreen, parseLens, type LensMemento } from "../src/core/windows/treeLens";
-import { RAIL_BUTTONS, RAIL_BUTTON_IDS, railHtml } from "../src/views/railHtml";
+import { RAIL_BUTTONS, RAIL_BUTTON_IDS, railButtonsShown, railHtml } from "../src/views/railHtml";
 
 const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 
@@ -98,4 +98,16 @@ test("shell: the rail lists its buttons once each, escaped, behind a nonce", () 
   assert.match(html, /<script nonce="abc123">/);
   for (const b of RAIL_BUTTONS) assert.ok(html.includes(`data-id="${b.id}"`), b.id);
   assert.doesNotMatch(html, /https?:\/\//, "no remote resource");
+});
+
+test("shell: the rail's DAG button follows the Airflow DAG view and the Airflow module (V3-POLISH-2)", () => {
+  const all = () => true;
+  const noDag = (surface: string) => surface !== "view.airflowDag";
+  assert.deepEqual(railButtonsShown({ shows: all, airflowModule: true }), RAIL_BUTTON_IDS);
+  assert.ok(!railButtonsShown({ shows: noDag, airflowModule: true }).includes("airflow"), "view hidden by the mode");
+  assert.ok(!railButtonsShown({ shows: all, airflowModule: false }).includes("airflow"), "module off");
+  assert.equal(railButtonsShown({ shows: noDag, airflowModule: false }).length, RAIL_BUTTON_IDS.length - 1, "only the DAG button goes");
+  const html = railHtml("vscode-resource:", "abc123", railButtonsShown({ shows: all, airflowModule: false }));
+  assert.doesNotMatch(html, /data-id="airflow"/);
+  assert.match(html, /data-id="git"/);
 });
