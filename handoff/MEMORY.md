@@ -10,3 +10,4 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-27 (PM): background PM agents (Agent tool) need no chip click and suit night work; chips need Julian awake to click.
 - 2026-09-27 (assistant 2): commands for Julian are PowerShell (`& "exe" args`) or launched for him via Start-Process; a bare "exe" --flag fails.
 - 2026-09-28 (coordinator): open PLAN-only PRs go DIRTY whenever an agent merges its own PLAN row; stack further PLAN edits on the open PR's branch instead of opening a second PR.
+- 2026-09-28 (coordinator): before pushing onto a PLAN PR branch, check the PR is still open — a push after merge recreates the deleted branch; Team rows share the `PM agent · X` text with the V3 Owner column, anchor inserts on the role column too.
