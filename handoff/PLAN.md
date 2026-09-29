@@ -286,7 +286,8 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 6 (local_264e3da2) | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1400-pm-datapass-5.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 7 (to start) | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 6 (local_264e3da2) | global PM, handed off at 241 K | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1400-pm-datapass-5.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
 | PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |

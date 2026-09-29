@@ -15,3 +15,4 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-28 (PM): low role sessions that read screenshots reach 150 K in a few hours; expect one assistant hand-off per Julian test session.
 
 - 2026-09-29 (assistant 6): a clicked chip becomes a session titled like the chip: check `list_sessions limit 30` (default 20 hides idle ones) before reminding Julian; chip_watch re-emits reported chips, so treat its events as "offered" only. Check `get_usage self` every ~10 turns: assistant 6 reached 235 K against a 150 K limit.
+- 2026-09-29 (PM 6): every new Common package edits the same shared registries (PACKAGES.md, package.json, check-packed-consumers, contracts.json), so after each Common merge the next MR usually conflicts: re-check with `git merge-tree` after every merge. `glab mr merge --sha` needs the full 40-character SHA. Edit PLAN.md with the Edit tool or sed, never PowerShell Set-Content (BOM + CRLF rewrite the whole file).
