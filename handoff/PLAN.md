@@ -160,7 +160,8 @@ Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decisio
 |---|---|---|---|---|---|
 | PM DataPass 3 | global PM (Opus medium) | § V4-RUN, phase 0, merges (hand-off 2026-09-29-1045-pm-datapass-2.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM ASSISTANT DataPass 6 | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
-| COORD DataPass 5 | coordinator (Sonnet low) | § V4-RUN flow, routine merges, quota/context watch | — | 2026-09-29 · V3.6 | PM |
+| COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
+| CODER V4 C5b | coder (Opus medium) | C5b realizations + navigation, common | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 API0 | coder (Opus medium) | API0 provider transport, cloud `packages/provider-readers` | 20 | 2026-09-29 · V3.6 | COORD 5 |
 | CODER V4 UIH1 | coder (Opus medium) | UIH1 graph canvas, cloud `packages/workbench-ui` | 25 | 2026-09-29 · V3.6 | COORD 5 |
 | CODER V4 UIH2 | coder (Opus medium) | UIH2 notebook view + runtime picker + panes, cloud `packages/workbench-ui` | 30 | 2026-09-29 · V3.6 | COORD 5 |
@@ -174,7 +175,7 @@ Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decisio
 | PM subagent · OBSG | PM subagent (Sonnet) | OBSG strip Grafana from central docs | 3 | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 4 | coordinator (Opus low) | idle since 28 Sept; retired when COORD 5 starts | — | 2026-09-28 · V2.2 | PM |
 
-Retired on 2026-09-29: PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
+Retired on 2026-09-29: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
