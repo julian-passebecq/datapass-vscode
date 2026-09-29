@@ -265,12 +265,16 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | PM subagent · GAPREV (done) | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md, § V4-GAP | 3 | 2026-09-29 · V3.6 | PM |
-| CODER V4 ADOPT-A (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
-| CODER V4 ADOPT-C (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
+| CODER V4 ADOPT-A (done, !38 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
+| CODER V4 ADOPT-B | coder (Opus medium) | § V4-NOCODEX ADOPT-B, common | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 L1 | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
+| CODER V4 G1 | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 ADOPT-C | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
 | PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
 | PM subagent · OBSC (merged !40) | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · CAPM1 | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
-| CODER V4 G1 (chip) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ (chip) | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
