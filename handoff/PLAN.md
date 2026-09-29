@@ -191,6 +191,18 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | SINK1 | optional export adapters: CSV, Prometheus text, Grafana dashboard JSON | cloud | 10 | Sonnet | W3 |
   - ETA impact: core V1 unchanged (~17:55 UTC on 30 Sept). Full V1 moves from ~04:00 to ~08:00 UTC on 1 Oct, still before the 12:00 UTC reset. The gap review (below) may add more.
 - **V1 gap review (Julian's "PM bis", 2026-09-29):** an independent read-only review of the whole V1 plan by an auditor subagent of PM DataPass 4 (Opus medium) → `handoff/reviews/2026-09-29-v1-gap-review.md`. The PM turns its findings into packages or deferrals here, and they go into the next Codex digest.
+- **§ V4-PORT: PM decision on Julian idea 15 (PM DataPass 5, 2026-09-29; Julian delegated it to the PM and the tech lead; recorded for Codex review).** Sources: `handoff/reviews/2026-09-29-doris-exploration.md`, `handoff/reviews/2026-09-29-portability-exploration.md`.
+  - **Doris: inspire only.** No integration or adaptation, and no Doris dialect or backend. Its pattern (shared semantics, common operators, one Scan/Sink adapter per format) becomes the model for DataPass portability. A local engine for testing variants (DuckDB vs Doris) is reconsidered after V2.
+  - **Where a variant lives: layered, with the most specific level winning.** An **architecture profile** (table format, catalog, engine, platform, IaC provider set) is set at the **cloud-project level** as the default. A **segment or sub-architecture** (layer or domain, as in the project model's roles, layers and segments) may override it, and a **table** may carry only an override (for example one table stays Delta while its segment moves to Iceberg). Resolution order: table, then segment, then project. It extends the 0.25.0 switchable variants from "project variant" to "architecture variant", with the same selection UI and `selectedVariant`.
+  - **Rejected:** converting data ourselves (XTable embedded, an engine) and a home-made catalog.
+  - **Path, after the V1 run (never in the current quota):**
+    | Package | Content | est. M | Milestone |
+    |---|---|---|---|
+    | PORT0 | ADR "architecture profile and portability layers" (the decisions above) in dataprojects `technical-common/ADR` | 3 | V1.1 |
+    | PORT1 | C + B prototype: 6–8 static rules (UniForm readiness, deletion vectors, column mapping, Databricks-only lock-ins, hard-coded `abfss`/`s3` paths) → a readiness report on FOIL-synthetic | 15 | V1.1 |
+    | PORT2 | A: profile model at project, segment and table level + variant selection | 20 | V2 |
+    | PORT3 | D + F: migration plan (no execution) and engine dialect compatibility | 20 | V2 |
+    | PORT4 | E: IaC mapping and diff across Databricks, Azure Databricks and Fabric | 30 | V2/V3 |
 - **§ V4-NOCODEX: Codex is unavailable (Julian, 2026-09-29).** Everything is done in Claude sessions. PM DataPass 4 owns the architecture; decisions are recorded here and in `PROJECT_MODEL.md` §13. No digest goes to Codex. Julian's verbatim text: `handoff/ideas/2026-09-29-julian-direction.md`.
   - The hour-12 decision is taken now: **Opus adopts Codex's frozen Common branches.** New `v4/adopt-*` branches are cut from Codex's heads and rebased onto main; Codex's own branches and MRs (!23, !26–!32) are left untouched and closed only after adoption. Common merges are the PM's, in series.
   - The RC UX pass by Codex Computer Use is replaced by a Claude tester session (Playwright `_electron`) plus an Opus UX opinion, inside RV1.
