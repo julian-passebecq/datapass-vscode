@@ -319,11 +319,12 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 9** (local_2265fbb2, Opus medium, global PM, from 2026-09-29 ~20:15 local): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 9, local_816220f3) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09-29 ~22:30 local; GO go/PM-DataPass-10.md): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 9, local_816220f3) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 9 (local_2265fbb2), live, pinned | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
+| PM DataPass 10 (local_e46b43b6), live, pinned | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-29-2215-pm-datapass-9.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
+| (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
 | COORD DataPass Common 1 (local_cf999fdb), live, pinned | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
 | PM DataPass 8 (local_29fd99e3), handed off at ~225 K (kept pinned: parent of S1 chips) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
@@ -388,13 +389,14 @@ Kept by **PM DataPass 9** (local_2265fbb2, Opus medium, global PM, from 2026-09-
 | CODER V4 FAKEERP (local_44c357bd) | coder (Sonnet medium) | idea 25: synthetic ERP P&L world + decision log, cloud (GO go/FAKEERP.md) | 15 | 2026-09-29 · V3.7 | COORD 9 |
 | CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
 | REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
-| ARCHQ1 (local_4957fa69) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
-| A2B (local_4f39a026) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 20 | 2026-09-29 · V3.7 | COORD Common 1 |
+| ARCHQ1 (local_4957fa69, done, !60 merged, retire) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
+| A2B (local_4f39a026, handed off at 170 K: split pending, go/A2B-handoff-1.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 20 | 2026-09-29 · V3.7 | COORD Common 1 |
 | DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
-| (queued, cap) ARCHCAT1, GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
-| COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 9 → PM 10 |
+| ARCHCAT1 (local_85a53e2b) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
+| (queued, cap) GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
+| COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
 | (retired) COORD DataPass 9 (local_816220f3) | coordinator | handed off to COORD 10 | — | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
