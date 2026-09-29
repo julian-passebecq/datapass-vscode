@@ -114,6 +114,8 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 Waiting for Codex ADRs. No V4 package starts before they are accepted by the PM.
 
+Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5.5 medium. Only run, T0 dummy (SQL table extractor): Sonnet xhigh 7 min / $1.06 / 22 tests, more robust; Opus medium 3 min / $1.00 / 17 tests, failed 7 of Sonnet's edge cases.
+
 ## Team (rules V2.3, from 2026-09-26 23:15 — every live session on DataPass)
 
 Kept by **PM DataPass 1** (medium, global PM for all apps since V2.3): every code and merge decision. Tech lead: **Codex** for V4 (GPT 6 Pro was the V1–V3 tech lead). Coordinator: **COORD DataPass 4** (low) runs the coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).

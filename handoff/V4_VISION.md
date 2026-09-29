@@ -18,3 +18,9 @@ Discovery never executes client code. No cloud provisioning. There is no mandato
 - A thin icon bar on the left too, and a rethought right rail (or a top button that opens the AI menu); all configurable.
 - Airflow DAG view: a shape and icon per task type, an optional horizontal layout, and a choice of where it opens. Its current UX is "pas très pratique".
 - Ergonomics: a visible DataPass icon, easy code zoom, a findable theme setting, and a Home button that restores the project layout.
+
+## 4. Julian's answers on Codex's architecture (2026-09-29)
+- **Observe** is accepted as an additional, opt-in module (supersedes "no monitoring" of 2026-09-27).
+- **Python analyzers** are allowed in the extension, even an embedded Python runtime, because they are more effective.
+- **Spark:** no Spark execution and no plan capture for now; DataPass statically extracts lineage from Spark / PySpark files with its own engine. Fabric runtime evidence may be imported later.
+- **Licences:** left to the PM (Common public MIT, products private). The FOIL data in the architecture evidence is synthetic.
