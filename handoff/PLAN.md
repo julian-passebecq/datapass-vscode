@@ -368,7 +368,7 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | CODER V4 FIXORC (local_4d265ef9) | coder (Sonnet medium) | S1 fixture: Airflow/DAB/ADF/Fabric/Step Functions, cloud (GO go/FIXORC.md) | 8 | 2026-09-29 · V3.6 | COORD 7 |
 | CODER V4 XR0 (local_cb04e69a), FIXREPO (local_9d10fe32), FIXIAC (local_5df8c388) | coder (Sonnet medium) | S1 Data X-ray on GitLab + fixtures (GOs go/XR0, FIXREPO, FIXIAC) | 8/12/15 | 2026-09-29 · V3.6 | COORD 8 |`n| (chips sent) FIXGOV, FIXMON (Sonnet), SEC2 (Opus) | coder | S1 (GOs in go/) | 12/10/12 | 2026-09-29 · V3.6 | COORD 8 |
 | CODER V4 PSPI (local_d2bf831c) | coder (Opus medium) | S1 Common core: provider/catalog SPI v1, common (GO go/PSPI.md) | 15 | 2026-09-29 · V3.6 | PM 8 |
-| CODER V4 H1 (local_932b0bad) | coder (Opus medium) | S1 hub module broker + unsupported, hub (GO go/H1.md) | 20 | 2026-09-29 · V3.6 | COORD 8 |
+| CODER V4 H1 (local_932b0bad, done, hub !6 merged) | coder (Opus medium) | S1 hub module broker + unsupported, hub (GO go/H1.md) | 20 | 2026-09-29 · V3.6 | COORD 8 |
 | CODER V4 ASPI (local_bc851173) | coder (Opus medium) | S1 Common core: analyzer SPI v1, common (GO go/ASPI.md) | 12 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VSPI (local_bd34ed12) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
 | (chips sent) UIH3b (Opus), FIXVAR (Sonnet) | coder | S1 (GOs in go/) | 15/12 | 2026-09-29 · V3.6 | COORD 8 |
