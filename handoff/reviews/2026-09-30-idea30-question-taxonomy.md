@@ -1,0 +1,25 @@
+# Idea 30: question taxonomy for "Ask DataPass" (PM 13, 2026-09-30)
+
+Julian (~03:15) pasted 9 public interview-prep pages. They are **inputs, not content**: no text is copied here or into the product. Sources (for coders to re-read): a Medium DataExpert write-up of a live DE interview; GeeksforGeeks "Data Engineering Interview Questions" and "Power BI Interview Questions"; Tredence "25 Data Engineer Interview Questions 2026"; 365 Data Science "BI Analyst Interview Questions"; Agilemania "Business Analyst Interview Questions"; Medium (V. Barvaliya) "Data Warehousing interview questions"; a GitHub "Data Warehousing Architecture" question list; r/dataengineering "How do you build the data warehouse from scratch?"; DataInterview "Data Warehousing Interview Questions".
+
+Each question in the bank gets one **answerability class**: **G** from Git alone (static facts) · **R** needs runtime/replay evidence · **A** needs the client AI / owner through the bridge (business context, SLAs, consumers) · **X** not about the code (soft skills, career); X is out of scope.
+
+| Domain | Question topics (our wording) | Class | Detector / fact owner |
+|---|---|---|---|
+| SQL correctness | NULL handling in DISTINCT/joins/NOT IN; COUNT vs COUNT DISTINCT; dedup ties (ROW_NUMBER vs DENSE_RANK); case normalisation; join fan-out / grain change; second-highest-with-duplicates patterns | G | CLEAN1, PRACT1 |
+| Python / PySpark | edge cases (empty input, divide by len, unknown enum); pandas chunking + dtypes on large CSV; vectorised vs row loops; collect/toPandas; UDF vs built-in; repartition vs coalesce; cache vs persist; lazy actions repeated | G | CLEAN1, ARCHLINT1 |
+| Spark performance | skew (salting, AQE, broadcast, isolate hot key); shuffle size; small files; partition pruning; spot/autoscale/right-sizing | G+R | ARCHLINT1, PERF1, RUNX1 |
+| Modelling (Kimball) | fact grain declared; star vs snowflake vs galaxy; conformed dimensions across marts; surrogate vs natural keys; SCD 0/1/2/3/4/6 and hybrid; degenerate and junk dimensions; factless facts; additive / semi-additive / non-additive measures (balances summed over time); date dimension; role-playing dims; hierarchies; bus matrix | G | MODEL1 (new), PHYS1 |
+| Ingestion / CDC / incremental | idempotent loads; MERGE ordered by source version (LSN/commit ts); dedup on replay; watermark committed after write; late-arriving window + backfill without double count; full vs incremental; schema evolution (additive, mergeSchema, contracts); quarantine / DLQ for bad records | G+R | INCR1 (new), DQ1 |
+| Streaming | tumbling/sliding/session windows; watermarks and late data; at-most/at-least/exactly-once; Lambda vs Kappa; batch-first when an SLA is a fixed deadline | G+A | STR1, PRACT2 |
+| Layout / storage | partition key choice vs query patterns; hot partitions; clustering / Z-order; bucketing; file formats (Parquet/ORC/Avro/CSV); compaction; tiering, retention, time travel | G+R | PHYS1, STOR1, WASTE1 |
+| Query performance | plan reading (broadcast vs shuffle join, pruning, spill, nested loop after stats drift); stale statistics; CTE intermediate size | R | RUNX1, PERF1 |
+| Warehouse / lakehouse architecture | medallion guarantees; OLTP vs OLAP placement; lake vs warehouse vs lakehouse; data mesh ownership; materialized views / aggregate tables; semantic layer as single metric definition; custom orchestrator vs managed | G+A | LAYER1, PRACT2 |
+| Governance / security | PII classification; masking / row filters in the catalog vs table grants; dynamic views; RLS static vs dynamic; audit, lineage, ownership; data residency, sharing revocation | G+A | PRACT2, ACCESS1 |
+| Data quality / observability | not-null, unique, referential, range, business rules; freshness / volume / schema drift / null-rate monitors; reconciliation of aggregates source vs report; anomaly on day-over-day recompute | G+R | DQ1, CLEAN1, FRESH1 |
+| Power BI | storage mode (Import / DirectQuery / Live / composite); query folding broken; incremental refresh (RangeStart/RangeEnd) on large facts; gateway needs; star schema in the model; bidirectional cross-filter overuse; calculated column vs measure; SUM vs SUMX; marked date table; time-intelligence; ALL/ALLEXCEPT/ALLSELECTED; RLS roles; dataflows reuse; duplicated Power Query logic | G+R | BIPRAC1, BI3 |
+| Cost | compute vs storage split; concurrency spikes; small-file overhead; egress; idle clusters | R | PERF1, STOR1, WASTE1 |
+| "Build a warehouse from scratch" | process answer: stakeholders + sources → constraints (SLA, freshness, security, budget) → architecture → MVP with tests/alerts/resume → iterate + docs | A | PRACT3 answer template (uses DataPass inventory as the "sources" step) |
+| BA / behavioural / career | requirements, RTM, NFRs, INVEST, MoSCoW, stakeholder handling | X (NFR capture = A, feeds PRACT2 constraints) | none |
+
+Rule for every answer card: short answer for **this** repo → reasoning → edge cases → alternatives with when each is right → evidence links → "question to ask the owner" when class A.
