@@ -163,7 +163,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | IACBF | iac-model follow-up to IACB: `bicep`/`arm` in `IAC_TOOLS` (iac-bicep emits them instead of `unknown`), `discoverEnvironments` finds `*.bicepparam` and ARM `parameters*.json`, one IACCORPUS manifest entry for the ARM fixture | common | 5 | Opus | after IACB !49 + L1 !46 |
   | IAC4 | readiness rules IAC001–013 | common | 15 | Opus | after IAC2 |
   | IAC8-10 | `datapass-iac` VSIX, journeys, `docs/iac/TRY_IT.md` | cloud | 30 | Opus | after IAC1/2 |
-  | IACW | wire IAC4 `iac-readiness` findings into the `datapass-iac` readiness slot (IAC9-10 left it empty), IAC10 screenshot set, TRY_IT update | cloud | 8 | Opus | after OBSV1a (owns the one vendored-Common re-pin to common ≥ 0b924b3) + IACBF |
+  | IACW | wire IAC4 `iac-readiness` findings into the `datapass-iac` readiness slot (IAC9-10 left it empty), IAC10 screenshot set, TRY_IT update | cloud | 8 | Opus | after OBSV1a (owns the one vendored-Common re-pin to common ≥ 0a0c1bb; IACBF !51 merged) |
   | IAC-EMIT | emitter iac-hcl → datapass.iac-declarations/1 | common | 8 | Opus | after IAC03 !41 + IAC1 !43 |
   | IAC6/IAC7 | lineage link and CI reading | common/cloud | 20 | Opus | W3 |
 - **Idées de Julian (2026-09-29 ~15:00 local, target V1 where feasible, for the next Codex digest):**
@@ -280,7 +280,7 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 7**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 8**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
@@ -288,7 +288,8 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
 | PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
-| PM ASSISTANT DataPass 7 | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 8 (local_767bfb24) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron (hand-off go/handoff-assistant-7.md) | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 7 | assistant, retired at ~195 K (kept pinned: parent of assistant 8 and PM 6) | — | — | 2026-09-29 · V3.6 | — |
 | COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
 | CODER V4 API1 | coder (Opus medium) | API1 Fabric inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 API2 | coder (Opus medium) | API2 Databricks inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
@@ -324,7 +325,7 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC9-10 (local_de1f351e, done, cloud !32 merged) | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IACBF | coder (Opus medium) | § V4-IAC IACBF iac-model Bicep/ARM follow-up, common (GO go/IACBF.md) | 5 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IACBF (local_2dbfeaad, done, !51 merged) | coder (Opus medium) | § V4-IAC IACBF iac-model Bicep/ARM follow-up, common (GO go/IACBF.md) | 5 | 2026-09-29 · V3.6 | PM |
 | CODER V4 TRN1 (local_802ca659) | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBSV1a (local_04afa201) | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
