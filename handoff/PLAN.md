@@ -310,11 +310,11 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 10** (local_3e858fbf). Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 9** (local_2265fbb2, Opus medium, global PM, from 2026-09-29 ~20:15 local): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 9, local_816220f3) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 9 (local_2265fbb2) | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 9 (local_2265fbb2), live, pinned | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
 | COORD DataPass Common 1 (chip, night) | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
 | PM DataPass 8 (local_29fd99e3), handed off at ~225 K (kept pinned: parent of S1 chips) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
