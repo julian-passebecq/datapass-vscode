@@ -305,7 +305,7 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 9**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 10** (local_3e858fbf). Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
@@ -315,7 +315,8 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
 | PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
-| PM ASSISTANT DataPass 9 (local_4ccac046) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron, idea-19 audit relay (hand-off from assistant 8) | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 10 (local_3e858fbf) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron (hand-off go/handoff-assistant-9.md) | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 9 (local_4ccac046), retired at 150 K ~19:05 local (kept pinned: parent of PM 8 and S1 chips) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron, idea-19 audit relay (hand-off from assistant 8) | — | 2026-09-29 · V3.6 | PM |
 | PM ASSISTANT DataPass 8 (local_767bfb24), retired 2026-09-29 ~15:40 UTC (kept pinned: parent of assistant 9 and PM 7) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron (hand-off go/handoff-assistant-7.md) | — | 2026-09-29 · V3.6 | PM |
 | PM ASSISTANT DataPass 7 | assistant, retired at ~195 K (kept pinned: parent of assistant 8 and PM 6) | — | — | 2026-09-29 · V3.6 | — |
 | COORD DataPass 7 (local_0bdd83a7) | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off go/handoff-coord-6.md) | — | 2026-09-29 · V3.6 | PM |
