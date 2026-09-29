@@ -389,12 +389,12 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | CODER V4 FAKEERP (local_44c357bd) | coder (Sonnet medium) | idea 25: synthetic ERP P&L world + decision log, cloud (GO go/FAKEERP.md) | 15 | 2026-09-29 · V3.7 | COORD 9 |
 | CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
 | REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
-| ARCHQ1 (local_4957fa69, done, !60 merged, retire) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
-| (retire) A2B (local_4f39a026, handed off at 170 K, split by PM 10 into A2Ba 5 M core / A2Bb1 15 M / A2Bb2 12 M after b1: go/A2B*.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 32 | 2026-09-29 · V3.7 | COORD Common 1 |
+| (archived) ARCHQ1 (local_4957fa69, !60 merged) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
+| (archived) A2B (local_4f39a026, split by PM 10 into A2Ba 5 M core / A2Bb1 15 M / A2Bb2 12 M after b1: go/A2B*.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 32 | 2026-09-29 · V3.7 | COORD Common 1 |
 | DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
-| (chip sent) HUBCI1 | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
+| HUBCI1 (local_fb1ed666) | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
 | ARCHCAT1 (local_85a53e2b) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (queued, cap) GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
 | COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
@@ -404,7 +404,7 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | CODER V4 UIH3a (local_01d3c05e) | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
 | (chips sent) UIH3b (Opus), FIXVAR (Sonnet) | coder | S1 (GOs in go/) | 15/12 | 2026-09-29 · V3.6 | COORD 8 |
 
-Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
+Archived on 2026-09-29 (PM DataPass 10, ~22:35 local): A2B (split), ARCHQ1 (!60), ARCHQ0 (!59), FAKEERP (!55), FAKESCM (!54), GOV1 (cloud !49), SEC2 (!51), UIH3a, UIH3b, FIXREPO. Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
