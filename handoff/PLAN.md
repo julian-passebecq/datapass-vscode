@@ -112,37 +112,69 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 ## V4 (rules V2.3 · source: [V4_VISION.md](V4_VISION.md), #178; tech lead: Codex)
 
-Waiting for Codex ADRs. No V4 package starts before they are accepted by the PM.
+### § V4-RUN — installable V1, 30-hour run (rules V3.6 · PM DataPass 3 · 2026-09-29)
+
+- **Goal:** an installable V1 VSIX set 30 h after the quota reset (reset seen at 11:55 UTC on 29 Sept). Target: 17:55 UTC on 30 Sept; hard limit: 03:55 UTC on 1 Oct. Scope is hand-off `handoff/sessions/2026-09-29-1045-pm-datapass-2.md` §0.
+- **Sources:**
+  - `dataprojects` branch `pm/phase0-project-model`:
+    - `technical-common/PROJECT_MODEL.md`: the model.
+    - `technical-common/PACKET_MAP_V1.md`: every packet, sizes, waves, critical path. It is the package spec: each package's scope, files and done condition are there.
+- **Tech lead:** Codex is out of tokens, so the PM owns the architecture for this run. Codex reviews `PROJECT_MODEL.md` when its quota returns.
+- **PM exceptions to ADR-0009 and `AGENTS.md`, recorded for Codex:**
+  - Julian's 29 Sept scope overrides the "R1A before Cloud" gate.
+  - The new Cloud packages each get their own worktree and branch; a package's coder is the only writer on its worktree and branch.
+  - Codex's frozen Common branches (A2/A0H, C2, IAC bridge) stay untouched. At hour 12 the PM decides whether Opus adopts them.
+- **Pace:**
+  - Check every 5 h against the quota curve: 17 / 33 / 50 / 67 / 83 / 100 %.
+  - At most 8 coders at once.
+  - Opus 5.5 medium for core, contract, parser and API packages; Sonnet 5.5 medium for mechanical ones (docs, fixtures, packaging).
+- **Merge:** each package goes on a GitLab branch with a merge request, and is merged on a green `local-windows` pipeline. The coordinator merges routine packages; cross-package and Common merges go to the PM.
+
+| Wave | Hours | Packages (model) |
+|---|---|---|
+| W0 | 0–4 | OBSG (Sonnet), API0, UIH1, VM1a, OBS3, IACCORPUS (Sonnet). None of these depends on the model. |
+| W1 | 4–12 | C5a, API1, VM1b, VM3a, HG1a, HOP1a, UIH2, SEC1 detectors |
+| W2 | 12–22 | C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, HOP1b, L1 |
+| W3 | 22–30 | P2, P3 (thin), C6 without Grafana, IaC Cloud children, H1, UI2, RV1 (Sonnet) plus Julian's single test session |
+
+- **Critical path:** model → C5a → API0 → API1 → UIH3 → Cloud VSIX → RV1.
+- **Parallel VSIXs:**
+  - Infra: VM1 → VM3.
+  - Git companion: HG1a → HG1b.
+  - Observe: OBS3 → OBS1 → OBS2.
+  - IaC: highest risk, because it needs Codex's C2 and A0.
+- **Phase 0:** ✓ accepted on 2026-09-29 (dataprojects `f5d82df`, `PROJECT_MODEL.md` §13 has the PM interim decisions). Model-dependent packages may start.
+- **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
+- **GO rules for every coder:**
+  - Work on branch `v4/<pkg-lowercase>` in a new worktree of the target repo, `.worktrees/<pkg-lowercase>`.
+  - Never touch another worktree or Codex's branches.
+  - Draft MR on GitLab. Report to COORD DataPass 5 in ≤ 5 lines.
 
 Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5.5 medium. Only run, T0 dummy (SQL table extractor): Sonnet xhigh 7 min / $1.06 / 22 tests, more robust; Opus medium 3 min / $1.00 / 17 tests, failed 7 of Sonnet's edge cases.
 
-## Team (rules V2.3, from 2026-09-26 23:15 — every live session on DataPass)
+## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 1** (medium, global PM for all apps since V2.3): every code and merge decision. Tech lead: **Codex** for V4 (GPT 6 Pro was the V1–V3 tech lead). Coordinator: **COORD DataPass 4** (low) runs the coders and routine merges. No new TAMPONs; fresh coder conversations per package with a 5-line GO (`package-go`).
+Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 6**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
-| Session | Role | Package / job | GO date | Reports to |
-|---|---|---|---|---|
-| PM DataPass 1 | global PM (all apps) | plan, merges, tech-lead (Codex) exchange | 2026-09-26 · V2.3 | Julian (via assistant) |
-| PM ASSISTANT DataPass 5 | assistant (low) | Julian's only contact; rc.1 test session (takes over from ASSISTANT 4) | 2026-09-28 · V2.2 | PM |
-| PM agent · V1.1.x-POLISH-3 | PM agent (medium, agent of PM DataPass 1) | V1.1.x-POLISH-3: lenses, rail, single Git section, DAG button — done (#177) | 2026-09-28 · V2.3 | PM |
-| PM agent · V1.1.x-POLISH-4 | PM agent (medium, agent of PM DataPass 1) | V1.1.x-POLISH-4: activity-bar icon, one-click zoom, Appearance picker, Home layout-restore — running | 2026-09-28 · V2.3 | PM |
-| COORD DataPass 4 | coordinator (low) | 1.1.x flow (WORKTREES), routine merges, context and quota watch (took over from COORD 3, hand-off handoff/sessions/2026-09-28-0135-coord-datapass-3.md) | 2026-09-28 · V2.2 | PM |
-| PM agent · AUTO-2 | PM agent (medium) | V1-AUTO-2 — done (#131) | 2026-09-27 · V2 | PM |
-| PM agent · GAPS | PM agent (medium) | V1-GAPS — done (#140) | 2026-09-27 · V2 | PM |
-| PM agent · QATMP | PM agent (medium) | V1.0.x-QATMP (branch claude/qatmp; merges its own PRs) | 2026-09-27 · V2 | PM |
-| PM agent · V3-SHELL | PM agent (medium) | V3-SHELL — done (#154) | 2026-09-27 · V2 | PM |
-| PM agent · V3-HOME | PM agent (medium) | V3-HOME — done (#153) | 2026-09-27 · V2 | PM |
-| PM agent · V3-HOP1 | PM agent (medium) | V3-HOP1 — done (#151) | 2026-09-27 · V2 | PM |
-| PM agent · V3-THEME | PM agent (medium) | V3-THEME — done (#152) | 2026-09-27 · V2 | PM |
-| PM agent · V3-GITDIAG | PM agent (medium, agent of PM DataPass 1) | V3-GITDIAG — done (#157) | 2026-09-28 · V2.2 | PM |
-| PM agent · V3-AIRFLOW | PM agent (medium) | V3-AIRFLOW — done (#158) | 2026-09-28 · V2 | PM |
-| PM agent · V3-HOP2 | PM agent (medium, agent of PM DataPass 1) | V3-HOP2 — done (#159) | 2026-09-28 · V2.2 | PM |
-| PM agent · V3-DEMO | PM agent (medium) | V3-DEMO — done (#156) | 2026-09-28 · V2 | PM |
-| PM agent · FIX-ICONS | PM agent (medium) | V3-FIX-ICONS — done (#162) | 2026-09-28 · V2 | PM |
-| PM agent · V3-POLISH-1 | PM agent (medium, agent of PM DataPass 1) | V3-POLISH-1 — done (#166; common #22) | 2026-09-28 · V2.2 | PM |
-| PM agent · V3-RC1 | PM agent (medium, agent of PM DataPass 1) | V3-RC1 — done (#168; v1.1.0-rc.1) | 2026-09-28 · V2.2 | PM |
-| PM agent · FOILSURF | PM agent (medium) | V1-FOILSURF — done (#126) | 2026-09-27 · V2 | PM |
-| CODER DataPass REL100 | coder (medium, chip) | V1-REL100 (M4): cut 1.0.0 — done (#143, common #19; v1.0.0 at d8772d4) | 2026-09-27 · V2 | PM |
+| Session | Role | Package / job | est. M | GO date | Reports to |
+|---|---|---|---|---|---|
+| PM DataPass 3 | global PM (Opus medium) | § V4-RUN, phase 0, merges (hand-off 2026-09-29-1045-pm-datapass-2.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM ASSISTANT DataPass 6 | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
+| COORD DataPass 5 | coordinator (Sonnet low) | § V4-RUN flow, routine merges, quota/context watch | — | 2026-09-29 · V3.6 | PM |
+| CODER V4 API0 | coder (Opus medium) | API0 provider transport, cloud `packages/provider-readers` | 20 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 UIH1 | coder (Opus medium) | UIH1 graph canvas, cloud `packages/workbench-ui` | 25 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 UIH2 | coder (Opus medium) | UIH2 notebook view + runtime picker + panes, cloud `packages/workbench-ui` | 30 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 VM1a | coder (Opus medium) | VM1a SSH/cloud-init/systemd analyzers + SEC1 detectors, cloud `packages/infra-analyzers` | 25 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 VM1b | coder (Opus medium) | VM1b Compose/K8s/Helm/Ansible analyzers, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 VM3a | coder (Opus medium) | VM3a `datapass-infra` VSIX shell, cloud `packages/vscode-infra` | 15 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 OBS3 | coder (Opus medium) | OBS3 replay/mock transport, cloud | 15 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 IACCORPUS | coder (Sonnet medium) | IACCORPUS fixtures, common (fixtures only) | 10 | 2026-09-29 · V3.6 | COORD 5 |
+| CODER V4 C5a | coder (Opus medium) | C5a project contracts from PROJECT_MODEL.md, common new package | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 HG1a | coder (Opus medium) | HG1a multi-repo Git observation service + dashboard shell, hub | 20 | 2026-09-29 · V3.6 | COORD 5 |
+| PM subagent · OBSG | PM subagent (Sonnet) | OBSG strip Grafana from central docs | 3 | 2026-09-29 · V3.6 | PM |
+| COORD DataPass 4 | coordinator (Opus low) | idle since 28 Sept; retired when COORD 5 starts | — | 2026-09-28 · V2.2 | PM |
+
+Retired on 2026-09-29: PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
