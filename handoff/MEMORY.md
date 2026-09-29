@@ -13,3 +13,5 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-28 (coordinator): before pushing onto a PLAN PR branch, check the PR is still open — a push after merge recreates the deleted branch; Team rows share the `PM agent · X` text with the V3 Owner column, anchor inserts on the role column too.
 - 2026-09-28 (PM): a background agent can merge its own PR and publish a release overnight; when its GO reuses a common GO, name the rules it overrides (e.g. "no version bump") explicitly.
 - 2026-09-28 (PM): low role sessions that read screenshots reach 150 K in a few hours; expect one assistant hand-off per Julian test session.
+
+- 2026-09-29 (assistant 6): a clicked chip becomes a session titled like the chip: check `list_sessions limit 30` (default 20 hides idle ones) before reminding Julian; chip_watch re-emits reported chips, so treat its events as "offered" only. Check `get_usage self` every ~10 turns: assistant 6 reached 235 K against a 150 K limit.
