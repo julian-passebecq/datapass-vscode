@@ -328,6 +328,7 @@ Kept by **PM DataPass 11** (local_2522f634, Opus medium, global PM, from 2026-09
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
 | COORD DataPass Common 2 (local_a047ee0d, ex-reserve COORD 13), live, pinned | coordinator (Sonnet low) | Common serial merges (GO go/COORD-Common-2.md, hand-off go/handoff-coord-common-1.md) | — | 2026-09-30 · V3.7 | PM 11 |
 | CODER R1 (local_223e3ff8) | coder (Opus medium) | GITL0FIX (Common !72 merged), then CITIME1 CI timeouts (go/CITIME1.md) | 2+2 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER R3 (local_98a83587) | coder (Opus medium) | ARCHB1 successor: fix Common !71, then re-pin hub !12 (ARCHB1 handed off at 246 K) | 5 | 2026-09-30 · V3.7 | COORD Common 2 / COORD 12 |
 | COORD DataPass Common 1 (local_cf999fdb), handed off at ~221 K, pinned | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
