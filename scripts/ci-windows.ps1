@@ -1,8 +1,8 @@
 param([switch]$Node, [switch]$Python)
 $ErrorActionPreference = 'Stop'
 function Invoke-CiNative {
-    param([string]$File, [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-    & $File @Arguments
+    param([string]$File)
+    & $File @args
     if ($LASTEXITCODE -ne 0) { throw "$File failed with exit code $LASTEXITCODE" }
 }
 if ($Node) {
