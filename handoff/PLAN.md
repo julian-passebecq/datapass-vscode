@@ -160,6 +160,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | IACB | Bicep/ARM reader | common | 20 | Opus | after IAC1 |
   | IAC4 | readiness rules IAC001–013 | common | 15 | Opus | after IAC2 |
   | IAC8-10 | `datapass-iac` VSIX, journeys, `docs/iac/TRY_IT.md` | cloud | 30 | Opus | after IAC1/2 |
+  | IAC-EMIT | emitter iac-hcl → datapass.iac-declarations/1 | common | 8 | Opus | after IAC03 !41 + IAC1 !43 |
   | IAC6/IAC7 | lineage link and CI reading | common/cloud | 20 | Opus | W3 |
 - **Idées de Julian (2026-09-29 ~15:00 local, target V1 where feasible, for the next Codex digest):**
   5. Integrate the Fabric / Power BI / Azure toolboxes: read their information through the API and **show it in the app**.
@@ -260,7 +261,7 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 OBS3 | coder (Opus medium) | OBS3 replay/mock transport (!8) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 HG1b | coder (Opus medium) | HG1b Git change → impact, hub | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 HOP1a | coder (Opus medium) | HOP1a Hop renderer, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC1 | coder (Opus medium) | § V4-IAC IAC1 HCL parser, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC1 | coder (Opus medium) | § V4-IAC IAC1 HCL parser, common (!43) | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC03 | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
@@ -271,12 +272,12 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 G1 | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 ADOPT-C | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
+| CODER V4 ADOPT-C (done, !37 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
 | PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
 | PM subagent · OBSC (merged !40) | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · CAPM1 | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
-| CODER V4 FIXPRJ (chip) | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
