@@ -195,6 +195,25 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | IACA0 | register `iac-hcl` (and Bicep) with the A0 dispatcher | — | 10 | Opus | after ADOPT-A + IAC1 |
   | L1 | `lineage-core` (unchanged scope) | — | 30 | Opus | after ADOPT-A |
   - ETA: core V1 unchanged (the adoption runs beside the critical path). Full V1 stays at ~08:00 UTC on 1 Oct, with ~2 h of risk from the adoption merges.
+- **§ V4-GAP: PM decisions on the gap review** (`handoff/reviews/2026-09-29-v1-gap-review.md`, 14 gaps: 2 blocker, 8 major, 4 minor). The PM answers the review's three architecture questions, since Codex is unavailable:
+  - Q1: evidence and observation types get a minimal Common home now, **OBSC** in `project-contracts`. ADOPT-A aligns them with C2 when it lands.
+  - Q2: Common reaches the private repos as a **pinned `npm pack` tarball vendored under `vendor/common/`** with a SHA check, bundled into each VSIX with esbuild. No registry token and offline CI-safe (SEAM1).
+  - Q3: yes. OBSV3 diffs against P2/C5 resources when L1 is absent, with coverage `unknown`. OBSV1 supersedes A7/P4 (captured Spark plans) for V1.
+  - One transport: the OBS3 cassette format is the only replay format. API0's `replay.ts` adapts to it (TRN1), and FAKE2 writes OBS3 cassettes.
+  - One synthetic ID manifest: FAKE1 owns `fixtures/foil-synthetic/ids.json` with a check (+3 M), and FAKE2 and the acceptance fixtures use it.
+  - K8s/Helm: VM1b owns manifest parsing. IAC2 adds only the `kubernetes`/`helm` Terraform provider resources, reusing VM1b's parse, plus `azuread` (+5 M).
+  - Resizes: UIH3 → UIH3a tree + API feed (15) and UIH3b layouts, D3/Plotly and bundle explorer (15). OBSV1 → OBSV1a Spark event log (15) and OBSV1b Fabric/Databricks runs + runtime lineage (15). IAC8-10 → IAC8 VSIX (20) and IAC9-10 journeys + TRY_IT (15). RV1 → RV1a packaging, install and activation smoke test, Observe off by default (15 Opus), RV1b French guide per VSIX + synthetic-data page (10 Sonnet), RV1c Claude Playwright UX pass (5).
+  - Hub: H1 broker + `unsupported` test stay in V1 (20). The Home UI is deferred to V1.1.
+  - Deferred to V1.1, recorded here: A5 Airflow, DQ1, H2/PH1 Home, PG1. A4a (Fabric/DAB native formats incl. `databricks.yml`) and PROV1 are V1 **if slack after W2**, else V1.1.
+  | Package | Content | Repo | est. M | Model | Gate / mode |
+  |---|---|---|---|---|---|
+  | SEAM1 | vendored pinned Common tarball + esbuild bundle + contract-version CI check | common/cloud/hub | 10 | Opus | now, PM subagent |
+  | OBSC | ObservedRun / ObservationBatch / evidence-origin enum in `project-contracts` | common | 8 | Opus | now, PM subagent |
+  | CAPM1 | Fabric Capacity Metrics import adapter (Q6) | cloud | 8 | Opus | now, PM subagent |
+  | G1 | semantic diff feeding the Git companion | common `packages/semantic-diff` | 20 | Opus | now, chip; HG1b plugs it in later |
+  | TRN1 | one replay transport (OBS3 cassette) | cloud provider-readers | 8 | Opus | after OBS3 !8 merges |
+  | SEC2 | negative security suite + bundle scan (redaction, allowlist and ceilings, Observe off, no provider-readers in static VSIXs, export masking) | cloud | 12 | Opus | before RV1a |
+  | E2E1 | cross-VSIX journey on FOIL-synthetic, replay only, @vscode/test-electron | cloud `tests/e2e` | 20 | Opus | after UIH3a + OBSV3 |
 - **New ETA:** core V1 still at ~30 h (17:55 UTC on 30 Sept). V1 with full IaC and monitoring at ~40 h (04:00 UTC on 1 Oct). Hard stop before the 12:00 UTC reset on 1 Oct. OBS1/OBS2 use FAKE1's CU timelines.
 - **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
 - **GO rules for every coder:**
@@ -225,9 +244,13 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC03 | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
-| PM subagent · GAPREV | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md | 3 | 2026-09-29 · V3.6 | PM |
+| PM subagent · GAPREV (done) | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md, § V4-GAP | 3 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-A (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-C (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
+| PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
+| PM subagent · OBSC | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
+| PM subagent · CAPM1 | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
+| CODER V4 G1 (chip) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 (chip) | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
