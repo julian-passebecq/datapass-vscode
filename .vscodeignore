@@ -1,4 +1,7 @@
 .github/**
+.ci-tools/**
+.ci-venv/**
+.cache/**
 .vscode/**
 handoff/**
 tests/**
