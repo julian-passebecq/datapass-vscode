@@ -371,9 +371,9 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | CODER V4 H1 (local_932b0bad, done, hub !6 merged) | coder (Opus medium) | S1 hub module broker + unsupported, hub (GO go/H1.md) | 20 | 2026-09-29 · V3.6 | COORD 8 |
 | CODER V4 ASPI (local_bc851173) | coder (Opus medium) | S1 Common core: analyzer SPI v1, common (GO go/ASPI.md) | 12 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VSPI (local_bd34ed12) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 API2b (done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
-| CODER V4 API3b | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
-| CODER V4 UIH3a | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
+| CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
+| CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
+| CODER V4 UIH3a (local_01d3c05e) | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
 | (chips sent) UIH3b (Opus), FIXVAR (Sonnet) | coder | S1 (GOs in go/) | 15/12 | 2026-09-29 · V3.6 | COORD 8 |
 
 Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
