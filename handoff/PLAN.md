@@ -339,6 +339,7 @@ Kept by **PM DataPass 12** (local_3e3932f1, Opus medium, global PM, from 2026-09
 | CODER R12 (local_95358d62) | coder (Opus medium) | PY2 pandas/polars/SQLAlchemy/requests + config folding, common (go/PY2.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R13 (local_5d9a0f65) | coder (Opus medium) | K8S1 Docker/K8s/Helm/Kustomize/ArgoCD edges, common (go/K8S1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R14 (local_2ad7db24) | coder (Opus medium) | OL1 OpenLineage + catalog lineage import, drift, cloud (go/OL1.md) | 20 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER BI1M (local_d720c05d, ex COORD 16 reserve) | coder (Opus medium) | BI1M Power BI semantic-model node, common (go/BI1M.md) | 8 | 2026-09-30 · V3.7 | COORD Common 2 |
 | (reserves, idle) coders R12 local_95358d62, R13 local_5d9a0f65, R14 local_2ad7db24 · PM reserves local_6dbe9065, local_9fb959f3 · COORD 14 local_08623e5e, COORD 15 local_ea68acc1, COORD 16 local_d720c05d | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 11 / COORD 12 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 12 |
