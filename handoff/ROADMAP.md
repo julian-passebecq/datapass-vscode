@@ -194,7 +194,7 @@ From Julian's check of 1.1.0-rc.1 (screenshots relayed by the PM). Praise first:
 
 1. **V4 starts now**, without waiting for a final 1.1.0: 1.1.0-rc.1 stays the working version and fixes land along the way.
 2. **First V4 product: DataPass V4 = understanding a real project** (file roles, milestones, lineage, findings, SQL then PySpark analyzers), extending DataPass Hop.
-3. **Codex is the V4 tech lead**; coding waits for its first ADRs.
+3. ~~Codex is the V4 tech lead~~ → **the PM is the architect** (Julian, 30 Sept: no more Codex; its feedback was already received).
 
 ## 4c. Julian's decisions (2026-09-27, after 1.0)
 

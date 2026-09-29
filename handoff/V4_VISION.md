@@ -6,7 +6,7 @@
 - **First V4 product: DataPass V4 — understand a real project.** Each file's role and layer, its milestones, static data lineage (inputs → outputs), findings, and optional AI questions only where the analysis is uncertain. SQL analysis first, then Python/PySpark, then notebooks. It extends the Hop view (V3), which Julian found "makes much more sense".
 - **Prototype Cloud** (compare 2–3 architectures, no provisioning) and **Factory** (a local prototype that really runs) come after DataPass V4. They are not built in parallel with it.
 - **V4 starts now.** `1.1.0-rc.1` stays the working version, and the rc.1 fixes ship alongside V4.
-- **The tech lead is Codex.** Coders start V4 architecture work only after its first decision records (ADRs).
+- **The architect is the PM** (Julian, 30 Sept: no more Codex; its ADRs and feedback were already received and are kept as inputs).
 - **Organisation (Claude Control V2.3):** one global PM, plus one light coordinator per active app. A sub-PM is used only for an app with more than about 3 coders at once.
 - **Test gate:** before any test session Julian gets a guided tutorial with screenshots, covering where everything is and all shortcuts. It is a standing step of every release candidate.
 
