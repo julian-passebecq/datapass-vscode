@@ -390,7 +390,7 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
 | REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
 | ARCHQ1 (local_4957fa69, done, !60 merged, retire) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
-| A2B (local_4f39a026, handed off at 170 K: split pending, go/A2B-handoff-1.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 20 | 2026-09-29 · V3.7 | COORD Common 1 |
+| (retire) A2B (local_4f39a026, handed off at 170 K, split by PM 10 into A2Ba 5 M core / A2Bb1 15 M / A2Bb2 12 M after b1: go/A2B*.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 32 | 2026-09-29 · V3.7 | COORD Common 1 |
 | DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
