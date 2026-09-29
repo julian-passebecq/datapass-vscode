@@ -45,3 +45,5 @@ The branch sits on the ADOPT-A stack (`00bfeaf`); the C4 part is 2 commits (`427
 1. ADOPT-E1: **accepted**, 6 M, Common, queued after CONCEPT1b (low priority, no screen needs it yet); Cloud switch-over stays deferred.
 2. IAC-ORACLES: **accepted**, split as proposed (Common 3 M conformance test, Cloud 5 M import tests), queued after ADOPT-E1; oracles must not widen lineage-graph/1.
 3. ADOPT-D2: **deferred**. GitLab is the only write/CI authority and codex-datapass-bridge main is GitHub-era; revisit when that repo is migrated. No CI job is added meanwhile.
+
+**PM 15, 05:00:** ADOPT-D2 **un-deferred**. Julian had already imported codex-datapass-bridge to GitLab (juliandatapass-group, main e5f3e9b identical to GitHub). CI ruling: vendored pinned schemas, validated by a local-windows job, or CI omitted if that would need a runner change. GO: D:\PROJ\datapass\go\ADOPTD2.md.

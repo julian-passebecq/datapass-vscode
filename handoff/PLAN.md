@@ -655,7 +655,5 @@ xhigh consult briefs: `handoff/briefs/<date>-<topic>.md` (question, options, fil
 
 ## Open questions for Julian
 
-**For the 08:00 status, after R1A (PM 15):** move `codex-datapass-bridge` from GitHub to GitLab so ADOPT-D2 can run? Asked by Julian at 04:30; PM 13 answered "not tonight". Recommendation: yes, as a GitLab mirror/import done by Julian (repo visibility is his call), then ADOPT-D2 is re-queued.
-
 
 None blocking. Plan 10 §6 J1–J5 continue with the recommendations (Standard by default, `foil-v1-vscode-datapass` as FOIL's bridge, "bridge repository" wording, J3 and J5 in V2). The pass order toolkit catalogue → AI-3 → AI-4 is Julian's (09 §13.1 Q1).
