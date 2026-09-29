@@ -254,7 +254,6 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
 | PM ASSISTANT DataPass 7 | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
-| PM ASSISTANT DataPass 6 (handed off at 235 K) | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
 | CODER V4 API1 | coder (Opus medium) | API1 Fabric inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 API2 | coder (Opus medium) | API2 Databricks inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
@@ -283,7 +282,7 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
-Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
+Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
