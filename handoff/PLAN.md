@@ -314,7 +314,9 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 8 (local_29fd99e3) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 9 (chip, night) | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| COORD DataPass Common 1 (chip, night) | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
+| PM DataPass 8 (local_29fd99e3), handed off at ~225 K (kept pinned: parent of S1 chips) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 6 (local_264e3da2) | global PM, handed off at 241 K | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1400-pm-datapass-5.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
