@@ -194,6 +194,12 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 - **§ V4-PORT: PM decision on Julian idea 15 (PM DataPass 5, 2026-09-29; Julian delegated it to the PM and the tech lead; recorded for Codex review).** Sources: `handoff/reviews/2026-09-29-doris-exploration.md`, `handoff/reviews/2026-09-29-portability-exploration.md`.
   - **Doris: inspire only.** No integration or adaptation, and no Doris dialect or backend. Its pattern (shared semantics, common operators, one Scan/Sink adapter per format) becomes the model for DataPass portability. A local engine for testing variants (DuckDB vs Doris) is reconsidered after V2.
   - **Where a variant lives: layered, with the most specific level winning.** An **architecture profile** (table format, catalog, engine, platform, IaC provider set) is set at the **cloud-project level** as the default. A **segment or sub-architecture** (layer or domain, as in the project model's roles, layers and segments) may override it, and a **table** may carry only an override (for example one table stays Delta while its segment moves to Iceberg). Resolution order: table, then segment, then project. It extends the 0.25.0 switchable variants from "project variant" to "architecture variant", with the same selection UI and `selectedVariant`.
+  - **Addendum (Julian, ~16:00 local, VeloDB article "The data lakehouse evolution: why Apache Doris is leading the way": "maybe DataPass's engine should take inspiration from Doris, your call").** The DataPass engine is a static semantic engine (parsers, the A0 dispatcher, the project model, lineage), not a query engine. What we borrow:
+    1. **The layer stack as the profile's canonical axes:** storage, file format, table format, catalog/metadata, engine, access, IaC. PORT0/PORT2 use exactly these.
+    2. **A connector SPI with a Catalog → Database → Table mapping** for provider-readers and A0 analyzers (Unity, Fabric lakehouse, Hive, Iceberg REST, Polaris/Gravitino later), so adding a source means implementing an interface. PORT2.
+    3. **Metadata catalogs as the control plane that DataPass reads (read-only, Observe opt-in)** for lineage and governance. It is a later reader package after V1.
+    4. **A dialect converter idea, detect-and-propose only:** it flags non-portable SQL and suggests the target-dialect form, and never executes. PORT3.
+    - Not borrowed: MPP execution, caching, materialized views, Arrow Flight, federated queries. They are query-engine features; a local engine for testing variants stays DuckDB-first, after V2.
   - **Rejected:** converting data ourselves (XTable embedded, an engine) and a home-made catalog.
   - **Path, after the V1 run (never in the current quota):**
     | Package | Content | est. M | Milestone |
@@ -284,7 +290,7 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 ADOPT-A (done, !38 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-B (done, !44 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-B, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 L1 | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
-| CODER V4 G1 | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 G1 (re-merging, next in queue) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 ADOPT-C (done, !37 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
