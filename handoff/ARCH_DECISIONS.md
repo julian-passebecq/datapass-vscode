@@ -86,3 +86,8 @@ Critical reading of the 9 sources Julian pasted: good for **coverage** (which to
 5. **One format.** Catalogue entry (CONCEPT1) → rationale applied to a subject (RATIO1) → reasoning card on a finding (PRACT1) → answer card (PRACT3) share fields and vocabulary.
 6. **Platform priority.** Fabric/OneLake, Databricks/UC, dbt, Power BI, SQL Server/Oracle as sources first (V1 live readers + FOIL reality); Snowflake/BigQuery/Redshift/AWS/GCP next; legacy tech only as detectors when found in a repo, no catalogue effort.
 7. **Merge hygiene.** arch-lint detectors live in one folder per family (clean, practice, model, incr, bi, layer) with a generated registry; CLEAN1 → PRACT1 → MODEL1/INCR1 → LAYER1/BIPRAC1/PRACT2 merge serially; each merges main in and regenerates the registry.
+
+### Concept entry schema (PM 15, 2026-09-30 ~02:10)
+- One concept format: `datapass.concept-entry/1` + its taxonomy (CONCEPT1b, Common !91) is the only arch-catalog concept schema. `arch.concept.v1` (CONCEPT1a !93) is dropped; its 47 entries are ported onto concept-entry/1. Fields concept-entry/1 lacks are added to it additively in !93, not as a second schema.
+- Merge order: !91, then !93 rebased on it, then RATIO1.
+- `CONSTRAINT_KINDS` is exported once by arch-catalog; RATIO1's `decision-rationale/1` imports it (its `why` kinds = CONSTRAINT_KINDS + data-profile) and never keeps a copy.
