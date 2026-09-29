@@ -399,9 +399,10 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | (queued after A2Bb1) A2Bb2 | coder (Opus) | spark.sql + temp views (go/A2Bb2.md) | 12 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBCI1 (local_fb1ed666) | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
 | ARCHCAT1 (local_85a53e2b) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
-| (chip sent) FOILARCH · (queued) ARCHB1 after ARCHCAT1, ARCHV1 after ARCHB1 Common | coder (Opus) | idea 25 S2 (go/FOILARCH.md, ARCHB1.md, ARCHV1.md, PM 10) | 20/15/20 | 2026-09-29 · V3.7 | COORD 10 / COORD Common 1 |
+| FOILARCH (local_24082e5a) running · (queued) ARCHB1 after ARCHCAT1, ARCHV1 after ARCHB1 Common | coder (Opus) | idea 25 S2 (go/FOILARCH.md, ARCHB1.md, ARCHV1.md, PM 10) | 20/15/20 | 2026-09-29 · V3.7 | COORD 10 / COORD Common 1 |
 | (queued, cap) GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
-| COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
+| COORD DataPass 11 (local_469fbbb4), live, pinned | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
+| (retired, kept pinned: parent of COORD 11) COORD DataPass 10 (local_cac39b06) | coordinator | handed off to COORD 11 at context limit | — | 2026-09-29 · V3.7 | PM 10 |
 | (retired) COORD DataPass 9 (local_816220f3) | coordinator | handed off to COORD 10 | — | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
