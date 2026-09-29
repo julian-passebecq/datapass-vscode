@@ -161,6 +161,28 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | IAC4 | readiness rules IAC001–013 | common | 15 | Opus | after IAC2 |
   | IAC8-10 | `datapass-iac` VSIX, journeys, `docs/iac/TRY_IT.md` | cloud | 30 | Opus | after IAC1/2 |
   | IAC6/IAC7 | lineage link and CI reading | common/cloud | 20 | Opus | W3 |
+- **Idées de Julian (2026-09-29 ~15:00 local, target V1 where feasible, for the next Codex digest):**
+  5. Integrate the Fabric / Power BI / Azure toolboxes: read their information through the API and **show it in the app**.
+  6. Grafana may come back only as an **optional export target**. The app must not depend on it: in-app views come first, and Grafana is one sink among others.
+  7. **Fake FOIL logs and metrics served as if they came from the Fabric, Power BI and Databricks APIs** (Azure Databricks; FOIL's DAB). Everything can be integrated and tested now and switched to the real cloud later with no redesign.
+  8. Split observation from monitoring. **Observation** analyses the real deployed project: its real Spark files, joins and lineage. It must be very complete, reuse much of Cloud, and be fed by real data. Today's Cloud is static only.
+  9. Analyse Spark execution and CU consumption: stages, shuffles, skew, spill, and CU cost per job or notebook.
+  10. Julian's own Databricks is on the free tier, so its metrics are too small to be useful. Generate **synthetic telemetry from a large Azure Databricks cluster** (many executors, big shuffles, skew, spill, autoscaling, long jobs), clearly labelled synthetic, through the same fake API path.
+- **§ V4-OBS: PM decision (PM DataPass 4, 2026-09-29), recorded for Codex review:**
+  - **Monitoring** is ops health: CU, capacity throttling, refreshes, run status and failures. It covers OBS1 and OBS2 (unchanged) in the `datapass-observe` VSIX, Monitor tab.
+  - **Observation** is the deployed project analysed from runtime data: Spark plans, joins, runtime lineage, run histories, stage/shuffle/skew/spill metrics and CU cost per job. It is projected onto the **same Cloud and Hop views** as the static analysis, with a static-vs-observed diff. It sits in the same VSIX, Observe tab, and reuses Cloud's model and UIH/HOP views. Static lineage (L1, P2) stays the baseline that observation is compared against.
+  - Both read only through `provider-readers` in Observe mode (opt-in, read-only), with a replay or live transport (OBS3). Fake data and real APIs share one code path; only the transport changes.
+  - Sinks: in-app views first. CSV, Prometheus text and Grafana dashboard JSON exports are optional adapters.
+  | Package | Content | Repo | est. M | Model | Gate |
+  |---|---|---|---|---|---|
+  | FAKE2 | synthetic runtime telemetry through the OBS3 replay: Fabric Spark monitoring, Power BI refresh history, Azure Databricks large-cluster Spark event logs (executors, skew, spill, autoscale, long jobs), CU per job; labelled synthetic | cloud `fixtures/foil-synthetic/runtime` | 20 | Sonnet | now |
+  | OBSV1 | runtime readers: Spark event log / Fabric Spark monitoring / Databricks runs → observed-run model (plans, joins, runtime lineage edges) | cloud `packages/observe-runtime` | 25 | Opus | after OBS3 + FAKE2 |
+  | OBSV2 | Spark execution and CU cost analysis: stage/shuffle/skew/spill rules, per-job/notebook CU cost | cloud `packages/observe-runtime` | 20 | Opus | after OBSV1 |
+  | OBSV3 | static-vs-observed diff, projected onto the UIH3 cloud view and the Hop views | cloud | 20 | Opus | after OBSV1 + UIH3 + HOP1b |
+  | TBX1 | Fabric / Power BI / Azure toolbox panel: capacities, workspaces, gateways, item types and settings read via API1–3 and shown in-app | cloud | 15 | Opus | after API1–3 |
+  | SINK1 | optional export adapters: CSV, Prometheus text, Grafana dashboard JSON | cloud | 10 | Sonnet | W3 |
+  - ETA impact: core V1 unchanged (~17:55 UTC on 30 Sept). Full V1 moves from ~04:00 to ~08:00 UTC on 1 Oct, still before the 12:00 UTC reset. The gap review (below) may add more.
+- **V1 gap review (Julian's "PM bis", 2026-09-29):** an independent read-only review of the whole V1 plan by an auditor subagent of PM DataPass 4 (Opus medium) → `handoff/reviews/2026-09-29-v1-gap-review.md`. The PM turns its findings into packages or deferrals here, and they go into the next Codex digest.
 - **New ETA:** core V1 still at ~30 h (17:55 UTC on 30 Sept). V1 with full IaC and monitoring at ~40 h (04:00 UTC on 1 Oct). Hard stop before the 12:00 UTC reset on 1 Oct. OBS1/OBS2 use FAKE1's CU timelines.
 - **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
 - **GO rules for every coder:**
@@ -191,7 +213,9 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC03 | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 VM2 (chip) | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| PM subagent · GAPREV | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md | 3 | 2026-09-29 · V3.6 | PM |
+| CODER V4 FAKE2 (chip) | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
 Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
