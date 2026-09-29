@@ -394,6 +394,7 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
+| (chip sent) HUBCI1 | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
 | ARCHCAT1 (local_85a53e2b) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (queued, cap) GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
 | COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
