@@ -246,13 +246,15 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 6**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 7**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 4 | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 5 | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1510-pm-datapass-4.md); pace alarm: chips held to the quota curve | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
-| PM ASSISTANT DataPass 6 | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 7 | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
+| PM ASSISTANT DataPass 6 (handed off at 235 K) | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
 | CODER V4 API1 | coder (Opus medium) | API1 Fabric inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 API2 | coder (Opus medium) | API2 Databricks inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
