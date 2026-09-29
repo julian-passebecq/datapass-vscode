@@ -278,11 +278,12 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 7**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 7**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 5 | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1510-pm-datapass-4.md); pace alarm: chips held to the quota curve | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 6 (local_264e3da2) | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1400-pm-datapass-5.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
 | PM DataPass 4 | global PM, handed off at 255 K (kept pinned: parent of running coders) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
 | PM ASSISTANT DataPass 7 | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
@@ -302,7 +303,7 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 ADOPT-A (done, !38 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-B (done, !44 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-B, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 L1 | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
-| CODER V4 G1 (re-merging, next in queue) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 G1 (done, !45 merged) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 ADOPT-C (done, !37 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
@@ -316,7 +317,7 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC-EMIT (local_1db68731) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IACB (local_dd8ce01e) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC5 (local_4e6fd9fb) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IACA0 (local_2f706821) | coder (Opus medium) | § V4-NOCODEX IACA0, common (GO go/IACA0.md) | 10 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IACA0 (local_2f706821, done, !48 merged) | coder (Opus medium) | § V4-NOCODEX IACA0, common (GO go/IACA0.md) | 10 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC8 (local_da8ca375) | coder (Opus medium) | § V4-IAC IAC8 datapass-iac VSIX, cloud (GO go/IAC8.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
