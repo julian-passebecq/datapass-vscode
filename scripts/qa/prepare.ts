@@ -180,6 +180,12 @@ function checkFolders(root: string, workspaces: ClientWorkspace[]): Map<string, 
 }
 
 export async function vscodeExecutable(explicit?: string): Promise<string> {
+  // CI's qualified release takes precedence over an ambient per-user installation.
+  const pinnedVersion = process.env.DATAPASS_TEST_VSCODE_VERSION;
+  if (pinnedVersion) {
+    if (!/^\d+\.\d+\.\d+$/.test(pinnedVersion)) throw new CannotPrepare(["DATAPASS_TEST_VSCODE_VERSION must be an exact release (x.y.z)."]);
+    return downloadAndUnzipVSCode(pinnedVersion);
+  }
   const pick = explicit ?? process.env.VSCODE_EXECUTABLE;
   if (pick) {
     if (!fs.existsSync(pick)) throw new CannotPrepare([`VS Code executable not found: ${pick}`]);
@@ -442,4 +448,3 @@ if (require.main === module) {
     vendor: argValue(argv, "vendor") ?? (argv.includes("--rc") ? RC_JOURNEYS_DIR : undefined)
   }).then(r => process.exit(r.code));
 }
-

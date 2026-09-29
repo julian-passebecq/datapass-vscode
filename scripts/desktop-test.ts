@@ -7,7 +7,8 @@
  *                                               (read-only use of ~/.vscode/extensions) to
  *                                               record what DataPass detects on this machine
  *
- * VS Code is taken from VSCODE_EXECUTABLE, then the default per-user Windows install, then
+ * CI pins VS Code with DATAPASS_TEST_VSCODE_VERSION. Otherwise it is taken from
+ * VSCODE_EXECUTABLE, then the default per-user Windows install, then
  * downloaded into .vscode-test/. The user's settings, state and windows are never touched:
  * every run uses a fresh temporary --user-data-dir.
  */
@@ -614,6 +615,11 @@ function extensionHostErrors(logs: string): string[] {
 }
 
 async function vscodeExecutable(): Promise<string> {
+  const pinnedVersion = process.env.DATAPASS_TEST_VSCODE_VERSION;
+  if (pinnedVersion) {
+    if (!/^\d+\.\d+\.\d+$/.test(pinnedVersion)) throw new Error("DATAPASS_TEST_VSCODE_VERSION must be an exact release (x.y.z).");
+    return downloadAndUnzipVSCode(pinnedVersion);
+  }
   const fromEnv = process.env.VSCODE_EXECUTABLE;
   if (fromEnv) return fromEnv;
   if (process.platform === "win32" && process.env.LOCALAPPDATA) {
@@ -695,6 +701,7 @@ async function main(): Promise<void> {
   const summary = {
     generatedAt: new Date().toISOString(),
     executable,
+    requestedVSCodeVersion: process.env.DATAPASS_TEST_VSCODE_VERSION ?? null,
     realExtensions,
     host: { platform: process.platform, release: os.release(), arch: process.arch },
     reports

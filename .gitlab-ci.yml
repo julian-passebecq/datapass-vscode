@@ -57,15 +57,18 @@ demo_fixture_tests:
 
 desktop_acceptance:
   stage: qualify
-  # Run for evidence, but legacy fixture failures are currently known and do not block the baseline pipeline.
-  allow_failure: true
+  variables:
+    # Exact release exercised by the passing Windows desktop baseline (Q1).
+    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
+  # Q1: all 20 fixtures passed on runner 56844575; failures now block acceptance.
+  allow_failure: false
   timeout: 30m
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: manual
-      allow_failure: true
+      allow_failure: false
     - when: never
   before_script:
     - . ./scripts/ci-windows.ps1 -Node
@@ -81,6 +84,8 @@ desktop_acceptance:
 
 ui_smoke:
   stage: qualify
+  variables:
+    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
   timeout: 30m
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
