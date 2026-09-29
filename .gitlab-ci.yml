@@ -15,7 +15,9 @@ variables:
   PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
 
 default:
-  image: node:22-bookworm
+  tags: [local-windows]
+  before_script:
+    - . ./scripts/ci-windows.ps1 -Node
   interruptible: true
   cache:
     key:
@@ -32,9 +34,9 @@ verify_and_package:
   stage: verify
   timeout: 25m
   script:
-    - npm ci --prefer-offline
-    - npm run verify
-    - npx vsce package --no-dependencies
+    - Invoke-CiNative npm.cmd ci --prefer-offline
+    - Invoke-CiNative npm.cmd run verify
+    - Invoke-CiNative npx.cmd vsce package --no-dependencies
   artifacts:
     name: "datapass-vscode-$CI_COMMIT_SHORT_SHA"
     when: always
@@ -44,11 +46,12 @@ verify_and_package:
 
 demo_fixture_tests:
   stage: verify
-  image: python:3.12-bookworm
+  before_script:
+    - . ./scripts/ci-windows.ps1 -Python
   timeout: 10m
   script:
-    - python -m pip install --disable-pip-version-check pytest
-    - python -m pytest -q -p no:cacheprovider examples/v3/etl-demo
+    - Invoke-CiNative $CiPython -m pip install --disable-pip-version-check pytest
+    - Invoke-CiNative $CiPython -m pytest -q -p no:cacheprovider examples/v3/etl-demo
   variables:
     PYTHONDONTWRITEBYTECODE: "1"
 
@@ -65,11 +68,10 @@ desktop_acceptance:
       allow_failure: true
     - when: never
   before_script:
-    - apt-get update -qq
-    - apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libxss1 libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libatspi2.0-0 ca-certificates
-    - npm ci --prefer-offline
+    - . ./scripts/ci-windows.ps1 -Node
+    - Invoke-CiNative npm.cmd ci --prefer-offline
   script:
-    - xvfb-run -a npm run test:desktop
+    - Invoke-CiNative npm.cmd run test:desktop
   artifacts:
     name: "datapass-desktop-$CI_COMMIT_SHORT_SHA"
     when: always
@@ -91,11 +93,14 @@ ui_smoke:
     - job: verify_and_package
       artifacts: true
   before_script:
-    - apt-get update -qq
-    - apt-get install -y --no-install-recommends xvfb xauth libgtk-3-0 libxss1 libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 libatspi2.0-0 ca-certificates
-    - npm ci --prefer-offline
+    - . ./scripts/ci-windows.ps1 -Node
+    - Invoke-CiNative npm.cmd ci --prefer-offline
   script:
-    - DATAPASS_QA_VSIX="$(find . -maxdepth 1 -name '*.vsix' -print -quit)" xvfb-run -a npx tsx --test tests/qa-ui.smoke.test.ts
+    - |
+      $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
+      if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
+      $env:DATAPASS_QA_VSIX = $vsix.FullName
+      Invoke-CiNative npx.cmd tsx --test tests/qa-ui.smoke.test.ts
   artifacts:
     name: "datapass-ui-smoke-$CI_COMMIT_SHORT_SHA"
     when: always
