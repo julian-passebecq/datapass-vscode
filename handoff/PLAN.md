@@ -219,6 +219,21 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | TRN1 | one replay transport (OBS3 cassette) | cloud provider-readers | 8 | Opus | after OBS3 !8 merges |
   | SEC2 | negative security suite + bundle scan (redaction, allowlist and ceilings, Observe off, no provider-readers in static VSIXs, export masking) | cloud | 12 | Opus | before RV1a |
   | E2E1 | cross-VSIX journey on FOIL-synthetic, replay only, @vscode/test-electron | cloud `tests/e2e` | 20 | Opus | after UIH3a + OBSV3 |
+- **§ V4-FIX: fixture coverage** (Julian ideas 11–14; audit `handoff/reviews/2026-09-29-fixture-coverage.md`). It found 21 fixture sets missing and 3 that are not true to format. Rules for every FIX package:
+  - Open the official format page on the web (WebFetch) before writing, and cite its URL in the fixture README; the audit's URLs were written from memory.
+  - Label every file synthetic, and use only IDs from `fixtures/foil-synthetic/ids.json`.
+  - Prefer too much data to too little.
+  FAKE1 fixes its own format faults before merging: the plan JSON gets no `note` key and gains prior_state, configuration and resource_drift; the SARIF uses a real tool driver shape; the recordings carry fuller bodies.
+  | Package | Content | Repo path | est. M | Model | Gate |
+  |---|---|---|---|---|---|
+  | FIXPRJ | Warehouse SQL project, 20+ PySpark jobs, notebooks at scale | cloud `fixtures/foil-synthetic/project/` | 12 | Sonnet | now |
+  | FIXIAC | current state, compiled ARM + what-if, tfsec/checkov SARIF, Infracost JSON, `helm template` output | cloud `fixtures/foil-synthetic/iac-evidence/` | 15 | Sonnet | after FAKE1 !16 |
+  | FIXGOV | role assignments, capacities, gateways/connections, deployment pipelines, Git status replays | cloud `.../recordings/governance-*` | 12 | Sonnet | after FAKE1 + TRN1 |
+  | FIXMON | Azure Monitor replays; enrich Fabric/Power BI/Databricks bodies to the documented fields | cloud `.../recordings/` | 10 | Sonnet | after TRN1 |
+  | FIXLIN | OpenLineage events, Unity Catalog lineage, Databricks cluster events | cloud `fixtures/foil-synthetic/runtime/lineage/` | 10 | Sonnet | after FAKE2 |
+  | FIXVM | ufw/iptables-save, fail2ban, OCI security list/NSG/instance replays | cloud `fixtures/foil-synthetic/oracle-vm/` | 8 | Sonnet | after VM2 |
+  | FIXGIT | GitLab replays: projects, branches, MRs, pipelines, jobs | hub `fixtures/gitlab-replay/` | 10 | Sonnet | after HG1b !4 |
+  - **ETA (Julian allows > 48 h):** the run is now about 420 M of packages. Core V1 stays around 17:55 UTC on 30 Sept. Complete V1 moves to about 10:00 UTC on 1 Oct, just before the weekly reset at 12:00 UTC. The quota is the real limit: the PM checks every 5 h and tells the assistant as soon as the weekly curve projects past 90 %. Any work left after the reset continues in the new week.
 - **New ETA:** core V1 still at ~30 h (17:55 UTC on 30 Sept). V1 with full IaC and monitoring at ~40 h (04:00 UTC on 1 Oct). Hard stop before the 12:00 UTC reset on 1 Oct. OBS1/OBS2 use FAKE1's CU timelines.
 - **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
 - **GO rules for every coder:**
@@ -253,10 +268,12 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 ADOPT-A (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-C (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
 | PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
-| PM subagent · OBSC | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
+| PM subagent · OBSC (merged !40) | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · CAPM1 | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
 | CODER V4 G1 (chip) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 FAKE2 (chip) | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
+| CODER V4 FIXPRJ (chip) | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
 Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
