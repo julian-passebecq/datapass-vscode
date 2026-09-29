@@ -28,7 +28,7 @@ DataPass shows a **super brain doing a project**, not a Git tree. The client AI 
 - DataPass must **support that vision**: show the reasoning, the alternatives, the partial realizations and the metric deltas clearly (ARCHV1), and the bridge asks the client AI for this senior mode by default (ARCHB1).
 Contract impact (additive, K9 v1 minor): ARCHQ1 adds optional `realization: full | partial | none`, `estimates[]` {metric, baseline, alternative, delta, unit, basis `theory | measured`, assumptions} and `improvements[]` {where, action, expected gain, estimate refs} to `arch.choice.v1`, and `estimateModels[]` (how to reason a metric theoretically) to `arch.decision.v1`.
 
-## 3c. Problem solver at every scale (Julian, 2026-09-29 ~22:40 local)
+## 3c. Problem solver at every scale (Julian, 2026-09-29 ~22:15 local)
 Julian: "my first logic (archi A, B, C) was not so good; now we expand how we think." The bridge does **not** hand the client AI a menu of architectures. It hands it a **problem-solving method**, and the catalogue is its knowledge, not its menu. Knowledge digest: `handoff/reviews/2026-09-29-senior-patterns-digest.md`.
 
 **Problem first.** Every reasoning starts from the customer's problem and value (which decision the data serves, how fresh, how trusted, at what cost, who maintains it), then works down the scales; a technical choice that serves no stated need is flagged as over-engineering.
