@@ -386,9 +386,15 @@ Kept by **PM DataPass 9** (local_2265fbb2, Opus medium, global PM, from 2026-09-
 | CODER V4 ARCHQ0 (local_92df7b07) | coder (Opus medium) | idea 25: arch.decision.v1 + arch.choice.v1 contracts, common K9 (GO go/ARCHQ0.md) | 15 | 2026-09-29 · V3.7 | COORD Common 1 |
 | CODER V4 FAKEERP (local_44c357bd) | coder (Sonnet medium) | idea 25: synthetic ERP P&L world + decision log, cloud (GO go/FAKEERP.md) | 15 | 2026-09-29 · V3.7 | COORD 9 |
 | CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
-| (chip pending) REPIN1 (Opus) | coder | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 9 |
-| (queued, cap) A2B, DBT1, BI1, ARCHCAT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 20/25/25/25 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 9 |
-| COORD DataPass 9 (local_816220f3) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges (hand-off go/handoff-coord-8.md) | — | 2026-09-29 · V3.7 | PM 9 |
+| REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
+| ARCHQ1 (local_4957fa69) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
+| A2B (local_4f39a026) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 20 | 2026-09-29 · V3.7 | COORD Common 1 |
+| DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
+| BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
+| HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
+| (queued, cap) ARCHCAT1, GITL0, then ARCHLINT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
+| COORD DataPass 10 (local_cac39b06) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 9 → PM 10 |
+| (retired) COORD DataPass 9 (local_816220f3) | coordinator | handed off to COORD 10 | — | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 UIH3a (local_01d3c05e) | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
