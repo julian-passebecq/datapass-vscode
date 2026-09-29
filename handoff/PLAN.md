@@ -172,7 +172,7 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 6**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 6**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
@@ -180,21 +180,20 @@ Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decisio
 | PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
 | PM ASSISTANT DataPass 6 | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
-| CODER V4 C5b | coder (Opus medium) | C5b realizations + navigation, common | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 API0 | coder (Opus medium) | API0 provider transport, cloud `packages/provider-readers` | 20 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 UIH1 | coder (Opus medium) | UIH1 graph canvas, cloud `packages/workbench-ui` | 25 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 UIH2 | coder (Opus medium) | UIH2 notebook view + runtime picker + panes, cloud `packages/workbench-ui` | 30 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 VM1a | coder (Opus medium) | VM1a SSH/cloud-init/systemd analyzers + SEC1 detectors, cloud `packages/infra-analyzers` | 25 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 VM1b | coder (Opus medium) | VM1b Compose/K8s/Helm/Ansible analyzers, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 VM3a | coder (Opus medium) | VM3a `datapass-infra` VSIX shell, cloud `packages/vscode-infra` | 15 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 OBS3 | coder (Opus medium) | OBS3 replay/mock transport, cloud | 15 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 IACCORPUS | coder (Sonnet medium) | IACCORPUS fixtures, common (fixtures only) | 10 | 2026-09-29 · V3.6 | COORD 5 |
-| CODER V4 C5a | coder (Opus medium) | C5a project contracts from PROJECT_MODEL.md, common new package | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 HG1a | coder (Opus medium) | HG1a multi-repo Git observation service + dashboard shell, hub | 20 | 2026-09-29 · V3.6 | COORD 5 |
-| PM subagent · OBSG | PM subagent (Sonnet) | OBSG strip Grafana from central docs | 3 | 2026-09-29 · V3.6 | PM |
-| COORD DataPass 4 | coordinator (Opus low) | idle since 28 Sept; retired when COORD 5 starts | — | 2026-09-28 · V2.2 | PM |
+| CODER V4 API1 | coder (Opus medium) | API1 Fabric inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 API2 | coder (Opus medium) | API2 Databricks inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 API3 | coder (Opus medium) | API3 Power BI + Azure reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 VM1b | coder (Opus medium) | VM1b Compose/K8s/Helm/Ansible analyzers (!11) | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 OBS3 | coder (Opus medium) | OBS3 replay/mock transport (!8) | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 HG1b | coder (Opus medium) | HG1b Git change → impact, hub | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 HOP1a | coder (Opus medium) | HOP1a Hop renderer, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC1 | coder (Opus medium) | § V4-IAC IAC1 HCL parser, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC03 | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 VM2 (chip) | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
-Retired on 2026-09-29: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
+Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
