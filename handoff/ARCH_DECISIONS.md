@@ -18,6 +18,16 @@
 ## 3. Flow
 Catalogue (DataPass engine, versioned) → bridge exposes it to the client AI → the AI builds one realization (or two parts to compare when Julian asks) and writes the decision log → DataPass reads the log, links each choice to graph nodes → views: decision overlay on Hop and Cloud views, comparison tables, variant filter, "ask the AI to build alternative X" action. Client AI only, never an embedded LLM; no client code execution; synthetic data only.
 
+## 3b. The senior mind (Julian, 2026-09-29 ~22:20 local)
+DataPass shows a **super brain doing a project**, not a Git tree. The client AI does **not** create 10 repos for 10 architectures: it builds **one fixed repo**, then, proactively, explains its thinking and supports it:
+- **Proactive alternatives with value:** "I did X; here you should use Iceberg / polars / DuckDB because…"; when an alternative is useful and when it is not; once alternatives are known, evaluate them (in general, not only for this client).
+- **Partial alternative realizations:** "I built part of that architecture so you can compare; it is not complete" (`realization: partial`).
+- **Theoretical metrics:** cost, runtime, data scanned, data moved, storage, latency, freshness, each baseline vs alternative with the basis (`theory | measured`) and the assumptions: "partitioning here by date saves ~x % scanned data per run, so ~y cost".
+- **Proactive improvements:** where to save cost doing what, which partition key is more judicious, where Spark is overkill (polars / DuckDB on one node), when a Fabric copy activity, an ETL tool or Airflow fits better, when a lakehouse table format (Iceberg, Delta, DuckLake) brings value (multi-engine reads, time travel, schema evolution, small-team local work) and when plain Parquet or a warehouse table is enough.
+- The catalogue covers data engineering **and** warehousing best practice: Spark vs SQL, polars, DuckDB, DuckLake, Iceberg / Delta / Parquet, pipelines vs notebooks vs dbt vs copy activities vs Airflow, modelling (star schema, SCD, incremental), cost control (capacity, autoscale, file sizes, caching, refresh cadence).
+- DataPass must **support that vision**: show the reasoning, the alternatives, the partial realizations and the metric deltas clearly (ARCHV1), and the bridge asks the client AI for this senior mode by default (ARCHB1).
+Contract impact (additive, K9 v1 minor): ARCHQ1 adds optional `realization: full | partial | none`, `estimates[]` {metric, baseline, alternative, delta, unit, basis `theory | measured`, assumptions} and `improvements[]` {where, action, expected gain, estimate refs} to `arch.choice.v1`, and `estimateModels[]` (how to reason a metric theoretically) to `arch.decision.v1`.
+
 ## 4. Packages (S2, before less central S2 work; est. M)
 | Id | Repo | Scope | M | Model |
 |---|---|---|---|---|
@@ -28,4 +38,5 @@ Catalogue (DataPass engine, versioned) → bridge exposes it to the client AI �
 | FOILARCH | cloud | critical review of the FOIL DAB; ML part as a Fabric notebook too; decision log and comparison tables (data movement, perf, price, complexity) | 20 | Opus |
 | ARCHB1 | common + hub | bridge: exposes catalogue + selection to the client AI, reads `arch.choice.v1` logs | 15 | Opus |
 | ARCHV1 | cloud | decision overlay, comparison tables, select / deselect variants in Hop and Cloud views | 20 | Opus |
-Order: ARCHQ0 → ARCHCAT1 → ARCHB1 → ARCHV1; FAKEERP, FAKESCM start now (their logs validate against ARCHQ0 once merged); FOILARCH after ARCHQ0. Total ≈ 122 M.
+| ARCHQ1 | common | § 3b additive fields (realization, estimates, improvements, estimateModels), core-change K9 | 6 | Opus |
+Order: ARCHQ0 → ARCHQ1 → ARCHCAT1 → ARCHB1 → ARCHV1; FAKEERP, FAKESCM start now (their logs validate against ARCHQ0 once merged); FOILARCH after ARCHQ0. Total ≈ 122 M.
