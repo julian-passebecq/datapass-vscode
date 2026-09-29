@@ -22,7 +22,7 @@ if ($Python) {
     $env:PYTHONUTF8 = '1'
     $script:CiPython = 'D:\PROJ\GitlabRunner\tools\python-3.12.10\tools\python.exe'
     if (-not (Test-Path -LiteralPath $CiPython -PathType Leaf)) { throw 'CPython 3.12 runtime is missing' }
-    Invoke-CiNative $CiPython -c 'import sys; print(sys.version); print(sys.executable); assert sys.version_info[:2] == (3, 12); assert __debug__'
+    Invoke-CiNative $CiPython -c 'import sys; print(sys.version); print(sys.executable); sys.exit(0 if sys.version_info[:2] == (3, 12) and __debug__ and not sys.flags.optimize else 1)'
     Invoke-CiNative $CiPython -m venv .ci-venv
     $script:CiPython = Join-Path $PWD '.ci-venv\Scripts\python.exe'
     $env:PATH = "$(Join-Path $PWD '.ci-venv\Scripts');$env:PATH"
