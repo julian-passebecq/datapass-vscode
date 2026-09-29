@@ -37,12 +37,17 @@ verify_and_package:
     - Invoke-CiNative npm.cmd ci --prefer-offline
     - Invoke-CiNative npm.cmd run verify
     - Invoke-CiNative npx.cmd vsce package --no-dependencies
+    - |
+      $packages = @(Get-ChildItem -LiteralPath . -Filter *.vsix -File)
+      if ($packages.Count -ne 1) { throw 'Expected exactly one packaged VSIX' }
+      ./scripts/check-vsix.ps1 -Path $packages[0].FullName
   artifacts:
     name: "datapass-vscode-$CI_COMMIT_SHORT_SHA"
     when: always
     expire_in: 14 days
     paths:
       - "*.vsix"
+      - "*.vsix.sha256"
 
 demo_fixture_tests:
   stage: verify

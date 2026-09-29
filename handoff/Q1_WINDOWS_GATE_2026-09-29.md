@@ -10,4 +10,6 @@ Both desktop and installed-VSIX QA resolvers now honor an exact `DATAPASS_TEST_V
 
 The baseline's verify/package job **16796032762** passed 732 checks with four existing skips; demo job **16796032763** passed ten checks. Its VSIX included CI cache files, so it is **not a release artifact**. Commit b046aeb only added exclusions for `.ci-tools`, `.ci-venv` and `.cache`; it did not change product source. The Q1 candidate pipeline must produce and exercise the newly packaged VSIX. Its exact-head checks, artifact digest and installed UI outcome are separate from the reused baseline desktop evidence.
 
+The package job inspects the actual VSIX ZIP without extracting it, rejects any `.ci-tools`, `.ci-venv` or `.cache` entries and records its size, entry count and SHA256 sidecar as artifacts. This checks the diagnosed packaging regression rather than assuming source ignore rules were honored.
+
 No old assertions were deleted, no retry policy was added, no main merge/migration sign-off is claimed, and no provider work was performed. This Windows service-host evidence is limited to the actual isolated desktop and UI harnesses, not a claim about every user's interactive desktop environment.
