@@ -323,7 +323,8 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | PM ASSISTANT DataPass 9 (local_4ccac046), retired at 150 K ~19:05 local (kept pinned: parent of PM 8 and S1 chips) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron, idea-19 audit relay (hand-off from assistant 8) | — | 2026-09-29 · V3.6 | PM |
 | PM ASSISTANT DataPass 8 (local_767bfb24), retired 2026-09-29 ~15:40 UTC (kept pinned: parent of assistant 9 and PM 7) | assistant (Sonnet low) | Julian's only contact, chip relay, quota cron (hand-off go/handoff-assistant-7.md) | — | 2026-09-29 · V3.6 | PM |
 | PM ASSISTANT DataPass 7 | assistant, retired at ~195 K (kept pinned: parent of assistant 8 and PM 6) | — | — | 2026-09-29 · V3.6 | — |
-| COORD DataPass 7 (local_0bdd83a7) | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off go/handoff-coord-6.md) | — | 2026-09-29 · V3.6 | PM |
+| COORD DataPass 8 (local_474ea0e1) | coordinator (Sonnet low) | S1 flow, routine cloud/hub merges (hand-off go/handoff-coord-7.md) | — | 2026-09-29 · V3.6 | PM |
+| COORD DataPass 7 (local_0bdd83a7), retired at 158 K (kept pinned) | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off go/handoff-coord-6.md) | — | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 6 (local_bdf70452, handed off at 173 K) | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
 | CODER V4 API1 | coder (Opus medium) | API1 Fabric inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 API2 | coder (Opus medium) | API2 Databricks inventory reads, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
@@ -362,7 +363,7 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | CODER V4 FIXDBT (local_7bcad348) | coder (Sonnet medium) | S1 fixture: synthetic dbt project, cloud (GO go/FIXDBT.md) | 8 | 2026-09-29 · V3.6 | COORD 7 |
 | CODER V4 FIXBI (local_7dbafb7a) | coder (Sonnet medium) | S1 fixture: PBIP/TMDL/PBIR/PBIX + Superset, cloud (GO go/FIXBI.md) | 8 | 2026-09-29 · V3.6 | COORD 7 |
 | CODER V4 FIXORC (local_4d265ef9) | coder (Sonnet medium) | S1 fixture: Airflow/DAB/ADF/Fabric/Step Functions, cloud (GO go/FIXORC.md) | 8 | 2026-09-29 · V3.6 | COORD 7 |
-| (queued) VM3b, XR0, FIXREPO, FIXIAC | — | S1 next free slots, GOs in go/ | — | — | COORD 7 |
+| CODER V4 XR0 (local_cb04e69a), FIXREPO (local_9d10fe32), FIXIAC (local_5df8c388) | coder (Sonnet medium) | S1 Data X-ray on GitLab + fixtures (GOs go/XR0, FIXREPO, FIXIAC) | 8/12/15 | 2026-09-29 · V3.6 | COORD 8 |`n| (chips sent) FIXGOV, FIXMON (Sonnet), SEC2 (Opus) | coder | S1 (GOs in go/) | 12/10/12 | 2026-09-29 · V3.6 | COORD 8 |
 
 Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
