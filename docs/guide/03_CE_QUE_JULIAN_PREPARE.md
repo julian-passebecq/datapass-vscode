@@ -111,7 +111,27 @@ machine (jamais dans un dépôt) avec le dépôt de coordination, les dépôts t
 barre de titre et le nom de l'entreprise (`datapass.company`). Rouvre VS Code par ce fichier ;
 accepte Workspace Trust pour ses dossiers. Ensuite, *Save Work View…* pour retrouver ta disposition.
 
-## 3.8 Ta check-list avant de dire « le client est prêt »
+## 3.8 Te repérer dans la fenêtre : Home, zoom du code, apparence, icône DataPass
+
+Quatre commandes à connaître (palette Ctrl+Maj+P, tape `DataPass`), toutes aussi dans la barre d'état :
+
+| Tu veux… | Clique | Ou |
+|---|---|---|
+| **Retrouver ta disposition** : la page Home, l'arbre DataPass à gauche et le rail à droite | `⌂ Home` en bas à gauche de la barre d'état | le bouton maison en haut de l'arbre DataPass ou du rail ; *DataPass: Home — Restore the Project Layout* |
+| **Agrandir ou réduire le code** (`editor.fontSize` de VS Code, écrit dans ce workspace) | les loupes `−` / `+` en bas à droite ; le chiffre entre les deux est la taille actuelle | **Alt+=** (plus grand), **Alt+-** (plus petit) ; boutons A− / A+ / Reset en haut de la page Home ; *Reset the code size* dans *Appearance…* |
+| **Changer l'apparence** : thème clair/sombre de VS Code, surcouche DataPass (on/off, couleurs), couleurs des icônes de l'arbre, style des diagrammes, taille du code | le chiffre de taille du code (bas à droite) | *DataPass: Appearance…* ; bouton *Appearance…* de la page Home ; menu `…` de l'arbre DataPass |
+| **Faire revenir l'icône DataPass** dans la barre d'activité (la colonne d'icônes tout à gauche) | *DataPass: Show DataPass in the Activity Bar* | puis **clic droit sur la barre d'activité → coche DataPass** pour qu'elle reste |
+
+- Ctrl+= / Ctrl+- de VS Code zooment **toute la fenêtre** (menus compris), pas seulement le code.
+- Le bouton Home restaure la disposition nommée **Home** si tu en as enregistré une (page Home →
+  *Save as my Home layout* : fichiers ouverts, grille, vues DataPass), sinon celle avec laquelle
+  l'espace de travail s'ouvre, sinon la dernière appliquée ; puis il montre toujours la page Home,
+  l'arbre et le rail, même si tu avais fermé les barres latérales ou découpé l'éditeur.
+- Si toute la barre d'activité est cachée, *Show DataPass in the Activity Bar* propose de la
+  réafficher (réglage VS Code `workbench.activityBar.location`, après confirmation).
+- Chaque élément DataPass de la barre d'état se masque par un clic droit sur la barre d'état.
+
+## 3.9 Ta check-list avant de dire « le client est prêt »
 
 - [ ] Comptes : Git, Azure (tenant + abonnement dev), Databricks/Fabric si utilisés, Atlas dev.
 - [ ] Outils de la toolchain installés ; **Tools & versions** sans « missing » (hors optionnels).

@@ -39,6 +39,7 @@ import { registerNativeTestFlows } from "./nativeTestFlows";
 import { registerHonestFlows } from "./honestFlows";
 import { registerJourneyGapFlows } from "./journeyGapFlows";
 import { registerAirflowFlows } from "./airflowFlows";
+import { registerPolish4Flows } from "./polish4Flows";
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -274,6 +275,7 @@ registerBoardFlows(() => api);
 registerDevopsFlows(() => api);
 registerWindowFlows(() => api);
 registerHomeFlows(() => api);
+registerPolish4Flows(() => api);
 registerHopFlows(() => api);
 registerToolchainFlows(() => api);
 registerToolkitFlows(() => api);

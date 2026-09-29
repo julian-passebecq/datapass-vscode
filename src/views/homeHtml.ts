@@ -55,6 +55,8 @@ const STYLE = `
   button.file { width: 100%; text-align: left; background: none; border: 0; padding: 2px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--vscode-textLink-foreground); }
   button.file:hover { background: var(--vscode-list-hoverBackground); }
   button.file .muted { font-size: 11px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .tools .size { color: var(--vscode-descriptionForeground); font-size: 12px; padding: 0 2px; }
   @media (max-width: 520px) { body { padding: 12px; } .lane { grid-template-columns: 1fr; } }
 `;
 
@@ -95,6 +97,22 @@ ${g.links.map(k => `<div class="link" data-link="${k.group}:${k.index}">
 </div>`).join("")}</div>`).join("");
 }
 
+/**
+ * V1.1.x-POLISH-4: the toolbar at the top right — Home (restore the project layout), Appearance, the code
+ * size (A− / A+, the size between them resets it) and DataPass back in the Activity Bar.
+ */
+export function homeTools(s: HomeState): string {
+  const size = typeof s.codeFontSize === "number" ? s.codeFontSize : 14;
+  const btn = (id: string, label: string, title: string) => `<button type="button" data-action="${esc(id)}" title="${esc(title)}">${esc(label)}</button>`;
+  return `<div class="tools" data-tools>
+  ${btn("home.restore", "⌂ Restore layout", "The Home page, the DataPass tree and the right rail as this project saved them")}
+  ${btn("appearance.open", "Appearance…", "Colour theme, DataPass overlay, overlay and tree colours, diagram style, code size")}
+  ${btn("font.smaller", "A−", "Smaller code text (Alt+-)")}<span class="size" title="VS Code's editor.fontSize">Code ${esc(size)} px</span>${btn("font.bigger", "A+", "Larger code text (Alt+=)")}
+  ${btn("font.reset", "Reset", "Back to your usual code size")}
+  ${btn("activityBar.show", "DataPass icon", "Show DataPass in the Activity Bar (right-click the Activity Bar and tick DataPass to keep it)")}
+</div>`;
+}
+
 function homeBody(s: HomeState): string {
   const title = s.project ? s.project.title : "DataPass";
   const preview = s.preview ? `<h2>Architecture at a glance</h2>
@@ -107,10 +125,11 @@ function homeBody(s: HomeState): string {
   <p class="sub">A layout keeps the open files, the Workbench, the visible DataPass views, the diagram settings and this Home tab — on this computer only. Modules you close load nothing.</p>
   ${s.layoutsError ? `<p class="error">${esc(s.layoutsError)}</p>` : ""}
   ${s.layouts.length ? `<div class="layouts">${s.layouts.map(v => `<div class="layout"><div><strong>${esc(v.name)}</strong>${v.project ? `<span class="env">${esc(v.project)}</span>` : ""}<div class="sub">${esc(v.detail)}</div></div><button type="button" data-layout="${esc(v.id)}">Apply</button></div>`).join("")}</div>` : `<p class="muted">No saved layout yet: open the modules you want, arrange them, then save.</p>`}
-  <div class="actions">${actionButton({ id: "layout.save", label: "Save this layout…" }, true)}${s.layouts.length ? actionButton({ id: "layout.manage", label: "Rename, delete, startup…" }, false) : ""}</div>
+  <p class="sub" data-home-layout>The Home button (status bar, tree and rail title bars) restores ${s.homeLayout ? `the layout <strong>${esc(s.homeLayout)}</strong>, then this page, the DataPass tree and the rail.` : `this page, the DataPass tree and the rail. Save a layout named "Home" to make it restore your files and views too.`}</p>
+  <div class="actions">${actionButton({ id: "layout.save", label: "Save this layout…" }, true)}${actionButton({ id: "layout.saveHome", label: "Save as my Home layout" }, false)}${s.layouts.length ? actionButton({ id: "layout.manage", label: "Rename, delete, startup…" }, false) : ""}</div>
 </div>`;
   const noProject = s.project ? "" : `<div class="actions" style="margin-top:10px">${actionButton({ id: "project.open", label: "Open a client project…" }, true)}${actionButton({ id: "project.guide", label: "How to prepare a project" }, false)}</div>`;
-  return `<div class="top"><div><h1>${esc(title)}</h1><p class="sub">${esc(s.project?.description ?? "Pick a module: each one opens on its own.")}</p></div></div>${noProject}
+  return `<div class="top"><div><h1>${esc(title)}</h1><p class="sub">${esc(s.project?.description ?? "Pick a module: each one opens on its own.")}</p></div>${homeTools(s)}</div>${noProject}
 ${s.areas.map(a => `<h2>${esc(a.title)}</h2><div class="tiles" data-area="${esc(a.id)}">${a.tiles.map(tileHtml).join("")}</div>`).join("\n")}
 ${preview}
 ${layouts}`;

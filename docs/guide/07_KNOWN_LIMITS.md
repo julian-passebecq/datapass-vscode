@@ -53,6 +53,10 @@ that does not exist.
     set the width of the secondary side bar it sits in. When the full panel folds into the rail,
     DataPass narrows the side bar with VS Code's own "decrease view width" steps and widens it back
     by the same steps on Expand; if you resized the side bar by hand in between, drag its edge.
+14. **The DataPass activity-bar icon cannot pin itself.** Once hidden (right-click on the Activity
+    Bar), only the person can tick it again; *DataPass: Show DataPass in the Activity Bar* opens the
+    DataPass side bar and says so. VS Code also sizes the icon itself (24 px); DataPass only draws a
+    bolder shape (V1.1.x-POLISH-4).
 
 ## 7.3 Open — to qualify with real accounts (unchanged since V1 gate 16)
 

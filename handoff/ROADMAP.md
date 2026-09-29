@@ -185,7 +185,7 @@ From Julian's check of 1.1.0-rc.1 (screenshots relayed by the PM). Praise first:
 | Full rail redesign (what each button opens, order, placement) | V4 | idea |
 | Airflow DAG tasks with shapes and icons per operator type (sensor, branch, transfer, compute…) instead of identical rectangles, possibly a horizontal layout — configurable | V4 | idea |
 | Choose where the Airflow DAG view lives: its own editor tab, the bottom panel or the right rail (a built-in "placement" option, part of the modular layout) | V4 | idea |
-| Remaining rc.1 remarks: the DataPass activity-bar icon disappeared and is too discreet; code zoom and the theme setting are hard to find; a Home button that restores the project layout | later package | to fix |
+| Remaining rc.1 remarks: the DataPass activity-bar icon disappeared and is too discreet; code zoom and the theme setting are hard to find; a Home button that restores the project layout | 1.1.0 | V1.1.x-POLISH-4: "Show DataPass in the Activity Bar" + a bolder icon (pinning it back stays a right-click: no API); A− / size / A+ in the status bar, on the Home page and on Alt+- / Alt+=; "Appearance…" (theme, overlay, colours, tree icons, diagram style, code size); a Home button (status bar, tree and rail title bars) restoring the layout named "Home" plus the Home page, tree and rail |
 | Preset window layouts per project step, opened from a task in Home | V4 | idea |
 | The Airflow DAG view works but is "pas très pratique": improve its UX | V4 | idea |
 | **Standing test gate:** before any test session Julian runs, deliver a guided tutorial with screenshots showing where everything is (theme, zoom, Home, lenses…) and every shortcut; for V4, once V4 ships and before his test | every test session; V4 before Julian's test | rule |
