@@ -183,6 +183,18 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | SINK1 | optional export adapters: CSV, Prometheus text, Grafana dashboard JSON | cloud | 10 | Sonnet | W3 |
   - ETA impact: core V1 unchanged (~17:55 UTC on 30 Sept). Full V1 moves from ~04:00 to ~08:00 UTC on 1 Oct, still before the 12:00 UTC reset. The gap review (below) may add more.
 - **V1 gap review (Julian's "PM bis", 2026-09-29):** an independent read-only review of the whole V1 plan by an auditor subagent of PM DataPass 4 (Opus medium) → `handoff/reviews/2026-09-29-v1-gap-review.md`. The PM turns its findings into packages or deferrals here, and they go into the next Codex digest.
+- **§ V4-NOCODEX: Codex is unavailable (Julian, 2026-09-29).** Everything is done in Claude sessions. PM DataPass 4 owns the architecture; decisions are recorded here and in `PROJECT_MODEL.md` §13. No digest goes to Codex. Julian's verbatim text: `handoff/ideas/2026-09-29-julian-direction.md`.
+  - The hour-12 decision is taken now: **Opus adopts Codex's frozen Common branches.** New `v4/adopt-*` branches are cut from Codex's heads and rebased onto main; Codex's own branches and MRs (!23, !26–!32) are left untouched and closed only after adoption. Common merges are the PM's, in series.
+  - The RC UX pass by Codex Computer Use is replaced by a Claude tester session (Playwright `_electron`) plus an Opus UX opinion, inside RV1.
+  - The gap review reports to the PM only.
+  | Package | Content | Codex source (ahead of main) | est. M | Model | Gate |
+  |---|---|---|---|---|---|
+  | ADOPT-A | C2 tail + C2c capability exchange + A0 bounded analyzer dispatch and project cache | `v4/a0-analyzer-dispatch` 00bfeaf (17 commits, ~5.4 K lines, includes `v4/common-capability-exchange`) | 25 | Opus | now |
+  | ADOPT-C | C3 V3 readers, loss-aware compat projection + seven legacy evidence families | `v4/common-compat-evidence` 5fda1a0 (includes `v4/common-compat-v3`) | 25 | Opus | now, parallel to A (merge after A) |
+  | ADOPT-B | LPAC static syntax host with a verified offline runtime (bundled Python parser, qualified host contract) | `v4/common-node-host` 419c926 | 20 | Opus | after ADOPT-A |
+  | IACA0 | register `iac-hcl` (and Bicep) with the A0 dispatcher | — | 10 | Opus | after ADOPT-A + IAC1 |
+  | L1 | `lineage-core` (unchanged scope) | — | 30 | Opus | after ADOPT-A |
+  - ETA: core V1 unchanged (the adoption runs beside the critical path). Full V1 stays at ~08:00 UTC on 1 Oct, with ~2 h of risk from the adoption merges.
 - **New ETA:** core V1 still at ~30 h (17:55 UTC on 30 Sept). V1 with full IaC and monitoring at ~40 h (04:00 UTC on 1 Oct). Hard stop before the 12:00 UTC reset on 1 Oct. OBS1/OBS2 use FAKE1's CU timelines.
 - **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
 - **GO rules for every coder:**
@@ -214,6 +226,8 @@ Kept by **PM DataPass 4** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | PM subagent · GAPREV | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md | 3 | 2026-09-29 · V3.6 | PM |
+| CODER V4 ADOPT-A (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
+| CODER V4 ADOPT-C (chip) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 (chip) | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
