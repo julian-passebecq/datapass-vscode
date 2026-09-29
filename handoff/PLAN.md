@@ -126,7 +126,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   - Codex's frozen Common branches (A2/A0H, C2, IAC bridge) stay untouched. At hour 12 the PM decides whether Opus adopts them.
 - **Pace:**
   - Check every 5 h against the quota curve: 17 / 33 / 50 / 67 / 83 / 100 %.
-  - At most 6 coders at once (PM 6, 2026-09-29 ~14:10 UTC, was 8): Julian saw "Temporarily unable to authenticate" 4 times with ~10 sessions active at the same time. No new chip while 6 coders are running; revisit if the error comes back below 6.
+  - At most 6 coders at once (PM 6, 2026-09-29 ~14:10 UTC, was 8): Julian saw "Temporarily unable to authenticate" 4 times with ~10 sessions active at the same time. No new chip while 6 coders are running; revisit if the error comes back below 6. Correction by assistant 8: only 2 sessions were running at the error, so load is an unlikely cause; the cap stays as a precaution.
   - **Julian, 2026-09-29 ~13:20 UTC: "Continuer et voir".** The pace alarm is lifted: chips go out normally, with no extra usage and no spending. The assistant alerts Julian at 90 % and 98 % weekly. At 98 %, no new chips until the reset on 1 Oct at 12:00 UTC.
   - Opus 5.5 medium for core, contract, parser and API packages; Sonnet 5.5 medium for mechanical ones (docs, fixtures, packaging).
   - **Kept after the token audit (PM DataPass 5, 2026-09-29, `handoff/reviews/2026-09-29-audit-opus-vs-sonnet.md`):** Sonnet averaged ~10 M tokens per session against ~22 M for Opus, with no failed CI and no quality gap seen. But Sonnet only did the easier fixture packages, so the comparison is not like for like. The exception stays limited to fixtures, docs and packaging (FAKE*, FIX*, RV1b, SINK1). Code, parser, contract, API and UI packages stay Opus. If a Sonnet package fails CI twice, it is re-run on Opus.
@@ -305,8 +305,6 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | PM subagent · GAPREV (done) | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md, § V4-GAP | 3 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-A (done, !38 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-B (done, !44 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-B, common | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 L1 (done, !46 merged) | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
-| CODER V4 G1 (done, !45 merged) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 ADOPT-C (done, !37 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
@@ -316,20 +314,15 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | PM subagent · DORIS + PORTABILITY (done) | auditor subagent (Sonnet) | Julian idea 15, Apache Doris exploration | 1 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC4 (local_dbb7b433, done, !50 merged) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IAC-EMIT (local_1db68731) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IACB (local_dd8ce01e, done, !49 merged) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC5 (local_4e6fd9fb) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IACA0 (local_2f706821, done, !48 merged) | coder (Opus medium) | § V4-NOCODEX IACA0, common (GO go/IACA0.md) | 10 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC8 (local_da8ca375) | coder (Opus medium) | § V4-IAC IAC8 datapass-iac VSIX, cloud (GO go/IAC8.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC9-10 (local_de1f351e, done, cloud !32 merged) | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IACBF (local_2dbfeaad, done, !51 merged) | coder (Opus medium) | § V4-IAC IACBF iac-model Bicep/ARM follow-up, common (GO go/IACBF.md) | 5 | 2026-09-29 · V3.6 | PM |
 | CODER V4 TRN1 (local_802ca659) | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBSV1a (local_04afa201) | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
-Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
+Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
 Retired on 2026-09-28: PM ASSISTANT DataPass 4, COORD DataPass 3, PM ASSISTANT DataPass 2 and 3, CODER RC3, UI-POLISH, FLAKE3; COORD DataPass 2 (hand-off handoff/sessions/2026-09-28-0059-coord-datapass-2.md).
 
