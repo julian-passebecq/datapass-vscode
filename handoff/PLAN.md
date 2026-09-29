@@ -188,7 +188,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | Package | Content | Repo | est. M | Model | Gate |
   |---|---|---|---|---|---|
   | FAKE2 | synthetic runtime telemetry through the OBS3 replay: Fabric Spark monitoring, Power BI refresh history, Azure Databricks large-cluster Spark event logs (executors, skew, spill, autoscale, long jobs), CU per job; labelled synthetic | cloud `fixtures/foil-synthetic/runtime` | 20 | Sonnet | now |
-  | OBSV1 | runtime readers: Spark event log / Fabric Spark monitoring / Databricks runs → observed-run model (plans, joins, runtime lineage edges) | cloud `packages/observe-runtime` | 25 | Opus | after OBS3 + FAKE2 |
+  | OBSV1 | runtime readers: Spark event log / Fabric Spark monitoring / Databricks runs → observed-run model (plans, joins, runtime lineage edges); runtime lineage edges key datasets and fields with Common lineage-core's `canonicalDatasetIdentity` / `canonicalFieldId` (L1 !46 merged) | cloud `packages/observe-runtime` | 25 | Opus | after OBS3 + FAKE2 |
   | OBSV2 | Spark execution and CU cost analysis: stage/shuffle/skew/spill rules, per-job/notebook CU cost | cloud `packages/observe-runtime` | 20 | Opus | after OBSV1 |
   | OBSV3 | static-vs-observed diff, projected onto the UIH3 cloud view and the Hop views | cloud | 20 | Opus | after OBSV1 + UIH3 + HOP1b |
   | TBX1 | Fabric / Power BI / Azure toolbox panel: capacities, workspaces, gateways, item types and settings read via API1–3 and shown in-app | cloud | 15 | Opus | after API1–3 |
@@ -303,7 +303,7 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | PM subagent · GAPREV (done) | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md, § V4-GAP | 3 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-A (done, !38 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-A, common | 25 | 2026-09-29 · V3.6 | PM |
 | CODER V4 ADOPT-B (done, !44 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-B, common | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 L1 | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
+| CODER V4 L1 (done, !46 merged) | coder (Opus medium) | L1 lineage-core, common | 30 | 2026-09-29 · V3.6 | PM |
 | CODER V4 G1 (done, !45 merged) | coder (Opus medium) | § V4-GAP G1 semantic diff, common | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VM3b | coder (Opus medium) | VM3b infra graph views, cloud | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBS1 | coder (Opus medium) | OBS1 Observe monitoring VSIX, cloud | 25 | 2026-09-29 · V3.6 | COORD 6 |
