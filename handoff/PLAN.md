@@ -391,7 +391,7 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
 | (archived) ARCHQ1 (local_4957fa69, !60 merged) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (archived) A2B (local_4f39a026, split by PM 10 into A2Ba 5 M core / A2Bb1 15 M / A2Bb2 12 M after b1: go/A2B*.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 32 | 2026-09-29 · V3.7 | COORD Common 1 |
-| DBT1 (local_932d4256) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
+| DBT1 (local_932d4256, done, !61 merged 694db51, archive when idle) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBP1 (local_eb178b86) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
 | A2Ba (local_215417eb) | coder (Opus) | A2 core exports, core-change (go/A2Ba.md) | 5 | 2026-09-29 · V3.7 | COORD Common 1 + PM 10 |
