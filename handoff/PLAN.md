@@ -328,6 +328,8 @@ Kept by **PM DataPass 11** (local_2522f634, Opus medium, global PM, from 2026-09
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
 | COORD DataPass Common 2 (local_a047ee0d, ex-reserve COORD 13), live, pinned | coordinator (Sonnet low) | Common serial merges (GO go/COORD-Common-2.md, hand-off go/handoff-coord-common-1.md) | — | 2026-09-30 · V3.7 | PM 11 |
 | CODER R1 (local_223e3ff8) | coder (Opus medium) | GITL0FIX (Common !72 merged), then CITIME1 CI timeouts (go/CITIME1.md) | 2+2 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER R3 (local_98a83587) | coder (Opus medium) | ARCHB1 successor: fix Common !71, then re-pin hub !12 (ARCHB1 handed off at 246 K) | 5 | 2026-09-30 · V3.7 | COORD Common 2 / COORD 12 |
 | COORD DataPass Common 1 (local_cf999fdb), handed off at ~221 K, pinned | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
 | PM DataPass 8 (local_29fd99e3), handed off at ~225 K (kept pinned: parent of S1 chips) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
