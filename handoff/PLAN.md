@@ -322,6 +322,9 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC8 (local_da8ca375) | coder (Opus medium) | § V4-IAC IAC8 datapass-iac VSIX, cloud (GO go/IAC8.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC9-10 | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 TRN1 | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 OBSV1a | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
 Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
