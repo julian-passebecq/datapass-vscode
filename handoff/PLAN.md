@@ -374,7 +374,8 @@ Kept by **PM DataPass 13** (local_6dbe9065, Opus medium, global PM, from 2026-09
 | CODER BI1M (local_d720c05d, ex COORD 16 reserve) | coder (Opus medium) | BI1M Power BI semantic-model node, common (go/BI1M.md) | 8 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER FLOWDIR1 (local_9fb959f3, ex PM 14 reserve) | coder (Opus medium) | FLOWDIR1 flow-edge direction in every Common analyzer (go/FLOWDIR1.md) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER VIS0 (local_ea68acc1, ex COORD 15 reserve) | coder (Opus medium) | VIS0 renderer registry, view switcher, layout presets, cloud (go/VIS0.md) | 12 | 2026-09-30 · V3.7 | COORD 12 |
-| (reserves, idle) coders R12 local_95358d62, R13 local_5d9a0f65, R14 local_2ad7db24 · PM reserves local_6dbe9065, local_9fb959f3 · COORD 14 local_08623e5e, COORD 15 local_ea68acc1, COORD 16 local_d720c05d | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 11 / COORD 12 |
+| CODER STOR1 (local_0c4e62c8, R15) | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 12 |
+| (reserves, idle) coders R16 local_0df5f432, R17 local_3519831d, R18 local_c15e5a7f, R19 local_60374d24 · COORD 14 local_08623e5e · chips not yet started: coders R20–R26, COORD 17, PM 15 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 13 / COORD 12 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER R3 (local_98a83587) | coder (Opus medium) | ARCHB1 successor: fix Common !71, then re-pin hub !12 (ARCHB1 handed off at 246 K) | 5 | 2026-09-30 · V3.7 | COORD Common 2 / COORD 12 |
