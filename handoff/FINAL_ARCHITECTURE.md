@@ -111,4 +111,4 @@ Product decisions (asked by the PM, answers recorded in PLAN):
 - **D2 Factory: inside the final engine** (F0 S2, F0D Julian S3, vertical by S6).
 - **D4 ML/LLM-RAG: inventory only.** ML1 is reduced to an inventory of MLflow/feature-store/registry/serving/RAG objects (~15 M, S5); ML2 and MLV1 are dropped from the final engine (−40 M); ML lineage is a later decision.
 - **D3 (PM decision, minor):** a human-confirmed client-AI edge (`ai-confirmed`) counts in "certain" impact but keeps its label and a filter; "client AI only, never an embedded LLM" stays binding.
-- **D5 Data X-ray install mode:** Julian asked for details; pending.
+- **D5 Data X-ray (Julian):** always installed with the DataPass pack; **DuckDB enabled by default**, one setting turns it off to fall back to simple SQL. Values never leave the machine (SEC2).
