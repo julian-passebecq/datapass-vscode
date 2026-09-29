@@ -398,10 +398,10 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | A2Bb1 (local_850ec9f6) | coder (Opus) | notebook splitters + Spark SQL (go/A2Bb1.md) | 15 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (queued after A2Bb1) A2Bb2 | coder (Opus) | spark.sql + temp views (go/A2Bb2.md) | 12 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBCI1 (local_fb1ed666) | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
-| ARCHCAT1 (local_85a53e2b) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
-| FOILARCH (local_24082e5a) running · (queued) ARCHB1 after ARCHCAT1, ARCHV1 after ARCHB1 Common | coder (Opus) | idea 25 S2 (go/FOILARCH.md, ARCHB1.md, ARCHV1.md, PM 10) | 20/15/20 | 2026-09-29 · V3.7 | COORD 10 / COORD Common 1 |
+| ARCHCAT1 (local_85a53e2b, done, !64 merged f0b740c, archive when idle) | coder (Opus) | decision catalogue (go/ARCHCAT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
+| FOILARCH (local_24082e5a) running · (chip sent) ARCHB1, ARCHV1 after ARCHB1 Common | coder (Opus) | idea 25 S2 (go/FOILARCH.md, ARCHB1.md, ARCHV1.md, PM 10) | 20/15/20 | 2026-09-29 · V3.7 | COORD 10 / COORD Common 1 |
 | APIX1 25 (local_2feee473) · A5 20 (local_005c9e5b) · CFG1 12 (local_bffb4f62) (common) · CAT1 20 (local_95327832, cloud), Opus, GOs go/*.md by PM 10 | coder | S2/S3 analyzers + catalogs | 77 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 11 |
-| GITL0 (local_2ddde650, Opus) · FIXLIN (local_94cca29e) · FIXVM (local_9565ed5b) · FIXGIT (local_d5161273) (Sonnet medium) · (queued) ARCHLINT1 after ARCHCAT1 · REPIN2 by REPIN1 after Common !63 + hub !7 | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
+| GITL0 (local_2ddde650, Opus) · FIXLIN (local_94cca29e) · FIXVM (local_9565ed5b) · FIXGIT (local_d5161273) (Sonnet medium) · (chip sent) ARCHLINT1 · REPIN2 by REPIN1 after Common !63 + hub !7 | coder | S2 (GOs in go/) | 25/15/20 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 10 |
 | COORD DataPass 11 (local_469fbbb4), live, pinned | coordinator (Sonnet low) | chips, quota log, cloud/hub merges | — | 2026-09-29 · V3.7 | PM 10 |
 | (retired, kept pinned: parent of COORD 11) COORD DataPass 10 (local_cac39b06) | coordinator | handed off to COORD 11 at context limit | — | 2026-09-29 · V3.7 | PM 10 |
 | (retired) COORD DataPass 9 (local_816220f3) | coordinator | handed off to COORD 10 | — | 2026-09-29 · V3.7 | PM 9 |
