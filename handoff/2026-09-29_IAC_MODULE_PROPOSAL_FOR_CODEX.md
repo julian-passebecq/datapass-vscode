@@ -137,3 +137,21 @@ Content (mirrors the two reference repos, all names/IDs fake, GUIDs obviously sy
 Tests on top: golden analyzer outputs per stack/environment, the `IAC-*` diagnostic corpus, qa:ui journeys (IaC lens, diagram layer, plan diff, `.tf` Hop view, lineage bridge), and the release-candidate tutorial with screenshots taken on this fixture. Optional later: a "real trial" variant where Julian runs `tofu plan` himself on a Fabric trial capacity (still no apply by DataPass).
 
 Updated order: **IAC-FIX0 → IAC0 → IAC1 → IAC2/IAC3 → IAC4 → IAC5/IAC6 → IAC7 → IAC8 → IAC10** (IAC9 becomes the qa:ui journeys on the IAC-FIX0 fixture).
+
+## 8. Toolbox integration (the existing toolkit catalogue, `src/core/capabilities/tools.ts`)
+
+The toolbox already lists `cli.tofu`, `cli.terraform` (with winget/brew install lines), `cli.az`, the Fabric extensions (core, Data Engineering, Fabric Studio), `cli.fab`, `py.fabric-cicd` and the Fabric MCP servers. The IaC module **extends the same catalogue** (data entries, detected, never installed automatically, each with its install line and docs), and each entry is wired to a concrete step of the guided flow:
+
+| New entry | Kind | Used for (step in the flow) | Output DataPass imports |
+|---|---|---|---|
+| OpenTofu / HashiCorp Terraform / Azure Terraform VS Code extensions | extension | syntax, completion, go-to-definition while editing `.tf` (DataPass does not rebuild an editor) | — |
+| `tflint` + azurerm ruleset | cli | "Check" step: provider-aware lint | JSON → `iac.scan` evidence |
+| `checkov` or `trivy config` | cli | "Check" step: security misconfigurations (public storage, missing TLS, secrets) | SARIF → `iac.scan` evidence, shown with `IAC-*` findings |
+| `infracost` | cli | "Cost" step: monthly cost per environment from the plan JSON (F2 vs F64 capacity, storage) — very useful for a beginner | JSON → cost facet on capacity nodes (feeds Prototype Cloud comparisons later) |
+| `terraform-docs` | cli | "Document" step: README tables of inputs/outputs per module | — (link) |
+| Bicep extension + `az bicep` | extension / cli | same flow for Bicep projects (A5 already covers Bicep) | what-if JSON → like plan JSON |
+| Azure Verified Modules | reference | "Write" step: recommended modules for the client AI work order | — |
+
+Rules: every tool is run by the user (copy command or run in the VS Code terminal); DataPass only reads the files they produce, as evidence with origin `imported`. The readiness view says which tool is missing for which step and shows its install line. Toolbox presets per experience mode decide which entries appear (modular UI).
+
+**How it helps Julian's workflow, end to end:** open a Fabric Terraform repo → DataPass draws the platform (capacity → workspaces → lakehouses → notebooks → data lineage) per environment → the readiness list names each problem in plain words with the fix (IAC-*) → one click copies `tofu plan` for tst → Julian runs it → DataPass shows the plan as a diff on the diagram, the security scan and the monthly cost → Julian applies in the terminal or the pipeline → (optional Observe) DataPass confirms the real workspaces match. What Terraform cannot do is handed to Fabric Studio / `fab` / `fabric-cicd` from the same screen.
