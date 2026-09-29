@@ -129,6 +129,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   - At most 8 coders at once.
   - **Julian, 2026-09-29 ~13:20 UTC: "Continuer et voir".** The pace alarm is lifted: chips go out normally, with no extra usage and no spending. The assistant alerts Julian at 90 % and 98 % weekly. At 98 %, no new chips until the reset on 1 Oct at 12:00 UTC.
   - Opus 5.5 medium for core, contract, parser and API packages; Sonnet 5.5 medium for mechanical ones (docs, fixtures, packaging).
+  - **Kept after the token audit (PM DataPass 5, 2026-09-29, `handoff/reviews/2026-09-29-audit-opus-vs-sonnet.md`):** Sonnet averaged ~10 M tokens per session against ~22 M for Opus, with no failed CI and no quality gap seen. But Sonnet only did the easier fixture packages, so the comparison is not like for like. The exception stays limited to fixtures, docs and packaging (FAKE*, FIX*, RV1b, SINK1). Code, parser, contract, API and UI packages stay Opus. If a Sonnet package fails CI twice, it is re-run on Opus.
 - **Merge:** each package goes on a GitLab branch with a merge request, and is merged on a green `local-windows` pipeline. The coordinator merges routine packages; cross-package and Common merges go to the PM.
 
 | Wave | Hours | Packages (model) |
