@@ -314,7 +314,7 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | PM subagent · DORIS + PORTABILITY (done) | auditor subagent (Sonnet) | Julian idea 15, Apache Doris exploration | 1 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC4 (local_dbb7b433) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC4 (local_dbb7b433, done, !50 merged) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC-EMIT (local_1db68731) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IACB (local_dd8ce01e, done, !49 merged) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IAC5 (local_4e6fd9fb) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
@@ -322,9 +322,10 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC8 (local_da8ca375) | coder (Opus medium) | § V4-IAC IAC8 datapass-iac VSIX, cloud (GO go/IAC8.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC9-10 | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 TRN1 | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 OBSV1a | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC9-10 (local_de1f351e) | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IACBF | coder (Opus medium) | § V4-IAC IACBF iac-model Bicep/ARM follow-up, common (GO go/IACBF.md) | 5 | 2026-09-29 · V3.6 | PM |
+| CODER V4 TRN1 (local_802ca659) | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 OBSV1a (local_04afa201) | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
 Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
