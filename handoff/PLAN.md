@@ -509,7 +509,7 @@ Kept by **PM DataPass 15** (from 04:25; before: PM 13 local_6dbe9065, Opus mediu
 | CODER VIS7 (local_6bbf2860, R28) | coder (Opus medium) | VIS7 cloud, early start on v4/vis0 (go/VIS7.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER PERF1 (local_ea5c2cfa, R29) | coder (Opus medium) | PERF1 cloud, early start on v4/vis0 (go/PERF1.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER FRESH1 (local_f752f151, R30) | coder (Opus medium) | FRESH1 cloud, early start on v4/vis0 (go/FRESH1.md) | — | 2026-09-30 · V3.7 | COORD 14 |
-| CODER HOP3 (local_8cdfc5de, ex API2b) | coder (Opus medium) | HOP3 cloud, early start on v4/repin3 (go/HOP3.md) | — | 2026-09-30 · V3.7 | COORD 14 |
+| CODER HOP3b (local_ee5fc8e0, R36; HOP3 local_8cdfc5de handed off at 128 K, !69) | coder (Opus medium) | HOP3 views + Playwright, resumes v4/hop3 from handoff/sessions/2026-09-30-0150-coder-hop3.md (go/HOP3.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER SANKEY1 (local_9dd7681a, R32) | coder (Opus medium) | SANKEY1 cloud, early start on v4/repin3 (go/SANKEY1.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER APIX2 (local_4f8110e5, R31) | coder (Opus medium) | APIX2 cloud, early start on v4/repin3 (go/APIX2.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER DBT3 (local_cca43081, R27) | coder (Opus medium) | DBT3 common, dbt no-manifest fallback (go/DBT3.md) | — | 2026-09-30 · V3.7 | COORD Common 2 |
