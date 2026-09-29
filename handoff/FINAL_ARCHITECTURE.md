@@ -107,7 +107,7 @@ Product decisions (asked by the PM, answers recorded in PLAN):
 5. Data X-ray installed by default with optional local DuckDB, or opt-in?
 
 ## 8. Decisions (Julian, 2026-09-29 ~19:00 local; PM for D3)
-- **D1 Other clouds: static first.** AWS, GCP and Snowflake/BigQuery are understood from the Git (IaC, orchestrators, catalogs). Live readers API4–6 come after S6. Azure/Fabric/Databricks/OCI stay live (opt-in).
+- **D1 Live readers (Julian, corrected ~19:15 local): only Databricks and Fabric (incl. Power BI) are live in V1**, because they have fake data (existing or to be made). Azure, OCI, AWS, GCP and Snowflake/BigQuery are understood statically from the Git (IaC, orchestrators, catalogs) plus replay cassettes only; their live transport is off in V1 (API3 Azure reads stay replay-only). Live readers for them come after S6.
 - **D2 Factory: inside the final engine** (F0 S2, F0D Julian S3, vertical by S6).
 - **D4 ML/LLM-RAG: inventory only.** ML1 is reduced to an inventory of MLflow/feature-store/registry/serving/RAG objects (~15 M, S5); ML2 and MLV1 are dropped from the final engine (−40 M); ML lineage is a later decision.
 - **D3 (PM decision, minor):** a human-confirmed client-AI edge (`ai-confirmed`) counts in "certain" impact but keeps its label and a filter; "client AI only, never an embedded LLM" stays binding.
