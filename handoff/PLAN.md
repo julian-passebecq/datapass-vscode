@@ -127,6 +127,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 - **Pace:**
   - Check every 5 h against the quota curve: 17 / 33 / 50 / 67 / 83 / 100 %.
   - At most 8 coders at once.
+  - **Julian, 2026-09-29 ~13:20 UTC: "Continuer et voir".** The pace alarm is lifted: chips go out normally, with no extra usage and no spending. The assistant alerts Julian at 90 % and 98 % weekly. At 98 %, no new chips until the reset on 1 Oct at 12:00 UTC.
   - Opus 5.5 medium for core, contract, parser and API packages; Sonnet 5.5 medium for mechanical ones (docs, fixtures, packaging).
 - **Merge:** each package goes on a GitLab branch with a merge request, and is merged on a green `local-windows` pipeline. The coordinator merges routine packages; cross-package and Common merges go to the PM.
 
@@ -276,9 +277,10 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 ADOPT-C (done, !37 merged) | coder (Opus medium) | § V4-NOCODEX ADOPT-C, common | 25 | 2026-09-29 · V3.6 | PM |
 | PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
 | PM subagent · OBSC (merged !40) | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
-| PM subagent · CAPM1 | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
+| PM subagent · CAPM1 (merged cloud !17) | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC4 (chip sent 13:25) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
