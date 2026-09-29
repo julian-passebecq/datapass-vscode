@@ -39,7 +39,15 @@ export const HOME_ACTIONS: Readonly<Record<string, { command: string; args?: rea
   "project.guide": { command: "datapass.openPreparationGuide" },
   // V3-HOP2: DataPass Hop.
   "hop.explained": { command: "datapass.hop.showExplained" },
-  "hop.explain": { command: "datapass.hop.explain" }
+  "hop.explain": { command: "datapass.hop.explain" },
+  // V1.1.x-POLISH-4: the page's toolbar (Home, Appearance, code size, Activity Bar) and the Home layout.
+  "home.restore": { command: "datapass.home.restore" },
+  "appearance.open": { command: "datapass.appearance" },
+  "font.smaller": { command: "datapass.codeFont.smaller" },
+  "font.bigger": { command: "datapass.codeFont.bigger" },
+  "font.reset": { command: "datapass.codeFont.reset" },
+  "activityBar.show": { command: "datapass.showInActivityBar" },
+  "layout.saveHome": { command: "datapass.saveWorkView", args: ["Home"] }
 };
 
 export interface HomeAction { id: string; label: string; /** Why it cannot run here (shown instead of running). */ disabled?: string }
@@ -75,6 +83,10 @@ export interface HomeState {
   links: HomeLinks;
   /** The Home was opened by the workspace's startup view. */
   startup?: boolean;
+  /** V1.1.x-POLISH-4: VS Code's code font size now (the toolbar's A− / A+). */
+  codeFontSize?: number;
+  /** V1.1.x-POLISH-4: the saved layout the Home button restores, if any. */
+  homeLayout?: string;
 }
 
 export interface HomeInput {
@@ -92,6 +104,8 @@ export interface HomeInput {
   layoutsError?: string;
   /** Surfaces the current DataPass mode shows (a tile action whose surface is hidden says so). */
   shows: (surface: string) => boolean;
+  codeFontSize?: number;
+  homeLayout?: string;
 }
 
 export const LINKS_HOW_TO = `No links declared. Ask your AI to add ${LINKS_PATH} to the bridge repository: groups of links, each { "label", "url", "kind" } (docs/PREPARING_A_PROJECT.md, "Project links").`;
@@ -207,6 +221,8 @@ export function homeState(input: HomeInput): HomeState {
     preview: homePreview(map),
     layouts: input.layouts,
     layoutsError: input.layoutsError,
-    links
+    links,
+    codeFontSize: input.codeFontSize,
+    homeLayout: input.homeLayout
   };
 }

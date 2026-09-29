@@ -49,7 +49,9 @@ test("palette: every listable command is classified, and package.json carries ex
 test("palette: lighter modes stay short, grow towards Advanced, and Advanced lists every command", () => {
   const counts = PRESET_IDS.map(p => paletteOf(p).length);
   for (let i = 1; i < counts.length; i += 1) assert.ok(counts[i]! >= counts[i - 1]!, `${PRESET_IDS[i]} lists at least as many as ${PRESET_IDS[i - 1]}`);
-  for (const p of PRESET_IDS.filter(x => x !== "advanced")) assert.ok(paletteOf(p).length <= 63, `${p}: ${paletteOf(p).length} entries`);
+  // V1.1.x-POLISH-4: 63 → 66 for Home, Appearance and "Show DataPass in the Activity Bar", listed in every mode
+  // (the last one is how the DataPass side bar comes back when its icon is gone).
+  for (const p of PRESET_IDS.filter(x => x !== "advanced")) assert.ok(paletteOf(p).length <= 66, `${p}: ${paletteOf(p).length} entries`);
   assert.ok(paletteOf(DEFAULT_PRESET).length <= 60);
   assert.equal(paletteOf("advanced").length, PALETTE_TIERS.size);
   for (const p of PRESET_IDS) for (const t of paletteOf(p)) assert.match(t, /^DataPass: \S/, `${p}: consistent prefix`);

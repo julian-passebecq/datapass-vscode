@@ -14,7 +14,8 @@ import type { WorkViews } from "../work/workViews";
 import { confirmModal, guarded, UserFacingError } from "../work/io";
 import { openExternal } from "../core/external";
 import { workOrdersEnabled } from "../work/workOrders";
-import { describeView } from "../core/windows/workViews";
+import { describeView, findView } from "../core/windows/workViews";
+import { projectLayout } from "../core/experience/ergonomics";
 import { linkHost, linkUrlProblem, LINKS_PATH } from "../core/project/links";
 import { HOME_ACTIONS, homeState, type HomeLayout, type HomeState } from "./homeState";
 import { homeHtml, type HomePage } from "./homeHtml";
@@ -34,7 +35,9 @@ export class HomeHost implements vscode.Disposable {
   lastAction?: { type: string; id?: string; command?: string; error?: string };
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession, private readonly views: WorkViews, private readonly shows: (surface: string) => boolean) {
-    this.subs.push(session.onDidChange(() => this.schedule()), views.onDidChange(() => this.schedule()));
+    this.subs.push(session.onDidChange(() => this.schedule()), views.onDidChange(() => this.schedule()),
+      // V1.1.x-POLISH-4: the toolbar names the code size.
+      vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("editor.fontSize")) this.schedule(); }));
   }
 
   dispose(): void {
@@ -56,7 +59,14 @@ export class HomeHost implements vscode.Disposable {
     })));
     const errors = all.filter(s => s.error).map(s => `${s.title}: saved layouts cannot be read (${s.error})`);
     const ctx = this.session.project;
+    // V1.1.x-POLISH-4: the layout the Home button restores (this project's).
+    const mine = all.find(s => s.root.toString() === current);
+    const startup = vscode.workspace.workspaceFile?.scheme === "file" ? vscode.workspace.getConfiguration("datapass").inspect<string>("startupView")?.workspaceValue : undefined;
+    const applied = this.views.lastApplied();
+    const pick = mine ? projectLayout({ views: mine.file.views, startup: typeof startup === "string" ? startup : undefined, lastApplied: applied && applied.root === current ? applied.id : undefined }) : undefined;
     return homeState({
+      codeFontSize: vscode.workspace.getConfiguration("editor").get<number>("fontSize"),
+      homeLayout: pick && mine ? findView(mine.file, pick.id)?.name : undefined,
       hasProject: Boolean(ctx.manifestExists && ctx.manifest), map,
       board: this.session.boardView(), boardError: ctx.boardError,
       links: ctx.links, linksError: ctx.linksError,

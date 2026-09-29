@@ -931,6 +931,36 @@
         "icon": "$(text-size)"
       },
       {
+        "command": "datapass.home.restore",
+        "title": "DataPass: Home — Restore the Project Layout",
+        "icon": "$(home)"
+      },
+      {
+        "command": "datapass.appearance",
+        "title": "DataPass: Appearance… (theme, overlay, colours, code size)",
+        "icon": "$(paintcan)"
+      },
+      {
+        "command": "datapass.showInActivityBar",
+        "title": "DataPass: Show DataPass in the Activity Bar",
+        "icon": "$(layout-activitybar-left)"
+      },
+      {
+        "command": "datapass.codeFont.smaller",
+        "title": "DataPass: Smaller Code Text (A−)",
+        "icon": "$(zoom-out)"
+      },
+      {
+        "command": "datapass.codeFont.bigger",
+        "title": "DataPass: Larger Code Text (A+)",
+        "icon": "$(zoom-in)"
+      },
+      {
+        "command": "datapass.codeFont.reset",
+        "title": "DataPass: Reset the Code Text Size",
+        "icon": "$(discard)"
+      },
+      {
         "command": "datapass.control.refresh",
         "title": "DataPass: Refresh Claude Control Status",
         "icon": "$(refresh)"
@@ -1120,12 +1150,32 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "datapass.codeFont.bigger",
+        "key": "alt+="
+      },
+      {
+        "command": "datapass.codeFont.smaller",
+        "key": "alt+-"
+      }
+    ],
     "menus": {
       "view/title": [
         {
-          "command": "datapass.openHome",
-          "when": "view == datapass.project",
+          "command": "datapass.home.restore",
+          "when": "view == datapass.project || view == datapass.rail || view == datapass.aiExchange || view == datapass.details || view == datapass.agentPanel || view == datapass.airflowDag",
           "group": "navigation@0"
+        },
+        {
+          "command": "datapass.appearance",
+          "when": "view == datapass.project",
+          "group": "9_mode@2"
+        },
+        {
+          "command": "datapass.showInActivityBar",
+          "when": "view == datapass.project",
+          "group": "9_mode@3"
         },
         {
           "command": "datapass.refreshProject",
@@ -2486,6 +2536,18 @@
         },
         {
           "command": "datapass.setCodeFontSize",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codeFont.smaller",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codeFont.bigger",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codeFont.reset",
           "when": "!datapass.hidden.palette.full"
         },
         {

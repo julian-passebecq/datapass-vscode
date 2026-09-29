@@ -22,7 +22,9 @@ const CORE = [
   "cloneRepository", "locateRepository", "openRepositoryWindow", "openRepositoryWeb",
   "experience.switchMode", "experience.customize",
   // V3-HOME: the module dashboard.
-  "openHome"
+  "openHome",
+  // V1.1.x-POLISH-4: Home (restore the project layout), Appearance, DataPass back in the Activity Bar.
+  "home.restore", "appearance", "showInActivityBar"
 ] as const;
 
 /** Gated on a surface: listed while the mode shows it. */
@@ -67,6 +69,8 @@ const GATED: Record<string, readonly string[]> = {
     "fileVersions.openLatest", "fileVersions.lastUpdate", "experience.resetOverrides",
     "control.refresh", "control.copyStartCommand",
     "openProjectLinks", "openLinksFile", "setCodeFontSize",
+    // V1.1.x-POLISH-4: also in the status bar, on the Home page, in Appearance and on Alt+- / Alt+=.
+    "codeFont.smaller", "codeFont.bigger", "codeFont.reset",
     // V3-AIRFLOW: also in the editor context menu of Python files (the view opens by itself).
     "showAirflowDag",
     "layout.toggleArchitecturePanel",

@@ -61,6 +61,7 @@ import { registerOpenClientProject } from "./work/openClientProject";
 import type { Experience } from "./core/experience/presets";
 import { registerFileVersionCommands } from "./work/fileVersionCommands";
 import { ShellService, registerShellCommands } from "./work/shellCommands";
+import { registerErgonomicsCommands, type ErgonomicsControls } from "./work/ergonomicsCommands";
 import { railButtonsShown } from "./views/railHtml";
 import { moduleEnabled } from "./core/modules";
 import type { TreeLens } from "./core/windows/treeLens";
@@ -224,6 +225,8 @@ export interface DataPassTestApi {
     solo(): string | undefined;
     architectureInPanel(): boolean;
   };
+  /** V1.1.x-POLISH-4: status-bar texts, the last Home restore, the last "Show DataPass in the Activity Bar". */
+  ergonomics: ErgonomicsControls;
 }
 
 export interface PerfCounters {
@@ -414,6 +417,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerHomeCommands(context, session, home);
   views.attachHome({ isHomeTab, open: column => home.open("home", column, true), panel: () => home.panel("home") });
   const windows = registerWindowCommands(context, session, host, views, () => home.open("home"));
+  // V1.1.x-POLISH-4: Home (restore the project layout), code zoom, Appearance, DataPass back in the Activity Bar.
+  const ergonomics = registerErgonomicsCommands(context, session, views, shell, () => home.open("home"));
 
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 20);
   status.text = "$(dashboard) DataPass";
@@ -568,6 +573,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
       solo: () => shell.solo(),
       architectureInPanel: () => shell.architectureInPanel()
     },
+    ergonomics,
     gitDiagram: { refresh: () => gitDiagram.refresh(), setsOf: (id: string) => gitDiagram.setsOf(id) },
     refresh: refreshState,
     workModel: () => session.model(),

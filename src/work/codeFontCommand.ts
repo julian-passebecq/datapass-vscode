@@ -24,6 +24,16 @@ async function chooseSize(current: number | undefined): Promise<Choice | undefin
   return "error" in r ? undefined : r.size;
 }
 
+/**
+ * V1.1.x-POLISH-4: write (or remove, "reset") `editor.fontSize` where the command above writes it — this
+ * workspace's settings, else the user settings. Used by the one-click A− / A+ / reset controls, whose
+ * new size shows at once in the status bar (no confirmation for a one-pixel step).
+ */
+export async function writeCodeFontSize(choice: Choice): Promise<void> {
+  const workspace = Boolean(vscode.workspace.workspaceFolders?.length);
+  await vscode.workspace.getConfiguration("editor").update("fontSize", choice === "reset" ? undefined : choice, workspace ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global);
+}
+
 export function registerCodeFontCommand(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.commands.registerCommand("datapass.setCodeFontSize", async (arg?: unknown) => {
     const cfg = vscode.workspace.getConfiguration("editor");
@@ -40,6 +50,6 @@ export function registerCodeFontCommand(context: vscode.ExtensionContext): void 
     const button = choice === "reset" ? "Remove" : "Set";
     const ok = await vscode.window.showInformationMessage(what, { modal: true, detail: "This is VS Code's own setting; you can change it back in Settings at any time." }, button);
     if (ok !== button) return;
-    await cfg.update("fontSize", choice === "reset" ? undefined : choice, workspace ? vscode.ConfigurationTarget.Workspace : vscode.ConfigurationTarget.Global);
+    await writeCodeFontSize(choice);
   }));
 }
