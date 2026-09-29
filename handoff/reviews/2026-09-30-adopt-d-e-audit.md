@@ -40,3 +40,8 @@ The branch sits on the ADOPT-A stack (`00bfeaf`); the C4 part is 2 commits (`427
 1. **ADOPT-E1 — tool-catalog into Common** (6 M): new `v4/adopt-tool-catalog` from main, replay `4272653`+`3a9d01f` (C4 paths only), regenerate lockfile, dedupe seed (single source), run tool-catalog tests + packed-consumer check. Cloud switch-over deferred to a later Cloud package (≈ 8 M, when a screen needs versioned tool support).
 2. **IAC-ORACLES — wire the unused wind-lab oracles** (8 M, Common + Cloud): (a) lineage-core conformance test mapping `expected/lineage.json` to lineage-graph/1 edges without widening the enum (Common, 3 M); (b) Cloud iac-extension import tests over `evidence/*.plan.json`, SARIF and `fixtures/adverse/imports/*`, reading the Common corpus copy by pinned path (Cloud, 5 M). Can split into two coders.
 3. **ADOPT-D2 — bridge IaC metadata** (2 M, codex-datapass-bridge): cherry-pick `IAC_SOURCE_PIN.json`, `docs/IAC.md`, `.datapass/*` and README/AGENTS lines; replace the CI job's GitHub runtime download with pinned vendored schemas or omit CI. Kept as a proposal, not a draft MR: it touches CI on a repo whose main is still GitHub-era, so the PM should decide the CI choice first.
+
+## PM rulings (PM DataPass 13, 03:58)
+1. ADOPT-E1: **accepted**, 6 M, Common, queued after CONCEPT1b (low priority, no screen needs it yet); Cloud switch-over stays deferred.
+2. IAC-ORACLES: **accepted**, split as proposed (Common 3 M conformance test, Cloud 5 M import tests), queued after ADOPT-E1; oracles must not widen lineage-graph/1.
+3. ADOPT-D2: **deferred**. GitLab is the only write/CI authority and codex-datapass-bridge main is GitHub-era; revisit when that repo is migrated. No CI job is added meanwhile.
