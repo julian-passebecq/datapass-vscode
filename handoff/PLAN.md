@@ -168,6 +168,11 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   8. Split observation from monitoring. **Observation** analyses the real deployed project: its real Spark files, joins and lineage. It must be very complete, reuse much of Cloud, and be fed by real data. Today's Cloud is static only.
   9. Analyse Spark execution and CU consumption: stages, shuffles, skew, spill, and CU cost per job or notebook.
   10. Julian's own Databricks is on the free tier, so its metrics are too small to be useful. Generate **synthetic telemetry from a large Azure Databricks cluster** (many executors, big shuffles, skew, spill, autoscaling, long jobs), clearly labelled synthetic, through the same fake API path.
+  11. **Fake/synthetic data for EVERY module** (IaC, cloud, management, monitoring, observation, VM, Git): better too much than too little.
+  12. Fixtures follow **real formats researched online** (Terraform/OpenTofu plan JSON and state, Fabric/Power BI/Databricks REST, Azure Monitor/Capacity Metrics, Spark event logs, VM configs).
+  13. V1 must be **ready for the cloud, complete from A to Z**, local and cloud.
+  14. Running past 48 h is fine: completeness beats the date. The PM reconciles this with the quota and says when the quota becomes the limit.
+  → A fixture-coverage audit (PM subagent) gives the module × fake-data matrix, and its gaps become FIX* packages in § V4-GAP.
 - **§ V4-OBS: PM decision (PM DataPass 4, 2026-09-29), recorded for Codex review:**
   - **Monitoring** is ops health: CU, capacity throttling, refreshes, run status and failures. It covers OBS1 and OBS2 (unchanged) in the `datapass-observe` VSIX, Monitor tab.
   - **Observation** is the deployed project analysed from runtime data: Spark plans, joins, runtime lineage, run histories, stage/shuffle/skew/spill metrics and CU cost per job. It is projected onto the **same Cloud and Hop views** as the static analysis, with a static-vs-observed diff. It sits in the same VSIX, Observe tab, and reuses Cloud's model and UIH/HOP views. Static lineage (L1, P2) stays the baseline that observation is compared against.

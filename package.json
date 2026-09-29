@@ -3504,6 +3504,9 @@
     "qa:rc": "tsx scripts/qa/rc.ts"
   },
   "devDependencies": {
+    "@juliandatapass-group/project-contracts": "file:../../vendor/common/juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
+    "@juliandatapass-group/semantic-core": "file:../../vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.3.tgz",
+    "esbuild": "0.28.2",
     "@types/node": "^22.10.0",
     "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^3.1.0",

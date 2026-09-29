@@ -11,3 +11,6 @@ et aussi analyser les spark cu etc, et peut etre faire fausse donnes azure datab
 
 ## 4. Also asked (18:30)
 lancer un pm bis pour reflechir a ce quon aurait pu oublier globalement, mieux voir reflechir maintenant que ensuite ce quon aurait pu zappe ou sous traite mal integre etc
+
+## 5. Fake data completeness and cloud-readiness (19:17)
+sassurer quon a bien toutes les fausses donneess pour tous nos modules iac cloud management monitoring vm etc mieux vaut avoir torp de fake donnees que pas assez, chercher sur internet les format etc, on doit faire en sorte quon soit pret pour le cloud en v1, on peut monter a plus de 48h cest pas le soucis, on doit etre complet a z locla cloud etc
