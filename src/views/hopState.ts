@@ -73,6 +73,8 @@ export interface HopState {
   explainDisabled?: string;
   /** A diagram exists to go back to. */
   canGoBack: boolean;
+  /** V4 compatibility is a sidecar; it never widens the legacy provenance enum. */
+  compatibility?: { resolved: number; unresolved: number; operationFlows: number; losses: string[] };
 }
 
 export interface HopInput {
@@ -138,7 +140,13 @@ export function hopState(i: HopInput): HopState {
       joins: (doc.joins ?? []).filter(j => j.step === s.id).map(j => ({ id: j.id, left: j.left, right: j.right, type: j.type, typeLabel: JOIN_LABELS[j.type], keys: j.keys.map(k => [k[0], k[1]] as [string, string]), note: j.note, provenance: j.provenance }))
     };
   });
-  return { ...base, ...head, kind: "explained", state: e.state, explanationPath, problems: warnings.slice(0, MAX_PROBLEMS), banner, steps };
+  const compatibility = e.compatibility ? {
+    resolved: e.compatibility.anchors.filter(a => a.resolution.reason === "resolved").length,
+    unresolved: e.compatibility.anchors.filter(a => a.resolution.reason !== "resolved").length,
+    operationFlows: e.compatibility.operationFlows.length,
+    losses: [...new Set(e.compatibility.losses.map(l => l.explanation))].slice(0, MAX_PROBLEMS)
+  } : undefined;
+  return { ...base, ...head, kind: "explained", state: e.state, explanationPath, problems: warnings.slice(0, MAX_PROBLEMS), banner, steps, compatibility };
 }
 
 /** The Home tile's list: explained files, by repository then path. */

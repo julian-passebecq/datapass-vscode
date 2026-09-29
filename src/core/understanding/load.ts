@@ -12,8 +12,10 @@ import { createHash } from "node:crypto";
 import { boundedRead, type ReadPort } from "../model/boundedRead";
 import { isInside, resolveWithinRoot, vetRelativePath } from "../exchange/pathSafety";
 import { runBounded } from "../project/observation";
+import { readLegacyUnderstanding } from "../../analysis/compat";
+import type { V3Projection } from "@juliandatapass-group/compat-v3";
 import {
-  checkAgainstNative, hasError, lineCount, normaliseNativeText, parseUnderstanding, UNDERSTANDING_DIR, UNDERSTANDING_LIMITS,
+  checkAgainstNative, hasError, lineCount, normaliseNativeText, UNDERSTANDING_DIR, UNDERSTANDING_LIMITS,
   type UnderstandingDiagnostic, type UnderstandingDoc
 } from "./contract";
 
@@ -57,6 +59,8 @@ export interface UnderstandingEntry extends IndexedUnderstanding {
   lines?: number;
   /** The catalog generation that produced this entry (a newer refresh supersedes it). */
   generation: number;
+  /** Read-only Common sidecar; original V3 rendering and bytes are retained. */
+  compatibility?: V3Projection;
 }
 
 const fold = (s: string) => process.platform === "win32" ? s.toLowerCase() : s;
@@ -168,8 +172,9 @@ export class UnderstandingCatalog {
 
   private async read(f: IndexedUnderstanding, folder: string | undefined): Promise<UnderstandingEntry> {
     const base = { ...f, generation: this.generation };
+    let compatibility: V3Projection | undefined;
     const done = (e: Omit<UnderstandingEntry, "state" | keyof typeof base>, orphan = false, stale = false): UnderstandingEntry =>
-      ({ ...base, ...e, state: hasError(e.diagnostics) ? "invalid" : orphan ? "orphan" : stale ? "stale" : "ok" });
+      ({ ...base, compatibility, ...e, state: hasError(e.diagnostics) ? "invalid" : orphan ? "orphan" : stale ? "stale" : "ok" });
 
     const got = await boundedRead(nodePort(f.file), UNDERSTANDING_LIMITS.maxBytes);
     if (got.kind === "absent") return done({ diagnostics: [{ severity: "error", code: "unreadable", message: "The file disappeared since the last refresh." }] });
@@ -177,7 +182,8 @@ export class UnderstandingCatalog {
       const code = got.reason === "too-large" ? "oversized" : "unreadable";
       return done({ diagnostics: [{ severity: "error", code, message: `Cannot read the file: ${got.message}.` }] });
     }
-    const parsed = parseUnderstanding(got.bytes);
+    const parsed = readLegacyUnderstanding(got.bytes);
+    compatibility = parsed.projection;
     const diagnostics = [...parsed.diagnostics];
     const doc = parsed.doc;
     if (!doc) return done({ diagnostics });
@@ -186,11 +192,11 @@ export class UnderstandingCatalog {
     }
     if (!this.repositories.has(f.repositoryKey)) {
       diagnostics.push({ severity: "error", code: "unknown-repository", message: `"${f.repositoryKey}" is not a repository of the project manifest.`, path: "$.target.repository" });
-      return done({ doc, diagnostics });
+      return done({ doc, diagnostics, compatibility: parsed.projection });
     }
     if (!folder) {
       diagnostics.push({ severity: "warning", code: "not-cloned", message: `Repository "${f.repositoryKey}" is not on this machine; the native file cannot be checked.` });
-      return done({ doc, diagnostics }, true);
+      return done({ doc, diagnostics, compatibility: parsed.projection }, true);
     }
     const resolved = await resolveWithinRoot(folder, f.nativePath, realpath);
     if (!resolved.ok) {
@@ -217,7 +223,8 @@ export class UnderstandingCatalog {
     diagnostics.push(...checkAgainstNative(doc, lines));
     const stale = currentSha256 !== doc.target.sha256;
     if (stale) diagnostics.push({ severity: "warning", code: "stale", message: `${f.nativePath} changed since this explanation was written; steps may point at the wrong lines until the AI updates it.` });
-    return done({ doc, diagnostics, nativeFile, currentSha256, lines }, false, stale);
+    compatibility = readLegacyUnderstanding(got.bytes, { repository: doc.target.repository, path: doc.target.path, bytes: native.bytes }).projection;
+    return done({ doc, diagnostics, nativeFile, currentSha256, lines, compatibility }, false, stale);
   }
 }
 

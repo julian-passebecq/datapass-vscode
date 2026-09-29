@@ -27,6 +27,7 @@ import { workOrdersEnabled } from "../work/workOrders";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import type { UnderstandingEntry } from "../core/understanding/load";
 import { hopState, explanationPathOf, type HopState } from "./hopState";
+import { rebindLegacyEditor } from "../analysis/compat";
 import { hopHtml } from "./hopHtml";
 import { codeLensSteps, parseHopMessage, stepForCursor, stepForTopLine, stepRange, type HopMessage } from "./hopSync";
 
@@ -55,6 +56,7 @@ export class HopHost implements vscode.Disposable {
   private scrollTimer?: ReturnType<typeof setTimeout>;
   private followTimer?: ReturnType<typeof setTimeout>;
   private lastHtml = "";
+  private loadGeneration = 0;
   private readonly decoration = vscode.window.createTextEditorDecorationType({
     isWholeLine: true,
     backgroundColor: new vscode.ThemeColor("editor.rangeHighlightBackground"),
@@ -67,7 +69,8 @@ export class HopHost implements vscode.Disposable {
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession, private readonly workbench: WorkbenchHost) {
     this.subs.push(
       this.decoration, this.lensEmitter,
-      session.onDidChange(() => { this.lensEmitter.fire(); this.scheduleReload(); void this.updateContext(); }),
+      session.onDidChange(() => { this.loadGeneration++; this.lensEmitter.fire(); this.scheduleReload(); void this.updateContext(); }),
+      vscode.workspace.onDidChangeTextDocument(e => { if (this.isShown(e.document.uri)) { this.loadGeneration++; this.scheduleReload(); } }),
       vscode.workspace.onDidSaveTextDocument(d => { if (this.isShown(d.uri)) this.scheduleReload(); }),
       vscode.window.onDidChangeActiveTextEditor(e => { void this.updateContext(); this.follow(e); }),
       vscode.window.onDidChangeTextEditorSelection(e => this.onSelection(e)),
@@ -78,6 +81,7 @@ export class HopHost implements vscode.Disposable {
   }
 
   dispose(): void {
+    this.loadGeneration++;
     for (const t of [this.reloadTimer, this.scrollTimer, this.followTimer]) if (t) clearTimeout(t);
     this.panel?.dispose();
     for (const s of this.subs) s.dispose();
@@ -147,7 +151,7 @@ export class HopHost implements vscode.Disposable {
     panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, "resources", "datapass.svg");
     this.panel = panel;
     this.lastHtml = "";
-    panel.onDidDispose(() => { if (this.panel === panel) { this.panel = undefined; this.shown = undefined; this.active = undefined; this.decorate(); } });
+    panel.onDidDispose(() => { if (this.panel === panel) { this.loadGeneration++; this.panel = undefined; this.shown = undefined; this.active = undefined; this.decorate(); } });
     panel.onDidChangeViewState(e => { if (e.webviewPanel.visible) this.render(); });
     panel.webview.onDidReceiveMessage(m => void this.receive(m));
     this.render(true);
@@ -156,10 +160,14 @@ export class HopHost implements vscode.Disposable {
   private title(): string { return `Hop: ${this.shown?.state.fileName ?? "file"}`; }
 
   private async load(uri: vscode.Uri | undefined, located: { repositoryKey: string; nativePath: string } | undefined): Promise<void> {
+    const generation = ++this.loadGeneration;
     const changedFile = !this.shown || this.shown.uri?.toString() !== uri?.toString() || this.shown.located?.nativePath !== located?.nativePath;
     let entry: UnderstandingEntry | undefined;
     if (located) entry = uri ? await this.session.understandingFor(uri) : await this.session.understandingByPath(located.repositoryKey, located.nativePath);
+    if (generation !== this.loadGeneration) return;
     const doc = uri && vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString());
+    // Dirty editor text is a new exact UTF-8 capture; a disk anchor cannot claim to bind it.
+    if (doc?.isDirty && entry) entry = rebindLegacyEditor(entry, doc.getText());
     const repositoryLabel = located ? this.session.projectMap().repositories.find(r => r.key === located.repositoryKey)?.label : undefined;
     const state = hopState({
       fileName: uri ? path.basename(uri.fsPath) : located ? path.posix.basename(located.nativePath) : "file",

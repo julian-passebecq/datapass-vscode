@@ -259,7 +259,8 @@ function bodyHtml(s: HopState): string {
   const intro = s.title ? `<h1>${esc(s.title)}</h1>${s.summary ? `<p class="summary">${esc(s.summary)}</p>` : ""}` : "";
   const flow = s.steps.length ? `<div class="flow" data-flow>${s.steps.map((st, i) => (i ? `<div class="connector ${st.fromPrevious ?? "none"}" title="${esc(st.fromPrevious ? `${st.fromPrevious} link` : "no declared link")}"></div>` : "") + stepHtml(st)).join("")}</div>` : s.kind === "explained" && s.state !== "invalid" ? `<p class="empty">No steps.</p>` : "";
   const warnings = s.kind === "explained" && s.state !== "invalid" && s.state !== "orphan" && s.problems.length && !s.banner ? `<div class="banner warning"><strong>Warnings</strong><ul class="problems">${s.problems.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>` : "";
-  return `${header}<main>${banner}${warnings}${intro}${flow}</main>`;
+  const compatibility = s.compatibility ? `<details class="compatibility"><summary>Source binding and evidence limits</summary><p>${s.compatibility.resolved} steps bound to captured source; ${s.compatibility.unresolved} unresolved. ${s.compatibility.operationFlows} operation links; dataset lineage is not established by these links.</p><ul>${s.compatibility.losses.map(loss => `<li>${esc(loss)}</li>`).join("")}</ul></details>` : "";
+  return `${header}<main>${banner}${warnings}${intro}${compatibility}${flow}</main>`;
 }
 
 export function hopHtml(state: HopState, cspSource: string, nonce: string, active?: string): string {

@@ -1,0 +1,1137 @@
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "3.13.15",
+  "parserVersion": "30.19.0",
+  "platform": "win-x64",
+  "status": "containment-unqualified",
+  "sourceManifestSha256": "0cb08f6892b550a449e0d545b3415517e184397237028ab58338b745c3abf1f2",
+  "files": [
+    {
+      "path": "_asyncio.pyd",
+      "sha256": "6941e2aeed3aad1a4658774ecb60309170066a040c2118a5efd16458ac3bed00",
+      "bytes": 72928
+    },
+    {
+      "path": "_bz2.pyd",
+      "sha256": "261545bd24f15a783fc0c82568b766a4ab569dde14507a81701cccf5293e6e54",
+      "bytes": 86752
+    },
+    {
+      "path": "_ctypes.pyd",
+      "sha256": "9d6dccb4cd84a44a107f9b06b91c0a44e85766d9bf4debb6abbde8fda7494c2c",
+      "bytes": 134368
+    },
+    {
+      "path": "_decimal.pyd",
+      "sha256": "1e6a5707163d3c103e0eb4695eefedbea4b855fb227c61cc265b168970d6c6f0",
+      "bytes": 286944
+    },
+    {
+      "path": "_elementtree.pyd",
+      "sha256": "26c5c2f3f2b8dac1499f07a50d7afd14315c20a6a541abbe4e306bcd9df404f1",
+      "bytes": 135904
+    },
+    {
+      "path": "_hashlib.pyd",
+      "sha256": "79a26289aef0d92545a082507c7021f10e219621d137cb726c4d0fbbfd4b46ae",
+      "bytes": 69344
+    },
+    {
+      "path": "_lzma.pyd",
+      "sha256": "ee224aacf5cf9c9974a1b842aac8d89d5d9b7eeebbf4d76619ae0ce4da8ecd96",
+      "bytes": 159456
+    },
+    {
+      "path": "_multiprocessing.pyd",
+      "sha256": "db19972cf033b598f5826f8219bc2608412b84061d294f5972b43c2ab95f7af5",
+      "bytes": 38112
+    },
+    {
+      "path": "_overlapped.pyd",
+      "sha256": "9db08b5449e18088754ce57e315657d00b46575e0151cd379efef8847488a606",
+      "bytes": 57568
+    },
+    {
+      "path": "_queue.pyd",
+      "sha256": "4404c2569443ffb54e7cfffdca8ddf58c9a609175305970728ec12bc1c147b43",
+      "bytes": 35552
+    },
+    {
+      "path": "_socket.pyd",
+      "sha256": "ccbd0f83df3784da08147b8e8765e28c978de28b5c0eddcfba5567b59d43fef9",
+      "bytes": 86752
+    },
+    {
+      "path": "_sqlite3.pyd",
+      "sha256": "4c5fa9341a76ac525fd36e2cb23260934ad9b9f6825725ff139b26c8dc72436d",
+      "bytes": 131296
+    },
+    {
+      "path": "_ssl.pyd",
+      "sha256": "8d2f51fa1dc929073a2ad8d1c7c0c911e8f695870dcf4dda2846f4b75a7f77fb",
+      "bytes": 181984
+    },
+    {
+      "path": "_uuid.pyd",
+      "sha256": "b93832742a2348d6659fd62e8a8aff061594693fc537da74c7d2d1cdf83a8475",
+      "bytes": 27872
+    },
+    {
+      "path": "_wmi.pyd",
+      "sha256": "db45362354fd4965329cb14bd974e60b26525045d09fb4fdfb1674a93b79d60c",
+      "bytes": 39648
+    },
+    {
+      "path": "_zoneinfo.pyd",
+      "sha256": "6650db91accc05e625d3c5d8a40e15127a040ea1135e40e875fd78d8a7665a84",
+      "bytes": 50912
+    },
+    {
+      "path": "datapass_analyzer.py",
+      "sha256": "732dd987195e8cf993f87b975d413b0bff285fddf9cedf6e0b35c19811f80d07",
+      "bytes": 6566
+    },
+    {
+      "path": "datapass_controller.py",
+      "sha256": "5e2a8eddc930c270983269290cd2aef9692fcf83e38767bedb8b8e94ba79a903",
+      "bytes": 13539
+    },
+    {
+      "path": "libcrypto-3.dll",
+      "sha256": "09499e186cf0e434ffa17ad153aa9a66d6048c54a2c03b823e2a06c49d9affe4",
+      "bytes": 5238520
+    },
+    {
+      "path": "libffi-8.dll",
+      "sha256": "eff52743773eb550fcc6ce3efc37c85724502233b6b002a35496d828bd7b280a",
+      "bytes": 39696
+    },
+    {
+      "path": "libssl-3.dll",
+      "sha256": "28c395290279fa4f4f54a57b85cd66d853895f925fefb8f6fdebc0d8b1cdd07c",
+      "bytes": 794872
+    },
+    {
+      "path": "LICENSE.txt",
+      "sha256": "62bec384df47b0328307db41455ff6ea2559e5546b394ac69148561b21703120",
+      "bytes": 33861
+    },
+    {
+      "path": "pyexpat.pyd",
+      "sha256": "b9c9c5a9f52af559a7eb4e8ddfd60558185bfc7794f32840bed1747d1ec9026a",
+      "bytes": 221920
+    },
+    {
+      "path": "python.cat",
+      "sha256": "49eb507453b924ff70c19c8b8940b033ac5865f11cdd637447024725ed105bef",
+      "bytes": 578418
+    },
+    {
+      "path": "python.exe",
+      "sha256": "85b71d8c6ec1905935f74be0c9869aae198d00e98f39df699ec66f9c5a84cecd",
+      "bytes": 105696
+    },
+    {
+      "path": "python3.dll",
+      "sha256": "76e7fd69a01081726308317d6e502721c2ba6792b48880dc1ef649c755788db7",
+      "bytes": 72416
+    },
+    {
+      "path": "python313._pth",
+      "sha256": "cc16419afb9e047ea07f23609e42fe57dc30b82ad96c0f9df00f918094ecd339",
+      "bytes": 26
+    },
+    {
+      "path": "python313.dll",
+      "sha256": "e820bf024efd2b56bb2b82791e6b6ddc7303f070f8e72cba7637482a8a906238",
+      "bytes": 6135008
+    },
+    {
+      "path": "python313.zip",
+      "sha256": "1916abd946d2044ec8c04c3319f96c8415d5b6fce01e125622827f2b7756cbab",
+      "bytes": 3825631
+    },
+    {
+      "path": "pythonw.exe",
+      "sha256": "146c01e5448a084ff15d63113a790b9aa75250baf862d984c51dd695ac4775bc",
+      "bytes": 104160
+    },
+    {
+      "path": "select.pyd",
+      "sha256": "024f955349fe46cf1bb2c22c6b57fcf38cf5755d46166fbf63e7e5b92433b111",
+      "bytes": 32992
+    },
+    {
+      "path": "sqlite3.dll",
+      "sha256": "c6812eaf0f8605df273b9bf7e359b83fd65038ecc66455c3f7a933768cb92f3f",
+      "bytes": 1584864
+    },
+    {
+      "path": "unicodedata.pyd",
+      "sha256": "111e0fdfeef9887c04f6ebf1972ce1ccbec55b226012e4a288c2d4a0b17b216b",
+      "bytes": 712928
+    },
+    {
+      "path": "vcruntime140_1.dll",
+      "sha256": "a7146c08f89fe5b04541ab507cdb59ff7b44534d4ba3c668a426c6450a03434e",
+      "bytes": 50112
+    },
+    {
+      "path": "vcruntime140.dll",
+      "sha256": "d1f4225df2cd877dbf130d5668a021dce3f94118455ff5ec952061c30afc9ce7",
+      "bytes": 178616
+    },
+    {
+      "path": "vendor/sqlglot-30.19.0.dist-info/licenses/LICENSE",
+      "sha256": "b0bf909b472ddf9bd4eab30f6e6fd8b33bf3997ce038b882fe0663f291958d2d",
+      "bytes": 1065
+    },
+    {
+      "path": "vendor/sqlglot-30.19.0.dist-info/METADATA",
+      "sha256": "ba5925cb9fa4171370a0b6afdad1b33aa333e0908dc97fdd20bed1a2b9fb1545",
+      "bytes": 25461
+    },
+    {
+      "path": "vendor/sqlglot-30.19.0.dist-info/RECORD",
+      "sha256": "5761f022c248e2230c7d9a7b027328d163daa2595995ff7cb2b30bd78719d506",
+      "bytes": 15882
+    },
+    {
+      "path": "vendor/sqlglot-30.19.0.dist-info/top_level.txt",
+      "sha256": "e6446c902180fe05400c5f6b49f4b33dd2c75eabdf32eb0361e1de3df358da74",
+      "bytes": 8
+    },
+    {
+      "path": "vendor/sqlglot-30.19.0.dist-info/WHEEL",
+      "sha256": "61532836a2b3111b7ec23519c09df7c41180c27165fb872a6d8913b566b88ad1",
+      "bytes": 91
+    },
+    {
+      "path": "vendor/sqlglot/__init__.py",
+      "sha256": "62475c676c9112c31d8ecca3ef7763565153a2ba6fe01897dcef6e782fe89cb3",
+      "bytes": 5873
+    },
+    {
+      "path": "vendor/sqlglot/__main__.py",
+      "sha256": "24fb7b1b6ab2adb5575308c7d386687389627a0018b4eb730254dc4f9e708219",
+      "bytes": 2148
+    },
+    {
+      "path": "vendor/sqlglot/_typing.py",
+      "sha256": "e685abc5e4579508bf432632159c64d89fab91a1831235bcc0a0f12e4fa309f7",
+      "bytes": 1808
+    },
+    {
+      "path": "vendor/sqlglot/_version.py",
+      "sha256": "10cb0cd0dc4be9dc939312444b51449e2ca8837c80fd11c3f63a8f0cd1c24230",
+      "bytes": 532
+    },
+    {
+      "path": "vendor/sqlglot/anonymize.py",
+      "sha256": "9073df1607d9b770c94d6c870616af3cded097da42f26187114fef4a7f7adeb9",
+      "bytes": 10713
+    },
+    {
+      "path": "vendor/sqlglot/dialects/__init__.py",
+      "sha256": "0769ac3b1bec8cacf5a24c63b3049271d0907e20bba94a2475bbcfdeac329ae9",
+      "bytes": 3795
+    },
+    {
+      "path": "vendor/sqlglot/dialects/athena.py",
+      "sha256": "5bc45ae9c5d2f9bcd0ecdd8c2dfe280c53727deef8b792947f32e817df9a9854",
+      "bytes": 4363
+    },
+    {
+      "path": "vendor/sqlglot/dialects/bigquery.py",
+      "sha256": "eb8ece78a473b996689c50fdd151b8d0ba5f1673fc696e2bb8d7efbcaf491925",
+      "bytes": 7414
+    },
+    {
+      "path": "vendor/sqlglot/dialects/clickhouse.py",
+      "sha256": "9875ef9c278c8e2c87b1fcd221d6c42ea18090848e7d863eb3a71d5509a1a4a2",
+      "bytes": 4694
+    },
+    {
+      "path": "vendor/sqlglot/dialects/databricks.py",
+      "sha256": "79a1895feac0da04e144b2cea70c8405328074df708fd63e525ec811b7487e98",
+      "bytes": 1254
+    },
+    {
+      "path": "vendor/sqlglot/dialects/dax.py",
+      "sha256": "072851f20850e4548c0b3a48e0a2e3ceab961d7b956e76a8944ed409cd460898",
+      "bytes": 489
+    },
+    {
+      "path": "vendor/sqlglot/dialects/dialect.py",
+      "sha256": "6ba7de5e70a5a69db2ab09d436b7579f353eea87417ebd3745bb7c3acd6d33e8",
+      "bytes": 98932
+    },
+    {
+      "path": "vendor/sqlglot/dialects/doris.py",
+      "sha256": "0ebe7363ac003db7bc6b6aa8f54aa2f17315c88c4296f16e66206b0557b19acf",
+      "bytes": 364
+    },
+    {
+      "path": "vendor/sqlglot/dialects/dremio.py",
+      "sha256": "6155114ea8f946e116dec8afd080b91d37275d9565d62004a2303fdcff74cbc7",
+      "bytes": 1678
+    },
+    {
+      "path": "vendor/sqlglot/dialects/drill.py",
+      "sha256": "14ca0e5e3df142ba9a07dfabff8ebc0fec2ab684f630237ad295b1ca66f9cdfd",
+      "bytes": 1438
+    },
+    {
+      "path": "vendor/sqlglot/dialects/druid.py",
+      "sha256": "acca03eb1f853e16c9166c144b645f44f470cc81cde0c0aa5a3ed0c4b3c0b070",
+      "bytes": 224
+    },
+    {
+      "path": "vendor/sqlglot/dialects/duckdb.py",
+      "sha256": "1d4e986838f18b648c72212e91e78f419dfc410940b8d922bc13013c5b52523e",
+      "bytes": 4355
+    },
+    {
+      "path": "vendor/sqlglot/dialects/dune.py",
+      "sha256": "e31d4cdcadea1fc6b0d8449098b06d946d58f308ad2e6efe7eac6b9c3f72ed98",
+      "bytes": 329
+    },
+    {
+      "path": "vendor/sqlglot/dialects/exasol.py",
+      "sha256": "06c96307cb6749a4c9f169de9a4e049fe07ec8f753aff30344a0aa00921e5530",
+      "bytes": 2052
+    },
+    {
+      "path": "vendor/sqlglot/dialects/fabric.py",
+      "sha256": "3e82b28d76197292a35d4d479b77fe14e5482bff0f7fd04d2a34e8d7cec4c9c4",
+      "bytes": 1865
+    },
+    {
+      "path": "vendor/sqlglot/dialects/hive.py",
+      "sha256": "a89b1d30a7f0622c92ac63dc30b0ba071857e90d6eb150076fbce440d86de546",
+      "bytes": 3732
+    },
+    {
+      "path": "vendor/sqlglot/dialects/materialize.py",
+      "sha256": "d25cb879ffc8612c6312d2d80933cef3cb67677c552e3128b2ae503083f23bd9",
+      "bytes": 336
+    },
+    {
+      "path": "vendor/sqlglot/dialects/mysql.py",
+      "sha256": "5d566fcb172731288ce156376acdb024ff79e7bbfb7fb93a82e728089c2319c5",
+      "bytes": 5908
+    },
+    {
+      "path": "vendor/sqlglot/dialects/oracle.py",
+      "sha256": "d5dace1c2f2fea82eb92f6d16bc8b274f1a7e60d38a88c03bf5ec7be78c44942",
+      "bytes": 3485
+    },
+    {
+      "path": "vendor/sqlglot/dialects/postgres.py",
+      "sha256": "a961be04faf24ff26f67c681cb6011fdd526b9f0dbcd345c05f8b6651dae48e2",
+      "bytes": 5251
+    },
+    {
+      "path": "vendor/sqlglot/dialects/presto.py",
+      "sha256": "f8d014e088704e7c366e91b61dbc6a959380908e4836eb6e3952a80b6a39768e",
+      "bytes": 2219
+    },
+    {
+      "path": "vendor/sqlglot/dialects/prql.py",
+      "sha256": "4a177d4a54761cd46cf044f6a6cf9c30831665a9e0aa2b84bd52f9e563f4ebfc",
+      "bytes": 782
+    },
+    {
+      "path": "vendor/sqlglot/dialects/redshift.py",
+      "sha256": "5753e46fbe2bfb0aab1854d5471c5872f7fff17b62a015a17bde3a5098fda35f",
+      "bytes": 2024
+    },
+    {
+      "path": "vendor/sqlglot/dialects/risingwave.py",
+      "sha256": "72c3cb2ac088ec961ff6afea044ec4deea42c9628d74b3aa6879673f67957b06",
+      "bytes": 649
+    },
+    {
+      "path": "vendor/sqlglot/dialects/singlestore.py",
+      "sha256": "ec619a6e34b3b53aa71aed4bb0b9ffe241f151243cd114d69401229b1fadbe72",
+      "bytes": 2126
+    },
+    {
+      "path": "vendor/sqlglot/dialects/snowflake.py",
+      "sha256": "774e0f091b878ae9559ca0da0c4c5d325ce3923fe95086e9f24e1d5cd7bd3cda",
+      "bytes": 6873
+    },
+    {
+      "path": "vendor/sqlglot/dialects/solr.py",
+      "sha256": "f9e0e6242ac3dbdc151241cbcca9d173765514e2fb7878648cc886143f1d5376",
+      "bytes": 535
+    },
+    {
+      "path": "vendor/sqlglot/dialects/spark.py",
+      "sha256": "31a016a710656a4cfb0ef08f207dda6a8aec8100d3da3c572741589b5916d4b5",
+      "bytes": 1226
+    },
+    {
+      "path": "vendor/sqlglot/dialects/spark2.py",
+      "sha256": "79368101aba9c92def01ddf16a654a52d5f5d79e2737661a6fdbbf2f1ef3f964",
+      "bytes": 1253
+    },
+    {
+      "path": "vendor/sqlglot/dialects/sqlite.py",
+      "sha256": "b924faa3ebd4373e053a31b501c26b6e3de55ad565567b35a24bb4de4ab36965",
+      "bytes": 1215
+    },
+    {
+      "path": "vendor/sqlglot/dialects/starrocks.py",
+      "sha256": "4492495e0dc2e47f1b87f411820982547e5a89869b05a9aef2e566fd428824dd",
+      "bytes": 688
+    },
+    {
+      "path": "vendor/sqlglot/dialects/tableau.py",
+      "sha256": "077ab6db2082770a4683b37912c0b43e34330101fec97aab1a1cac4bb4d7b2ed",
+      "bytes": 432
+    },
+    {
+      "path": "vendor/sqlglot/dialects/teradata.py",
+      "sha256": "30b8ecb4b97d2520addb522f77c2e955d01ebc62fb9a2ef9a6d8a3f41dc3d0b3",
+      "bytes": 2555
+    },
+    {
+      "path": "vendor/sqlglot/dialects/trino.py",
+      "sha256": "ac95755ba4b994dae0c0902cd052a9200ec09eecac28c547408a4ebabdbc99b0",
+      "bytes": 805
+    },
+    {
+      "path": "vendor/sqlglot/dialects/tsql.py",
+      "sha256": "0f550580c5d7b1a4d6b7247bb6738079b4ff92aed43060b9a48bd8ab58b36f94",
+      "bytes": 5495
+    },
+    {
+      "path": "vendor/sqlglot/diff.py",
+      "sha256": "a72ba42d04aaec7d10ce1c44162e70d83c7dcfee9dd3252f8e171b2f45d725a5",
+      "bytes": 16715
+    },
+    {
+      "path": "vendor/sqlglot/errors.py",
+      "sha256": "5f6474ff3b49542dd553d88d9b78512241cf7a25f8e37c03fe9bb9d90d1dd77f",
+      "bytes": 5273
+    },
+    {
+      "path": "vendor/sqlglot/executor/__init__.py",
+      "sha256": "3b8f68cfd6fce0828c205723e98a31902455a71c27413d8a7bd18b1aec42d11b",
+      "bytes": 2801
+    },
+    {
+      "path": "vendor/sqlglot/executor/context.py",
+      "sha256": "7e7b298f6716c0e3a013d25bfcf20a766fc42aa59821b0a639b60bb7e5c78b75",
+      "bytes": 3802
+    },
+    {
+      "path": "vendor/sqlglot/executor/env.py",
+      "sha256": "ef3c6ee91b5887d23af03c58a5200d2eb9bc37b03ca1e33db33b58a1e20e863d",
+      "bytes": 10091
+    },
+    {
+      "path": "vendor/sqlglot/executor/python.py",
+      "sha256": "14c0be0a65ff87803a56e1ec031308cdd99a96f6c2732fdf28055fab5fa0a4cc",
+      "bytes": 19893
+    },
+    {
+      "path": "vendor/sqlglot/executor/table.py",
+      "sha256": "07751cc81cf60a44c571c0a5ac8194690a6805211eaab10236590849b7c3b90f",
+      "bytes": 4510
+    },
+    {
+      "path": "vendor/sqlglot/expressions/__init__.py",
+      "sha256": "8a8c0e212718e0f53d004acad86827b4fab97539fe7ae1ada5c4c855ef7f57e0",
+      "bytes": 2243
+    },
+    {
+      "path": "vendor/sqlglot/expressions/aggregate.py",
+      "sha256": "907b357fdd5c8ade00becbfe952a99791855a2afc90ecc3fd026a7860fb13ebf",
+      "bytes": 7274
+    },
+    {
+      "path": "vendor/sqlglot/expressions/array.py",
+      "sha256": "39494472d2d23c94be51555dd3eda5cb2acee9847c1d280bcd9361986f17b78f",
+      "bytes": 8132
+    },
+    {
+      "path": "vendor/sqlglot/expressions/builders.py",
+      "sha256": "7af350d5480396dc588086a060e4f0b51b2cc650cc8ab953f0f8d773b661e1d9",
+      "bytes": 35530
+    },
+    {
+      "path": "vendor/sqlglot/expressions/constraints.py",
+      "sha256": "86381e08ef019f54ed7d237fd76b005faf1513e2d87f5d65dc58fff1e9b159bd",
+      "bytes": 5724
+    },
+    {
+      "path": "vendor/sqlglot/expressions/core.py",
+      "sha256": "241e86e17b65e58eeb08a164c5bce1e92081d0b446ab412d4e56e926af977750",
+      "bytes": 91568
+    },
+    {
+      "path": "vendor/sqlglot/expressions/datatypes.py",
+      "sha256": "94eb9b33c7a809030f7c0b892eed114e646a3c612139fb0dd0b1c116e6fc6271",
+      "bytes": 11916
+    },
+    {
+      "path": "vendor/sqlglot/expressions/ddl.py",
+      "sha256": "bb13a6075adfd4480655aa01eb5ec039a8016bd5e18cc6db38689fc056ef466a",
+      "bytes": 9659
+    },
+    {
+      "path": "vendor/sqlglot/expressions/dml.py",
+      "sha256": "9efaba2abb2f32c9f5778872fd7849609c8045687aa7ac8146a1001bf653f151",
+      "bytes": 15629
+    },
+    {
+      "path": "vendor/sqlglot/expressions/functions.py",
+      "sha256": "bb3ba5db709a7df15a2936db36793939f877e99dd437956c64042d6e6cc25886",
+      "bytes": 11673
+    },
+    {
+      "path": "vendor/sqlglot/expressions/json.py",
+      "sha256": "552cd1ccfb80759b76f981ef974e4e28d15342174b6c7e5099fc76a4cb936fc2",
+      "bytes": 5937
+    },
+    {
+      "path": "vendor/sqlglot/expressions/math.py",
+      "sha256": "c81e7321a9a9fbf9cfe5a70434e4df2c751f33b6d68d93697ba4f09f69b56d88",
+      "bytes": 4552
+    },
+    {
+      "path": "vendor/sqlglot/expressions/properties.py",
+      "sha256": "6d3cb2a2125ef46b4dc51c0295a0cdec4ccfbc0e93060eb3f0d8c7349192182b",
+      "bytes": 13915
+    },
+    {
+      "path": "vendor/sqlglot/expressions/query.py",
+      "sha256": "7fc1d8b0f904f0c2e7242746fb1e739b03d7ff544f95f7374a0719537455f152",
+      "bytes": 64404
+    },
+    {
+      "path": "vendor/sqlglot/expressions/string.py",
+      "sha256": "29a7219b66b8dc59da0b8111254f9bcb83b7a5fb2abd22e268bebda334da51e3",
+      "bytes": 12849
+    },
+    {
+      "path": "vendor/sqlglot/expressions/temporal.py",
+      "sha256": "c156358204eec1287edae8ab604ccd12ad856045334a57c9a43928a467f89a79",
+      "bytes": 12626
+    },
+    {
+      "path": "vendor/sqlglot/generator.py",
+      "sha256": "ef49fd2c5cd1b5884dbbb994355e09b0b7c8736b03616ab87f2298b7034bf2e0",
+      "bytes": 271643
+    },
+    {
+      "path": "vendor/sqlglot/generators/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "vendor/sqlglot/generators/athena.py",
+      "sha256": "c1121b3218e18d61e0462525b0193fc1f6816487cc44a68ca2d0efa20e05b403",
+      "bytes": 5973
+    },
+    {
+      "path": "vendor/sqlglot/generators/bigquery.py",
+      "sha256": "84ad21c8dc3f2913f5465f409f7f2792785f9d6d7087a9d93bbfc05319d7bb3b",
+      "bytes": 26888
+    },
+    {
+      "path": "vendor/sqlglot/generators/clickhouse.py",
+      "sha256": "4650c477d2e27552e4df557b58698a61a1b12f106d1a8c00c160bcef0fd226ea",
+      "bytes": 29361
+    },
+    {
+      "path": "vendor/sqlglot/generators/databricks.py",
+      "sha256": "8e944148159136e2386c184443ef0ad06292bd45cdb1190ce91a0059780d08e5",
+      "bytes": 4852
+    },
+    {
+      "path": "vendor/sqlglot/generators/dax.py",
+      "sha256": "e8dd3c8676b9cf5bc7ecd501f3afe82555c2c0d4f7700bb6e05417278447a995",
+      "bytes": 191
+    },
+    {
+      "path": "vendor/sqlglot/generators/doris.py",
+      "sha256": "6c05e14482f778ad1c8edf33468fac357eb5572f045ef1cf497bce3db762b6e3",
+      "bytes": 15112
+    },
+    {
+      "path": "vendor/sqlglot/generators/dremio.py",
+      "sha256": "87c78942a5b6663ed1311a181d97c5f7dd28715652c404a329cb211cbcd3a076",
+      "bytes": 3941
+    },
+    {
+      "path": "vendor/sqlglot/generators/drill.py",
+      "sha256": "c9607ce34cfa39cd8a1264baa2c98ac010aa3899aa6e8af58c5dd8445a275adc",
+      "bytes": 5131
+    },
+    {
+      "path": "vendor/sqlglot/generators/druid.py",
+      "sha256": "6ebf9b6ed5a5b3d78e179c609950fc0f7788b6af12dde11cd55ec79c9b3e28d7",
+      "bytes": 892
+    },
+    {
+      "path": "vendor/sqlglot/generators/duckdb.py",
+      "sha256": "342ad14ce19b89f978a070b4c3db72733da9266d4d2797e183ef39e59d28df2e",
+      "bytes": 192319
+    },
+    {
+      "path": "vendor/sqlglot/generators/dune.py",
+      "sha256": "d38da245bf7b2f54bfd4c728d2638dd9050888e3f5a2c7ed2360201b960e75a8",
+      "bytes": 323
+    },
+    {
+      "path": "vendor/sqlglot/generators/exasol.py",
+      "sha256": "b08df2dd90bb5c8e272c7e380495942c2909696e5c0b166c33fe1f2b1b5c5e7e",
+      "bytes": 30286
+    },
+    {
+      "path": "vendor/sqlglot/generators/fabric.py",
+      "sha256": "7a5f69137b537f518f684c69a1148f0cc2b613f3be098da603b402c533f4483d",
+      "bytes": 6708
+    },
+    {
+      "path": "vendor/sqlglot/generators/hive.py",
+      "sha256": "163c01c58b71a42dc919b728be5b9e6e2b977c5ec418c0c946da055e2e6755c4",
+      "bytes": 24441
+    },
+    {
+      "path": "vendor/sqlglot/generators/materialize.py",
+      "sha256": "92620514be64aede3e7b52463a0708df6f75e97158fa1935fece607edfe1baf2",
+      "bytes": 2060
+    },
+    {
+      "path": "vendor/sqlglot/generators/mysql.py",
+      "sha256": "67325779c6667cdc6703867bd5f6e45f703a6f6470779064a919cdf17c7d524f",
+      "bytes": 27755
+    },
+    {
+      "path": "vendor/sqlglot/generators/oracle.py",
+      "sha256": "29ea33e8e0f524119c72cdc9383e6a0fc21083cd991f44b3fc70c5289d4d58a9",
+      "bytes": 7085
+    },
+    {
+      "path": "vendor/sqlglot/generators/postgres.py",
+      "sha256": "b33c44778b22bfa5a4bc8f3a1e0de55a58eb8e5823f0d492221914ce365ae602",
+      "bytes": 23695
+    },
+    {
+      "path": "vendor/sqlglot/generators/presto.py",
+      "sha256": "ea6054c995fddb5b5260c5786ead158ba35ecec657354590e3b6a2d141b95a24",
+      "bytes": 28355
+    },
+    {
+      "path": "vendor/sqlglot/generators/prql.py",
+      "sha256": "fc74fbb0dc95c48b5f68c802efa4b1be36e59b6456c384f30a54f74a379381c6",
+      "bytes": 192
+    },
+    {
+      "path": "vendor/sqlglot/generators/python.py",
+      "sha256": "b7bc02b58487dc2c3de0607eaece4d85f6ed2adf3bca7f2ff3a84b8b3490974d",
+      "bytes": 5046
+    },
+    {
+      "path": "vendor/sqlglot/generators/redshift.py",
+      "sha256": "09227c7b429d24b269ef938818d6d893883253b0ad7bf26d1049bb179b6ac043",
+      "bytes": 11987
+    },
+    {
+      "path": "vendor/sqlglot/generators/risingwave.py",
+      "sha256": "6d3a5986dba58d872e8ad2b234259001d5d5d73eec7d6b8a7bd06b6ce3904f78",
+      "bytes": 1129
+    },
+    {
+      "path": "vendor/sqlglot/generators/singlestore.py",
+      "sha256": "61c10f83cb5d6b1a3e3d08f8ae26a8b118611d3b639977d1943c192bd9153cce",
+      "bytes": 43823
+    },
+    {
+      "path": "vendor/sqlglot/generators/snowflake.py",
+      "sha256": "35c76551df5ab662f6f4846f559bf46bff2b4ba543fe316d72f4a3d6f9dd590b",
+      "bytes": 49823
+    },
+    {
+      "path": "vendor/sqlglot/generators/solr.py",
+      "sha256": "965c794f040d45cf2abefb16ea17c55e14be81d390b6534d36da7a12cecf5a93",
+      "bytes": 192
+    },
+    {
+      "path": "vendor/sqlglot/generators/spark.py",
+      "sha256": "96979aa4efedb8aa99c959ebaa9601b7a1e10915c2f1a0d258b83c1a501d07f7",
+      "bytes": 8166
+    },
+    {
+      "path": "vendor/sqlglot/generators/spark2.py",
+      "sha256": "7e448afc120c00760b8b542959e0fca6715d9800f31d42ccccdce9b91ab55488",
+      "bytes": 10338
+    },
+    {
+      "path": "vendor/sqlglot/generators/sqlite.py",
+      "sha256": "d2f29bb8c6b311dc0672ba51313f75a98ea27c2bb8b4bcd424706afdc03869bf",
+      "bytes": 15793
+    },
+    {
+      "path": "vendor/sqlglot/generators/starrocks.py",
+      "sha256": "943c22559c5074564d8c8440cf241f2d4b5851a00f6f33c6338b605bc1e69744",
+      "bytes": 11248
+    },
+    {
+      "path": "vendor/sqlglot/generators/tableau.py",
+      "sha256": "2e41c214043ae68cc2fc533ecf1e7c3358e8390c6edc9ff8f20a962acbf0d5b2",
+      "bytes": 1634
+    },
+    {
+      "path": "vendor/sqlglot/generators/teradata.py",
+      "sha256": "04684b58f0c08741b9d0af357ff991e366bb256d60c4369af6cf68342c5dbf05",
+      "bytes": 7252
+    },
+    {
+      "path": "vendor/sqlglot/generators/trino.py",
+      "sha256": "6d51bb59d46216e72346c97c834b0c02e17cae4991d2a3fca85af00b610ada79",
+      "bytes": 7553
+    },
+    {
+      "path": "vendor/sqlglot/generators/tsql.py",
+      "sha256": "66a19bed8165720694322a3ff9593883ce905887aa3cdc636e441c66b26fc838",
+      "bytes": 30125
+    },
+    {
+      "path": "vendor/sqlglot/helper.py",
+      "sha256": "881a27d1dcc311b59cc784e9ce28ed9e5b193a3e17a27a332a5345b35b30179f",
+      "bytes": 12009
+    },
+    {
+      "path": "vendor/sqlglot/jsonpath.py",
+      "sha256": "23c8aaaccd3090eeb1fccf74315cd6af01098ce762d694590754f4821921992c",
+      "bytes": 8126
+    },
+    {
+      "path": "vendor/sqlglot/lineage.py",
+      "sha256": "4805c896111fbaa0b5a883a491b57b940641f9cb0b6c30c6e47afc3147fbfe9c",
+      "bytes": 27222
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/__init__.py",
+      "sha256": "ad220f0033d3761d67d8048c8b4a730fb1ce47923e88c6bbe236b41067b83a82",
+      "bytes": 2679
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/annotate_types.py",
+      "sha256": "503071c4b9d72237c1d2af79612a5bed2bfcf7ec2276f74d8b87feb517a7ebd4",
+      "bytes": 44165
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/canonicalize_internal_names.py",
+      "sha256": "f220d035bc61e24a9991413158f33623015b7ed0ffe156b4c670c79f85ca50aa",
+      "bytes": 15503
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/canonicalize.py",
+      "sha256": "25085977304df1783cfddf859f9854209e0f7fa48c1dd4717e56aea770cbfa1d",
+      "bytes": 8554
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/eliminate_ctes.py",
+      "sha256": "f6e985a2f49e4412c0685f7632740abf87aebc32d3c359346d9ce0b8af38f50c",
+      "bytes": 1976
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/eliminate_joins.py",
+      "sha256": "f4273824c3595069c5225cac4da036ea677847e38e3df6e65ed77f4a3b007af2",
+      "bytes": 6495
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/eliminate_subqueries.py",
+      "sha256": "bc89ed266b373257a693d1548c7d0d8304830e9d26517002623d7d29fbb467d2",
+      "bytes": 7208
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/isolate_table_selects.py",
+      "sha256": "c0468e20922d17555f41cbd76255a183917e1bde85d6c621732862fd2cf176de",
+      "bytes": 1470
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/journal.py",
+      "sha256": "93dcc3aa14fba92023f3b9fc44caab09bded50c9ef54a7b9d95281b6ab5afc25",
+      "bytes": 1204
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/merge_subqueries.py",
+      "sha256": "0ad2876853af73c5c9ea225da1927e9817ac923ff4fe5f0e02d7f1579b53a77b",
+      "bytes": 20801
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/normalize_identifiers.py",
+      "sha256": "f9cb70123441e889d53dc9c20d282826e4b6d4841562f2e3b21cca965427cf3d",
+      "bytes": 3822
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/normalize.py",
+      "sha256": "3f6164c3f80f5fc8794b8c1776a6ceb7bc80af9cd36e03f6dcf3c0442ca662b5",
+      "bytes": 7980
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/optimize_joins.py",
+      "sha256": "1d52d2c03dcaf375094dc592786b1656183236e398a7a2b2e8c23bb31cf950f0",
+      "bytes": 4709
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/optimizer.py",
+      "sha256": "ad09bbf039b18cbbe1c84144f77853bc0df19235206732ad3e54f316cdeb3462",
+      "bytes": 4298
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/pushdown_predicates.py",
+      "sha256": "5a44bd5f3399868ff1ee5f8475b5c930ea062019f228762281a3a5332f1d7a44",
+      "bytes": 11370
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/pushdown_projections.py",
+      "sha256": "177b75c2d934563820601992645d89ae7ad9011ed1d1620bebbd3ac4b1ad936f",
+      "bytes": 15808
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/qualify_columns.py",
+      "sha256": "ad1e62b784cda06b158f9a7cb2b5c1d15f97f76119d1c4a3479a312d2da302db",
+      "bytes": 54344
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/qualify_tables.py",
+      "sha256": "b9f0daebfb9a2ed0723d0d2b01f6527aa77b16a99775213501cb30181215964f",
+      "bytes": 10789
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/qualify.py",
+      "sha256": "52ba576f43d8e0139e1cf13dd78445988cda6b188071ccaa1802aab48baa2900",
+      "bytes": 4350
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/resolver.py",
+      "sha256": "72ce4736709ec258069c99aef05bacd000c47f9c3b58713c8ca4ee4d2f615cea",
+      "bytes": 19947
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/scope.py",
+      "sha256": "3c1983f4f38819032f0b31b82a7d24ef2ca48c17b9a31a4f623b171b2307706c",
+      "bytes": 39789
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/simplify.py",
+      "sha256": "fb71b6dd611cca940955daddf1b9abe546693edf34cc067abdb01c668daad90d",
+      "bytes": 68015
+    },
+    {
+      "path": "vendor/sqlglot/optimizer/unnest_subqueries.py",
+      "sha256": "4ac5abb35aa3540bf1b9aafb4a95a496f4eef055de4da100b38f563d1ff9e2f3",
+      "bytes": 17553
+    },
+    {
+      "path": "vendor/sqlglot/parser.py",
+      "sha256": "a0b22aec01ca8f620a563eebd3a90a3547c130f68fe3588e1ba8d4ba01edb1d3",
+      "bytes": 402170
+    },
+    {
+      "path": "vendor/sqlglot/parsers/__init__.py",
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "bytes": 1
+    },
+    {
+      "path": "vendor/sqlglot/parsers/athena.py",
+      "sha256": "f5714b307c9c5c88d8b842bd2b6690fe13bc1d9cf8cf937738049fe30aae43dc",
+      "bytes": 2353
+    },
+    {
+      "path": "vendor/sqlglot/parsers/base.py",
+      "sha256": "b828e68f67e7ee17cef4ff75d5c2b354672fbe6f559607248d621fd5a1e490f4",
+      "bytes": 582
+    },
+    {
+      "path": "vendor/sqlglot/parsers/bigquery.py",
+      "sha256": "0f1d2108827df13fc4420c9ab05f2fc22ce33c85d2fc54008e955c79fe7ddbc4",
+      "bytes": 31483
+    },
+    {
+      "path": "vendor/sqlglot/parsers/clickhouse.py",
+      "sha256": "790112694a4dc990fc09e4268de7f75b500d5a8748b719edc3afdb23b08f7dc6",
+      "bytes": 37741
+    },
+    {
+      "path": "vendor/sqlglot/parsers/databricks.py",
+      "sha256": "210e8f84fce6a32e60cc535296ea4a05d98456a47af977898f02017561a73eec",
+      "bytes": 2753
+    },
+    {
+      "path": "vendor/sqlglot/parsers/dax.py",
+      "sha256": "c2f5c1d6dd2de0195d89370359f91c438a48dacf5f157aa83607b24abe363265",
+      "bytes": 1565
+    },
+    {
+      "path": "vendor/sqlglot/parsers/doris.py",
+      "sha256": "3ebd302efa1186c43f820877abe6a04134feae722ec399f99fbbba9fab7c1659",
+      "bytes": 5129
+    },
+    {
+      "path": "vendor/sqlglot/parsers/dremio.py",
+      "sha256": "82fc9c7435522c5f6af5a2ffb32e9ce63d162bd1d99a9b92f258d473f8d072bf",
+      "bytes": 4227
+    },
+    {
+      "path": "vendor/sqlglot/parsers/drill.py",
+      "sha256": "dd549dbd66a79f783b7b49a3cc9ebd556c8da4814ef6d5602d6e4cb548df50b3",
+      "bytes": 950
+    },
+    {
+      "path": "vendor/sqlglot/parsers/druid.py",
+      "sha256": "a1f77593681bc49b242a042d4819e5da3baa60ac4e6e65e9cd8ea4d5aae8a9e0",
+      "bytes": 226
+    },
+    {
+      "path": "vendor/sqlglot/parsers/duckdb.py",
+      "sha256": "72d320ac708978a2a82bee9cbaf9dae7230434452178ac101deed145e3116a94",
+      "bytes": 16561
+    },
+    {
+      "path": "vendor/sqlglot/parsers/dune.py",
+      "sha256": "5041b972c2b7e3c80a5483329c5b52512e566391959f74c2aa4c4ea0fa1f83d7",
+      "bytes": 124
+    },
+    {
+      "path": "vendor/sqlglot/parsers/exasol.py",
+      "sha256": "04945e1ff569c5cd580028d77db3d8f35d6fce9817f6aa52e13768c26e978d62",
+      "bytes": 6657
+    },
+    {
+      "path": "vendor/sqlglot/parsers/fabric.py",
+      "sha256": "82e6fc9baae2c5fb23b24bde85880f8d6c2911ed07f0911ca1959434650c2256",
+      "bytes": 1348
+    },
+    {
+      "path": "vendor/sqlglot/parsers/hive.py",
+      "sha256": "a6d2345264fd948e8f7ada350d0e20a2575541e2fa0f9befb7e4b2ae6eb969de",
+      "bytes": 10978
+    },
+    {
+      "path": "vendor/sqlglot/parsers/materialize.py",
+      "sha256": "78290186ea157bb44399268dd87f4df32feba21d79229cbe988a35de576e800f",
+      "bytes": 1368
+    },
+    {
+      "path": "vendor/sqlglot/parsers/mysql.py",
+      "sha256": "4129551188afd9788709652bf7d726a5af6cd9504bde735192596dae79a004f9",
+      "bytes": 27568
+    },
+    {
+      "path": "vendor/sqlglot/parsers/oracle.py",
+      "sha256": "dd2379a4b1d0831f0aad3f21fb2bdcbd804ce44382eb3ec31b5ad581ffd34e9f",
+      "bytes": 9679
+    },
+    {
+      "path": "vendor/sqlglot/parsers/postgres.py",
+      "sha256": "49f6c5179286d0e39b7bfb04efa48d42ea370b696fb3a5e1872db31f96dfb0d7",
+      "bytes": 14025
+    },
+    {
+      "path": "vendor/sqlglot/parsers/presto.py",
+      "sha256": "260e72f782a948ce25a8ffae0611e6ae0f931374b876632627c45aa958be94f5",
+      "bytes": 5463
+    },
+    {
+      "path": "vendor/sqlglot/parsers/prql.py",
+      "sha256": "7fd7446396037cea02815f73fae6542c6f663813c6e7108b020def431af90fa9",
+      "bytes": 7068
+    },
+    {
+      "path": "vendor/sqlglot/parsers/redshift.py",
+      "sha256": "21216183778358af56b295128ea4f4deec59392c162488e59514178ded96798c",
+      "bytes": 5978
+    },
+    {
+      "path": "vendor/sqlglot/parsers/risingwave.py",
+      "sha256": "56b487defef5b61803857ef671f307ae3109ba96d6e29fce2c3004a888966952",
+      "bytes": 2268
+    },
+    {
+      "path": "vendor/sqlglot/parsers/singlestore.py",
+      "sha256": "d96d992c656327d88115d0c544e36bffe7e7f350bc350b6b7ca498e37663ff6e",
+      "bytes": 10655
+    },
+    {
+      "path": "vendor/sqlglot/parsers/snowflake.py",
+      "sha256": "22d14409513e4b8db7393318c9ace507fb088e6bf41050cdaa3a2dd4bd431609",
+      "bytes": 56458
+    },
+    {
+      "path": "vendor/sqlglot/parsers/solr.py",
+      "sha256": "b575e3334fe9a21b3b9fc428d0f25728dfd4523426f4bf7aa34f6ddd7d4769e8",
+      "bytes": 353
+    },
+    {
+      "path": "vendor/sqlglot/parsers/spark.py",
+      "sha256": "bf15a41914062ab065f3eb2c422cc8fc8667d30b1dfa3966606bc6b5096a26f1",
+      "bytes": 5231
+    },
+    {
+      "path": "vendor/sqlglot/parsers/spark2.py",
+      "sha256": "ea856683c16000c2c8d0d5429c5adfab86f5c2a8253b46ac4255c36849636205",
+      "bytes": 5116
+    },
+    {
+      "path": "vendor/sqlglot/parsers/sqlite.py",
+      "sha256": "11a2bb1b90faa0a1c428f134415099fa9242e42f232c43382cc544c212ec18e2",
+      "bytes": 7838
+    },
+    {
+      "path": "vendor/sqlglot/parsers/starrocks.py",
+      "sha256": "e04aeb5a18a40b06174b8f8b0929cffa87bb7c2302bb0c45e47bb402a9498614",
+      "bytes": 7071
+    },
+    {
+      "path": "vendor/sqlglot/parsers/tableau.py",
+      "sha256": "3eed2836d8c4111cf409815d9e749806c0f54fb8164e704bbcc9297b19e829ae",
+      "bytes": 507
+    },
+    {
+      "path": "vendor/sqlglot/parsers/teradata.py",
+      "sha256": "a458502bba818e4dfd648462b3c7932f030ee3e27e19b9cdf848a5a3c0e35e75",
+      "bytes": 7618
+    },
+    {
+      "path": "vendor/sqlglot/parsers/trino.py",
+      "sha256": "88ab3ca520696f86d269679b2a37ae3031a4b479991753addf306124ed67c949",
+      "bytes": 10350
+    },
+    {
+      "path": "vendor/sqlglot/parsers/tsql.py",
+      "sha256": "baa0a08afecaf4a69422bd39f16ba6c4b6c3fec1cf09c44c59144c7c609bbe17",
+      "bytes": 28260
+    },
+    {
+      "path": "vendor/sqlglot/planner.py",
+      "sha256": "6c3aea16470b39249cc3ce85e263322bef757d60dd9122618f6ddea353c5fa0b",
+      "bytes": 17095
+    },
+    {
+      "path": "vendor/sqlglot/py.typed",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "vendor/sqlglot/schema.py",
+      "sha256": "4679488848e4946787c773d29cef75fb76f5b435dae3db8471c9776d0b01dfff",
+      "bytes": 28527
+    },
+    {
+      "path": "vendor/sqlglot/serde.py",
+      "sha256": "11766ff21cd6deda9fc4f1ad4ba45007222ebf7534a1c5639d6ad26df4359c03",
+      "bytes": 3225
+    },
+    {
+      "path": "vendor/sqlglot/time.py",
+      "sha256": "fbe2b197e9f06a2916d7ef950cd2621aba2a8597faa58bc4b10789b4fef02761",
+      "bytes": 18465
+    },
+    {
+      "path": "vendor/sqlglot/tokenizer_core.py",
+      "sha256": "09b682b51b8fbdb446bbb2e2ae6c32e8b1edc333dc33eb296bedc4e7aaed004d",
+      "bytes": 35866
+    },
+    {
+      "path": "vendor/sqlglot/tokens.py",
+      "sha256": "1a46865b2ebffdbada972840ae4178c79cbd580a7daf63ba273f8f0870d9052e",
+      "bytes": 22870
+    },
+    {
+      "path": "vendor/sqlglot/transforms.py",
+      "sha256": "70f40c562b23ff3ffa0d983a7c5f4566cb1ce9039ecfcc97f436a6216c737cd3",
+      "bytes": 45786
+    },
+    {
+      "path": "vendor/sqlglot/trie.py",
+      "sha256": "ed5eed8c69210ed743e47c0c4025c0b69114f02925f2ca8cd946911b311c6913",
+      "bytes": 2278
+    },
+    {
+      "path": "vendor/sqlglot/typing/__init__.py",
+      "sha256": "c1aada500e3c551a1a794ddf18678718c1f082d05bb68e5ae5dd10aedee51aa0",
+      "bytes": 11100
+    },
+    {
+      "path": "vendor/sqlglot/typing/bigquery.py",
+      "sha256": "b987bbfac8f96a775a6b7f190776f63b661d98198e39ad47eadbd18172d67504",
+      "bytes": 13818
+    },
+    {
+      "path": "vendor/sqlglot/typing/clickhouse.py",
+      "sha256": "548f1142be10f46b302886abae76790f5802c0f159412994eee66a7a5a3366a9",
+      "bytes": 607
+    },
+    {
+      "path": "vendor/sqlglot/typing/databricks.py",
+      "sha256": "071b6416f3f0785dde7c5a06e90afe405fc0885a39853c2f2027d670f060556e",
+      "bytes": 1077
+    },
+    {
+      "path": "vendor/sqlglot/typing/duckdb.py",
+      "sha256": "f2086250b066a93a0117bbdac0059133ec6af098d55f6c9633db80810153b37e",
+      "bytes": 2286
+    },
+    {
+      "path": "vendor/sqlglot/typing/hive.py",
+      "sha256": "773b8cae2b20bde1f582474fcc75b49f6539c09aa491112500ebec01f67e4385",
+      "bytes": 2483
+    },
+    {
+      "path": "vendor/sqlglot/typing/mysql.py",
+      "sha256": "fe42694806dede2847762153e12eb7b84ff461f47959c5b39189c4893df5863e",
+      "bytes": 5459
+    },
+    {
+      "path": "vendor/sqlglot/typing/postgres.py",
+      "sha256": "f71b94769ca8464d6d02ab2d76a3e6c1a74f62d8cf88036ce98ef50033b0603e",
+      "bytes": 1413
+    },
+    {
+      "path": "vendor/sqlglot/typing/presto.py",
+      "sha256": "bc7b979d61b5651cefccc812040386eb5591a4aea18f2235965f30351b39b249",
+      "bytes": 1025
+    },
+    {
+      "path": "vendor/sqlglot/typing/redshift.py",
+      "sha256": "55140c9d44a6e7d17f842df192656a03501d9cdc68e2ea71766399dddaad3abe",
+      "bytes": 777
+    },
+    {
+      "path": "vendor/sqlglot/typing/snowflake.py",
+      "sha256": "9aaa070eff69fc7dfb26736b06ddd75c22809ecefa8c9499a7c670c3897f25c4",
+      "bytes": 17570
+    },
+    {
+      "path": "vendor/sqlglot/typing/spark.py",
+      "sha256": "dc0601b93d20a58245982b6041763212720e7d5386993749ba88d0f79d8e8479",
+      "bytes": 1508
+    },
+    {
+      "path": "vendor/sqlglot/typing/spark2.py",
+      "sha256": "f7f2f12b6b9056653aed9b2cc8cd928a6b0dbbaf74130421e3dc5cf8e03eaa1c",
+      "bytes": 2888
+    },
+    {
+      "path": "vendor/sqlglot/typing/tsql.py",
+      "sha256": "e21c1f07af517c94cb7ce2657149d37d5e1befc56ea59c2e11de7811c00703e4",
+      "bytes": 887
+    },
+    {
+      "path": "winsound.pyd",
+      "sha256": "b078b7f5c53efd3c4201b63fa34a17c6747142e37298293f52c3a9ad643e69e2",
+      "bytes": 31968
+    }
+  ],
+  "derivedFromManifestSha256": "59acb9704ffdf655b191a782fbd2ea28bd2a551e89b4440ab18b7f3451035e7e",
+  "productionSubset": "Only qualification fixture worker omitted; runtime and production controller/analyzer bytes unchanged."
+}

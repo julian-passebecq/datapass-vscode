@@ -1,4 +1,6 @@
 import * as esbuild from "esbuild";
+import "./scripts/verify-common.mjs";
+import "./scripts/prepare-runtime.mjs";
 
 await esbuild.build({
   entryPoints: ["src/extension.ts"],

@@ -1049,6 +1049,10 @@
         "command": "datapass.layout.closeBottomPanel",
         "title": "DataPass: Close the Bottom Panel",
         "icon": "$(close)"
+      },
+      {
+        "command": "datapass.understanding.analyzeSelection",
+        "title": "DataPass: Analyze Selected SQL File"
       }
     ],
     "viewsContainers": {
@@ -2609,6 +2613,10 @@
         {
           "command": "datapass.layout.toggleArchitecturePanel",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.understanding.analyzeSelection",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -2707,6 +2715,11 @@
           "command": "datapass.showAirflowDag",
           "when": "resourceLangId == python && !datapass.hidden.view.airflowDag",
           "group": "7_datapass"
+        },
+        {
+          "command": "datapass.understanding.analyzeSelection",
+          "when": "resourceScheme == file && editorLangId == sql",
+          "group": "datapass@1"
         }
       ]
     },
@@ -2807,14 +2820,23 @@
         },
         "datapass.diagram.legendPosition": {
           "type": "string",
-          "enum": ["bottom-left", "bottom-right", "top-left", "top-right", "hidden"],
+          "enum": [
+            "microsoft",
+            "vscode"
+          ],
           "default": "bottom-left",
           "description": "Architecture diagram: where the legend sits (above or below the diagram, left or right), or hidden."
         },
         "datapass.diagram.theme": {
           "type": "string",
-          "enum": ["microsoft", "vscode"],
-          "enumDescriptions": ["Microsoft-style light or dark surfaces (as in the Azure portal, Data Factory and Fabric), following your theme's kind. High-contrast themes keep their own colours.", "The colours of your VS Code theme."],
+          "enum": [
+            "microsoft",
+            "vscode"
+          ],
+          "enumDescriptions": [
+            "Microsoft-style light or dark surfaces (as in the Azure portal, Data Factory and Fabric), following your theme's kind. High-contrast themes keep their own colours.",
+            "The colours of your VS Code theme."
+          ],
           "default": "microsoft",
           "description": "Architecture diagram: the look of the canvas, blocks, borders and text. Provider colours and icons stay the official ones."
         },
@@ -2827,12 +2849,36 @@
           "type": "object",
           "default": {},
           "properties": {
-            "blue": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "DataPass state: an operation ready (left band)." },
-            "violet": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "DataPass state: none ready yet (left band); capability unverified." },
-            "green": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability available; client step validated." },
-            "orange": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability prepared or planned; client step to redo." },
-            "rose": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "Capability blocked." },
-            "muted": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$", "description": "No operation; choice only; never run." }
+            "blue": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "DataPass state: an operation ready (left band)."
+            },
+            "violet": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "DataPass state: none ready yet (left band); capability unverified."
+            },
+            "green": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Capability available; client step validated."
+            },
+            "orange": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Capability prepared or planned; client step to redo."
+            },
+            "rose": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "Capability blocked."
+            },
+            "muted": {
+              "type": "string",
+              "pattern": "^#[0-9a-fA-F]{6}$",
+              "description": "No operation; choice only; never run."
+            }
           },
           "additionalProperties": false,
           "markdownDescription": "Your own colours for the DataPass overlay (`#rrggbb`), in every theme. By default the overlay uses its own light tones (electric blue, violet, green, orange and rose), distinct from provider colours and from VS Code's pass / warning / error colours: deeper in light themes, fluorescent in dark ones."
@@ -3468,6 +3514,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
     "yaml": "^2.9.1",
+    "yauzl": "3.4.0",
     "zod": "^3.25.76"
   },
   "repository": {
@@ -3480,5 +3527,12 @@
       "supported": "limited",
       "description": "In Restricted Mode DataPass reads the project files but never runs Git or other programs inside the workspace: repository state is shown as not inspected, and Check for updates, Get updates, cloning and command operations are disabled until you trust the folder."
     }
+  },
+  "dependencies": {
+    "@juliandatapass-group/analysis-host-node": "file:vendor/common/juliandatapass-group-analysis-host-node-0.1.0-alpha.2.tgz",
+    "@juliandatapass-group/analysis-protocol": "file:vendor/common/juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
+    "@juliandatapass-group/analyzers": "file:vendor/common/juliandatapass-group-analyzers-0.1.0-alpha.5.tgz",
+    "@juliandatapass-group/compat-v3": "file:vendor/common/juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
+    "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz"
   }
 }

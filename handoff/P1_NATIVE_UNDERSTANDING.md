@@ -1,0 +1,13 @@
+# P1 internal candidate: V3 compatibility and selected disk SQL
+
+Base: Q1 `10f3167b53ae5d7bd796c4ef84bb4fa5d26d083d`. This is a draft Windows consumer integration, not complete P1 or a public release.
+
+V3 understanding documents now pass through Common's pinned authoritative reader and pure projection. Hop keeps its steps and original provenance labels, and displays exact-source binding and losses separately. Dirty editor text rebinds the compatibility sidecar without modifying cached disk entries. Superseded loads cannot replace the current selection.
+
+`DataPass: Analyze Selected SQL File` is available from the SQL editor context menu and the Advanced palette. It works without a bridge. The command captures only the selected saved local SQL file in a trusted workspace, builds the shared request, invokes the installed Common SQL plugin and host, and accepts results through Common's dispatcher/session checks. The view shows readable claims, named lineage links, coverage limits, and source-bound diagnostics. Changes, cancellation, or project switches invalidate the result. Selected SQL is parsed, never executed.
+
+Pins are in `vendor/common/manifest.json` and `vendor/runtime/pin.json`; the lockfile uses committed tarballs. An exact GitLab npm registry query returned HTTP401; no registry publish/ACL qualification is claimed. The internal fallback is reproducible without local worktree paths. Build verifies tarballs and extracts only the checked runtime inventory. Runtime invocation verifies its manifest and files again. The archive excludes the fixture-only worker; production controller/analyzer bytes are unchanged from host alpha2. All licences/notices are included.
+
+Validation: 22 existing Hop/understanding tests passed; focused exact capture, dirty V3 sidecar, UI escaping/navigation, late-result rejection, and failed-backend-replacement tests passed. Typecheck and build passed. A real backend probe on cached VS Code1.139.1 / Electron43.6.0 / Node24.20.0 produced14entities/27claims/14edges for the public join/filter fixture through the packaged runtime and shared dispatcher. Installed-VSIX UI qualification is recorded separately after this checkpoint.
+
+Limits: selected saved T-SQL only; dirty-buffer/notebook transport follows in a successor. DQ1 rules are not evaluated. Host runtime qualification is explicitly limited by its package; the existing VS Code1.106 minimum remains valid for V3 but is not a native-parser qualification. Unsupported platform/runtime/containment contexts fail closed without an ordinary-process fallback. The private compat package includes UNLICENSED donor code and must not be publicly published without redistribution clearance. No imported evidence becomes local approval or a gate result.

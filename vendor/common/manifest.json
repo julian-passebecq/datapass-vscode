@@ -1,0 +1,32 @@
+{
+  "schema": "datapass.vendored-common/1",
+  "sourceRepository": "https://gitlab.com/juliandatapass-group/datapass-vscode-common",
+  "sourceCommit": "5fda1a00c94310a8d9ee7c3f5ed9a9d61cce56a5",
+  "dependencyCommit": "53bf327f21ebdf8cb574098792440fa7d21438dd",
+  "internalOnly": true,
+  "registryStatus": "Exact candidate lookup returned HTTP401 from configured group registry; publication eligibility not established. No publish attempted.",
+  "artifacts": [
+    {
+      "file": "juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
+      "sha256": "83724c6a27d9c1fc932638a4138b59851f2a5f42e63a34955e2ec0fab394268b"
+    },
+    {
+      "file": "juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
+      "sha256": "b8a18f31f4010753520c9905477490d1d929d158f49c2292ae01dd55a8de0e9d"
+    },
+    {
+      "file": "juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
+      "sha256": "32c352bd4f9acb8ec3dc11aae1a81e05c11f644c4d9e3a0978bc0ab3b8be4109"
+    },
+    {
+      "file": "juliandatapass-group-analysis-host-node-0.1.0-alpha.2.tgz",
+      "sha256": "782ad0aab0db2844b4d4d112c0cdb0635f253744073544cbeb941c00af7ef27d",
+      "sourceCommit": "1c4e684f86aaa53d91360a132762e5221156e976"
+    },
+    {
+      "file": "juliandatapass-group-analyzers-0.1.0-alpha.5.tgz",
+      "sha256": "7ae5269b53d47bb495bfe93ca3da21d81ff692f8ae628131310d521527d4ca3c",
+      "sourceCommit": "e8b7bf31f8e4259eaa9e7e897d28b70f98934589"
+    }
+  ]
+}

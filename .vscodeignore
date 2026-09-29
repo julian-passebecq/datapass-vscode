@@ -8,6 +8,8 @@ tests/**
 src/**
 node_modules/**
 *.vsix
+vendor/common/*.tgz
+vendor/runtime/*.zip
 *.map
 scripts/**
 **/*.map

@@ -1,0 +1,11 @@
+{
+  "schema": "datapass.runtime-payload/1",
+  "internalOnly": true,
+  "hostCommit": "1c4e684f86aaa53d91360a132762e5221156e976",
+  "archive": "python-sqlglot-win-x64.zip",
+  "archiveSha256": "99e27b949a440e56c64843ba07628ef3b4a79fda6da4601d9568d258e27c8571",
+  "manifestSha256": "81f9efa508544ca68e75638e6ff83753bfaa500de3b1e11def19b959797b45b8",
+  "sourceManifestSha256": "59acb9704ffdf655b191a782fbd2ea28bd2a551e89b4440ab18b7f3451035e7e",
+  "files": 225,
+  "uncompressedBytes": 24284563
+}
