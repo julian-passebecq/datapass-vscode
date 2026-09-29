@@ -61,3 +61,8 @@ Julian: "my first logic (archi A, B, C) was not so good; now we expand how we th
 | ARCHLINT1 | common | senior-pattern detectors over Git + lineage facts (`handoff/reviews/2026-09-29-senior-patterns-digest.md` § 6), findings linked to catalogue entries, shown as proposals with their why (S3) | 20 | Opus |
 | ARCHQ1 | common | § 3b additive fields (realization, estimates, improvements, estimateModels), core-change K9 | 6 | Opus |
 Order: ARCHQ0 → ARCHQ1 → ARCHCAT1 → ARCHB1 → ARCHV1; FAKEERP, FAKESCM start now (their logs validate against ARCHQ0 once merged); FOILARCH after ARCHQ0. Total ≈ 122 M.
+
+## Lineage graph conventions (PM DataPass 12, architect, 2026-09-30)
+- **Flow edge direction:** `reads`, `writes`, `derives` point in data-flow direction: `from` = upstream, `to` = downstream. `reads`: dataset/field/topic/endpoint → job/task/model/measure/visual; `writes`: job/task/model → dataset/field/topic. DBT1/DBT2 follow it; core dispatch and BI1 were reversed → FLOWDIR1 (go/FLOWDIR1.md) flips them and adds a repo-level golden test.
+- **Semantic model (BI1M):** lineage-graph/1 is frozen, so a Power BI semantic model is an `infra-resource` node with scope `powerbi-semantic-model`; tables take it as `parentId`, `serves` → reports, `exposes` → measures.
+- **lineage-graph/2 candidates** (decided by the PM when a v2 is cut, not tonight): `semantic-model` node kind, `contains` edge kind.
