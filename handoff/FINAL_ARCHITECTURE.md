@@ -105,3 +105,10 @@ Product decisions (asked by the PM, answers recorded in PLAN):
 3. Does a human-confirmed client-AI edge count in "certain" impact, or stay a separate class?
 4. ML/LLM-RAG depth (ML1, ML2, MLV1 = 55 M): full lineage or inventory only?
 5. Data X-ray installed by default with optional local DuckDB, or opt-in?
+
+## 8. Decisions (Julian, 2026-09-29 ~19:00 local; PM for D3)
+- **D1 Other clouds: static first.** AWS, GCP and Snowflake/BigQuery are understood from the Git (IaC, orchestrators, catalogs). Live readers API4–6 come after S6. Azure/Fabric/Databricks/OCI stay live (opt-in).
+- **D2 Factory: inside the final engine** (F0 S2, F0D Julian S3, vertical by S6).
+- **D4 ML/LLM-RAG: inventory only.** ML1 is reduced to an inventory of MLflow/feature-store/registry/serving/RAG objects (~15 M, S5); ML2 and MLV1 are dropped from the final engine (−40 M); ML lineage is a later decision.
+- **D3 (PM decision, minor):** a human-confirmed client-AI edge (`ai-confirmed`) counts in "certain" impact but keeps its label and a filter; "client AI only, never an embedded LLM" stays binding.
+- **D5 Data X-ray install mode:** Julian asked for details; pending.
