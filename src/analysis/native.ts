@@ -67,7 +67,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
     void this.retireBackend().catch(() => undefined);
     this.panel?.dispose(); this.diagnostics.dispose(); for (const s of this.subscriptions) s.dispose();
   }
-  async analyzeSelection(): Promise<void> {
+  async analyzeSelection(selectedEditor: vscode.TextEditor | null = vscode.window.activeTextEditor ?? null): Promise<void> {
     if (this.disposed) return;
     if (this.cleanupFailed) return this.show('Analysis disabled: backend cleanup failed. Reload the extension host before trying again.');
     const previous = this.handle;
@@ -75,7 +75,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
     const generation = this.generation;
     await previous?.cancel();
     if (generation !== this.generation) return;
-    const editor = vscode.window.activeTextEditor;
+    const editor = selectedEditor;
     if (!vscode.workspace.isTrusted) return this.show('Analysis unavailable: trust this local workspace before analyzing selected source.');
     if (vscode.env.remoteName || !editor || editor.document.uri.scheme !== 'file') return this.show('Analysis unavailable: select a SQL file in a local workspace.');
     const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
@@ -172,4 +172,13 @@ export class NativeAnalysisHost implements vscode.Disposable {
     const nonce = randomBytes(18).toString('base64');
     this.panel.webview.html = `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'"><style>body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);padding:16px}button{color:var(--vscode-textLink-foreground);background:none;border:0;cursor:pointer}li{margin:8px 0}</style></head><body><h1>Native understanding</h1><p>${escape(message)}</p>${result ? `<h2>Coverage limits</h2><ul>${gaps || '<li>No additional coverage gaps reported. This is not a completeness guarantee.</li>'}</ul><h2>Diagnostics</h2><ul>${diagnostics || '<li>No diagnostics reported.</li>'}</ul><h2>Claims</h2><ul>${claims || '<li>No claims reported.</li>'}</ul><h2>Lineage links</h2><ul>${edges || '<li>No lineage links reported.</li>'}</ul><p>Each section displays at most 200 entries.</p>` : ''}<script nonce="${nonce}">const api=acquireVsCodeApi();document.addEventListener('click',e=>{const b=e.target.closest('button[data-index]');if(b)api.postMessage({type:'reveal',index:Number(b.dataset.index)})});</script></body></html>`;
   }
+}
+
+/** Bootstrap may settle the project and arrange views. Retain the explicit selection across it. */
+export function selectedAnalysisCommand(host: NativeAnalysisHost, startup: () => Promise<unknown>): () => Promise<void> {
+  return async () => {
+    const selected = vscode.window.activeTextEditor;
+    await startup();
+    await host.analyzeSelection(selected ?? null);
+  };
 }

@@ -66,7 +66,7 @@ import { railButtonsShown } from "./views/railHtml";
 import { moduleEnabled } from "./core/modules";
 import type { TreeLens } from "./core/windows/treeLens";
 import { GitDiagram, registerGitDiagramCommands } from "./work/gitDiagram";
-import { NativeAnalysisHost } from "./analysis/native";
+import { NativeAnalysisHost, selectedAnalysisCommand } from "./analysis/native";
 import { createNativeBackend } from "./analysis/backend";
 import { HopHost, registerHopCommands } from "./views/hop";
 import type { HopState } from "./views/hopState";
@@ -331,7 +331,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(hop, vscode.languages.registerCodeLensProvider({ scheme: "file" }, hop.codeLensProvider()));
   registerHopCommands(context, session, hop);
   const nativeUnderstanding = new NativeAnalysisHost(session, root => createNativeBackend(context.extensionPath, root));
-  context.subscriptions.push(nativeUnderstanding, vscode.commands.registerCommand("datapass.understanding.analyzeSelection", () => nativeUnderstanding.analyzeSelection()));
+  context.subscriptions.push(nativeUnderstanding, vscode.commands.registerCommand("datapass.understanding.analyzeSelection", selectedAnalysisCommand(nativeUnderstanding, () => startup)));
   registerWorkbenchCommands(context, session, host, uri => hop.openIfExplained(uri));
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);

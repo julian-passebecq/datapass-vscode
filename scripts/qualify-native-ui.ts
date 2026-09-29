@@ -30,13 +30,31 @@ async function main(): Promise<void> {
     while (Date.now() < deadline) {
       for (const frame of page.frames()) {
         const body = await frame.locator('body').innerText({ timeout: 1000 }).catch(() => '');
-        if (body.includes('Native understanding') && body.includes('Lineage links')) { content = body; break; }
+        if (body.includes('Native understanding')) { content = body; if (body.includes('Lineage links') || /unavailable|unsupported|disabled/i.test(body)) break; }
       }
-      if (content) break; await page.waitForTimeout(250);
+      if (content.includes('Lineage links') || /unavailable|unsupported|disabled/i.test(content)) break; await page.waitForTimeout(250);
     }
-    if (!content.includes('14 entities, 27 claims, 14 lineage edges') || !content.includes('customers') || !content.includes('orders') || content.includes('tool-unavailable')) throw new Error(`SQL UI did not show the qualified result: ${content.slice(0, 500)}`);
     await page.screenshot({ path: join(outputRoot, 'native-sql.png') });
-    writeFileSync(join(outputRoot, 'report.json'), JSON.stringify({ schema: 'datapass.p1-installed-ui/1', outcome: 'pass', vsixSha256: createHash('sha256').update(readFileSync(vsix)).digest('hex'), installed: installed.trim(), checks: ['isolated-profile-installed-VSIX', 'no-bridge-selected-SQL', 'native-command', 'real-LPAC-parser', 'named-claims-and-lineage-view'], limitations: ['Trusted Windows context and existing VS Code build only', 'Saved disk SQL only', 'No DQ1 or dirty-buffer qualification'] }, null, 2) + '\n');
+    if (!content.includes('14 entities, 27 claims, 14 lineage edges') || !content.includes('customers') || !content.includes('orders') || content.includes('tool-unavailable')) throw new Error(`SQL UI did not show the qualified result: ${content.slice(0, 500)}`);
+    // A real unsupported construct produces an anchored diagnostic; exercise source navigation.
+    await page.keyboard.press('Control+P'); await input.fill('star.sql');
+    await page.locator('.quick-input-widget:visible .monaco-list-row', { hasText: 'star.sql' }).first().click();
+    await page.getByRole('tab', { name: /star.sql/ }).first().click();
+    await page.keyboard.press('Control+Shift+P'); await input.fill('>DataPass: Analyze Selected SQL File');
+    await page.locator('.quick-input-widget:visible .monaco-list-row', { hasText: 'DataPass: Analyze Selected SQL File' }).first().click();
+    let navigated = false; const navigationDeadline = Date.now() + 60000;
+    while (Date.now() < navigationDeadline) {
+      for (const frame of page.frames()) {
+        const button = frame.locator('button[data-index]').first();
+        if (await button.isVisible().catch(() => false)) { await button.click(); navigated = true; break; }
+      }
+      if (navigated) break; await page.waitForTimeout(250);
+    }
+    if (!navigated) throw new Error('No source-bound diagnostic was rendered for SELECT *');
+    const selection = page.locator('[id="status.editor.selection"]');
+    await selection.getByText(/selected/).waitFor({ timeout: 15000 });
+    await page.screenshot({ path: join(outputRoot, 'diagnostic-source.png') });
+    writeFileSync(join(outputRoot, 'report.json'), JSON.stringify({ schema: 'datapass.p1-installed-ui/1', outcome: 'pass', vsixSha256: createHash('sha256').update(readFileSync(vsix)).digest('hex'), installed: installed.trim(), checks: ['isolated-profile-installed-VSIX', 'no-bridge-selected-SQL', 'native-command', 'real-LPAC-parser', 'named-claims-and-lineage-view', 'real-diagnostic-source-click'], limitations: ['Trusted Windows context and existing VS Code build only', 'Saved disk SQL only', 'No DQ1 or dirty-buffer qualification'] }, null, 2) + '\n');
     passed = true;
   } finally {
     await app.close();

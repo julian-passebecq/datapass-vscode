@@ -26,7 +26,7 @@ function harness() {
   const loaded = new Module('native-ui-test') as Module & { _compile(source: string, file: string): void };
   loaded.require = ((id: string) => id === 'vscode' ? vscode : require(id)) as any;
   loaded._compile(compiled, 'native-ui-test.cjs');
-  return { Host: loaded.exports.NativeAnalysisHost, vscode, document, folder, session: { project: {}, onDidChange: disposable },
+  return { Host: loaded.exports.NativeAnalysisHost, command: loaded.exports.selectedAnalysisCommand, vscode, document, folder, session: { project: {}, onDidChange: disposable },
     edit() { document.version++; documentListener({ document }); }, get html() { return html; }, get diagnostics() { return diagnosticItems; }, get reveals() { return reveals; }, message: (value: unknown) => messageListener(value) };
 }
 const digest = unwrap(digestJson({ testOnly: true }));
@@ -77,4 +77,14 @@ test('P1 failed backend replacement cannot revive a disposed backend when return
   h.folder.uri.fsPath = 'C:\\fixture'; h.document.uri.fsPath = 'C:\\fixture\\q.sql';
   const repeated = host.analyzeSelection(); await retry.running; retry.complete(); await repeated;
   assert.equal(factories, 3); assert.equal(h.diagnostics.length, 1); host.dispose();
+});
+test('P1 first command waits for project bootstrap and retains the explicitly selected editor', async () => {
+  const h = harness(); const b = backend(); let ready!: () => void; let factories = 0;
+  const startup = new Promise<void>(resolve => { ready = resolve; });
+  const host = new h.Host(h.session, async () => { factories++; return b.value; });
+  const run = h.command(host, () => startup)();
+  await Promise.resolve(); assert.equal(factories, 0);
+  h.vscode.window.activeTextEditor = undefined as any; ready();
+  await b.running; b.complete(); await run;
+  assert.equal(factories, 1); assert.equal(h.diagnostics.length, 1); host.dispose();
 });
