@@ -376,7 +376,13 @@ Kept by **PM DataPass 9** (local_2265fbb2, Opus medium, global PM, from 2026-09-
 | CODER V4 VSPI (local_bd34ed12, done, !55 merged 155ebe6) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 INV1 (local_970ba2e5) | coder (Opus medium) | S1 Common: repo inventory + coverage registry (GO go/INV1.md) | 15 | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 A2 (local_77039cb5) | coder (Opus medium) | S1 Common: PySpark + notebooks adopted from Codex (GO go/A2.md) | 25 | 2026-09-29 · V3.7 | PM 9 |
-| CODER V4 GOV1 (local_487bf099) | coder (Opus medium) | governance reads: allowlist + cassettes, cloud (GO go/GOV1.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
+| CODER V4 GOV1 (local_487bf099, done, cloud !49 merged) | coder (Opus medium) | governance reads: allowlist + cassettes, cloud (GO go/GOV1.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
+| CODER V4 FIXVM2 (local_0b24a617) | coder (Sonnet medium) | real-time wind-turbine VM fixture, cloud (GO go/FIXVM2.md) | 10 | 2026-09-29 · V3.7 | COORD 9 |
+| CODER V4 ARCHQ0 (local_92df7b07) | coder (Opus medium) | idea 25: arch.decision.v1 + arch.choice.v1 contracts, common K9 (GO go/ARCHQ0.md) | 15 | 2026-09-29 · V3.7 | COORD Common 1 |
+| CODER V4 FAKEERP (local_44c357bd) | coder (Sonnet medium) | idea 25: synthetic ERP P&L world + decision log, cloud (GO go/FAKEERP.md) | 15 | 2026-09-29 · V3.7 | COORD 9 |
+| CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
+| (chip pending) REPIN1 (Opus) | coder | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 9 |
+| (queued, cap) A2B, DBT1, BI1, ARCHCAT1 (Opus) · FIXLIN, FIXVM, FIXGIT (Sonnet) | coder | S2 (GOs in go/) | 20/25/25/25 | 2026-09-29 · V3.7 | COORD Common 1 / COORD 9 |
 | COORD DataPass 9 (local_816220f3) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges (hand-off go/handoff-coord-8.md) | — | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
