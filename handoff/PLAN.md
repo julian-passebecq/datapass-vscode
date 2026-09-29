@@ -381,7 +381,7 @@ Kept by **PM DataPass 15** (from 04:25; before: PM 13 local_6dbe9065, Opus mediu
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 15 (reserve chip session), live, pinned | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0420-pm-datapass-13.md; GO go/PM-DataPass-15.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
+| PM DataPass 15 (local_7024f765), live, pinned | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0420-pm-datapass-13.md; GO go/PM-DataPass-15.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 13 (local_6dbe9065), handed off at ~355 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0230-pm-datapass-12.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 12 (local_3e3932f1), handed off at ~260 K | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0045-pm-datapass-11.md; GO go/PM-DataPass-12.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 11 (local_2522f634), handed off at ~200 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-29-2355-pm-datapass-10.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
@@ -654,5 +654,8 @@ Toolkit T1–T4 took ≈ 9 h in one session (estimate 9–14 h): in range. AI-3 
 xhigh consult briefs: `handoff/briefs/<date>-<topic>.md` (question, options, files to read, then "## Decision").
 
 ## Open questions for Julian
+
+**For the 08:00 status, after R1A (PM 15):** move `codex-datapass-bridge` from GitHub to GitLab so ADOPT-D2 can run? Asked by Julian at 04:30; PM 13 answered "not tonight". Recommendation: yes, as a GitLab mirror/import done by Julian (repo visibility is his call), then ADOPT-D2 is re-queued.
+
 
 None blocking. Plan 10 §6 J1–J5 continue with the recommendations (Standard by default, `foil-v1-vscode-datapass` as FOIL's bridge, "bridge repository" wording, J3 and J5 in V2). The pass order toolkit catalogue → AI-3 → AI-4 is Julian's (09 §13.1 Q1).
