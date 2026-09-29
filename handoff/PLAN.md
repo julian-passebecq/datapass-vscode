@@ -394,7 +394,7 @@ Kept by **PM DataPass 10** (local_e46b43b6, Opus medium, global PM, from 2026-09
 | DBT1 (local_932d4256, done, !61 merged 694db51, archive when idle) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | BI1 (local_3b38f5b2) | coder (Opus) | analyzers-powerbi (go/BI1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (archived) HUBP1 (local_eb178b86, hub !8 merged) | coder (Opus) | hub project discovery + decisions tree (go/HUBP1.md) | 10 | 2026-09-29 · V3.7 | COORD 10 |
-| A2Ba (local_215417eb) | coder (Opus) | A2 core exports, core-change (go/A2Ba.md) | 5 | 2026-09-29 · V3.7 | COORD Common 1 + PM 10 |
+| (archived) A2Ba (local_215417eb, !63 merged 250f178) | coder (Opus) | A2 core exports, core-change (go/A2Ba.md) | 5 | 2026-09-29 · V3.7 | COORD Common 1 + PM 10 |
 | A2Bb1 (local_850ec9f6) | coder (Opus) | notebook splitters + Spark SQL (go/A2Bb1.md) | 15 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (queued after A2Bb1) A2Bb2 | coder (Opus) | spark.sql + temp views (go/A2Bb2.md) | 12 | 2026-09-29 · V3.7 | COORD Common 1 |
 | HUBCI1 (local_fb1ed666) | coder (Opus) | hub CI long-path checkout fix, unblocks hub !7/!8 (go/HUBCI1.md) | 5 | 2026-09-29 · V3.7 | COORD 10 |
