@@ -174,6 +174,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   12. Fixtures follow **real formats researched online** (Terraform/OpenTofu plan JSON and state, Fabric/Power BI/Databricks REST, Azure Monitor/Capacity Metrics, Spark event logs, VM configs).
   13. V1 must be **ready for the cloud, complete from A to Z**, local and cloud.
   14. Running past 48 h is fine: completeness beats the date. The PM reconciles this with the quota and says when the quota becomes the limit.
+  15. (2026-09-29 ~16:00 local) **Explore Apache Doris**: what DataPass can reuse or take inspiration from (VARIANT semi-structured type and sub-column lineage, unified internal/lake layers, Iceberg V3/Paimon variant, agent-trace analytics ↔ Observe). Open exploration, no decision. Target: research now (auditor subagent → `go/doris-exploration.md`, then `handoff/reviews/`), features V1.1 or later. Source: `D:\PROJ\datapass\julian-idea-2026-09-29-doris.md`.
   → A fixture-coverage audit (PM subagent) gives the module × fake-data matrix, and its gaps become FIX* packages in § V4-GAP.
 - **§ V4-OBS: PM decision (PM DataPass 4, 2026-09-29), recorded for Codex review:**
   - **Monitoring** is ops health: CU, capacity throttling, refreshes, run status and failures. It covers OBS1 and OBS2 (unchanged) in the `datapass-observe` VSIX, Monitor tab.
@@ -278,12 +279,13 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | PM subagent · SEAM1 | PM subagent (Opus medium) | § V4-GAP SEAM1 | 10 | 2026-09-29 · V3.6 | PM |
 | PM subagent · OBSC (merged !40) | PM subagent (Opus medium) | § V4-GAP OBSC | 8 | 2026-09-29 · V3.6 | PM |
 | PM subagent · CAPM1 (merged cloud !17) | PM subagent (Opus medium) | § V4-GAP CAPM1 | 8 | 2026-09-29 · V3.6 | PM |
+| PM subagent · DORIS | auditor subagent (Sonnet) | Julian idea 15, Apache Doris exploration | 1 | 2026-09-29 · V3.6 | PM |
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC4 (chip sent 13:25) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IAC-EMIT (chip sent 13:40) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IACB (chip sent 13:40) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IAC5 (chip sent 13:40) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC4 (local_dbb7b433) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC-EMIT (local_1db68731) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IACB (local_dd8ce01e) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC5 (local_4e6fd9fb) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
