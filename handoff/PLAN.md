@@ -370,7 +370,7 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | CODER V4 PSPI (local_d2bf831c, done, !54 merged) | coder (Opus medium) | S1 Common core: provider/catalog SPI v1, common (GO go/PSPI.md) | 15 | 2026-09-29 · V3.6 | PM 8 |
 | CODER V4 H1 (local_932b0bad, done, hub !6 merged) | coder (Opus medium) | S1 hub module broker + unsupported, hub (GO go/H1.md) | 20 | 2026-09-29 · V3.6 | COORD 8 |
 | CODER V4 ASPI (local_bc851173, done, !56 merged f666adf) | coder (Opus medium) | S1 Common core: analyzer SPI v1, common (GO go/ASPI.md) | 12 | 2026-09-29 · V3.6 | PM |
-| CODER V4 VSPI (local_bd34ed12) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 VSPI (local_bd34ed12, done, !55 merged 155ebe6) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 UIH3a (local_01d3c05e) | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
