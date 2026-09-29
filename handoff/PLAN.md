@@ -404,13 +404,13 @@ Kept by **PM DataPass 13** (local_6dbe9065, Opus medium, global PM, from 2026-09
 | CODER STOR1 (local_0c4e62c8, R15) | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER CLEAN1 (local_0df5f432, R16) | coder (Opus medium) | CLEAN1 quality + performance detectors, Common (go/CLEAN1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER PRACT1 (local_3519831d, R17) | coder (Opus medium) | PRACT1 correctness practices + reasoning card, Common (go/PRACT1.md; parallel to CLEAN1, merges after it) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER ADOPTDE (local_c15e5a7f, R18) | coder (Opus medium) | ADOPT-D/E audits (go/ADOPTDE.md), **done** (review pushed, PM ruled) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER FIXPRAC1b (local_c15e5a7f, R18, ex ADOPTDE done) | coder (Opus medium) | FIXPRAC1b public practice corpus (go/FIXPRAC1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER RATIO1 (local_4afd89d7, R22) | coder (Opus medium) | RATIO1 decision-rationale/1 (go/RATIO1.md; core contract, PM merge) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER PY1C (local_87eac079, R23) | coder (Opus medium) | PY1C Python-host containment (go/PY1C.md; RC gate) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER CONCEPT1a (local_?, R20) | coder (Opus medium) | CONCEPT1a catalogue entries (go/CONCEPT1a.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER CONCEPT1b (local_?, R21) | coder (Opus medium) | CONCEPT1b catalogue entries (go/CONCEPT1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER FIXPRAC1b (local_e2c2b883, R24) | coder (Opus medium) | FIXPRAC1b public practice corpus (go/FIXPRAC1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER FIXPRAC1a (local_caec64e6, R25) | coder (Opus medium) | FIXPRAC1a FOIL-synthetic practice exam (go/FIXPRAC1a.md) | 18 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER CONCEPT1a (local_8ee720cc, R20) | coder (Opus medium) | CONCEPT1a catalogue entries (go/CONCEPT1a.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER CONCEPT1b (local_86d39bfb, R21) | coder (Opus medium) | CONCEPT1b catalogue entries (go/CONCEPT1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER FIXPRAC1a (local_e2c2b883, R24) | coder (Opus medium) | FIXPRAC1a FOIL-synthetic practice exam (go/FIXPRAC1a.md) | 18 | 2026-09-30 · V3.7 | COORD 12 |
+| CODER ADOPT-E1 (local_caec64e6, R25) | coder (Opus medium) | ADOPT-E1 tool-catalog into Common, then IAC-ORACLES (a) (go/ADOPTE1.md) | 9 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER DQ2 (local_60374d24, R19) | coder (Opus medium) | DQ2 DuckDB read-only safeguards, data-xray (go/DQ2.md) | 8 | 2026-09-30 · V3.7 | COORD 12 |
 | (reserves, idle) coders R26 local_d53f18b2 (held for VIS3 when VIS0 !67 merges) · COORD 14 local_08623e5e · chips unclicked: coders R27–R34, PM 16, PM 17, COORD 18 (PM 15 / COORD 17 started) | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 13 / COORD 12 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
