@@ -144,6 +144,24 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   - Observe: OBS3 → OBS1 → OBS2.
   - IaC: highest risk, because it needs Codex's C2 and A0.
 - **Phase 0:** ✓ accepted on 2026-09-29 (dataprojects `f5d82df`, `PROJECT_MODEL.md` §13 has the PM interim decisions). Model-dependent packages may start.
+- **Idées de Julian (2026-09-29, target V1, for the next Codex digest):**
+  1. IaC matters a lot for his jobs. V1 must ship a **complete, useful IaC part**: OpenTofu/Terraform, Bicep, Kubernetes/Helm where useful, providers for Fabric, Databricks, Azure and OCI (the Oracle VM).
+  2. **Synthetic FOIL-like data only** (Fabric, Databricks, Oracle VM…); real-scale testing comes after V1, never with real client data.
+  3. Monitoring (Fabric CU etc.) runs on fake data.
+  4. V1 must contain all of this, even if the run goes past 30 h, up to the weekly reset on 1 Oct at 12:00 UTC. No speed that causes merge or integration problems.
+- **§ V4-IAC (PM, 2026-09-29):** adopts dataprojects `handoff/IAC_IMPLEMENTATION.md` IAC0–IAC10, extended with Kubernetes/Helm and the OCI and Databricks providers. Codex's A0/analyzers branches stay frozen, so the HCL parser lives in a new Common package and registers with A0 later.
+  | Package | Content | Repo | est. M | Model | Wave |
+  |---|---|---|---|---|---|
+  | IAC1 | HCL/OpenTofu parser, `packages/iac-hcl` | common | 25 | Opus | now |
+  | IAC03 | IAC0 contracts + IAC3 environments and stacks | common | 20 | Opus | now |
+  | IAC2 | resource packs: azurerm, fabric, databricks, oci, kubernetes, helm | common | 25 | Opus | now |
+  | FAKE1 | `foil-synthetic` world: consistent fake Fabric/Databricks/Power BI/Azure/OCI/K8s API replays, IaC repo, VM files, CU-metrics timelines | cloud `fixtures/foil-synthetic` (private) | 20 | Sonnet | now |
+  | IAC5 | imports: tofu/terraform plan JSON, SARIF, Infracost, Azure what-if | cloud | 20 | Opus | after IAC1 |
+  | IACB | Bicep/ARM reader | common | 20 | Opus | after IAC1 |
+  | IAC4 | readiness rules IAC001–013 | common | 15 | Opus | after IAC2 |
+  | IAC8-10 | `datapass-iac` VSIX, journeys, `docs/iac/TRY_IT.md` | cloud | 30 | Opus | after IAC1/2 |
+  | IAC6/IAC7 | lineage link and CI reading | common/cloud | 20 | Opus | W3 |
+- **New ETA:** core V1 still at ~30 h (17:55 UTC on 30 Sept). V1 with full IaC and monitoring at ~40 h (04:00 UTC on 1 Oct). Hard stop before the 12:00 UTC reset on 1 Oct. OBS1/OBS2 use FAKE1's CU timelines.
 - **Chip batch 1** (2026-09-29, 10 coders + coordinator). Batch 2 at about hour 5–10 follows as packages close: API1, HOP1a, C5b, API2, API3, OBS1, OBS2, UIH3, VM2, VM3b, HG1b, L1.
 - **GO rules for every coder:**
   - Work on branch `v4/<pkg-lowercase>` in a new worktree of the target repo, `.worktrees/<pkg-lowercase>`.
