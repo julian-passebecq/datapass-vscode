@@ -314,7 +314,7 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 9 (chip, night) | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 9 (local_2265fbb2) | global PM (Opus medium) | night 29→30 Sept + S1/S2 (hand-off handoff/sessions/2026-09-29-2330-pm-datapass-8.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | COORD DataPass Common 1 (chip, night) | coordinator (Sonnet low) | Common core train flow + delegated serial Common merges (GO go/COORD-Common.md) | — | 2026-09-29 · V3.6 | PM |
 | PM DataPass 8 (local_29fd99e3), handed off at ~225 K (kept pinned: parent of S1 chips) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
@@ -371,6 +371,10 @@ Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code a
 | CODER V4 H1 (local_932b0bad, done, hub !6 merged) | coder (Opus medium) | S1 hub module broker + unsupported, hub (GO go/H1.md) | 20 | 2026-09-29 · V3.6 | COORD 8 |
 | CODER V4 ASPI (local_bc851173, done, !56 merged f666adf) | coder (Opus medium) | S1 Common core: analyzer SPI v1, common (GO go/ASPI.md) | 12 | 2026-09-29 · V3.6 | PM |
 | CODER V4 VSPI (local_bd34ed12, done, !55 merged 155ebe6) | coder (Opus medium) | S1/S2 Common core: view SPI v1, common (GO go/VSPI.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 INV1 (local_970ba2e5) | coder (Opus medium) | S1 Common: repo inventory + coverage registry (GO go/INV1.md) | 15 | 2026-09-29 · V3.7 | PM 9 |
+| CODER V4 A2 (local_77039cb5) | coder (Opus medium) | S1 Common: PySpark + notebooks adopted from Codex (GO go/A2.md) | 25 | 2026-09-29 · V3.7 | PM 9 |
+| CODER V4 GOV1 (local_487bf099) | coder (Opus medium) | governance reads: allowlist + cassettes, cloud (GO go/GOV1.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
+| COORD DataPass 9 (local_816220f3) | coordinator (Sonnet low) | chips, quota log, cloud/hub merges (hand-off go/handoff-coord-8.md) | — | 2026-09-29 · V3.7 | PM 9 |
 | CODER V4 API2b (local_8cdfc5de, done, !14 merged c5cd0fc1) | coder (Opus medium) | finish API2 Databricks reads, cloud (GO go/API2b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 API3b (local_b834e20e) | coder (Opus medium) | finish API3 Power BI + Azure (replay-only) reads, cloud !13 (GO go/API3b.md) | 8 | 2026-09-29 · V3.7 | COORD 8 |
 | CODER V4 UIH3a (local_01d3c05e) | coder (Opus medium) | Cloud workspace tree + API feed, cloud !47 (GO go/UIH3a.md) | 15 | 2026-09-29 · V3.7 | COORD 8 |
