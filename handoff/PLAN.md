@@ -400,9 +400,10 @@ Kept by **PM DataPass 13** (local_6dbe9065, Opus medium, global PM, from 2026-09
 | CODER VIS0 (local_ea68acc1, ex COORD 15 reserve) | coder (Opus medium) | VIS0 renderer registry, view switcher, layout presets, cloud (go/VIS0.md) | 12 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER STOR1 (local_0c4e62c8, R15) | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER CLEAN1 (local_0df5f432, R16) | coder (Opus medium) | CLEAN1 quality + performance detectors, Common (go/CLEAN1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER PRACT1 (local_3519831d, R17) | coder (Opus medium) | PRACT1 correctness practices + reasoning card, Common (go/PRACT1.md; parallel to CLEAN1, merges after it) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER PY1C (local_3519831d, R17) | coder (Opus medium) | PY1C Python-host containment proof, Common (go/PY1C.md; RC gate) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER ADOPTDE (local_c15e5a7f, R18) | coder (Opus medium) | ADOPT-D/E audits (go/ADOPTDE.md) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER DQ2 (local_60374d24, R19) | coder (Opus medium) | DQ2 DuckDB read-only safeguards, data-xray (go/DQ2.md) | 8 | 2026-09-30 · V3.7 | COORD 12 |
-| (reserves, idle) coders R18 local_c15e5a7f (→ PY1C) · COORD 14 local_08623e5e · chips not yet started: coders R20–R26, COORD 17, PM 15 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 13 / COORD 12 |
+| (reserves, idle) coders: none idle (R20+ chips pending; next: PRACT1 first, then CONCEPT1a/b) · COORD 14 local_08623e5e · chips not yet started: coders R20–R26, COORD 17, PM 15 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 13 / COORD 12 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 12 |
 | CODER R3 (local_98a83587) | coder (Opus medium) | ARCHB1 successor: fix Common !71, then re-pin hub !12 (ARCHB1 handed off at 246 K) | 5 | 2026-09-30 · V3.7 | COORD Common 2 / COORD 12 |
