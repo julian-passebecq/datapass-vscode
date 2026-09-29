@@ -176,7 +176,8 @@ Kept by **PM DataPass 3** (Opus medium, global PM): every code and merge decisio
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 3 | global PM (Opus medium) | § V4-RUN, phase 0, merges (hand-off 2026-09-29-1045-pm-datapass-2.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 4 | global PM (Opus medium) | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1500-pm-datapass-3.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 3 | global PM, handed off (kept pinned: parent of running coders) | — | — | 2026-09-29 · V3.6 | — |
 | PM ASSISTANT DataPass 6 | assistant (Opus low → Sonnet low at hand-off) | Julian's only contact, chip relay, quota cron | — | 2026-09-29 · V3.6 | PM |
 | COORD DataPass 6 | coordinator (Sonnet low) | § V4-RUN flow, routine merges (hand-off handoff/sessions/2026-09-29-1435-coord-datapass-5.md) | — | 2026-09-29 · V3.6 | PM |
 | CODER V4 C5b | coder (Opus medium) | C5b realizations + navigation, common | 15 | 2026-09-29 · V3.6 | PM |
