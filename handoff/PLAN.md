@@ -407,7 +407,7 @@ Kept by **PM DataPass 12** (local_3e3932f1, Opus medium, global PM, from 2026-09
 | CODER V4 ARCHQ0 (local_92df7b07) | coder (Opus medium) | idea 25: arch.decision.v1 + arch.choice.v1 contracts, common K9 (GO go/ARCHQ0.md) | 15 | 2026-09-29 · V3.7 | COORD Common 1 |
 | CODER V4 FAKEERP (local_44c357bd) | coder (Sonnet medium) | idea 25: synthetic ERP P&L world + decision log, cloud (GO go/FAKEERP.md) | 15 | 2026-09-29 · V3.7 | COORD 9 |
 | CODER V4 FAKESCM (local_ebc7153f) | coder (Sonnet medium) | idea 25: synthetic supply-chain world + decision log, cloud (GO go/FAKESCM.md) | 12 | 2026-09-29 · V3.7 | COORD 9 |
-| REPIN1 (local_34fa8294) | coder (Opus) | re-pin vendored Common 32e3be0 in cloud + hub (GO go/REPIN1.md) | 6 | 2026-09-29 · V3.7 | COORD 10 |
+| REPIN1 (local_34fa8294) | coder (Opus medium) | REPIN1 done; now REPIN3: re-pin cloud + hub to Common main after APIX1 (GO go/REPIN3.md) | 6 | 2026-09-30 · V3.7 | COORD 12 |
 | (archived) ARCHQ1 (local_4957fa69, !60 merged) | coder (Opus) | K9 senior-mind fields, core-change (go/ARCHQ1.md) | 6 | 2026-09-29 · V3.7 | COORD Common 1 |
 | (archived) A2B (local_4f39a026, split by PM 10 into A2Ba 5 M core / A2Bb1 15 M / A2Bb2 12 M after b1: go/A2B*.md) | coder (Opus) | notebook splitters + core-change exports (go/A2B.md) | 32 | 2026-09-29 · V3.7 | COORD Common 1 |
 | DBT1 (local_932d4256, done, !61 merged 694db51, archive when idle) | coder (Opus) | analyzers-dbt (go/DBT1.md) | 25 | 2026-09-29 · V3.7 | COORD Common 1 |
