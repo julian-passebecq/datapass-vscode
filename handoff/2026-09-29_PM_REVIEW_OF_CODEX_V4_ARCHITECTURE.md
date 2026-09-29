@@ -285,3 +285,14 @@ The PM asks these directly (one AskUserQuestion, French, recommended option firs
 | F-spike redo | separate small packet for the M19 re-run before F1 |
 
 Each split packet keeps the original acceptance, divided so every part has its own `doneCheck`. Nothing is removed from the programme.
+
+## 8. Julian's answers (2026-09-29) — binding for the next revision
+
+| Q | Answer | Consequence for the architecture |
+|---|---|---|
+| Q1 Observe | **Yes, Observe as an additional opt-in module** (off by default). The 2026-09-27 "no monitoring" decision is superseded. | Keep OBS1–3/R6. Record the decision in ADR-0006 (cite this answer). Observe stays a separate module/VSIX; polling only after the user enables it. |
+| Q2 Python | **Python analyzers are allowed, including the heavier embedded runtime**: Julian expects them to be more effective. | B1 changes: Python parsers (SQLLineage, sqlglot, Python AST for PySpark…) become first-class. Amend A1's "no subprocess" rule into a **sandboxed analyzer host**: a pinned embedded Python (per-OS, shipped or downloaded on first use, checksum-verified) or the user's local Python when present, run as a separate process with no network, read-only access to the workspace, a timeout and a JSON-only protocol. Add a packaging packet (VSIX size, Windows first, offline install) and keep a TS fallback for the no-Python case. |
+| Q3 Spark | **No Spark execution and no plan capture for now.** DataPass extracts lineage **statically** from the Spark / PySpark files with its own engine. Fabric runtime evidence may be imported later when available. | Replace capture packets by static PySpark lineage (DataFrame API calls, `spark.sql` strings through the SQL analyzer, read/write sources and sinks, column-level where resolvable). CapturedPlan becomes an optional import format, not a prerequisite. Boundary "discovery never executes client code" holds unchanged. |
+| Q4 Licences | Julian leaves it to the PM. **PM decision:** Common and its packages public under MIT; product repositories (DataPass, Studio, Cloud, Factory, Mosaic) private; donor code moves only between private repos or into MIT Common by its owner. | Add a LICENSE file per repository accordingly. |
+| — FOIL data | The FOIL details in `STUDIO_CONTOSO_FOIL_2026-09-29.md` are **synthetic**, not private. | Drop the privacy finding; keep the general rule that real client payloads never enter these repositories. |
+| Q5/Q6 | Q6 (Activity Bar footprint): PM decision — configurable per experience preset (modular UI principle). | — |
