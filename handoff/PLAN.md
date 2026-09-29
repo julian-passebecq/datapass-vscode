@@ -304,11 +304,11 @@ Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
-Kept by **PM DataPass 8** (to start, Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 9**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
+Kept by **PM DataPass 8** (local_29fd99e3, Opus medium, global PM): every code and merge decision; architecture owner for the V4 run while Codex is out of tokens. Julian's only contact: **PM ASSISTANT DataPass 9**. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 8 (to start) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
+| PM DataPass 8 (local_29fd99e3) | global PM (Opus medium) | FINAL_ARCHITECTURE slices S1+, merges (hand-off handoff/sessions/2026-09-29-1700-pm-datapass-7.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 7 (local_7871195e), handed off at ~225 K (kept pinned: parent of IACW/OBSV1b chips and the PM 8 GO) | global PM | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1505-pm-datapass-6.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 6 (local_264e3da2) | global PM, handed off at 241 K | § V4-RUN/V4-IAC, merges (hand-off handoff/sessions/2026-09-29-1400-pm-datapass-5.md) | — | 2026-09-29 · V3.6 | Julian (via assistant) |
 | PM DataPass 5 | global PM, handed off at ~225 K (kept pinned: parent of running coders and of the L1 re-merge subagent) | — | — | 2026-09-29 · V3.6 | — |
@@ -351,6 +351,8 @@ Kept by **PM DataPass 8** (to start, Opus medium, global PM): every code and mer
 | CODER V4 OBSV1a (local_04afa201) | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IACW (local_7a1bc1c2) | coder (Opus medium) | § V4-IAC IACW iac-readiness wiring, cloud (GO go/IACW.md) | 8 | 2026-09-29 · V3.6 | COORD 7 |
 | CODER V4 OBSV1b (local_67bbec5f) | coder (Opus medium) | § V4-OBS OBSV1b Fabric/Databricks runs + runtime lineage, cloud (GO go/OBSV1b.md) | 15 | 2026-09-29 · V3.6 | COORD 7 |
+| CODER V4 MODEL1 (chip) | coder (Opus medium) | S1 Common core: project model v1 freeze + contracts:additive CI, common (GO go/MODEL1.md) | 10 | 2026-09-29 · V3.6 | PM 8 |
+| CODER V4 LG0 (chip) | coder (Opus medium) | S1 Common core: lineage graph v1 + lineage.gap.v1, common (GO go/LG0.md) | 12 | 2026-09-29 · V3.6 | PM 8 |
 
 Archived on 2026-09-29 (PM DataPass 6, ~14:15 UTC), all merged: CODER V4 IAC4 (!50), L1 (!46), IACB (!49), IACA0 (!48), IAC9-10 (cloud !32), G1 (!45), IAC-EMIT (!47). Retired on 2026-09-29 (PM DataPass 5, 13:20 UTC): PM ASSISTANT DataPass 6 (hand-off at 235 K → assistant 7). Retired on 2026-09-29 (PM DataPass 4, 12:45 UTC): CODER V4 C5b (!36), API0 (!7), UIH1 (!6), UIH2 (!10), VM1a (!12), VM3a (!9), HG1a (hub !3), OBSG, all merged. Earlier: COORD DataPass 5 (hand-off at 155 K), CODER V4 C5a (!35 merged), CODER V4 IACCORPUS (!34 merged), COORD DataPass 4, PM DataPass 1, PM DataPass 2 (hand-off above; archive pending Julian's sidebar detach), PM ASSISTANT DataPass 5, all V1–V3 PM agents (work merged).
 
