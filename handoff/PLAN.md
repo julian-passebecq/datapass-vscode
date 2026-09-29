@@ -163,6 +163,7 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
   | IACBF | iac-model follow-up to IACB: `bicep`/`arm` in `IAC_TOOLS` (iac-bicep emits them instead of `unknown`), `discoverEnvironments` finds `*.bicepparam` and ARM `parameters*.json`, one IACCORPUS manifest entry for the ARM fixture | common | 5 | Opus | after IACB !49 + L1 !46 |
   | IAC4 | readiness rules IAC001–013 | common | 15 | Opus | after IAC2 |
   | IAC8-10 | `datapass-iac` VSIX, journeys, `docs/iac/TRY_IT.md` | cloud | 30 | Opus | after IAC1/2 |
+  | IACW | wire IAC4 `iac-readiness` findings into the `datapass-iac` readiness slot (IAC9-10 left it empty), IAC10 screenshot set, TRY_IT update | cloud | 8 | Opus | after OBSV1a (owns the one vendored-Common re-pin to common ≥ 0b924b3) + IACBF |
   | IAC-EMIT | emitter iac-hcl → datapass.iac-declarations/1 | common | 8 | Opus | after IAC03 !41 + IAC1 !43 |
   | IAC6/IAC7 | lineage link and CI reading | common/cloud | 20 | Opus | W3 |
 - **Idées de Julian (2026-09-29 ~15:00 local, target V1 where feasible, for the next Codex digest):**
@@ -322,7 +323,7 @@ Kept by **PM DataPass 6** (Opus medium, global PM): every code and merge decisio
 | CODER V4 IAC8 (local_da8ca375) | coder (Opus medium) | § V4-IAC IAC8 datapass-iac VSIX, cloud (GO go/IAC8.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC9-10 (local_de1f351e) | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC9-10 (local_de1f351e, done, cloud !32 merged) | coder (Opus medium) | § V4-IAC IAC9-10 journeys + TRY_IT, cloud (GO go/IAC9-10.md) | 15 | 2026-09-29 · V3.6 | PM |
 | CODER V4 IACBF | coder (Opus medium) | § V4-IAC IACBF iac-model Bicep/ARM follow-up, common (GO go/IACBF.md) | 5 | 2026-09-29 · V3.6 | PM |
 | CODER V4 TRN1 (local_802ca659) | coder (Opus medium) | § V4-GAP TRN1 one replay transport, cloud (GO go/TRN1.md) | 8 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 OBSV1a (local_04afa201) | coder (Opus medium) | § V4-OBS OBSV1a Spark event log reader, cloud `packages/observe-runtime` (GO go/OBSV1a.md) | 15 | 2026-09-29 · V3.6 | COORD 6 |
