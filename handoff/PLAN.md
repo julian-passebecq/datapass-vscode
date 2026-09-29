@@ -263,8 +263,8 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | CODER V4 OBS3 | coder (Opus medium) | OBS3 replay/mock transport (!8) | 15 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 HG1b | coder (Opus medium) | HG1b Git change → impact, hub | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 HOP1a | coder (Opus medium) | HOP1a Hop renderer, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
-| CODER V4 IAC1 | coder (Opus medium) | § V4-IAC IAC1 HCL parser, common (!43) | 25 | 2026-09-29 · V3.6 | PM |
-| CODER V4 IAC03 | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
+| CODER V4 IAC1 (done, !43 merged) | coder (Opus medium) | § V4-IAC IAC1 HCL parser, common (!43) | 25 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC03 (done, !41 merged) | coder (Opus medium) | § V4-IAC IAC0+IAC3, common | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC2 | coder (Opus medium) | § V4-IAC IAC2 resource packs, common | 25 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 FAKE1 | coder (Sonnet medium) | § V4-IAC FAKE1 synthetic FOIL-like world, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | PM subagent · GAPREV (done) | auditor subagent (Opus medium, read-only) | V1 gap review → handoff/reviews/2026-09-29-v1-gap-review.md, § V4-GAP | 3 | 2026-09-29 · V3.6 | PM |
@@ -281,6 +281,9 @@ Kept by **PM DataPass 5** (Opus medium, global PM): every code and merge decisio
 | PM subagent · FIXAUDIT (done) | auditor subagent (Opus medium) | § V4-FIX audit | 2 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FIXPRJ | coder (Sonnet medium) | § V4-FIX FIXPRJ | 12 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 IAC4 (chip sent 13:25) | coder (Opus medium) | § V4-IAC IAC4 readiness rules, common (GO D:\PROJ\datapass\go\IAC4.md) | 15 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC-EMIT (chip sent 13:40) | coder (Opus medium) | § V4-IAC IAC-EMIT emitter iac-hcl → iac-declarations/1, common (GO D:\PROJ\datapass\go\IAC-EMIT.md) | 8 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IACB (chip sent 13:40) | coder (Opus medium) | § V4-IAC IACB Bicep/ARM reader, common (GO D:\PROJ\datapass\go\IACB.md) | 20 | 2026-09-29 · V3.6 | PM |
+| CODER V4 IAC5 (chip sent 13:40) | coder (Opus medium) | § V4-IAC IAC5 IaC imports, cloud (GO D:\PROJ\datapass\go\IAC5.md) | 20 | 2026-09-29 · V3.6 | PM |
 | CODER V4 FAKE2 | coder (Sonnet medium) | § V4-OBS FAKE2 synthetic runtime telemetry, cloud | 20 | 2026-09-29 · V3.6 | COORD 6 |
 | CODER V4 VM2 | coder (Opus medium) | VM2 hardening rules, cloud `packages/infra-analyzers` | 15 | 2026-09-29 · V3.6 | COORD 6 |
 
