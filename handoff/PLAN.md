@@ -418,7 +418,8 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R61 (local_7504bbd0) | coder (Opus medium) | VOL1 (go/VOL1.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 15 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R62 (local_4717ebe2) | coder (Opus medium) | VIS6 finish cloud !92 + CI (VIS6 hand-off, 50d5dfd) | 4 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R57 (local_a8ed5c8d) | coder (Opus medium) | VIS5 finish cloud !96: merge main in, CI (hand-off 2026-09-30-vis5-coder-r49.md) | 4 | 2026-09-30 · V3.8 | COORD 22 |
-| (reserves, idle) R63 local_6236a0f6, R64 | coder (Opus medium) | SCHED1c, WASTE1/PHYS1, HOP4a/b, AIB2a/b, HOP6a/b as deps land | — | 2026-09-30 · V3.8 | COORD 22 |
+| CODER R63 (local_6236a0f6) | coder (Opus medium) | AIB2a Common (go/AIB2a.md; queue § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 22 → COORD Common 4 merges |
+| (reserves, idle) R64 local_1d16cf76, R65 local_bfc7b8d3, R66 local_4bfce98a, R67 local_ca0057c1, R68 local_c600facf, R69 local_62911807, R70 local_a5cb3cf5 | coder (Opus medium, set on use) | SCHED1c, WASTE1/PHYS1, HOP4a/b, AIB2b, HOP6a/b as deps land | — | 2026-09-30 · V3.8 | COORD 22 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
