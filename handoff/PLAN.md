@@ -517,6 +517,24 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R90 (local_3e71ff34, ex RESERVE) | coder (Opus medium) | CLOUDREBASE1 cloud rebaser !107 → !100 → !101 → !103 → !68 (go/CLOUDREBASE1.md) | 6 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER SCHED1d-2 (local_7fb376ae) | coder (Opus medium) | SCHED1d follow-up (go/SCHED1d.md); !121 already green + approved at 21feaa5 | 3 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER R97 (local_846304e4) | coder (Opus medium) | CITHRU1 cloud CI two-stage (go/CITHRU1.md) | 10 | 2026-09-30 · V3.8 | COORD 26/27 |
+| CODER TOOLPROV1 (local_8ab0dd24) | coder (Opus medium) | TOOLPROV1 (go/TOOLPROV1.md, § V4-ARCHCORR N1) | 10 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER CAPROUTE1a (local_13cdada7) | coder (Opus medium) | CAPROUTE1a (go/CAPROUTE1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER EXEC1a (local_388bc415) | coder (Opus medium) | EXEC1a (go/EXEC1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER DBTRUN1 (local_529cef22) | coder (Opus medium) | DBTRUN1 (go/DBTRUN1.md, § V4-ARCHCORR N1) | 12 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER FABEVID1 (local_1422abd5) | coder (Opus medium) | FABEVID1 (go/FABEVID1.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER SPARKPLAN1 (local_f3115537) | coder (Opus medium) | SPARKPLAN1 (go/SPARKPLAN1.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER OBSFAB1a (local_538c8ee6) | coder (Opus medium) | OBSFAB1a (go/OBSFAB1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER COSTACT1 (local_d16f98e1) | coder (Opus medium) | COSTACT1 (go/COSTACT1.md, § V4-ARCHCORR N1) | 12 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER FABINT1 (local_3e763ad6) | coder (Opus medium) | FABINT1 (go/FABINT1.md, § V4-ARCHCORR N1) | 14 | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE CODER N1 (local_ce570e39), waiting | coder reserve (Opus medium) | N2/N3 packages of § V4-ARCHCORR, PRACT3b (go/RESERVE-night-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE CODER N2 (local_89a0a6f7), waiting | coder reserve (Opus medium) | N2/N3 packages of § V4-ARCHCORR, PRACT3b (go/RESERVE-night-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE CODER N3 (local_5d942588), waiting | coder reserve (Opus medium) | N2/N3 packages of § V4-ARCHCORR, PRACT3b (go/RESERVE-night-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE CODER N4 (local_bb4f9c28), waiting | coder reserve (Opus medium) | N2/N3 packages of § V4-ARCHCORR, PRACT3b (go/RESERVE-night-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE COORD DataPass 29 (local_bad8f629), waiting | coordinator reserve (Sonnet low) | after COORD 28 | — | 2026-09-30 · V3.8 | PM 21 |
+| RESERVE COORD DataPass Common 6 (local_6ec6e311), waiting | Common coordinator reserve (Sonnet low) | after Common 5 | — | 2026-09-30 · V3.8 | PM 21 |
+| RESERVE PM DataPass 23 (local_1c9ba10c), waiting | PM reserve (Opus medium) | after PM 22 | — | 2026-09-30 · V3.8 | PM 21 |
+| CODER IACEV1 (local_7fb376ae, ex SCHED1d-2) | coder (Opus medium) | IACEV1 (go/IACEV1.md) | 10 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER R87 (local_aadbfe3a), archived at 191 K | coder | STDA1a !185 done | — | 2026-09-30 · V3.8 | COORD 27 |
 | CODER R10 (local_be4257d3) | coder (Opus medium) | AIB1 AI gap bridge, Common part (go/AIB1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R11 (local_7bf36177) | coder (Opus medium) | BI3 Power BI operational metadata, cloud (go/BI3.md) | 12 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER R12 (local_95358d62) | coder (Opus medium) | PY2 pandas/polars/SQLAlchemy/requests + config folding, common (go/PY2.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
