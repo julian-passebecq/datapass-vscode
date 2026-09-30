@@ -430,12 +430,12 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R67 (local_ca0057c1) | coder (Opus medium) | PRACT2 re-merge Common !112 (hand-off 2026-09-30-pract2-coder.md) | 4 | 2026-09-30 · V3.8 | COORD Common 4 |
 | CODER R68 (local_c600facf) | coder (Opus medium) | HOP5a (go/HOP5a.md; queue go/TODAY-queue-2026-09-30.md § Wave 3) | 10 | 2026-09-30 · V3.8 | COORD 23 |
 | CODER R69 (local_62911807) | coder (Opus medium) | IACSPI1a Common (go/IACSPI1a.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 23 → Common 4 |
-| CODER R70 (local_a5cb3cf5) | coder (Opus medium) | FABITEM1 Common (go/FABITEM1.md; § Wave 3; includes SparkJobDefinition) | 15 | 2026-09-30 · V3.8 | COORD 23 → Common 4 |
+| CODER R70 (local_a5cb3cf5) | done: Common !119, archived |
 | CODER R71 (local_87fcb181) | coder (Opus medium) | COVREG2 Common (go/COVREG2.md; § Wave 3, PM proposal) | 6 | 2026-09-30 · V3.8 | COORD 23 → Common 4 |
 | CODER R72 (local_93a2908b) | coder (Opus medium) | HOP4a+4b CI fix (scale_ui) | 3 | 2026-09-30 · V3.8 | COORD 23 |
 | CODER R73 (local_977a557d) | coder (Opus medium) | DASH1 cloud !94 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R74 (local_8fb09b20) | coder (Opus medium) | STOR1f cloud !68 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
-| CODER R75 (local_b7ae2f94) | coder (Opus medium) | RUNX1 cloud !95 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R75 (local_b7ae2f94) | done: !95 merged, archived |
 | CODER R77 (local_f10cbcb9) | coder (Opus medium) | ML1a Common (go/ML1a.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R78 (local_e9f69459) | coder (Opus medium) | BI3f finish cloud !65 (go/BI3f.md; § Wave 3) | 5 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R79 (local_48441dae) | coder (Opus medium) | AIB2b Common (go/AIB2b.md; § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 24 |
