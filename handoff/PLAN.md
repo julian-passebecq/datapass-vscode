@@ -379,6 +379,44 @@ Each package runs as a PM agent and merges its own PRs on green CI. Coders do no
 
 Coder trial V3.4: closed by Julian (2026-09-28 22:43), all coders stay on Opus 5.5 medium. Only run, T0 dummy (SQL table extractor): Sonnet xhigh 7 min / $1.06 / 22 tests, more robust; Opus medium 3 min / $1.00 / 17 tests, failed 7 of Sonnet's edge cases.
 
+### § V4-ARCHCORR — Julian's architecture correction (PM DataPass 21 · 2026-09-30 · rules V3.8)
+
+Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026-09-30.md) (Julian, 30 Sept). Inventories: `D:\PROJ\datapass\go\archcorr-inventory-{A,B}.md`. **Not a redesign:** keep merged work, fill the semantic gaps, never clone a native tool (§ 29). Priority from § 45: coherence over new parsers.
+
+**PM architecture decisions (PM 21, architect):**
+- AC-D1 `ExecutionUnit` is a Common **facet projected over the existing lineage-core job/task nodes** (no new graph, no migration). Portable fields in Common; Fabric/Databricks details go in a `providerAttachment` (§ 42). The schema is new and additive (a new version dir, core-change label).
+- AC-D2 The capability router moves to Common (`capability-router`, contract + ranking); the standalone keeps probes and UI and consumes it. Readiness is per operation; there is no global "Fabric READY" (§ 35, 37).
+- AC-D3 Provenance is one enum in Common `tool-catalog`: official / community / fork / accelerator / sample-reference, plus `canonicalUpstream` for forks. The standalone and cloud map onto it.
+- AC-D4 Everything that reads provider state (FABEVID1, OBSFAB1, SPARKPLAN1, TBX1b) is **replay/import-only in V1**, with fixtures in the synthetic FOIL set. Live reading stays behind the existing live-provider gates. Evidence origin stays explicit (§ 34): synthetic ≠ observed, never "production confirmed".
+- AC-D5 Observe = deployed state + runtime + monitoring (monitoring is a sub-domain, § 10). Reconciliation verdicts reuse RUNX1's confirmed / not-observed / refuted, plus `unknown`.
+- AC-D6 Typed domain graphs (§ 25): relation kinds are already typed, so this is a docs fix first (DOCS-AC). An optional domain tag per edge kind comes later.
+- AC-D7 PM additions beyond the brief: an **EXEC1 fixture set per native kind** in the FOIL synthetic repos (so every kind is tested); the **lifecycle E2E story (§ 44)** becomes the V4 acceptance test (E2E-AC, after the waves).
+
+| Pkg | Repo · package | Scope (one MR each) | Depends on | est. M | Wave |
+|---|---|---|---|---|---|
+| DOCS-AC | standalone handoff + Common view-spi README | § 25 typed-graphs wording; FINAL_ARCHITECTURE status refresh (§ 1: landed = landed); lifecycle wording (§ 31) | — | 4 | now (PM subagent) |
+| TOOLPROV1 | Common `tool-catalog` | provenance enum + canonicalUpstream (gbrueckl/fabric-cicd → microsoft), add gbrueckl/Fabric.Toolbox as reference; standalone tools.ts + cloud catalog map onto it | — | 10 | N1 |
+| CAPROUTE1a | Common new `capability-router` | operation catalog (§ 35 list + fabric-cicd deploy, OneLake r/w, Spark remote run, CU observe, TF deploy, PBIR edit), requirements → ranked candidates (preferred/fallback, official/community, side effects), project context rule (Git-authoritative) | TOOLPROV1 field optional | 15 | N1 |
+| CAPROUTE1b | standalone `core/capabilities` + `adapters/fabric.ts` | § 37: capability facts; card shows per-operation readiness from the Common router; no global Fabric READY; Warehouse/dbt projects never require Fabric DE | CAPROUTE1a | 12 | N2 |
+| EXEC1a | Common new `execution-model` | ExecutionUnit contract (AC-D1: nativeKind vocabulary of all § 5 kinds, portable props, providerAttachment) + projector over existing job/task nodes (ADF/Fabric pipeline, Databricks, Airflow, Cosmos, notebooks) + ScheduleFact binding | — | 15 | N1 |
+| EXEC1b | Common `execution-model` | Fabric Notebook / SJD / Fabric dbt Job / SDP / Warehouse proc / Dataflow Gen2 / UDF units from FABITEM1, SDP1, SCHED1d facts; per-kind fixtures (AC-D7) | EXEC1a + !119 !124 !121 merged | 15 | N2 |
+| EXEC1c | Common `arch-lint` / PRACT | notebook-vs-SJD detector (§ 6) + decision card (evidence, assumption, alternative, benefit, trade-off, confidence); comparison matrix row data (§ 8) | EXEC1b | 12 | N3 |
+| DBTRUN1 | Common `analyzers-dbt` | dbt route fact: model → invoker (Core CLI / Cosmos / Databricks dbt_task / Fabric dbt Job / dbt Cloud) → adapter/target → compute, per environment; parse the Fabric dbt Job item | EXEC1a contract (can start on a local type) | 12 | N1 |
+| IACFAB1 | Common `iac-resource-packs` + `project-contracts` | deployment-binding relation TF resource ↔ FABITEM1 item ↔ provider-reader actual; Design/Desired/Actual triple data | !119 FABITEM1 merged | 15 | N2 |
+| IACFAB1-UI | cloud `workbench-ui` | three-way Design/Desired/Actual view | IACFAB1 | 12 | N3 |
+| FABEVID1 | cloud `provider-readers/fabric` + `observe-runtime` | replay reader for Spark workspace settings / environment / pool; desired (IaC) vs actual config drift with its consequence (runtime, env, HC, timeout, pool) | IACFAB1 for desired (start with fixture desired) | 15 | N1 |
+| SPARKPLAN1 | cloud `observe-runtime` | logical ↔ physical correlation (static transformation ↔ plan node ↔ stage/shuffle/spill), confidence ("a plan is not column lineage"), attach to unit ids; Fabric.Toolbox concepts only, never its code (§ 13) | EXEC1a ids (can start on node ids) | 15 | N1 |
+| OBSFAB1a | cloud `observe-runtime` + `observe-providers` | drill evidence model capacity spike → workspace ops → unit run → Spark stages → architecture node; per-unit CU (the old OBSV2) | EXEC1a | 15 | N1 |
+| OBSFAB1b | cloud `workbench-ui` | Observe surface "why did capacity spike?" with state / runtime / monitoring tabs (§ 10, 39) | OBSFAB1a | 15 | N2 |
+| COSTACT1 | cloud `observe-runtime` + volumetry view | theoretical (VOL1) vs observed reconciliation per edge/unit: bytes/rows/CU/duration rules → confirmed / refuted / not observed (§ 12); observed no longer overwrites theoretical | — | 12 | N1 |
+| TBX1a | Common `tool-catalog` | per-asset domain (Observe/FinOps, Admin, Deploy, readiness, governance, router), relevance condition, prereqs, side effects, evidence kinds for the 11 assets (§ 19, 38); never vendor the toolbox | TOOLPROV1 | 10 | N2 |
+| TBX1b | cloud `provider-readers/observe/import` | import outputs of Fabric Spark Monitoring, FUAM, Cost Analysis (replay files) into Observe evidence | TBX1a | 18 | N3 |
+| FABINT1 | standalone `core/fabric/nativeBridge.ts` | investigation + bridge to the official Fabric VS Code extension API (context, item identity, open native artifact); optional, static analysis without it; no private tokens or undocumented commands | — | 14 | N1 |
+| MAT1 | standalone | Git-first materialization: candidate native files + provenance stamp (source id, revision, generator, target, hash, env) → diff → branch/MR; never deploy | CAPROUTE1a | 18 | N3 |
+| E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
+
+Totals: 18 coder packages + docs, ~270 M. N1 = 9 packages startable tonight (TOOLPROV1, CAPROUTE1a, EXEC1a, DBTRUN1, FABEVID1, SPARKPLAN1, OBSFAB1a, COSTACT1, FABINT1). N2/N3 are taken by reserve coders as dependencies merge. GOs: `D:\PROJ\datapass\go\<PKG>.md`.
+
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
 Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16 local_0e9d67b3 from ~03:00; PM 15 local_7024f765 from ~01:40; before: PM 13 local_6dbe9065, Opus medium, global PM, from 2026-09-30 ~00:45 local; GO go/PM-DataPass-12.md): every code and merge decision; architect of DataPass (no more Codex, Julian 30 Sept). **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 12, local_d18705b2) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. **Pace (Julian, 29 Sept ~22:50): no night coder cap; quota credit runs to Thu 1 Oct 14:00 (18 % used by 23:00), speed up, finishing a bit early is fine: guard weekly burn ≤ 3.5 %/h, 5 h window ≤ 90 %; night 29→30 Sept: no burn guard (Julian, 23:55, "we have margin").** CI: runner 56844575 (local-windows) has concurrent = 15 live (Julian, 29 Sept ~23:15; free RAM ~18 GB at 12 jobs; the runner reloads config.toml by itself, never restart it), no per-runner limit (Julian, 29 Sept; measured: peak 10, median start wait 5 s). If jobs wait with no earlier stage ahead while 10 run, tell the PM, who asks Julian to restart the runner: run CI in parallel across repos; do not create or re-register runners; measure overlap before claiming a CI queue. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
