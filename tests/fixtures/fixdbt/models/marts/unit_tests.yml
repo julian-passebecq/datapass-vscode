@@ -1,0 +1,29 @@
+# SYNTHETIC FIXTURE: dbt unit tests (static fixtures, never run here).
+version: 2
+unit_tests:
+  - name: test_kpi_energy_rollup
+    description: Hourly energy rolls up to MWh per day.
+    model: fct_turbine_kpi_daily
+    overrides:
+      macros:
+        is_incremental: false
+    given:
+      - input: ref('int_scada_hourly')
+        rows:
+          - {turbine_id: T-SYN-01, hour_ts: 2026-06-01 00:00:00, energy_kwh: 1000, avg_wind_ms: 8, fault_minutes: 0}
+          - {turbine_id: T-SYN-01, hour_ts: 2026-06-01 01:00:00, energy_kwh: 500, avg_wind_ms: 6, fault_minutes: 30}
+      - input: ref('dim_turbine')
+        rows:
+          - {turbine_id: T-SYN-01, rated_power_kw: 2000}
+    expect:
+      rows:
+        - {turbine_id: T-SYN-01, energy_mwh: 1.5, fault_minutes: 30}
+  - name: test_stg_turbines_passthrough
+    model: stg_turbines
+    given:
+      - input: source('silver_spark', 'turbine_dim')
+        rows:
+          - {turbine_id: T-SYN-02, site_id: S-SYN-A, model_code: M-SYN, rated_power_kw: 3000, commissioned_on: 2026-01-15}
+    expect:
+      rows:
+        - {turbine_id: T-SYN-02, site_id: S-SYN-A}

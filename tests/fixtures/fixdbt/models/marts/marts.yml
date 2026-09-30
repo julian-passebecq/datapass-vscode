@@ -1,0 +1,78 @@
+# SYNTHETIC FIXTURE
+version: 2
+models:
+  - name: dim_turbine
+    description: One row per turbine with model attributes.
+    config:
+      group: wind_analytics
+      access: public
+    columns:
+      - name: turbine_id
+        tests: [unique, not_null]
+      - name: site_id
+      - name: model_code
+      - name: manufacturer
+      - name: hub_height_m
+      - name: rated_power_kw
+      - name: commissioned_on
+  - name: fct_turbine_kpi_daily
+    description: '{{ doc("turbine_kpi") }}'
+    config:
+      group: wind_analytics
+      access: public
+      contract: {enforced: true}
+    constraints:
+      - type: primary_key
+        columns: [turbine_id, kpi_date]
+    columns:
+      - name: turbine_id
+        data_type: string
+        constraints:
+          - type: not_null
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: "ref('dim_turbine')", field: turbine_id}
+      - name: kpi_date
+        data_type: date
+      - name: energy_mwh
+        data_type: double
+        tests: [positive_value]
+      - name: avg_wind_ms
+        data_type: double
+      - name: capacity_factor
+        description: '{{ doc("capacity_factor") }}'
+        data_type: double
+      - name: availability_pct
+        data_type: double
+      - name: fault_minutes
+        data_type: bigint
+  - name: fct_maintenance_downtime
+    config:
+      group: maintenance
+      access: protected
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: turbine_id
+      - name: site_id
+      - name: order_type
+      - name: opened_date
+      - name: downtime_hours
+      - name: cost_eur
+  - name: mart_fleet_availability
+    columns:
+      - name: site_id
+      - name: kpi_date
+      - name: availability_pct
+      - name: energy_mwh
+      - name: downtime_hours
+  - name: fct_forecast_accuracy
+    description: Forecast wind speed vs observed, per site and day (Python model).
+    columns:
+      - name: site_id
+      - name: forecast_date
+      - name: horizon_h
+      - name: forecast_wind_ms
+      - name: actual_wind_ms
+      - name: abs_error_ms

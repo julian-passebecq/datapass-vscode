@@ -1,0 +1,37 @@
+# SYNTHETIC FIXTURE (foil-synthetic, fabricated): not client code.
+name: foil_syn_wind
+version: "1.0.0"
+config-version: 2
+profile: foil_syn_wind
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+analysis-paths: ["analyses"]
+target-path: "target"
+clean-targets: ["target"]
+vars:
+  rated_power_floor_kw: 100
+  history_start: "2026-01-01"
+models:
+  foil_syn_wind:
+    +on_schema_change: append_new_columns
+    staging:
+      +materialized: view
+      +schema: dbt_syn_staging
+      +tags: ["staging"]
+    intermediate:
+      +materialized: ephemeral
+      +schema: dbt_syn_intermediate
+      +tags: ["intermediate"]
+    marts:
+      +materialized: table
+      +schema: dbt_syn_marts
+      +tags: ["marts"]
+seeds:
+  foil_syn_wind:
+    +schema: dbt_syn_seeds
+snapshots:
+  foil_syn_wind:
+    +target_schema: dbt_syn_snapshots

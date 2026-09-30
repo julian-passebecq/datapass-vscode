@@ -24,9 +24,25 @@
       "sourceCommit": "1c4e684f86aaa53d91360a132762e5221156e976"
     },
     {
-      "file": "juliandatapass-group-analyzers-0.1.0-alpha.5.tgz",
-      "sha256": "7ae5269b53d47bb495bfe93ca3da21d81ff692f8ae628131310d521527d4ca3c",
-      "sourceCommit": "e8b7bf31f8e4259eaa9e7e897d28b70f98934589"
+      "file": "juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
+      "sha256": "92bfb2e8b05588cc5f7cbe2b0384449ea2171c1afdc617f861c4b1e2b3c5a470",
+      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+    },
+    {
+      "file": "juliandatapass-group-lineage-core-0.1.0-alpha.1.tgz",
+      "sha256": "bdc7c144984e8a2825c5b4bc6ec72fd6de37807855ae47b15f26cf20f769d0f9",
+      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+    },
+    {
+      "file": "juliandatapass-group-analyzers-0.1.0-alpha.7.tgz",
+      "sha256": "e7bfb0f8c89c9a80b5258006a8d0610dbe7e0353176133ecc54e67329b05dcab",
+      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+    },
+    {
+      "file": "juliandatapass-group-analyzers-dbt-0.1.0-alpha.1.tgz",
+      "sha256": "b0bf03d50d1a8c2cf05f153df80723bbf4298fe71e0dc692b08eeb7bf58c68b2",
+      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
     }
-  ]
+  ],
+  "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins."
 }

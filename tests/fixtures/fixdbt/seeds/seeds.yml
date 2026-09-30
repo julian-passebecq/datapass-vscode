@@ -1,0 +1,15 @@
+# SYNTHETIC FIXTURE
+version: 2
+seeds:
+  - name: seed_turbine_models
+    description: Reference table of turbine models.
+    config:
+      column_types: {model_code: string, rated_power_kw: int}
+    columns:
+      - name: model_code
+        tests: [unique, not_null]
+  - name: seed_alarm_codes
+    description: SCADA status codes.
+    columns:
+      - name: status_code
+        tests: [unique, not_null]

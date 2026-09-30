@@ -78,7 +78,9 @@ const GATED: Record<string, readonly string[]> = {
     "fileVersions.history", "diagram.toggleGitBadges",
     // V3-HOP2: DataPass Hop (the lighter modes are at their palette budget; the editor's context menu,
     // its title button on an explained file and the Home tile reach it in every mode).
-    "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection"
+    "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
+    // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
+    "understanding.analyzeDbtProjects"
   ]
 };
 

@@ -1,0 +1,4 @@
+model_code,manufacturer,rated_power_kw,hub_height_m
+SYN-2000,Aeolus Demo Works,2000,80
+SYN-3400,Aeolus Demo Works,3400,105
+SYN-4500,Aeolus Demo Works,4500,120

@@ -1,0 +1,27 @@
+# SYNTHETIC FIXTURE
+version: 2
+exposures:
+  - name: wind_fleet_dashboard
+    label: Wind Fleet (Power BI report rpt_wind_fleet)
+    type: dashboard
+    maturity: high
+    url: https://app.powerbi.com/groups/5f5a0005-0000-4000-8000-000000000003/reports/rpt_wind_fleet
+    description: Fleet report on semantic model sm_wind_kpi.
+    depends_on:
+      - ref('fct_turbine_kpi_daily')
+      - ref('mart_fleet_availability')
+      - ref('dim_turbine')
+    owner: {name: Wind Analytics, email: wind-analytics@example.invalid}
+  - name: maintenance_report
+    label: Maintenance (Power BI report rpt_maintenance)
+    type: dashboard
+    maturity: medium
+    depends_on:
+      - ref('fct_maintenance_downtime')
+    owner: {name: Wind Analytics, email: wind-analytics@example.invalid}
+  - name: forecast_model_review
+    type: ml
+    maturity: low
+    depends_on:
+      - ref('fct_forecast_accuracy')
+    owner: {name: Wind Ops, email: wind-ops@example.invalid}

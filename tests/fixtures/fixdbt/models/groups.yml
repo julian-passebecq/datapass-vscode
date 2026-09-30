@@ -1,0 +1,7 @@
+# SYNTHETIC FIXTURE
+version: 2
+groups:
+  - name: wind_analytics
+    owner: {name: Wind Analytics (synthetic), email: wind-analytics@example.invalid}
+  - name: maintenance
+    owner: {name: Maintenance Ops (synthetic)}

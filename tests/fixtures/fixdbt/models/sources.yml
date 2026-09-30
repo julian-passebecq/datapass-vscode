@@ -1,0 +1,66 @@
+# SYNTHETIC FIXTURE
+version: 2
+sources:
+  - name: scada
+    description: "{{ doc('scada_source') }}"
+    database: wind_syn
+    schema: bronze
+    loader: pl_hourly_scada
+    config:
+      tags: ["bronze"]
+      freshness:
+        warn_after: {count: 2, period: hour}
+        error_after: {count: 12, period: hour}
+      loaded_at_field: ingested_at
+    tables:
+      - name: scada_raw
+        description: Raw 10-minute SCADA readings per turbine.
+        columns:
+          - name: turbine_id
+            tests: [not_null]
+          - name: ts
+          - name: power_kw
+          - name: wind_speed_ms
+          - name: rotor_rpm
+          - name: status_code
+          - name: ingested_at
+      - name: weather_forecast_raw
+        description: Hourly wind forecasts per site.
+        columns:
+          - name: site_id
+          - name: forecast_ts
+          - name: horizon_h
+          - name: forecast_wind_ms
+          - name: ingested_at
+  - name: cmms
+    description: Maintenance system export.
+    database: wind_syn
+    schema: bronze
+    tables:
+      - name: maintenance_orders_raw
+        columns:
+          - name: order_id
+            tests: [unique, not_null]
+          - name: turbine_id
+          - name: opened_at
+          - name: closed_at
+          - name: order_type
+          - name: cost_eur
+  - name: silver_spark
+    description: Tables written by the Spark notebooks (nb_clean_scada), read here as sources.
+    database: wind_syn
+    schema: silver
+    tables:
+      - name: scada_clean
+        columns:
+          - name: turbine_id
+          - name: ts
+          - name: power_kw
+          - name: wind_speed_ms
+      - name: turbine_dim
+        columns:
+          - name: turbine_id
+          - name: site_id
+          - name: model_code
+          - name: rated_power_kw
+          - name: commissioned_on
