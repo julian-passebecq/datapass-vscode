@@ -389,6 +389,7 @@ Kept by **PM DataPass 16** (from ~03:00; PM 15 local_7024f765 from ~01:40; befor
 | (retired, pinned) PM DataPass 11 (local_2522f634), handed off at ~200 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-29-2355-pm-datapass-10.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired, kept pinned: parent of COORD 12 and reserves) PM DataPass 10 (local_e46b43b6) | global PM | handed off at ~235 K | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
+| COORD DataPass 17 (local_b8ef6057, ex-reserve), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, Julian 08:00 status (GO go/COORD-DataPass-17.md, hand-off go/handoff-coord-14.md) | — | 2026-09-30 · V3.7 | PM 16 |
 | COORD DataPass Common 2 (local_a047ee0d, ex-reserve COORD 13), live, pinned | coordinator (Sonnet low) | Common serial merges (GO go/COORD-Common-2.md, hand-off go/handoff-coord-common-1.md) | — | 2026-09-30 · V3.7 | PM 11 |
 | CODER R1 (local_223e3ff8) | coder (Opus medium) | GITL0FIX (Common !72 merged), then CITIME1 CI timeouts (go/CITIME1.md) | 2+2 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER R5 (local_fd5757bc) | coder (Opus medium) | DBT2 dbt semantic/contracts/unit tests, common (go/DBT2.md) | 12 | 2026-09-30 · V3.7 | COORD Common 2 |
@@ -422,7 +423,7 @@ Kept by **PM DataPass 16** (from ~03:00; PM 15 local_7024f765 from ~01:40; befor
 | CODER VIS3 (local_d53f18b2, R26) | coder (Opus medium) | VIS3 after VIS0 cloud !67 (go/VIS3.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER ORC2 (local_df73707a, R33, ex CIFIX1) | coder (Opus medium) | ORC2 (go/ORC2.md, Common) | — | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER INCR1 (local_4626da65, R38) | coder (Opus medium) | INCR1 (go/INCR1.md, Common, after CLEAN1). Cloud !77 REPIN4 moved to a PM 16 subagent | — | 2026-09-30 · V3.7 | COORD Common 2 |
-| (reserves, idle) PM 16 local_0e9d67b3, PM 17 local_8b1410a1 · COORD 17 local_b8ef6057, COORD 18 local_19b041e9 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 15 |
+| (reserves, idle) PM 16 local_0e9d67b3, PM 17 local_8b1410a1 · COORD 18 local_19b041e9 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 15 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER R3 (local_98a83587) | coder (Opus medium) | ARCHB1 successor: fix Common !71, then re-pin hub !12 (ARCHB1 handed off at 246 K) | 5 | 2026-09-30 · V3.7 | COORD Common 2 / COORD 12 |
