@@ -533,6 +533,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R95 (local_6bcfec02) | coder (Opus medium) | ML1b (go/ML1b.md) | see queue | 2026-09-30 · V3.8 | COORD 26 |
 | CODER R96 (local_44329dd3) | coder (Opus medium) | SDP1b SQL core kinds (go/SDP1b.md, core-change PM-approved) | see queue | 2026-09-30 · V3.8 | COORD 26 |
 | CODER R97, R98 | coder (Opus medium) | COVREG2b after !114 (go/COVREG2b.md); spare | see queue | 2026-09-30 · V3.8 | COORD 26 |
+| CODER REGREBASE1 R99 (RESERVE N30 local_0b44ee7b-0b01-4c71-9426-f9f841c1b49f; R98 handed off at 219 K, go/handoff-inbox/REGREBASE1-R98.md) | coder (Opus medium) | REGREBASE1 continued (!128 overlap fixed 96d5201) | — | 2026-09-30 · V3.8 | COORD Common 7 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
