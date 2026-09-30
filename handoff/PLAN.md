@@ -417,6 +417,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | PRACT4 | PRACT2 engine (Common or cloud) | § 41 detectors: unclear dbt route, duplicated Airflow/Fabric orchestration, Spark on tiny workload, daily SLA on streaming, full refresh vs volume, runtime dep mismatch (PM 22, go/PRACT4.md) | DBTRUN1 | 15 | N2 |
 | IACEV1b | cloud `iac-imports` | re-export plan/what-if/Infracost readers from Common iac-hcl (!134), delete the cloud copy, goldens byte-identical (PM 22) | !134 | 5 | N2 |
 | IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then) | IACEV1b | 6 | backlog |
+| TBX1c | standalone toolbox assets | add the missing Workspace Monitoring asset (§ 19) and reconcile the standalone 12-asset list with Common tool-catalog/3 routing (TBX1a finding) | TBX1a | 4 | N3 |
 | E2E-ACa | cloud fixtures + tests | § 44 lifecycle scenario in FOIL synthetic set (notebook %run chain + SJD candidate, Fabric dbt Job, Airflow, TF Fabric desired, drifting actual settings, Spark plan, CU spike, VOL1 refuted) + skeleton E2E with skips (PM 22 split, go/E2E-ACa.md) | — | 15 | N2 (now) |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
 
