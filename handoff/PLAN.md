@@ -412,7 +412,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | OBSFAB1b | cloud `workbench-ui` | Observe surface "why did capacity spike?" with state / runtime / monitoring tabs (§ 10, 39) | OBSFAB1a | 15 | N2 |
 | COSTACT1 | cloud `observe-runtime` + volumetry view | theoretical (VOL1) vs observed reconciliation per edge/unit: bytes/rows/CU/duration rules → confirmed / refuted / not observed (§ 12); observed no longer overwrites theoretical | — | 12 | N1 |
 | TBX1a | Common `tool-catalog` | per-asset domain (Observe/FinOps, Admin, Deploy, readiness, governance, router), relevance condition, prereqs, side effects, evidence kinds for the 11 assets (§ 19, 38); never vendor the toolbox | TOOLPROV1 | 10 | N2 |
-| TBX1b | cloud `provider-readers/observe/import` | import outputs of Fabric Spark Monitoring, FUAM, Cost Analysis (replay files) into Observe evidence | TBX1a | 18 | N3 |
+| TBX1b | cloud `provider-readers/observe/import` | import outputs of Fabric Spark Monitoring, FUAM, Cost Analysis (replay files) into Observe evidence; consumes Common tool-catalog/3 ids (no local copies) once !137 is on main (PM 23) | TBX1a | 18 | N3 |
 | FABINT1 | standalone `core/fabric/nativeBridge.ts` | investigation + bridge to the official Fabric VS Code extension API (context, item identity, open native artifact); optional, static analysis without it; no private tokens or undocumented commands | — | 14 | N1 |
 | MAT1 | standalone | Git-first materialization: candidate native files + provenance stamp (source id, revision, generator, target, hash, env) → diff → branch/MR; never deploy | CAPROUTE1a | 18 | N3 |
 | PRACT4 | PRACT2 engine (Common or cloud) | § 41 detectors: unclear dbt route, duplicated Airflow/Fabric orchestration, Spark on tiny workload, daily SLA on streaming, full refresh vs volume, runtime dep mismatch (PM 22, go/PRACT4.md) | DBTRUN1 | 15 | N2 |
@@ -533,13 +533,19 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER PRACT4 (local_e8e7233f) | coder (Opus medium) | PRACT4 (go/PRACT4.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER TBX1a (local_5749433c) | coder (Opus medium) | TBX1a (go/TBX1a.md) | 10 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER MAT1 (local_ae115d77) | coder (Opus medium) | MAT1 (go/MAT1.md) | 18 | 2026-09-30 · V3.8 | COORD 29 |
-| CODER SPARKPLAN1-FU (chip pending) | coder (Opus medium) | SPARKPLAN1 follow-up: ExecutionUnit keys (+ COSTACT1/OBSFAB1a if !111/!112 merged) (go/SPARKPLAN1-FU.md, lean) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER SPARKPLAN1-FU (local_9e53dcc4, ex reserve N7) | coder (Opus medium) | SPARKPLAN1 follow-up: ExecutionUnit keys (+ COSTACT1/OBSFAB1a if !111/!112 merged) (go/SPARKPLAN1-FU.md, lean) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | RESERVE CODER N1 (local_ce570e39) | coder (Opus medium) | CAPROUTE1b part 2 (go/CAPROUTE1b-2.md; standalone WIP 7069205) | 8 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER CAPROUTE1b (local_846f59c4), handed off at 273 K (Common !138) → N1 | coder (Opus medium) | CAPROUTE1b (go/CAPROUTE1b.md, incl. router id alignment + FABINT1 facts) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER EXEC1b (local_d6d19cfd), stopped at 262 K → EXEC1b-2 | coder (Opus medium) | EXEC1b (go/EXEC1b.md, MR after Common !133) | 15 | 2026-09-30 · V3.8 | COORD 29 |
-| CODER EXEC1b-2 (chip pending) | coder (Opus medium) | EXEC1b successor (go/handoff-inbox/EXEC1b-1.md; core-change conditionally approved by PM 23) | 8 | 2026-09-30 · V3.8 | COORD 30 |
-| CODER SPARKPLAN1-FU (chip pending) | coder (Opus medium) | SPARKPLAN1-FU (go/SPARKPLAN1-FU.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER EXEC1b-2 (local_53bdbc7d, ex reserve N5) | coder (Opus medium) | EXEC1b successor (go/handoff-inbox/EXEC1b-1.md; core-change conditionally approved by PM 23) | 8 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER NAV1 (chip after IACFAB1-UI + OBSFAB1b MRs) | coder (Opus medium) | NAV1 (go/NAV1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER PRACT4-2 (local_8088d2d1, ex reserve N6) | coder (Opus medium) | PRACT4 successor (go/handoff-inbox/PRACT4-1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER PRACT3b (local_24bc86f2) | coder (Opus medium) | PRACT3b (after cloud !107) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER IACFAB1-UI-2 (local_bfc8e0ff) | coder (Opus medium) | IACFAB1-UI successor (go/handoff-inbox/IACFAB1-UI-1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER OBSFAB1b-2 (local_329cc3ad) | coder (Opus medium) | OBSFAB1b successor (go/handoff-inbox/OBSFAB1b-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER E2E-ACa-2 (local_f831517d) | coder (Opus medium) | E2E-ACa successor (go/handoff-inbox/E2E-ACa-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER SCHED1e (chip after EXEC1b) | coder (Opus medium) | SCHED1e | 3 | 2026-09-30 · V3.8 | COORD 30 |
+| RESERVE CODER N8–N10 + RESERVE COORD 31 (chips requested 21:3x) | reserves (Opus medium) | go/RESERVE-night-2026-09-30.md | — | 2026-09-30 · V3.8 | PM 23 |
 | CODER IACFAB1-UI (local_6d1a3a41) | coder (Opus medium) | IACFAB1-UI (go/IACFAB1-UI.md, MR after Common !136) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N4 | coder (Opus medium) | OBSFAB1b (go/OBSFAB1b.md, from v4/obsfab1a, MR after cloud !112) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N3 (local_5d942588) | coder (Opus medium) | E2E-ACa (go/E2E-ACa.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
