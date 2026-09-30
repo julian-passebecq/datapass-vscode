@@ -386,7 +386,8 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
 | PM DataPass 17 (local_8b1410a1), retired → PM 18 | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
-| PM DataPass 19 (local_43715a1b, ex RESERVE PM 19), live, pinned | global PM + architect (Opus medium) | 30 Sept day + Codex night relay (GO go/PM-DataPass-19.md; hand-off handoff/sessions/2026-09-30-1230-pm-datapass-18.md); hands off at 250 K to RESERVE PM 21 | — | 2026-09-30 · V3.8 | Julian |
+| PM DataPass 21 (local_9ad369ad), live, pinned | global PM + architect (Opus medium) | 30 Sept afternoon + Codex night relay (GO go/PM-DataPass-21.md; hand-off handoff/sessions/2026-09-30-1600-pm-datapass-19.md) | — | 2026-09-30 · V3.8 | PM 19 |
+| PM DataPass 19 (local_43715a1b, ex RESERVE PM 19), retired at ~225 K → PM 21 (not archived: parent of PM 21) | global PM + architect (Opus medium) | 30 Sept day + Codex night relay (GO go/PM-DataPass-19.md; hand-off handoff/sessions/2026-09-30-1230-pm-datapass-18.md); hands off at 250 K to RESERVE PM 21 | — | 2026-09-30 · V3.8 | Julian |
 | PM DataPass 18 (local_241d9a17), retired at 314 K → PM 19 |
 | (retired, pinned until its subagents VISM/SCHED1 report) PM DataPass 16 (local_0e9d67b3), handed off at ~251 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0300-pm-datapass-15.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 15 (local_7024f765), handed off at ~215 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0420-pm-datapass-13.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
