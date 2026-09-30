@@ -472,6 +472,10 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R7 (local_ab903ea7) | coder (Opus medium) | DQ1 DQ checks as test nodes, common (go/DQ1.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | (done, archive) CODER R8 (local_fff30ea8) | coder (Opus medium) | CICD1 CI/CD deploy edges, common (go/CICD1.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R9 (local_c947c849) | coder (Opus medium) | IAC11 CFN/CDK/Pulumi/OCI, common (go/IAC11.md) | 25 | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER R89 (local_ff484958) | coder (Opus medium) | COVREG3 registry fragments (go/COVREG3.md), after HOPC1 | 12 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER R90 (local_3e71ff34, ex RESERVE) | coder (Opus medium) | CLOUDREBASE1 cloud rebaser !107 → !100 → !101 → !103 → !68 (go/CLOUDREBASE1.md) | 6 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER SCHED1d-2 (local_7fb376ae) | coder (Opus medium) | SCHED1d follow-up (go/SCHED1d.md); !121 already green + approved at 21feaa5 | 3 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER R97 (local_846304e4) | coder (Opus medium) | CITHRU1 cloud CI two-stage (go/CITHRU1.md) | 10 | 2026-09-30 · V3.8 | COORD 26/27 |
 | CODER R10 (local_be4257d3) | coder (Opus medium) | AIB1 AI gap bridge, Common part (go/AIB1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R11 (local_7bf36177) | coder (Opus medium) | BI3 Power BI operational metadata, cloud (go/BI3.md) | 12 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER R12 (local_95358d62) | coder (Opus medium) | PY2 pandas/polars/SQLAlchemy/requests + config folding, common (go/PY2.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
