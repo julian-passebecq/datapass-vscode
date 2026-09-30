@@ -397,7 +397,8 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | COORD DataPass 18 (local_13a12722), retired → COORD 21 | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-18.md, hand-off go/handoff-coord-17.md) | — | 2026-09-30 · V3.7 | PM 17 |
 | COORD DataPass 21 (local_6e74a178), retired at 151 K → COORD 22 |
 | COORD DataPass 22 (local_eadf00e1), retired at 175 K → COORD 23 |
-| COORD DataPass 23 (local_a588fbe4, ex RESERVE CODER R76 switched to Sonnet low), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-23.md, hand-off go/handoff-coord-22.md) | — | 2026-09-30 · V3.8 | PM 18 |
+| COORD DataPass 23 (local_a588fbe4), retired at 133 K → COORD 24 |
+| COORD DataPass 24 (local_a728fc91), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-24.md) | — | 2026-09-30 · V3.8 | PM 19 |
 | CODER R41 (local_e181f6c1) | coder (Opus medium) | ARCHV1b (go/ARCHV1b.md; queue go/TODAY-queue-2026-09-30.md) | 5 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R42 (local_21a414c5) | coder (Opus medium) | REPIN6 (go/REPIN6.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R43 (local_936a7004) | coder (Opus medium) | SCHED1b (core change, PM approves) (go/SCHED1b.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
@@ -415,7 +416,7 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R55 (local_335bb4c9) | coder (Opus medium) | MODEL1 (go/MODEL1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R56 (local_f1f400e8) | coder (Opus medium) | STOR1f: finish cloud !68 STOR1 (go/STOR1f.md; queue go/TODAY-queue-2026-09-30.md § Wave 2); SCHED1c needs another reserve | 6 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R58 (local_3f9af4e9) | coder (Opus medium) | APIX3 (go/APIX3.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 12 | 2026-09-30 · V3.8 | COORD 21 |
-| CODER R59 (local_2a37b65c) | coder (Opus medium) | MULTI1a cloud (go/MULTI1a.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 21 |
+| CODER R59 (local_2a37b65c) | coder (Opus medium) | MULTI1a cloud !97 rebase (go/MULTI1a.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R60 (local_5ee7bd44) | coder (Opus medium) | MULTI1b hub (go/MULTI1b.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R61 (local_7504bbd0) | coder (Opus medium) | VOL1 (go/VOL1.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 15 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R62 (local_4717ebe2) | coder (Opus medium) | VIS6 finish cloud !92 + CI (VIS6 hand-off, 50d5dfd) | 4 | 2026-09-30 · V3.8 | COORD 21 |
@@ -430,7 +431,17 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R70 (local_a5cb3cf5) | coder (Opus medium) | FABITEM1 Common (go/FABITEM1.md; § Wave 3; includes SparkJobDefinition) | 15 | 2026-09-30 · V3.8 | COORD 23 → Common 4 |
 | CODER R71 (local_87fcb181) | coder (Opus medium) | COVREG2 Common (go/COVREG2.md; § Wave 3, PM proposal) | 6 | 2026-09-30 · V3.8 | COORD 23 → Common 4 |
 | CODER R72 (local_93a2908b) | coder (Opus medium) | HOP4a+4b CI fix (scale_ui) | 3 | 2026-09-30 · V3.8 | COORD 23 |
-| (reserves, idle) R73, R74, R75 | coder (Opus medium, set on use) | conflicts !94 DASH1, !68 STOR1f, !95 RUNX1, !99 APIX3 rebase; then wave 3 | — | 2026-09-30 · V3.8 | COORD 23 |
+| CODER R73 (local_977a557d) | coder (Opus medium) | DASH1 cloud !94 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R74 (local_8fb09b20) | coder (Opus medium) | STOR1f cloud !68 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R75 (local_b7ae2f94) | coder (Opus medium) | RUNX1 cloud !95 conflicts | 4 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R77 (local_f10cbcb9) | coder (Opus medium) | ML1a Common (go/ML1a.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R78 (local_e9f69459) | coder (Opus medium) | BI3f finish cloud !65 (go/BI3f.md; § Wave 3) | 5 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R79 (local_48441dae) | coder (Opus medium) | AIB2b Common (go/AIB2b.md; § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R80 (local_1aa01027) | coder (Opus medium) | APIX4 Common (go/APIX4.md; § Wave 3) | 10 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R81 (local_c503f846) | coder (Opus medium) | APIX3 cloud !99 rebase | 3 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R82 (local_993b57a5) | coder (Opus medium) | HOP6a cloud (go/HOP6a.md; § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R83 (local_7b489beb) | coder (Opus medium) | HOP5b cloud (go/HOP5b.md; § Wave 3) | 10 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R84 (local_1888c20a) | coder (Opus medium) | IACSPI1b Common (go/IACSPI1b.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 24 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
