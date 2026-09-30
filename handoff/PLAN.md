@@ -513,7 +513,7 @@ Kept by **PM DataPass 15** (from 04:25; before: PM 13 local_6dbe9065, Opus mediu
 | CODER SANKEY1 (local_9dd7681a, R32) | coder (Opus medium) | SANKEY1 cloud, early start on v4/repin3 (go/SANKEY1.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER APIX2 (local_4f8110e5, R31) | coder (Opus medium) | APIX2 cloud, early start on v4/repin3 (go/APIX2.md) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER DBT3 (local_cca43081, R27) | coder (Opus medium) | DBT3 common, dbt no-manifest fallback (go/DBT3.md) | — | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER ADOPT-D2 (local_8517aae5, R35) | coder (Opus medium) | ADOPT-D2 codex-datapass-bridge IaC metadata (go/ADOPTD2.md) | — | 2026-09-30 · V3.7 | COORD 14 |
+| (done, idle) CODER ADOPT-D2 (local_8517aae5, R35) | coder (Opus medium) | ADOPT-D2 merged (bridge !9); idle, reusable | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER CIFIX1 (local_df73707a, R33) | coder (Opus medium) | CIFIX1 .ci-tools checkout flake, cloud + hub v4/cifix1 (continues PM 13 WIP; go/CIFIX1.md; CI-config → PM approves) | — | 2026-09-30 · V3.7 | COORD 14 |
 | CODER LAYER1 (local_24ab8824, R34) | coder (Opus medium) | LAYER1 common (go/LAYER1.md; FLOWDIR1 !85 merged 54bf41d) | — | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER DQ3 (local_0aaaff69, R37) | coder (Opus medium) | DQ3 data-xray: .sql run sandbox + CSV sniff fix (go/DQ3.md) | 6 | 2026-09-30 · V3.7 | COORD 14 |
