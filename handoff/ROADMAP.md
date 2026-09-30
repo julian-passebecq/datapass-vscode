@@ -170,6 +170,11 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-09-30 (correction d'architecture V4)
+
+- Brief complet : [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026-09-30.md). Cycle Understand → Design → IaC/Git → Deploy → Observe → Optimize ; ExecutionUnit ; routeur de capacités par opération ; provenance des outils ; Observe = réalité (état déployé, runtime, monitoring) ; boucle théorique ↔ mesuré ; ne jamais cloner un outil natif. Cible : V4 (PLAN § V4-ARCHCORR, vagues N1–N3, E2E-AC à la RC).
+- Nuit du 30 sept : consommer le quota sans économie, coder sans arrêt, réserves (PM, coordinateur, codeurs) prêtes avant minuit.
+
 ## Idées de Julian — 2026-09-28 (retour rc.1)
 
 From Julian's check of 1.1.0-rc.1 (screenshots relayed by the PM). Praise first: DataPass Hop "makes much more sense" — keep that direction.
