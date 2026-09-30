@@ -198,6 +198,25 @@ Source : `D:\PROJ\datapass\handoff\JULIAN_UX_NAV_AND_STUDIO_2026-10-01.md`. Plan
 | SQLRooms / DuckCon : Studio hors VS Code re-plateformé, adaptateur Factory → web app | V5 (Factory/Studio) | Pertinent pour Studio/Mosaic, pas pour DataPass VS Code ; brouillon GPT `datapass.studio.workspace/1` (datapass-studio!6) non qualifié. « Hop » reste notre langage visuel, pas Apache Hop. |
 | Premier client FOIL éolien ; client « vanilla » = remplaçant perso Deepnote/Jupyter/Streamlit (web) | investigate (Studio) | Bonne cible de démo ; le client vanilla relève de Studio, pas de l'extension. |
 
+### Ajouts de 02:00 (1 Oct) — idées et références visuelles (décrites, aucune image dans le dépôt)
+
+| Idée | Cible | Critique |
+|---|---|---|
+| Navigator à droite ou à gauche, déplaçable | NAVBAR1 (réglage `datapass.navigator.location` + commande) | Juste : VS Code permet déjà de glisser les vues ; le réglage rend le choix explicite et mémorisé. |
+| Vue « Prochaines étapes » par étape du cycle de vie / emplacement | NAVTODO1 | Très utile pour un client ; ne liste que ce que les faits connaissent déjà (readiness, contrôles, preuves manquantes, trous), sinon ce serait une to-do inventée. |
+| Tableau de bord du projet façon tableau CI/PR (référence : tableau de bord Caddy + compagnon mobile) | NAVHOME1 ; mobile : V5 | Bon point d'entrée ; aucun nouvel appel distant, le statut CI est celui déjà en cache ou « inconnu ». Le compagnon mobile n'a pas sa place dans une extension VS Code. |
+| Résumé de changement façon revue dbt Cloud (résumé, hypothèses, attentes, DAG des modèles modifiés, diff côte à côte) | NAVCHG1 | Le DAG d'impact est le vrai gain ; les « hypothèses/attentes » ne viennent que de fichiers proposés par l'IA via l'échange, jamais d'un appel caché. |
+| Diagramme ERD (tables, colonnes, clés) | NAVERD1 | Attendu pour SQL/Warehouse/modèle sémantique ; limite : les clés ne sont pas toujours déclarées, les jointures déduites seront en pointillé « théorique ». |
+| Fiches de principes data engineering (médaillon, lignage, idempotence, contrôles qualité, SCD, partitionnement) ; référence : affiche du flux staging → processed → curated | NAVPRIN1 | Pédagogique et différenciant ; chaque fiche montre où le projet applique ou enfreint le principe, sinon ce ne serait qu'un cours générique. |
+| Page d'accueil + walkthrough (guide + tutoriel) pour chaque VSIX | NAVINTRO1a/b/c (standalone, Cloud, Data X-Ray) | Nécessaire pour l'adoption ; le hub n'est pas une extension, et le modèle commun évite trois styles différents. |
+| Nouvelles VSIX séparées « dashboard », « supergit Sankey », « méga-lignage » | Non (§ 31) : NAVHOME1, NAVLIN1 ; module Git multi-dépôts en V5 | Une VSIX par idée fragmenterait le cycle de vie unique ; on ne séparera que si l'empaquetage l'impose. |
+| Visites guidées sur la carte d'architecture (zones = systèmes, boîtes = fonctions/tables/fichiers, panneau de visite numéroté par parcours, boutons de parcours, « aller à une boîte ») — référence : tweet de Robin Ebers | NAVTOUR1 | Fort pour l'onboarding et les démos client, mais la valeur dépend des faits : des visites écrites à la main pourrissent, donc elles sont d'abord générées depuis le lignage et l'exécution. |
+| OmicsLake : instantané/restauration + lignage + provenance de l'acteur par état validé, métadonnées DuckDB | investigate (V5) ; § 34 origines des preuves | Recoupe nos origines de preuve ; la restauration d'états de données dépasse une extension qui n'exécute rien. |
+| Arbre de trace avec nœuds pass / clipped / pruned / replay | V5 (lecteur Observe en replay) ; style réutilisable dans NAVLIN1 | Bonne grammaire visuelle pour le replay Observe ; sans trace observée, rien à afficher en statique. |
+| Espace de travail d'agents (Elastic : missions, tâches, preuves, panneau d'autorité/permissions) | V5 (agents optionnels) | Le panneau d'autorité rejoint nos approbations typées ; les agents restent un travail ultérieur optionnel (frontières du dépôt). |
+| « Cerveau d'entreprise » Gorgias (skills, graphe, recherche hybride, signaler les manques → boucle de PR nocturne) | investigate (V5) ; les manques alimentent NAVTODO1 | L'idée utile est « signaler les manques » ; la boucle automatique de PR contredit l'échange IA manuel, elle reste hors V4. |
+| SQLRooms (arbre de données + feuilles : tableau de bord, pivot, notebook, SQL, app) | V5 (Studio), déjà noté | Confirme la cible Studio ; rien à ajouter dans VS Code maintenant. |
+
 ## Idées de Julian — 2026-09-30 (correction d'architecture V4)
 
 - Brief complet : [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026-09-30.md). Cycle Understand → Design → IaC/Git → Deploy → Observe → Optimize ; ExecutionUnit ; routeur de capacités par opération ; provenance des outils ; Observe = réalité (état déployé, runtime, monitoring) ; boucle théorique ↔ mesuré ; ne jamais cloner un outil natif. Cible : V4 (PLAN § V4-ARCHCORR, vagues N1–N3, E2E-AC à la RC).
