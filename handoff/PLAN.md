@@ -432,7 +432,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 |---|---|---|---|---|---|
 | PM DataPass 17 (local_8b1410a1), retired → PM 18 | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | PM DataPass 21 (local_9ad369ad), retired at ~215 K → PM 22 | global PM + architect (Opus medium) | 30 Sept afternoon + Codex night relay (GO go/PM-DataPass-21.md; hand-off handoff/sessions/2026-09-30-1600-pm-datapass-19.md) | — | 2026-09-30 · V3.8 | PM 19 |
-| PM DataPass 22 (local_88062104), live, pinned (took over ~18:30) | global PM + architect (Opus medium) | night burn 30 Sept (GO go/PM-DataPass-22.md; hand-off handoff/sessions/2026-09-30-1815-pm-datapass-21.md) | — | 2026-09-30 · V3.8 | Julian (via ASSISTANT 1) |
+| PM DataPass 22 (local_88062104), retired at ~255 K → PM 23 | global PM + architect (Opus medium) | night burn 30 Sept (GO go/PM-DataPass-22.md; hand-off handoff/sessions/2026-09-30-1815-pm-datapass-21.md) | — | 2026-09-30 · V3.8 | Julian (via ASSISTANT 1) |
 | COORD DataPass 30 (local_f914183f), live (Opus medium; from ~20:50, hand-off go/handoff-coord-29.md) | coordinator (Opus medium, option A) | cloud/hub/data-xray/bridge merges, chips, quota log; lean successor GOs (go/LEAN-SUCCESSOR-GO.md) | — | 2026-09-30 · V3.8 | PM 22 |
 | COORD DataPass 29 (local_bad8f629), retired at 213 K → COORD 30 (Opus medium; from ~20:00, hand-off go/handoff-coord-28.md) | coordinator (Opus medium, option A) | cloud/hub/data-xray/bridge merges, chips, quota log | — | 2026-09-30 · V3.8 | PM 22 |
 | COORD DataPass 28 (local_34ead6aa), retired at 142 K → COORD 29 (from ~19:00; COORD 27 local_18618b76 retired at 148 K, hand-off go/handoff-coord-27.md) | coordinator (Opus medium, option A) | cloud/hub/data-xray/bridge merges, chips, quota log | — | 2026-09-30 · V3.8 | PM 22 |
@@ -552,7 +552,8 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | RESERVE CODER N4 (local_bb4f9c28), waiting | coder reserve (Opus medium) | N2/N3 packages of § V4-ARCHCORR, PRACT3b (go/RESERVE-night-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 27 |
 | RESERVE COORD DataPass 29 (local_bad8f629), waiting | coordinator reserve (Sonnet low) | after COORD 28 | — | 2026-09-30 · V3.8 | PM 21 |
 | RESERVE COORD DataPass Common 6 (local_6ec6e311), waiting | Common coordinator reserve (Sonnet low) | after Common 5 | — | 2026-09-30 · V3.8 | PM 21 |
-| RESERVE PM DataPass 23 (local_1c9ba10c), waiting | PM reserve (Opus medium) | after PM 22 | — | 2026-09-30 · V3.8 | PM 21 |
+| PM DataPass 23 (local_1c9ba10c), live, pinned (took over ~21:00) | global PM + architect (Opus medium) | night burn 30 Sept→1 Oct (GO go/PM-DataPass-23.md; hand-off handoff/sessions/2026-09-30-2100-pm-datapass-22.md) | — | 2026-09-30 · V3.8 | PM 22 |
+| RESERVE PM DataPass 24 (chip requested) | PM reserve (Opus medium) | after PM 23 (GO go/PM-DataPass-24.md) | — | 2026-09-30 · V3.8 | PM 23 |
 | CODER IACEV1 (local_7fb376ae, ex SCHED1d-2) | coder (Opus medium) | IACEV1 (go/IACEV1.md) | 10 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER R87 (local_aadbfe3a), archived at 191 K | coder | STDA1a !185 done | — | 2026-09-30 · V3.8 | COORD 27 |
 | CODER R10 (local_be4257d3) | coder (Opus medium) | AIB1 AI gap bridge, Common part (go/AIB1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
