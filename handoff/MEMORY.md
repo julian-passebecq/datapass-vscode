@@ -22,3 +22,5 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-30 (PM 16): GitLab auto-cancels older main pipelines by default, so with a busy merge queue main is never fully tested and a semantic conflict between two green MRs (LAYER1 + CLEAN1, generated arch-lint registry) went unseen. Keep auto_cancel_pending_pipelines disabled on repos with a merge queue, and stop the queue when main is red.
 
 - 2026-09-30 (CODER VIS6): without `glab` or a token, open a GitLab MR with push options: `git push -o merge_request.create -o merge_request.target=main -o merge_request.title=...` (the push must update the ref).
+- 2026-09-30 (coder R51): with no glab, create a GitLab MR through push options: `git push -u origin <branch> -o merge_request.create -o merge_request.target=main -o "merge_request.title=..." -o "merge_request.description=..."`. They only act on a push that changes the ref.
+- 2026-09-30 (coder R51): on Windows, Python `open(...,'w')` writes CRLF. Use `newline=''` when editing repository files.
