@@ -91,3 +91,7 @@ Critical reading of the 9 sources Julian pasted: good for **coverage** (which to
 - One concept format: `datapass.concept-entry/1` + its taxonomy (CONCEPT1b, Common !91) is the only arch-catalog concept schema. `arch.concept.v1` (CONCEPT1a !93) is dropped; its 47 entries are ported onto concept-entry/1. Fields concept-entry/1 lacks are added to it additively in !93, not as a second schema.
 - Merge order: !91, then !93 rebased on it, then RATIO1.
 - `CONSTRAINT_KINDS` is exported once by arch-catalog; RATIO1's `decision-rationale/1` imports it (its `why` kinds = CONSTRAINT_KINDS + data-profile) and never keeps a copy.
+
+### Python parser containment (PM 15, 2026-09-30, Common !96 PY1C)
+- Default containment is `lpac-required` (fails closed). `lpac-or-trusted-local` and `trusted-local-host-only` keep the Job Object limits (25 MiB, 2 s CPU, one process) and mark every result `trusted-local-host-only`; they claim no filesystem, registry or socket isolation.
+- No product caller defaults to a fallback: a fallback is a user setting, off by default. The manifest stays `platform:pending` until the qualified host is released.
