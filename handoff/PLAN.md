@@ -444,14 +444,14 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R82 (local_993b57a5) | coder (Opus medium) | HOP6a cloud (go/HOP6a.md; § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R83 (local_7b489beb) | coder (Opus medium) | HOP5b cloud (go/HOP5b.md; § Wave 3) | 10 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R84 (local_1888c20a) | coder (Opus medium) | IACSPI1b Common (go/IACSPI1b.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 24 |
-| CODER R85 | coder (Opus medium) | ML2a Common (go/ML2a.md; § Wave 3) | 15 | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R86 | coder (Opus medium) | SCHED1d Common (go/SCHED1d.md; § Wave 4) | 12 | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R87 | coder (Opus medium) | STDA1a standalone (go/STDA1a.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R88 | coder (Opus medium) | FMT1a (go/FMT1a.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R89 | coder (Opus medium) | HOPC1 cloud (go/HOPC1.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R90 | coder (Opus medium) | CAT1f cloud !61 (go/CAT1f.md; PM reviews policy.ts) | 5 | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R91 | coder (Opus medium) | SDP1 Common (go/SDP1.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
-| CODER R92 | coder (Opus medium) | FMT1b (go/FMT1b.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R85 (local_4ffca303) | coder (Opus medium) | ML2a Common (go/ML2a.md; § Wave 3) | 15 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R86 (local_3d0bccbc) | coder (Opus medium) | SCHED1d Common (go/SCHED1d.md; § Wave 4) | 12 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R87 (local_aadbfe3a) | coder (Opus medium) | STDA1a standalone (go/STDA1a.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R88 (local_9be9ee81) | coder (Opus medium) | FMT1a (go/FMT1a.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R89 (local_ff484958) | coder (Opus medium) | HOPC1 cloud (go/HOPC1.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R90 (local_3e71ff34) | coder (Opus medium) | CAT1f cloud !61 (go/CAT1f.md; PM reviews policy.ts) | 5 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R91 (local_8a82975b) | coder (Opus medium) | SDP1 Common (go/SDP1.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R92 (local_dd82d989) | coder (Opus medium) | FMT1b (go/FMT1b.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
