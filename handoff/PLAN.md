@@ -417,7 +417,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | MAT1 | standalone | Git-first materialization: candidate native files + provenance stamp (source id, revision, generator, target, hash, env) → diff → branch/MR; never deploy | CAPROUTE1a | 18 | N3 |
 | PRACT4 | PRACT2 engine (Common or cloud) | § 41 detectors: unclear dbt route, duplicated Airflow/Fabric orchestration, Spark on tiny workload, daily SLA on streaming, full refresh vs volume, runtime dep mismatch (PM 22, go/PRACT4.md) | DBTRUN1 | 15 | N2 |
 | IACEV1b | cloud `iac-imports` | re-export plan/what-if/Infracost readers from Common iac-hcl (!134), delete the cloud copy, goldens byte-identical (PM 22) | !134 | 5 | N2 |
-| IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then) | IACEV1b | 6 | backlog |
+| IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then); pulled into the night by PM 23 (go/IACEV1c.md) | !134 | 6 | N3 |
 | TBX1c | standalone toolbox assets | add the missing Workspace Monitoring asset (§ 19) and reconcile the standalone 12-asset list with Common tool-catalog/3 routing (TBX1a finding); add structured `routing.sideEffectKinds` typed on capability-router `SIDE_EFFECTS` next to the free-text lines (PM 23, !137 review) | TBX1a | 5 | N3 |
 | NAV1 | cloud `workbench-ui` host | one host opener for cross-view links (Design/Desired/Actual → Observe run, lineage node, design/architecture view, and back); needed by § 44 step 14 "back to architecture with evidence" (IACFAB1-UI finding) | IACFAB1-UI, OBSFAB1b | 6 | N3 |
 | SCHED1e | Common `analyzers-orchestration` (SCHED1d) | align SCHED1d scopes with FABITEM1/ORC1: `fabric-spark-job-definition` + notebook logical id instead of `fabric-spark-job` + display name; then remove the EXEC1b projector alias join (PM 23 decision, EXEC1b finding) | EXEC1b | 3 | N3 |
@@ -538,14 +538,14 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER CAPROUTE1b (local_846f59c4), handed off at 273 K (Common !138) → N1 | coder (Opus medium) | CAPROUTE1b (go/CAPROUTE1b.md, incl. router id alignment + FABINT1 facts) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER EXEC1b (local_d6d19cfd), stopped at 262 K → EXEC1b-2 | coder (Opus medium) | EXEC1b (go/EXEC1b.md, MR after Common !133) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER EXEC1b-2 (local_53bdbc7d, ex reserve N5) | coder (Opus medium) | EXEC1b successor (go/handoff-inbox/EXEC1b-1.md; core-change conditionally approved by PM 23) | 8 | 2026-09-30 · V3.8 | COORD 30 |
-| CODER NAV1 (chip after IACFAB1-UI + OBSFAB1b MRs) | coder (Opus medium) | NAV1 (go/NAV1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER NAV1 (local_ce0ac142, ex reserve N8) | coder (Opus medium) | NAV1 (go/NAV1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER PRACT4-2 (local_8088d2d1, ex reserve N6) | coder (Opus medium) | PRACT4 successor (go/handoff-inbox/PRACT4-1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER PRACT3b (local_24bc86f2) | coder (Opus medium) | PRACT3b (after cloud !107) | 8 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER IACFAB1-UI-2 (local_bfc8e0ff) | coder (Opus medium) | IACFAB1-UI successor (go/handoff-inbox/IACFAB1-UI-1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER OBSFAB1b-2 (local_329cc3ad) | coder (Opus medium) | OBSFAB1b successor (go/handoff-inbox/OBSFAB1b-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER E2E-ACa-2 (local_f831517d) | coder (Opus medium) | E2E-ACa successor (go/handoff-inbox/E2E-ACa-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
-| CODER SCHED1e (chip after EXEC1b) | coder (Opus medium) | SCHED1e | 3 | 2026-09-30 · V3.8 | COORD 30 |
-| RESERVE CODER N8–N10 + RESERVE COORD 31 (chips requested 21:3x) | reserves (Opus medium) | go/RESERVE-night-2026-09-30.md | — | 2026-09-30 · V3.8 | PM 23 |
+| CODER SCHED1e (local_c07b8777, ex reserve N9) | coder (Opus medium) | SCHED1e | 3 | 2026-09-30 · V3.8 | COORD 30 |
+| RESERVE CODER N10 (local_bf58f183) → EXEC1c, N11 → TBX1c, N12 → IACEV1c, N13 → next from PM; RESERVE COORD 31 (local_d1a2d7e3) standby | reserves (Opus medium) | go/RESERVE-night-2026-09-30.md; GOs go/EXEC1c.md, go/TBX1c.md, go/IACEV1c.md | — | 2026-09-30 · V3.8 | PM 23 |
 | CODER IACFAB1-UI (local_6d1a3a41) | coder (Opus medium) | IACFAB1-UI (go/IACFAB1-UI.md, MR after Common !136) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N4 | coder (Opus medium) | OBSFAB1b (go/OBSFAB1b.md, from v4/obsfab1a, MR after cloud !112) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N3 (local_5d942588) | coder (Opus medium) | E2E-ACa (go/E2E-ACa.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
