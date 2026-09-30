@@ -399,7 +399,8 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | COORD DataPass 21 (local_6e74a178), retired at 151 K → COORD 22 |
 | COORD DataPass 22 (local_eadf00e1), retired at 175 K → COORD 23 |
 | COORD DataPass 23 (local_a588fbe4), retired at 133 K → COORD 24 |
-| COORD DataPass 24 (local_a728fc91), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-24.md) | — | 2026-09-30 · V3.8 | PM 19 |
+| COORD DataPass 24 (local_a728fc91), handing off at 136 K → COORD 25 |
+| COORD DataPass 25 (local_bfd2c45d, ex RESERVE COORD 25), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-25.md) | — | 2026-09-30 · V3.8 | PM 19 |
 | CODER R41 (local_e181f6c1) | coder (Opus medium) | ARCHV1b (go/ARCHV1b.md; queue go/TODAY-queue-2026-09-30.md) | 5 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R42 (local_21a414c5) | coder (Opus medium) | REPIN6 (go/REPIN6.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R43 (local_936a7004) | coder (Opus medium) | SCHED1b (core change, PM approves) (go/SCHED1b.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
@@ -443,6 +444,14 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R82 (local_993b57a5) | coder (Opus medium) | HOP6a cloud (go/HOP6a.md; § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R83 (local_7b489beb) | coder (Opus medium) | HOP5b cloud (go/HOP5b.md; § Wave 3) | 10 | 2026-09-30 · V3.8 | COORD 24 |
 | CODER R84 (local_1888c20a) | coder (Opus medium) | IACSPI1b Common (go/IACSPI1b.md; § Wave 3) | 12 | 2026-09-30 · V3.8 | COORD 24 |
+| CODER R85 | coder (Opus medium) | ML2a Common (go/ML2a.md; § Wave 3) | 15 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R86 | coder (Opus medium) | SCHED1d Common (go/SCHED1d.md; § Wave 4) | 12 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R87 | coder (Opus medium) | STDA1a standalone (go/STDA1a.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R88 | coder (Opus medium) | FMT1a (go/FMT1a.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R89 | coder (Opus medium) | HOPC1 cloud (go/HOPC1.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R90 | coder (Opus medium) | CAT1f cloud !61 (go/CAT1f.md; PM reviews policy.ts) | 5 | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R91 | coder (Opus medium) | SDP1 Common (go/SDP1.md; § Wave 4, PM proposal) | see queue | 2026-09-30 · V3.8 | COORD 25 |
+| CODER R92 | coder (Opus medium) | FMT1b (go/FMT1b.md; § Wave 4) | see queue | 2026-09-30 · V3.8 | COORD 25 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
