@@ -132,6 +132,13 @@ export function galaxyHtml(cspSource: string, nonce: string): string {
   .op-status.s-ready { color: var(--vscode-testing-iconPassed); }
   .op-status.s-blocked, .op-status.s-unsupported { color: var(--vscode-errorForeground); }
   .op-status.s-needs-config, .op-status.s-needs-review { color: var(--vscode-editorWarning-foreground); }
+  .op-status.r-READY, .op-status.r-IMPORT_ONLY { color: var(--vscode-testing-iconPassed); }
+  .op-status.r-MISSING_AUTH, .op-status.r-NOT_CONFIGURED { color: var(--vscode-editorWarning-foreground); }
+  .route { font-size:10px; }
+  .route > summary { cursor:pointer; list-style:none; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:2px 0; }
+  .route.not-needed > summary { opacity:.6; }
+  .route-via, .cand { color:var(--vscode-descriptionForeground); padding-left:10px; }
+  .prov { border:1px solid var(--vscode-widget-border); border-radius:999px; padding:0 4px; font-size:9px; }
 
   .actions { display:flex; flex-wrap:wrap; gap:5px; }
   .action {
@@ -370,12 +377,12 @@ export function galaxyHtml(cspSource: string, nonce: string): string {
   function renderOperations(platform) {
     const details = elt('details', 'tools');
     const ready = platform.operations.filter(op => op.status === 'ready').length;
-    details.appendChild(elt('summary', '', 'Operations · ' + ready + '/' + platform.operations.length + ' ready'));
+    details.appendChild(elt('summary', '', (platform.routing ? 'Preflight actions · ' : 'Operations · ') + ready + '/' + platform.operations.length + ' ready'));
     const list = elt('div', 'op-list');
     platform.operations.forEach(op => {
       const row = elt('button', 'op');
       row.type = 'button';
-      row.title = op.label + ': ' + op.status + '\n' + op.nextStep + '\nClick for the full preflight.';
+      row.title = op.label + ': ' + op.status + '\n' + op.nextStep + (op.route ? '\nRouter: ' + op.route : '') + '\nClick for the full preflight.';
       row.appendChild(elt('span', 'op-name', op.label + (op.nativeTool ? ' (native tool)' : '')));
       row.appendChild(elt('span', 'op-status s-' + op.status, op.status));
       row.addEventListener('click', event => {
@@ -386,6 +393,62 @@ export function galaxyHtml(cspSource: string, nonce: string): string {
     });
     details.appendChild(list);
     return details;
+  }
+
+  // CAPROUTE1b: per-operation readiness from the Common router. Each candidate shows its own
+  // readiness and provenance next to the operation's; UNKNOWN stays unknown, never ready.
+  function renderRouting(routing) {
+    const details = elt('details', 'tools');
+    const needed = routing.operations.filter(op => op.relevance !== 'not-needed');
+    const ready = needed.filter(op => op.readiness === 'READY').length;
+    const importOnly = needed.filter(op => op.readiness === 'IMPORT_ONLY').length;
+    details.open = true;
+    details.appendChild(elt('summary', '', 'Readiness per operation · ' + ready + '/' + needed.length + ' ready' + (importOnly ? ' · ' + importOnly + ' import-only' : '')));
+    const list = elt('div', 'op-list');
+    routing.operations.forEach(op => {
+      const row = elt('details', 'route' + (op.relevance === 'not-needed' ? ' not-needed' : ''));
+      row.dataset.operation = op.operationId;
+      const head = elt('summary', '');
+      head.appendChild(elt('span', 'op-name', op.label + (op.relevance === 'not-needed' ? ' (not needed here)' : '')));
+      head.appendChild(elt('span', 'op-status r-' + op.readiness, op.readiness));
+      head.title = op.relevanceReason;
+      row.appendChild(head);
+      if (op.preferred) row.appendChild(via('via', op.preferred));
+      if (op.fallback && (!op.preferred || op.fallback.candidateId !== op.preferred.candidateId)) row.appendChild(via('fallback', op.fallback));
+      op.candidates.forEach(c => {
+        const line = elt('div', 'cand', '');
+        line.appendChild(document.createTextNode(c.providerLabel + ' '));
+        line.appendChild(elt('span', 'prov', c.provenance || 'unknown'));
+        line.appendChild(document.createTextNode(' ' + c.readiness + (c.gaps.length ? ' · ' + c.gaps.join('; ') : '') + (c.notPreferred ? ' · ' + c.notPreferred : '')));
+        row.appendChild(line);
+      });
+      list.appendChild(row);
+    });
+    details.appendChild(list);
+    const facts = elt('details', 'tools');
+    facts.appendChild(elt('summary', '', 'Capability facts · ' + routing.facts.filter(f => f.state === 'present').length + '/' + routing.facts.length));
+    const factList = elt('div', 'tool-list');
+    routing.facts.forEach(f => {
+      const row = elt('div', 'tool');
+      row.appendChild(elt('span', 'tool-name', f.label + (f.requiredBy ? ' (required: ' + f.requiredBy + ')' : '')));
+      const right = elt('span', 'tool-state ' + (f.state === 'present' ? 'yes' : ''), f.state);
+      right.title = f.detail;
+      row.appendChild(right);
+      factList.appendChild(row);
+    });
+    facts.appendChild(factList);
+    const wrap = elt('div', '');
+    wrap.appendChild(details);
+    wrap.appendChild(facts);
+    return wrap;
+  }
+
+  function via(kind, c) {
+    const line = elt('div', 'route-via', '');
+    line.appendChild(document.createTextNode(kind + ': ' + c.providerLabel + ' '));
+    line.appendChild(elt('span', 'prov', c.provenance || 'unknown'));
+    line.appendChild(document.createTextNode(' ' + c.readiness));
+    return line;
   }
 
   function renderCatalog(catalog) {
@@ -432,12 +495,13 @@ export function galaxyHtml(cspSource: string, nonce: string): string {
     left.appendChild(titleRow);
     left.appendChild(elt('div', 'summary-line', platform.summary));
     summaryGrid.appendChild(left);
-    summaryGrid.appendChild(elt('span', 'badge ' + statusClass(platform.status), platform.status));
+    summaryGrid.appendChild(elt('span', 'badge ' + statusClass(platform.status), platform.badge || platform.status));
     summary.appendChild(summaryGrid);
     card.appendChild(summary);
 
     const body = elt('div', 'card-body');
     if (platform.tools && platform.tools.length) body.appendChild(renderTools(platform));
+    if (platform.routing && platform.routing.operations.length) body.appendChild(renderRouting(platform.routing));
     if (platform.operations && platform.operations.length) body.appendChild(renderOperations(platform));
     (platform.details || []).forEach(detail => body.appendChild(elt('div', 'detail', detail)));
     addActions(body, platform.actions, true);

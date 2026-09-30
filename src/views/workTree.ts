@@ -8,6 +8,7 @@ import type { WorkSession } from "../work/session";
 import type { WorkChecklistEntry, WorkOperation, WorkApp, ExchangeRecord } from "../core/work/workModel";
 import type { ImpactEntry } from "../core/impact/facets";
 import type { PreflightStatus } from "../core/capabilities/preflight";
+import { routeSummary } from "../core/capabilities/fabricRouting";
 import type { ProgrammeView } from "../core/programme/programme";
 import { moduleEnabled, MODULES } from "../core/modules";
 import { resourcesForScope, scopeTitles, type ResourceView } from "../core/resources/resources";
@@ -123,6 +124,7 @@ export class WorkTreeProvider implements vscode.TreeDataProvider<Node>, vscode.D
         const md = new vscode.MarkdownString();
         md.appendMarkdown(`**${esc(c.label)}** \`${c.id}\`\n\n**${r.status}** — ${esc(r.nextStep)}\n\n`);
         if (r.sideEffects.length) md.appendMarkdown(`Side effects: ${r.sideEffects.join(", ")}\n\n`);
+        if (r.route) md.appendMarkdown(`Router: ${esc(r.route.label)} — **${esc(routeSummary(r.route))}**\n\n`);
         md.appendMarkdown(`*${esc(r.evidenceNote)}*`);
         if (q) md.appendMarkdown(`\n\nYour test: **${q.result}** on ${esc(q.at)} (DataPass ${esc(q.dataPassVersion)})${q.note ? ` — ${esc(q.note)}` : ""}`);
         item.tooltip = md;

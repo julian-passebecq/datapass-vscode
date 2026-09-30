@@ -74,6 +74,8 @@ export interface CapabilityRecord {
   sources: string[];
   implementation: "implemented" | "documented-only";
   qualification: Qualification;
+  /** CAPROUTE1b: the Common capability-router operation this capability is one route of (its preflight shows the ranked routes). */
+  routerOperation?: string;
 }
 
 const cap = (c: Omit<CapabilityRecord, "facts" | "reviews" | "constraints" | "warnings"> & Partial<Pick<CapabilityRecord, "facts" | "reviews" | "constraints" | "warnings">>): CapabilityRecord =>
@@ -107,7 +109,7 @@ export const CAPABILITIES: CapabilityRecord[] = [
     sideEffects: ["writes-local", "writes-remote", "executes-code", "credential-prompt"], actionMode: "open-native",
     warnings: ["Local sync and remote VFS are different modes: never write a remote VFS notebook through a local path.",
       "Local %pip installs do not change the remote Fabric environment."],
-    fallback: "Edit the notebook in the Fabric portal.", sources: ["S02"], implementation: "documented-only", qualification: "documented" }),
+    fallback: "Edit the notebook in the Fabric portal.", sources: ["S02"], implementation: "documented-only", qualification: "documented", routerOperation: "fabric.notebook.edit" }),
   cap({ id: "fabric.notebook.edit-remote-vfs", provider: "fabric", nativeItemType: "notebook", operation: "edit-and-run", authoringMode: "remote-vfs", phase: "develop",
     label: "Edit a Fabric notebook in place (remote file system)",
     requirements: [{ anyOf: ["ext.fabric-data-engineering"], need: "required", why: "Provides the remote notebook file system." },
@@ -115,7 +117,7 @@ export const CAPABILITIES: CapabilityRecord[] = [
     facts: [{ fact: "fabric.workspace", why: "Which workspace to mount." }],
     sideEffects: ["writes-remote", "executes-code", "credential-prompt"], actionMode: "open-native",
     warnings: ["Saves apply to the workspace immediately; there is no local staging copy."],
-    fallback: "Use local-sync mode or the Fabric portal.", sources: ["S02"], implementation: "documented-only", qualification: "documented" }),
+    fallback: "Use local-sync mode or the Fabric portal.", sources: ["S02"], implementation: "documented-only", qualification: "documented", routerOperation: "fabric.notebook.edit" }),
   cap({ id: "fabric.items.deploy", provider: "fabric", nativeItemType: "workspace-items", operation: "deploy", authoringMode: "cli", phase: "deploy",
     label: "Deploy item definitions with fab deploy",
     requirements: [{ anyOf: ["cli.fab"], need: "required", why: "Deployment is performed by the official CLI." }],
@@ -123,7 +125,7 @@ export const CAPABILITIES: CapabilityRecord[] = [
     reviews: [{ id: "target-confirmed", prompt: "Target workspace identity re-checked for this deployment" }],
     sideEffects: ["writes-remote", "credential-prompt"], actionMode: "copy-command", datapassActionId: "fabric.copyDeployCommand",
     warnings: ["Item types supported by the CLI change between versions; check the current support list."],
-    fallback: "Use Fabric Git integration or deployment pipelines in the portal.", sources: ["S04"], implementation: "implemented", qualification: "documented" }),
+    fallback: "Use Fabric Git integration or deployment pipelines in the portal.", sources: ["S04"], implementation: "implemented", qualification: "documented", routerOperation: "fabric.workspace.deploy" }),
   // ---- Fabric RTI ----
   cap({ id: "fabric.eventstream.deploy", provider: "fabric", nativeItemType: "eventstream", operation: "deploy", authoringMode: "git-or-deployment-pipeline", phase: "deploy",
     label: "Promote an Eventstream definition",

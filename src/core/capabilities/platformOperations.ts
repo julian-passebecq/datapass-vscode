@@ -6,6 +6,7 @@
 import { CAPABILITIES, type CapabilityRecord } from "./registry";
 import { preflight, type PreflightContext } from "./preflight";
 import type { PlatformOperation } from "../types";
+import { routeSummary } from "./fabricRouting";
 
 /** Registry providers that have a Galaxy card. Others (mongo, apps, airflow, …) live in the Work view only. */
 export const PROVIDER_PLATFORM: Partial<Record<CapabilityRecord["provider"], string>> = {
@@ -23,7 +24,7 @@ export function platformOperations(ctx: PreflightContext, capabilities: readonly
     if (!platform) continue;
     const r = preflight(cap, ctx);
     const list = out.get(platform) ?? [];
-    list.push({ id: cap.id, label: cap.label, status: r.status, nextStep: r.nextStep, nativeTool: cap.implementation === "documented-only" });
+    list.push({ id: cap.id, label: cap.label, status: r.status, nextStep: r.nextStep, nativeTool: cap.implementation === "documented-only", ...(r.route ? { route: routeSummary(r.route) } : {}) });
     out.set(platform, list);
   }
   return out;

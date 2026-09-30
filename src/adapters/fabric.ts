@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { detectCli } from "../core/detection";
-import { deriveStatus } from "../core/status";
+import { perOperationStatus } from "../core/status";
 import type { CatalogItemState, PlatformAction, PlatformAdapter, PlatformState, ToolProbe } from "../core/types";
 import { anyWorkspaceFile, detectAnyExtension, detectExtension } from "../core/vscodeDetection";
 import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/catalog";
@@ -15,9 +15,9 @@ export class FabricAdapter implements PlatformAdapter {
   constructor(private readonly extensionUri: vscode.Uri) {}
 
   async detect(): Promise<PlatformState> {
-    // Card status reflects the core route (Fabric extension + fab CLI). Task-specific routes
-    // (Data Engineering notebooks, community explorers) are evaluated per operation in the
-    // Work view preflight, so they are optional here and never lower the card status.
+    // CAPROUTE1b: there is no global Fabric status. These probes are shown as tools; readiness is
+    // per operation, from the Common capability router (the Galaxy view adds it from the session),
+    // and Fabric Data Engineering is required only by Spark / notebook projects.
     const integrationTools: ToolProbe[] = [
       detectExtension("fabric.vscode-fabric", "Microsoft Fabric VS Code"),
       await detectCli({ id: "fab", label: "Fabric CLI", command: "fab", args: ["--version"] }),
@@ -74,8 +74,8 @@ export class FabricAdapter implements PlatformAdapter {
     return {
       id: this.id,
       title: this.displayName,
-      status: deriveStatus(integrationTools, Boolean(toolboxRoot)),
-      summary: `${integrationTools.filter(tool => !tool.optional && tool.available).length}/${integrationTools.filter(tool => !tool.optional).length} core Fabric surfaces detected (+${integrationTools.filter(tool => tool.optional && tool.available).length} optional). ${catalog.items.length} curated Toolbox assets registered.`,
+      status: perOperationStatus(integrationTools),
+      summary: `${integrationTools.filter(tool => tool.available).length}/${integrationTools.length} Fabric tools detected; readiness is per operation. ${catalog.items.length} curated Toolbox assets registered.`,
       tools,
       actions: [
         { id: "fabric.open", label: "Open Fabric", enabled: true, kind: "open" },

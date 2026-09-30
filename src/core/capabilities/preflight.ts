@@ -2,6 +2,7 @@ import type { CapabilityRecord } from "./registry";
 import { TOOL_INDEX, type ToolObservation } from "./tools";
 import { FACT_MANIFEST_FIELDS } from "../workspace/facts";
 import { sha256Bytes } from "../model/ids";
+import type { RoutedOperation } from "./fabricRouting";
 
 export type PreflightStatus = "ready" | "blocked" | "needs-review" | "needs-config" | "unsupported" | "unknown";
 
@@ -30,6 +31,8 @@ export interface PreflightResult {
   targetDigest: string;
   /** Review id → the exact confirmation key for this target; a key for another target never satisfies it. */
   reviewKeys: Record<string, string>;
+  /** CAPROUTE1b: the Common router's ranked routes for the operation this capability belongs to. */
+  route?: RoutedOperation;
 }
 
 /** What a fact looked like when it was not simply present: declared but not found, or not checkable. */
@@ -74,6 +77,8 @@ export interface PreflightContext {
    * that use the tool, never a blocker, and never on reading (see toolchain/toolchain.ts).
    */
   toolRangeWarnings?: ReadonlyMap<string, string>;
+  /** CAPROUTE1b: router operation id → ranked routes (Common capability-router), for capabilities with `routerOperation`. */
+  routes?: ReadonlyMap<string, RoutedOperation>;
 }
 
 const label = (toolId: string) => TOOL_INDEX.get(toolId)?.label ?? toolId;
@@ -171,6 +176,7 @@ export function preflight(cap: CapabilityRecord, ctx: PreflightContext): Preflig
     fallback: cap.fallback,
     evidenceNote: `Qualification: ${cap.qualification}. ${cap.implementation === "documented-only" ? "DataPass routes you to the native tool; it does not perform this operation." : "DataPass implements the listed action only."} Ready means prerequisites are present, not that the operation will succeed on this target.`,
     targetDigest: targetDigest(cap, ctx),
-    reviewKeys
+    reviewKeys,
+    ...(cap.routerOperation && ctx.routes?.has(cap.routerOperation) ? { route: ctx.routes.get(cap.routerOperation) } : {})
   };
 }
