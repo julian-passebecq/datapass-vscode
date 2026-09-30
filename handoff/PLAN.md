@@ -414,6 +414,7 @@ Kept by **PM DataPass 16** (from ~03:00; PM 15 local_7024f765 from ~01:40; befor
 | (done, archive) CODER FIXPRAC1a (local_e2c2b883, R24) | coder (Opus medium) | FIXPRAC1a FOIL-synthetic practice exam (go/FIXPRAC1a.md) | 18 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER ADOPT-E1 (local_caec64e6, R25) | coder (Opus medium) | ADOPT-E1 tool-catalog into Common, then IAC-ORACLES (a) (go/ADOPTE1.md) | 9 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER DQ2 (local_60374d24, R19) | coder (Opus medium) | DQ2 DuckDB read-only safeguards, data-xray (go/DQ2.md) | 8 | 2026-09-30 · V3.7 | COORD 14 |
+| CODER DQ3 (local_0aaaff69, R37) | coder (Opus medium) | DQ3 data-xray .sql sandbox + CSV sniff (go/DQ3.md; data-xray !3 approved by PM 16) | 6 | 2026-09-30 · V3.7 | COORD 14 |
 | (reserves, idle) coder R26 local_d53f18b2 (held for VIS3 when VIS0 !67 merges) · PM 16 local_0e9d67b3, PM 17 local_8b1410a1 · COORD 17 local_b8ef6057, COORD 18 local_19b041e9 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 15 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 14 |
