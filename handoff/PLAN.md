@@ -403,9 +403,9 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R46 (local_3922511a) | coder (Opus medium) | LAYER1b (go/LAYER1b.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R47 (local_7d38898d) | coder (Opus medium) | HOP3d (go/HOP3d.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R48 (local_730675f2) | coder (Opus medium) | VIS3DQ (go/VIS3DQ.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
-| CODER R49 (local_a971cf91) | coder (Opus medium) | VIS5 (go/VIS5.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
-| CODER R50 (local_61a59096) | coder (Opus medium) | VIS6 (go/VIS6.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
-| CODER R51 (local_2f72a4cb) | coder (Opus medium) | DASH1 (go/DASH1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R49 (local_a971cf91), stopped, hand-off 2026-09-30-vis5-coder-r49.md | coder (Opus medium) | VIS5 (go/VIS5.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R50 (local_61a59096), stopped at 255 K → R62 | coder (Opus medium) | VIS6 (go/VIS6.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R51 (local_2f72a4cb), stopped, hand-off 2026-09-30-0938-dash1-coder-r51.md (!94) | coder (Opus medium) | DASH1 (go/DASH1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R52 (local_74f9adf1) | coder (Opus medium) | BIPRAC1 (go/BIPRAC1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R53 (local_874cf83f) | coder (Opus medium) | RUNX1 (go/RUNX1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R54 (local_8e28793e) | coder (Opus medium) | PRACT2 (go/PRACT2.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
@@ -415,7 +415,8 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R59 (local_2a37b65c) | coder (Opus medium) | MULTI1a cloud (go/MULTI1a.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R60 (local_5ee7bd44) | coder (Opus medium) | MULTI1b hub (go/MULTI1b.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 10 | 2026-09-30 · V3.8 | COORD 21 |
 | CODER R61 (local_7504bbd0) | coder (Opus medium) | VOL1 (go/VOL1.md; queue go/TODAY-queue-2026-09-30.md § Wave 2) | 15 | 2026-09-30 · V3.8 | COORD 21 |
-| (reserves, idle) R62 local_4717ebe2, R63 local_6236a0f6; R57, R64 not started | coder (Opus medium) | SCHED1c, WASTE1/PHYS1, HOP4a/b, AIB2a/b, HOP6a/b, VIS6 CI fix as deps land | — | 2026-09-30 · V3.8 | COORD 21 |
+| CODER R62 (local_4717ebe2) | coder (Opus medium) | VIS6 finish cloud !92 + CI (VIS6 hand-off, 50d5dfd) | 4 | 2026-09-30 · V3.8 | COORD 21 |
+| (reserves, idle) R63 local_6236a0f6; R57, R64 not started | coder (Opus medium) | SCHED1c, WASTE1/PHYS1, HOP4a/b, AIB2a/b, HOP6a/b as deps land | — | 2026-09-30 · V3.8 | COORD 21 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
