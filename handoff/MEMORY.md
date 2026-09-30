@@ -24,3 +24,8 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-30 (CODER VIS6): without `glab` or a token, open a GitLab MR with push options: `git push -o merge_request.create -o merge_request.target=main -o merge_request.title=...` (the push must update the ref).
 - 2026-09-30 (coder R51): with no glab, create a GitLab MR through push options: `git push -u origin <branch> -o merge_request.create -o merge_request.target=main -o "merge_request.title=..." -o "merge_request.description=..."`. They only act on a push that changes the ref.
 - 2026-09-30 (coder R51): on Windows, Python `open(...,'w')` writes CRLF. Use `newline=''` when editing repository files.
+
+## 2026-09-30 (PM DataPass 23)
+- Check a new package id against the Common coverage registry (coverage-plan-packages.json and planned rows) before using it: reusing SCHED1e turned Common main red.
+- Chips titled "Opus medium" may start on Sonnet low: get_session every reserve before assigning it and fix model/effort while it is idle.
+- PowerShell `cd` doesn't move .NET's current directory: use (Resolve-Path x).Path with [IO.File] calls.
