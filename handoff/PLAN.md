@@ -393,6 +393,23 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | (retired, kept pinned: parent of COORD 12 and reserves) PM DataPass 10 (local_e46b43b6) | global PM | handed off at ~235 K | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
 | COORD DataPass 18 (local_13a12722, ex RESERVE COORD 19), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-18.md, hand-off go/handoff-coord-17.md) | — | 2026-09-30 · V3.7 | PM 17 |
+| CODER R41 (local_e181f6c1) | coder (Opus medium) | ARCHV1b (go/ARCHV1b.md; queue go/TODAY-queue-2026-09-30.md) | 5 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R42 (local_21a414c5) | coder (Opus medium) | REPIN6 (go/REPIN6.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R43 (local_936a7004) | coder (Opus medium) | SCHED1b (core change, PM approves) (go/SCHED1b.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R44 (local_f6825bef) | coder (Opus medium) | DBT3W (standalone datapass-vscode) (go/DBT3W.md; queue go/TODAY-queue-2026-09-30.md) | 12 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R45 (local_1331cd87) | coder (Opus medium) | VIS12b (go/VIS12b.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R46 (local_3922511a) | coder (Opus medium) | LAYER1b (go/LAYER1b.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R47 (local_7d38898d) | coder (Opus medium) | HOP3d (go/HOP3d.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R48 (local_730675f2) | coder (Opus medium) | VIS3DQ (go/VIS3DQ.md; queue go/TODAY-queue-2026-09-30.md) | 4 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R49 (local_a971cf91) | coder (Opus medium) | VIS5 (go/VIS5.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R50 (local_61a59096) | coder (Opus medium) | VIS6 (go/VIS6.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R51 (local_2f72a4cb) | coder (Opus medium) | DASH1 (go/DASH1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R52 (local_74f9adf1) | coder (Opus medium) | BIPRAC1 (go/BIPRAC1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R53 (local_874cf83f) | coder (Opus medium) | RUNX1 (go/RUNX1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R54 (local_8e28793e) | coder (Opus medium) | PRACT2 (go/PRACT2.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| CODER R55 (local_335bb4c9) | coder (Opus medium) | MODEL1 (go/MODEL1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
+| RESERVE CODER R56 (local_f1f400e8), idle | coder (Opus medium) | SCHED1c, after SCHED1b + REPIN6 merge | 6 | 2026-09-30 · V3.8 | COORD 18 |
+| COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
 | (retired at 143 K) COORD DataPass 17 (local_b8ef6057) | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, Julian 08:00 status (GO go/COORD-DataPass-17.md, hand-off go/handoff-coord-14.md) | — | 2026-09-30 · V3.7 | PM 17 |
