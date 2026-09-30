@@ -525,6 +525,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R97 (local_846304e4) | coder (Opus medium) | CITHRU1 cloud CI two-stage (go/CITHRU1.md) | 10 | 2026-09-30 · V3.8 | COORD 26/27 |
 | CODER TOOLPROV1 (local_8ab0dd24) | coder (Opus medium) | TOOLPROV1 (go/TOOLPROV1.md, § V4-ARCHCORR N1) | 10 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER CAPROUTE1a (local_13cdada7) | coder (Opus medium) | CAPROUTE1a (go/CAPROUTE1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE CODER N3 (local_5d942588) | coder (Opus medium) | E2E-ACa (go/E2E-ACa.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N2 (local_89a0a6f7) | coder (Opus medium) | IACEV1b (go/IACEV1b.md, MR after Common !134) | 6 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER EXEC1a (local_388bc415) | coder (Opus medium) | EXEC1a (go/EXEC1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER DBTRUN1 (local_529cef22) | coder (Opus medium) | DBTRUN1 (go/DBTRUN1.md, § V4-ARCHCORR N1) | 12 | 2026-09-30 · V3.8 | COORD 27 |
