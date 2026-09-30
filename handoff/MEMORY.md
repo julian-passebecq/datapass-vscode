@@ -20,3 +20,5 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - 2026-09-29 (PM 9, Julian): DataPass reasons like a problem solver across five scales (macro-macro → super-micro) and a value lens, never "pick archi A/B/C"; see `handoff/ARCH_DECISIONS.md` § 3c.
 
 - 2026-09-30 (PM 16): GitLab auto-cancels older main pipelines by default, so with a busy merge queue main is never fully tested and a semantic conflict between two green MRs (LAYER1 + CLEAN1, generated arch-lint registry) went unseen. Keep auto_cancel_pending_pipelines disabled on repos with a merge queue, and stop the queue when main is red.
+
+- 2026-09-30 (CODER VIS6): without `glab` or a token, open a GitLab MR with push options: `git push -o merge_request.create -o merge_request.target=main -o merge_request.title=...` (the push must update the ref).
