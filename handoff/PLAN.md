@@ -387,6 +387,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 - AC-D1 `ExecutionUnit` is a Common **facet projected over the existing lineage-core job/task nodes** (no new graph, no migration). Portable fields in Common; Fabric/Databricks details go in a `providerAttachment` (§ 42). The schema is new and additive (a new version dir, core-change label).
 - AC-D2 The capability router moves to Common (`capability-router`, contract + ranking); the standalone keeps probes and UI and consumes it. Readiness is per operation; there is no global "Fabric READY" (§ 35, 37).
 - AC-D3 Provenance is one enum in Common `tool-catalog`: official / community / fork / accelerator / sample-reference, plus `canonicalUpstream` for forks. The standalone and cloud map onto it.
+- AC-D9 (PM 23) EXEC1b may relax EXEC1a's "task ⇒ step" rule **only** for WarehouseProcedure / WarehouseQueryJob (a SQL proc/script invoked as a task has no step); every other kind still fails validation (negative test required). Canonical Spark job scope = `fabric-spark-job-definition`, notebooks by logical id; SCHED1d aligns in SCHED1e.
 - AC-D4 Everything that reads provider state (FABEVID1, OBSFAB1, SPARKPLAN1, TBX1b) is **replay/import-only in V1**, with fixtures in the synthetic FOIL set. Live reading stays behind the existing live-provider gates. Evidence origin stays explicit (§ 34): synthetic ≠ observed, never "production confirmed".
 - AC-D5 Observe = deployed state + runtime + monitoring (monitoring is a sub-domain, § 10). Reconciliation verdicts reuse RUNX1's confirmed / not-observed / refuted, plus `unknown`.
 - AC-D6 Typed domain graphs (§ 25): relation kinds are already typed, so this is a docs fix first (DOCS-AC). An optional domain tag per edge kind comes later.
@@ -419,6 +420,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then) | IACEV1b | 6 | backlog |
 | TBX1c | standalone toolbox assets | add the missing Workspace Monitoring asset (§ 19) and reconcile the standalone 12-asset list with Common tool-catalog/3 routing (TBX1a finding) | TBX1a | 4 | N3 |
 | NAV1 | cloud `workbench-ui` host | one host opener for cross-view links (Design/Desired/Actual → Observe run, lineage node, design/architecture view, and back); needed by § 44 step 14 "back to architecture with evidence" (IACFAB1-UI finding) | IACFAB1-UI, OBSFAB1b | 6 | N3 |
+| SCHED1e | Common `analyzers-orchestration` (SCHED1d) | align SCHED1d scopes with FABITEM1/ORC1: `fabric-spark-job-definition` + notebook logical id instead of `fabric-spark-job` + display name; then remove the EXEC1b projector alias join (PM 23 decision, EXEC1b finding) | EXEC1b | 3 | N3 |
 | E2E-ACa | cloud fixtures + tests | § 44 lifecycle scenario in FOIL synthetic set (notebook %run chain + SJD candidate, Fabric dbt Job, Airflow, TF Fabric desired, drifting actual settings, Spark plan, CU spike, VOL1 refuted) + skeleton E2E with skips (PM 22 split, go/E2E-ACa.md) | — | 15 | N2 (now) |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
 
@@ -534,7 +536,10 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER SPARKPLAN1-FU (chip pending) | coder (Opus medium) | SPARKPLAN1 follow-up: ExecutionUnit keys (+ COSTACT1/OBSFAB1a if !111/!112 merged) (go/SPARKPLAN1-FU.md, lean) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | RESERVE CODER N1 (local_ce570e39) | coder (Opus medium) | CAPROUTE1b part 2 (go/CAPROUTE1b-2.md; standalone WIP 7069205) | 8 | 2026-09-30 · V3.8 | COORD 29 |
 | CODER CAPROUTE1b (local_846f59c4), handed off at 273 K (Common !138) → N1 | coder (Opus medium) | CAPROUTE1b (go/CAPROUTE1b.md, incl. router id alignment + FABINT1 facts) | 12 | 2026-09-30 · V3.8 | COORD 29 |
-| CODER EXEC1b (local_d6d19cfd) | coder (Opus medium) | EXEC1b (go/EXEC1b.md, MR after Common !133) | 15 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER EXEC1b (local_d6d19cfd), stopped at 262 K → EXEC1b-2 | coder (Opus medium) | EXEC1b (go/EXEC1b.md, MR after Common !133) | 15 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER EXEC1b-2 (chip pending) | coder (Opus medium) | EXEC1b successor (go/handoff-inbox/EXEC1b-1.md; core-change conditionally approved by PM 23) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER SPARKPLAN1-FU (chip pending) | coder (Opus medium) | SPARKPLAN1-FU (go/SPARKPLAN1-FU.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER NAV1 (chip after IACFAB1-UI + OBSFAB1b MRs) | coder (Opus medium) | NAV1 (go/NAV1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER IACFAB1-UI (local_6d1a3a41) | coder (Opus medium) | IACFAB1-UI (go/IACFAB1-UI.md, MR after Common !136) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N4 | coder (Opus medium) | OBSFAB1b (go/OBSFAB1b.md, from v4/obsfab1a, MR after cloud !112) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N3 (local_5d942588) | coder (Opus medium) | E2E-ACa (go/E2E-ACa.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
