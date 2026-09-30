@@ -410,7 +410,7 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER R53 (local_874cf83f) | coder (Opus medium) | RUNX1 (go/RUNX1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R54 (local_8e28793e) | coder (Opus medium) | PRACT2 (go/PRACT2.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R55 (local_335bb4c9) | coder (Opus medium) | MODEL1 (go/MODEL1.md; queue go/TODAY-queue-2026-09-30.md) | — | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
-| RESERVE CODER R56 (local_f1f400e8), idle | coder (Opus medium) | SCHED1c, after SCHED1b + REPIN6 merge | 6 | 2026-09-30 · V3.8 | COORD 18 |
+| CODER R56 (local_f1f400e8) | coder (Opus medium) | STOR1f: finish cloud !68 STOR1 (go/STOR1f.md; queue go/TODAY-queue-2026-09-30.md § Wave 2); SCHED1c needs another reserve | 6 | 2026-09-30 · V3.8 | COORD 21 |
 | COORD DataPass Common 4 (local_4c3fc5ca, ex RESERVE COORD 20), pinned | coordinator (Sonnet low) | Common merges (GO go/COORD-Common-4.md, hand-off go/handoff-coord-common-3.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
 | CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
@@ -431,7 +431,7 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | CODER BI1M (local_d720c05d, ex COORD 16 reserve) | coder (Opus medium) | BI1M Power BI semantic-model node, common (go/BI1M.md) | 8 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER FLOWDIR1 (local_9fb959f3, ex PM 14 reserve) | coder (Opus medium) | FLOWDIR1 flow-edge direction in every Common analyzer (go/FLOWDIR1.md) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
 | (done, archived) CODER VIS0 (local_ea68acc1, ex COORD 15 reserve) | coder (Opus medium) | VIS0 renderer registry, view switcher, layout presets, cloud (go/VIS0.md) | 12 | 2026-09-30 · V3.7 | COORD 14 |
-| CODER STOR1 (local_0c4e62c8, R15) | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 14 |
+| CODER STOR1 (local_0c4e62c8, R15), ended → STOR1f R56 | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 14 |
 | (done, archive) CODER CLEAN1 (local_0df5f432, R16) | coder (Opus medium) | CLEAN1 quality + performance detectors, Common (go/CLEAN1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER PRACT1 (local_3519831d, R17) | coder (Opus medium) | PRACT1 correctness practices + reasoning card, Common (go/PRACT1.md; parallel to CLEAN1, merges after it) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER FIXPRAC1b (local_c15e5a7f, R18, ex ADOPTDE done) | coder (Opus medium) | FIXPRAC1b public practice corpus (go/FIXPRAC1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
