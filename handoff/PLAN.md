@@ -391,7 +391,10 @@ Kept by **PM DataPass 17** (from ~05:25; PM 16 local_0e9d67b3 from ~03:00; PM 15
 | (retired, pinned) PM DataPass 11 (local_2522f634), handed off at ~200 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-29-2355-pm-datapass-10.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired, kept pinned: parent of COORD 12 and reserves) PM DataPass 10 (local_e46b43b6) | global PM | handed off at ~235 K | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
-| COORD DataPass 17 (local_b8ef6057, ex-reserve), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, Julian 08:00 status (GO go/COORD-DataPass-17.md, hand-off go/handoff-coord-14.md) | — | 2026-09-30 · V3.7 | PM 17 |
+| COORD DataPass 18 (local_13a12722, ex RESERVE COORD 19), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-18.md, hand-off go/handoff-coord-17.md) | — | 2026-09-30 · V3.7 | PM 17 |
+| CODER VIS4 (see go/handoff-coord-17.md) | coder (Opus medium) | VIS4 (go/VIS4.md) | — | 2026-09-30 · V3.7 | COORD 18 |
+| CODER ARCHV1 (see go/handoff-coord-17.md) | coder (Opus medium) | ARCHV1 decision views, scale zoom, SCD/partition views, cloud (go/ARCHV1.md) | 20 | 2026-09-30 · V3.7 | COORD 18 |
+| (retired at 143 K) COORD DataPass 17 (local_b8ef6057) | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, Julian 08:00 status (GO go/COORD-DataPass-17.md, hand-off go/handoff-coord-14.md) | — | 2026-09-30 · V3.7 | PM 17 |
 | COORD DataPass Common 3 (local_19b041e9, ex RESERVE COORD 18), live, pinned | coordinator (Sonnet low) | Common serial merges (GO go/COORD-Common-3.md, hand-off go/handoff-coord-common-2.md) | — | 2026-09-30 · V3.7 | PM 17 |
 | (retired at 350 K) COORD DataPass Common 2 (local_a047ee0d) | coordinator (Sonnet low) | Common serial merges | — | 2026-09-30 · V3.7 | PM 16 |
 | CODER R1 (local_223e3ff8) | coder (Opus medium) | GITL0FIX (Common !72 merged), then CITIME1 CI timeouts (go/CITIME1.md) | 2+2 | 2026-09-30 · V3.7 | COORD 14 |
