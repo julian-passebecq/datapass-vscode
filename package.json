@@ -3541,9 +3541,11 @@
     "@juliandatapass-group/analysis-protocol": "file:vendor/common/juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/analyzers": "file:vendor/common/juliandatapass-group-analyzers-0.1.0-alpha.7.tgz",
     "@juliandatapass-group/analyzers-dbt": "file:vendor/common/juliandatapass-group-analyzers-dbt-0.1.0-alpha.1.tgz",
+    "@juliandatapass-group/capability-router": "file:vendor/common/juliandatapass-group-capability-router-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/compat-v3": "file:vendor/common/juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
     "@juliandatapass-group/lineage-core": "file:vendor/common/juliandatapass-group-lineage-core-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/project-contracts": "file:vendor/common/juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
-    "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz"
+    "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
+    "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz"
   }
 }

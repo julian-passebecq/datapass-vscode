@@ -16,6 +16,7 @@ import { observeFileFacts } from "./observe";
 import { probeTools, invalidateToolProbes } from "../core/capabilities/probe";
 import type { ToolObservation } from "../core/capabilities/tools";
 import type { PreflightContext } from "../core/capabilities/preflight";
+import { fabricProjectProfile, routeFabricOperations, type FabricRouting, type NativeBridgeInput } from "../core/capabilities/fabricRouting";
 import { buildWorkModel, checklistKey, type ChecklistRecord, type ChecklistState, type ExchangeRecord, type WorkModel } from "../core/work/workModel";
 import type { ImpactEntry } from "../core/impact/facets";
 import { readRepoRevision, type GitRunner, type RemoteObservation } from "../core/workspace/gitBase";
@@ -62,7 +63,9 @@ export interface Preview { key: string; title: string; picks: Map<string, string
 /** Machine-local repository locations chosen with "Locate clone" (git-ignored, never shared). */
 export const LOCAL_REPOSITORIES_FILE = "repositories.json";
 
-interface Inventory { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[] }
+/** CAPROUTE1b: file markers the Fabric router needs (names only, never content). */
+interface InventoryMarkers { dbtProject: boolean; fabricCicdParameterFile: boolean; gitRepository: boolean }
+interface Inventory { at: number; root?: string; assets: Asset[]; truncated: boolean; repos: RepoStatus[]; markers?: InventoryMarkers }
 
 /** The first `bytes` of a file as text; undefined for a symbolic link or a file above `maxSize`. */
 async function readHead(fsPath: string, bytes: number, maxSize: number): Promise<string | undefined> {
@@ -340,6 +343,7 @@ export class WorkSession implements vscode.Disposable {
     const root = ctx.root;
     if (!root) return { at: Date.now(), assets: [], truncated: false, repos: [] };
     const repos = this.readRepositories(ctx);
+    const markers = this.scanMarkers(root);
     const [named, py, platform, pipelines] = await Promise.all([
       vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}", INVENTORY_EXCLUDE, 2000),
       vscode.workspace.findFiles("**/*.py", INVENTORY_EXCLUDE, MAX_PY_FILES),
@@ -370,7 +374,33 @@ export class WorkSession implements vscode.Disposable {
       for (const a of batch) if (a) assets.push(a);
     }
     assets.sort((a, b) => a.kind.localeCompare(b.kind) || a.path.localeCompare(b.path));
-    return { at: Date.now(), root: root.toString(), assets, truncated: py.length >= MAX_PY_FILES, repos: await repos };
+    return { at: Date.now(), root: root.toString(), assets, truncated: py.length >= MAX_PY_FILES, repos: await repos, markers: await markers };
+  }
+
+  private async scanMarkers(root: vscode.Uri): Promise<InventoryMarkers> {
+    const [dbt, parameter, git] = await Promise.all([
+      vscode.workspace.findFiles("**/dbt_project.{yml,yaml}", INVENTORY_EXCLUDE, 1),
+      vscode.workspace.findFiles("**/parameter.{yml,yaml}", INVENTORY_EXCLUDE, 1),
+      Promise.resolve(vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".git"))).then(() => true, () => false)
+    ]);
+    return { dbtProject: dbt.length > 0, fabricCicdParameterFile: parameter.length > 0, gitRepository: git };
+  }
+
+  /** FABINT1 facts about the official Fabric extension, when a bridge is supplied (extension.ts). */
+  nativeBridge?: () => NativeBridgeInput | undefined;
+
+  /**
+   * CAPROUTE1b: Fabric capability facts and per-operation readiness from the Common router, from
+   * this window's tool probes, the last read-only sign-in check and the inventory. Never probes.
+   */
+  fabricRouting(): FabricRouting {
+    const m = this.inv?.markers;
+    const toolbox = vscode.workspace.getConfiguration("datapass").get<string>("fabric.toolboxRoot", "").trim() || this.ctx.manifest?.platforms?.fabric?.toolboxRoot?.trim();
+    return routeFabricOperations({
+      tools: this.tools, fabSignIn: this.connectionProbes.get("cli.fab"), toolboxConfigured: Boolean(toolbox),
+      fabricCicdParameterFile: m?.fabricCicdParameterFile ?? false, nativeBridge: this.nativeBridge?.(),
+      profile: fabricProjectProfile({ assets: this.inv?.assets ?? [], dbtProject: m?.dbtProject ?? false, gitRepository: m?.gitRepository ?? false })
+    });
   }
 
   private async readRepositories(ctx: ProjectContext): Promise<RepoStatus[]> {
@@ -420,7 +450,7 @@ export class WorkSession implements vscode.Disposable {
   preflightContext(): PreflightContext {
     return {
       tools: this.tools, facts: projectFacts(this.ctx, this.factObs), factNotes: factNotes(this.ctx.manifest, this.factObs), reviewsConfirmed: this.reviews,
-      toolRangeWarnings: this.rangeWarnings()
+      toolRangeWarnings: this.rangeWarnings(), routes: new Map(this.fabricRouting().operations.map(o => [o.operationId, o]))
     };
   }
 

@@ -14,6 +14,7 @@ import { confirmModal, guarded, jsonBytes, openLocal, pickFile, pickFiles, readB
 import { writeLocal, LOCAL_DIR } from "../core/workspace/loader";
 import { CAPABILITY_INDEX } from "../core/capabilities/registry";
 import { preflight } from "../core/capabilities/preflight";
+import { routeReportLines } from "../core/capabilities/fabricRouting";
 import { executeGalaxyAction } from "../core/actions";
 import { CHECKLIST_STATES, IMPLICIT_SCOPE_ID, type ChecklistState, type ExchangeRecord, type WorkChecklistEntry } from "../core/work/workModel";
 import { buildAppRequest } from "../core/exchange/appExchange";
@@ -128,6 +129,7 @@ async function showPreflight(session: WorkSession, capabilityId?: string): Promi
       ...section("Pending reviews", r.pendingReviews), ...section("Optional, missing (never blocks)", r.optionalMissing), ...section("Satisfied", r.satisfied),
       ...(r.warnings.length ? ["Warnings:", ...r.warnings.map(w => `  - ${w}`)] : []),
       ...(cap.covers?.length ? [`Covers: ${cap.covers.join(", ")}`] : []),
+      ...(r.route ? routeReportLines(r.route) : []),
       `Fallback: ${r.fallback}`,
       `Sources: ${cap.sources.join(", ")}`,
       r.evidenceNote

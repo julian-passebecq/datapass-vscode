@@ -32,6 +32,7 @@ import { workspaceJournalFs } from "./commands";
 import { LOCAL_DIR } from "../core/workspace/loader";
 import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { PHASE_LABELS } from "../core/capabilities/registry";
+import { routeReportLines } from "../core/capabilities/fabricRouting";
 import { executeGalaxyAction } from "../core/actions";
 import { architectureInPanel } from "./shellCommands";
 import { gitNodeArg } from "../views/gitTree";
@@ -436,6 +437,7 @@ async function showOperation(session: WorkSession, opKey?: string): Promise<void
       ...section("Reviews to confirm", r.pendingReviews), ...section("Optional, missing (never blocks)", r.optionalMissing), ...section("Satisfied", r.satisfied),
       ...(r.warnings.length ? ["Warnings:", ...r.warnings.map(w => `  - ${w}`)] : []),
       ...(op.command ? [`Command (you run it, from ${op.command.cwd}): ${op.command.text}`] : []),
+      ...(r.route ? routeReportLines(r.route) : []),
       `Fallback: ${r.fallback}`, r.evidenceNote
     ]);
     const choices: Array<{ label: string; id: string; detail?: string }> = r.pendingReviews.map(p => ({ label: `$(eye) Confirm review: ${p.label}`, id: `review:${p.id}` }));

@@ -10,6 +10,15 @@ export function deriveStatus(allTools: ToolProbe[], configured = false): StatusL
   return configured ? "partial" : "missing";
 }
 
+/**
+ * CAPROUTE1b (brief § 35, 37): a platform whose readiness is per operation (Fabric) never reports one
+ * global "ready". The card says only whether any of its tools is here; each operation carries its own
+ * readiness from the capability router.
+ */
+export function perOperationStatus(allTools: ToolProbe[]): StatusLevel {
+  return allTools.some(tool => tool.available) ? "partial" : "missing";
+}
+
 export function statusLabel(status: StatusLevel): string {
   switch (status) {
     case "ready": return "Ready";

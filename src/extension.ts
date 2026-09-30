@@ -270,7 +270,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerCodeFontCommand(context);
   registerOpenClientProject(context);
   // Galaxy cards show the same operation readiness as the Work view.
-  const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()));
+  const galaxy = new GalaxyViewProvider(context.extensionUri, () => platformOperations(session.preflightContext()), () => session.fabricRouting());
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
       GalaxyViewProvider.viewType,

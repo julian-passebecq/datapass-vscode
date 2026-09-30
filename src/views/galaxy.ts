@@ -3,14 +3,18 @@ import { collectGalaxyState } from "../core/galaxyState";
 import { executeGalaxyAction } from "../core/actions";
 import type { GalaxyState, PlatformOperation } from "../core/types";
 import { CAPABILITY_INDEX } from "../core/capabilities/registry";
+import { routingBadge, type FabricRouting } from "../core/capabilities/fabricRouting";
 import { galaxyHtml } from "./galaxyHtml";
 
 export class GalaxyViewProvider implements vscode.WebviewViewProvider {
   static readonly viewType = "datapass.galaxy";
   private view?: vscode.WebviewView;
 
-  /** `operations` supplies per-platform operation readiness (the Work session's preflight). */
-  constructor(private readonly extensionUri: vscode.Uri, private readonly operations?: () => Map<string, PlatformOperation[]>) {}
+  /**
+   * `operations` supplies per-platform operation readiness (the Work session's preflight); `fabricRouting`
+   * the Fabric capability facts and per-operation readiness from the Common router (CAPROUTE1b).
+   */
+  constructor(private readonly extensionUri: vscode.Uri, private readonly operations?: () => Map<string, PlatformOperation[]>, private readonly fabricRouting?: () => FabricRouting) {}
 
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
@@ -48,6 +52,9 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
   private async post(state: GalaxyState): Promise<void> {
     const ops = this.operations?.();
     if (ops) for (const platform of state.platforms) platform.operations = ops.get(platform.id);
+    const fabric = state.platforms.find(p => p.id === "fabric");
+    const routing = fabric ? this.fabricRouting?.() : undefined;
+    if (fabric && routing) { fabric.routing = routing; fabric.badge = routingBadge(routing).text; }
     await this.view?.webview.postMessage({ type: "state", state });
   }
 

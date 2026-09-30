@@ -42,7 +42,18 @@
       "file": "juliandatapass-group-analyzers-dbt-0.1.0-alpha.1.tgz",
       "sha256": "b0bf03d50d1a8c2cf05f153df80723bbf4298fe71e0dc692b08eeb7bf58c68b2",
       "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+    },
+    {
+      "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz",
+      "sha256": "c14f64610d4d17d6398614a7d32dbd37e85a5cc0472db7df6328969a6578d640",
+      "sourceCommit": "6b87493bfc13ee78a337f5032b862b561790f89c"
+    },
+    {
+      "file": "juliandatapass-group-capability-router-0.1.0-alpha.1.tgz",
+      "sha256": "ad43f119ab91ed00785961add9374d052c978402aa3f98db08eeaffdb332ea54",
+      "sourceCommit": "6b87493bfc13ee78a337f5032b862b561790f89c"
     }
   ],
-  "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins."
+  "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins.",
+  "caproute1bNote": "CAPROUTE1b: tool-catalog and capability-router packed with scripts/pack-vendor.mjs from Common 6b87493 (!138); semantic-core alpha.4 is byte-identical there and keeps its pin."
 }

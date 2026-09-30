@@ -1,4 +1,5 @@
 import type { PreflightStatus } from "./capabilities/preflight";
+import type { FabricRouting } from "./capabilities/fabricRouting";
 
 export type StatusLevel = "ready" | "partial" | "missing" | "unbound" | "error";
 
@@ -39,6 +40,8 @@ export interface PlatformOperation {
   nextStep: string;
   /** DataPass routes to the native tool and does not perform the operation itself. */
   nativeTool: boolean;
+  /** CAPROUTE1b: the Common router's readiness for the operation this route belongs to ("READY via fab CLI [official]"). */
+  route?: string;
 }
 
 export interface PlatformState {
@@ -50,6 +53,10 @@ export interface PlatformState {
   actions: PlatformAction[];
   details?: string[];
   operations?: PlatformOperation[];
+  /** Badge text when the card has no single status (Fabric: "3/6 ops ready"). */
+  badge?: string;
+  /** CAPROUTE1b: capability facts and per-operation readiness from the Common router. */
+  routing?: FabricRouting;
   catalog?: {
     title: string;
     items: CatalogItemState[];
