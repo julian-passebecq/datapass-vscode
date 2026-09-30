@@ -393,7 +393,7 @@ Kept by **PM DataPass 16** (from ~03:00; PM 15 local_7024f765 from ~01:40; befor
 | CODER R5 (local_fd5757bc) | coder (Opus medium) | DBT2 dbt semantic/contracts/unit tests, common (go/DBT2.md) | 12 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R6 (local_ea51e44c) | coder (Opus medium) | BI2 Superset/LookML/Tableau, common (go/BI2.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R7 (local_ab903ea7) | coder (Opus medium) | DQ1 DQ checks as test nodes, common (go/DQ1.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER R8 (local_fff30ea8) | coder (Opus medium) | CICD1 CI/CD deploy edges, common (go/CICD1.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
+| (done, archive) CODER R8 (local_fff30ea8) | coder (Opus medium) | CICD1 CI/CD deploy edges, common (go/CICD1.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R9 (local_c947c849) | coder (Opus medium) | IAC11 CFN/CDK/Pulumi/OCI, common (go/IAC11.md) | 25 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R10 (local_be4257d3) | coder (Opus medium) | AIB1 AI gap bridge, Common part (go/AIB1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R11 (local_7bf36177) | coder (Opus medium) | BI3 Power BI operational metadata, cloud (go/BI3.md) | 12 | 2026-09-30 · V3.7 | COORD 14 |
@@ -404,18 +404,20 @@ Kept by **PM DataPass 16** (from ~03:00; PM 15 local_7024f765 from ~01:40; befor
 | CODER FLOWDIR1 (local_9fb959f3, ex PM 14 reserve) | coder (Opus medium) | FLOWDIR1 flow-edge direction in every Common analyzer (go/FLOWDIR1.md) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER VIS0 (local_ea68acc1, ex COORD 15 reserve) | coder (Opus medium) | VIS0 renderer registry, view switcher, layout presets, cloud (go/VIS0.md) | 12 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER STOR1 (local_0c4e62c8, R15) | coder (Opus medium) | STOR1 storage inventory + cost, cloud (go/STOR1.md) | 15 | 2026-09-30 · V3.7 | COORD 14 |
-| CODER CLEAN1 (local_0df5f432, R16) | coder (Opus medium) | CLEAN1 quality + performance detectors, Common (go/CLEAN1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
+| (done, archive) CODER CLEAN1 (local_0df5f432, R16) | coder (Opus medium) | CLEAN1 quality + performance detectors, Common (go/CLEAN1.md) | 20 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER PRACT1 (local_3519831d, R17) | coder (Opus medium) | PRACT1 correctness practices + reasoning card, Common (go/PRACT1.md; parallel to CLEAN1, merges after it) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER FIXPRAC1b (local_c15e5a7f, R18, ex ADOPTDE done) | coder (Opus medium) | FIXPRAC1b public practice corpus (go/FIXPRAC1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER RATIO1 (local_4afd89d7, R22) | coder (Opus medium) | RATIO1 decision-rationale/1 (go/RATIO1.md; core contract, PM merge) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER PY1C (local_87eac079, R23) | coder (Opus medium) | PY1C Python-host containment (go/PY1C.md; RC gate) | 10 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER CONCEPT1a (local_8ee720cc, R20) | coder (Opus medium) | CONCEPT1a catalogue entries (go/CONCEPT1a.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
-| CODER CONCEPT1b (local_86d39bfb, R21) | coder (Opus medium) | CONCEPT1b catalogue entries (go/CONCEPT1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
+| (done, archive) CODER CONCEPT1b (local_86d39bfb, R21) | coder (Opus medium) | CONCEPT1b catalogue entries (go/CONCEPT1b.md) | 15 | 2026-09-30 · V3.7 | COORD Common 2 |
 | (done, archive) CODER FIXPRAC1a (local_e2c2b883, R24) | coder (Opus medium) | FIXPRAC1a FOIL-synthetic practice exam (go/FIXPRAC1a.md) | 18 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER ADOPT-E1 (local_caec64e6, R25) | coder (Opus medium) | ADOPT-E1 tool-catalog into Common, then IAC-ORACLES (a) (go/ADOPTE1.md) | 9 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER DQ2 (local_60374d24, R19) | coder (Opus medium) | DQ2 DuckDB read-only safeguards, data-xray (go/DQ2.md) | 8 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER DQ3 (local_0aaaff69, R37) | coder (Opus medium) | DQ3 data-xray .sql sandbox + CSV sniff (go/DQ3.md; data-xray !3 merged; done, archive) · DQ3b ancestor-of-home refusal = PM 16 subagent | 6 | 2026-09-30 · V3.7 | COORD 14 |
 | CODER HOP3c (local_bdb13d34, R39) | coder (Opus medium) | STEP 0: rebase cloud !69 HOP3 on main (SANKEY1 conflict, R36 retired), then HOP3c (go/HOP3c.md) | 8 | 2026-09-30 · V3.7 | COORD 14 |
+| CODER ORC2 (local_df73707a, R33, ex CIFIX1) | coder (Opus medium) | ORC2 (go/ORC2.md, Common) | — | 2026-09-30 · V3.7 | COORD Common 2 |
+| CODER INCR1 (local_4626da65, R38) | coder (Opus medium) | INCR1 (go/INCR1.md, Common, after CLEAN1). Cloud !77 REPIN4 moved to a PM 16 subagent | — | 2026-09-30 · V3.7 | COORD Common 2 |
 | (reserves, idle) coder R26 local_d53f18b2 (held for VIS3 when VIS0 !67 merges) · PM 16 local_0e9d67b3, PM 17 local_8b1410a1 · COORD 17 local_b8ef6057, COORD 18 local_19b041e9 | reserve | go/RESERVE.md | — | 2026-09-30 · V3.7 | PM 15 |
 | CODER R4 (local_9854a053) | coder (Opus medium) | ORC1 DAB/ADF/Fabric/Step Functions analyzers, common (go/ORC1.md) | 18 | 2026-09-30 · V3.7 | COORD Common 2 |
 | CODER R2 (local_b85d070f) | coder (Opus medium) | ARCHK9FIX: FAKEERP/FAKESCM decision logs → strict K9, cloud (go/ARCHK9FIX.md; before ARCHV1) | 5 | 2026-09-30 · V3.7 | COORD 14 |
