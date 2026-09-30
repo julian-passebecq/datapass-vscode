@@ -428,6 +428,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | OBSWSM1 | cloud `observe-providers` | § 10/11/40: Workspace Monitoring Eventhouse export replay reader (old OBS4 never built) (go/OBSWSM1.md) | — | 8 | N3 |
 | EDGEDOM1 | Common `lineage-core` | § 25 (AC-D6 follow-up): domain per edge kind (data, control, infra, deploy, BI, runtime, git) + filter, no schema change (go/EDGEDOM1.md) | — | 5 | N3 |
 | SCHED1f | Common `analyzers-orchestration` | schedule facts for AWS EventBridge Scheduler + GCP Cloud Scheduler (the coverage registry had planned aws.eventbridge-schedule under the id SCHED1e before PM 23 reused it; SCHED1e's MR moves that row to SCHED1f) | SCHED1e | 6 | N4 |
+| CIPACK1 | Common CI scripts | validate_packages 26 → ~14 min: no rebuild in pack-vendor, parallel npm pack in check-packed-consumers; same checks (go/CIPACK1-findings.md; PM 23 subagent) | — | 10 | now |
 | EXEC1d | Common `execution-model` | § 42: Databricks units (Lakeflow/DLT pipelines, jobs, serverless vs cluster, Unity Catalog targets) onto ExecutionUnit; GO to write when EXEC1b + SCHED1e merge | EXEC1b, SCHED1e | 8 | N4 |
 | E2E-ACa | cloud fixtures + tests | § 44 lifecycle scenario in FOIL synthetic set (notebook %run chain + SJD candidate, Fabric dbt Job, Airflow, TF Fabric desired, drifting actual settings, Spark plan, CU spike, VOL1 refuted) + skeleton E2E with skips (PM 22 split, go/E2E-ACa.md) | — | 15 | N2 (now) |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
