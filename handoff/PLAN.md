@@ -414,6 +414,8 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | FABINT1 | standalone `core/fabric/nativeBridge.ts` | investigation + bridge to the official Fabric VS Code extension API (context, item identity, open native artifact); optional, static analysis without it; no private tokens or undocumented commands | — | 14 | N1 |
 | MAT1 | standalone | Git-first materialization: candidate native files + provenance stamp (source id, revision, generator, target, hash, env) → diff → branch/MR; never deploy | CAPROUTE1a | 18 | N3 |
 | PRACT4 | PRACT2 engine (Common or cloud) | § 41 detectors: unclear dbt route, duplicated Airflow/Fabric orchestration, Spark on tiny workload, daily SLA on streaming, full refresh vs volume, runtime dep mismatch (PM 22, go/PRACT4.md) | DBTRUN1 | 15 | N2 |
+| IACEV1b | cloud `iac-imports` | re-export plan/what-if/Infracost readers from Common iac-hcl (!134), delete the cloud copy, goldens byte-identical (PM 22) | !134 | 5 | N2 |
+| IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then) | IACEV1b | 6 | backlog |
 | E2E-ACa | cloud fixtures + tests | § 44 lifecycle scenario in FOIL synthetic set (notebook %run chain + SJD candidate, Fabric dbt Job, Airflow, TF Fabric desired, drifting actual settings, Spark plan, CU spike, VOL1 refuted) + skeleton E2E with skips (PM 22 split, go/E2E-ACa.md) | — | 15 | N2 (now) |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
 
