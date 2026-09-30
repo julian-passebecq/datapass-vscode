@@ -1,0 +1,12 @@
+# SYNTHETIC FIXTURE: placeholder profile; never applied anywhere.
+foil_syn_wind:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      catalog: wind_syn
+      schema: dbt_syn_dev
+      host: adb-7000000000000001.1.azuredatabricks.net
+      http_path: /sql/1.0/warehouses/syn0wh0000000001
+      token: "{{ env_var('DBT_SYN_TOKEN', 'SYNTHETIC_ONLY_NOT_A_CREDENTIAL') }}"
+      threads: 4

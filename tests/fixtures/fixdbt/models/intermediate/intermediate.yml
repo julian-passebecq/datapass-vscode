@@ -1,0 +1,19 @@
+# SYNTHETIC FIXTURE
+version: 2
+models:
+  - name: int_scada_hourly
+    description: Hourly aggregation of SCADA readings (incremental merge).
+    columns:
+      - name: turbine_id
+      - name: hour_ts
+      - name: avg_power_kw
+      - name: energy_kwh
+      - name: avg_wind_ms
+      - name: fault_minutes
+  - name: int_turbine_enriched
+    description: Turbines joined with the model reference seed.
+    config:
+      group: wind_analytics
+      access: private
+  - name: int_maintenance_downtime
+    description: Closed maintenance orders with non-negative downtime.

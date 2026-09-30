@@ -1,0 +1,50 @@
+# SYNTHETIC FIXTURE
+version: 2
+models:
+  - name: stg_scada_readings
+    description: Typed 10-minute SCADA readings.
+    columns:
+      - name: turbine_id
+        tests:
+          - not_null
+          - relationships:
+              arguments: {to: "ref('stg_turbines')", field: turbine_id}
+      - name: reading_ts
+        tests: [not_null]
+      - name: power_kw
+      - name: wind_speed_ms
+      - name: rotor_rpm
+      - name: status_code
+        tests:
+          - accepted_values:
+              arguments: {values: [0, 1, 2, 3, 4], quote: false}
+      - name: energy_kwh_10min
+      - name: ingested_at
+  - name: stg_turbines
+    columns:
+      - name: turbine_id
+        tests: [unique, not_null]
+      - name: site_id
+      - name: model_code
+      - name: rated_power_kw
+        tests: [positive_value]
+      - name: commissioned_on
+  - name: stg_maintenance_orders
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: turbine_id
+      - name: opened_at
+      - name: closed_at
+      - name: order_type
+        tests:
+          - accepted_values:
+              arguments: {values: [preventive, corrective, inspection]}
+      - name: cost_eur
+      - name: downtime_hours
+  - name: stg_weather_forecast
+    columns:
+      - name: site_id
+      - name: forecast_ts
+      - name: horizon_h
+      - name: forecast_wind_ms

@@ -6,6 +6,7 @@ import { digestsEqual, digestExactBytes, unwrap, type SourceAnchor } from '@juli
 import type { AnalysisRequest, AnalysisResult } from '@juliandatapass-group/analysis-protocol';
 import type { WorkSession } from '../work/session';
 import { selectedCapture, selectedRequest, sessionIdentity, editorOffsets, type SelectedCapture } from './capture';
+import { collectDbtWorkspace, dbtSections, extractDbt } from './dbt';
 
 /** Installed trusted host only; never obtain a module or executable from workspace settings. */
 export interface NativeAnalysisBackend {
@@ -141,7 +142,28 @@ export class NativeAnalysisHost implements vscode.Disposable {
     this.diagnostics.set(current.uri, diagnostics);
     this.show(`${current.result.entities.length} entities, ${current.result.claims.length} claims, ${current.result.edges.length} lineage edges. Static analysis only; no execution, approval, or rule evaluation is implied.`, current.result);
   }
-  private show(message: string, result?: AnalysisResult): void {
+  /** DBT3W: user-triggered static read of the workspace's dbt projects with their profiles.yml targets. dbt is never run. */
+  async analyzeDbtProjects(): Promise<void> {
+    if (this.disposed) return;
+    this.invalidate();
+    const generation = this.generation;
+    if (!vscode.workspace.isTrusted) return this.show('Analysis unavailable: trust this local workspace before analyzing dbt projects.');
+    const folder = (this.session.root && vscode.workspace.getWorkspaceFolder(this.session.root)) || vscode.workspace.workspaceFolders?.[0];
+    if (vscode.env.remoteName || !folder || folder.uri.scheme !== 'file') return this.show('Analysis unavailable: open a local workspace folder.');
+    const abort = this.abort = new AbortController();
+    this.show('Reading dbt projects… Files are read statically; dbt is not run and no warehouse is contacted.');
+    try {
+      const files = await collectDbtWorkspace(folder.uri.fsPath, abort.signal);
+      const result = await extractDbt(files, { cancelled: () => abort.signal.aborted });
+      if (generation !== this.generation || this.disposed) return;
+      if (!result) return this.show('No dbt project found: no dbt_project.yml in this workspace.');
+      const { graph, gaps } = result.extraction;
+      this.show(`${graph.nodes.length} nodes, ${graph.edges.length} lineage edges, ${gaps.length} coverage gaps. Static reading only; dbt was not run.`, undefined, dbtSections(result));
+    } catch {
+      if (generation === this.generation && !this.disposed) this.show('Analysis unavailable: the dbt projects could not be read. No result was accepted.');
+    }
+  }
+  private show(message: string, result?: AnalysisResult, sections = ''): void {
     if (!this.panel) {
       const panel = this.panel = vscode.window.createWebviewPanel('datapass.nativeUnderstanding', 'DataPass: Native understanding', { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [] });
       panel.onDidDispose(() => { if (this.panel === panel) { this.panel = undefined; this.invalidate(); } });
@@ -170,7 +192,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
     }).join('') ?? '';
     const edges = result?.edges.slice(0, 200).map(e => `<li>${escape(name(e.fromId))} → ${escape(name(e.toId))} — ${escape(e.granularity)}, ${escape(e.relation)}, ${escape(e.transform.kind)}</li>`).join('') ?? '';
     const nonce = randomBytes(18).toString('base64');
-    this.panel.webview.html = `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'"><style>body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);padding:16px}button{color:var(--vscode-textLink-foreground);background:none;border:0;cursor:pointer}li{margin:8px 0}</style></head><body><h1>Native understanding</h1><p>${escape(message)}</p>${result ? `<h2>Coverage limits</h2><ul>${gaps || '<li>No additional coverage gaps reported. This is not a completeness guarantee.</li>'}</ul><h2>Diagnostics</h2><ul>${diagnostics || '<li>No diagnostics reported.</li>'}</ul><h2>Claims</h2><ul>${claims || '<li>No claims reported.</li>'}</ul><h2>Lineage links</h2><ul>${edges || '<li>No lineage links reported.</li>'}</ul><p>Each section displays at most 200 entries.</p>` : ''}<script nonce="${nonce}">const api=acquireVsCodeApi();document.addEventListener('click',e=>{const b=e.target.closest('button[data-index]');if(b)api.postMessage({type:'reveal',index:Number(b.dataset.index)})});</script></body></html>`;
+    this.panel.webview.html = `<!doctype html><html><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src 'unsafe-inline'"><style>body{font-family:var(--vscode-font-family);color:var(--vscode-foreground);padding:16px}button{color:var(--vscode-textLink-foreground);background:none;border:0;cursor:pointer}li{margin:8px 0}</style></head><body><h1>Native understanding</h1><p>${escape(message)}</p>${result ? `<h2>Coverage limits</h2><ul>${gaps || '<li>No additional coverage gaps reported. This is not a completeness guarantee.</li>'}</ul><h2>Diagnostics</h2><ul>${diagnostics || '<li>No diagnostics reported.</li>'}</ul><h2>Claims</h2><ul>${claims || '<li>No claims reported.</li>'}</ul><h2>Lineage links</h2><ul>${edges || '<li>No lineage links reported.</li>'}</ul><p>Each section displays at most 200 entries.</p>` : ''}${sections}<script nonce="${nonce}">const api=acquireVsCodeApi();document.addEventListener('click',e=>{const b=e.target.closest('button[data-index]');if(b)api.postMessage({type:'reveal',index:Number(b.dataset.index)})});</script></body></html>`;
   }
 }
 

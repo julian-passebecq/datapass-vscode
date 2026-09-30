@@ -1,0 +1,6 @@
+status_code,alarm_name,is_fault
+0,run,false
+1,curtailed,false
+2,grid_loss,true
+3,gearbox_temp,true
+4,icing,true

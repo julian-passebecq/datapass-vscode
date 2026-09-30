@@ -1,0 +1,31 @@
+# SYNTHETIC FIXTURE
+version: 2
+models:
+  - name: metricflow_time_spine
+    description: Day spine for the semantic layer.
+    config:
+      group: wind_analytics
+      access: protected
+    time_spine:
+      standard_granularity_column: date_day
+    columns:
+      - name: date_day
+        granularity: day
+  - name: mart_site_energy
+    description: Site energy per day (versioned model).
+    config:
+      group: wind_analytics
+      access: public
+    latest_version: 2
+    columns:
+      - name: site_id
+      - name: kpi_date
+      - name: energy_mwh
+      - name: availability_pct
+    versions:
+      - v: 1
+        deprecation_date: 2026-12-31
+        columns:
+          - include: all
+            exclude: [availability_pct]
+      - v: 2

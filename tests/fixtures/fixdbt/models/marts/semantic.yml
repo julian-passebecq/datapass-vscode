@@ -1,0 +1,69 @@
+# SYNTHETIC FIXTURE: small semantic layer on the KPI mart.
+version: 2
+semantic_models:
+  - name: turbine_kpi
+    description: Daily turbine KPIs.
+    model: ref('fct_turbine_kpi_daily')
+    primary_entity: turbine_day
+    defaults:
+      agg_time_dimension: kpi_date
+    entities:
+      - name: turbine
+        type: foreign
+        expr: turbine_id
+    dimensions:
+      - name: kpi_date
+        type: time
+        type_params:
+          time_granularity: day
+    measures:
+      - name: energy_mwh
+        agg: sum
+      - name: fault_minutes
+        agg: sum
+      - name: capacity_factor_avg
+        agg: average
+        expr: capacity_factor
+  - name: turbine
+    description: Turbine dimension.
+    model: ref('dim_turbine')
+    entities:
+      - name: turbine
+        type: primary
+        expr: turbine_id
+    dimensions:
+      - name: site_id
+        type: categorical
+      - name: manufacturer
+        type: categorical
+metrics:
+  - name: total_energy_mwh
+    label: Total energy (MWh)
+    type: simple
+    type_params:
+      measure: energy_mwh
+  - name: total_fault_minutes
+    label: Fault minutes
+    type: simple
+    type_params:
+      measure: fault_minutes
+  - name: fault_hours
+    label: Fault hours
+    type: derived
+    type_params:
+      expr: total_fault_minutes / 60
+      metrics:
+        - name: total_fault_minutes
+  - name: avg_capacity_factor
+    label: Average capacity factor
+    type: simple
+    type_params:
+      measure: capacity_factor_avg
+saved_queries:
+  - name: fleet_daily_energy
+    description: Energy and fault hours per site and day.
+    query_params:
+      metrics: [total_energy_mwh, fault_hours]
+      group_by:
+        - "TimeDimension('metric_time', 'day')"
+        - "Dimension('turbine__site_id')"
