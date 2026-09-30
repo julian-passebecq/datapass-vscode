@@ -425,7 +425,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 |---|---|---|---|---|---|
 | PM DataPass 17 (local_8b1410a1), retired → PM 18 | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | PM DataPass 21 (local_9ad369ad), retired at ~215 K → PM 22 | global PM + architect (Opus medium) | 30 Sept afternoon + Codex night relay (GO go/PM-DataPass-21.md; hand-off handoff/sessions/2026-09-30-1600-pm-datapass-19.md) | — | 2026-09-30 · V3.8 | PM 19 |
-| PM DataPass 22 (local_88062104, ex RESERVE), live, pinned | global PM reserve (Opus medium) | wakes only on PM 21 "take over" (GO go/PM-DataPass-22.md) | — | 2026-09-30 · V3.8 | PM 21 |
+| PM DataPass 22 (local_88062104), live, pinned (took over ~18:30) | global PM + architect (Opus medium) | night burn 30 Sept (GO go/PM-DataPass-22.md; hand-off handoff/sessions/2026-09-30-1815-pm-datapass-21.md) | — | 2026-09-30 · V3.8 | Julian (via ASSISTANT 1) |
 | RESERVE COORD DataPass 28 (local_34ead6aa), waiting | coordinator reserve (Sonnet low) | successor of COORD 27 | — | 2026-09-30 · V3.8 | COORD 27 |
 | ASSISTANT DATAPASS 1 (local_d1da3eeb), live, pinned | assistant (Julian relay) | chip spawner for Julian (Julian 30 Sept ~16:50: chips go through it) | — | 2026-09-30 · V3.8 | Julian |
 | PM DataPass 19 (local_43715a1b, ex RESERVE PM 19), retired at ~225 K → PM 21 (not archived: parent of PM 21) | global PM + architect (Opus medium) | 30 Sept day + Codex night relay (GO go/PM-DataPass-19.md; hand-off handoff/sessions/2026-09-30-1230-pm-datapass-18.md); hands off at 250 K to RESERVE PM 21 | — | 2026-09-30 · V3.8 | Julian |
@@ -443,7 +443,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | COORD DataPass 23 (local_a588fbe4), retired at 133 K → COORD 24 |
 | COORD DataPass 24 (local_a728fc91), handing off at 136 K → COORD 25 |
 | COORD DataPass 25 (local_bfd2c45d), retired at 156 K → COORD 26 |
-| COORD DataPass 26 (local_40e4512b), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-26.md, lean start) | — | 2026-09-30 · V3.8 | PM 19 |
+| COORD DataPass 26 (local_40e4512b), archived → COORD 27 (local_18618b76) | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-26.md, lean start) | — | 2026-09-30 · V3.8 | PM 19 |
 | COORD DataPass Common 5 (local_2dc45374), live, pinned | Common coordinator (Sonnet low) | Common merges; replaces COORD Common 4 | — | 2026-09-30 · V3.8 | COORD 26 / PM 19 |
 | CODER R41 (local_e181f6c1) | coder (Opus medium) | ARCHV1b (go/ARCHV1b.md; queue go/TODAY-queue-2026-09-30.md) | 5 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R42 (local_21a414c5) | coder (Opus medium) | REPIN6 (go/REPIN6.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
