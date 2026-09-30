@@ -6,6 +6,7 @@
  * (capabilities/tools.ts), never in the manifest: an id DataPass does not know is shown as unknown
  * and nothing is run for it. Install commands are shown to copy, never run.
  */
+import { provenanceFromPublisher, type ToolProvenanceInfo } from "../capabilities/provenance";
 import { TOOLS, type InstallHint, type ProbeState, type ToolDefinition, type ToolObservation } from "../capabilities/tools";
 import { onlyForText, outOfRoute, validateVariantRefs } from "../readiness/variantScope";
 import { extractVersion, isRangeError, parseRange, satisfies, versionText, type VersionRange } from "./versions";
@@ -37,6 +38,8 @@ export interface ToolchainTool {
   extensionIds?: string[]; install?: InstallHint; note?: string;
   /** DataPass has a probe for it on this computer. */
   probe: boolean;
+  /** TOOLPROV1: provenance in the Common tool-catalog vocabulary (filled by knownTools() from publisher). */
+  provenance?: ToolProvenanceInfo;
 }
 
 /**
@@ -78,8 +81,8 @@ const NOT_PROBED: ToolchainTool[] = [
 let known: ReadonlyMap<string, ToolchainTool> | undefined;
 export function knownTools(): ReadonlyMap<string, ToolchainTool> {
   known ??= new Map([
-    ...TOOLS.map((t): [string, ToolchainTool] => [t.id, { id: t.id, label: t.label, kind: t.kind, publisher: t.publisher, extensionIds: t.extensionIds, install: t.install, note: t.note, probe: t.kind === "extension" || t.kind === "cli" || t.kind === "workspace-file" }]),
-    ...NOT_PROBED.map((t): [string, ToolchainTool] => [t.id, t])
+    ...TOOLS.map((t): [string, ToolchainTool] => [t.id, { id: t.id, label: t.label, kind: t.kind, publisher: t.publisher, extensionIds: t.extensionIds, install: t.install, note: t.note, probe: t.kind === "extension" || t.kind === "cli" || t.kind === "workspace-file", provenance: provenanceFromPublisher(t.publisher) }]),
+    ...NOT_PROBED.map((t): [string, ToolchainTool] => [t.id, { ...t, provenance: provenanceFromPublisher(t.publisher) }])
   ]);
   return known;
 }

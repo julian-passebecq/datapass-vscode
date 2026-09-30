@@ -1,3 +1,5 @@
+import { provenanceFromFabricTool, type ToolProvenanceInfo } from "./capabilities/provenance";
+
 export type CatalogAction = "read" | "clone" | "configure" | "run" | "scaffold" | "deploy";
 
 export interface ToolCatalogItem {
@@ -11,6 +13,8 @@ export interface ToolCatalogItem {
   description?: string;
   verifiedRef?: string;
   actions: CatalogAction[];
+  /** TOOLPROV1: provenance in the Common tool-catalog vocabulary, derived from source + kind. */
+  provenance?: ToolProvenanceInfo;
 }
 
 export interface ToolCatalog {
@@ -50,7 +54,8 @@ export function parseToolCatalog(raw: unknown): ToolCatalog {
       relativePath: typeof item.relativePath === "string" ? item.relativePath : undefined,
       description: typeof item.description === "string" ? item.description : undefined,
       verifiedRef: typeof item.verifiedRef === "string" ? item.verifiedRef : undefined,
-      actions: item.actions as CatalogAction[]
+      actions: item.actions as CatalogAction[],
+      provenance: provenanceFromFabricTool({ source: String(item.source), kind: String(item.kind) })
     } satisfies ToolCatalogItem;
   });
 
