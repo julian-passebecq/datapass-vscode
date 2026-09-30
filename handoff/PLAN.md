@@ -384,7 +384,8 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 
 | Session | Role | Package / job | est. M | GO date | Reports to |
 |---|---|---|---|---|---|
-| PM DataPass 17 (local_8b1410a1), live, pinned | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
+| PM DataPass 17 (local_8b1410a1), retired → PM 18 | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
+| PM DataPass 18 (local_241d9a17, ex RESERVE PM 18), live, pinned | global PM + architect (Opus medium) | 30 Sept day + Codex night relay (hand-off handoff/sessions/2026-09-30-0915-pm-datapass-17.md; GO go/PM-DataPass-18.md) | — | 2026-09-30 · V3.8 | Julian (direct) |
 | (retired, pinned until its subagents VISM/SCHED1 report) PM DataPass 16 (local_0e9d67b3), handed off at ~251 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0300-pm-datapass-15.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 15 (local_7024f765), handed off at ~215 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0420-pm-datapass-13.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | (retired, pinned) PM DataPass 13 (local_6dbe9065), handed off at ~355 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-30-0230-pm-datapass-12.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
@@ -392,7 +393,8 @@ Kept by **PM DataPass 18** (from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16
 | (retired, pinned) PM DataPass 11 (local_2522f634), handed off at ~200 K | global PM (Opus medium) | night 29→30 Sept (hand-off handoff/sessions/2026-09-29-2355-pm-datapass-10.md) | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired, kept pinned: parent of COORD 12 and reserves) PM DataPass 10 (local_e46b43b6) | global PM | handed off at ~235 K | — | 2026-09-29 · V3.7 | Julian (direct) |
 | (retired) PM DataPass 9 (local_2265fbb2) | global PM | handed off to PM 10 at 22:15 | — | 2026-09-29 · V3.7 | — |
-| COORD DataPass 18 (local_13a12722, ex RESERVE COORD 19), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-18.md, hand-off go/handoff-coord-17.md) | — | 2026-09-30 · V3.7 | PM 17 |
+| COORD DataPass 18 (local_13a12722), retired → COORD 21 | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-18.md, hand-off go/handoff-coord-17.md) | — | 2026-09-30 · V3.7 | PM 17 |
+| COORD DataPass 21 (local_6e74a178, ex RESERVE COORD 21), live, pinned | coordinator (Sonnet low) | cloud/hub/data-xray/bridge merges, chips, quota log (GO go/COORD-DataPass-21.md, hand-off go/handoff-coord-18.md) | — | 2026-09-30 · V3.8 | PM 18 |
 | CODER R41 (local_e181f6c1) | coder (Opus medium) | ARCHV1b (go/ARCHV1b.md; queue go/TODAY-queue-2026-09-30.md) | 5 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R42 (local_21a414c5) | coder (Opus medium) | REPIN6 (go/REPIN6.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
 | CODER R43 (local_936a7004) | coder (Opus medium) | SCHED1b (core change, PM approves) (go/SCHED1b.md; queue go/TODAY-queue-2026-09-30.md) | 8 | 2026-09-30 · V3.8 | COORD 18 / COORD Common 4 |
