@@ -418,6 +418,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | IACEV1b | cloud `iac-imports` | re-export plan/what-if/Infracost readers from Common iac-hcl (!134), delete the cloud copy, goldens byte-identical (PM 22) | !134 | 5 | N2 |
 | IACEV1c | Common `iac-bicep` | what-if bound to Bicep nodes (typed gaps until then) | IACEV1b | 6 | backlog |
 | TBX1c | standalone toolbox assets | add the missing Workspace Monitoring asset (§ 19) and reconcile the standalone 12-asset list with Common tool-catalog/3 routing (TBX1a finding) | TBX1a | 4 | N3 |
+| NAV1 | cloud `workbench-ui` host | one host opener for cross-view links (Design/Desired/Actual → Observe run, lineage node, design/architecture view, and back); needed by § 44 step 14 "back to architecture with evidence" (IACFAB1-UI finding) | IACFAB1-UI, OBSFAB1b | 6 | N3 |
 | E2E-ACa | cloud fixtures + tests | § 44 lifecycle scenario in FOIL synthetic set (notebook %run chain + SJD candidate, Fabric dbt Job, Airflow, TF Fabric desired, drifting actual settings, Spark plan, CU spike, VOL1 refuted) + skeleton E2E with skips (PM 22 split, go/E2E-ACa.md) | — | 15 | N2 (now) |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
 
