@@ -415,7 +415,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 | MAT1 | standalone | Git-first materialization: candidate native files + provenance stamp (source id, revision, generator, target, hash, env) → diff → branch/MR; never deploy | CAPROUTE1a | 18 | N3 |
 | E2E-AC | standalone + cloud tests | § 44 lifecycle story as an automated E2E on the FOIL synthetic set | N1-N3 | 20 | RC |
 
-Totals: 18 coder packages + docs, ~270 M. N1 = 9 packages startable tonight (TOOLPROV1, CAPROUTE1a, EXEC1a, DBTRUN1, FABEVID1, SPARKPLAN1, OBSFAB1a, COSTACT1, FABINT1). N2/N3 are taken by reserve coders as dependencies merge. GOs: `D:\PROJ\datapass\go\<PKG>.md`.
+**Option A (Julian, 30 Sept ~18:45, "lets go"): every role on Opus 5.5 medium except debug/tester (Sonnet); 10 parallel coders; coordinators switch at hand-off (reserves COORD 28/29/Common 6 set to Opus medium by PM 22); target V4 done Thu 1 Oct ~08:00.** Totals: 18 coder packages + docs, ~270 M. N1 = 9 packages startable tonight (TOOLPROV1, CAPROUTE1a, EXEC1a, DBTRUN1, FABEVID1, SPARKPLAN1, OBSFAB1a, COSTACT1, FABINT1). N2/N3 are taken by reserve coders as dependencies merge. GOs: `D:\PROJ\datapass\go\<PKG>.md`.
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
@@ -426,7 +426,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | PM DataPass 17 (local_8b1410a1), retired → PM 18 | global PM (Opus medium) | night 29→30 Sept + S2 (hand-off handoff/sessions/2026-09-30-0525-pm-datapass-16.md; GO go/PM-DataPass-17.md) | — | 2026-09-30 · V3.7 | Julian (direct) |
 | PM DataPass 21 (local_9ad369ad), retired at ~215 K → PM 22 | global PM + architect (Opus medium) | 30 Sept afternoon + Codex night relay (GO go/PM-DataPass-21.md; hand-off handoff/sessions/2026-09-30-1600-pm-datapass-19.md) | — | 2026-09-30 · V3.8 | PM 19 |
 | PM DataPass 22 (local_88062104), live, pinned (took over ~18:30) | global PM + architect (Opus medium) | night burn 30 Sept (GO go/PM-DataPass-22.md; hand-off handoff/sessions/2026-09-30-1815-pm-datapass-21.md) | — | 2026-09-30 · V3.8 | Julian (via ASSISTANT 1) |
-| RESERVE COORD DataPass 28 (local_34ead6aa), waiting | coordinator reserve (Sonnet low) | successor of COORD 27 | — | 2026-09-30 · V3.8 | COORD 27 |
+| RESERVE COORD DataPass 28 (local_34ead6aa), waiting | coordinator reserve (Opus medium, option A) | successor of COORD 27 | — | 2026-09-30 · V3.8 | COORD 27 |
 | ASSISTANT DATAPASS 1 (local_d1da3eeb), live, pinned | assistant (Julian relay) | chip spawner for Julian (Julian 30 Sept ~16:50: chips go through it) | — | 2026-09-30 · V3.8 | Julian |
 | PM DataPass 19 (local_43715a1b, ex RESERVE PM 19), retired at ~225 K → PM 21 (not archived: parent of PM 21) | global PM + architect (Opus medium) | 30 Sept day + Codex night relay (GO go/PM-DataPass-19.md; hand-off handoff/sessions/2026-09-30-1230-pm-datapass-18.md); hands off at 250 K to RESERVE PM 21 | — | 2026-09-30 · V3.8 | Julian |
 | PM DataPass 18 (local_241d9a17), retired at 314 K → PM 19 |
