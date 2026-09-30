@@ -553,6 +553,13 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER OBSFAB1b-2 (local_329cc3ad) | coder (Opus medium) | OBSFAB1b successor (go/handoff-inbox/OBSFAB1b-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER E2E-ACa-2 (local_f831517d) | coder (Opus medium) | E2E-ACa successor (go/handoff-inbox/E2E-ACa-1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
 | CODER SCHED1e (local_c07b8777, ex reserve N9) | coder (Opus medium) | SCHED1e | 3 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER EVORIGIN1 (local_9bc262e8, ex reserve N14) | coder (Opus medium) | EVORIGIN1 (core-change, PM reviews) (go/EVORIGIN1.md) | 6 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER DEPLOYFAB1 (local_852bfe32, ex reserve N15) | coder (Opus medium) | DEPLOYFAB1 (go/DEPLOYFAB1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER GITSEM1 (local_9fa6609f, ex reserve N16) | coder (Opus medium) | GITSEM1 (go/GITSEM1.md) | 10 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER OBSWSM1 (local_bd817f7a, ex reserve N17) | coder (Opus medium) | OBSWSM1 (cloud) (go/OBSWSM1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER IACARM1 (local_4720fdd0, ex reserve N18) | coder (Opus medium) | IACARM1 (go/IACARM1.md) | 8 | 2026-09-30 · V3.8 | COORD 30 |
+| CODER EDGEDOM1 (local_de01f8dd, ex reserve N19) | coder (Opus medium) | EDGEDOM1 (go/EDGEDOM1.md) | 5 | 2026-09-30 · V3.8 | COORD 30 |
+| RESERVE CODER N20 (local_6594afc0), RESERVE COORD 32 (local_02210024), RESERVE PM 25 (local_75f74959) | reserves (Opus medium), idle | successors per go/NIGHT-RELAY-2026-09-30.md | — | 2026-09-30 · V3.8 | PM 23 |
 | RESERVE CODER N10 (local_bf58f183) → EXEC1c, N11 → TBX1c, N12 → IACEV1c, N13 → INSIGHT1 (go/INSIGHT1.md), N14 → EXPORT1 (go/EXPORT1.md), N15 → REPIN7 (go/REPIN7.md, only open cloud re-pin); later WASTE1/PHYS1 after cloud !68, JSONL1a after Common !125, HOP6b after cloud !105; RESERVE COORD 31 (local_d1a2d7e3) standby | reserves (Opus medium) | go/RESERVE-night-2026-09-30.md; GOs go/EXEC1c.md, go/TBX1c.md, go/IACEV1c.md | — | 2026-09-30 · V3.8 | PM 23 |
 | CODER IACFAB1-UI (local_6d1a3a41) | coder (Opus medium) | IACFAB1-UI (go/IACFAB1-UI.md, MR after Common !136) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N4 | coder (Opus medium) | OBSFAB1b (go/OBSFAB1b.md, from v4/obsfab1a, MR after cloud !112) | 15 | 2026-09-30 · V3.8 | COORD 29 |
