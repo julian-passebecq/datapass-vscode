@@ -525,6 +525,12 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER R97 (local_846304e4) | coder (Opus medium) | CITHRU1 cloud CI two-stage (go/CITHRU1.md) | 10 | 2026-09-30 · V3.8 | COORD 26/27 |
 | CODER TOOLPROV1 (local_8ab0dd24) | coder (Opus medium) | TOOLPROV1 (go/TOOLPROV1.md, § V4-ARCHCORR N1) | 10 | 2026-09-30 · V3.8 | COORD 27 |
 | CODER CAPROUTE1a (local_13cdada7) | coder (Opus medium) | CAPROUTE1a (go/CAPROUTE1a.md, § V4-ARCHCORR N1) | 15 | 2026-09-30 · V3.8 | COORD 27 |
+| CODER PRACT4 (local_e8e7233f) | coder (Opus medium) | PRACT4 (go/PRACT4.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER TBX1a (local_5749433c) | coder (Opus medium) | TBX1a (go/TBX1a.md) | 10 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER MAT1 (local_ae115d77) | coder (Opus medium) | MAT1 (go/MAT1.md) | 18 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER CAPROUTE1b (local_846f59c4) | coder (Opus medium) | CAPROUTE1b (go/CAPROUTE1b.md, incl. router id alignment + FABINT1 facts) | 12 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER EXEC1b (local_d6d19cfd) | coder (Opus medium) | EXEC1b (go/EXEC1b.md, MR after Common !133) | 15 | 2026-09-30 · V3.8 | COORD 29 |
+| CODER IACFAB1-UI (local_6d1a3a41) | coder (Opus medium) | IACFAB1-UI (go/IACFAB1-UI.md, MR after Common !136) | 12 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N4 | coder (Opus medium) | OBSFAB1b (go/OBSFAB1b.md, from v4/obsfab1a, MR after cloud !112) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N3 (local_5d942588) | coder (Opus medium) | E2E-ACa (go/E2E-ACa.md) | 15 | 2026-09-30 · V3.8 | COORD 29 |
 | RESERVE CODER N2 (local_89a0a6f7) | coder (Opus medium) | IACEV1b (go/IACEV1b.md, MR after Common !134) | 6 | 2026-09-30 · V3.8 | COORD 29 |
