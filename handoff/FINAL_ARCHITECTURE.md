@@ -4,7 +4,9 @@ Sources: datapass-vscode `origin/main` handoff/PLAN.md § V4-* and reviews 2026-
 
 ## 1. Engine vision
 1. DataPass is a complete **static + observed semantic engine**: it understands every file of any modern cloud/data/ML Git repo (Spark, SQL, dbt, orchestrators, BI, IaC, containers, CI, APIs, streaming, ML/RAG, every data/table format) on any platform, and it never executes client code.
-2. There is **one project model and one lineage graph**. Every node and edge records its origin (static, artifact, runtime, ai-proposed, ai-confirmed) and its evidence.
+2. There is **one project experience over multiple typed domain graphs**: data lineage, control/orchestration, infrastructure, deployment, BI semantic, runtime execution, Git/history. Each domain normalizes its facts into its own contract; a unified projection joins them for the views. Every node and edge records its origin (static, artifact, runtime, ai-proposed, ai-confirmed) and its evidence.
+
+   **Lifecycle planes:** Cloud = design, IaC = desired state, Deploy = transition, Observe = reality (monitoring is a sub-domain of Observe).
 3. **The client's AI fills gaps** through the bridge (`lineage.gap.v1`): bounded, redacted and cited. A human confirms each answer, and nothing is promoted silently.
 4. **Views are projections:** Hop and each VSIX (Cloud, IaC, Infra, Observe, Git companion, Home, Data X-ray) show the same graph. Observe compares what runs against what the code says.
 5. **One project, several profiles:** local and cloud are two profiles of the same project, with a diff and a readiness check between them. Factory runs the local profile.
@@ -50,6 +52,8 @@ Sources: datapass-vscode `origin/main` handoff/PLAN.md § V4-* and reviews 2026-
 | Portability | common + cloud | 0.25.0 variants | — | PORT0, PORT1, PORT2 (profiles + local↔cloud diff, incl. T1), PORT3, PORT4, E1, T2 | K1, K4 |
 | Factory | datapass-factory | ADR OPEN | — | F0, F0D, F1, F2, F3, F4, R3 | F0D (Julian), C2 |
 | Packaging / release | all | 1.1.x releases | — | E2E1, RV1a/b/c, E2E2, RVF, PUB1 (GitLab npm) | all VSIXs |
+
+**Status refresh 2026-09-30 (DOCS-AC; the tables above keep their 2026-09-29 text).** Verified merged on `origin/main` (merge commit found by id): DBT3W (standalone), MODEL1 (Common, Kimball), BIPRAC1 (Common), PRACT2 (Common), RUNX1 (Cloud), MULTI1a (Cloud), VOL1 (Cloud), SCHED1 (Common; SCHED1c Cloud), IACSPI1a and IACSPI1b (Common), APIX3 (Cloud), APIX4 (Common), DASH1 (Cloud). Unverified: none. Whether MODEL1 also delivered the K1 freeze + CI additive-only check: check.
 
 **Data X-ray in the engine:** (a) the file/table-level inspector and the project-level data view, plugged in through VSPI; (b) one reader per format: XR1/FMT1 moves the Parquet, Delta, Iceberg, DuckLake readers into Common under K8 and adds ORC, Avro, Hudi, Paimon; its dbt-manifest, OpenLineage, pipeline-JSON and `databricks.yml` readers seed DBT1, OL1, A4a and ORC1; XR2 switches its DAG view to Common facts; (c) XR3 opens and inspects bridge JSON (AI exchange, `lineage.gap.v1`, overlay); data values stay local (SEC2).
 
