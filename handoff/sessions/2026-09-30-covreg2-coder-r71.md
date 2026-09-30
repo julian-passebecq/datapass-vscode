@@ -1,0 +1,16 @@
+HAND-OFF COVREG2 (R71, Opus medium, rules V3.8, 2026-09-30): the package is code-complete and waiting on CI and the PM.
+- MR: https://gitlab.com/juliandatapass-group/datapass-vscode-common/-/merge_requests/114 (non-draft). Branch v4/covreg2, head 12936d8 (commit 38079ad + a merge of origin/main). Worktree: datapass-vscode-common/.worktrees/covreg2.
+- Local results: repo-inventory tests 11/11 pass, scripts/tests 19/19 pass. check:contracts, check:boundaries and check:coverage pass (problems=0, baselinedUnknown=137).
+- Still open:
+  - the local-windows pipeline must go green;
+  - PM 18 must approve the additive schema change (externalOwner);
+  - COORD Common 4 merges by hand.
+- If CI fails:
+  - fix it in the worktree;
+  - rerun `npm run build && node scripts/check-coverage.mjs`;
+  - push.
+- If another wave-3 MR merges first on coverage-registry.json: merge origin/main, take the union of the rows, rerun check:coverage, update coverage-unknown-baseline.json (`--baseline-draft`), push.
+- PM 18 decisions are listed in the MR description:
+  - FMT1, JSONL1, IAC12 and ML1b have no PLAN row;
+  - terraform.tfstate and Caddyfile have no family (baselined);
+  - foil-synthetic.index.json is stale (422 of 608 files), follow-up MR.
