@@ -390,6 +390,7 @@ Source: [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026
 - AC-D4 Everything that reads provider state (FABEVID1, OBSFAB1, SPARKPLAN1, TBX1b) is **replay/import-only in V1**, with fixtures in the synthetic FOIL set. Live reading stays behind the existing live-provider gates. Evidence origin stays explicit (§ 34): synthetic ≠ observed, never "production confirmed".
 - AC-D5 Observe = deployed state + runtime + monitoring (monitoring is a sub-domain, § 10). Reconciliation verdicts reuse RUNX1's confirmed / not-observed / refuted, plus `unknown`.
 - AC-D6 Typed domain graphs (§ 25): relation kinds are already typed, so this is a docs fix first (DOCS-AC). An optional domain tag per edge kind comes later.
+- AC-D8 (PM 22, FABINT1 finding): the official Fabric VS Code extension API (workspace, openArtifact) is allow-listed to Microsoft extensions. DataPass uses only detection/version/view-container facts; context, item identity and native open are recorded as unsupported and fall back to static analysis + portal link. No workaround via private or undocumented commands (§ 24). Revisit if Microsoft opens the API. Record: go/handoff-inbox/FABINT1-api-investigation.md.
 - AC-D7 PM additions beyond the brief: an **EXEC1 fixture set per native kind** in the FOIL synthetic repos (so every kind is tested); the **lifecycle E2E story (§ 44)** becomes the V4 acceptance test (E2E-AC, after the waves).
 
 | Pkg | Repo · package | Scope (one MR each) | Depends on | est. M | Wave |
