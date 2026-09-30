@@ -170,6 +170,34 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-01 (navigation / UX, Studio, réponses § 28 et § 31)
+
+Source : `D:\PROJ\datapass\handoff\JULIAN_UX_NAV_AND_STUDIO_2026-10-01.md`. Plan : PLAN.md § V4-NAV (PM 24). Critique du PM en une phrase par idée.
+
+| Idée | Cible | Critique |
+|---|---|---|
+| § 28 : dbt canonique, puis notebook Fabric « détachable » (réponse 1b) | V5 (après MAT1 + DBTRUN1) | Bon choix : le détachement est un simple changement d'autorité tracé par un tampon ; l'exécuter sur Spark Fabric est faisable, c'est le flux Fabric normal de l'utilisateur, DataPass n'exécute rien. |
+| § 31 : cycle de vie = système de navigation, pas des onglets ; pas d'étapes dans l'arbre de gauche | V4-NAV (AC-N1, étape affichée dans Context par NAVCTX2) | Juste : l'arbre VS Code est une liste de fichiers/composants, y mettre des étapes l'aurait cassé. |
+| Profondeur ↑/↓ (projet → sous-projet → artefact → étape → opération) + vues ←/→ | NAVSPI1, NAVSVC1, NAVLOC1, NAVKEYS1 | Le cœur de valeur ; faisable car les échelles existent déjà (view-spi, VIS5 cloud, Hop). Risque : le niveau « opération » n'existe que là où les analyseurs donnent des positions (SQL, PySpark). |
+| Vues prédéfinies par type d'artefact × niveau, modifiables, sauvables, réinitialisables ; grammaire factorisée | NAVSPI1 (catalogue JSON), NAVCAT1, NAVREN1–4 | Très utile et modulaire ; on garde deux moteurs de rendu (standalone, cloud) mais un seul catalogue. |
+| Panneau droit fin permanent : home, flèches, icônes rapides, liste des vues | NAVBAR1 (barre latérale secondaire, déjà utilisée) | Faisable tel quel ; « permanent » = affiché par défaut et mémorisé, VS Code garde la main sur la largeur. |
+| Mini-carte « vous êtes ici » entourée en rouge, variantes haut-bas / gauche-droite, ou arbre des granularités | NAVMAP1 | Utile pour l'orientation ; la mini-carte doit rester petite sinon elle doublonne l'architecture. |
+| Zone du bas : résumé, étape du process, pourquoi, alternatives, patterns, que faire sur Fabric (IDs, paramètres) | NAVCTX1, NAVCTX2, NAVFAB1 | La partie la plus différenciante pour un client ; le contenu vient des faits, des rationales et du catalogue, avec des trous explicites plutôt que du texte inventé. |
+| Fichiers d'explication écrits par l'IA pour le client | NAVAIX1 | Acceptable s'ils restent marqués « proposé par l'IA » et périmés quand le code change ; sinon ils deviennent de la fausse documentation. |
+| Clic sur une boîte du DAG → détail de l'opération + code coloré à droite | NAVCODE1 (+ NAVHOST1) | Déjà fait par Hop pour les étapes ; on le généralise. |
+| Git diff / retour dans l'historique à gauche pour l'artefact courant | NAVHIST1 | Utile et simple (lecture seule, jamais de checkout). |
+| Spark : métriques théoriques shuffle / skew / coût avant exécution | NAVSPARK1 + NAVPERF1 | Faisable en structurel (frontières de shuffle, stratégie de jointure) ; le skew et le coût restent des trous ou du relatif tant qu'on n'a pas de volumétrie : on ne donnera jamais un chiffre en euros inventé. |
+| SQL : partitions, index, vitesse de requête | NAVSQL1 + NAVPERF1 | Partitions/index/forme de requête : oui. Vitesse : **pas faisable en statique**, remplacée par « élagage de partition possible oui/non » ; la vitesse observée reste dans Observe. |
+| Lignage et flux de données partout (où, quand, comment, par quel process) | NAVLIN1 | Les ~80 % communs ; le meilleur rapport valeur/effort de la liste. |
+| Vue type Power Query (tables, étapes, couleurs cohérentes avec la mini-carte) | NAVREN4 (V4) | Bon marché car Hop extrait déjà les étapes ; l'échantillon de données par l'IA reste V5. |
+| Spark job vs notebook comme alternative d'architecture | NAVPERF1 (carte EXEC1c) | Important pour plusieurs clients ; dépend de EXEC1c, sinon trou explicite. |
+| « Git d'un projet cloud » : multi-fournisseurs, variantes activables avant push | investigate (après V4-NAV) | Vision juste mais large ; les variantes existent déjà (0.25), le lien avec la navigation se fera par des vues du catalogue. |
+| Data X-Ray via un bouton sur les extensions OneLake / Fabric (Microsoft, Gerhard) | XRAYOL1 (V4, petit) | Faisable : menus sur leurs vues par identifiant (objet cliqué non garanti) et fichiers de leurs FileSystemProvider ouverts via `workspace.fs` ; l'API Fabric de Microsoft reste réservée (AC-D8). |
+| Module Git « supercharged » multi-dépôts (Sankey n'était qu'un exemple) | V5 | Utile mais pas nécessaire à la navigation ; l'historique par artefact (NAVHIST1) couvre le besoin immédiat. |
+| FastAPI expose des métriques OpenTelemetry | V5 (lecteur Observe en replay) | Faisable plus tard (import OTLP/Prometheus comme les autres lecteurs replay) ; peu de valeur tant qu'aucun client n'a d'API FastAPI en prod. |
+| SQLRooms / DuckCon : Studio hors VS Code re-plateformé, adaptateur Factory → web app | V5 (Factory/Studio) | Pertinent pour Studio/Mosaic, pas pour DataPass VS Code ; brouillon GPT `datapass.studio.workspace/1` (datapass-studio!6) non qualifié. « Hop » reste notre langage visuel, pas Apache Hop. |
+| Premier client FOIL éolien ; client « vanilla » = remplaçant perso Deepnote/Jupyter/Streamlit (web) | investigate (Studio) | Bonne cible de démo ; le client vanilla relève de Studio, pas de l'extension. |
+
 ## Idées de Julian — 2026-09-30 (correction d'architecture V4)
 
 - Brief complet : [JULIAN_V4_ARCH_CORRECTION_2026-09-30.md](JULIAN_V4_ARCH_CORRECTION_2026-09-30.md). Cycle Understand → Design → IaC/Git → Deploy → Observe → Optimize ; ExecutionUnit ; routeur de capacités par opération ; provenance des outils ; Observe = réalité (état déployé, runtime, monitoring) ; boucle théorique ↔ mesuré ; ne jamais cloner un outil natif. Cible : V4 (PLAN § V4-ARCHCORR, vagues N1–N3, E2E-AC à la RC).
