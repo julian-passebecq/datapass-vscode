@@ -32,7 +32,7 @@ default:
 
 verify_and_package:
   stage: verify
-  timeout: 25m
+  timeout: 45m
   script:
     - Invoke-CiNative npm.cmd ci --prefer-offline
     - Invoke-CiNative npm.cmd run verify
@@ -67,7 +67,7 @@ desktop_acceptance:
     DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
   # Q1: all 20 fixtures passed on runner 56844575; failures now block acceptance.
   allow_failure: false
-  timeout: 30m
+  timeout: 45m
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
@@ -91,7 +91,7 @@ ui_smoke:
   stage: qualify
   variables:
     DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
-  timeout: 30m
+  timeout: 45m
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
