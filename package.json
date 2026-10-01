@@ -1174,7 +1174,8 @@
         {
           "id": "datapass.context",
           "name": "Context",
-          "type": "webview"
+          "type": "webview",
+          "when": "!datapass.hidden.view.context"
         }
       ],
       "datapass-details": [
@@ -3278,6 +3279,10 @@
             "view.architecture": {
               "type": "boolean",
               "description": "Architecture panel: The project diagram (bottom panel)"
+            },
+            "view.context": {
+              "type": "boolean",
+              "description": "Context panel: Details of where you are: summary, process step, why, patterns, Fabric, evidence (bottom panel)"
             },
             "view.aiExchange": {
               "type": "boolean",

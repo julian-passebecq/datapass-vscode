@@ -25,6 +25,7 @@ export const SURFACES: readonly Surface[] = [
   { id: "view.work", kind: "view", viewId: "datapass.work", label: "Work view", detail: "Module cards and capability operations (V2)" },
   { id: "view.galaxy", kind: "view", viewId: "datapass.galaxy", label: "Galaxy view", detail: "Platform cards and qualification (V1)" },
   { id: "view.architecture", kind: "view", viewId: "datapass.architecture", label: "Architecture panel", detail: "The project diagram (bottom panel)" },
+  { id: "view.context", kind: "view", viewId: "datapass.context", label: "Context panel", detail: "Details of where you are: summary, process step, why, patterns, Fabric, evidence (bottom panel)" },
   { id: "view.aiExchange", kind: "view", viewId: "datapass.aiExchange", label: "AI view", detail: "Copy a DataPass file for your AI, paste its answer (secondary side bar)" },
   { id: "view.details", kind: "view", viewId: "datapass.details", label: "Details", detail: "The selected component or sub-project (secondary side bar)" },
   { id: "ai.agent", kind: "aiTab", label: "AI view: Agent tab", detail: "Work orders for Claude Code or Codex (still opt-in per machine and project type)" },
