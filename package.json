@@ -33,6 +33,38 @@
   "contributes": {
     "commands": [
       {
+        "command": "datapass.nav.up",
+        "title": "DataPass: Navigate Up (coarser level)"
+      },
+      {
+        "command": "datapass.nav.down",
+        "title": "DataPass: Navigate Down (finer level)"
+      },
+      {
+        "command": "datapass.nav.left",
+        "title": "DataPass: Previous View"
+      },
+      {
+        "command": "datapass.nav.right",
+        "title": "DataPass: Next View"
+      },
+      {
+        "command": "datapass.nav.home",
+        "title": "DataPass: Navigate to Project"
+      },
+      {
+        "command": "datapass.nav.back",
+        "title": "DataPass: Navigate Back"
+      },
+      {
+        "command": "datapass.nav.forward",
+        "title": "DataPass: Navigate Forward"
+      },
+      {
+        "command": "datapass.nav.pickView",
+        "title": "DataPass: Pick a View…"
+      },
+      {
         "command": "datapass.refresh",
         "title": "DataPass: Refresh Control Plane",
         "icon": "$(refresh)"
@@ -1817,6 +1849,38 @@
       ],
       "commandPalette": [
         {
+          "command": "datapass.nav.up",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.down",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.left",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.right",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.home",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.back",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.forward",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.pickView",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.hop.explain",
           "when": "!datapass.hidden.palette.full"
         },
@@ -2648,9 +2712,57 @@
         }
       ]
     },
+    "keybindings": [
+      {
+        "command": "datapass.nav.up",
+        "key": "shift+alt+p up",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.down",
+        "key": "shift+alt+p down",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.left",
+        "key": "shift+alt+p left",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.right",
+        "key": "shift+alt+p right",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.home",
+        "key": "shift+alt+p home",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.back",
+        "key": "shift+alt+p backspace",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.forward",
+        "key": "shift+alt+p shift+backspace",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.pickView",
+        "key": "shift+alt+p v",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      }
+    ],
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.nav.globalKeys": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "markdownDescription": "Global navigation chords while a DataPass navigation view is open: `Shift+Alt+P` then an arrow, `Home`, `Backspace` (back), `Shift+Backspace` (forward) or `V` (pick a view). They never fire in the editor, the terminal, a tree or an input box, and no VS Code default uses `Shift+Alt+P`. Plain arrows inside the navigation views work either way. Rebind them in Keyboard Shortcuts (`datapass.nav.`)."
+        },
         "datapass.diagramCloud.url": {
           "type": "string",
           "default": "",
