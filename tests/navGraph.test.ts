@@ -51,7 +51,7 @@ test("graph: Location node selected, click selects, double-click goes down", () 
   assert.equal(cur[0]!.attrs!["aria-current"], "location");
   const job = byCls(out, "nv-graph-node").find(n => n.attrs!["data-node-id"] === "n:job")!;
   assert.deepEqual(job.on, { action: "select", nodeId: "n:job" });
-  assert.equal(job.attrs!["data-nav-down"], "n:job");
+  assert.equal(job.attrs!["data-nav-dblclick"], "n:job");
   assert.match(job.attrs!.style!, /--nv-accent:var\(--vscode-charts-/);
 });
 
@@ -65,4 +65,11 @@ test("graph: off-shape DTO is a typed hole, no graph is an empty note", () => {
 test("styleColor: hex as is, token as theme variable with fallback", () => {
   assert.equal(styleColor("#123456", "x"), "#123456");
   assert.equal(styleColor("lineage.dataset", "red"), "var(--nv-color-lineage-dataset, red)");
+});
+
+test("the renderer registers the graph kind and the shell CSS carries its look", async () => {
+  const { registeredLayouts } = await import("../src/webview/views/renderer");
+  const { navViewCss } = await import("../src/views/viewHtml");
+  assert.ok(registeredLayouts().includes("graph"));
+  assert.match(navViewCss(), /\.nv-graph \.node/);
 });

@@ -22,7 +22,7 @@ const byCls = (n: VNode, cls: string) => all(n).filter(x => x.cls?.split(" ").in
 const texts = (n: VNode) => all(n).map(x => x.text).filter(Boolean);
 
 test("built-in layouts registered", () => {
-  assert.deepEqual(registeredLayouts().sort(), ["detail-card", "surface", "table"]);
+  for (const k of ["detail-card", "surface", "table"]) assert.ok(registeredLayouts().includes(k), k); // other kinds register in their own files
 });
 
 test("table: rows, origin badge per value (cell origin wins), typed holes, selectable rows", () => {

@@ -4,11 +4,11 @@
  * (`core/project/layout.ts`) and look (`.canvas` / `.node` / `.edges`), so a nav graph and the Workbench diagram
  * read the same; no new graph engine. Groups become lanes; the Location node gets the selected style.
  * Each node's accent is its `navColor` (shared with the mini-map and code-steps), the border its preset style.
- * Click selects (`{type:"select"}`), double-click goes down (`data-nav-down`, wired by the renderer).
+ * Click selects (`{type:"select"}`), double-click goes down (`data-nav-dblclick`, wired by the renderer).
  * The DTO is untrusted: anything off-shape becomes a typed hole, never a guess.
  */
 import { layoutGraph, type LayoutEdgeInput } from "../../../core/project/layout";
-import { navColor, NAV_HERE_DEFAULT } from "../../../core/navigation/navPalette";
+import { navColor, NAV_HERE_DEFAULT } from "./graphPalette";
 import { cssToken, holesNode, label, type Hole, type Labels, type LayoutModel, type VNode } from "../model";
 
 /** The `datapass.graph-view/1` fields this layout reads (view-spi `GraphView`, structural until vendored). */
@@ -90,10 +90,10 @@ function graphBlock(g: GraphViewLike, title: string, labels: Labels, here: strin
     const n = byId.get(ln.id)!;
     const cur = isHere(n);
     const accent = navColor(n.id);
-    const style = `left:${ln.x}px;top:${ln.y}px;width:${ln.w}px;height:${ln.h}px;--nv-accent:${accent};--nv-border:${styleColor(n.style.color, accent)}${cur ? `;--nv-here:${NAV_HERE_DEFAULT}` : ""}`;
+    const style = `left:${ln.x}px;top:${ln.y}px;width:${ln.w}px;height:${ln.h}px;--nv-accent:${accent};--nv-node-border:${styleColor(n.style.color, accent)}${cur ? `;--nv-here:${NAV_HERE_DEFAULT}` : ""}`;
     const meta = n.kind === "group" ? `${n.memberIds.length} ${label(labels, "graph.members")}` : label(labels, `nodeKind.${n.kind}`);
     return { tag: "div", cls: `node nv-graph-node nv-selectable shape-${cssToken(n.style.shape)} border-${cssToken(n.style.border)}${n.certain ? "" : " uncertain"}${cur ? " selected nv-current" : ""}`,
-      attrs: { style, tabindex: "0", role: "button", "data-node-id": n.id, "data-nav-down": n.id, title: `${n.label} · ${label(labels, "graph.openHint")}`, ...(cur ? { "aria-current": "location" } : {}) },
+      attrs: { style, tabindex: "0", role: "button", "data-node-id": n.id, "data-nav-dblclick": n.id, title: `${n.label} · ${label(labels, "graph.openHint")}`, ...(cur ? { "aria-current": "location" } : {}) },
       on: { action: "select", nodeId: n.id },
       children: [
         { tag: "span", cls: "nodetop", text: meta },
