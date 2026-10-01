@@ -24,9 +24,13 @@ Sources: `glab` MR states at ~12:30 (vscode, Common, cloud, studio, data-xray), 
 - **Common V5 contracts (b3, S2):** !172, !175, !178, !180, !179 approved freeze-free; !173 OTELSPI1 pipeline skipped → run it before V5FREEZE1 so it can join v3 (TL-2).
 
 ## c. CI saturation (runner local-windows, 10–15 concurrent jobs; never touch the runner)
-- c1 (S2) Pipelines on conflicting MRs are wasted work: cancel and re-run only after the rebase. Do not run MR pipelines on drafts (`rules: if $CI_MERGE_REQUEST_DRAFT == "true"` → manual) and use `-o ci.skip` on WIP pushes (already in the GOs).
-- c2 (S2) Common: run per-package jobs only for changed packages (`rules: changes:` per workspace) on MR pipelines; the full matrix stays required on main and on the merge train. Detail and job list: V4-TECHLEAD-REVIEW.md § c.
-- c3 (S3) Cache `node_modules` by lockfile hash per repo; cloud's 19-slot holds on 1 Oct came from 9 re-runs at once: re-run 3 at a time.
+Measured by TECHLEAD-V4 (V4-TECHLEAD-REVIEW.md § c, f142236). Required checks are unchanged by every item.
+- c1 (S2) **Cloud cache:** 104 of 197 runner-minutes per main pipeline are cache unpack/repack. Make caches `policy: pull` everywhere except one writer job: ~200 min saved per MR. **CIFIX1** (with c2, c4): 3 M, one coder now.
+- c2 (S1 for releases) **vscode checkout:** 4 of the last 6 desktop reds die at checkout; copy cloud's `GIT_CLEAN_FLAGS` + longpaths fix. !217 only treats the symptom (b4).
+- c4 (S2) **Auto-cancel redundant pipelines** is off in cloud and Common: 540 min in 8 h ran in superseded pipelines. Turn it on (project setting, not the runner) with `interruptible: true` on test/build jobs. **c10 decision (TECH LEAD): on for MR branches and for main too**, since a newer main commit re-runs every required check. Release/tag jobs stay `interruptible: false`.
+- c5 (S3) vscode: a `merge-candidate` label tier + `rules: changes` for the desktop shards (30–80 min per MR); full matrix on main and on labelled MRs.
+- c7 (S3) cloud: merge the 11 `*_ui` jobs into 3 shards.
+- Process (unchanged): no pipelines on conflicting or draft MRs, `-o ci.skip` on WIP, re-run 3 at a time.
 
 ## d. Risks and V4+NAV VSIX checklist (ship today)
 1. NAV rebase train merged through NAVERD1; NAVE2E1 green (acceptance + screenshots), or the release says which NAV views are not in it.
@@ -39,4 +43,4 @@ Sources: `glab` MR states at ~12:30 (vscode, Common, cloud, studio, data-xray), 
 8. Guided tutorial with screenshots for Julian's test session (standing gate) built from NAVE2E1 screenshots.
 9. CHANGELOG in user words; "planned" for MAT1 command, NAVPERF1 if cut, X-Ray button if x!5 still red.
 
-**Top 5 V4 actions, in order:** (1) NAVWIRE1 (+ a7 fix + a9 self-registration, 5+2+4 M) → NAVDATA1 (a8), then the NAV rebase train with 3 coders (b1, go/NAV-train-conflict-map.md); (2) assign NAVREN2 now (a1); (3) VERBUMP1 → V5FREEZE1 → REPIN5 before the VSIX (a2); (4) CI hygiene on MR pipelines: no runs on conflicting/draft MRs, changed-package jobs in Common (c1–c2); (5) NAVE2E1 + tutorial, then package the VSIX with the checklist (d).
+**Top 5 V4 actions, in order:** (1) NAVWIRE1 (+ a7 fix + a9 self-registration, 5+2+4 M) → NAVDATA1 (a8), then the NAV rebase train with 3 coders (b1, go/NAV-train-conflict-map.md); (2) assign NAVREN2 now (a1); (3) VERBUMP1 → V5FREEZE1 → REPIN5 before the VSIX (a2); (4) CIFIX1 now (c1 cache pull-only, c2 checkout fix, c4 auto-cancel; 3 M), then c5/c7; (5) NAVE2E1 + tutorial, then package the VSIX with the checklist (d).
