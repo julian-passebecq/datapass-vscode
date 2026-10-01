@@ -82,7 +82,9 @@ const GATED: Record<string, readonly string[]> = {
     // its title button on an explained file and the Home tile reach it in every mode).
     "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
     // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
-    "understanding.analyzeDbtProjects"
+    "understanding.analyzeDbtProjects",
+    // V5 EXPLAIN1: export the client-shareable explainer page (the lighter modes are at their palette budget).
+    "explain.export"
   ]
 };
 
