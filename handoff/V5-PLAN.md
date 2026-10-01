@@ -33,7 +33,7 @@ Binding decisions: ARCH_DECISIONS § "V5 architecture (TECH LEAD GLOBAL)" TL-1�
 | **ARCHCALL1** | Common + vscode | new GO (TL-7) | NAVCTX2 | 10 | W2 |
 | **LAYOUT1** | vscode | new GO (rc.1 remark) | NAVHOME1 | 10 | W2 |
 | STUDIO4 | studio | GO ready | STUDIO2 + STUDIO3 | 15 | W2 |
-| **V5FREEZE2** | Common | new GO (TL-2) | TOURSPI1, PEDA1a, ARCHCALL1 | 4 | W3 |
+| **V5FREEZE2** | Common | new GO (TL-2) | TOURSPI1, PEDA1a, ARCHCALL1, OTELSPI1 !173 (moved from V5FREEZE1, freeze review 1 Oct) | 4 | W3 |
 | V5E2E1 → **V5TUT1** → **V5REL1** | vscode | GO ready / new GOs | everything above | 12+6+6 | W3 |
 
 **Totals:** 42 packages, ~445 M (19 new GOs, ~196 M; Julian's 12:10 addenda 1–3 included). Already merged for V5: STUDIO0, STUDIO1, STUDIOCI1, MAT1, DBTRUN1.
