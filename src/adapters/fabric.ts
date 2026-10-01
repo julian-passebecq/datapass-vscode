@@ -7,6 +7,7 @@ import { parseToolCatalog, type CatalogAction, type ToolCatalog } from "../core/
 import { getProjectPlatformConfig } from "../core/projectState";
 import { resolveManifestPath } from "../core/projectManifest";
 import { projectRoot } from "../core/workspace/root";
+import { fabricNativeBridgeFacts, nativeBridgeDetail } from "../core/fabric/nativeBridge";
 
 export class FabricAdapter implements PlatformAdapter {
   readonly id = "fabric";
@@ -100,6 +101,7 @@ export class FabricAdapter implements PlatformAdapter {
         integrationTools.find(tool => tool.label === "Fabric Data Engineering")?.available
           ? "Fabric Data Engineering is installed. Local-sync and remote-VFS notebook editing are different routes; see Operations in the Work view."
           : "Fabric Data Engineering (SynapseVSCode.synapse) is not installed; notebook/Spark job work uses the Fabric portal until it is.",
+        nativeBridgeDetail(fabricNativeBridgeFacts(id => vscode.extensions.getExtension(id), { workspaceId: fabricConfig?.workspaceId })),
         "DataPass composes Fabric tooling; it does not replace vendor/community clients. Eventstream deployment activates target resources: review before deploying."
       ],
       catalog: {
