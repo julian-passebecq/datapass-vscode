@@ -1097,6 +1097,26 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.nav.tour.pick",
+        "title": "DataPass: Pick a Tour…",
+        "icon": "$(milestone)"
+      },
+      {
+        "command": "datapass.nav.tour.next",
+        "title": "DataPass: Next Tour Step",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "datapass.nav.tour.prev",
+        "title": "DataPass: Previous Tour Step",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "datapass.nav.jump",
+        "title": "DataPass: Jump to a Box…",
+        "icon": "$(search)"
       }
     ],
     "viewsContainers": {
@@ -2697,6 +2717,22 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.pick",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.next",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.prev",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.jump",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -3377,6 +3413,32 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.tours.generated": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Offer built-in journey tours generated from the project's lineage and execution facts (NAVTOUR1). Tours of your own live in `.datapass/tours.json`."
+        },
+        "datapass.tours.journeyLabels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "default": {
+            "lineage": "Data lineage",
+            "execution": "Execution"
+          },
+          "markdownDescription": "Display names of the tour journeys (journey id → label). Journeys not listed show their id."
+        },
+        "datapass.tours.labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "default": {},
+          "markdownDescription": "Override the words of the Navigator's Tours section (keys: heading, none, previous, next, stale, aiProposed, user, jump, jumpEmpty, pickTour, step)."
         }
       }
     },
@@ -3472,6 +3534,12 @@
           "**/.datapass/work-log.json"
         ],
         "url": "./schemas/datapass-work-log.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/tours.json"
+        ],
+        "url": "./schemas/datapass-tours.schema.json"
       }
     ],
     "walkthroughs": [

@@ -34,7 +34,7 @@ export class NavHost implements vscode.Disposable {
   readonly nav: NavigationService;
   private readonly subs: vscode.Disposable[] = [];
 
-  constructor(private readonly session: NavSession) {
+  constructor(readonly session: NavSession) {
     const map = () => session.projectMap();
     this.nav = new NavigationService(projectLadder(map));
     this.nav.dispatch({ type: "go", location: locationOf(session.selection(), map()) });
