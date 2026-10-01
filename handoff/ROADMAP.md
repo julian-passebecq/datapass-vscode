@@ -170,6 +170,12 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-01 13:45 (relayé par ASSISTANT DATAPASS 5 ; détail : effort-board/julian-idea-guided-tours-2026-10-01.md addendum 4)
+1. **Parcours guidé aussi en navigation normale** : la liste des étapes à suivre avec de petits checks, dans la nouvelle barre étapes (sidebar/mini-map), pas seulement pédagogie/entretien. → **V5, STEPBAR1** (go/V5-STEPBAR1.md, après TOUR2 !244 + NAVBAR1 !211).
+2. **Sortir les checks de l'arbre projet** : illisibles, ils dénaturent l'arbre qui doit rester au plus près de git. → **V5, STEPBAR1** (réglage `datapass.tree.showChecks`, défaut off, une version).
+3. **« Super charged git mode » en V5 ?** Oui, comme module (TL-4) : GITMR1 statut multi-repo, GITMR2 historique cross-repo + Sankey, GITMR3 dérive des pins + impact, NAVCHG1 résumé de changement, NAVHIST1 historique/diff, PINDRIFT1. → **V5**.
+4. **Vérification d'exhaustivité V5** (ne rien oublier d'utile) → audit PM 29 13:55 (go/V5-COMPLETENESS-2026-10-01.md).
+
 ## Idées de Julian — 2026-10-01 12:10 (pédagogie + visites guidées, relayé par ASSISTANT DATAPASS 4 ; détail : effort-board/julian-idea-guided-tours-2026-10-01.md)
 1. **Fiches pédagogiques d'une page** dans le catalogue (style « PySpark Interview Series » : question, bloc de code, sortie, tableau comparatif, points clés) pour les notions data-engineering du projet ; elles renforcent le « pourquoi ceci plutôt que cela ». → **V5**.
 2. **Partie « Pédagogie »** : les points clés du projet et comment le lire avec les yeux d'un recruteur (Spark SQL, etc.), le projet disséqué de façon ordonnée pour préparer un entretien. → **V5**.
