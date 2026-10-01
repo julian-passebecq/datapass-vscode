@@ -8,7 +8,7 @@
 import * as vscode from "vscode";
 import type { ProjectMap } from "../project/projectMap";
 import { NavigationService } from "./navigationService";
-import { sameLocation, type NavCommand, type NavLocation, type NavState } from "./navTypes";
+import { sameLocation, type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
 import { locationLabel, locationOf, locationPath, projectLadder, selectionOf } from "./projectLadder";
 
 /** The part of the session the host needs (kept small for tests). */
@@ -23,10 +23,13 @@ export interface NavSession {
 export const NAV_COMMANDS = ["up", "down", "left", "right", "home", "back", "forward", "pickView"] as const;
 export type NavCommandId = (typeof NAV_COMMANDS)[number];
 
-/** What a nav webview receives (`{type:"nav-state", state, views, labels}`): labels by node id, root → location path. */
+/**
+ * What a nav webview receives (`{type:"nav-state", state, views, labels}`): labels by node id, root → location path.
+ * `views` are the full ViewDefs (bindings included): the renderer drops a view without them (a7).
+ */
 export interface NavStateMessage {
   readonly type: "nav-state"; readonly state: NavState;
-  readonly views: readonly { id: string; title: string; layout: string }[];
+  readonly views: readonly ViewDef[];
   readonly labels: Readonly<Record<string, string>>; readonly path: readonly NavLocation[];
 }
 
@@ -35,7 +38,7 @@ export class NavHost implements vscode.Disposable {
   private readonly subs: vscode.Disposable[] = [];
 
   constructor(private readonly session: NavSession) {
-    const map = () => session.projectMap();
+    const map = () => this.projectMap();
     this.nav = new NavigationService(projectLadder(map));
     this.nav.dispatch({ type: "go", location: locationOf(session.selection(), map()) });
     const navSub = this.nav.onDidChange((e) => { void this.toSession(e.state.location); void this.updateKeys(); });
@@ -66,13 +69,19 @@ export class NavHost implements vscode.Disposable {
 
   label(l: NavLocation): string { return locationLabel(this.session.projectMap(), l); }
 
+  /**
+   * The project map the NavigationService's ladder walks: the same session getter `projectLadder`
+   * reads, never a copy, so surfaces and bindings see exactly what `nav` navigates.
+   */
+  projectMap(): ProjectMap { return this.session.projectMap(); }
+
   /** The message every nav webview renders. */
   message(): NavStateMessage {
     const s = this.nav.state;
     const path = locationPath(this.nav.ladder, s.location);
     const labels: Record<string, string> = {};
     for (const l of [...path, ...this.nav.ladder.children(s.location)]) labels[l.nodeId] = this.label(l);
-    return { type: "nav-state", state: s, views: this.nav.views().map((v) => ({ id: v.id, title: v.title, layout: v.layout })), labels, path };
+    return { type: "nav-state", state: s, views: this.nav.views(), labels, path };
   }
 
   dispose(): void {

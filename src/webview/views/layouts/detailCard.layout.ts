@@ -1,5 +1,5 @@
 /** V4-NAV `detail-card` layout kind: one card per binding card, label/value pairs, each value with its origin. */
-import { holesNode, label, valueNode, type LayoutModel, type VNode } from "../model";
+import { holesNode, label, valueNode, type LayoutEntry, type LayoutModel, type VNode } from "../model";
 
 export const detailCardModel: LayoutModel = ({ data, labels }) => {
   const cards: VNode[] = data.flatMap(d => (d.cards ?? []).map(c => ({
@@ -16,3 +16,5 @@ export const detailCardModel: LayoutModel = ({ data, labels }) => {
   const body: VNode[] = cards.length ? cards : [{ tag: "p", cls: "nv-empty", text: label(labels, "view.noCards") }];
   return { tag: "div", cls: "nv-layout nv-layout-detail-card", children: holes ? [...body, holes] : body };
 };
+
+export default { kind: "detail-card", model: detailCardModel } satisfies LayoutEntry;

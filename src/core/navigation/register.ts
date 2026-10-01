@@ -1,17 +1,15 @@
 /**
  * V4-NAV hub: the one place navigation surfaces plug into the NavigationService. Each surface
- * package adds exactly ONE line in `SURFACES` (`registerNavigator`, `registerNavViewHost`…) and
- * owns its own file; nothing else is shared. Activation calls `registerNavigation` once.
+ * package owns one `*.surface.ts` file under src/ whose default export is a `NavSurface`; the build
+ * collects them into out/gen/surfaces.ts (scripts/gen-registry.mjs, NAVWIRE1), so no package edits
+ * this file. Activation calls `registerNavigation` once.
  */
 import * as vscode from "vscode";
+import { SURFACES } from "../../../out/gen/surfaces";
 import { NavHost, type NavSession } from "./navHost";
 
 /** A surface receives the host (state, dispatch, labels) and returns what to dispose. */
 export type NavSurface = (context: vscode.ExtensionContext, host: NavHost) => vscode.Disposable | readonly vscode.Disposable[] | void;
-
-const SURFACES: readonly NavSurface[] = [
-  // One line per surface package (merge order: handoff/PLAN.md § V4-NAV).
-];
 
 export function registerNavigation(context: vscode.ExtensionContext, session: NavSession): NavHost {
   const host = new NavHost(session);

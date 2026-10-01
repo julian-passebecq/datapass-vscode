@@ -7,10 +7,18 @@
  * package.json `menus.commandPalette` must match this table (tests/palette.test.ts): the `when`
  * of a gated command is `!datapass.hidden.<surface>`, as for views (listed before activation).
  *
+ * A feature adds its gated commands in its own `*.palette.ts` file (default export: surface id →
+ * command ids, without the `datapass.` prefix), collected into out/gen/palette.ts by
+ * scripts/gen-registry.mjs (NAVWIRE1), so it never edits the tables below.
+ *
  * Hiding a command from the palette is presentation only (D-03 as amended by V1-SURF): the command
  * stays registered, its view and editor menus and keybindings keep working, blockers still show in
  * every mode, and nothing here authorises anything. Pure (no `vscode`).
  */
+import { PALETTE } from "../../../out/gen/palette";
+
+/** A `*.palette.ts` file's default export: gating surface id → command ids (no `datapass.` prefix). */
+export type PaletteEntry = Readonly<Record<string, readonly string[]>>;
 
 /** Core, listed in every mode (Vanilla has exactly these). */
 const CORE = [
@@ -68,8 +76,6 @@ const GATED: Record<string, readonly string[]> = {
     "codexTests.openLastReport", "codexTests.chooseRepository", "codexTests.refresh", "pilot.enable",
     "fileVersions.openLatest", "fileVersions.lastUpdate", "experience.resetOverrides",
     "control.refresh", "control.copyStartCommand",
-    // V4-NAV NAVSVC1: used through keybindings (NAVKEYS1) and the Navigator, not the palette (the DataPass mode is at its cap).
-    "nav.up", "nav.down", "nav.left", "nav.right", "nav.home", "nav.back", "nav.forward", "nav.pickView",
     "openProjectLinks", "openLinksFile", "setCodeFontSize",
     // V1.1.x-POLISH-4: also in the status bar, on the Home page, in Appearance and on Alt+- / Alt+=.
     "codeFont.smaller", "codeFont.bigger", "codeFont.reset",
@@ -89,7 +95,7 @@ const GATED: Record<string, readonly string[]> = {
 /** Full command id → gating surface id, or null for the core. */
 export const PALETTE_TIERS: ReadonlyMap<string, string | null> = new Map<string, string | null>([
   ...CORE.map(c => [`datapass.${c}`, null] as [string, null]),
-  ...Object.entries(GATED).flatMap(([surface, cmds]) => cmds.map(c => [`datapass.${c}`, surface] as [string, string]))
+  ...[GATED, ...PALETTE].flatMap(t => Object.entries(t).flatMap(([surface, cmds]) => cmds.map(c => [`datapass.${c}`, surface] as [string, string])))
 ]);
 
 /** The palette `when` clause a command must carry (undefined = none, listed in every mode). */

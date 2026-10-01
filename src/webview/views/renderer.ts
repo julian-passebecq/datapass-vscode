@@ -1,24 +1,19 @@
 /**
  * V4-NAV one view renderer: views are data (ViewDef from the catalog), and one renderer draws every layout kind
- * through a registry, so a new view is JSON and a new kind is one file under `layouts/`. The shell (location,
+ * through a registry, so a new view is JSON and a new kind is one `layouts/<kind>.layout.ts` file (collected
+ * by scripts/gen-registry.mjs into out/gen/layouts.ts: no line to add here). The shell (location,
  * view switcher) and each layout build a pure node tree (`model.ts`); `toDom` turns it into elements.
  * Host messages are untrusted and validated (`parseHostMessage`); the webview only posts nav commands,
  * a selection or an "open surface" request — it never runs project code.
  */
 import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navStub";
 import { label, parseHostMessage, type BindingData, type Labels, type LayoutModel, type VNode } from "./model";
-import { detailCardModel } from "./layouts/detailCard";
-import { graphModel } from "./layouts/graph";
-import { surfaceModel } from "./layouts/surface";
-import { tableModel } from "./layouts/table";
+import { LAYOUTS } from "../../../out/gen/layouts";
 
 const registry = new Map<string, LayoutModel>();
 export function registerLayout(kind: LayoutKind, draw: LayoutModel): void { registry.set(kind, draw); }
 export function registeredLayouts(): string[] { return [...registry.keys()]; }
-registerLayout("table", tableModel);
-registerLayout("detail-card", detailCardModel);
-registerLayout("surface", surfaceModel);
-registerLayout("graph", graphModel);
+for (const l of LAYOUTS) registerLayout(l.kind, l.model);
 
 export interface ViewScreen { readonly state: NavState; readonly views: readonly ViewDef[]; readonly labels: Labels; readonly data: readonly BindingData[] | null }
 

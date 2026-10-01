@@ -1,5 +1,5 @@
 /** V4-NAV `surface` layout kind: reuse an existing DataPass view (Workbench diagram, Hop, Airflow DAG…) — a button asks the host to open it. */
-import { holesNode, label, type LayoutModel, type VNode } from "../model";
+import { holesNode, label, type LayoutEntry, type LayoutModel, type VNode } from "../model";
 
 export const surfaceModel: LayoutModel = ({ view, data, labels }) => {
   const holes = holesNode(data, labels);
@@ -17,3 +17,5 @@ export const surfaceModel: LayoutModel = ({ view, data, labels }) => {
       attrs: { type: "button", "data-surface": view.surface }, on: { action: "open-surface", surface: view.surface } }];
   return { tag: "div", cls: "nv-layout nv-layout-surface", children: holes ? [...children, holes] : children };
 };
+
+export default { kind: "surface", model: surfaceModel } satisfies LayoutEntry;

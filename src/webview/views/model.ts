@@ -3,7 +3,7 @@
  * kind builds from it. Layouts never touch the DOM; `renderer.ts` turns the tree into elements, so the
  * data → view step is tested without a browser.
  */
-import type { NavLocation, NavState, ViewDef } from "../../core/navigation/navStub";
+import type { LayoutKind, NavLocation, NavState, ViewDef } from "../../core/navigation/navStub";
 
 /** § 34 origin of a value (static, theoretical, ai-proposed, observed…). Free text: the host's labels name it. */
 export type Origin = string;
@@ -31,6 +31,8 @@ export interface VNode { readonly tag: string; readonly cls?: string; readonly t
 
 export interface LayoutInput { readonly view: ViewDef; readonly data: readonly BindingData[]; readonly labels: Labels; readonly location: NavLocation }
 export type LayoutModel = (input: LayoutInput) => VNode;
+/** A `*.layout.ts` file's default export: the renderer registers it by itself (NAVWIRE1, out/gen/layouts.ts). */
+export interface LayoutEntry { readonly kind: LayoutKind; readonly model: LayoutModel }
 
 export function cellValue(c: Cell): Valued { return c !== null && typeof c === "object" ? c : { value: c }; }
 
