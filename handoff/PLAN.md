@@ -590,12 +590,12 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N53 (local_c1479d09-e957-40ea-9061-bb337fd9332a) | coder (Opus medium) | NAVPRIN1 (go/NAVPRIN1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
 | CODER N54 (local_7f02d4f0-f093-4785-bfdc-ffc70c346ddf) | coder (Opus medium) | SNOWOBJ1 (go/SNOWOBJ1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N55 (local_31416554-e034-4cc4-bdc4-5200e01c6b37) | coder (Opus medium) | DATAFORM1 (go/DATAFORM1.md) | — | 2026-10-01 · V3.8 | Common 8 |
-| CODER N56 (local_3db0254a-4274-4b77-a964-983f5f67303d) | coder (Opus medium) | SQLMESH1 (go/SQLMESH1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N56 (local_3db0254a-4274-4b77-a964-983f5f67303d) | coder (Opus medium) | SQLMESH1 done (Common !164) → STUDIOCI1 (go/STUDIOCI1.md, 04:50) | 6 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N57 (local_3b4ca9ea-f88a-4905-ae97-3acf76462f13) | coder (Opus medium) | DBXDASH1 done (Common !162) → cloud main-merges !114, !117, !103, !120 (COORD 32, 04:25) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N58 (local_40daa8df-0527-4ecf-bfe5-99df653588b8) | coder (Opus medium) | SYNWS1 (go/SYNWS1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N59 (local_f1158d6e-5946-44b6-a03f-06d20109dcb0) | coder (Opus medium) | DAGFACT1 (go/DAGFACT1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N60 (local_d12324c8-899f-462d-a5a9-e9efe3b90f96) | coder (Opus medium) | RDL1 (go/RDL1.md) | — | 2026-10-01 · V3.8 | Common 8 |
-| CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 done (Common !163) → V5 EVPIN1 (go/EVPIN1.md, 04:40) | 6 | 2026-10-01 · V3.8 | Common 9 / COORD 32 |
+| CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 done (Common !163); stopped at 162 K (EVPIN1 declined → needs a fresh coder) | — | 2026-10-01 · V3.8 | Common 9 |
 | CODER N62 (local_71e18c26-cd54-4b42-9c36-b90ed354e6b1) | coder (Opus medium) | DESKSHARD1 (go/DESKSHARD1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N63 (local_3e2e0f54-e049-46aa-819f-9500e63f937c) | coder (Opus medium) | PWCI1 (go/PWCI1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N64 (local_4fcf7ef9-112f-4c77-9a93-4d759d7cbd17) | coder (Opus medium) | V5 DETSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
