@@ -170,6 +170,10 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-01 11:46 (5 captures d'écran, relayées par ASSISTANT DATAPASS 4)
+1. **Visual Explainer** : plans, architecture et statuts rendus en pages HTML visuelles (diagrammes, tableaux, checklists) au lieu de plans en markdown. → **Process, tout de suite** : V5-PLAN et les statuts pour Julian en Artifact HTML à côté du fichier .md versionné. **Produit, V5** : une vue « explainer » de l'architecture d'un projet dans le Navigator/Studio (triage par le TECH LEAD GLOBAL).
+2. **Architecte de garde** (modèle des sous-agents Codex) : un architecte en effort élevé, appelé seulement à 3 moments (avant un gros plan, quand une erreur se répète, avant de déclarer finie une longue tâche) ; il conseille, n'écrit jamais de code ; les workers restent en medium ; une seule règle AGENTS.md. → **Process, tout de suite** : le PM TECH LEAD GLOBAL tient ce rôle pour DataPass à partir du 1 Oct. Règle à proposer pour Claude Control V4. **Produit, V5 (à trier)** : proposer ce modèle dans l'échange IA de DataPass.
+
 ## Idées de Julian — 2026-10-01 02:10 (enchaînement V4 → V5, relayé par ASSISTANT DATAPASS 3)
 - Si V4 est fini avant son réveil (~08:00–11:00) et qu'il reste du quota : démarrer V5 tout de suite, sans l'attendre. Le PM planifie V5 depuis ce ROADMAP et PLAN (V5 déjà noté : détachement dbt, supergit multi-repo, SQLRooms/Studio, FastAPI OTel). Cible : V5.
 - Les questions produit V5 ne bloquent pas : elles vont dans go/JULIAN-questions-reveil.md pour son réveil ; le PM prend la recommandation par défaut en attendant.
