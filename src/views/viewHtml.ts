@@ -3,6 +3,8 @@
  * the `#nav-root` mount point for dist/navView.js, and the renderer's styles on VS Code theme tokens only.
  * Pure (no `vscode`), like workbenchHtml.ts.
  */
+import { navGraphCss } from "../webview/views/layouts/graphCss";
+
 export function viewHtml(opts: { cspSource: string; nonce: string; scriptUri: string; title: string }): string {
   const { cspSource, nonce, scriptUri, title } = opts;
   return String.raw`<!doctype html>
@@ -59,5 +61,5 @@ export function navViewCss(): string {
   .nv-hole-kind { color: var(--nv-warn); font-weight: 600; font-size: 11px; }
   .nv-surface-open { padding: 4px 12px; border-radius: 4px; border: 1px solid var(--vscode-button-border, transparent); background: var(--vscode-button-background); color: var(--vscode-button-foreground); cursor: pointer; }
   .nv-surface-open:hover { background: var(--vscode-button-hoverBackground); }
-  `;
+  ` + navGraphCss();
 }

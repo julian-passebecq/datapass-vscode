@@ -8,6 +8,7 @@
 import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navStub";
 import { label, parseHostMessage, type BindingData, type Labels, type LayoutModel, type VNode } from "./model";
 import { detailCardModel } from "./layouts/detailCard";
+import { graphModel } from "./layouts/graph";
 import { surfaceModel } from "./layouts/surface";
 import { tableModel } from "./layouts/table";
 
@@ -17,6 +18,7 @@ export function registeredLayouts(): string[] { return [...registry.keys()]; }
 registerLayout("table", tableModel);
 registerLayout("detail-card", detailCardModel);
 registerLayout("surface", surfaceModel);
+registerLayout("graph", graphModel);
 
 export interface ViewScreen { readonly state: NavState; readonly views: readonly ViewDef[]; readonly labels: Labels; readonly data: readonly BindingData[] | null }
 
