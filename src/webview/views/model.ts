@@ -18,7 +18,9 @@ export interface Card { readonly id: string; readonly title: string; readonly no
 /** What one binding provider returned (go/NAV-contract.md: `{ rows | graph | cards | metrics, holes, origin }`). */
 export interface BindingData { readonly source: string; readonly origin: Origin; readonly holes: readonly Hole[];
   readonly columns?: readonly string[]; readonly rows?: readonly Row[]; readonly cards?: readonly Card[];
-  readonly graph?: unknown; readonly metrics?: unknown }
+  readonly graph?: unknown; readonly metrics?: unknown;
+  /** `code-steps` kind (NAVREN4): a `CodeStepsInput`, validated by the layout. */
+  readonly steps?: unknown }
 
 /** Labels are data from the host (settings, presets); `label()` falls back to the key. */
 export type Labels = Readonly<Record<string, string>>;
