@@ -626,7 +626,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER W1FIX-EVPIN1 (local_77075086-a0e7-4334-9479-545b06e275c9) | coder (Opus medium) | W1 review fixes !215, local stub instead of re-vendor (go/W1FIX-EVPIN1.md) | 6 | 2026-10-01 · V3.8 | COORD 39 |
 | CODER CIFIX2 (chip 12:20) | coder (Opus medium) | CI c1/c2/c4 + auto-cancel incl. main (go/CIFIX2.md) | 4 | 2026-10-01 · V3.8 | COORD 39 |
 | CODER GITMR3 (local_ad61188c-d90f-4441-bc2b-8372d1a0065e) | coder (Opus medium) | V5 GITMR3 on stubs (go/GITMR3.md) | 14 | 2026-10-01 · V3.8 | COORD 39 |
-| RESERVE CODER 1, 2 (chips 12:20) | coder (Opus medium) | idle until the coordinator assigns (go/RESERVE-CODER-28.md) | — | 2026-10-01 · V3.8 | COORD 39 |
+| CODER NAV-TRAIN R3 (local_17a0a3cf-a94c-4938-a1e0-9a6fbc65b363, was RESERVE CODER 1) · CODER NAV-TRAIN R1 (local_3b42976a-f191-4379-9bac-263489359e13, was RESERVE CODER 2) · CODER NAV-TRAIN R2 (chip 12:55) | coder (Opus medium) | NAV rebase train lanes (go/NAV-TRAIN-LANES.md, go/NAV-train-conflict-map.md) | ~15 | 2026-10-01 · V3.8 | COORD 39 |
 | RESERVE PM DataPass 29 (chip 12:20) | global PM (Opus medium) | takes over from PM 28 (go/PM-DataPass-29.md) | — | 2026-10-01 · V3.8 | PM 28 |
 | PM 27 subagents, batch 2 (+NAVDATA1, STUDIO2) | coder subagents (Opus medium) | MULTIFAM1, TOURSPI1, DETACH1, SJDMAT1, LAYOUT1, ARCHCALL1, XGAP1+TODOSTALE1, NAVDATA1 | ~80 | 2026-10-01 · V3.8 | PM 27 |
 | PM TECH LEAD GLOBAL DataPass (chip pending, 11:40) | global tech lead, architecture authority via ARCH_DECISIONS (Opus **high**, Julian exception 1 Oct 11:35); never merges, never edits PLAN | V4 review + merge order + CI + ideas triage + V5 plan by 13:30, then on call (go/PM-AUDIT-V5.md) | — | 2026-10-01 · V3.8 | PM 27 |
