@@ -545,6 +545,7 @@ Merge order (shared files): DETSPI1 / GITSPI1 / OTELSPI1 (Common, independent) �
 | EVACTOR1 | Common `project-contracts` | recorded actor (human / ai-proposed / tool) per evidence state (additive, core-change) | — | 5 | W1 |
 | XGAP1 | Common AI exchange + standalone | `gaps[]` block in AI-exchange answers feeding NAVTODO1 Next steps | NAVTODO1 merged | 6 | W2 |
 | TODOSTALE1 | standalone | "stale evidence" source for NAVTODO1 (uses EVPIN1) | EVPIN1 + NAVTODO1 | 4 | W2 |
+| STUDIOCI1 | datapass-studio | GitLab CI on local-windows (repo has none; Vercel fails off-main): install, tests, build (go/STUDIOCI1.md) | — | 6 | W1 |
 | V5E2E1 | standalone | V5 acceptance E2E + screenshots for Julian (detach, multi-repo, endpoint view) | all V5 standalone merged | 12 | W3 |
 
 Totals: 25 packages, ~291 M (V5INV1 done 02:30: +EVPIN1/EVCAPT1/EVACTOR1/XGAP1/TODOSTALE1; TODORANK1 deferred). W0 (5, 40 M) now; W1 (7, 110 M) on stubs, merge after deps; W2 (6, 88 M); W3 (2, 27 M). Parallelism: Tracks A–D are disjoint (4 repos), so up to ~8 coders at once.
@@ -593,13 +594,13 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N58 (local_40daa8df-0527-4ecf-bfe5-99df653588b8) | coder (Opus medium) | SYNWS1 (go/SYNWS1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N59 (local_f1158d6e-5946-44b6-a03f-06d20109dcb0) | coder (Opus medium) | DAGFACT1 (go/DAGFACT1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N60 (local_d12324c8-899f-462d-a5a9-e9efe3b90f96) | coder (Opus medium) | RDL1 (go/RDL1.md) | — | 2026-10-01 · V3.8 | Common 8 |
-| CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 (go/ADFARM1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 done (Common !163) → V5 EVPIN1 (go/EVPIN1.md, 04:40) | 6 | 2026-10-01 · V3.8 | Common 9 / COORD 32 |
 | CODER N62 (local_71e18c26-cd54-4b42-9c36-b90ed354e6b1) | coder (Opus medium) | DESKSHARD1 (go/DESKSHARD1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N63 (local_3e2e0f54-e049-46aa-819f-9500e63f937c) | coder (Opus medium) | PWCI1 (go/PWCI1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N64 (local_4fcf7ef9-112f-4c77-9a93-4d759d7cbd17) | coder (Opus medium) | V5 DETSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N65 (local_89458b51-3efc-436c-8f0c-9b541609998f) | coder (Opus medium) | V5 GITSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N66 (local_ddb905fa-fd1d-4730-8ca1-93edc74b984e) | coder (Opus medium) | V5 OTELSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
-| CODER N35 (local_69d9967d-91a5-4e58-8b5a-0f75c714dc43) | coder (Opus medium) | V5 STUDIO0 (go/, § V5) | 10 | 2026-10-01 · V3.8 | COORD 32 |
+| CODER N35 (local_69d9967d-91a5-4e58-8b5a-0f75c714dc43) | coder (Opus medium) | V5 STUDIO0 done (studio !7) → STUDIO1 (go/STUDIO1.md) | 25 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N36 (local_81cb2caf-bfbf-4fdb-b193-2115737d9966) | coder (Opus medium) | V5 EVCAPT1 then EVACTOR1 (go/, § V5) | 10 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N31 (local_db47d1f7-4e3d-4123-bb85-401e3289b377) | coder (Opus medium) | TABCOL1 (ERD gap: columns/keys in sql-table-facts, core) | 12 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N32 (local_ed440262-1db4-488a-bf74-002d41f86efb) | coder (Opus medium) | TMDL1 (ERD gap: Power BI semantic-model facts) | 15 | 2026-10-01 · V3.8 | Common 8 |
