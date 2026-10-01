@@ -204,10 +204,10 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
       legend.id = "legend";
       for (const id of ids) {
         const k = state.families[id], item = el("span", "item");
-        const sw = sv("svg", { width: 22, height: 12, viewBox: "0 0 168 38", "aria-hidden": "true", preserveAspectRatio: "none" });
-        const o = outline(k.shape, 168, 38);
+        const sw = sv("svg", { width: 22, height: 12, viewBox: "0 0 66 38", "aria-hidden": "true", preserveAspectRatio: "none" });
+        const o = outline(k.shape, 66, 38);
         o.setAttribute("class", "box" + (k.dashed ? " dashed" : ""));
-        o.style.stroke = k.color; o.style.strokeWidth = "8"; o.style.fill = "none";
+        o.style.stroke = k.color; o.style.strokeWidth = "5"; o.style.fill = "none";
         sw.appendChild(o);
         item.appendChild(sw);
         item.appendChild(el("span", "", k.label));
@@ -281,11 +281,13 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
       box.style.stroke = k.color;
       g.appendChild(box);
       const inset = k.shape === "hexagon" || k.shape === "parallelogram" ? 12 : k.shape === "pill" ? 8 : 0;
-      g.appendChild(icon(k, 10 + inset, 11, 16));
-      const name = sv("text", { x: 32 + inset, y: 16 });
+      // The cylinder's top cap takes the first lines: its text starts lower.
+      const drop = k.shape === "cylinder" ? 5 : 0;
+      g.appendChild(icon(k, 10 + inset, 11 + drop, 16));
+      const name = sv("text", { x: 32 + inset, y: 16 + drop });
       name.textContent = clip(t.label, inset ? 18 : 20) + (t.mapped ? " [ ]" : "");
       g.appendChild(name);
-      const op = sv("text", { x: 32 + inset, y: 30, class: "op" });
+      const op = sv("text", { x: 32 + inset, y: 30 + drop, class: "op" });
       op.textContent = clip((t.group ? t.group + " · " : "") + t.operator, inset ? 23 : 26);
       g.appendChild(op);
       const go = () => vscode.postMessage({ type: "reveal", id: t.id });
