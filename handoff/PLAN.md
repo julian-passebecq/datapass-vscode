@@ -540,9 +540,14 @@ Merge order (shared files): DETSPI1 / GITSPI1 / OTELSPI1 (Common, independent) �
 | STUDIO2 | datapass-studio | Factory → web app adapter: Factory output manifest → Studio workspace (sheets per service/dataset) | STUDIO1 | 18 | W2 |
 | STUDIO3 | datapass-studio | Studio renders the shared view catalog (reuse cloud workbench-ui React renderer) | STUDIO1 + NAVCLOUD1 | 20 | W2 |
 | STUDIO4 | datapass-studio | "vanilla client" demo (Deepnote/Jupyter/Streamlit replacement) on a public synthetic wind dataset; no FOIL data | STUDIO2 + STUDIO3 | 15 | W3 |
+| EVPIN1 | Common `project-contracts` + standalone | verdicts/evidence pinned to a Git SHA, marked stale when the file changes (go/V5INV1-note.md) | — | 6 | W1 |
+| EVCAPT1 | Common `project-contracts` | lineage edge capture tag traced / declared / inferred (additive, core-change) | — | 5 | W1 |
+| EVACTOR1 | Common `project-contracts` | recorded actor (human / ai-proposed / tool) per evidence state (additive, core-change) | — | 5 | W1 |
+| XGAP1 | Common AI exchange + standalone | `gaps[]` block in AI-exchange answers feeding NAVTODO1 Next steps | NAVTODO1 merged | 6 | W2 |
+| TODOSTALE1 | standalone | "stale evidence" source for NAVTODO1 (uses EVPIN1) | EVPIN1 + NAVTODO1 | 4 | W2 |
 | V5E2E1 | standalone | V5 acceptance E2E + screenshots for Julian (detach, multi-repo, endpoint view) | all V5 standalone merged | 12 | W3 |
 
-Totals: 20 packages, ~265 M. W0 (5, 40 M) now; W1 (7, 110 M) on stubs, merge after deps; W2 (6, 88 M); W3 (2, 27 M). Parallelism: Tracks A–D are disjoint (4 repos), so up to ~8 coders at once.
+Totals: 25 packages, ~291 M (V5INV1 done 02:30: +EVPIN1/EVCAPT1/EVACTOR1/XGAP1/TODOSTALE1; TODORANK1 deferred). W0 (5, 40 M) now; W1 (7, 110 M) on stubs, merge after deps; W2 (6, 88 M); W3 (2, 27 M). Parallelism: Tracks A–D are disjoint (4 repos), so up to ~8 coders at once.
 
 Julian questions (go/JULIAN-questions-reveil.md) run on the defaults until he answers; V5 W0 and the W1 packages with no V4 dependency (GITMR1 on stub, OTEL1, STUDIO1) may start now while V4-NAV runs (separate repos or new files only).
 
