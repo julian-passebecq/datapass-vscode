@@ -44,14 +44,14 @@
       "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
     },
     {
-      "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz",
-      "sha256": "c14f64610d4d17d6398614a7d32dbd37e85a5cc0472db7df6328969a6578d640",
-      "sourceCommit": "6b87493bfc13ee78a337f5032b862b561790f89c"
+      "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.2.tgz",
+      "sha256": "5e175d9ca8a385aec21250e747b4764c2b2cdade81595fa0687cba6986881737",
+      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
     },
     {
       "file": "juliandatapass-group-capability-router-0.1.0-alpha.1.tgz",
-      "sha256": "ad43f119ab91ed00785961add9374d052c978402aa3f98db08eeaffdb332ea54",
-      "sourceCommit": "6b87493bfc13ee78a337f5032b862b561790f89c"
+      "sha256": "ab9aa5c05b575049252e78749147d26d6a4bc401077873cc67bb2e005486a625",
+      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
     },
     {
       "file": "juliandatapass-group-view-spi-0.1.0-alpha.1.tgz",
@@ -76,5 +76,6 @@
   ],
   "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins.",
   "caproute1bNote": "CAPROUTE1b: tool-catalog and capability-router packed with scripts/pack-vendor.mjs from Common 6b87493 (!138); semantic-core alpha.4 is byte-identical there and keeps its pin.",
-  "navsvc1Note": "NAVSVC1: view-spi pinned to Common main 55c4412a (!157 merged; re-pack from 55c4412a gives the same sha256 as the earlier 46563fb pack); arch-catalog, arch-decisions and decision-rationale packed in the same run, their sources are identical to Common main 5794003. lineage-core alpha.1 and semantic-core alpha.4 keep their pins."
+  "navsvc1Note": "NAVSVC1: view-spi pinned to Common main 55c4412a (!157 merged; re-pack from 55c4412a gives the same sha256 as the earlier 46563fb pack); arch-catalog, arch-decisions and decision-rationale packed in the same run, their sources are identical to Common main 5794003. lineage-core alpha.1 and semantic-core alpha.4 keep their pins.",
+  "tbx1cNote": "TBX1c: tool-catalog 0.1.0-alpha.2 (typed sideEffectKinds, Workspace Monitoring, owns TOOL_SIDE_EFFECTS) and capability-router re-packed with scripts/pack-vendor.mjs from Common main 5794003 (supersedes the CAPROUTE1b 6b87493 pins; both from one Common commit, byte-identical to the dd950b2 pack)."
 }
