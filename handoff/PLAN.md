@@ -596,6 +596,11 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 (go/ADFARM1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N62 (local_71e18c26-cd54-4b42-9c36-b90ed354e6b1) | coder (Opus medium) | DESKSHARD1 (go/DESKSHARD1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N63 (local_3e2e0f54-e049-46aa-819f-9500e63f937c) | coder (Opus medium) | PWCI1 (go/PWCI1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
+| CODER N64 (local_4fcf7ef9-112f-4c77-9a93-4d759d7cbd17) | coder (Opus medium) | V5 DETSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
+| CODER N65 (local_89458b51-3efc-436c-8f0c-9b541609998f) | coder (Opus medium) | V5 GITSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
+| CODER N66 (local_ddb905fa-fd1d-4730-8ca1-93edc74b984e) | coder (Opus medium) | V5 OTELSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
+| CODER N35 (local_69d9967d-91a5-4e58-8b5a-0f75c714dc43) | coder (Opus medium) | V5 STUDIO0 (go/, § V5) | 10 | 2026-10-01 · V3.8 | COORD 32 |
+| CODER N36 (local_81cb2caf-bfbf-4fdb-b193-2115737d9966) | coder (Opus medium) | V5 EVCAPT1 then EVACTOR1 (go/, § V5) | 10 | 2026-10-01 · V3.8 | Common 8 |
 | COORD DataPass 31 (local_d1a2d7e3-7008-4fcd-8b36-5ab65c9537cb), live, pinned (Opus medium; took over ~21:10, hand-off go/handoff-coord-30.md) | coordinator (Opus medium, option A) | cloud/vscode/hub + night coders; RESERVE COORD 32 (local_02210024) next | — | 2026-09-30 · V3.8 | PM 23 |
 | COORD DataPass Common 8 (RESERVE COORD 34, local_6779655d-49db-44ce-91d3-a5b7608c900c), live from ~01:00 (Opus medium; hand-off go/handoff-coord-common-7.md) | Common coordinator (Opus medium) | Common merge train (core MRs pinned to the approved SHA); next: RESERVE COORD Common chip (go/NIGHT-RELAY-2026-09-30.md) | — | 2026-10-01 · V3.8 | PM 24 |
 | (retired at 171 K) COORD DataPass Common 7 (local_eb1085e5-0849-42de-9548-45f97a8ae0f2) | Common coordinator (Opus medium) | → Common 8 (go/handoff-coord-common-7.md) | — | 2026-09-30 · V3.8 | PM 23 |
