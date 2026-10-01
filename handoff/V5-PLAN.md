@@ -20,7 +20,7 @@ Binding decisions: ARCH_DECISIONS § "V5 architecture (TECH LEAD GLOBAL)" TL-1�
 | DETACH1 | vscode | GO ready | DBTMAT1 | 14 | W1 |
 | **PINDRIFT1** | Common tool + 3 CI lines | new GO | — | 10 | W1 |
 | **DAGUX1** | vscode | new GO (rc.1 remarks) | — | 12 | W1 |
-| **PEDA1a** | Common arch-catalog | new GO (TL-12) | — | 12 | W1 |
+| **PEDA1a** | Common arch-catalog | new GO (TL-12; 5 families × 5 concepts + Spark/SQL cards) | — | 14 | W1 |
 | **TOUR2** | vscode | new GO (TL-11) | NAVTOUR1 + NAVCAT1 + NAVBAR1 | 14 | W1 |
 | OTEL2 | vscode | chip pending (stub) | OTEL1 + REPIN5 (analyzers-api) + NAVLIN1 | 14 | W2 |
 | GITMR3 | vscode | GO ready | GITMR2 + NAVCHG1 + PINDRIFT1 | 14 | W2 |
