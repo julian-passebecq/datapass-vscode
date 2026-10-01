@@ -3414,31 +3414,24 @@
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
         },
-        "datapass.tours.generated": {
+        "datapass.guided.enabled": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Offer built-in journey tours generated from the project's lineage and execution facts (NAVTOUR1). Tours of your own live in `.datapass/tours.json`."
+          "markdownDescription": "Guided tours (journey tours, Navigator Tours section, tour commands). Off: no tour UI or command, nothing computed."
         },
-        "datapass.tours.journeyLabels": {
+        "datapass.guided.generatedJourneys.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Offer built-in journey tours generated from the project's lineage and execution facts. Your own tours live in `.datapass/tours.json`."
+        },
+        "datapass.guided.labels": {
           "type": "object",
           "additionalProperties": {
             "type": "string",
-            "maxLength": 64
-          },
-          "default": {
-            "lineage": "Data lineage",
-            "execution": "Execution"
-          },
-          "markdownDescription": "Display names of the tour journeys (journey id → label). Journeys not listed show their id."
-        },
-        "datapass.tours.labels": {
-          "type": "object",
-          "additionalProperties": {
-            "type": "string",
-            "maxLength": 200
+            "maxLength": 2000
           },
           "default": {},
-          "markdownDescription": "Override the words of the Navigator's Tours section (keys: heading, none, previous, next, stale, aiProposed, user, jump, jumpEmpty, pickTour, step)."
+          "markdownDescription": "Override the words of guided tours, key by key (e.g. `journey.lineage`, `journey.execution.unit`, `ui.next`). Built-in keys: `resources/guided/labels.json`."
         }
       }
     },
@@ -3539,7 +3532,7 @@
         "fileMatch": [
           "**/.datapass/tours.json"
         ],
-        "url": "./schemas/datapass-tours.schema.json"
+        "url": "./schemas/datapass-tour.schema.json"
       }
     ],
     "walkthroughs": [

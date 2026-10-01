@@ -1,25 +1,34 @@
 /**
- * V4-NAV NAVTOUR1: the Navigator `#tours` slot, pure part (no `vscode`): the UI words (defaults of
- * the setting `datapass.tours.labels`), the slot model, its HTML (escaped, no inline handlers), the
- * slot script and the message validator. navTours.ts owns the state and the commands.
+ * V4-NAV NAVTOUR1: the Navigator `#tours` slot, pure part (no `vscode`): the label pack (built-in
+ * `resources/guided/labels.json` + the setting `datapass.guided.labels`), the slot model, its HTML
+ * (escaped, no inline handlers), the slot script and the message validator. navTours.ts owns the
+ * state and the commands.
  */
-import type { Tour } from "../core/navigation/tours/tours";
+import builtinLabels from "../../resources/guided/labels.json";
+import type { StepStatus } from "../core/navigation/tours/store";
 
-export const TOURS_LABELS = {
-  heading: "Tours", none: "No tour yet: tours come from lineage and execution facts, or .datapass/tours.json.",
-  previous: "Previous", next: "Next", stale: "missing", aiProposed: "AI-proposed", user: "yours",
-  jump: "Jump to a box…", jumpEmpty: "No box matches.", pickTour: "Pick a tour", step: "Step"
-} as const;
-export type ToursLabels = { -readonly [K in keyof typeof TOURS_LABELS]: string };
+export type LabelPack = Readonly<Record<string, string>>;
+
+/** Built-in labels overridden key by key by the setting (strings ≤ 2000 chars only). */
+export function labelPack(overrides: unknown): LabelPack {
+  const out: Record<string, string> = { ...(builtinLabels as Record<string, string>) };
+  if (overrides && typeof overrides === "object" && !Array.isArray(overrides)) {
+    for (const [k, v] of Object.entries(overrides as Record<string, unknown>)) if (typeof v === "string" && v.length <= 2000) out[k] = v;
+  }
+  return out;
+}
+/** A UI word: the pack's `ui.<key>`, else the key itself (never blank). */
+export const uiLabel = (pack: LabelPack, key: string): string => pack[`ui.${key}`] ?? key;
 
 export interface ToursModel {
-  readonly labels: ToursLabels;
+  readonly labels: LabelPack;
   readonly journeys: readonly { id: string; label: string; active: boolean }[];
-  readonly tours: readonly { id: string; title: string; origin: Tour["origin"]; active: boolean }[];
-  readonly steps: readonly { index: number; label: string; text: string; stale: boolean; current: boolean }[];
+  readonly tours: readonly { id: string; title: string; badge?: "ai-proposed" | "user"; active: boolean }[];
+  readonly steps: readonly { index: number; number: string; depth: number; label: string; preview: string; status: StepStatus; current: boolean }[];
+  /** The current step's explanation; `null` = typed hole (ref not resolved). */
+  readonly explanation: string | null;
   readonly canPrev: boolean; readonly canNext: boolean;
   readonly jump: { readonly query: string; readonly hits: readonly { index: number; label: string; kind: string }[] };
-  readonly problems: readonly string[];
 }
 
 /** Messages the `#tours` slot sends (validated; anything else is dropped). */
@@ -38,8 +47,8 @@ export function parseToursMessage(raw: unknown): ToursMessage | null {
   const s = (v: unknown, max = 200) => typeof v === "string" && v.length <= max;
   const n = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) < 10_000;
   switch (m.action) {
-    case "journey": return s(m.journey, 64) ? { type: "tour", action: "journey", journey: m.journey as string } : null;
-    case "select": return s(m.tourId, 140) ? { type: "tour", action: "select", tourId: m.tourId as string } : null;
+    case "journey": return s(m.journey, 128) ? { type: "tour", action: "journey", journey: m.journey as string } : null;
+    case "select": return s(m.tourId, 128) ? { type: "tour", action: "select", tourId: m.tourId as string } : null;
     case "step": return n(m.index) ? { type: "tour", action: "step", index: m.index as number } : null;
     case "next": case "prev": return { type: "tour", action: m.action };
     case "jump-query": return s(m.query) ? { type: "tour", action: "jump-query", query: m.query as string } : null;
@@ -49,24 +58,31 @@ export function parseToursMessage(raw: unknown): ToursMessage | null {
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[c]!));
+const badge = (text: string) => ` <span class="tour-badge">${esc(text)}</span>`;
 
 /** The `#tours` slot content (pure). Clicks are read from `data-tour-*` attributes by `toursScript`. */
 export function toursHtml(m: ToursModel): string {
-  const L = m.labels;
-  const journeysRow = m.journeys.map((j) => `<button class="tour-journey${j.active ? " active" : ""}" data-tour-journey="${esc(j.id)}" aria-pressed="${j.active}">${esc(j.label)}</button>`).join("");
+  const L = (k: string) => uiLabel(m.labels, k);
+  const journeysRow = m.journeys.length > 1 || (m.journeys[0] && m.journeys[0].id)
+    ? `<div class="tour-journeys">${m.journeys.map((j) => `<button class="tour-journey${j.active ? " active" : ""}" data-tour-journey="${esc(j.id)}" aria-pressed="${j.active}">${esc(j.label)}</button>`).join("")}</div>`
+    : "";
   const tours = m.tours.length > 1
-    ? `<div class="tour-list">${m.tours.map((t) => `<button class="tour-pick${t.active ? " active" : ""}" data-tour-select="${esc(t.id)}">${esc(t.title)}${t.origin === "ai-proposed" ? ` <span class="tour-badge">${esc(L.aiProposed)}</span>` : t.origin === "user" ? ` <span class="tour-badge">${esc(L.user)}</span>` : ""}</button>`).join("")}</div>`
+    ? `<div class="tour-list">${m.tours.map((t) => `<button class="tour-pick${t.active ? " active" : ""}" data-tour-select="${esc(t.id)}" aria-pressed="${t.active}">${esc(t.title)}${t.badge ? badge(L(t.badge === "ai-proposed" ? "aiProposed" : "user")) : ""}</button>`).join("")}</div>`
     : "";
   const steps = m.steps.length
-    ? `<ol class="tour-steps">${m.steps.map((s) => `<li class="${s.current ? "current" : ""}${s.stale ? " stale" : ""}"><button data-tour-step="${s.index}" title="${esc(s.text)}"${s.stale ? " disabled" : ""}><span class="tour-n">${s.index + 1}</span> ${esc(s.label)}${s.stale ? ` <span class="tour-badge">${esc(L.stale)}</span>` : ""}</button>${s.current && s.text ? `<div class="tour-text">${esc(s.text)}</div>` : ""}</li>`).join("")}</ol>
-      <div class="tour-nav"><button data-tour-action="prev"${m.canPrev ? "" : " disabled"}>${esc(L.previous)}</button><button data-tour-action="next"${m.canNext ? "" : " disabled"}>${esc(L.next)}</button></div>`
-    : `<p class="tour-none">${esc(L.none)}</p>`;
+    ? `<ol class="tour-steps">${m.steps.map((s) => {
+      const hole = s.status === "ok" ? "" : badge(L(s.status === "unknown-location" ? "unknownLocation" : "unknownView"));
+      const box = s.current ? `<div class="tour-text">${m.explanation === null ? `<span class="tour-hole">${esc(L("noExplanation"))}</span>` : esc(m.explanation)}</div>` : "";
+      return `<li class="tour-step depth-${Math.min(s.depth, 4)}${s.current ? " current" : ""}${s.status === "ok" ? "" : " stale"}"><button data-tour-step="${s.index}" title="${esc(s.preview)}"${s.status === "unknown-location" ? " disabled" : ""}${s.current ? " aria-current=\"step\"" : ""}><span class="tour-n">${esc(s.number)}</span> ${esc(s.label)}${hole}</button>${box}</li>`;
+    }).join("")}</ol>
+      <div class="tour-nav"><button data-tour-action="prev"${m.canPrev ? "" : " disabled"}>${esc(L("previous"))}</button><button data-tour-action="next"${m.canNext ? "" : " disabled"}>${esc(L("next"))}</button></div>`
+    : `<p class="tour-none">${esc(L("none"))}</p>`;
   const hits = m.jump.query
-    ? (m.jump.hits.length ? `<ul class="tour-hits">${m.jump.hits.map((h) => `<li><button data-tour-jump="${h.index}">${esc(h.label)} <span class="tour-kind">${esc(h.kind)}</span></button></li>`).join("")}</ul>` : `<p class="tour-none">${esc(L.jumpEmpty)}</p>`)
+    ? (m.jump.hits.length ? `<ul class="tour-hits">${m.jump.hits.map((h) => `<li><button data-tour-jump="${h.index}">${esc(h.label)} <span class="tour-kind">${esc(h.kind)}</span></button></li>`).join("")}</ul>` : `<p class="tour-none">${esc(L("jumpEmpty"))}</p>`)
     : "";
-  return `<section class="tours" aria-label="${esc(L.heading)}"><h3>${esc(L.heading)}</h3>
-    <input class="tour-jump" type="search" placeholder="${esc(L.jump)}" aria-label="${esc(L.jump)}" value="${esc(m.jump.query)}">${hits}
-    ${m.journeys.length ? `<div class="tour-journeys">${journeysRow}</div>` : ""}${tours}${steps}</section>`;
+  return `<section class="tours" aria-label="${esc(L("heading"))}"><h3>${esc(L("heading"))}</h3>`
+    + `<input class="tour-jump" type="search" placeholder="${esc(L("jump"))}" aria-label="${esc(L("jump"))}" value="${esc(m.jump.query)}">${hits}`
+    + `${journeysRow}${tours}${steps}</section>`;
 }
 
 /**
@@ -79,12 +95,10 @@ export function toursScript(api: string): string {
   const slot = document.getElementById("tours"); if (!slot) return;
   let timer;
   window.addEventListener("message", (e) => {
-    if (e.data && e.data.type === "tours") {
-      const focused = document.activeElement && document.activeElement.classList.contains("tour-jump");
-      const pos = focused ? document.activeElement.selectionStart : null;
-      slot.innerHTML = e.data.html;
-      if (focused) { const i = slot.querySelector(".tour-jump"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
-    }
+    if (!e.data || e.data.type !== "tours") return;
+    const a = document.activeElement, focused = a && a.classList && a.classList.contains("tour-jump"), pos = focused ? a.selectionStart : null;
+    slot.innerHTML = e.data.html;
+    if (focused) { const i = slot.querySelector(".tour-jump"); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   });
   slot.addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b || b.disabled) return;
@@ -102,9 +116,7 @@ export function toursScript(api: string): string {
     timer = setTimeout(() => ${api}.postMessage({ type: "tour", action: "jump-query", query }), 120);
   });
   slot.addEventListener("keydown", (e) => {
-    if (e.target.classList.contains("tour-jump") && e.key === "Enter") {
-      const first = slot.querySelector("[data-tour-jump]"); if (first) first.click();
-    }
+    if (e.target.classList.contains("tour-jump") && e.key === "Enter") { const first = slot.querySelector("[data-tour-jump]"); if (first) first.click(); }
   });
 })();`;
 }

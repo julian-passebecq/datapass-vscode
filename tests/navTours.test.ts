@@ -1,19 +1,21 @@
 /**
- * V4-NAV NAVTOUR1: journey tours (`datapass.tours/1`), tours generated from facts, stepping, stale
- * holes, 'Jump to a box' fuzzy search and the Navigator `#tours` slot (pure parts).
+ * V4-NAV NAVTOUR1: journey tours on `datapass.tour/1` (go/TOUR-PEDA-contract.md), tours generated from
+ * facts, stepping over sub-steps, live holes, text refs, 'Jump to a box' and the `#tours` slot (pure parts).
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import type { ProjectMap, RelationView } from "../src/core/project/projectMap";
+import type { NavLocation } from "../src/core/navigation/navTypes";
 import { componentLocation, projectLadder } from "../src/core/navigation/projectLadder";
 import { generateTours } from "../src/core/navigation/tours/generate";
 import { fuzzyScore, jumpSearch } from "../src/core/navigation/tours/jump";
 import {
-  journeys, ladderLocations, locationKeys, mergeTours, nextStep, parseToursDoc, prevStep, serializeToursDoc, startTour, stepExists, stepTo,
-  TOUR_STEP_TEXT_MAX, type Tour
-} from "../src/core/navigation/tours/tours";
-import { parseToursMessage, toursHtml, toursScript, TOURS_LABELS, type ToursModel } from "../src/views/navToursHtml";
+  flattenSteps, journeys, ladderLocations, loadTourFile, locationKey, mergeTours, nextStep, prevStep, resolveRef, serializeTourFile,
+  startTour, stepStatus, stepTo, tourOrigin, toursForMode
+} from "../src/core/navigation/tours/store";
+import { TOUR_JSON_SCHEMA, type Tour } from "../src/core/navigation/tours/tourTypes";
+import { labelPack, parseToursMessage, toursHtml, toursScript, uiLabel, type ToursModel } from "../src/views/navToursHtml";
 
 type Flow = RelationView["flow"];
 function mapOf(components: Record<string, string>, edges: [string, string, Flow][] = []): ProjectMap {
@@ -21,89 +23,97 @@ function mapOf(components: Record<string, string>, edges: [string, string, Flow]
   return {
     project: { id: "demo", title: "Demo", schemaVersion: 1 },
     subprojects: [{ id: "main", title: "Main", componentIds: ids }],
-    components: ids.map((id) => ({ id, label: components[id], description: `About ${components[id]}` })),
+    components: ids.map((id) => ({ id, label: components[id] })),
     relations: edges.map(([from, to, flow], i) => ({ id: `r${i}`, source: from, target: to, from, to, flow, relation: flow === "data" ? "feeds" : "orchestrates" }))
   } as unknown as ProjectMap;
 }
-
+const VIEWS = { viewsAt: (l: NavLocation) => (l.nodeId === "noview" ? [] : [{ id: "detail" }, { id: "lineage" }]) };
 const LAYERS = { landing: "Landing file", staging: "Staging", processed: "Processed", curated: "Curated", report: "Report" };
+const ids = (t: Tour) => flattenSteps(t.steps).map((f) => f.step.location.nodeId);
 
-test("tours: lineage tour follows the data flow from the source, numbered in order", () => {
+test("generate: lineage tour follows the data flow, guide refs per stage, first offered view", () => {
   const map = mapOf(LAYERS, [["landing", "staging", "data"], ["staging", "processed", "data"], ["processed", "curated", "data"], ["curated", "report", "data"]]);
-  const tours = generateTours(map);
-  assert.equal(tours.length, 1);
-  const [t] = tours;
+  const [t, ...rest] = generateTours(map, VIEWS);
+  assert.equal(rest.length, 0);
+  assert.equal(t!.id, "datapass.journey.lineage.1");
   assert.equal(t!.journey, "lineage");
-  assert.equal(t!.origin, "generated");
-  assert.deepEqual(t!.steps.map((s) => s.location.nodeId), ["landing", "staging", "processed", "curated", "report"]);
-  assert.equal(t!.title, "Landing file → Report");
-  assert.equal(t!.steps[0]!.text, "About Landing file");
+  assert.equal(t!.mode, "general");
+  assert.equal(t!.titleRef, "guide:journey.lineage");
+  assert.deepEqual(ids(t!), ["landing", "staging", "processed", "curated", "report"]);
+  assert.deepEqual(t!.steps.map((s) => s.explanationRef.split(".").pop()), ["source", "flow", "flow", "flow", "end"]);
+  assert.ok(t!.steps.every((s) => s.viewId === "detail" && s.origin === "datapass-guidance"));
 });
 
-test("tours: execution tour walks schedule → job → notebook, then the tables they produce", () => {
-  const map = mapOf({ sched: "Nightly", job: "Job", nb: "Notebook", tbl: "Sales table" },
-    [["sched", "job", "control"], ["job", "nb", "control"], ["nb", "tbl", "data"]]);
-  const tours = generateTours(map);
+test("generate: execution tour walks schedule → job → notebook, then the produced tables", () => {
+  const map = mapOf({ sched: "Nightly", job: "Job", nb: "Notebook", tbl: "Sales" }, [["sched", "job", "control"], ["job", "nb", "control"], ["nb", "tbl", "data"]]);
+  const tours = generateTours(map, VIEWS);
   const exec = tours.find((t) => t.journey === "execution")!;
-  assert.deepEqual(exec.steps.map((s) => s.location.nodeId), ["sched", "job", "nb", "tbl"]);
+  assert.deepEqual(ids(exec), ["sched", "job", "nb", "tbl"]);
+  assert.deepEqual(exec.steps.map((s) => s.explanationRef), ["trigger", "unit", "unit", "output"].map((s) => `guide:journey.execution.${s}`));
   assert.deepEqual(journeys(tours), ["lineage", "execution"]);
 });
 
-test("tours: no facts = no tour; cycles and dangling edges are safe", () => {
-  assert.deepEqual(generateTours(mapOf(LAYERS)), []);
-  const cyc = generateTours(mapOf({ a: "A", b: "B" }, [["a", "b", "data"], ["b", "a", "data"], ["a", "ghost", "data"]]));
+test("generate: no facts = no tour; cycles, dangling edges and view-less Locations are safe", () => {
+  assert.deepEqual(generateTours(mapOf(LAYERS), VIEWS), []);
+  const cyc = generateTours(mapOf({ a: "A", b: "B" }, [["a", "b", "data"], ["b", "a", "data"], ["a", "ghost", "data"]]), VIEWS);
   assert.equal(cyc.length, 1);
-  assert.deepEqual(cyc[0]!.steps.map((s) => s.location.nodeId), ["a", "b"]);
+  assert.deepEqual(ids(cyc[0]!), ["a", "b"]);
+  assert.deepEqual(generateTours(mapOf({ a: "A", noview: "N" }, [["a", "noview", "data"]]), VIEWS), []);
 });
 
-test("tours: long descriptions are cut to the step text limit", () => {
-  const map = mapOf({ a: "A", b: "B" }, [["a", "b", "data"]]);
-  (map.components[0] as { description?: string }).description = "x".repeat(400);
-  assert.equal(generateTours(map)[0]!.steps[0]!.text.length, TOUR_STEP_TEXT_MAX);
+const USER: Tour = { id: "onboard", titleRef: "text:onboard.title", mode: "learning", steps: [
+  { id: "s1", location: componentLocation("staging"), viewId: "lineage", explanationRef: "text:onboard.s1", origin: "user",
+    substeps: [{ id: "s1a", location: componentLocation("processed"), viewId: "detail", explanationRef: "concept:x", origin: "ai-proposed" }] },
+  { id: "s2", location: componentLocation("gone"), viewId: "detail", explanationRef: "guide:journey.lineage.end", origin: "user" },
+  { id: "s3", location: componentLocation("curated"), viewId: "hidden", explanationRef: "text:missing", origin: "user" }] };
+const DOC = { schema: "datapass.tour/1", tours: [USER], texts: { "onboard.title": "Onboarding", "onboard.s1": "Raw rows land here." } };
+
+test("store: tours.json loads leniently, built-ins are never written, a built-in id in the file is a hole", () => {
+  const loaded = loadTourFile(JSON.stringify(DOC));
+  assert.deepEqual(loaded.holes, []);
+  assert.equal(loaded.document.tours[0]!.id, "onboard");
+  const builtin: Tour = { id: "datapass.journey.lineage.1", titleRef: "guide:journey.lineage", steps: [] };
+  const merged = mergeTours([builtin], loadTourFile(JSON.stringify({ ...DOC, tours: [USER, { ...USER, id: builtin.id }] })));
+  assert.deepEqual(merged.document.tours.map((t) => t.id), [builtin.id, "onboard"]);
+  assert.deepEqual(merged.holes.map((h) => h.kind), ["duplicate-tour"]);
+  const text = serializeTourFile(merged.document, new Set([builtin.id]));
+  assert.deepEqual(JSON.parse(text).tours.map((t: Tour) => t.id), ["onboard"]);
+  assert.deepEqual(loadTourFile("{nope").holes.map((h) => h.kind), ["malformed-document"]);
+  assert.deepEqual(loadTourFile(undefined).document.tours, []);
+  const bad = loadTourFile(JSON.stringify({ schema: "datapass.tour/1", tours: [{ id: "x", titleRef: "text:t", steps: [{ location: { level: "nowhere" } }] }] }));
+  assert.deepEqual(bad.holes.map((h) => h.kind), ["malformed-location"]);
 });
 
-const FILE: Tour = { id: "onboard", title: "Onboarding", journey: "lineage", origin: "user", steps: [
-  { location: componentLocation("staging"), viewId: "lineage", text: "Raw rows land here." },
-  { location: componentLocation("gone"), text: "This box was removed." }] };
-
-test("tours: tours.json round-trips; bad, generated-origin and duplicate tours are dropped with a problem", () => {
-  const text = serializeToursDoc([FILE, { ...FILE, id: "gen", origin: "generated" }]);
-  const back = parseToursDoc(text);
-  assert.deepEqual(back.problems, []);
-  assert.deepEqual(JSON.parse(JSON.stringify(back.tours)), [FILE]);
-  const bad = parseToursDoc(JSON.stringify({ format: "datapass.tours", version: 1, tours: [
-    FILE, FILE, { ...FILE, id: "g", origin: "generated" }, { ...FILE, id: "long", steps: [{ location: componentLocation("a"), text: "y".repeat(281) }] },
-    { ...FILE, id: "loc", steps: [{ location: { level: "nowhere", nodeId: "a", artifactKind: "other" }, text: "" }] }, { ...FILE, id: "ai", origin: "ai-proposed" }] }));
-  assert.deepEqual(bad.tours.map((t) => t.id), ["onboard", "ai"]);
-  assert.equal(bad.problems.length, 4);
-  assert.deepEqual(parseToursDoc("{nope").tours, []);
-  assert.deepEqual(parseToursDoc(JSON.stringify({ format: "other", version: 1, tours: [] })).problems.length, 1);
-  assert.deepEqual(parseToursDoc(undefined), { tours: [], problems: [] });
-});
-
-test("tours: merge keeps generated first and never lets a file tour shadow one", () => {
-  const gen: Tour = { ...FILE, id: "gen.lineage.a", origin: "generated" };
-  const merged = mergeTours([gen], [{ ...FILE, id: "gen.lineage.a" }, FILE]);
-  assert.deepEqual(merged.map((t) => t.id), ["gen.lineage.a", "gen.lineage.a~file", "onboard"]);
-});
-
-test("tours: stepping clamps at both ends; a step whose node is gone is stale", () => {
-  let c = startTour(FILE);
-  c = prevStep(FILE, c);
+test("store: numbering covers sub-steps, stepping clamps, holes are live (missing box, hidden view)", () => {
+  assert.deepEqual(flattenSteps(USER.steps).map((f) => f.number), ["1", "1.1", "2", "3"]);
+  let c = prevStep(USER, startTour(USER));
   assert.equal(c.index, 0);
-  c = nextStep(FILE, nextStep(FILE, c));
-  assert.equal(c.index, 1);
-  assert.equal(stepTo(FILE, c, -5).index, 0);
+  for (let i = 0; i < 9; i++) c = nextStep(USER, c);
+  assert.equal(c.index, 3);
+  assert.equal(stepTo(USER, -2).index, 0);
   const map = mapOf(LAYERS);
-  const keys = locationKeys(ladderLocations(projectLadder(() => map)));
-  assert.equal(stepExists(FILE.steps[0]!, keys), true);
-  assert.equal(stepExists(FILE.steps[1]!, keys), false);
+  const ctx = { known: new Set(ladderLocations(projectLadder(() => map)).map(locationKey)), viewsAt: () => [{ id: "detail" }, { id: "lineage" }] };
+  assert.deepEqual(flattenSteps(USER.steps).map((f) => stepStatus(f.step, ctx)), ["ok", "ok", "unknown-location", "unknown-view"]);
+  assert.equal(tourOrigin(USER), "ai-proposed");
+});
+
+test("store: refs resolve text: and guide:, anything else is a hole; modes filter learning/interview + general", () => {
+  const guide = labelPack({ "journey.lineage.end": "Custom end" });
+  assert.equal(resolveRef("text:onboard.s1", DOC.texts, guide), "Raw rows land here.");
+  assert.equal(resolveRef("guide:journey.lineage.end", undefined, guide), "Custom end");
+  assert.equal(resolveRef("guide:journey.lineage", undefined, guide), "Data lineage");
+  assert.equal(resolveRef("concept:x", DOC.texts, guide), undefined);
+  assert.equal(resolveRef("text:missing", DOC.texts, guide), undefined);
+  const g: Tour = { ...USER, id: "g", mode: undefined }, iv: Tour = { ...USER, id: "iv", mode: "interview" };
+  assert.deepEqual(toursForMode([USER, g, iv], "learning").map((t) => t.id), ["onboard", "g"]);
+  assert.deepEqual(toursForMode([USER, g, iv], "interview").map((t) => t.id), ["g", "iv"]);
+  assert.deepEqual(toursForMode([USER, g, iv], "all", (m) => m !== "interview").map((t) => t.id), ["onboard", "g"]);
 });
 
 test("jump: every ladder Location is searchable by label, prefix beats scattered, kind matches weaker", () => {
   const map = mapOf(LAYERS);
-  const ladder = projectLadder(() => map);
-  const entries = ladderLocations(ladder).map((location) => ({ location, label: location.level === "project" ? "Demo" : location.level === "subproject" ? "Main" : (LAYERS as Record<string, string>)[location.nodeId]! }));
+  const labels: Record<string, string> = { demo: "Demo", main: "Main", ...LAYERS };
+  const entries = ladderLocations(projectLadder(() => map)).map((location) => ({ location, label: labels[location.nodeId]! }));
   assert.equal(entries.length, 7);
   assert.equal(jumpSearch(entries, "cur")[0]!.label, "Curated");
   assert.equal(jumpSearch(entries, "stg")[0]!.label, "Staging");
@@ -122,27 +132,29 @@ test("slot: messages are validated", () => {
   assert.equal(parseToursMessage({ type: "nav" }), null);
 });
 
-test("slot: html escapes data, marks stale and AI-proposed, numbers the steps", () => {
+test("slot: html escapes data, numbers sub-steps, marks holes and AI-proposed, words come from the pack", () => {
+  const labels = labelPack({ "ui.next": "Onward" });
   const m: ToursModel = {
-    labels: { ...TOURS_LABELS },
-    journeys: [{ id: "lineage", label: "Data <lineage>", active: true }],
-    tours: [{ id: "a", title: "A", origin: "generated", active: true }, { id: "b", title: "B", origin: "ai-proposed", active: false }],
-    steps: [{ index: 0, label: "Landing", text: "x", stale: false, current: true }, { index: 1, label: "Gone", text: "", stale: true, current: false }],
-    canPrev: false, canNext: true, jump: { query: "", hits: [] }, problems: []
+    labels, journeys: [{ id: "lineage", label: "Data <lineage>", active: true }, { id: "execution", label: "Execution", active: false }],
+    tours: [{ id: "a", title: "A", active: true }, { id: "b", title: "B", badge: "ai-proposed", active: false }],
+    steps: [{ index: 0, number: "1", depth: 0, label: "Landing", preview: "x", status: "ok", current: true },
+      { index: 1, number: "1.1", depth: 1, label: "Gone", preview: "", status: "unknown-location", current: false }],
+    explanation: null, canPrev: false, canNext: true, jump: { query: "", hits: [] }
   };
   const html = toursHtml(m);
   assert.ok(html.includes("Data &lt;lineage&gt;"));
-  assert.ok(html.includes(TOURS_LABELS.aiProposed));
-  assert.ok(html.includes(`data-tour-step="1" title="" disabled`));
-  assert.ok(html.includes(`<span class="tour-n">1</span>`));
-  assert.ok(html.includes(`data-tour-action="prev" disabled`));
+  assert.ok(html.includes(uiLabel(labels, "aiProposed")));
+  assert.ok(html.includes(uiLabel(labels, "unknownLocation")));
+  assert.ok(html.includes(uiLabel(labels, "noExplanation")));
+  assert.ok(html.includes(`<span class="tour-n">1.1</span>`) && html.includes("depth-1"));
+  assert.ok(html.includes(`data-tour-action="prev" disabled`) && html.includes("Onward"));
   assert.ok(!/on(click|input)=/.test(html));
-  assert.ok(toursHtml({ ...m, steps: [], tours: [] }).includes(TOURS_LABELS.none));
+  assert.ok(toursHtml({ ...m, steps: [], tours: [] }).includes(uiLabel(labels, "none")));
   assert.ok(toursScript("vscodeApi").includes("vscodeApi.postMessage"));
 });
 
-test("schema: the JSON schema and the validator agree on origins and limits", () => {
-  const schema = JSON.parse(readFileSync("schemas/datapass-tours.schema.json", "utf8"));
-  assert.deepEqual(schema.$defs.tour.properties.origin.enum, ["ai-proposed", "user"]);
-  assert.equal(schema.$defs.step.properties.text.maxLength, TOUR_STEP_TEXT_MAX);
+test("schema: schemas/datapass-tour.schema.json is generated from TOUR_JSON_SCHEMA", () => {
+  assert.deepEqual(JSON.parse(readFileSync("schemas/datapass-tour.schema.json", "utf8")), JSON.parse(JSON.stringify(TOUR_JSON_SCHEMA)));
+  const pkg = JSON.parse(readFileSync("package.json", "utf8"));
+  assert.ok(pkg.contributes.jsonValidation.some((v: { url: string; fileMatch: string[] }) => v.url === "./schemas/datapass-tour.schema.json" && v.fileMatch.includes("**/.datapass/tours.json")));
 });
