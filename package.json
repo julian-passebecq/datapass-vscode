@@ -1211,6 +1211,46 @@
       {
         "command": "datapass.codeFont.smaller",
         "key": "alt+-"
+      },
+      {
+        "command": "datapass.nav.up",
+        "key": "shift+alt+p up",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.down",
+        "key": "shift+alt+p down",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.left",
+        "key": "shift+alt+p left",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.right",
+        "key": "shift+alt+p right",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.home",
+        "key": "shift+alt+p home",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.back",
+        "key": "shift+alt+p backspace",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.forward",
+        "key": "shift+alt+p shift+backspace",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
+      },
+      {
+        "command": "datapass.nav.pickView",
+        "key": "shift+alt+p v",
+        "when": "datapass.nav.active && config.datapass.nav.globalKeys && !editorTextFocus && !terminalFocus && !listFocus && !inputFocus"
       }
     ],
     "menus": {
@@ -2829,6 +2869,12 @@
           },
           "additionalProperties": { "type": "string" },
           "description": "Which existing DataPass view a \"surface\" view opens: surface id → DataPass command id (datapass.* only)."
+        },
+        "datapass.nav.globalKeys": {
+          "type": "boolean",
+          "default": true,
+          "scope": "application",
+          "markdownDescription": "Global navigation chords while a DataPass navigation view is open: `Shift+Alt+P` then an arrow, `Home`, `Backspace` (back), `Shift+Backspace` (forward) or `V` (pick a view). They never fire in the editor, the terminal, a tree or an input box, and no VS Code default uses `Shift+Alt+P`. Plain arrows inside the navigation views work either way. Rebind them in Keyboard Shortcuts (`datapass.nav.`)."
         },
         "datapass.diagramCloud.url": {
           "type": "string",
