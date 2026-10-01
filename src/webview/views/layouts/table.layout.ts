@@ -1,5 +1,5 @@
 /** V4-NAV `table` layout kind: the binding rows as one table; a row with a node id selects it (Enter / click). */
-import { holesNode, label, valueNode, type LayoutModel, type VNode } from "../model";
+import { holesNode, label, valueNode, type LayoutEntry, type LayoutModel, type VNode } from "../model";
 
 export const tableModel: LayoutModel = ({ view, data, labels }) => {
   const sets = data.filter(d => d.rows);
@@ -16,3 +16,5 @@ export const tableModel: LayoutModel = ({ view, data, labels }) => {
     : { tag: "p", cls: "nv-empty", text: label(labels, "view.noRows") };
   return { tag: "div", cls: "nv-layout nv-layout-table", children: holes ? [body, holes] : [body] };
 };
+
+export default { kind: "table", model: tableModel } satisfies LayoutEntry;

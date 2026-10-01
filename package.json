@@ -524,6 +524,11 @@
         "icon": "$(project)"
       },
       {
+        "command": "datapass.navView.open",
+        "title": "DataPass: Open the DataPass View (left of the code)",
+        "icon": "$(layout-sidebar-left)"
+      },
+      {
         "command": "datapass.hop.explain",
         "title": "DataPass: Explain This File (DataPass Hop)",
         "icon": "$(symbol-structure)"
@@ -1915,6 +1920,10 @@
       ],
       "commandPalette": [
         {
+          "command": "datapass.navView.open",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.hop.explain",
           "when": "!datapass.hidden.palette.full"
         },
@@ -2806,6 +2815,21 @@
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.navView.titleFormat": {
+          "type": "string",
+          "default": "{location} · {view} {n}/{N}",
+          "description": "Title of the DataPass view (left of the code): {location} = where you are, {view} = the view's title, {n}/{N} = its position among the views of that place."
+        },
+        "datapass.navView.surfaces": {
+          "type": "object",
+          "default": {
+            "workbench": "datapass.openWorkbench",
+            "hop": "datapass.hop.open",
+            "airflow-dag": "datapass.showAirflowDag"
+          },
+          "additionalProperties": { "type": "string" },
+          "description": "Which existing DataPass view a \"surface\" view opens: surface id → DataPass command id (datapass.* only)."
+        },
         "datapass.diagramCloud.url": {
           "type": "string",
           "default": "",
@@ -3569,8 +3593,13 @@
   },
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "gen": "node scripts/gen-registry.mjs",
+    "postinstall": "node scripts/gen-registry.mjs",
+    "prebuild": "node scripts/gen-registry.mjs",
     "build": "npm run clean && node esbuild.mjs",
+    "precheck": "node scripts/gen-registry.mjs",
     "check": "tsc --noEmit",
+    "pretest": "node scripts/gen-registry.mjs",
     "sync:common": "tsx scripts/sync-common.ts",
     "test": "tsx --test tests/*.test.ts",
     "verify": "npm run check && npm test && npm run build",
