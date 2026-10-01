@@ -95,3 +95,9 @@ Critical reading of the 9 sources Julian pasted: good for **coverage** (which to
 ### Python parser containment (PM 15, 2026-09-30, Common !96 PY1C)
 - Default containment is `lpac-required` (fails closed). `lpac-or-trusted-local` and `trusted-local-host-only` keep the Job Object limits (25 MiB, 2 s CPU, one process) and mark every result `trusted-local-host-only`; they claim no filesystem, registry or socket isolation.
 - No product caller defaults to a fallback: a fallback is a user setting, off by default. The manifest stays `platform:pending` until the qualified host is released.
+
+## V5 (PM DataPass 25, 2026-10-01)
+- V5-A dbt detach: dbt stays canonical; detach is an explicit, stamped authority change (DETSPI1); drift after detach is a fact, never silently re-synced; never deploy.
+- V5-B multi-repo: `datapass.repo-set/1` (GITSPI1), read-only, local clones only; views go into the shared catalog, not a separate VSIX.
+- V5-C Studio: web app on SQLRooms/DuckDB-WASM in datapass-studio, shares the view catalog, qualifies `datapass.studio.workspace/1` first (STUDIO0).
+- V5-D FastAPI OTel: Observe replay reader only (OTLP JSON / Prometheus text), mapped onto OBSC ObservedRun; no live collector in V5.

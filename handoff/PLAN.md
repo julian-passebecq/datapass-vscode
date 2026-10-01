@@ -507,6 +507,46 @@ Merge order (shared files `package.json`, `palette.ts`, `register.ts`): NAVSPI1 
 
 Totals: 34 packages, ~359 M (02:00 additions: 9 packages, ~87 M, + 2 M on NAVBAR1). W0 (2) now; W1 (20) and W1b (6) start now on `NAV-contract.md` stubs and merge after their dependency; W2 (5) after their merges; W3 = acceptance + screenshots for Julian.
 
+## § V5 — dbt detach, multi-repo Git, Studio on SQLRooms, FastAPI OTel (PM DataPass 25 · 2026-10-01 · rules V3.8)
+
+Gate: V5 coders start when V4-NAV W2 is merged (shared `package.json`, `palette.ts`, `register.ts`); Track A also needs MAT1 + DBTRUN1 merged. Wave 0 (contracts, Studio qualification) may start at once. Boundaries unchanged: DataPass never executes client code, never deploys, no hidden AI call (AI only through the exchange, origin ai-proposed), new remote calls only in replay/opt-in readers.
+
+- AC-V1 (Track A, § 28 1b) dbt stays canonical; a dbt model can be **materialized** as a Fabric notebook (Spark SQL / PySpark cells from compiled SQL) through MAT1 (candidate files + provenance stamp → diff → branch/MR, never deploy). **Detach** = an explicit authority change (dbt → notebook) recorded by a stamp; afterwards drift between the dbt source and the detached notebook is a fact, never silently re-synced. Running it on Fabric Spark is the user's normal flow.
+- AC-V2 (Track B) Multi-repo Git module: a repo set (`datapass.repo-set/1`) from workspace folders, submodules and `.datapass/repos.json`; read-only status/history across repos (lanes + Sankey repo → component as one view of the catalog, not a separate VSIX, AC-N16); cross-repo impact via lineage and vendored-contract pin drift. Never checkout, never push on the user's behalf.
+- AC-V3 (Track C) Studio out of VS Code = web app on SQLRooms (DuckDB-WASM, data tree + sheets: SQL, table, pivot, notebook, dashboard). Qualify GPT's `datapass.studio.workspace/1` (datapass-studio!6) first. Studio reads DataPass exports (ProjectIndex, view catalog) and Factory outputs; it shares the view catalog, renders with its own React renderer (reuse cloud workbench-ui). "Hop" stays our visual language.
+- AC-V4 (Track D) FastAPI OpenTelemetry = an Observe **replay** reader (OTLP JSON / Prometheus text files) mapped onto OBSC ObservedRun and keyed to V4-API endpoints; endpoint view static vs observed, trace tree nodes pass / clipped / pruned / replay (style reused from NAVLIN1). No live collector in V5.
+- AC-V5 (Track E, other V5 rows) Power-Query step view data sample (NAVREN4 follow-up): local file sample through Data X-Ray's DuckDB or an AI-proposed sample through the exchange, marked; authority/permissions panel over typed approvals (Elastic idea, agents stay optional); one research package for OmicsLake snapshot/provenance and Gorgias "flag gaps" → NAVTODO1 feed. Mobile companion: not planned (question 5).
+
+Merge order (shared files): DETSPI1 / GITSPI1 / OTELSPI1 (Common, independent) → DBTMAT1 → DETACH1 → GITMR1 → GITMR2 → PQSAMP1 → GITMR3 → OTEL2 → AUTHPNL1 → V5E2E1. Common DETACH2 after DETSPI1. Cloud OTEL1 and Studio STUDIO0 → STUDIO1 → STUDIO2 / STUDIO3 → STUDIO4 independent. Out of order is fine when the rebase is clean.
+
+| Pkg | Repo · package | Scope (one MR each) | Depends on | est. M | Wave |
+|---|---|---|---|---|---|
+| DETSPI1 | Common `project-contracts` | `datapass.materialization-detach/1`: authority (dbt \| notebook), detach stamp (model id, dbt revision, notebook hash, who/when), drift states; additive, core-change | — | 8 | W0 |
+| GITSPI1 | Common `project-contracts` | `datapass.repo-set/1`: repos, roles, remote, default branch, cross-repo edges, vendored-contract pins; additive, core-change | — | 8 | W0 |
+| OTELSPI1 | Common `project-contracts` | OTLP span/metric + Prometheus sample → ObservedRun / ObservationBatch mapping types (OBSC), endpoint key = V4-API endpoint id | — | 8 | W0 |
+| STUDIO0 | datapass-studio | qualify `datapass.studio.workspace/1` (!6): fit vs ProjectIndex/view catalog, SQLRooms room model, decision note + amended schema; no UI | — | 10 | W0 |
+| V5INV1 | PM subagent (auditor) | research note: OmicsLake snapshot/provenance vs § 34 evidence origins; Gorgias "flag gaps" → NAVTODO1 source; ≤ 1 page each | — | 6 | W0 |
+| DBTMAT1 | standalone | dbt model → Fabric notebook materializer on MAT1: compiled SQL → cells, refs → table names per env, provenance stamp, diff → branch/MR | MAT1 + DBTRUN1 + DETSPI1 merged | 20 | W1 |
+| DETACH1 | standalone | `datapass.dbt.detach` command (palette-classified): authority flip + stamp, detached badge in tree/Context, drift fact (dbt changed / notebook edited), re-attach = new MAT1 proposal | DBTMAT1 | 14 | W1 |
+| GITMR1 | standalone | repo-set discovery (folders, submodules, `.datapass/repos.json`) + read-only per-repo status/branch/ahead-behind; Context section "Repositories" | GITSPI1 (stub now) | 12 | W1 |
+| GITMR2 | standalone | cross-repo history view: per-repo lanes + Sankey repo → component, as catalog views (graph/diff-history kinds) | GITMR1 + NAVREN2/3 merged | 14 | W1 |
+| OTEL1 | cloud `observe-providers` | FastAPI OTLP JSON / Prometheus text replay reader, synthetic cassettes, off by default | OTELSPI1 | 15 | W1 |
+| STUDIO1 | datapass-studio | SQLRooms web shell: data tree + SQL, table, pivot sheets on DuckDB-WASM, opens a DataPass ProjectIndex export | STUDIO0 | 25 | W1 |
+| PQSAMP1 | standalone (+ data-xray hook) | data sample in the code-steps view: X-Ray DuckDB sample of a local file, or AI-proposed sample via the exchange (marked), else hole | NAVREN4 merged | 10 | W1 |
+| DETACH2 | Common `arch-lint` | detectors + decision card: detached notebook diverged, dbt still invoked after detach, both authorities scheduled | DETSPI1 + DBTRUN1 | 10 | W2 |
+| GITMR3 | standalone | cross-repo change impact: change in repo A → downstream artifacts in repo B (lineage) + Common pin drift (vendored vs main) | GITMR2 + NAVCHG1 | 14 | W2 |
+| OTEL2 | standalone | endpoint view: static endpoints (V4-API) vs replayed latency/errors; trace tree pass/clipped/pruned/replay | OTEL1 + NAVLIN1 | 14 | W2 |
+| AUTHPNL1 | standalone | authority/permissions panel: typed approvals, who may do what per Location (read-only, no agent runtime) | NAVCTX1 | 12 | W2 |
+| STUDIO2 | datapass-studio | Factory → web app adapter: Factory output manifest → Studio workspace (sheets per service/dataset) | STUDIO1 | 18 | W2 |
+| STUDIO3 | datapass-studio | Studio renders the shared view catalog (reuse cloud workbench-ui React renderer) | STUDIO1 + NAVCLOUD1 | 20 | W2 |
+| STUDIO4 | datapass-studio | "vanilla client" demo (Deepnote/Jupyter/Streamlit replacement) on a public synthetic wind dataset; no FOIL data | STUDIO2 + STUDIO3 | 15 | W3 |
+| V5E2E1 | standalone | V5 acceptance E2E + screenshots for Julian (detach, multi-repo, endpoint view) | all V5 standalone merged | 12 | W3 |
+
+Totals: 20 packages, ~265 M. W0 (5, 40 M) now; W1 (7, 110 M) on stubs, merge after deps; W2 (6, 88 M); W3 (2, 27 M). Parallelism: Tracks A–D are disjoint (4 repos), so up to ~8 coders at once.
+
+Julian questions (go/JULIAN-questions-reveil.md) run on the defaults until he answers; V5 W0 and the W1 packages with no V4 dependency (GITMR1 on stub, OTEL1, STUDIO1) may start now while V4-NAV runs (separate repos or new files only).
+
+
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
 Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16 local_0e9d67b3 from ~03:00; PM 15 local_7024f765 from ~01:40; before: PM 13 local_6dbe9065, Opus medium, global PM, from 2026-09-30 ~00:45 local; GO go/PM-DataPass-12.md): every code and merge decision; architect of DataPass (no more Codex, Julian 30 Sept). **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 12, local_d18705b2) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. **Pace (Julian, 29 Sept ~22:50): no night coder cap; quota credit runs to Thu 1 Oct 14:00 (18 % used by 23:00), speed up, finishing a bit early is fine: guard weekly burn ≤ 3.5 %/h, 5 h window ≤ 90 %; night 29→30 Sept: no burn guard (Julian, 23:55, "we have margin").** CI: runner 56844575 (local-windows) has concurrent = 20 live (Julian raised it 30 Sept ~19:30; was 15) (Julian, 29 Sept ~23:15; free RAM ~18 GB at 12 jobs; the runner reloads config.toml by itself, never restart it), no per-runner limit (Julian, 29 Sept; measured: peak 10, median start wait 5 s). If jobs wait with no earlier stage ahead while 10 run, tell the PM, who asks Julian to restart the runner: run CI in parallel across repos; do not create or re-register runners; measure overlap before claiming a CI queue. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
