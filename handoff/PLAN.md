@@ -618,13 +618,14 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER TOURAI1 (local_40694ab0-b892-4b0c-a927-5c8babf5b6fd) | coder (Opus medium) | V5 TOURAI1 | 10 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER NAVPERF1+NAVINTRO1a (local_e56fad81-4ed1-4661-af97-5d8d0eddd45f) | coder (Opus medium) | NAVPERF1 then NAVINTRO1a | — | 2026-10-01 · V3.8 | COORD 38 |
 | PM DataPass 28 (local_14eb5b20-7fdb-40e9-9429-5d6159fbba5c), live from ~13:00, pinned | global PM + architect (Opus medium) | V4 critical path, Common freeze, V5 waves (go/PM-DataPass-28.md) | — | 2026-10-01 · V3.8 | Julian (via ASSISTANT 5) |
-| CODER NAVWIRE1 (chip 12:20) | coder (Opus medium) | NAVWIRE1 a3/a7/a8/a9 (go/NAVWIRE1.md), V4 critical path | 11 | 2026-10-01 · V3.8 | COORD 39 |
-| CODER W1FIX-DBTMAT1 (chip 12:20) | coder (Opus medium) | W1 review fixes !218 + datapass.dbt.materialize command (GATED v5.dbtmat) + rebase !220 (go/W1FIX-DBTMAT1.md) | 8 | 2026-10-01 · V3.8 | COORD 39 |
+| COORD DataPass 39 (local_1334df48-775a-4d30-a626-eabe8eb918ab), live ~12:15, pinned; COORD 38 local_d2fab7ca retired | coordinator vscode/cloud/studio/data-xray (Opus medium) | vscode throttled train (≤ 4 MR pipelines), chips of PM 28 (hand-off go/handoff-coord-38.md) | — | 2026-10-01 · V3.8 | PM 28 |
+| CODER NAVWIRE1 (local_cce377ef-5ef8-4e00-bff5-564522b706e9) | coder (Opus medium) | NAVWIRE1 a3/a7/a9 (a8 = NAVDATA1) (go/NAVWIRE1.md), V4 critical path | 11 | 2026-10-01 · V3.8 | COORD 39 |
+| CODER W1FIX-DBTMAT1 (local_2527c02d-62d7-4748-856c-1bab13999c79) | coder (Opus medium) | W1 review fixes !218 + datapass.dbt.materialize command (GATED v5.dbtmat) + rebase !220 (go/W1FIX-DBTMAT1.md) | 8 | 2026-10-01 · V3.8 | COORD 39 |
 | CODER W1FIX-PQSAMP1 (chip 12:20) | coder (Opus medium) | W1 review fixes !219 (go/W1FIX-PQSAMP1.md) | 6 | 2026-10-01 · V3.8 | COORD 39 |
 | CODER W1FIX-GITMR1 (chip 12:20) | coder (Opus medium) | W1 review fixes !214, gitReadOnly wrapper (go/W1FIX-GITMR1.md) | 6 | 2026-10-01 · V3.8 | COORD 39 |
-| CODER W1FIX-EVPIN1 (chip 12:20) | coder (Opus medium) | W1 review fixes !215, local stub instead of re-vendor (go/W1FIX-EVPIN1.md) | 6 | 2026-10-01 · V3.8 | COORD 39 |
+| CODER W1FIX-EVPIN1 (local_77075086-a0e7-4334-9479-545b06e275c9) | coder (Opus medium) | W1 review fixes !215, local stub instead of re-vendor (go/W1FIX-EVPIN1.md) | 6 | 2026-10-01 · V3.8 | COORD 39 |
 | CODER CIFIX2 (chip 12:20) | coder (Opus medium) | CI c1/c2/c4 + auto-cancel incl. main (go/CIFIX2.md) | 4 | 2026-10-01 · V3.8 | COORD 39 |
-| CODER GITMR3 (chip 12:20) | coder (Opus medium) | V5 GITMR3 on stubs (go/GITMR3.md) | 14 | 2026-10-01 · V3.8 | COORD 39 |
+| CODER GITMR3 (local_ad61188c-d90f-4441-bc2b-8372d1a0065e) | coder (Opus medium) | V5 GITMR3 on stubs (go/GITMR3.md) | 14 | 2026-10-01 · V3.8 | COORD 39 |
 | RESERVE CODER 1, 2 (chips 12:20) | coder (Opus medium) | idle until the coordinator assigns (go/RESERVE-CODER-28.md) | — | 2026-10-01 · V3.8 | COORD 39 |
 | RESERVE PM DataPass 29 (chip 12:20) | global PM (Opus medium) | takes over from PM 28 (go/PM-DataPass-29.md) | — | 2026-10-01 · V3.8 | PM 28 |
 | PM 27 subagents, batch 2 (+NAVDATA1, STUDIO2) | coder subagents (Opus medium) | MULTIFAM1, TOURSPI1, DETACH1, SJDMAT1, LAYOUT1, ARCHCALL1, XGAP1+TODOSTALE1, NAVDATA1 | ~80 | 2026-10-01 · V3.8 | PM 27 |
