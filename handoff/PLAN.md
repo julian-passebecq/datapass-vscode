@@ -605,7 +605,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N66 (local_ddb905fa-fd1d-4730-8ca1-93edc74b984e) | coder (Opus medium) | V5 OTELSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N35 (local_69d9967d-91a5-4e58-8b5a-0f75c714dc43) | coder (Opus medium) | V5 STUDIO0 done (studio !7) → STUDIO1 (go/STUDIO1.md) | 25 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N36 (local_81cb2caf-bfbf-4fdb-b193-2115737d9966) | coder (Opus medium) | V5 EVCAPT1 then EVACTOR1 (go/, § V5) | 10 | 2026-10-01 · V3.8 | Common 8 |
-| CODER N31 (local_db47d1f7-4e3d-4123-bb85-401e3289b377) | coder (Opus medium) | TABCOL1 (ERD gap: columns/keys in sql-table-facts, core) | 12 | 2026-10-01 · V3.8 | Common 8 |
+| CODER N31 (local_db47d1f7-4e3d-4123-bb85-401e3289b377) | coder (Opus medium) | TABCOL1 done (Common !169 approved 5a55635) → TABCOL1b (go/TABCOL1b.md, 05:40: Synapse NOT ENFORCED, named constraints per dialect) | 6 | 2026-10-01 · V3.8 | Common 9 |
 | CODER N32 (local_ed440262-1db4-488a-bf74-002d41f86efb) | coder (Opus medium) | TMDL1 done (Common !167, schema approved a876b7cc by PM 26) ; keeps TMDL1 !167 support only (146 K), GITMR1 moved to N57 | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N33 (local_31fe2353-60a9-444b-8bac-d85ec8304d35) | coder (Opus medium) | LHSCHEMA1 (ERD gap: Lakehouse/Warehouse schema facts) | 12 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N34 (local_a7970df1-0298-4cb2-b580-cbfbc3d0d7da) | coder (Opus medium) | V5 OTEL1 (cloud OTel replay reader) | 15 | 2026-10-01 · V3.8 | COORD 32 |
