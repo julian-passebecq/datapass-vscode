@@ -83,7 +83,9 @@ const GATED: Record<string, readonly string[]> = {
     "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
     // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
     "understanding.analyzeDbtProjects"
-  ]
+  ],
+  // V5 PEDA3: query showcase cards.
+  "v5.peda3": ["pedagogy.queriesWorthShowing"]
 };
 
 /** Full command id → gating surface id, or null for the core. */

@@ -1097,6 +1097,10 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.pedagogy.queriesWorthShowing",
+        "title": "DataPass: Queries Worth Showing"
       }
     ],
     "viewsContainers": {
@@ -2697,6 +2701,10 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.pedagogy.queriesWorthShowing",
+          "when": "!datapass.hidden.v5.peda3"
         }
       ],
       "explorer/context": [
@@ -3374,9 +3382,25 @@
             "palette.full": {
               "type": "boolean",
               "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
+            },
+            "v5.peda3": {
+              "type": "boolean",
+              "description": "Queries worth showing: The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.pedagogy.queryShowcase.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA3: show the project's notable queries as showcase cards (\"Queries worth showing\"), ranked by interview value. Static facts only: no query is run."
+        },
+        "datapass.pedagogy.queryShowcase.topN": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "V5 PEDA3: how many queries \"Queries worth showing\" lists."
         }
       }
     },
