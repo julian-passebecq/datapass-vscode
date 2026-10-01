@@ -29,3 +29,6 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 - Check a new package id against the Common coverage registry (coverage-plan-packages.json and planned rows) before using it: reusing SCHED1e turned Common main red.
 - Chips titled "Opus medium" may start on Sonnet low: get_session every reserve before assigning it and fix model/effort while it is idle.
 - PowerShell `cd` doesn't move .NET's current directory: use (Resolve-Path x).Path with [IO.File] calls.
+
+- 2026-10-01 (TECH LEAD GLOBAL): plain `git push/fetch` can hang on the Windows Credential Manager; push with `git -c credential.helper= -c 'credential.helper=!"C:/Users/julia/AppData/Local/Programs/glab/glab.exe" auth git-credential' push`.
+- 2026-10-01 (TECH LEAD GLOBAL): architect passes as parallel subagents (merge simulation, contract review, design-vs-code notes) found S1s that plan reading missed (empty views, stale vendoring, frozen-schema breaks).
