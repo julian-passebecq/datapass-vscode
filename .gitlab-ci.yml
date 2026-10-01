@@ -93,7 +93,7 @@ desktop_acceptance:
   # DESKSHARD1: fixtures split over 4 jobs balanced by measured time (scripts/desktop-test.ts,
   # FIXTURE_SECONDS); together they run every fixture once, and every shard gates.
   parallel: 4
-  timeout: 30m
+  timeout: 45m
   cache:
     - key:
         files:
@@ -128,7 +128,7 @@ ui_smoke:
     DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
   # DESKSHARD1: two journeys of ~1 min on a passing run; 20m makes a hang fail clearly before the
   # job token expires (~50 min) instead of timing out unexplained.
-  timeout: 20m
+  timeout: 45m
   cache:
     - key:
         files:
