@@ -129,7 +129,7 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
   function outline(shape, W, H) {
     const c = 7, pts = a => sv("polygon", { points: a.map(p => p.join(",")).join(" ") });
     switch (shape) {
-      case "rounded": return sv("rect", { width: W, height: H, rx: 8 });
+      case "rounded": return sv("rect", { width: W, height: H, rx: Math.round(H * 0.3) });
       case "pill": return sv("rect", { width: W, height: H, rx: H / 2 });
       case "hexagon": return pts([[c * 1.6, 0], [W - c * 1.6, 0], [W, H / 2], [W - c * 1.6, H], [c * 1.6, H], [0, H / 2]]);
       case "parallelogram": return pts([[c * 1.6, 0], [W, 0], [W - c * 1.6, H], [0, H]]);
@@ -287,7 +287,7 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
       const name = sv("text", { x: 32 + inset, y: 16 + drop });
       name.textContent = clip(t.label, inset ? 18 : 20) + (t.mapped ? " [ ]" : "");
       g.appendChild(name);
-      const op = sv("text", { x: 32 + inset, y: 30 + drop, class: "op" });
+      const op = sv("text", { x: 32 + inset, y: 30 + (drop ? 3 : 0), class: "op" });
       op.textContent = clip((t.group ? t.group + " · " : "") + t.operator, inset ? 23 : 26);
       g.appendChild(op);
       const go = () => vscode.postMessage({ type: "reveal", id: t.id });
