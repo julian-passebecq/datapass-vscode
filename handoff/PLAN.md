@@ -596,6 +596,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | PM 26 subagents (local_643e8398) | coder subagents (Opus medium) | GAPSCAN3 (go/GAPSCAN3-index.md): AZFUNC1, ASA1, ELT1, UCMETRIC1 (05:55) | 40 | 2026-10-01 · V3.8 | Common 9 |
 | Common 9 subagents (local_f6d74393) | coder subagents (Opus medium) | GAPSCAN3: SSIS1, LOGICAPP1 (serial version bumps, analyzers-orchestration) | 20 | 2026-10-01 · V3.8 | Common 9 |
 | COORD 35 subagents (local_d2456dac) | coder subagents (Opus medium) | GAPSCAN3: FABCOPY1, RTDASH1 | 20 | 2026-10-01 · V3.8 | COORD 35 |
+| (unassigned) | — | MULTIFAM1 (core, PM design first): coverage registry allows a secondary family per file, so PY2 still reads a v2 Azure Functions function_app.py body after AZFUNC1 !186 claims it (today: bindings only, known gap) | 12 | — | PM |
 | (unassigned) | — | XMLSHARE1: move the XML reader (SSIS1 copy in orchestration/src/xml.ts, analyzers-bi original) into @juliandatapass-group/analyzers; Common 9 subagent after GAPSCAN3 merges | 3 | — | Common 9 |
 | (unassigned, held) | — | GAPSCAN3: ADFDF1 after Common !163; SQLSEC1 → UCOBJ1 → INGEST1 serial after !170; need fresh coders (chips when Julian wakes) | 38 | — | PM 26 |
 | CODER N59 (local_f1158d6e-5946-44b6-a03f-06d20109dcb0) | coder (Opus medium) | DAGFACT1 (go/DAGFACT1.md) | — | 2026-10-01 · V3.8 | Common 8 |
