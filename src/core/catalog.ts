@@ -1,6 +1,16 @@
 import { provenanceFromFabricTool, type ToolProvenanceInfo } from "./capabilities/provenance";
+import { toolSeedV3, type ToolRouting } from "@juliandatapass-group/tool-catalog";
 
 export type CatalogAction = "read" | "clone" | "configure" | "run" | "scaffold" | "deploy";
+
+/** Routing (lifecycle domains, prerequisites, typed side effects) is owned by Common tool-catalog/3; the standalone keeps no copy. */
+const commonRouting = new Map<string, ToolRouting>();
+for (const entry of toolSeedV3().entries) {
+  if (entry.routing) for (const alias of entry.aliases) commonRouting.set(alias, entry.routing);
+}
+export function commonToolRouting(id: string): ToolRouting | undefined {
+  return commonRouting.get(id);
+}
 
 export interface ToolCatalogItem {
   id: string;
@@ -15,6 +25,8 @@ export interface ToolCatalogItem {
   actions: CatalogAction[];
   /** TOOLPROV1: provenance in the Common tool-catalog vocabulary, derived from source + kind. */
   provenance?: ToolProvenanceInfo;
+  /** From the Common seed (matched by alias = standalone id); undefined for ids Common does not route. */
+  routing?: ToolRouting;
 }
 
 export interface ToolCatalog {
@@ -55,7 +67,8 @@ export function parseToolCatalog(raw: unknown): ToolCatalog {
       description: typeof item.description === "string" ? item.description : undefined,
       verifiedRef: typeof item.verifiedRef === "string" ? item.verifiedRef : undefined,
       actions: item.actions as CatalogAction[],
-      provenance: provenanceFromFabricTool({ source: String(item.source), kind: String(item.kind) })
+      provenance: provenanceFromFabricTool({ source: String(item.source), kind: String(item.kind) }),
+      routing: commonToolRouting(String(item.id))
     } satisfies ToolCatalogItem;
   });
 

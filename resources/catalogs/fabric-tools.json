@@ -47,6 +47,21 @@
       ]
     },
     {
+      "id": "fabric-workspace-monitoring",
+      "name": "Workspace Monitoring Dashboards",
+      "category": "Monitoring",
+      "kind": "accelerator",
+      "source": "microsoft/fabric-toolbox",
+      "verifiedRef": "c38ea357b804b335d1ed3b558dda38cda778cf70",
+      "description": "Power BI and Real-Time dashboards over the Workspace Monitoring Eventhouse of one Fabric workspace.",
+      "url": "https://github.com/microsoft/fabric-toolbox/tree/main/monitoring/workspace-monitoring-dashboards",
+      "actions": [
+        "read",
+        "clone",
+        "deploy"
+      ]
+    },
+    {
       "id": "fabric-spark-monitoring",
       "name": "Fabric Spark Monitoring",
       "category": "Monitoring",

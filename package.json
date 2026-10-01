@@ -3621,7 +3621,7 @@
     "@juliandatapass-group/lineage-core": "file:vendor/common/juliandatapass-group-lineage-core-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/project-contracts": "file:vendor/common/juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
     "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
-    "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz",
+    "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.2.tgz",
     "@juliandatapass-group/view-spi": "file:vendor/common/juliandatapass-group-view-spi-0.1.0-alpha.1.tgz"
   }
 }
