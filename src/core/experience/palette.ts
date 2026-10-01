@@ -68,6 +68,8 @@ const GATED: Record<string, readonly string[]> = {
     "codexTests.openLastReport", "codexTests.chooseRepository", "codexTests.refresh", "pilot.enable",
     "fileVersions.openLatest", "fileVersions.lastUpdate", "experience.resetOverrides",
     "control.refresh", "control.copyStartCommand",
+    // V4-NAV NAVSVC1: used through keybindings (NAVKEYS1) and the Navigator, not the palette (the DataPass mode is at its cap).
+    "nav.up", "nav.down", "nav.left", "nav.right", "nav.home", "nav.back", "nav.forward", "nav.pickView",
     "openProjectLinks", "openLinksFile", "setCodeFontSize",
     // V1.1.x-POLISH-4: also in the status bar, on the Home page, in Appearance and on Alt+- / Alt+=.
     "codeFont.smaller", "codeFont.bigger", "codeFont.reset",

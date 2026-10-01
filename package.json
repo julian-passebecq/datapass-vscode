@@ -1057,6 +1057,46 @@
       {
         "command": "datapass.understanding.analyzeDbtProjects",
         "title": "DataPass: Analyze dbt Projects (static, with profiles.yml targets)"
+      },
+      {
+        "command": "datapass.nav.up",
+        "title": "DataPass: Navigate Up (coarser level)",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "datapass.nav.down",
+        "title": "DataPass: Navigate Down (finer level)",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "datapass.nav.left",
+        "title": "DataPass: Previous View Here",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "datapass.nav.right",
+        "title": "DataPass: Next View Here",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "datapass.nav.home",
+        "title": "DataPass: Navigate to Project Root",
+        "icon": "$(home)"
+      },
+      {
+        "command": "datapass.nav.back",
+        "title": "DataPass: Navigate Back",
+        "icon": "$(arrow-small-left)"
+      },
+      {
+        "command": "datapass.nav.forward",
+        "title": "DataPass: Navigate Forward",
+        "icon": "$(arrow-small-right)"
+      },
+      {
+        "command": "datapass.nav.pickView",
+        "title": "DataPass: Pick a View Here…",
+        "icon": "$(list-selection)"
       }
     ],
     "viewsContainers": {
@@ -2625,6 +2665,38 @@
         {
           "command": "datapass.understanding.analyzeDbtProjects",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.up",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.down",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.left",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.right",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.home",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.back",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.forward",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.pickView",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -3541,11 +3613,15 @@
     "@juliandatapass-group/analysis-protocol": "file:vendor/common/juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/analyzers": "file:vendor/common/juliandatapass-group-analyzers-0.1.0-alpha.7.tgz",
     "@juliandatapass-group/analyzers-dbt": "file:vendor/common/juliandatapass-group-analyzers-dbt-0.1.0-alpha.1.tgz",
+    "@juliandatapass-group/arch-catalog": "file:vendor/common/juliandatapass-group-arch-catalog-0.1.0-alpha.1.tgz",
+    "@juliandatapass-group/arch-decisions": "file:vendor/common/juliandatapass-group-arch-decisions-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/capability-router": "file:vendor/common/juliandatapass-group-capability-router-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/compat-v3": "file:vendor/common/juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
+    "@juliandatapass-group/decision-rationale": "file:vendor/common/juliandatapass-group-decision-rationale-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/lineage-core": "file:vendor/common/juliandatapass-group-lineage-core-0.1.0-alpha.1.tgz",
     "@juliandatapass-group/project-contracts": "file:vendor/common/juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
     "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
-    "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz"
+    "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.1.tgz",
+    "@juliandatapass-group/view-spi": "file:vendor/common/juliandatapass-group-view-spi-0.1.0-alpha.1.tgz"
   }
 }
