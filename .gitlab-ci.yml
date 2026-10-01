@@ -6,10 +6,22 @@ workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      variables:
+        MAIN_CACHE_POLICY: pull-push
     - if: '$CI_PIPELINE_SOURCE == "web"'
     - when: never
 
 variables:
+  # CIFIX2 (c2, port of cloud's checkout fix): .vscode-test holds node-pty paths > 260 chars; without
+  # core.longpaths git clean fails at checkout ("failed to remove .vscode-test/...", "Filename too long").
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: "core.longpaths"
+  GIT_CONFIG_VALUE_0: "true"
+  # .vscode-test and .ci-tools (pinned Node) stay on the build dir across jobs: deleting them at checkout
+  # raced with locked files. scripts/ci-windows.ps1 verifies Node by SHA-256 before reuse.
+  GIT_CLEAN_FLAGS: "-ffdx -e .vscode-test/ -e .ci-tools/"
+  # CIFIX2: only verify_and_package on main pushes the shared cache; every other job pulls.
+  MAIN_CACHE_POLICY: pull
   NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.cache/npm"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   PLAYWRIGHT_BROWSERS_PATH: "$CI_PROJECT_DIR/.cache/ms-playwright"
@@ -27,15 +39,23 @@ default:
     paths:
       - .cache/npm/
       - .cache/pip/
-      - .cache/ms-playwright/
-      - .cache/node/
-    policy: pull-push
+    policy: pull
 
 verify_and_package:
   stage: verify
   # CIBOOT1: ~8 min once the Node bootstrap is fixed (scripts/ci-windows.ps1); 25m makes a hang fail
   # clearly before the job token expires (~50 min).
   timeout: 25m
+  # CIFIX2: the one writer of the shared cache, on main only (workflow rule sets MAIN_CACHE_POLICY).
+  cache:
+    key:
+      files:
+        - package-lock.json
+      prefix: datapass-vscode
+    paths:
+      - .cache/npm/
+      - .cache/pip/
+    policy: $MAIN_CACHE_POLICY
   script:
     - Invoke-CiNative npm.cmd ci --prefer-offline
     - Invoke-CiNative npm.cmd run verify
@@ -82,13 +102,7 @@ desktop_acceptance:
       paths:
         - .cache/npm/
         - .cache/pip/
-        - .cache/ms-playwright/
-        - .cache/node/
       policy: pull
-    - key: vscode-$DATAPASS_TEST_VSCODE_VERSION
-      paths:
-        - .vscode-test/
-      policy: pull-push
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
@@ -123,13 +137,7 @@ ui_smoke:
       paths:
         - .cache/npm/
         - .cache/pip/
-        - .cache/ms-playwright/
-        - .cache/node/
       policy: pull
-    - key: vscode-$DATAPASS_TEST_VSCODE_VERSION
-      paths:
-        - .vscode-test/
-      policy: pull-push
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
