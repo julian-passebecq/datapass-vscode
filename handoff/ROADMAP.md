@@ -170,6 +170,15 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-01 12:10 (pédagogie + visites guidées, relayé par ASSISTANT DATAPASS 4 ; détail : effort-board/julian-idea-guided-tours-2026-10-01.md)
+1. **Fiches pédagogiques d'une page** dans le catalogue (style « PySpark Interview Series » : question, bloc de code, sortie, tableau comparatif, points clés) pour les notions data-engineering du projet ; elles renforcent le « pourquoi ceci plutôt que cela ». → **V5**.
+2. **Partie « Pédagogie »** : les points clés du projet et comment le lire avec les yeux d'un recruteur (Spark SQL, etc.), le projet disséqué de façon ordonnée pour préparer un entretien. → **V5**.
+3. **Visite guidée** dans le Navigator et la mini-carte : une liste ordonnée de vues (1, 2, 3…) ; cliquer ou défiler ouvre une vue déjà créée avec un encadré « ce qu'il faut comprendre ici » ; étapes et sous-étapes. → **V5 (cœur)**. Elle s'appuie sur NAVTOUR1, NAVCAT1 (vues personnalisées) et NAVMAP1.
+4. **Visites générées par le pont IA** (« je veux comprendre la partie BI ») : l'IA propose un parcours d'écrans, revu puis enregistré comme visite (marqué AI-proposed). → **V5**.
+5. **Écrans sur mesure enregistrés + visite partageable en lecture seule** pour montrer le projet à un supérieur en cliquant seulement la barre de navigation. → **V5**.
+6. Relire ses remarques précédentes et la note de nuit du pont IA sur les vues et les flèches gauche/droite/haut/bas. → à intégrer par le TECH LEAD GLOBAL.
+Cadrage : V5 livre le maximum ; V6 = un peu de polish + nouveaux clients. Décision d'architecture (TECH LEAD) : visite = liste ordonnée de vues enregistrées + panneau d'explication, parcours générés par le pont, visite partageable en lecture seule.
+
 ## Idées de Julian — 2026-10-01 11:46 (5 captures d'écran, relayées par ASSISTANT DATAPASS 4)
 1. **Visual Explainer** : plans, architecture et statuts rendus en pages HTML visuelles (diagrammes, tableaux, checklists) au lieu de plans en markdown. → **Process, tout de suite** : V5-PLAN et les statuts pour Julian en Artifact HTML à côté du fichier .md versionné. **Produit, V5** : une vue « explainer » de l'architecture d'un projet dans le Navigator/Studio (triage par le TECH LEAD GLOBAL).
 2. **Architecte de garde** (modèle des sous-agents Codex) : un architecte en effort élevé, appelé seulement à 3 moments (avant un gros plan, quand une erreur se répète, avant de déclarer finie une longue tâche) ; il conseille, n'écrit jamais de code ; les workers restent en medium ; une seule règle AGENTS.md. → **Process, tout de suite** : le PM TECH LEAD GLOBAL tient ce rôle pour DataPass à partir du 1 Oct. Règle à proposer pour Claude Control V4. **Produit, V5 (à trier)** : proposer ce modèle dans l'échange IA de DataPass.
