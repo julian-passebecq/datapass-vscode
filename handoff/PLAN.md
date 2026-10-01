@@ -593,6 +593,10 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N56 (local_3db0254a-4274-4b77-a964-983f5f67303d) | coder (Opus medium) | SQLMESH1 done (Common !164) → STUDIOCI1 (go/STUDIOCI1.md, 04:50) | 6 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N57 (local_3b4ca9ea-f88a-4905-ae97-3acf76462f13) | coder (Opus medium) | DBXDASH1 done (Common !162) → cloud main-merges !114, !117, !103, !120 (COORD 32, 04:25) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N58 (local_40daa8df-0527-4ecf-bfe5-99df653588b8) | coder (Opus medium) | SYNWS1 (go/SYNWS1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| PM 26 subagents (local_643e8398) | coder subagents (Opus medium) | GAPSCAN3 (go/GAPSCAN3-index.md): AZFUNC1, ASA1, ELT1, UCMETRIC1 (05:55) | 40 | 2026-10-01 · V3.8 | Common 9 |
+| Common 9 subagents (local_f6d74393) | coder subagents (Opus medium) | GAPSCAN3: SSIS1, LOGICAPP1 (serial version bumps, analyzers-orchestration) | 20 | 2026-10-01 · V3.8 | Common 9 |
+| COORD 35 subagents (local_d2456dac) | coder subagents (Opus medium) | GAPSCAN3: FABCOPY1, RTDASH1 | 20 | 2026-10-01 · V3.8 | COORD 35 |
+| (unassigned, held) | — | GAPSCAN3: ADFDF1 after Common !163; SQLSEC1 → UCOBJ1 → INGEST1 serial after !170; need fresh coders (chips when Julian wakes) | 38 | — | PM 26 |
 | CODER N59 (local_f1158d6e-5946-44b6-a03f-06d20109dcb0) | coder (Opus medium) | DAGFACT1 (go/DAGFACT1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N60 (local_d12324c8-899f-462d-a5a9-e9efe3b90f96) | coder (Opus medium) | RDL1 (go/RDL1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 done (Common !163); stopped at 162 K (EVPIN1 declined → needs a fresh coder) | — | 2026-10-01 · V3.8 | Common 9 |
