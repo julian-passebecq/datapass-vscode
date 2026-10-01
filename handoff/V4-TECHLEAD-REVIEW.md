@@ -28,12 +28,27 @@ Detail behind [V4-STATUS-REMAINING.md](V4-STATUS-REMAINING.md) (TECH LEAD GLOBAL
 | k4 | S3 | Every family's file-type signature is written twice, in the package `src` and in the registry JSON (`check-coverage.mjs:42-63` diffs them). Hotspots: `analyzers/src/sql/index.ts` (6 branches) and `sql/extractor.ts` (4). | Generate fragments from each package's exported signature; one file per SQL object family, collected through a sorted list. | 4 |
 
 ## b. MR merge order (detail)
-PENDING (subagent running): pairwise conflict matrix for vscode !192–!217, pipeline state, stacked branches. Until then the order in V4-STATUS-REMAINING b1 stands.
+Train order: V4-STATUS-REMAINING b1; merge simulation: `go/NAV-train-conflict-map.md` (TECH LEAD GLOBAL). Additions only:
+- b4 (S2) **!217 (CI flake timeouts) treats a symptom.** Most `desktop_acceptance` reds die at checkout (c2), not on waits. Merge c2 first and keep !217 only if the step-6/7 waits still flake after it.
+- b5 (S2) Common: COVREG3 !130 (fixed per k1) → ssis1 !185 → xmlshare1 !190 → elt1 !189 → yamlseq1 !191, then the other analyzer MRs one per VERBUMP batch (k2). V5 contracts per BV5-1.
 
-## c. CI saturation (job level)
-PENDING (subagent measuring durations). Facts read so far:
-- vscode: `desktop_acceptance` (4 shards) and `ui_smoke` each run `npm ci` again and do not `needs: verify_and_package`, so the packaged VSIX is not what gets tested and npm installs run 6× per MR pipeline.
-- cloud: one main pipeline runs ~13 `*_ui` jobs at once (api_explorer_ui, archv1_ui, runx1_ui, pract3a_ui, vis5_ui, hop6a_ui, hopc1_ui, scale_ui, dash1_ui, export1_ui, hop_browser, iac_vsix, verify_package). At 09:13 UTC, 13 of the 20 running jobs were cloud.
+## c. CI saturation (job level; never touch the runner)
+Measured on the last 40 pipelines per repo, plus one traced pipeline each (estimates; raw data was kept in the session scratchpad). **The biggest waste is the cache, not the tests:** one traced cloud main pipeline spent 104 of its 197 runner-minutes unpacking and re-packing the shared cache. Required checks keep running in full on main and on labelled merge candidates. Fixes c1–c4 save ~300 of ~450 runner-minutes per merged cloud MR and 70–120 per vscode MR.
+
+| # | Sev | Repo · change | Evidence | Saves | M |
+|---|---|---|---|---|---|
+| c1 | **S1** | cloud · Remove `.vscode-test/`, `ms-playwright` and `.cache/node` from the shared cache (they survive `git clean`). All jobs `policy: pull`; one cache-writer job on main with `resource_group: cache-writer`. | Every `*_ui` job spends 3.2–3.5 min unpacking and 4.5–6 min re-packing (archv1_ui: 9.5 of 15.3 min) | ~200 min/merged MR | 1 |
+| c2 | **S1** | vscode · Copy cloud's checkout fix (`core.longpaths`, `GIT_CLEAN_FLAGS: -ffdx -e .vscode-test/ -e .ci-tools/`); make the `vscode-1.139.1` cache `pull`. | 4 of the last 6 `desktop_acceptance` failures die at checkout in 0.5–0.9 min ("failed to remove .vscode-test/…"); same-commit reruns wasted 252 min in 5.5 h | ~13 min/MR + fewer red pipelines (also the source of the flakes !217 targets) | 1 |
+| c3 | S2 | cloud · `pract3a_ui` lacks `extends: .heavy_on_candidate`; pract3a, coverage and export1 install their own browser instead of using `ci-playwright.ps1`. | 12.1 min, 14 MR runs | ~13 min per unlabelled push | 1 |
+| c4 | S2 | cloud + Common · **Project setting "Auto-cancel redundant pipelines" is off**, so cloud's `workflow:auto_cancel` / `interruptible` do nothing. Turn it on (a repo setting, not the runner); copy cloud's `workflow` block into Common, main exempt. | cloud: 568 runner-min in 8 h ran in superseded pipelines (540 on the same commit) | stops duplicates | 1 |
+| c5 | S2 | vscode · Same `merge-candidate` label tier as cloud for `desktop_acceptance` ×4 and `ui_smoke`. Unlabelled pushes run them only on `rules: changes` (`src/**`, `tests/**`, `scripts/**`, `examples/**`, `package*.json`, `.gitlab-ci.yml`); docs-only and handoff MRs skip them. Retry the failed shard only. | 117 shard runs, median 17 min, 1.4 pipelines per MR | 30–80 min/MR | 2 |
+| c6 | S2 | vscode · Test jobs keep `node_modules` keyed by the lockfile hash and skip `npm ci` when it matches; `verify_and_package` keeps its clean install. Later: desktop tests install the CI-built VSIX (`needs: verify_and_package`), so the tested artifact is the shipped one. | `npm ci` 6× per pipeline (21 min) + 13 min checkout | ~28 min/MR | 2 |
+| c7 | S2 | cloud · Merge the 11 workbench `*_ui` jobs into `parallel: 3` shards sharing one install/build. | ~4 min fixed setup per job even after c1 | ~60 min/merged MR, 8 fewer slots | 3 |
+| c8 | S3 | cloud · Unlabelled MR pipelines: heavy tier `when: manual`, played in the same pipeline (no new pipeline); split `security_suite` into fast + full. | A labelled rerun repeats the ~55 min fast tier on the same commit | ~50 min/MR | 3 |
+| c9 | S3 | Common · Build once, pass `dist/` as artifacts; `coverage:check` and `ai-gap:eval` each redo install + build (6.4 and 6.5 min). Per-package `rules: changes` stays as in STATUS c2. | 3 builds per MR | ~15 min/MR | 2 |
+| c10 | S3 · **PM decision** | cloud · Let a newer main pipeline cancel an older running one (vscode already does; cloud's CI rules chose never). | 12 main pipelines × 164 min ≈ 2,000 runner-min in 8 h | ~50 min/MR | 1 |
+
+Order: c1 + c2 + c4 now (3 M, one coder; c2 is in datapass-vscode, c1/c4 in cloud). Then c5 + c6 (vscode), then c7–c9. No other `resource_group` is needed: nothing deploys, and the Playwright install already takes a lock.
 
 ## d. Release checklist additions (to V4-STATUS-REMAINING d)
 - d10 a7 + a8 merged, and NAVE2E1 asserts that a non-empty view renders at each ladder level (not just that the webview opens).
