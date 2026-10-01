@@ -28,7 +28,7 @@ export function factsFromSqlTrees(f: SqlFileFacts): QueryFact {
     tablesRead: [...new Set(f.tablesRead)].sort(), tablesWritten: [...new Set(f.tablesWritten)].sort(), origin: "static" };
 }
 
-const JOIN_TECHNIQUE: Readonly<Record<string, string>> = { anti: "sql.anti-join", semi: "sql.semi-join", full: "sql.full-outer-join" };
+const JOIN_TECHNIQUE: Readonly<Record<string, string>> = { anti: "card.sql-technique.anti-join", semi: "sql.semi-join", full: "sql.full-outer-join" };
 
 /** One bridge explanation → one query fact (SQL and PySpark files only), plus its summary as ai-proposed context. */
 export function factsFromUnderstanding(repositoryKey: string, doc: UnderstandingDoc): { fact: QueryFact; context?: ContextText } | undefined {

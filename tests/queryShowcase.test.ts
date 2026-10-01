@@ -18,20 +18,20 @@ const q = (id: string, techniques: string[], read: string[], written: string[], 
 const FIXTURE: QueryFact[] = [
   q("stg_orders", ["sql.join"], ["raw.orders", "raw.customers"], ["stg.orders"], { joins: 1 }),
   q("stg_payments", [], ["raw.payments"], ["stg.payments"]),
-  q("int_order_payments", ["sql.join", "sql.aggregate", "sql.cte"], ["stg.orders", "stg.payments"], ["int.order_payments"], { joins: 1, aggregates: 1, ctes: 2 }),
-  q("dim_customer_scd2", ["sql.merge-upsert", "sql.scd2"], ["stg.orders"], ["dim.customer"], { statements: 2 }),
-  q("fct_revenue", ["sql.window-function", "sql.qualify", "sql.cte"], ["int.order_payments", "dim.customer"], ["mart.revenue"], { windows: 2, ctes: 1 }),
+  q("int_order_payments", ["sql.join", "sql.aggregate", "card.sql-technique.cte"], ["stg.orders", "stg.payments"], ["int.order_payments"], { joins: 1, aggregates: 1, ctes: 2 }),
+  q("dim_customer_scd2", ["card.sql-technique.merge", "sql.scd2"], ["stg.orders"], ["dim.customer"], { statements: 2 }),
+  q("fct_revenue", ["card.spark-sql.window-functions", "sql.qualify", "card.sql-technique.cte"], ["int.order_payments", "dim.customer"], ["mart.revenue"], { windows: 2, ctes: 1 }),
   q("rpt_rollup", ["sql.rollup-cube", "sql.aggregate"], ["mart.revenue"], ["rpt.revenue_rollup"], { aggregates: 1 }),
   q("adhoc_lookup", ["sql.join"], ["dim.customer"], [], { joins: 1 }),
-  q("org_tree", ["sql.recursive-cte", "sql.cte"], ["raw.employees"], ["dim.org"], { ctes: 1 })
+  q("org_tree", ["sql.recursive-cte", "card.sql-technique.cte"], ["raw.employees"], ["dim.org"], { ctes: 1 })
 ];
 
 test("score: factors are pure, bounded and documented", () => {
   assert.equal(rarityFactor([]), FLOOR);
   assert.ok(rarityFactor(["sql.recursive-cte"]) > rarityFactor(["sql.join"]));
-  assert.ok(Math.abs(rarityFactor(["sql.window-function", "sql.qualify"]) - (1 - 0.45 * 0.3)) < 1e-9);
+  assert.ok(Math.abs(rarityFactor(["card.spark-sql.window-functions", "sql.qualify"]) - (1 - 0.45 * 0.3)) < 1e-9);
   assert.equal(complexityFactor(EMPTY_SHAPE, []), FLOOR);
-  assert.ok(complexityFactor({ ...EMPTY_SHAPE, windows: 3, ctes: 4 }, ["sql.window-function"]) <= 1);
+  assert.ok(complexityFactor({ ...EMPTY_SHAPE, windows: 3, ctes: 4 }, ["card.spark-sql.window-functions"]) <= 1);
   assert.ok(complexityFactor({ ...EMPTY_SHAPE, joins: 3 }, []) > complexityFactor({ ...EMPTY_SHAPE, joins: 1 }, []));
   for (const s of scoreQueries(FIXTURE)) {
     assert.ok(s.score > 0 && s.score <= 1, s.fact.id);
@@ -62,7 +62,7 @@ test("card: cites the project and shows typed holes, never invented context or s
   const field = (k: string) => card.fields.find(f => f.label === `showcase.${k}`)!.value as { value: unknown; origin: string };
   assert.equal(field("query").value, "repo/sql/fct_revenue.sql:1-10");
   assert.equal(field("tables").value, "int.order_payments (read), dim.customer (read), mart.revenue (write)");
-  assert.equal(field("techniques").value, "sql.qualify, sql.window-function, sql.cte");
+  assert.equal(field("techniques").value, "sql.qualify, card.spark-sql.window-functions, card.sql-technique.cte");
   assert.equal(field("context").value, null);
   assert.equal(field("sample").value, null);
   assert.deepEqual(holes.map(h => h.kind).sort(), ["missing-rationale", "missing-sample"]);
@@ -96,13 +96,14 @@ test("techniques: detected from SQLGlot node types and flags only", () => {
   const tree = n("Select", {
     with: [n("With", { recursive: [n("Boolean", {}, true)], expressions: [n("CTE"), n("CTE")] })],
     joins: [n("Join", { kind: [n("Var", {}, "anti")] }), n("Join", { side: [n("Var", {}, "full")] })],
-    expressions: [n("Window", { this: [n("Sum")] })],
+    expressions: [n("Window", { this: [n("Sum")] }), n("Window", { this: [n("RowNumber")] })],
+    having: [n("Having")],
     qualify: [n("Qualify")],
     group: [n("Group", { expressions: [n("Rollup")] })]
   });
   const { techniques, shape } = detectFromSqlTrees([tree, n("Merge")]);
-  assert.deepEqual(techniques, ["sql.aggregate", "sql.anti-join", "sql.cte", "sql.full-outer-join", "sql.join", "sql.merge-upsert", "sql.qualify", "sql.recursive-cte", "sql.rollup-cube", "sql.window-function"]);
-  assert.deepEqual(shape, { joins: 2, ctes: 2, subqueries: 0, windows: 1, aggregates: 1, setOps: 0, statements: 2 });
+  assert.deepEqual(techniques, ["card.spark-sql.window-functions", "card.sql-technique.anti-join", "card.sql-technique.cte", "card.sql-technique.having", "card.sql-technique.merge", "card.sql-technique.row-number", "sql.aggregate", "sql.full-outer-join", "sql.join", "sql.qualify", "sql.recursive-cte", "sql.rollup-cube"]);
+  assert.deepEqual(shape, { joins: 2, ctes: 2, subqueries: 0, windows: 2, aggregates: 1, setOps: 0, statements: 2 });
   const f = factsFromSqlTrees({ repositoryKey: "r", path: "a/b.sql", span: { startLine: 3, endLine: 9 }, dialect: "spark", trees: [tree], tablesRead: ["x", "x"], tablesWritten: ["y"] });
   assert.equal(f.language, "spark-sql");
   assert.deepEqual(f.tablesRead, ["x"]);
