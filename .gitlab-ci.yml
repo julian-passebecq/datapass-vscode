@@ -28,11 +28,14 @@ default:
       - .cache/npm/
       - .cache/pip/
       - .cache/ms-playwright/
+      - .cache/node/
     policy: pull-push
 
 verify_and_package:
   stage: verify
-  timeout: 45m
+  # CIBOOT1: ~8 min once the Node bootstrap is fixed (scripts/ci-windows.ps1); 25m makes a hang fail
+  # clearly before the job token expires (~50 min).
+  timeout: 25m
   script:
     - Invoke-CiNative npm.cmd ci --prefer-offline
     - Invoke-CiNative npm.cmd run verify
@@ -67,7 +70,25 @@ desktop_acceptance:
     DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
   # Q1: all 20 fixtures passed on runner 56844575; failures now block acceptance.
   allow_failure: false
-  timeout: 45m
+  # DESKSHARD1: fixtures split over 4 jobs balanced by measured time (scripts/desktop-test.ts,
+  # FIXTURE_SECONDS); together they run every fixture once, and every shard gates.
+  parallel: 4
+  timeout: 30m
+  cache:
+    - key:
+        files:
+          - package-lock.json
+        prefix: datapass-vscode
+      paths:
+        - .cache/npm/
+        - .cache/pip/
+        - .cache/ms-playwright/
+        - .cache/node/
+      policy: pull
+    - key: vscode-$DATAPASS_TEST_VSCODE_VERSION
+      paths:
+        - .vscode-test/
+      policy: pull-push
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
@@ -81,7 +102,7 @@ desktop_acceptance:
   script:
     - Invoke-CiNative npm.cmd run test:desktop
   artifacts:
-    name: "datapass-desktop-$CI_COMMIT_SHORT_SHA"
+    name: "datapass-desktop-$CI_COMMIT_SHORT_SHA-$CI_NODE_INDEX"
     when: always
     expire_in: 14 days
     paths:
@@ -91,7 +112,24 @@ ui_smoke:
   stage: qualify
   variables:
     DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
-  timeout: 45m
+  # DESKSHARD1: two journeys of ~1 min on a passing run; 20m makes a hang fail clearly before the
+  # job token expires (~50 min) instead of timing out unexplained.
+  timeout: 20m
+  cache:
+    - key:
+        files:
+          - package-lock.json
+        prefix: datapass-vscode
+      paths:
+        - .cache/npm/
+        - .cache/pip/
+        - .cache/ms-playwright/
+        - .cache/node/
+      policy: pull
+    - key: vscode-$DATAPASS_TEST_VSCODE_VERSION
+      paths:
+        - .vscode-test/
+      policy: pull-push
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

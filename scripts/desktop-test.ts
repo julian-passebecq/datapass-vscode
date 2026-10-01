@@ -629,6 +629,42 @@ async function vscodeExecutable(): Promise<string> {
   return downloadAndUnzipVSCode("stable");
 }
 
+/**
+ * DESKSHARD1: CI splits the fixtures over parallel jobs (`parallel:` sets CI_NODE_INDEX/CI_NODE_TOTAL).
+ * Weights are seconds measured on runner 56844575 (passing run, 1 Oct 2026); a fixture missing here
+ * gets DEFAULT_FIXTURE_SECONDS, so a new fixture always runs in some shard. Fixtures that read another
+ * fixture's output stay in one group, in order. Longest group first into the lightest shard: deterministic.
+ */
+const FIXTURE_SECONDS: Record<string, number> = {
+  "v20-work-orders": 428, "v25-doc-pipeline": 190, "v22-modes": 143, "v3-research": 137, "v19-git": 117,
+  "empty": 99, "v18-toolchain": 79, "v1-honest-doc-pipeline": 67, "v22-versions": 64, "v2-retail": 56,
+  "v17-company": 54, "v26-open-client-window": 54, "v26-open-client": 49, "v4-cloudflare": 36, "v3-devops": 33,
+  "v3-hop": 30, "v1-foil": 28, "v3-monorepo": 19, "broken": 18, "v22-checks": 14
+};
+const DEFAULT_FIXTURE_SECONDS = 120;
+const FIXTURE_GROUPS: string[][] = [["v26-open-client", "v26-open-client-window"]];
+
+function shardFixtures(all: string[], index: number, total: number): string[] {
+  const grouped = new Set(FIXTURE_GROUPS.flat());
+  const units = [...FIXTURE_GROUPS.map(g => g.filter(n => all.includes(n))).filter(g => g.length), ...all.filter(n => !grouped.has(n)).map(n => [n])];
+  const cost = (u: string[]) => u.reduce((s, n) => s + (FIXTURE_SECONDS[n] ?? DEFAULT_FIXTURE_SECONDS), 0);
+  units.sort((a, b) => cost(b) - cost(a) || a[0]!.localeCompare(b[0]!));
+  const bins = Array.from({ length: total }, () => ({ load: 0, names: [] as string[] }));
+  for (const u of units) {
+    const bin = bins.reduce((m, b) => (b.load < m.load ? b : m), bins[0]!);
+    bin.load += cost(u);
+    bin.names.push(...u);
+  }
+  const mine = new Set(bins[index - 1]!.names);
+  return all.filter(n => mine.has(n));
+}
+
+function shardFromEnv(): { index: number; total: number } | undefined {
+  const index = Number(process.env.CI_NODE_INDEX), total = Number(process.env.CI_NODE_TOTAL);
+  if (!Number.isInteger(index) || !Number.isInteger(total) || total < 2 || index < 1 || index > total) return undefined;
+  return { index, total };
+}
+
 async function main(): Promise<void> {
   if (!fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
   const out = path.join(repo, "out", "integration");
@@ -645,7 +681,16 @@ async function main(): Promise<void> {
   const reports: unknown[] = [];
   let failed = 0;
   let hostErrorCount = 0;
-  for (const name of [...Object.keys(FIXTURES), ...Object.keys(SETUPS)]) {
+  const shard = shardFromEnv();
+  const allFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
+  const selected = shard ? shardFixtures(allFixtures, shard.index, shard.total) : allFixtures;
+  if (shard) {
+    // Never weaken the check: the shards together must run every fixture exactly once.
+    const union = Array.from({ length: shard.total }, (_, i) => shardFixtures(allFixtures, i + 1, shard.total)).flat();
+    if (union.length !== allFixtures.length || new Set(union).size !== allFixtures.length) throw new Error(`Shards cover ${union.length} fixture runs, expected ${allFixtures.length}`);
+  }
+  if (shard) console.log(`Shard ${shard.index}/${shard.total}: ${selected.length} of ${allFixtures.length} fixtures (${selected.join(", ")})`);
+  for (const name of selected) {
     if (only && !only.includes(name)) continue;
     const files = FIXTURES[name];
     let ws = path.join(scratch, "ws", name);
@@ -703,6 +748,7 @@ async function main(): Promise<void> {
     executable,
     requestedVSCodeVersion: process.env.DATAPASS_TEST_VSCODE_VERSION ?? null,
     realExtensions,
+    shard: shard ? { ...shard, fixtures: selected } : null,
     host: { platform: process.platform, release: os.release(), arch: process.arch },
     reports
   };
