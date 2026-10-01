@@ -120,11 +120,13 @@ test("experience: customizing keeps only the differences from the preset", () =>
 test("experience: every contributed view has a surface id and is gated by its when clause", () => {
   const views = (Object.values(pkg.contributes.views) as Array<Array<{ id: string; when?: string }>>).flat();
   const surfaceViews = SURFACES.filter(s => s.kind === "view");
-  assert.deepEqual(views.map(v => v.id).sort(), surfaceViews.map(s => s.viewId).sort(), "the view list and the surface list agree");
+  // DAGUX1: the bottom-panel twin of the Airflow DAG view belongs to the same surface.
+  const twins: Record<string, string> = { "datapass.airflowDagPanel": "datapass.airflowDag" };
+  assert.deepEqual(views.map(v => v.id).filter(id => !twins[id]).sort(), surfaceViews.map(s => s.viewId).sort(), "the view list and the surface list agree");
   for (const v of views) {
-    const s = surfaceViews.find(x => x.viewId === v.id)!;
+    const s = surfaceViews.find(x => x.viewId === (twins[v.id] ?? v.id))!;
     // V3-SHELL: a layout key may come first (bottom-panel Architecture off by default; rail mode swaps the right-side views).
-    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && " };
+    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor && ", "datapass.airflowDagPanel": "config.datapass.airflow.dagPlacement == panel && " };
     // V1.1.x-POLISH-3: a layout key may also come last (the Git view hides while the Git lens repeats it; a rail button unfolds its own view alone).
     const after: Record<string, string> = { "datapass.git": " && datapass.tree.lens != git", ...Object.fromEntries(RAIL_PANEL_VIEWS.map(x => [`datapass.${x}`, soloWhenSuffix(x)])) };
     assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}${after[v.id] ?? ""}`, `${v.id} is shown unless its mode (or the layout) hides it`);

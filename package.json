@@ -1209,7 +1209,7 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 2,
-          "when": "!datapass.rail && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor"
+          "when": "!datapass.rail && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag"
         }
       ],
       "datapass-airflow": [
