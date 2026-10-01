@@ -87,10 +87,11 @@
                 "ai.codexTests",
                 "view.airflowDag",
                 "palette.full",
-                "view.rail"
+                "view.rail",
+                "v5.pqsamp"
               ]
             },
-            "maxItems": 36,
+            "maxItems": 37,
             "minItems": 0
           }
         },

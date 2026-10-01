@@ -1102,6 +1102,10 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.codeSteps.sampleStep",
+        "title": "DataPass: Data Sample for a Code Step"
       }
     ],
     "viewsContainers": {
@@ -2746,6 +2750,10 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.codeSteps.sampleStep",
+          "when": "!datapass.hidden.v5.pqsamp"
         }
       ],
       "explorer/context": [
@@ -3444,6 +3452,10 @@
             "palette.full": {
               "type": "boolean",
               "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
+            },
+            "v5.pqsamp": {
+              "type": "boolean",
+              "description": "Command Palette: code step data sample: Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."

@@ -10,6 +10,7 @@
  * Labels, icons and origin names are data (`DEFAULT_CODE_STEPS_LABELS`), overridable by the host.
  */
 import type { HopState } from "../../../views/hopState";
+import { DEFAULT_STEP_SAMPLE_LABELS, sampleCaption, type StepSample, type StepSampleLabels } from "../../../core/exchange/stepSampleModel";
 
 /** § 34 origins (the vocabulary every binding provider uses). */
 export type ValueOrigin = "static" | "theoretical" | "ai-proposed" | "observed" | "illustrative" | "datapass-guidance";
@@ -28,6 +29,8 @@ export interface CodeStepInput {
   readonly note?: { readonly text: string; readonly origin: ValueOrigin };
   /** 1-based inclusive line range, when the step maps to code. */
   readonly lines?: readonly [number, number];
+  /** PQSAMP1: the step's data sample (X-Ray or AI exchange); absent → a typed hole in the sample slot. */
+  readonly sample?: StepSample;
 }
 export interface CodeStepsInput {
   readonly title?: string;
@@ -43,6 +46,8 @@ export interface CodeStepsLabels {
   readonly params: string;
   readonly note: string;
   readonly lines: string;
+  readonly sample: string;
+  readonly sampleLabels: StepSampleLabels;
   readonly kinds: Readonly<Record<string, { readonly label: string; readonly icon: string }>>;
   readonly origins: Readonly<Record<ValueOrigin, string>>;
   readonly roles: Readonly<Record<"in" | "out" | "join", string>>;
@@ -55,6 +60,8 @@ export const DEFAULT_CODE_STEPS_LABELS: CodeStepsLabels = {
   params: "Parameters",
   note: "Note",
   lines: "Lines",
+  sample: "Data sample",
+  sampleLabels: DEFAULT_STEP_SAMPLE_LABELS,
   kinds: {
     source: { label: "Source", icon: "database" }, read: { label: "Read", icon: "arrow-down" },
     filter: { label: "Filter", icon: "filter" }, transform: { label: "Transform", icon: "symbol-operator" },
@@ -83,6 +90,26 @@ export function fallbackColor(id: string): string {
 }
 
 export interface CodeStepChip { readonly id: string; readonly role: string; readonly color: string }
+/** PQSAMP1: the sample slot of a row: a small table with its origin, or a hole. */
+export type CodeStepSampleView =
+  | { readonly kind: "table"; readonly caption: string; readonly origin: string; readonly aiProposed: boolean;
+      readonly columns: readonly string[]; readonly rows: readonly (readonly string[])[]; readonly more?: string }
+  | { readonly kind: "hole"; readonly reason: string };
+
+/** Rows shown per step in the view (the sample itself holds up to SAMPLE_MAX_ROWS). */
+export const SAMPLE_VIEW_ROWS = 10;
+
+export function sampleView(sample: StepSample | undefined, labels: CodeStepsLabels): CodeStepSampleView {
+  const s = sample ?? { state: "hole", reason: labels.sampleLabels.hole } as const;
+  if (s.state === "hole") return { kind: "hole", reason: s.reason };
+  const hidden = s.rows.length - SAMPLE_VIEW_ROWS;
+  return {
+    kind: "table", caption: sampleCaption(s, labels.sampleLabels), origin: labels.origins[s.origin], aiProposed: s.origin === "ai-proposed",
+    columns: s.columns, rows: s.rows.slice(0, SAMPLE_VIEW_ROWS).map(r => r.map(c => c === null ? "" : String(c))),
+    more: hidden > 0 || s.truncated ? `${hidden > 0 ? `${hidden} ` : ""}${labels.sampleLabels.truncated}` : undefined
+  };
+}
+
 export interface CodeStepRow {
   readonly id: string;
   readonly index: number;
@@ -95,6 +122,7 @@ export interface CodeStepRow {
   readonly params: readonly { readonly name: string; readonly value: string; readonly origin: string }[];
   readonly note?: { readonly text: string; readonly origin: string; readonly aiProposed: boolean };
   readonly lines?: string;
+  readonly sample: CodeStepSampleView;
   readonly selected: boolean;
 }
 export interface CodeStepsModel {
@@ -125,6 +153,7 @@ export function codeStepsModel(input: CodeStepsInput, opts: { labels?: CodeSteps
       params: s.params.map(p => ({ name: p.name, value: p.value, origin: labels.origins[p.origin] })),
       note: s.note && s.note.text.trim() ? { text: s.note.text, origin: labels.origins[s.note.origin], aiProposed: s.note.origin === "ai-proposed" } : undefined,
       lines: s.lines ? (s.lines[0] === s.lines[1] ? `${s.lines[0]}` : `${s.lines[0]}–${s.lines[1]}`) : undefined,
+      sample: sampleView(s.sample, labels),
       selected: opts.selected === s.id
     };
   });
@@ -163,6 +192,21 @@ export function codeStepsFromHop(state: HopState): CodeStepsInput {
   return { title: state.title ?? state.fileName, steps, holes, origin: "ai-proposed" };
 }
 
+/**
+ * PQSAMP1: the code-steps input with each step's `sample` read from the sample store (`sampleOf(stepId)`);
+ * a step the store does not know keeps its own sample (or none → the hole). Pure; the host calls it before
+ * each draw and re-draws when the store changes.
+ */
+export function withSamples(input: CodeStepsInput, sampleOf: (stepId: string) => StepSample | undefined): CodeStepsInput {
+  return { ...input, steps: input.steps.map(s => { const sample = sampleOf(s.id); return sample ? { ...s, sample } : s; }) };
+}
+
+/** PQSAMP1: the selected step as the sample command's subject (label, kind, table ids, parameters; never data). */
+export function stepSubjectOf(input: CodeStepsInput, nodeId: string): { id: string; label: string; kind: string; tables: { id: string; role: string }[]; params: { name: string; value: string }[] } | undefined {
+  const s = input.steps.find(x => x.id === nodeId);
+  return s && { id: s.id, label: s.label, kind: s.kind, tables: s.tables.map(t => ({ id: t.id, role: t.role })), params: s.params.map(p => ({ name: p.name, value: p.value })) };
+}
+
 /** Webview → host message for a selected step (validated by the host like workbench.ts). */
 export type CodeStepsPost = (message: { type: "select"; nodeId: string }) => void;
 
@@ -177,6 +221,24 @@ function badge(doc: Document, origin: string, ai: boolean): HTMLElement {
   const b = el(doc, "span", ai ? "dp-origin dp-origin-ai" : "dp-origin", origin);
   b.title = origin;
   return b;
+}
+
+/** PQSAMP1: the sample slot (text only): caption + origin badge + small table, or the hole line. */
+function drawSample(doc: Document, s: CodeStepSampleView, labels: CodeStepsLabels): HTMLElement {
+  const box = el(doc, "div", s.kind === "hole" ? "dp-step-sample dp-hole" : "dp-step-sample");
+  box.setAttribute("aria-label", labels.sample);
+  if (s.kind === "hole") { box.textContent = s.reason; return box; }
+  const cap = el(doc, "div", "dp-sample-caption", s.caption);
+  cap.append(" ", badge(doc, s.origin, s.aiProposed));
+  const table = el(doc, "table", "dp-sample-table");
+  const head = el(doc, "tr");
+  for (const c of s.columns) head.append(el(doc, "th", undefined, c));
+  table.append(el(doc, "thead"), el(doc, "tbody"));
+  table.tHead!.append(head);
+  for (const r of s.rows) { const tr = el(doc, "tr"); for (const v of r) tr.append(el(doc, "td", undefined, v)); table.tBodies[0]!.append(tr); }
+  box.append(cap, table);
+  if (s.more) box.append(el(doc, "div", "dp-sample-more", s.more));
+  return box;
 }
 
 /** Paints the model into `host` (text only, no innerHTML); arrow keys move, Enter/Space/click selects. */
@@ -236,6 +298,7 @@ export function drawCodeSteps(host: HTMLElement, model: CodeStepsModel, post: Co
       note.append(" ", badge(doc, r.note.origin, r.note.aiProposed));
       li.append(note);
     }
+    li.append(drawSample(doc, r.sample, labels));
     li.addEventListener("click", () => select(i));
     li.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "ArrowDown" && i + 1 < items.length) { e.preventDefault(); items[i + 1]!.focus(); }
@@ -248,5 +311,5 @@ export function drawCodeSteps(host: HTMLElement, model: CodeStepsModel, post: Co
   host.append(list);
 }
 
-/** Registration record for NAVREN1's `registerLayout("code-steps", …)` (one line once the registry lands). */
+/** The DOM painter and model together; the nav renderer registers the kind through `codeSteps.layout.ts`. */
 export const CODE_STEPS_LAYOUT = { kind: "code-steps", draw: drawCodeSteps, model: codeStepsModel } as const;
