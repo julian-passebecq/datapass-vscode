@@ -9,6 +9,7 @@ import * as vscode from "vscode";
 import type { ProjectMap } from "../project/projectMap";
 import { NavigationService } from "./navigationService";
 import { sameLocation, type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
+import { builtinCatalog } from "./viewPacks";
 import { locationLabel, locationOf, locationPath, projectLadder, selectionOf } from "./projectLadder";
 
 /** The part of the session the host needs (kept small for tests). */
@@ -39,7 +40,7 @@ export class NavHost implements vscode.Disposable {
 
   constructor(private readonly session: NavSession) {
     const map = () => this.projectMap();
-    this.nav = new NavigationService(projectLadder(map));
+    this.nav = new NavigationService(projectLadder(map), builtinCatalog());
     this.nav.dispatch({ type: "go", location: locationOf(session.selection(), map()) });
     const navSub = this.nav.onDidChange((e) => { void this.toSession(e.state.location); void this.updateKeys(); });
     this.subs.push({ dispose: () => navSub.dispose() },

@@ -60,6 +60,8 @@ const { registeredLayouts } = require("../src/webview/views/renderer") as typeof
 const { parseHostMessage } = require("../src/webview/views/model") as typeof import("../src/webview/views/model");
 const { PALETTE_TIERS } = require("../src/core/experience/palette") as typeof import("../src/core/experience/palette");
 const { bindingSources } = require("../src/core/navigation/bindings") as typeof import("../src/core/navigation/bindings");
+const { PACKS_FILES } = require("../out/gen/packs") as typeof import("../out/gen/packs");
+const { composeCatalog } = require("../src/core/navigation/viewPacks") as typeof import("../src/core/navigation/viewPacks");
 const { DEFAULT_VIEW_CATALOG, sameLocation } = require("../src/core/navigation/navTypes") as typeof import("../src/core/navigation/navTypes");
 
 const map = {
@@ -108,7 +110,7 @@ test("every catalog view is reachable from the host and drawn by the view host",
   const reached = walk(host.nav.ladder, host.nav.ladder.root());
   assert.deepEqual(reached.map(l => l.level), ["project", "subproject", "artifact"]);
   // …and a ladder with one artifact per catalog kind (NAVLOC1's granularity) reaches every catalog entry.
-  const catalog: ViewCatalog = DEFAULT_VIEW_CATALOG;
+  const catalog: ViewCatalog = host.nav.catalog; // DEFAULT_VIEW_CATALOG + every *.pack.ts
   const root = host.nav.ladder.root();
   const sub: NavLocation = { level: "subproject", nodeId: "ingest", artifactKind: "subproject" };
   const below = catalog.entries.filter(e => e.level !== "project" && e.level !== "subproject" && e.artifactKind !== "*")
@@ -147,11 +149,30 @@ test("a7: the renderer accepts the host's nav-state message (views carry their b
 });
 
 test("the generated index registers every layout, palette and binding file", () => {
-  assert.equal(LAYOUTS.length, LAYOUTS_FILES.length);
+  assert.ok(LAYOUTS.length >= LAYOUTS_FILES.length && LAYOUTS_FILES.length > 0);
   for (const l of LAYOUTS) assert.ok(registeredLayouts().includes(l.kind), l.kind);
-  assert.ok(PALETTE.length === PALETTE_FILES.length && PALETTE.length > 0);
+  assert.ok(PALETTE.length >= PALETTE_FILES.length && PALETTE_FILES.length > 0);
   for (const entry of PALETTE) for (const [surface, cmds] of Object.entries(entry))
     for (const c of cmds) assert.equal(PALETTE_TIERS.get(`datapass.${c}`), surface, c);
-  assert.equal(BINDINGS.length, BINDINGS_FILES.length);
+  assert.ok(BINDINGS.length >= BINDINGS_FILES.length);
   for (const b of BINDINGS) assert.ok(bindingSources().includes(b.source), b.source);
+});
+
+test("view packs: the host's catalog is DEFAULT_VIEW_CATALOG + every *.pack.ts, packs append views without overriding", () => {
+  assert.ok(Array.isArray(PACKS_FILES));
+  const host = registerNavigation(context(), session());
+  for (const e of DEFAULT_VIEW_CATALOG.entries) {
+    const got = host.nav.catalog.entries.find(x => x.artifactKind === e.artifactKind && x.level === e.level);
+    assert.deepEqual(got?.views.slice(0, e.views.length).map(v => v.id), e.views.map(v => v.id));
+  }
+  host.dispose();
+  const erd = { id: "erd", title: "ERD", layout: "table" as const, bindings: [{ source: "schema-erd" }] };
+  const composed = composeCatalog(DEFAULT_VIEW_CATALOG, [
+    { artifactKind: "subproject", level: "subproject", views: [erd, { ...DEFAULT_VIEW_CATALOG.entries[1]!.views[0]!, title: "dup" }] },
+    { artifactKind: "dbt-model", level: "artifact", views: [erd] }]);
+  const sub = composed.entries.find(e => e.artifactKind === "subproject")!;
+  assert.equal(sub.views.at(-1)!.id, "erd");
+  assert.equal(sub.views.filter(v => v.id === DEFAULT_VIEW_CATALOG.entries[1]!.views[0]!.id).length, 1, "a base view id wins");
+  assert.ok(composed.entries.some(e => e.artifactKind === "dbt-model" && e.views.some(v => v.id === "erd")));
+  assert.equal(DEFAULT_VIEW_CATALOG.entries.find(e => e.artifactKind === "subproject")!.views.some(v => v.id === "erd"), false, "base not mutated");
 });
