@@ -25,6 +25,7 @@ import { fabricToolboxMcpDefinition, planMcpFileEdit } from "./mcp";
 import { showProposalDiff, writeProjectFile } from "../work/optionsCommands";
 import { LOCAL_DIR } from "./workspace/loader";
 import { commandAvailable } from "./vscodeDetection";
+import { FABRIC_CORE_EXTENSION_ID, fabricNativeBridgeFacts, fabricViewContainerId } from "./fabric/nativeBridge";
 import { collectGalaxyState } from "./galaxyState";
 import { buildSanitizedEnvironmentSnapshot } from "./snapshot";
 import type { Readiness } from "./readiness/readiness";
@@ -454,16 +455,26 @@ async function runFabricCli(
   terminal.sendText(command, true);
 }
 
+/**
+ * FABINT1: reveal the official extension's own view container (read from its manifest, opened with
+ * VS Code's generic `workbench.view.extension.<id>` command), else the portal: the declared
+ * workspace's page when its ID is a GUID. No internal Fabric command is called.
+ */
 async function openFabric(): Promise<void> {
-  if (await commandAvailable("vscode-fabric.refreshArtifactView")) {
+  const facts = fabricNativeBridgeFacts(id => vscode.extensions.getExtension(id), {
+    workspaceId: (await getProjectPlatformConfig())?.fabric?.workspaceId
+  });
+  const ext = vscode.extensions.getExtension(FABRIC_CORE_EXTENSION_ID);
+  const container = ext ? fabricViewContainerId(ext) : undefined;
+  if (container) {
     try {
-      await vscode.commands.executeCommand("workbench.view.extension.vscode-fabric_view_workspace");
+      await vscode.commands.executeCommand(`workbench.view.extension.${container}`);
       return;
     } catch {
       // fall through
     }
   }
-  await openUrl("https://app.fabric.microsoft.com/");
+  await openUrl(facts.fallback.portalUrl);
 }
 
 async function openFabricStudio(): Promise<void> {

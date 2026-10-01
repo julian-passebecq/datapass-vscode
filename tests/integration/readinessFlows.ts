@@ -14,6 +14,7 @@ import * as vscode from "vscode";
 import type { DataPassTestApi } from "../../src/extension";
 import { record, test } from "./harness";
 import { withUi } from "./ui";
+import { FABRIC_PORTAL_URL, fabricNativeBridgeFacts } from "../../src/core/fabric/nativeBridge";
 
 export const FAKE_SECRET = "DPFAKESECRET_7f3a9c1e5b2d_do_not_leak";
 export const FAKE_UNDECLARED = "DPFAKE_UNDECLARED_VALUE_4410";
@@ -173,4 +174,14 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
     assert.ok(ui.errors.slice(0, 3).every(e => /valid .*project\.json/i.test(e)), ui.errors.join(" / "));
     assert.equal(ui.clipboard, "");
   }, ["broken"]);
+
+  test("FABINT1: without the Fabric extension the native bridge reports detection only and the portal fallback", async () => {
+    const facts = fabricNativeBridgeFacts(id => vscode.extensions.getExtension(id));
+    if (facts.installed) { record("fabint1", { skipped: "fabric.vscode-fabric is installed in this test host" }); return; }
+    assert.equal(facts.bridgeAvailable, false);
+    assert.deepEqual(facts.operations.filter(o => o.supported).map(o => o.operation), ["detect"]);
+    assert.equal(facts.fallback.staticAnalysis, true);
+    assert.equal(facts.fallback.portalUrl, FABRIC_PORTAL_URL);
+    record("fabint1", { installed: false, operations: facts.operations.length });
+  }, ["v2-retail"]);
 }
