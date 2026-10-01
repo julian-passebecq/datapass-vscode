@@ -611,7 +611,14 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER OTEL2 (local_8697efad-1a65-4ca9-a12e-30a5aa328f1d) | coder (Opus medium) | V5 OTEL2 | 14 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER STUDIO3 (local_a7621438-c3fa-4b31-abcb-281b458e636c) | coder (Opus medium) | V5 STUDIO3 | 20 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER GITMR2 (local_b65ad2a6-f130-4e9e-85ce-2c29095cb986) | coder (Opus medium) | V5 GITMR2 | 14 | 2026-10-01 · V3.8 | COORD 38 |
-| PM 27 subagents, batch 2 | coder subagents (Opus medium) | MULTIFAM1, TOURSPI1, DETACH1, SJDMAT1, LAYOUT1, ARCHCALL1, XGAP1+TODOSTALE1 | ~80 | 2026-10-01 · V3.8 | PM 27 |
+| CODER NAVCHG1 (local_7a4fda05-92b6-4c8f-8db9-11170b9d3cb0) | coder (Opus high until 14:00, then medium) | NAVCHG1 | — | 2026-10-01 · V3.8 | COORD 38 |
+| CODER NAVCLOUD1 (local_921787dc-ba2f-4614-82f2-01a2c34843f5) | coder (Opus high until 14:00, then medium) | NAVCLOUD1 | — | 2026-10-01 · V3.8 | COORD 38 |
+| CODER EXPLAIN1 (local_76c09a4e-8419-4e06-8c79-00792dd6d64f) | coder (Opus high until 14:00, then medium) | V5 EXPLAIN1 | 14 | 2026-10-01 · V3.8 | COORD 38 |
+| CODER PEDA3+PEDA1b (local_7368c5eb-b1e0-4b65-8fc2-87e02816bb62) | coder (Opus medium) | V5 PEDA3 then PEDA1b | 25 | 2026-10-01 · V3.8 | COORD 38 |
+| CODER TOURAI1 (local_40694ab0-b892-4b0c-a927-5c8babf5b6fd) | coder (Opus medium) | V5 TOURAI1 | 10 | 2026-10-01 · V3.8 | COORD 38 |
+| CODER NAVPERF1+NAVINTRO1a (local_e56fad81-4ed1-4661-af97-5d8d0eddd45f) | coder (Opus medium) | NAVPERF1 then NAVINTRO1a | — | 2026-10-01 · V3.8 | COORD 38 |
+| RESERVE PM DataPass 28 (local_14eb5b20-7fdb-40e9-9429-5d6159fbba5c) | global PM (Opus medium) | takes over from PM 27 at ~13:00 (go/PM-DataPass-28.md) | — | 2026-10-01 · V3.8 | Julian (via ASSISTANT 5) |
+| PM 27 subagents, batch 2 (+NAVDATA1, STUDIO2) | coder subagents (Opus medium) | MULTIFAM1, TOURSPI1, DETACH1, SJDMAT1, LAYOUT1, ARCHCALL1, XGAP1+TODOSTALE1, NAVDATA1 | ~80 | 2026-10-01 · V3.8 | PM 27 |
 | PM TECH LEAD GLOBAL DataPass (chip pending, 11:40) | global tech lead, architecture authority via ARCH_DECISIONS (Opus **high**, Julian exception 1 Oct 11:35); never merges, never edits PLAN | V4 review + merge order + CI + ideas triage + V5 plan by 13:30, then on call (go/PM-AUDIT-V5.md) | — | 2026-10-01 · V3.8 | PM 27 |
 | (retired 10:52) PM DataPass 26 (local_643e8398-ae0e-4855-b84b-9199bae65fae) | global PM + architect (Opus medium) | V4-NAV train, Common core reviews, V5 release (GO go/PM-DataPass-26.md) | — | 2026-10-01 · V3.8 | Julian (via ASSISTANT 3) |
 | PM DataPass 25 (local_75f74959-3a87-4d39-856a-b44a5f915cb3), retired at ~220 K → PM 26 (hand-off handoff/sessions/2026-10-01-0445-pm-datapass-25.md) (from ~02:20 1 Oct; PM 24 local_d2cf59a9 retired) | global PM + architect (Opus medium) | night 30 Sept→1 Oct: V4-NAV + Common core reviews (GO go/PM-DataPass-25.md; hand-off handoff/sessions/2026-10-01-0215-pm-datapass-24.md); RESERVE PM 26 local_643e8398 next | — | 2026-10-01 · V3.8 | Julian (via ASSISTANT 2) |
