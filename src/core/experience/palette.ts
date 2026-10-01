@@ -87,7 +87,9 @@ const GATED: Record<string, readonly string[]> = {
     "understanding.analyzeDbtProjects"
   ],
   // V5 TOUR2: guided mode (save path / add screen / present / Learning-Interview switch).
-  "v5.tour2": ["nav.tour.saveCurrentPath", "nav.tour.addScreen", "nav.tour.present", "nav.tour.setMode"]
+  "v5.tour2": ["nav.tour.saveCurrentPath", "nav.tour.addScreen", "nav.tour.present", "nav.tour.setMode"],
+  // TOURAI1 (go/TOUR-PEDA-contract.md § 7): ask the AI for a guided tour; also from the AI exchange view.
+  "v5.tourai1": ["nav.tour.askAi"]
 };
 
 /** Full command id → gating surface id, or null for the core. */

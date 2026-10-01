@@ -88,10 +88,11 @@
                 "view.airflowDag",
                 "palette.full",
                 "view.rail",
-                "v5.tour2"
+                "v5.tour2",
+                "v5.tourai1"
               ]
             },
-            "maxItems": 37,
+            "maxItems": 38,
             "minItems": 0
           }
         },

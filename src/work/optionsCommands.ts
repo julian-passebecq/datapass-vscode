@@ -28,9 +28,10 @@ import { SHEET_PATH } from "../core/project/sheet";
 import { AI_TASKS, EXCHANGE_FILES, checkIncoming, exportForAi, reviewIncoming, type ExchangeKind, type IncomingReview, type ProjectContextForImport } from "../core/project/aiExchange";
 import { BACKUP_SUBDIR, backupFileName, backupsToPrune, parseBackupName } from "../core/project/backups";
 import { showArchitecture } from "./shellCommands";
+import { copyTourRequest, registerTourAi, tourImportContext } from "../views/guided-ai/tourAi";
 
 const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
-export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog", "toolkit"];
+export const KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog", "toolkit", "tour"];
 const str = (v: unknown, max = 300) => (typeof v === "string" && v.length > 0 && v.length <= max ? v : undefined);
 
 /** Read-only documents shown in diffs ("the AI's proposal"), keyed by a random id. */
@@ -63,6 +64,7 @@ export function registerOptionsCommands(context: vscode.ExtensionContext, sessio
   reg("datapass.openSheetFile", async () => openProjectFile(session, SHEET_PATH, "sheet"));
   reg("datapass.copyForAi", async (kind?: unknown) => { await copyForAi(session, version, str(kind, 20) as ExchangeKind | undefined); });
   reg("datapass.importFromAi", async (kind?: unknown) => importFromAi(session, str(kind, 20) as ExchangeKind | undefined));
+  registerTourAi(context, session, version, reg);
   reg("datapass.restoreBackup", async () => restoreBackup(session));
 }
 
@@ -318,6 +320,7 @@ export async function copyForAi(session: WorkSession, version: string, preset?: 
   requireRoot(session.root);
   const kind = await pickKind("Copy which DataPass file for the AI?", preset);
   if (!kind) return undefined;
+  if (kind === "tour") return copyTourRequest(session, version, quiet);
   const tasks = AI_TASKS[kind];
   const task = tasks.find(t => t.id === taskId) ?? (tasks.length === 1 ? tasks[0]! : (await vscode.window.showQuickPick(tasks.map(t => ({ label: t.label, detail: t.ask.slice(0, 150) + (t.ask.length > 150 ? "…" : ""), t })), { title: `What should the AI do with ${EXCHANGE_FILES[kind].path}?` }))?.t);
   if (!task) return undefined;
@@ -338,7 +341,7 @@ export function importContext(session: WorkSession): ProjectContextForImport {
 /** The live check of the AI exchange view: which file the answer is, whether it is valid, how much changes. */
 export async function reviewAnswer(session: WorkSession, raw: string): Promise<IncomingReview> {
   if (!session.root) return { ok: false, error: "Open the project folder first." };
-  return reviewIncoming(raw, importContext(session), async kind => { const b = await currentBytes(session, kind); return b ? new TextDecoder().decode(b) : undefined; });
+  return reviewIncoming(raw, { ...importContext(session), tour: await tourImportContext(session) }, async kind => { const b = await currentBytes(session, kind); return b ? new TextDecoder().decode(b) : undefined; });
 }
 
 async function importFromAi(session: WorkSession, preset?: ExchangeKind): Promise<void> {
@@ -368,7 +371,7 @@ export async function importAnswer(session: WorkSession, raw: string, preset?: E
   const root = requireRoot(session.root);
   let incoming;
   try {
-    incoming = checkIncoming(raw, importContext(session), preset && KINDS.includes(preset) ? preset : undefined);
+    incoming = checkIncoming(raw, { ...importContext(session), tour: await tourImportContext(session) }, preset && KINDS.includes(preset) ? preset : undefined);
   } catch (e) {
     throw new UserFacingError(`Not imported: ${e instanceof Error ? e.message : String(e)}`);
   }

@@ -1137,6 +1137,11 @@
         "command": "datapass.nav.tour.setMode",
         "title": "DataPass: Guided Mode (Learning / Interview)…",
         "icon": "$(mortar-board)"
+      },
+      {
+        "command": "datapass.nav.tour.askAi",
+        "title": "DataPass: Ask the AI for a Guided Tour…",
+        "icon": "$(milestone)"
       }
     ],
     "viewsContainers": {
@@ -2769,6 +2774,10 @@
         {
           "command": "datapass.nav.tour.setMode",
           "when": "!datapass.hidden.v5.tour2"
+        },
+        {
+          "command": "datapass.nav.tour.askAi",
+          "when": "!datapass.hidden.v5.tourai1"
         }
       ],
       "explorer/context": [
@@ -3450,6 +3459,10 @@
             "v5.tour2": {
               "type": "boolean",
               "description": "Command Palette: guided tours: Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)"
+            },
+            "v5.tourai1": {
+              "type": "boolean",
+              "description": "AI guided tours: Ask your AI for a guided tour on a topic (BI, ingestion…); its answer is checked against the project and shown as a diff"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
@@ -3511,6 +3524,77 @@
           },
           "default": [],
           "markdownDescription": "Guided tours hidden by id (e.g. `datapass.journey.lineage.1`)."
+        },
+        "datapass.guided.ai.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Ask your AI for guided tours through the manual AI exchange (**DataPass: Ask the AI for a Guided Tour…**). Off: the command is not registered and nothing is computed."
+        },
+        "datapass.guided.ai.topics": {
+          "type": "array",
+          "default": [
+            {
+              "id": "bi",
+              "label": "BI and reporting",
+              "ask": "how data reaches the reports: the semantic models, the tables they read, their refresh, and the measures that matter.",
+              "mode": "learning"
+            },
+            {
+              "id": "ingestion",
+              "label": "Ingestion",
+              "ask": "where data arrives, how it lands, and the first transformations up to the staging layer.",
+              "mode": "learning"
+            },
+            {
+              "id": "orchestration",
+              "label": "Orchestration",
+              "ask": "what schedules and triggers the work: pipelines, DAGs and jobs, in the order they run.",
+              "mode": "learning"
+            },
+            {
+              "id": "spark-jobs",
+              "label": "Spark jobs",
+              "ask": "the Spark notebooks and jobs: what each reads, transforms and writes.",
+              "mode": "learning"
+            },
+            {
+              "id": "security",
+              "label": "Security and access",
+              "ask": "who can read and change what: identities, secrets handling, and the access boundaries between layers.",
+              "mode": "learning"
+            },
+            {
+              "id": "interview",
+              "label": "Interview: explain the project",
+              "ask": "the project as I would explain it in an interview: objectives, the whole picture (arrive, live, change, run, trust), then the key parts.",
+              "mode": "interview",
+              "include": [
+                "explain-project",
+                "objectives",
+                "volumetry",
+                "platforms",
+                "whole-picture",
+                "decision-cards",
+                "query-showcase"
+              ],
+              "exclude": [
+                "sample-output"
+              ]
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["id", "label"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$" },
+              "label": { "type": "string" },
+              "ask": { "type": "string" },
+              "mode": { "enum": ["learning", "interview", "general"] },
+              "include": { "type": "array", "items": { "type": "string" }, "description": "Step sections the AI may fill (explain-project, objectives, volumetry, platforms, whole-picture, concept-cards, decision-cards, query-showcase…); steps without one of them are dropped on import." },
+              "exclude": { "type": "array", "items": { "type": "string" }, "description": "Step sections the AI must not fill; they stay empty on import even if the answer fills them." }
+            }
+          },
+          "markdownDescription": "Starter topics of **DataPass: Ask the AI for a Guided Tour…** (manual AI exchange, no hidden AI call). Each topic copies a request with the project's Locations and views; the answer is checked, stamped ai-proposed and shown as a diff before `.datapass/tours.json` is written."
         }
       }
     },
