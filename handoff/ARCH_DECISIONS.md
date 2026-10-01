@@ -101,3 +101,5 @@ Critical reading of the 9 sources Julian pasted: good for **coverage** (which to
 - V5-B multi-repo: `datapass.repo-set/1` (GITSPI1), read-only, local clones only; views go into the shared catalog, not a separate VSIX.
 - V5-C Studio: web app on SQLRooms/DuckDB-WASM in datapass-studio, shares the view catalog, qualifies `datapass.studio.workspace/1` first (STUDIO0).
 - V5-D FastAPI OTel: Observe replay reader only (OTLP JSON / Prometheus text), mapped onto OBSC ObservedRun; no live collector in V5.
+
+- **2026-10-01 PM 26 — Common package versions:** any content change to a published Common package bumps its prerelease version in the same MR (lineage-core alpha.1 and project-contracts alpha.3 drifted unbumped; VERBUMP1 fixes them after !157). Vendored copies in vscode/cloud are pinned by version + digest.
