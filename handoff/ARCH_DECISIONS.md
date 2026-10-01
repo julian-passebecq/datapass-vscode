@@ -103,3 +103,4 @@ Critical reading of the 9 sources Julian pasted: good for **coverage** (which to
 - V5-D FastAPI OTel: Observe replay reader only (OTLP JSON / Prometheus text), mapped onto OBSC ObservedRun; no live collector in V5.
 
 - **2026-10-01 PM 26 — Common package versions:** any content change to a published Common package bumps its prerelease version in the same MR (lineage-core alpha.1 and project-contracts alpha.3 drifted unbumped; VERBUMP1 fixes them after !157). Vendored copies in vscode/cloud are pinned by version + digest.
+- **2026-10-01 PM 26 — one frozen version per wave:** feature MRs on project-contracts (V5: EVPIN1 !179, GITSPI1 !172, DETSPI1 !175, EVCAPT1 !178, EVACTOR1) add src/tests/exports only; they never mint `schemas/vN` or touch LATEST_VERSION. One closing MR (V5FREEZE1) mints v3 for the whole wave and bumps the package version. Consumers vendor from the approved feature SHA until then.
