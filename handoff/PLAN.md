@@ -586,6 +586,16 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N51 (local_ba1ebeb6-8d0a-456c-9ca1-889807d90bf1) | coder (Opus medium) | NAVHOME1 (go/NAVHOME1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
 | CODER N52 (local_8b622aa3-5bc0-4510-a0a7-25514143ed9f) | coder (Opus medium) | NAVERD1 (go/NAVERD1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
 | CODER N53 (local_c1479d09-e957-40ea-9061-bb337fd9332a) | coder (Opus medium) | NAVPRIN1 (go/NAVPRIN1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N54 (local_7f02d4f0-f093-4785-bfdc-ffc70c346ddf) | coder (Opus medium) | SNOWOBJ1 (go/SNOWOBJ1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N55 (local_31416554-e034-4cc4-bdc4-5200e01c6b37) | coder (Opus medium) | DATAFORM1 (go/DATAFORM1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N56 (local_3db0254a-4274-4b77-a964-983f5f67303d) | coder (Opus medium) | SQLMESH1 (go/SQLMESH1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N57 (local_3b4ca9ea-f88a-4905-ae97-3acf76462f13) | coder (Opus medium) | DBXDASH1 (go/DBXDASH1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N58 (local_40daa8df-0527-4ecf-bfe5-99df653588b8) | coder (Opus medium) | SYNWS1 (go/SYNWS1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N59 (local_f1158d6e-5946-44b6-a03f-06d20109dcb0) | coder (Opus medium) | DAGFACT1 (go/DAGFACT1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N60 (local_d12324c8-899f-462d-a5a9-e9efe3b90f96) | coder (Opus medium) | RDL1 (go/RDL1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 (go/ADFARM1.md) | — | 2026-10-01 · V3.8 | Common 8 |
+| CODER N62 (local_71e18c26-cd54-4b42-9c36-b90ed354e6b1) | coder (Opus medium) | DESKSHARD1 (go/DESKSHARD1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
+| CODER N63 (local_3e2e0f54-e049-46aa-819f-9500e63f937c) | coder (Opus medium) | PWCI1 (go/PWCI1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | COORD DataPass 31 (local_d1a2d7e3-7008-4fcd-8b36-5ab65c9537cb), live, pinned (Opus medium; took over ~21:10, hand-off go/handoff-coord-30.md) | coordinator (Opus medium, option A) | cloud/vscode/hub + night coders; RESERVE COORD 32 (local_02210024) next | — | 2026-09-30 · V3.8 | PM 23 |
 | COORD DataPass Common 8 (RESERVE COORD 34, local_6779655d-49db-44ce-91d3-a5b7608c900c), live from ~01:00 (Opus medium; hand-off go/handoff-coord-common-7.md) | Common coordinator (Opus medium) | Common merge train (core MRs pinned to the approved SHA); next: RESERVE COORD Common chip (go/NIGHT-RELAY-2026-09-30.md) | — | 2026-10-01 · V3.8 | PM 24 |
 | (retired at 171 K) COORD DataPass Common 7 (local_eb1085e5-0849-42de-9548-45f97a8ae0f2) | Common coordinator (Opus medium) | → Common 8 (go/handoff-coord-common-7.md) | — | 2026-09-30 · V3.8 | PM 23 |
