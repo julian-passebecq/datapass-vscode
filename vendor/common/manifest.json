@@ -1,81 +1,135 @@
 {
   "schema": "datapass.vendored-common/1",
   "sourceRepository": "https://gitlab.com/juliandatapass-group/datapass-vscode-common",
-  "sourceCommit": "5fda1a00c94310a8d9ee7c3f5ed9a9d61cce56a5",
-  "dependencyCommit": "53bf327f21ebdf8cb574098792440fa7d21438dd",
+  "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc",
   "internalOnly": true,
-  "registryStatus": "Exact candidate lookup returned HTTP401 from configured group registry; publication eligibility not established. No publish attempted.",
+  "registryStatus": "Packed from Common with npm pack (scripts/pack-vendor.mjs); not published.",
   "artifacts": [
     {
+      "name": "@juliandatapass-group/semantic-core",
+      "version": "0.1.0-alpha.4",
       "file": "juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
-      "sha256": "83724c6a27d9c1fc932638a4138b59851f2a5f42e63a34955e2ec0fab394268b"
+      "sha256": "83724c6a27d9c1fc932638a4138b59851f2a5f42e63a34955e2ec0fab394268b",
+      "integrity": "sha512-wNfyl/KZUZHvfZU88ETFBovla3aVDabaGFp3iqbajDvLqB4y5zeEhIwYimpYNwRSJ/UTlJlu8tIkQnCWOwt3Bg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
+      "name": "@juliandatapass-group/analysis-protocol",
+      "version": "0.1.0-alpha.4",
       "file": "juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
-      "sha256": "b8a18f31f4010753520c9905477490d1d929d158f49c2292ae01dd55a8de0e9d"
+      "sha256": "b8a18f31f4010753520c9905477490d1d929d158f49c2292ae01dd55a8de0e9d",
+      "integrity": "sha512-2ntXuU43jGrofwSwSEZaYWEREepiZpYSLJ1Nd0tgjQNYOWrBIeceHbjrckCmpp/w/6cEG36h7WxsV1M4SRjSrg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
+      "name": "@juliandatapass-group/compat-v3",
+      "version": "0.1.0-alpha.3",
       "file": "juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
-      "sha256": "32c352bd4f9acb8ec3dc11aae1a81e05c11f644c4d9e3a0978bc0ab3b8be4109"
+      "sha256": "3bf6182c09a78dcce3cdcde610d79440a337ba9db3d082768080096738e5c022",
+      "integrity": "sha512-5szyC/H4EX5MnSJM3JSJcR4wB8AYDV6GcOsX+IlnUJuzVJfDi/xBdPX7C0Vg8mzlQLB050QTgBFK/bvGUH5RnA==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-analysis-host-node-0.1.0-alpha.2.tgz",
-      "sha256": "782ad0aab0db2844b4d4d112c0cdb0635f253744073544cbeb941c00af7ef27d",
-      "sourceCommit": "1c4e684f86aaa53d91360a132762e5221156e976"
+      "name": "@juliandatapass-group/tool-catalog",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.3.tgz",
+      "sha256": "80f1db67a9c9d7e8b14eea4060f83d1080264bf0611694ce139241846dfeddbf",
+      "integrity": "sha512-NLslqS/oAE76FkD7Zx5nWJYoR9U4uqUwl4QJqoylQ0g3TE91w6GX8epB+zJ/DcFZSpHQoyX0hLbSRN9azSO1vQ==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-project-contracts-0.1.0-alpha.3.tgz",
-      "sha256": "92bfb2e8b05588cc5f7cbe2b0384449ea2171c1afdc617f861c4b1e2b3c5a470",
-      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+      "name": "@juliandatapass-group/capability-router",
+      "version": "0.1.0-alpha.2",
+      "file": "juliandatapass-group-capability-router-0.1.0-alpha.2.tgz",
+      "sha256": "bcbb5279a5b622ca531d7542daec52b7bea2b4e3a79d51b0d4db1af5552e023c",
+      "integrity": "sha512-CuocIVTstF4WyBZZStwANipvRUnza3pOFWUs+yTxNxbY4NRATIrK9KfcuxgOZJ9uaZT96iZRB0Ewj/tjezD9VA==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-lineage-core-0.1.0-alpha.1.tgz",
-      "sha256": "bdc7c144984e8a2825c5b4bc6ec72fd6de37807855ae47b15f26cf20f769d0f9",
-      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+      "name": "@juliandatapass-group/project-contracts",
+      "version": "0.1.0-alpha.5",
+      "file": "juliandatapass-group-project-contracts-0.1.0-alpha.5.tgz",
+      "sha256": "8ae55172fad3e71b5b8580e2038c6f5fe39bf8c746186938f4212b0db67c5680",
+      "integrity": "sha512-n71q8AR6spiTMkSOQhUPXjElYUZ8aJc0ZR581ynEmRpOTXz5iZjX4lofD+bEgAmB9xtGiaXiZ8EcaO6GE1Nzsw==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-analyzers-0.1.0-alpha.7.tgz",
-      "sha256": "e7bfb0f8c89c9a80b5258006a8d0610dbe7e0353176133ecc54e67329b05dcab",
-      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+      "name": "@juliandatapass-group/lineage-core",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-lineage-core-0.1.0-alpha.3.tgz",
+      "sha256": "2b6dde1da1c32b3397de59c7aaa05e3f6e9137915d74d9b77dbeff54112f92ea",
+      "integrity": "sha512-vMGy18ptZowQWnuOR5ugKeta7M6waE9fFdstHCpx16TWMO2F0G487vimrB6yJJdUb6pB/sIN5IDTGoAfifS5Eg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-analyzers-dbt-0.1.0-alpha.1.tgz",
-      "sha256": "b0bf03d50d1a8c2cf05f153df80723bbf4298fe71e0dc692b08eeb7bf58c68b2",
-      "sourceCommit": "26220641b796c9be297bcfc9ab13ab8cd67d20d1"
+      "name": "@juliandatapass-group/view-spi",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-view-spi-0.1.0-alpha.3.tgz",
+      "sha256": "8436e05c87bfdd12caaa8a4947744434a82c5e0cf5afb4c56964fbf74179f534",
+      "integrity": "sha512-TSAC16U95aEKOvyLyilgNBD8Chc5IF6atyPi2oxSSrkhF9KVpsbEUqpilPcX9SqmE9ZhWTu/fC7qlYytQiXEYA==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.2.tgz",
-      "sha256": "5e175d9ca8a385aec21250e747b4764c2b2cdade81595fa0687cba6986881737",
-      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
+      "name": "@juliandatapass-group/analyzers",
+      "version": "0.1.0-alpha.9",
+      "file": "juliandatapass-group-analyzers-0.1.0-alpha.9.tgz",
+      "sha256": "5e165b6ea4dde5057d4d6403e820d6a58b2930d169878bb2841c1fed27aebad8",
+      "integrity": "sha512-FrTy4wI1T15iQei5GcBkhZDi6voXxFWPe53vRScoEuZe42A4n5fQy0ZphpWHPAVx6S6YaYTXpRrZEgssP/bhEg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-capability-router-0.1.0-alpha.1.tgz",
-      "sha256": "ab9aa5c05b575049252e78749147d26d6a4bc401077873cc67bb2e005486a625",
-      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
+      "name": "@juliandatapass-group/analyzers-dbt",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-analyzers-dbt-0.1.0-alpha.3.tgz",
+      "sha256": "01b378e1aac6f7fb5356f63d0143e0482f6c40d13e5eb5702af58c873fd9bb5f",
+      "integrity": "sha512-/tReRKqqFa0UlUZ7WjaDegICTK1mAlpOqDHMijwXB6/nLif27wkaSq+50LdAnLL9KZ/424/9qPvvW6F0Sqdohg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-view-spi-0.1.0-alpha.1.tgz",
-      "sha256": "8d0eb1684c420209db4bbd32aee918c405a57e673e62cf0c7bb47e6975e0062e",
-      "sourceCommit": "55c4412afc973c7b47e847b653c45471375d93b0"
+      "name": "@juliandatapass-group/analyzers-api",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-analyzers-api-0.1.0-alpha.3.tgz",
+      "sha256": "6297565cf75f5e9403279e0b4f66c337c22d41725a221127e693ba7e45fc81dd",
+      "integrity": "sha512-wC/D3KuOrPfvS7DcKjdDDZwGUTWtbqrRN6RpH/IuoRNQxBDo4agV/u8Jr7dQpgGWWECJFin0ELAqqd3fEBIsZg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-arch-decisions-0.1.0-alpha.1.tgz",
-      "sha256": "0bdc95f6a06624065212cf5698c4829f8510c67b98721f62e09c1ffbc7e0cd1d",
-      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
+      "name": "@juliandatapass-group/arch-decisions",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-arch-decisions-0.1.0-alpha.3.tgz",
+      "sha256": "a52e0c95392293ce98a218549052e671caef96ffc7e638916340b01eab5a23a6",
+      "integrity": "sha512-947r4grcULa2yjd1tkzevnL+X0ILvYv7feAfWUHnNsZL9v1nkXJ9+Xn5TlPAeFNe1t0bCFJiv6AUU6hXwZK6QQ==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-arch-catalog-0.1.0-alpha.1.tgz",
-      "sha256": "ab0252eed1dd94ca00c6574d8d9583faad8cf77a5e4c45e99d56479190d8b5b7",
-      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
+      "name": "@juliandatapass-group/arch-catalog",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-arch-catalog-0.1.0-alpha.3.tgz",
+      "sha256": "51470c4a3bd236e87e63b1400e01e4a98183314e030fe4343644372ab479907d",
+      "integrity": "sha512-KiXfFDRH0uPJU+3LUlpspSRj/komr6vqeNyr+eNaMnVcCZpfIbE9gVKIT74yPYaVZ4MT8OkY7Zk2eWv6yGrCiw==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     },
     {
-      "file": "juliandatapass-group-decision-rationale-0.1.0-alpha.1.tgz",
-      "sha256": "5efda03b74f9b35bd7cd4f36c07f2fda5a54415bda6e44fec473c8a7306a5c68",
-      "sourceCommit": "57940038200caf341fce87ea958e6483dda208d5"
+      "name": "@juliandatapass-group/decision-rationale",
+      "version": "0.1.0-alpha.3",
+      "file": "juliandatapass-group-decision-rationale-0.1.0-alpha.3.tgz",
+      "sha256": "650a6f0289713cbe35571c9e0a2422fa652e6697224c9963979653df0c0f66ae",
+      "integrity": "sha512-odpQHbVB2vpH8vafdSfQka01OwSoijBJqKYbRr2vTcHv9qddlloLbhFdml6O+7uBCdtftVSmg6/iUIuP2YfEsg==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
+    },
+    {
+      "name": "@juliandatapass-group/analysis-host-node",
+      "version": "0.1.0-alpha.6",
+      "file": "juliandatapass-group-analysis-host-node-0.1.0-alpha.6.tgz",
+      "sha256": "79657c96618dfada7ad82a53bbdcccbe051969b69fc97fff7da6729c96afc11f",
+      "integrity": "sha512-2n3/fSDZ8Ik1gZ5OypsGF7gqohgqCjQrhqEbBQNbPyHZI7nV3MohnmqzNsqpZknXtfWODBQwQu9hfPINRlKYZA==",
+      "sourceCommit": "a6b7ad332d206b95867e795ff896350827518bfc"
     }
   ],
   "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins.",
   "caproute1bNote": "CAPROUTE1b: tool-catalog and capability-router packed with scripts/pack-vendor.mjs from Common 6b87493 (!138); semantic-core alpha.4 is byte-identical there and keeps its pin.",
   "navsvc1Note": "NAVSVC1: view-spi pinned to Common main 55c4412a (!157 merged; re-pack from 55c4412a gives the same sha256 as the earlier 46563fb pack); arch-catalog, arch-decisions and decision-rationale packed in the same run, their sources are identical to Common main 5794003. lineage-core alpha.1 and semantic-core alpha.4 keep their pins.",
-  "tbx1cNote": "TBX1c: tool-catalog 0.1.0-alpha.2 (typed sideEffectKinds, Workspace Monitoring, owns TOOL_SIDE_EFFECTS) and capability-router re-packed with scripts/pack-vendor.mjs from Common main 5794003 (supersedes the CAPROUTE1b 6b87493 pins; both from one Common commit, byte-identical to the dd950b2 pack)."
+  "tbx1cNote": "TBX1c: tool-catalog 0.1.0-alpha.2 (typed sideEffectKinds, Workspace Monitoring, owns TOOL_SIDE_EFFECTS) and capability-router re-packed with scripts/pack-vendor.mjs from Common main 5794003 (supersedes the CAPROUTE1b 6b87493 pins; both from one Common commit, byte-identical to the dd950b2 pack).",
+  "sourceDirty": false,
+  "repin5Note": "REPIN5 (TL-13): all vendored Common packages re-packed with scripts/pack-vendor.mjs from merged V5FREEZE1 a6b7ad332d206b95867e795ff896350827518bfc. analyzers-api vendored for OTEL2, not wired. Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.5, lineage-core@0.1.0-alpha.3, view-spi@0.1.0-alpha.3, analyzers@0.1.0-alpha.9, analyzers-dbt@0.1.0-alpha.3, analyzers-api@0.1.0-alpha.3, arch-decisions@0.1.0-alpha.3, arch-catalog@0.1.0-alpha.3, decision-rationale@0.1.0-alpha.3, analysis-host-node@0.1.0-alpha.6."
 }
