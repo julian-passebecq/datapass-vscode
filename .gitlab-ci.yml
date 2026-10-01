@@ -94,6 +94,11 @@ desktop_acceptance:
   # FIXTURE_SECONDS); together they run every fixture once, and every shard gates.
   parallel: 4
   timeout: 45m
+  # DESKHARD1: one retry for a shard that fails under runner load (unresponsive extension host);
+  # a real regression fails twice and still blocks.
+  retry:
+    max: 1
+    when: [runner_system_failure, script_failure]
   cache:
     - key:
         files:

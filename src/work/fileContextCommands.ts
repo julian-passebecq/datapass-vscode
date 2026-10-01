@@ -158,7 +158,7 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
     stamp: manifest ? stamp : undefined,
     bridge: bridgeRepo ? { key: bridgeRepo.key, label: bridgeRepo.label } : undefined,
     repository,
-    file: { relPath, languageId: doc?.languageId, unsaved, notOnDisk: uri.scheme === "untitled", binary, text, selection },
+    file: { relPath, languageId: doc?.languageId ?? (binary ? undefined : contributedLanguage(fsPath)), unsaved, notOnDisk: uri.scheme === "untitled", binary, text, selection },
     components, revisions,
     tree: { parents: loc ? parentChain(loc.relPath) : [], ...tree },
     diagnostics, localPaths
@@ -180,4 +180,25 @@ async function copyFileContext(session: WorkSession, target: vscode.Uri | undefi
   // 0.27 (P1, D-23): remembered with its stamp, so the AI view can say when it goes stale.
   if (manifest) await session.recordExchange({ id: newLocalId("file-ctx"), kind: "ai-context", label: `Context for my AI: ${relPath}`, status: "copied", digest: sha256Bytes(pack.text).value, scopeRef: session.model().scope.id, at: new Date().toISOString(), stamp });
   void vscode.window.showInformationMessage(`Copied the context of ${relPath} (${pack.bytes} bytes). Paste it into your AI.`);
+}
+
+/**
+ * The language of a file that is not open in an editor, from the installed extensions' `contributes.languages`
+ * (file names first, then extensions): no document is opened, so nothing else reacts to it. Undefined when none claims it.
+ */
+export function contributedLanguage(fsPath: string): string | undefined {
+  const name = path.basename(fsPath).toLowerCase();
+  let best: { id: string; len: number } | undefined;
+  for (const ext of vscode.extensions.all) {
+    const langs = (ext.packageJSON as { contributes?: { languages?: { id?: unknown; extensions?: unknown; filenames?: unknown }[] } } | undefined)?.contributes?.languages;
+    if (!Array.isArray(langs)) continue;
+    for (const l of langs) {
+      if (typeof l?.id !== "string") continue;
+      if (Array.isArray(l.filenames) && l.filenames.some(f => typeof f === "string" && f.toLowerCase() === name)) return l.id;
+      for (const e of Array.isArray(l.extensions) ? l.extensions : []) {
+        if (typeof e === "string" && e && name.endsWith(e.toLowerCase()) && (!best || e.length > best.len)) best = { id: l.id, len: e.length };
+      }
+    }
+  }
+  return best?.id;
 }

@@ -194,7 +194,7 @@ async function baseBranchOf(session: WorkSession, gitObs: GitObserver, key: stri
 }
 
 async function originCommit(folder: string, branch: string): Promise<string | undefined> {
-  const r = await git(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${branch}^{commit}`], folder, 5000);
+  const r = await git(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${branch}^{commit}`], folder, 20000);
   const sha = r.stdout.trim();
   return r.ok && /^[0-9a-f]{40}$/.test(sha) ? sha : undefined;
 }
