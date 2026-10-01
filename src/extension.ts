@@ -35,7 +35,7 @@ import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
 import { registerNavigation } from "./core/navigation/register";
-import { setProjectCardsSource } from "./views/projectCards/projectCards.surface";
+import { setProjectCardsSource } from "./views/peda-cards/cards.surface";
 import type { HomeState } from "./views/homeState";
 import type { HomePage } from "./views/homeHtml";
 import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";

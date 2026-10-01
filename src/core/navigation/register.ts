@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import { NavHost, type NavSession } from "./navHost";
-import { registerProjectCards } from "../../views/projectCards/projectCards.surface";
+import { registerProjectCards } from "../../views/peda-cards/cards.surface";
 
 /** A surface receives the host (state, dispatch, labels) and returns what to dispose. */
 export type NavSurface = (context: vscode.ExtensionContext, host: NavHost) => vscode.Disposable | readonly vscode.Disposable[] | void;

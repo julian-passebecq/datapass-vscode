@@ -3389,6 +3389,21 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.pedagogy.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: pedagogy cards (master switch). Off: the pedagogy commands are not registered and nothing is computed."
+        },
+        "datapass.pedagogy.conceptCards.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: concept cards bound to the project's code (the best matching span replaces the generic example)."
+        },
+        "datapass.pedagogy.decisionCards.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: decision cards showing the option the project took and where, or an owner question when no fact says it."
         }
       }
     },
