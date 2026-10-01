@@ -170,6 +170,11 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-01 02:10 (enchaînement V4 → V5, relayé par ASSISTANT DATAPASS 3)
+- Si V4 est fini avant son réveil (~08:00–11:00) et qu'il reste du quota : démarrer V5 tout de suite, sans l'attendre. Le PM planifie V5 depuis ce ROADMAP et PLAN (V5 déjà noté : détachement dbt, supergit multi-repo, SQLRooms/Studio, FastAPI OTel). Cible : V5.
+- Les questions produit V5 ne bloquent pas : elles vont dans go/JULIAN-questions-reveil.md pour son réveil ; le PM prend la recommandation par défaut en attendant.
+- Limite dure : jeudi 1 Oct 14:00 (reset hebdo 12:00 UTC) ; finir le quota avant est OK, aucune stagnation d'ici là.
+
 ## Idées de Julian — 2026-10-01 (navigation / UX, Studio, réponses § 28 et § 31)
 
 Source : `D:\PROJ\datapass\handoff\JULIAN_UX_NAV_AND_STUDIO_2026-10-01.md`. Plan : PLAN.md § V4-NAV (PM 24). Critique du PM en une phrase par idée.
