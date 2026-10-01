@@ -29,6 +29,7 @@ import { registerCheckCommands } from "./work/checkCommands";
 import { registerNativeTestCommands, resolveComponentTest } from "./work/nativeTestCommands";
 import type { WorkbenchState } from "./views/workbenchState";
 import { AiExchangeView } from "./views/aiExchange";
+import { registerNavigationSurfaces } from "./core/navigation/register";
 import type { AiExchangeState } from "./views/aiExchangeState";
 import type { ExchangeKind } from "./core/project/aiExchange";
 import { WorkViews } from "./work/workViews";
@@ -381,6 +382,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(pilot);
   aiExchange.attachPilot(pilot);
   registerPilotCommands(context, pilot, () => aiExchange.showTab("pilot"));
+  // V4-NAV: navigation surfaces (Context view…); NAVSVC1 passes the NavigationService.
+  registerNavigationSurfaces(context);
   // QA-2: the Codex tests section of the Work orders view (qa-run orders for the Codex app).
   const codexTests = new CodexTestsService(context, session, workOrders, id => flows.handToCodexApp(id));
   context.subscriptions.push(codexTests);

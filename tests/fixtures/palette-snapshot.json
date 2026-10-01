@@ -280,6 +280,7 @@
     "DataPass: Show Airflow DAG",
     "DataPass: Show All Variants in the Project Tree",
     "DataPass: Show Component Test Receipts",
+    "DataPass: Show Context",
     "DataPass: Show File History",
     "DataPass: Show Only the Selected Architecture",
     "DataPass: Show Operation Preflight",

@@ -74,7 +74,9 @@ const GATED: Record<string, readonly string[]> = {
     "fileVersions.history", "diagram.toggleGitBadges",
     // V3-HOP2: DataPass Hop (the lighter modes are at their palette budget; the editor's context menu,
     // its title button on an explained file and the Home tile reach it in every mode).
-    "hop.explain", "hop.showExplained", "workOrders.newForExplanation"
+    "hop.explain", "hop.showExplained", "workOrders.newForExplanation",
+    // V4-NAV NAVCTX1: the bottom-panel Context view.
+    "context.show"
   ]
 };
 
