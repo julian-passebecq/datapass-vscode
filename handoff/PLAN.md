@@ -559,7 +559,7 @@ Julian questions (go/JULIAN-questions-reveil.md) run on the defaults until he an
 |---|---|---|---|---|---|
 | DETSPI1 · GITSPI1 · OTELSPI1 | Common project-contracts | !175 · !172 · !173 open | — | 8+8+8 | W0 |
 | EVPIN1 · EVCAPT1 · EVACTOR1 | Common (+ vscode !215) | !179 · !178 · !180 open | — | 6+5+5 | W0 |
-| VERBUMP1 → V5FREEZE1 | Common | not started (COORD Common) | gap batch; contracts above | 4+5 | W0 |
+| VERBUMP1 → V5FREEZE1 | Common | CODER VERBUMP1→V5FREEZE1 local_6be43d9d, started ~14:00 | gap batch; contracts above | 4+5 | W0 |
 | **MULTIFAM1** | Common analyzers core | new GO (TL-6) | — | 12 | W0 |
 | **TOURSPI1** | Common view-spi | new GO (TL-11) | — | 6 | W0 |
 | **REPIN5** | vscode + cloud + studio | new GO (TL-13) | V5FREEZE1 | 10 | W0b |
@@ -629,6 +629,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER NAV-TRAIN R3 (local_17a0a3cf-a94c-4938-a1e0-9a6fbc65b363, was RESERVE CODER 1) · CODER NAV-TRAIN R1 (local_3b42976a-f191-4379-9bac-263489359e13, was RESERVE CODER 2) · CODER NAV-TRAIN R2 (chip 12:55) | coder (Opus medium) | NAV rebase train lanes (go/NAV-TRAIN-LANES.md, go/NAV-train-conflict-map.md) | ~15 | 2026-10-01 · V3.8 | COORD 39 |
 | PM DataPass 29 (local_b0e7d2f8-ca68-4334-b717-43838f5113e2), retired ~14:00 → PM 30 (hand-off handoff/sessions/2026-10-01-1400-pm-datapass-29.md) | global PM (Opus medium) | takes over from PM 28 (go/PM-DataPass-29.md) | — | 2026-10-01 · V3.8 | PM 28 |
 | COORD DataPass 40 (local_5b15baba-37ab-4db9-bb76-77e363d92356), live ~13:50, pinned; takes over from COORD 39 (go/handoff-coord-39.md) | coordinator vscode/cloud/studio/data-xray (Opus medium) | vscode train ≤ 4 MR pipelines, NAV lanes, V5 W1/W2 (go/COORD-DataPass-40.md) | — | 2026-10-01 · V3.8 | PM 29 |
+| CODER VERBUMP1→V5FREEZE1 (local_6be43d9d-5695-4ae1-821b-9fb75fa0298c), live ~14:00 (Opus medium) | coder | go/V5-VERBUMP1-FREEZE1.md | 9 | 2026-10-01 · V3.8 | PM 29 |
 | PM DataPass 30 (local_4887e3f7-57ad-404d-b7cc-7f4a9bc12dbd), live ~14:00 | global PM + architect (Opus medium) | go/PM-DataPass-30.md | — | 2026-10-01 · V3.8 | PM 29 |
 | CODER NAVTOUR1+TOUR2 (2) (local_74c1970b-0e2e-4046-9dac-a3acd7cad07e) | coder (Opus medium) | rebase+merge !242 NAVTOUR1, !244 TOUR2 (go/NAVTOUR1-TOUR2-2.md) | 10 | 2026-10-01 · V3.8 | PM 29 |
 | CEO ARCHI REVIEW V5 (local_bdd5e050-bc18-4e1f-89cd-60cc65668555), one-shot, stop 13:58 | read-only V5 architecture review, 3 xhigh subagents (Opus **xhigh**, Julian's explicit word 13:47) | go/CEO-ARCHI-REVIEW-V5.md | — | 2026-10-01 · V3.8 | PM 29 |
