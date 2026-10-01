@@ -64,7 +64,9 @@ export const SURFACES: readonly Surface[] = [
   // V1-SURF: the palette lists the core commands and those of the shown surfaces; this adds the rest.
   { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" },
   // V3-SHELL: the right rail (a thin column of buttons shown instead of the full panel in rail mode).
-  { id: "view.rail", kind: "view", viewId: "datapass.rail", label: "Right rail", detail: "A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)" }
+  { id: "view.rail", kind: "view", viewId: "datapass.rail", label: "Right rail", detail: "A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)" },
+  // V5 TOUR2: guided tours in the Navigator (Learning / Interview, present, save a path as a tour).
+  { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

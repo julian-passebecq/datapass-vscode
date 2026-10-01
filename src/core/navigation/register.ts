@@ -6,6 +6,7 @@
 import * as vscode from "vscode";
 import { NavHost, type NavSession } from "./navHost";
 import { registerNavTours } from "../../views/navTours";
+import { registerGuided } from "../../views/guided/guided";
 
 /** A surface receives the host (state, dispatch, labels) and returns what to dispose. */
 export type NavSurface = (context: vscode.ExtensionContext, host: NavHost) => vscode.Disposable | readonly vscode.Disposable[] | void;
@@ -13,6 +14,7 @@ export type NavSurface = (context: vscode.ExtensionContext, host: NavHost) => vs
 const SURFACES: readonly NavSurface[] = [
   // One line per surface package (merge order: handoff/PLAN.md § V4-NAV).
   registerNavTours,
+  registerGuided,
 ];
 
 export function registerNavigation(context: vscode.ExtensionContext, session: NavSession): NavHost {

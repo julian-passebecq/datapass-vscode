@@ -85,7 +85,9 @@ const GATED: Record<string, readonly string[]> = {
     "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
     // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
     "understanding.analyzeDbtProjects"
-  ]
+  ],
+  // V5 TOUR2: guided mode (save path / add screen / present / Learning-Interview switch).
+  "v5.tour2": ["nav.tour.saveCurrentPath", "nav.tour.addScreen", "nav.tour.present", "nav.tour.setMode"]
 };
 
 /** Full command id → gating surface id, or null for the core. */

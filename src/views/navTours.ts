@@ -16,16 +16,27 @@ import type { NavLocation } from "../core/navigation/navTypes";
 import { generateTours } from "../core/navigation/tours/generate";
 import { jumpSearch, type JumpEntry } from "../core/navigation/tours/jump";
 import {
-  clampPreview, flattenSteps, journeys, ladderLocations, loadTourFile, locationKey, mergeTours, nextStep, prevStep, resolveRef,
+  clampPreview, flattenSteps, journeys, ladderLocations, loadTourFile, locationKey, mergeTours, nextStep, prevStep,
   startTour, stepStatus, stepTo, tourOrigin, TOURS_FILE, type LoadedTours, type StepContext, type TourCursor
 } from "../core/navigation/tours/store";
 import type { Tour } from "../core/navigation/tours/tourTypes";
 import { projectRoot } from "../core/workspace/root";
+import { explanationText, resolveExplanation } from "../core/guided/explanations";
+import type { TourStep } from "../core/navigation/tours/tourTypes";
 import { labelPack, parseToursMessage, toursHtml, uiLabel, type LabelPack, type ToursModel } from "./navToursHtml";
 
 export const TOUR_COMMANDS = { pick: "datapass.nav.tour.pick", next: "datapass.nav.tour.next", prev: "datapass.nav.tour.prev", jump: "datapass.nav.jump" } as const;
 
 const config = () => vscode.workspace.getConfiguration("datapass.guided");
+
+/** TOUR2 (and later packages) extend the tours surface without editing it: filter, model, html, messages. */
+export interface ToursExtension {
+  filter?(tours: readonly Tour[]): readonly Tour[];
+  model?(m: ToursModel): ToursModel;
+  html?(inner: string, m: ToursModel): string;
+  /** True when the message was this extension's. */
+  handle?(raw: unknown): boolean | Promise<boolean>;
+}
 
 /** Tour state + actions over the NavHost (one per window). */
 export class NavTours implements vscode.Disposable {
@@ -37,6 +48,7 @@ export class NavTours implements vscode.Disposable {
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.emitter.event;
   private readonly subs: vscode.Disposable[] = [this.emitter];
+  private readonly extensions: ToursExtension[] = [];
 
   constructor(private readonly host: NavHost) {
     const watcher = vscode.workspace.createFileSystemWatcher(`**/${TOURS_FILE.join("/")}`);
@@ -49,6 +61,35 @@ export class NavTours implements vscode.Disposable {
   }
 
   dispose(): void { for (const s of this.subs) s.dispose(); }
+
+  addExtension(e: ToursExtension): vscode.Disposable {
+    this.extensions.push(e);
+    this.emitter.fire();
+    return { dispose: () => { const i = this.extensions.indexOf(e); if (i >= 0) this.extensions.splice(i, 1); this.emitter.fire(); } };
+  }
+  /** Repaint (an extension's state changed). */
+  refresh(): void { this.emitter.fire(); }
+
+  /** The tours a person sees now (extensions filter, e.g. the guided mode). */
+  visible(tours: readonly Tour[] = this.tours()): readonly Tour[] {
+    return this.extensions.reduce<readonly Tour[]>((ts, e) => (e.filter ? e.filter(ts) : ts), tours);
+  }
+
+  /** The `.datapass/tours.json` document (user and AI-proposed tours only). */
+  fileDocument(): LoadedTours["document"] { return this.file.document; }
+
+  /** The active tour and step, if any. */
+  current(): { tour: Tour; step: TourStep; index: number } | undefined {
+    const tour = this.activeTour();
+    const f = tour && this.cursor ? flattenSteps(tour.steps)[this.cursor.index] : undefined;
+    return tour && f ? { tour, step: f.step, index: this.cursor!.index } : undefined;
+  }
+
+  /** A ref's text through the explanation registry (`text:`, `guide:`, schemes added by later packages). */
+  explain(ref: string, step?: TourStep, tour?: Tour): string | undefined {
+    const { document } = this.loaded();
+    return explanationText(resolveExplanation(ref, { texts: document.texts, guide: labelPack(config().get("labels")), tour, step, location: step?.location }));
+  }
 
   /** Built-in (facts) + file tours, file tours reusing a built-in id dropped as holes. */
   loaded(): LoadedTours {
@@ -70,16 +111,16 @@ export class NavTours implements vscode.Disposable {
 
   model(): ToursModel {
     const { document } = this.loaded();
-    const tours = document.tours;
+    const tours = this.visible(document.tours);
     const labels = labelPack(config().get("labels"));
     const js = journeys(tours);
-    const active = this.activeTour(tours);
+    const active = this.activeTour(document.tours);
     const journey = this.journey !== null && js.includes(this.journey) ? this.journey : active?.journey ?? js[0] ?? null;
     const ctx = this.stepContext();
     const here = this.host.nav.state.location;
     const flat = active ? flattenSteps(active.steps) : [];
     const current = active && this.cursor ? flat[this.cursor.index] : undefined;
-    return {
+    const model: ToursModel = {
       labels,
       journeys: js.map((id) => ({ id, label: labels[`journey.${id}`] ?? id, active: id === journey })),
       tours: tours.filter((t) => (t.journey ?? "") === journey).map((t) => {
@@ -88,25 +129,29 @@ export class NavTours implements vscode.Disposable {
       }),
       steps: flat.map((f, index) => ({
         index, number: f.number, depth: f.path.length - 1, label: this.host.label(f.step.location),
-        preview: clampPreview(resolveRef(f.step.explanationRef, document.texts, labels) ?? ""), status: stepStatus(f.step, ctx),
+        preview: clampPreview(this.explain(f.step.explanationRef, f.step, active) ?? ""), status: stepStatus(f.step, ctx),
         current: index === this.cursor?.index && f.step.location.nodeId === here.nodeId && f.step.location.level === here.level
       })),
-      explanation: current ? resolveRef(current.step.explanationRef, document.texts, labels) ?? null : null,
+      explanation: current ? this.explain(current.step.explanationRef, current.step, active) ?? null : null,
       canPrev: !!active && (this.cursor?.index ?? 0) > 0, canNext: !!active && (this.cursor?.index ?? 0) < flat.length - 1,
       jump: { query: this.query, hits: this.jumpHits.map((h, index) => ({ index, label: h.label, kind: h.location.artifactKind })) }
     };
+    return this.extensions.reduce((m, e) => (e.model ? e.model(m) : m), model);
   }
 
-  html(): string { return toursHtml(this.model()); }
+  html(): string {
+    const m = this.model();
+    return this.extensions.reduce((h, e) => (e.html ? e.html(h, m) : h), toursHtml(m));
+  }
 
   /** Navigator `#tours` slot messages. */
   async handle(raw: unknown): Promise<void> {
     const m = parseToursMessage(raw);
-    if (!m) return;
+    if (!m) { for (const e of this.extensions) if (e.handle && await e.handle(raw)) return; return; }
     switch (m.action) {
       case "journey": {
         this.journey = m.journey;
-        const first = this.tours().find((t) => (t.journey ?? "") === m.journey);
+        const first = this.visible().find((t) => (t.journey ?? "") === m.journey);
         if (first) this.start(first); else this.emitter.fire();
         return;
       }
@@ -136,13 +181,14 @@ export class NavTours implements vscode.Disposable {
   async pick(): Promise<void> {
     const { document } = this.loaded();
     const labels = labelPack(config().get("labels"));
-    if (!document.tours.length) { void vscode.window.showInformationMessage(`DataPass: ${uiLabel(labels, "none")}`); return; }
-    const pick = await vscode.window.showQuickPick(document.tours.map((t) => {
+    const tours = this.visible(document.tours);
+    if (!tours.length) { void vscode.window.showInformationMessage(`DataPass: ${uiLabel(labels, "none")}`); return; }
+    const pick = await vscode.window.showQuickPick(tours.map((t) => {
       const o = tourOrigin(t);
       return { label: this.title(t, labels, document.texts), description: t.journey ? labels[`journey.${t.journey}`] ?? t.journey : undefined,
         detail: o === "datapass-guidance" ? undefined : uiLabel(labels, o === "ai-proposed" ? "aiProposed" : "user"), id: t.id };
     }), { placeHolder: uiLabel(labels, "pickTour"), matchOnDescription: true });
-    const t = pick && document.tours.find((x) => x.id === pick.id);
+    const t = pick && tours.find((x) => x.id === pick.id);
     if (t) this.start(t);
   }
 
@@ -157,7 +203,7 @@ export class NavTours implements vscode.Disposable {
 
   /** Title: the resolved ref, then "first → last" box of the tour so tours of one journey differ. */
   private title(t: Tour, labels: LabelPack, texts: Readonly<Record<string, string>> | undefined): string {
-    const base = resolveRef(t.titleRef, texts, labels) ?? t.id;
+    const base = explanationText(resolveExplanation(t.titleRef, { texts, guide: labels, tour: t })) ?? t.id;
     if (!t.id.startsWith("datapass.journey.")) return base;
     const first = t.steps[0], last = t.steps[t.steps.length - 1];
     return first && last ? `${base}: ${this.host.label(first.location)} → ${this.host.label(last.location)}` : base;
