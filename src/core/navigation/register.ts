@@ -5,7 +5,7 @@
  */
 import * as vscode from "vscode";
 import { NavHost, type NavSession } from "./navHost";
-import { registerQueryShowcase } from "../../views/queryShowcase/queryShowcase.surface";
+import { registerQueryShowcase } from "../../views/peda-showcase/showcase.surface";
 
 /** A surface receives the host (state, dispatch, labels) and returns what to dispose. */
 export type NavSurface = (context: vscode.ExtensionContext, host: NavHost) => vscode.Disposable | readonly vscode.Disposable[] | void;

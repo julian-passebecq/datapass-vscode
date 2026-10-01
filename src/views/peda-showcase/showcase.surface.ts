@@ -1,14 +1,17 @@
 /**
- * V5 PEDA3 (TL-12c): "Queries worth showing" — the project's notable queries as showcase cards, ranked by
- * interview value (src/core/pedagogy/queryShowcase/showcase.ts). Facts are read statically from the DataPass
- * Hop bridge (V3-HOP1); picking a query jumps to its span in the code. Nothing is run, no AI call is made.
- * Toggle: `datapass.pedagogy.queryShowcase.enabled`; list size: `datapass.pedagogy.queryShowcase.topN`.
+ * V5 PEDA3 (TL-12c): "Queries worth showing" — the project's notable queries as showcase cards, ranked by interview
+ * value (src/core/peda-showcase). Facts come from the DataPass Hop bridge (V3-HOP1); the query text is read (never
+ * run) for the technique tagger. Picking a query jumps to its span. No AI call.
+ * `datapass.pedagogy.queryShowcase.enabled` off = the command is not registered and nothing is computed
+ * (go/TOUR-PEDA-contract.md § 6); `datapass.pedagogy.queryShowcase.topN` sets the list size.
  */
+import { promises as fsp } from "node:fs";
 import * as vscode from "vscode";
 import type { NavHost } from "../../core/navigation/navHost";
 import type { UnderstandingEntry, UnderstandingIndex } from "../../core/understanding/load";
-import { factsFromUnderstanding } from "../../core/pedagogy/queryShowcase/facts";
-import { showcaseBinding, type ContextText, type QueryFact } from "../../core/pedagogy/queryShowcase/showcase";
+import { factsFromUnderstanding } from "../../core/peda-showcase/facts";
+import { showcaseBinding, type ContextText } from "../../core/peda-showcase/assemble";
+import type { QueryFact } from "../../core/peda-showcase/score";
 
 export interface QueryShowcaseSource {
   index(): UnderstandingIndex | undefined;
@@ -19,6 +22,13 @@ let source: QueryShowcaseSource | undefined;
 export function setQueryShowcaseSource(s: QueryShowcaseSource): void { source = s; }
 
 const CONFIG = "datapass.pedagogy.queryShowcase";
+const COMMAND = "datapass.pedagogy.queriesWorthShowing";
+const MAX_CODE_BYTES = 2 * 1024 * 1024;
+
+async function readCode(file: string | undefined): Promise<string | undefined> {
+  if (!file) return undefined;
+  try { return (await fsp.stat(file)).size <= MAX_CODE_BYTES ? await fsp.readFile(file, "utf8") : undefined; } catch { return undefined; }
+}
 
 /** Bridge explanations of SQL / PySpark files that still match their code → facts, context and native files. */
 async function collect(): Promise<{ facts: QueryFact[]; context: Map<string, ContextText>; files: Map<string, string> }> {
@@ -26,7 +36,7 @@ async function collect(): Promise<{ facts: QueryFact[]; context: Map<string, Con
   for (const f of source?.index()?.files ?? []) {
     const entry = await source!.load(f.repositoryKey, f.nativePath);
     if (!entry?.doc || entry.state !== "ok") continue;
-    const got = factsFromUnderstanding(f.repositoryKey, entry.doc);
+    const got = factsFromUnderstanding(f.repositoryKey, entry.doc, await readCode(entry.nativeFile));
     if (!got) continue;
     facts.push(got.fact);
     if (got.context) context.set(got.fact.id, got.context);
@@ -37,12 +47,8 @@ async function collect(): Promise<{ facts: QueryFact[]; context: Map<string, Con
 
 async function showQueriesWorthShowing(): Promise<void> {
   const cfg = vscode.workspace.getConfiguration(CONFIG);
-  if (!cfg.get<boolean>("enabled", true)) {
-    void vscode.window.showInformationMessage(`Queries worth showing is off (setting ${CONFIG}.enabled).`);
-    return;
-  }
   const { facts, context, files } = await collect();
-  const data = showcaseBinding({ facts, context }, Math.max(1, Math.min(50, cfg.get<number>("topN", 5))));
+  const data = showcaseBinding({ facts, context }, Math.max(1, Math.min(50, cfg.get<number>("topN", 10))));
   type Item = vscode.QuickPickItem & { nodeId?: string };
   const items: Item[] = (data.cards ?? []).map(c => {
     const v = (key: string) => { const x = c.fields.find(f => f.label === key)?.value; const val = x !== null && typeof x === "object" ? x.value : x; return val === null || val === undefined ? "—" : String(val); };
@@ -62,5 +68,12 @@ async function showQueriesWorthShowing(): Promise<void> {
 }
 
 export function registerQueryShowcase(_context: vscode.ExtensionContext, _host: NavHost): vscode.Disposable[] {
-  return [vscode.commands.registerCommand("datapass.pedagogy.queriesWorthShowing", showQueriesWorthShowing)];
+  let command: vscode.Disposable | undefined;
+  const sync = () => {
+    const on = vscode.workspace.getConfiguration(CONFIG).get<boolean>("enabled", true);
+    if (on && !command) command = vscode.commands.registerCommand(COMMAND, showQueriesWorthShowing);
+    if (!on && command) { command.dispose(); command = undefined; }
+  };
+  sync();
+  return [vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration(CONFIG)) sync(); }), { dispose: () => command?.dispose() }];
 }
