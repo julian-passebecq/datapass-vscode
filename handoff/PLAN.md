@@ -518,6 +518,29 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | PM DataPass 22 (local_88062104), retired at ~255 K → PM 23 | global PM + architect (Opus medium) | night burn 30 Sept (GO go/PM-DataPass-22.md; hand-off handoff/sessions/2026-09-30-1815-pm-datapass-21.md) | — | 2026-09-30 · V3.8 | Julian (via ASSISTANT 1) |
 | PM DataPass 25 (local_75f74959-3a87-4d39-856a-b44a5f915cb3), live, pinned (from ~02:20 1 Oct; PM 24 local_d2cf59a9 retired) | global PM + architect (Opus medium) | night 30 Sept→1 Oct: V4-NAV + Common core reviews (GO go/PM-DataPass-25.md; hand-off handoff/sessions/2026-10-01-0215-pm-datapass-24.md); RESERVE PM 26 local_643e8398 next | — | 2026-10-01 · V3.8 | Julian (via ASSISTANT 2) |
 | CODER N22 (local_d585aa41-b43c-43c9-8e9c-666e19ededf1), was NAVSQL1 (!158) | coder (Opus medium) | TSQLTOP1: T-SQL SELECT TOP no longer fails the file (go/TSQLTOP1.md) | 5 | 2026-10-01 · V3.8 | COORD Common 8 |
+| CODER N23 (local_53b969fb-25cc-4757-8b68-b474fb413e21) | coder (Opus medium) | NAVSVC1 (go/NAVSVC1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N24 (local_156bb9e4-b391-41e8-8b30-9c6a86818ae1) | coder (Opus medium) | NAVREN1 (go/NAVREN1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N25 (local_26b70d3a-065a-4bb0-b00d-c07777c65863) | coder (Opus medium) | NAVLOC1 (go/NAVLOC1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N26 (local_4b97e208-8613-4518-b835-42d784326230) | coder (Opus medium) | NAVBAR1 (go/NAVBAR1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N27 (local_00024d98-2a8a-4ff1-b4fb-885ffd88d939) | coder (Opus medium) | NAVCTX1 (go/NAVCTX1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N28 (local_36d688bc-1b14-41be-8f93-6c444cd18432) | coder (Opus medium) | NAVHOST1 (go/NAVHOST1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N37 (local_31fed90f-060e-457c-bf4f-f2d0f8fd4223) | coder (Opus medium) | NAVREN2 (go/NAVREN2.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N38 (local_832ce01e-b789-423f-b383-a5ad2f025dda) | coder (Opus medium) | NAVREN3 (go/NAVREN3.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N39 (local_b559c1f4-ccee-4604-883d-e07d17891445) | coder (Opus medium) | NAVREN4 (go/NAVREN4.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N40 (local_54019602-dbdd-43bd-8443-a24e9d7d6b23) | coder (Opus medium) | NAVMAP1 (go/NAVMAP1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N41 (local_4cc59ae3-21e5-4a58-9ae0-d3faf3d46e95) | coder (Opus medium) | NAVCTX2 (go/NAVCTX2.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N42 (local_5dcd9c76-aecc-409f-9074-913086bfb624) | coder (Opus medium) | NAVAIX1 (go/NAVAIX1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N43 (local_1f4d2aa3-bc5f-4a42-a4b2-5c317e2cdd1d) | coder (Opus medium) | NAVFAB1 (go/NAVFAB1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N44 (local_2f21fe77-68dd-4bb2-82f4-6e1d1faba45b) | coder (Opus medium) | NAVCODE1 (go/NAVCODE1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N45 (local_bca9bb86-6c5e-4664-8ecb-a8b08dfd909b) | coder (Opus medium) | NAVHIST1 (go/NAVHIST1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N46 (local_1ee35efd-b206-427a-96b2-0a6e73465685) | coder (Opus medium) | NAVKEYS1 (go/NAVKEYS1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N47 (local_6977a089-4fcc-404c-a0dd-9b6cadb356a9) | coder (Opus medium) | NAVCAT1 (go/NAVCAT1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N48 (local_8133d8f6-7889-4f4e-b628-e00b12b8d59d) | coder (Opus medium) | NAVLIN1 (go/NAVLIN1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N49 (local_cd35116a-f11f-46ca-8cc0-d0795965af53) | coder (Opus medium) | XRAYOL1 (go/XRAYOL1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N50 (local_a92705a9-8505-495f-ae23-d0d6da62336b) | coder (Opus medium) | NAVTODO1 (go/NAVTODO1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N51 (local_ba1ebeb6-8d0a-456c-9ca1-889807d90bf1) | coder (Opus medium) | NAVHOME1 (go/NAVHOME1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N52 (local_8b622aa3-5bc0-4510-a0a7-25514143ed9f) | coder (Opus medium) | NAVERD1 (go/NAVERD1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
+| CODER N53 (local_c1479d09-e957-40ea-9061-bb337fd9332a) | coder (Opus medium) | NAVPRIN1 (go/NAVPRIN1.md, § V4-NAV) | — | 2026-10-01 · V3.8 | COORD 31 |
 | COORD DataPass 31 (local_d1a2d7e3-7008-4fcd-8b36-5ab65c9537cb), live, pinned (Opus medium; took over ~21:10, hand-off go/handoff-coord-30.md) | coordinator (Opus medium, option A) | cloud/vscode/hub + night coders; RESERVE COORD 32 (local_02210024) next | — | 2026-09-30 · V3.8 | PM 23 |
 | COORD DataPass Common 8 (RESERVE COORD 34, local_6779655d-49db-44ce-91d3-a5b7608c900c), live from ~01:00 (Opus medium; hand-off go/handoff-coord-common-7.md) | Common coordinator (Opus medium) | Common merge train (core MRs pinned to the approved SHA); next: RESERVE COORD Common chip (go/NIGHT-RELAY-2026-09-30.md) | — | 2026-10-01 · V3.8 | PM 24 |
 | (retired at 171 K) COORD DataPass Common 7 (local_eb1085e5-0849-42de-9548-45f97a8ae0f2) | Common coordinator (Opus medium) | → Common 8 (go/handoff-coord-common-7.md) | — | 2026-09-30 · V3.8 | PM 23 |
