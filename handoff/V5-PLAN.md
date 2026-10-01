@@ -20,14 +20,14 @@ Binding decisions: ARCH_DECISIONS § "V5 architecture (TECH LEAD GLOBAL)" TL-1�
 | DETACH1 | vscode | GO ready | DBTMAT1 | 14 | W1 |
 | **PINDRIFT1** | Common tool + 3 CI lines | new GO | — | 10 | W1 |
 | **DAGUX1** | vscode | new GO (rc.1 remarks) | — | 12 | W1 |
-| **PEDA1a** | Common arch-catalog | new GO (TL-12; 5 families × 5 concepts + Spark/SQL cards) | — | 14 | W1 |
+| **PEDA1a** | Common arch-catalog | new GO (TL-12; 25 concepts + ~10 Spark/SQL + ~15 decision cards) | — | 17 | W1 |
 | **TOUR2** | vscode | new GO (TL-11) | NAVTOUR1 + NAVCAT1 + NAVBAR1 | 14 | W1 |
 | OTEL2 | vscode | chip pending (stub) | OTEL1 + REPIN5 (analyzers-api) + NAVLIN1 | 14 | W2 |
 | GITMR3 | vscode | GO ready | GITMR2 + NAVCHG1 + PINDRIFT1 | 14 | W2 |
 | XGAP1 · TODOSTALE1 | Common + vscode | GO ready | NAVTODO1 · EVPIN1 | 6+4 | W2 |
 | **SJDMAT1** | vscode | new GO (TL-5) | DBTMAT1 | 8 | W2 |
 | **TOURAI1** | vscode | new GO | TOUR2 | 10 | W2 |
-| **PEDA1b · PEDA2** | vscode | new GO | PEDA1a, NAVPRIN1 · PEDA1b + TOUR2 | 10+12 | W2 |
+| **PEDA1b · PEDA2** | vscode | new GO | PEDA1a, NAVPRIN1 · PEDA1b + TOUR2 ("whole picture" 5-question spine) | 13+12 | W2 |
 | **EXPLAIN1** | vscode | new GO (TL-8) | NAVHOME1, NAVLIN1, NAVTODO1, TOUR2 | 14 | W2 |
 | **ARCHCALL1** | Common + vscode | new GO (TL-7) | NAVCTX2 | 10 | W2 |
 | **LAYOUT1** | vscode | new GO (rc.1 remark) | NAVHOME1 | 10 | W2 |
