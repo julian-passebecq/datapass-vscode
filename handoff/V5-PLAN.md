@@ -74,3 +74,5 @@ Binding decisions: ARCH_DECISIONS § "V5 architecture (TECH LEAD GLOBAL)" TL-1�
 | Separate VSIXs (dashboard, Sankey, mega-lineage) · mobile companion | no · later | One lifecycle, one extension; mobile has no user need yet. |
 | Guided tutorial with screenshots before every test session | rule → V5TUT1 | Julian's standing gate. |
 | **Tech lead additions** | MULTIFAM1 design, PINDRIFT1, REPIN5, SJDMAT1, EXPLAIN1, ARCHCALL1, TOURSPI1 | Close the coverage, vendoring and drift holes found in today's review (TL-6, TL-13). |
+
+**PM 31 19:00 checkpoint:** V5FREEZE1 !214 (pipeline pending, runner full) and REPIN5 (vscode !248, cloud !135 prepped) are NOT merged. Cut order applied as a CI-load cut, not a quota cut (weekly 6 %): OTEL2, OTEL1, STUDIO4, LAYOUT1, GITMR3 leave tonight's V5 merge scope and move to V5.1 (MRs stay open, no pipelines tonight, rebased after V5REL1). Never cut: TOUR2, PEDA*, EXPLAIN1, DETACH1, V5TUT1. vscode desktop back to serial (19:00) after 3 parallel reds.
