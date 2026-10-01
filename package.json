@@ -1097,6 +1097,10 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.pedagogy.patternCards",
+        "title": "DataPass: Pattern Cards for This File"
       }
     ],
     "viewsContainers": {
@@ -2697,6 +2701,10 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.pedagogy.patternCards",
+          "when": "!datapass.hidden.v5.peda1b"
         }
       ],
       "explorer/context": [
@@ -3374,6 +3382,10 @@
             "palette.full": {
               "type": "boolean",
               "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
+            },
+            "v5.peda1b": {
+              "type": "boolean",
+              "description": "Pattern cards: Pedagogy cards bound to the open file's code: concept cards jump to the project's span, decision cards show the option taken or an owner question"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
