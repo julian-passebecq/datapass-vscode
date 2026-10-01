@@ -611,7 +611,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER OTEL2 (local_8697efad-1a65-4ca9-a12e-30a5aa328f1d) | coder (Opus medium) | V5 OTEL2 | 14 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER STUDIO3 (local_a7621438-c3fa-4b31-abcb-281b458e636c) | coder (Opus medium) | V5 STUDIO3 | 20 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER GITMR2 (local_b65ad2a6-f130-4e9e-85ce-2c29095cb986) | coder (Opus medium) | V5 GITMR2 | 14 | 2026-10-01 · V3.8 | COORD 38 |
-| CODER NAVCHG1 (local_7a4fda05-92b6-4c8f-8db9-11170b9d3cb0) | coder (Opus high until 14:00, then medium) | NAVCHG1 | — | 2026-10-01 · V3.8 | COORD 38 |
+| CODER NAVCHG1 (local_7a4fda05-92b6-4c8f-8db9-11170b9d3cb0) | coder (Opus high until 14:00, then medium) | NAVCHG1 | **Stopped at 272 K (PM 31).** MR !232 head eff50ab, stacked on NAVWIRE1 22a4155, pushed with ci.skip, so no pipeline yet. Local checks: tsc, build, navChangeSummary 12/12, palette, navWire.<br>Left: after !230 and NAVWIRE1b merge, rebase on main, then run CI and merge (COORD 41 queue; any fix = PM subagent).<br>Open: restore the ask-ai hole kind once NAVDATA1 typed holes land; no lineage graph in the standalone yet (impact = touched components); Git badge hook (gitDiagram.ts) not wired. | 2026-10-01 · V3.8 | COORD 38 |
 | CODER NAVCLOUD1 (local_921787dc-ba2f-4614-82f2-01a2c34843f5) | coder (Opus high until 14:00, then medium) | NAVCLOUD1 | — | 2026-10-01 · V3.8 | COORD 38 |
 | CODER EXPLAIN1 (local_76c09a4e-8419-4e06-8c79-00792dd6d64f) | coder (Opus high until 14:00, then medium) | V5 EXPLAIN1 | 14 | 2026-10-01 · V3.8 | COORD 38 |
 | CODER PEDA3+PEDA1b (local_7368c5eb-b1e0-4b65-8fc2-87e02816bb62) | coder (Opus medium) | V5 PEDA3 (!229) then PEDA1b | 25 | 2026-10-01 · V3.8 | COORD 39 |
