@@ -5,8 +5,6 @@
  */
 import * as vscode from "vscode";
 import type { NavHost } from "../../core/navigation/navHost";
-import type { ProjectMap } from "../../core/project/projectMap";
-import type { OptionsFile } from "../../core/project/options";
 import { readRepoRevision } from "../../core/workspace/gitBase";
 import { buildExplainHtml } from "../../core/explain/document";
 import { DEFAULT_EXPLAIN_LABELS, sectionsFromSetting } from "../../core/explain/presets";
@@ -16,27 +14,15 @@ import { gitRunner } from "../../work/session";
 export const EXPLAIN_EXPORT_COMMAND = "datapass.explain.export";
 export const EXPLAIN_FOLDER = ".datapass/explain";
 
-/** The session facts the export reads (the WorkSession behind the NavHost). */
-interface ExplainSession {
-  readonly root: vscode.Uri | undefined;
-  readonly project: { readonly options?: OptionsFile; readonly manifest?: { readonly project?: { readonly title?: string } } };
-  projectMap(): ProjectMap;
-}
-
-function sessionOf(host: NavHost): ExplainSession | undefined {
-  const s = (host as unknown as { session?: Partial<ExplainSession> }).session;
-  return s && typeof s.projectMap === "function" && s.project ? s as ExplainSession : undefined;
-}
-
 export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export function registerExplainExport(context: vscode.ExtensionContext, host: NavHost): vscode.Disposable {
   return vscode.commands.registerCommand(EXPLAIN_EXPORT_COMMAND, async () => {
-    const session = sessionOf(host);
-    const root = session?.root;
-    if (!session || !root) { void vscode.window.showWarningMessage("DataPass: open a DataPass project folder to export an explainer."); return; }
+    const session = host.session;
+    const root = session.root;
+    if (!root) { void vscode.window.showWarningMessage("DataPass: open a DataPass project folder to export an explainer."); return; }
     const pick = await vscode.window.showQuickPick([
       { label: "internal", audience: "internal" as ExplainAudience, detail: "Public and internal items; confidential and unclassified-as-confidential items are omitted" },
       { label: "public", audience: "public" as ExplainAudience, detail: "Only items explicitly classified public" }
@@ -48,10 +34,10 @@ export function registerExplainExport(context: vscode.ExtensionContext, host: Na
     const rev = await readRepoRevision(gitRunner, root.fsPath);
     const date = localDate();
     const { html, included, skipped } = buildExplainHtml({
-      facts: filterFacts(pick.audience, map, session.project.options),
+      facts: filterFacts(pick.audience, map, session.project?.options),
       sections: sectionsFromSetting(config.get("sections")),
       labels,
-      projectTitle: session.project.manifest?.project?.title ?? map.project?.title ?? "DataPass project",
+      projectTitle: session.project?.manifest?.project?.title ?? map.project?.title ?? "DataPass project",
       ...(rev.revision !== "unversioned" ? { git: { revision: rev.revision, dirty: rev.dirty } } : {}),
       date,
       generator: `DataPass ${String(context.extension.packageJSON.version ?? "")}`.trim()

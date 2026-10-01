@@ -107,3 +107,8 @@ test("explain: headless serialiser escapes text and attributes and drops handler
   assert.equal(toHtml({ tag: "svg", attrs: { xmlns: "http://www.w3.org/2000/svg" }, children: [{ tag: "rect", attrs: { width: "1" } }] }), `<svg><rect width="1"/></svg>`);
   assert.equal(toHtml({ tag: "img onerror=x" }), "");
 });
+
+test("explain: without the project options the decisions section shows a typed hole", () => {
+  const { html } = buildExplainHtml(input({ facts: filterFacts("internal", buildProjectMap(inputA())) }));
+  assert.match(html, /id="xp-decisions"[\s\S]*data-hole-kind="no-options"/);
+});

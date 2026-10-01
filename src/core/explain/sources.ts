@@ -92,7 +92,8 @@ const nextSteps: ExplainProvider = ({ map }) => {
 const optionLabel = (d: Decision, id: string | undefined): string | null => id ? d.options.find(o => o.id === id)?.label ?? id : null;
 
 const decisions: ExplainProvider = ({ options }) => {
-  if (!options) return [{ source: "explain.decisions", origin: "declared", holes: [], cards: [] }];
+  if (!options) return [{ source: "explain.decisions", origin: "declared", cards: [],
+    holes: [{ kind: "no-options", field: "project.options", reason: "The project options file was not available to the export." }] }];
   const cards: Card[] = options.decisions.map(d => ({ id: d.id, title: d.title, origin: "declared", fields: [
     ...(d.question ? [{ label: "question", value: d.question }] : []),
     { label: "current", value: optionLabel(d, d.current) },

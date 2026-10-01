@@ -55,6 +55,7 @@ export const DEFAULT_EXPLAIN_LABELS: Readonly<Record<string, string>> = {
   "view.noCards": "Nothing to show.",
   "value.empty": "—",
   "hole.no-provider": "missing view",
+  "hole.no-options": "no options file",
   "hole.layout-unregistered": "missing layout",
   "origin.title": "Origin of this value",
   "origin.static": "static",
