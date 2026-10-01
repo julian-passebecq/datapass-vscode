@@ -57,6 +57,7 @@
                 "view.work",
                 "view.galaxy",
                 "view.architecture",
+                "view.context",
                 "view.aiExchange",
                 "view.details",
                 "ai.agent",
@@ -90,7 +91,7 @@
                 "view.rail"
               ]
             },
-            "maxItems": 36,
+            "maxItems": 37,
             "minItems": 0
           }
         },
