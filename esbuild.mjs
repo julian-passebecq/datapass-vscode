@@ -18,9 +18,9 @@ await esbuild.build({
 
 // The Workbench webviews (editor tab, Architecture panel, Details side bar) run this in the browser sandbox.
 await esbuild.build({
-  entryPoints: ["src/webview/workbench.ts"],
+  entryPoints: ["src/webview/workbench.ts", "src/webview/navView.ts"],
   bundle: true,
-  outfile: "dist/workbench.js",
+  outdir: "dist",
   platform: "browser",
   format: "iife",
   target: "es2020",
