@@ -587,7 +587,7 @@ Julian questions (go/JULIAN-questions-reveil.md) run on the defaults until he an
 
 V5 plan v2 deltas (TECH LEAD 12:50, main 5db6b74, TL-12b/12c): new PEDA3 (query showcase, W2, 12 M, go/V5-PEDA3.md); TOUR2 16 M (modes + toggles); PEDA1a 17 M (decision cards, SQL technique concept ids); PEDA1b 13 M; PEDA2 depends on PEDA3; TOURSPI1 adds tour mode, generation include/exclude, step optional. Totals: 42 packages, ~445 M. Early start (PM 27, 12:45): SJDMAT1, LAYOUT1, ARCHCALL1, XGAP1+TODOSTALE1 as PM 27 subagents stacked on their dependency MRs.
 
-**Burn mode, 1 Oct until 14:00 (Julian, relayed by ASSISTANT DATAPASS 4 ~12:40, confirmation requested from Julian via ASSISTANT 5):** Opus high is allowed for coders on real V4/V5 packages, sub-architects and subagents ("custom: DataPass high" until 14:00). After 14:00, back to medium (Claude Control V4 applies).
+**Burn mode, 1 Oct until 14:00 (Julian, relayed by ASSISTANT DATAPASS 4 ~12:40, **CONFIRMED by Julian 11:52 (AskUserQuestion, ASSISTANT 5)** for NAVCHG1, NAVCLOUD1, EXPLAIN1 and the tech lead's subagents):** Opus high is allowed for coders on real V4/V5 packages, sub-architects and subagents ("custom: DataPass high" until 14:00). After 14:00, back to medium (Claude Control V4 applies).
 
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
