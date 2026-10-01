@@ -553,6 +553,38 @@ Totals: 25 packages, ~291 M (V5INV1 done 02:30: +EVPIN1/EVCAPT1/EVACTOR1/XGAP1/T
 Julian questions (go/JULIAN-questions-reveil.md) run on the defaults until he answers; V5 W0 and the W1 packages with no V4 dependency (GITMR1 on stub, OTEL1, STUDIO1) may start now while V4-NAV runs (separate repos or new files only).
 
 
+### V5 plan v2 (TECH LEAD GLOBAL, 1 Oct 12:30; supersedes the table above for state and waves; GOs in go/V5-*.md; detail and coder counts in handoff/V5-PLAN.md, decisions TL-1..14 in ARCH_DECISIONS)
+
+| Pkg | Repo | State 12:30 | Depends on | M | Wave |
+|---|---|---|---|---|---|
+| DETSPI1 · GITSPI1 · OTELSPI1 | Common project-contracts | !175 · !172 · !173 open | — | 8+8+8 | W0 |
+| EVPIN1 · EVCAPT1 · EVACTOR1 | Common (+ vscode !215) | !179 · !178 · !180 open | — | 6+5+5 | W0 |
+| VERBUMP1 → V5FREEZE1 | Common | not started (COORD Common) | gap batch; contracts above | 4+5 | W0 |
+| **MULTIFAM1** | Common analyzers core | new GO (TL-6) | — | 12 | W0 |
+| **TOURSPI1** | Common view-spi | new GO (TL-11) | — | 6 | W0 |
+| **REPIN5** | vscode + cloud + studio | new GO (TL-13) | V5FREEZE1 | 10 | W0b |
+| DBTMAT1 · DETACH2 · STUDIO2 · PQSAMP1 | vscode · Common · studio · vscode | running (PM 27 subagents) | MAT1 ✓, DBTRUN1 ✓ | 20+10+18+10 | W1 |
+| GITMR1 · OTEL1 | vscode · cloud | !214 · !128 open | GITSPI1 · OTELSPI1 | 12+15 | W1 |
+| GITMR2 · STUDIO3 · AUTHPNL1 | vscode · studio · vscode | chips pending | NAVREN2/3 · STUDIO1 ✓ (TL-3 vendoring) · NAVCTX1 | 14+20+12 | W1 |
+| DETACH1 | vscode | GO ready | DBTMAT1 | 14 | W1 |
+| **PINDRIFT1** | Common tool + 3 CI lines | new GO | — | 10 | W1 |
+| **DAGUX1** | vscode | new GO (rc.1 remarks) | — | 12 | W1 |
+| **PEDA1a** | Common arch-catalog | new GO (TL-12) | — | 12 | W1 |
+| **TOUR2** | vscode | new GO (TL-11) | NAVTOUR1 + NAVCAT1 + NAVBAR1 | 14 | W1 |
+| OTEL2 | vscode | chip pending (stub) | OTEL1 + REPIN5 (analyzers-api) + NAVLIN1 | 14 | W2 |
+| GITMR3 | vscode | GO ready | GITMR2 + NAVCHG1 + PINDRIFT1 | 14 | W2 |
+| XGAP1 · TODOSTALE1 | Common + vscode | GO ready | NAVTODO1 · EVPIN1 | 6+4 | W2 |
+| **SJDMAT1** | vscode | new GO (TL-5) | DBTMAT1 | 8 | W2 |
+| **TOURAI1** | vscode | new GO | TOUR2 | 10 | W2 |
+| **PEDA1b · PEDA2** | vscode | new GO | PEDA1a, NAVPRIN1 · PEDA1b + TOUR2 | 10+12 | W2 |
+| **EXPLAIN1** | vscode | new GO (TL-8) | NAVHOME1, NAVLIN1, NAVTODO1, TOUR2 | 14 | W2 |
+| **ARCHCALL1** | Common + vscode | new GO (TL-7) | NAVCTX2 | 10 | W2 |
+| **LAYOUT1** | vscode | new GO (rc.1 remark) | NAVHOME1 | 10 | W2 |
+| STUDIO4 | studio | GO ready | STUDIO2 + STUDIO3 | 15 | W2 |
+| **V5FREEZE2** | Common | new GO (TL-2) | TOURSPI1, PEDA1a, ARCHCALL1 | 4 | W3 |
+| V5E2E1 → **V5TUT1** → **V5REL1** | vscode | GO ready / new GOs | everything above | 12+6+6 | W3 |
+
+
 ## Team (rules V3.6, from 2026-09-29 12:00 — every live session on DataPass)
 
 Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17 local_8b1410a1 from ~05:25; PM 16 local_0e9d67b3 from ~03:00; PM 15 local_7024f765 from ~01:40; before: PM 13 local_6dbe9065, Opus medium, global PM, from 2026-09-30 ~00:45 local; GO go/PM-DataPass-12.md): every code and merge decision; architect of DataPass (no more Codex, Julian 30 Sept). **V3.7: no assistant on DataPass**; the coordinator (COORD DataPass 12, local_d18705b2) spawns chips and gives Julian chip/quota checkpoints; the PM asks Julian product questions directly. **Pace (Julian, 29 Sept ~22:50): no night coder cap; quota credit runs to Thu 1 Oct 14:00 (18 % used by 23:00), speed up, finishing a bit early is fine: guard weekly burn ≤ 3.5 %/h, 5 h window ≤ 90 %; night 29→30 Sept: no burn guard (Julian, 23:55, "we have margin").** CI: runner 56844575 (local-windows) has concurrent = 20 live (Julian raised it 30 Sept ~19:30; was 15) (Julian, 29 Sept ~23:15; free RAM ~18 GB at 12 jobs; the runner reloads config.toml by itself, never restart it), no per-runner limit (Julian, 29 Sept; measured: peak 10, median start wait 5 s). If jobs wait with no earlier stage ahead while 10 run, tell the PM, who asks Julian to restart the runner: run CI in parallel across repos; do not create or re-register runners; measure overlap before claiming a CI queue. Fresh coder conversation per package (chips prepared by the PM), GO points to § V4-RUN and `PACKET_MAP_V1.md`.
