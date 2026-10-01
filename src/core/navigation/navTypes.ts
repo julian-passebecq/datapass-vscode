@@ -8,6 +8,6 @@ export {
   sameLocation, initialNavState, reduceNav, resolveViews, validateNavLocation, validateViewCatalog, validateViewOverrides
 } from "@juliandatapass-group/view-spi";
 export type {
-  NavLevel, NavLocation, NavState, NavCommand, NavLadder, NavViews, LayoutKind,
+  ArtifactKind, NavLevel, NavLocation, NavState, NavCommand, NavLadder, NavViews, LayoutKind,
   ViewBinding, ViewDef, ViewCatalog, ViewOverrideEntry, ViewOverrides
 } from "@juliandatapass-group/view-spi";
