@@ -37,6 +37,14 @@ Binding decisions: ARCH_DECISIONS § "V5 architecture (TECH LEAD GLOBAL)" TL-1�
 | **V5FREEZE2** | Common | new GO (TL-2) | TOURSPI1, PEDA1a, ARCHCALL1, OTELSPI1 !173 (moved from V5FREEZE1, freeze review 1 Oct) | 4 | W3 |
 | V5E2E1 → **V5TUT1** → **V5REL1** | vscode | GO ready / new GOs | everything above | 12+6+6 | W3 |
 
+| **STEPBAR1** | vscode | new GO go/V5-STEPBAR1.md (Julian 13:45: guided path as normal navigation + checks out of the project tree) | TOUR2 !244, NAVBAR1 !211 | 14 | W2 |
+| **TOURSHARE1** | vscode | new GO go/V5-TOURSHARE1.md (tour inside the EXPLAIN1 HTML export; completeness audit) | TOUR2, EXPLAIN1 | 8 | W2 |
+| NAVINTRO1b · NAVINTRO1c | vscode | GO ready (go/NAVINTRO1b.md, go/NAVINTRO1c.md; were missing from this table) | NAVINTRO1a | see GOs | W2 |
+| **VERBUMP1 → V5FREEZE1** | Common | new GO go/V5-VERBUMP1-FREEZE1.md (ARCH-REVIEW S1: chain not started; NavOrigin out, evidence-id max 128) | !180 | 4+5 | W0 |
+| **REPIN8** | vscode + cloud + studio | new GO go/V5-REPIN8.md (ARCH-REVIEW S1: re-pin after V5FREEZE2 + exchange-protocol vendored + every stub swapped; gate `git grep "until REPIN"` = 0) | V5FREEZE2, REPIN5 | 10 | W3 (before V5E2E1) |
+
+**PM 29 rulings 14:00 (go/ARCH-REVIEW-2026-10-01-1345.md, go/V5-COMPLETENESS-2026-10-01.md):** W1 stand-ins (dbtNotebook.ts, repoSetContract.ts/stubs.ts, pinContract.ts) are aligned to the reviewed wire shapes (no `schemaId`, prefixed digests, actor `{kind,id}`) BEFORE their MRs merge, so `.datapass` records validate against frozen v3. OTEL2 drops its packs/index.ts and reuses NAVLIN1's lineage bindings; GITMR2 reuses GITMR1's repoSet (no copy under src/core/git/); TOURAI1 uses NAVTOUR1's tourTypes (one stub copy until REPIN8). PEDA2 done condition adds a "volumetry + objectives" step. V5REL1 includes the REPIN8 stub gate. Cut order unchanged.
+
 **Totals:** 42 packages, ~445 M (19 new GOs, ~196 M; Julian's 12:10 addenda 1–3 included). Already merged for V5: STUDIO0, STUDIO1, STUDIOCI1, MAT1, DBTRUN1.
 **Coders:** W0 now: contract reviews + 3 new packages (MULTIFAM1, TOURSPI1, then REPIN5). **W1 at 14:00: 10 coders** (4 subagents running, 3 chips, + DETACH1, PINDRIFT1, DAGUX1, PEDA1a, TOUR2, which fills 10 when the subagents end). W2: 10 coders as W1 merges. W3: 3 coders + Julian's test session with the V5TUT1 tutorial.
 **Merge order, standalone (shared files, append-only):** DBTMAT1 → DETACH1 → GITMR1 → GITMR2 → PQSAMP1 → AUTHPNL1 → DAGUX1 → TOUR2 → SJDMAT1 → GITMR3 → OTEL2 → XGAP1/TODOSTALE1 → PEDA1b → TOURAI1 → PEDA2 → ARCHCALL1 → LAYOUT1 → EXPLAIN1 → V5E2E1 → V5TUT1 → V5REL1. **Common:** V5 contracts → VERBUMP1 → V5FREEZE1 → REPIN5; MULTIFAM1 independent (batch version rule); TOURSPI1, PEDA1a, ARCHCALL1, PINDRIFT1 → V5FREEZE2. Studio and cloud are independent. Out of order is fine when the rebase is clean.
