@@ -3,7 +3,9 @@
 //   src/**/*.layout.ts   (default export: { kind, model })     → out/gen/layouts.ts   (renderer.ts)
 //   src/**/*.palette.ts  (default export: { surface: [cmd] })  → out/gen/palette.ts   (palette.ts)
 //   src/**/*.binding.ts  (default export: BindingProvider)     → out/gen/bindings.ts  (bindings/index.ts)
-// is collected here, so a feature MR adds its own file and never edits a shared list. The output is
+//   src/**/*.pack.ts     (default export: catalog entries)     → out/gen/packs.ts     (viewPacks.ts: DEFAULT_VIEW_CATALOG + packs)
+// is collected here, so a feature MR adds its own file and never edits a shared list. A default export
+// may also be an array of items (several providers, a pack's entries): it is flattened. The output is
 // generated (out/ is gitignored); `npm run check|test|build` and `npm ci` regenerate it. Sorted by
 // path, written only when it changes. package.json stays hand-written.
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -17,7 +19,8 @@ const KINDS = {
   surface: { file: "surfaces.ts", name: "SURFACES", type: 'import type { NavSurface } from "../../src/core/navigation/register";', elem: "NavSurface" },
   layout: { file: "layouts.ts", name: "LAYOUTS", type: 'import type { LayoutEntry } from "../../src/webview/views/model";', elem: "LayoutEntry" },
   palette: { file: "palette.ts", name: "PALETTE", type: 'import type { PaletteEntry } from "../../src/core/experience/palette";', elem: "PaletteEntry" },
-  binding: { file: "bindings.ts", name: "BINDINGS", type: 'import type { BindingProvider } from "../../src/core/navigation/bindings";', elem: "BindingProvider" }
+  binding: { file: "bindings.ts", name: "BINDINGS", type: 'import type { BindingProvider } from "../../src/core/navigation/bindings";', elem: "BindingProvider" },
+  pack: { file: "packs.ts", name: "PACKS", type: 'import type { PackEntry } from "../../src/core/navigation/viewPacks";', elem: "PackEntry" }
 };
 
 function walk(dir, out) {
@@ -31,7 +34,7 @@ function walk(dir, out) {
 
 const found = Object.fromEntries(Object.keys(KINDS).map(k => [k, []]));
 for (const f of walk(join(root, "src"), [])) {
-  const m = /\.(surface|layout|palette|binding)\.ts$/.exec(f);
+  const m = /\.(surface|layout|palette|binding|pack)\.ts$/.exec(f);
   if (m) found[m[1]].push(relative(outDir, f).replace(/\\/g, "/").replace(/\.ts$/, ""));
 }
 
@@ -43,7 +46,8 @@ for (const [kind, k] of Object.entries(KINDS)) {
     k.type,
     ...files.map((f, i) => `import m${i} from ${JSON.stringify(f)};`),
     "",
-    `export const ${k.name}: readonly ${k.elem}[] = [${files.map((_, i) => `m${i}`).join(", ")}];`,
+    `const all: readonly (${k.elem} | readonly ${k.elem}[])[] = [${files.map((_, i) => `m${i}`).join(", ")}];`,
+    `export const ${k.name}: readonly ${k.elem}[] = all.flat() as readonly ${k.elem}[];`,
     `export const ${k.name}_FILES: readonly string[] = ${JSON.stringify(files.map(f => f.replace(/^(\.\.\/)+/, "")))};`,
     ""
   ].join("\n");
