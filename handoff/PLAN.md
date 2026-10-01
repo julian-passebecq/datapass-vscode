@@ -597,7 +597,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N60 (local_d12324c8-899f-462d-a5a9-e9efe3b90f96) | coder (Opus medium) | RDL1 (go/RDL1.md) | — | 2026-10-01 · V3.8 | Common 8 |
 | CODER N61 (local_55636580-c052-4a19-afe9-f7a679aa1154) | coder (Opus medium) | ADFARM1 done (Common !163); stopped at 162 K (EVPIN1 declined → needs a fresh coder) | — | 2026-10-01 · V3.8 | Common 9 |
 | COORD 32 → COORD 35 subagent (local_d2456dac) | coder subagent (Opus medium) | EVPIN1 part 1 (Common, core-change, PM review); part 2 standalone after approval (go/EVPIN1.md, 05:00) | 6 | 2026-10-01 · V3.8 | COORD 32 |
-| COORD 35 subagent (local_d2456dac) | coder subagent (Opus medium) | GITMR1 (go/GITMR1.md, from ~05:20; GITSPI1 stub until N65 merges) | 12 | 2026-10-01 · V3.8 | COORD 35 |
+| CODER N57 (local_3b4ca9ea-f88a-4905-ae97-3acf76462f13) | coder (Opus medium) | GITMR1 (go/GITMR1.md, from ~05:30; GITSPI1 stub until N65 merges) | 12 | 2026-10-01 · V3.8 | COORD 35 |
 | CODER N62 (local_71e18c26-cd54-4b42-9c36-b90ed354e6b1) | coder (Opus medium) | DESKSHARD1 (go/DESKSHARD1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N63 (local_3e2e0f54-e049-46aa-819f-9500e63f937c) | coder (Opus medium) | PWCI1 (go/PWCI1.md) | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N64 (local_4fcf7ef9-112f-4c77-9a93-4d759d7cbd17) | coder (Opus medium) | V5 DETSPI1 (go/, § V5) | 8 | 2026-10-01 · V3.8 | Common 8 |
@@ -606,7 +606,7 @@ Kept by **PM DataPass 19** (from ~12:20; PM 18 local_241d9a17 from ~09:15; PM 17
 | CODER N35 (local_69d9967d-91a5-4e58-8b5a-0f75c714dc43) | coder (Opus medium) | V5 STUDIO0 done (studio !7) → STUDIO1 (go/STUDIO1.md) | 25 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N36 (local_81cb2caf-bfbf-4fdb-b193-2115737d9966) | coder (Opus medium) | V5 EVCAPT1 then EVACTOR1 (go/, § V5) | 10 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N31 (local_db47d1f7-4e3d-4123-bb85-401e3289b377) | coder (Opus medium) | TABCOL1 (ERD gap: columns/keys in sql-table-facts, core) | 12 | 2026-10-01 · V3.8 | Common 8 |
-| CODER N32 (local_ed440262-1db4-488a-bf74-002d41f86efb) | coder (Opus medium) | TMDL1 done (Common !167, schema approved a876b7cc by PM 26) ; keeps TMDL1 !167 support only (146 K), GITMR1 moved to COORD 35 subagent | — | 2026-10-01 · V3.8 | COORD 32 |
+| CODER N32 (local_ed440262-1db4-488a-bf74-002d41f86efb) | coder (Opus medium) | TMDL1 done (Common !167, schema approved a876b7cc by PM 26) ; keeps TMDL1 !167 support only (146 K), GITMR1 moved to N57 | — | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N33 (local_31fe2353-60a9-444b-8bac-d85ec8304d35) | coder (Opus medium) | LHSCHEMA1 (ERD gap: Lakehouse/Warehouse schema facts) | 12 | 2026-10-01 · V3.8 | Common 8 |
 | CODER N34 (local_a7970df1-0298-4cb2-b580-cbfbc3d0d7da) | coder (Opus medium) | V5 OTEL1 (cloud OTel replay reader) | 15 | 2026-10-01 · V3.8 | COORD 32 |
 | CODER N29 (local_557991d1-0a1d-41d1-8350-79f6f7e7ee7e), ex SCHED1e-2 | coder (Opus medium) | SCHED1f (go/SCHED1f.md; after Common !155) | 6 | 2026-10-01 · V3.8 | COORD Common 9 |
