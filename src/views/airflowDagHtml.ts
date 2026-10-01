@@ -4,10 +4,15 @@
  * bundled (src/webview/diagramIcons.ts). The webview sends task ids and line numbers only; the
  * extension host looks them up again in its own reading of the file.
  */
-import { layoutDag, type DagEdge, type DagExtraction, type DagRoute, type DagTask, type TaskKind, type Unresolved } from "../core/airflow/dagExtract";
+import { layoutDag, type DagEdge, type DagExtraction, type DagRoute, type DagTask, type Unresolved } from "../core/airflow/dagExtract";
 import { DIAGRAM_ICONS } from "../webview/diagramIcons";
+import { DEFAULT_DAG_FAMILIES, familyOf, type DagFamily, type DagShape } from "../core/dagux/families";
+import type { DagDirection } from "../core/dagux/placement";
 
-export type AirflowDirection = "down" | "right";
+export type AirflowDirection = DagDirection;
+
+/** DAGUX1: a family as the webview draws it (the icon resolved to its path). */
+export interface FamilyLook { label: string; shape: DagShape; color: string; dashed?: boolean; glyph?: string; path?: { vb: string; d: string; evenodd?: boolean } }
 
 export interface AirflowViewState {
   status: "none" | "not-dag" | "dag";
@@ -16,7 +21,9 @@ export interface AirflowViewState {
   reason?: string;
   dags: Array<{ dagId?: string; schedule?: string }>;
   dag: number;
-  tasks: Array<DagTask & { layer: number; order: number }>;
+  tasks: Array<DagTask & { layer: number; order: number; family: string }>;
+  /** DAGUX1: the families used by these tasks, by id (shape, icon, colour; from the preset and settings). */
+  families: Record<string, FamilyLook>;
   edges: DagEdge[];
   /** Each edge with the slots it passes through; `width`: slots per layer. */
   routes: DagRoute[];
@@ -28,8 +35,8 @@ export interface AirflowViewState {
   direction: AirflowDirection;
 }
 
-export function airflowViewState(x: DagExtraction | undefined, file: string | undefined, dag: number, opts: { explanation: boolean; highlight?: string; direction: AirflowDirection }): AirflowViewState {
-  const base = { dags: [], dag: 0, tasks: [], edges: [], routes: [], width: {}, unresolved: [], truncated: false, explanation: false, direction: opts.direction };
+export function airflowViewState(x: DagExtraction | undefined, file: string | undefined, dag: number, opts: { explanation: boolean; highlight?: string; direction: AirflowDirection; families?: readonly DagFamily[] }): AirflowViewState {
+  const base = { dags: [], dag: 0, tasks: [], edges: [], routes: [], width: {}, families: {}, unresolved: [], truncated: false, explanation: false, direction: opts.direction };
   if (!x || !file) return { ...base, status: "none" };
   if (!x.detected) return { ...base, status: "not-dag", file, reason: x.reason };
   const d = Math.min(Math.max(0, dag), x.dags.length - 1);
@@ -38,9 +45,15 @@ export function airflowViewState(x: DagExtraction | undefined, file: string | un
   const edges = x.edges.filter(e => ids.has(e.from) && ids.has(e.to));
   const layout = layoutDag(tasks, edges);
   const placed = new Map(layout.placed.map(p => [p.id, p]));
+  const families: Record<string, FamilyLook> = {};
+  const familyId = (operator: string): string => {
+    const f = familyOf(operator, opts.families ?? DEFAULT_DAG_FAMILIES);
+    families[f.id] ??= familyLook(f);
+    return f.id;
+  };
   return {
     status: "dag", file, dags: x.dags.map(i => ({ dagId: i.dagId, schedule: i.schedule })), dag: d,
-    tasks: tasks.map(t => ({ ...t, layer: placed.get(t.id)!.layer, order: placed.get(t.id)!.order })),
+    tasks: tasks.map(t => ({ ...t, layer: placed.get(t.id)!.layer, order: placed.get(t.id)!.order, family: familyId(t.operator) })), families,
     edges, routes: layout.routes, width: Object.fromEntries(layout.width), unresolved: x.unresolved, truncated: x.truncated, explanation: opts.explanation,
     ...(opts.highlight && ids.has(opts.highlight) ? { highlight: opts.highlight } : {}), direction: opts.direction
   };
@@ -52,24 +65,14 @@ export function taskAtLine(tasks: readonly DagTask[], line: number): DagTask | u
   return hits.find(t => t.callLine === line) ?? hits.sort((a, b) => (a.endLine - a.startLine) - (b.endLine - b.startLine))[0];
 }
 
-const KIND_ICON: Record<TaskKind, { icon?: string; glyph?: string; color: string; label: string }> = {
-  python: { icon: "si:python", color: "#3b82c4", label: "Python" },
-  bash: { glyph: "$_", color: "#6e7781", label: "Bash" },
-  databricks: { icon: "si:databricks", color: "#ff3621", label: "Databricks" },
-  spark: { icon: "co:layers", color: "#e8702a", label: "Spark" },
-  sql: { icon: "co:database", color: "#2da44e", label: "SQL" },
-  sensor: { icon: "co:symbol-event", color: "#a371f7", label: "Sensor" },
-  container: { icon: "si:docker", color: "#2496ed", label: "Container" },
-  notify: { glyph: "✉", color: "#d4a72c", label: "Notification" },
-  empty: { glyph: "○", color: "#8c959f", label: "Empty" },
-  trigger: { glyph: "↪", color: "#bf3989", label: "Trigger DAG" },
-  other: { icon: "co:package", color: "#8c959f", label: "Other operator" }
-};
+function familyLook(f: DagFamily): FamilyLook {
+  const path = f.icon ? DIAGRAM_ICONS[f.icon] : undefined;
+  return { label: f.label, shape: f.shape, color: f.color, ...(f.dashed ? { dashed: true } : {}), ...(path ? { path } : { glyph: f.glyph ?? "•" }) };
+}
 
 export function airflowDagHtml(cspSource: string, nonce: string): string {
-  const kinds = Object.fromEntries(Object.entries(KIND_ICON).map(([k, v]) => [k, { ...v, path: v.icon ? DIAGRAM_ICONS[v.icon] : undefined }]));
   const airflow = DIAGRAM_ICONS["si:apacheairflow"];
-  const data = JSON.stringify({ kinds, airflow }).replace(/</g, "\\u003c");
+  const data = JSON.stringify({ airflow }).replace(/</g, "\\u003c");
   return String.raw`<!doctype html>
 <html lang="en">
 <head>
@@ -95,9 +98,10 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
   #graph svg { display: block; margin: 0 auto; }
   #graph { overflow: auto; border: 1px solid var(--border); border-radius: 4px; background: var(--vscode-editor-background); }
   g.task { cursor: pointer; outline: none; }
-  g.task rect.box { fill: var(--vscode-editorWidget-background, var(--vscode-editor-background)); stroke: var(--border); }
-  g.task:hover rect.box { stroke: var(--vscode-focusBorder); }
-  g.task.hl rect.box { stroke: var(--vscode-focusBorder); stroke-width: 2.2; fill: var(--vscode-editor-selectionHighlightBackground, var(--vscode-list-hoverBackground)); }
+  g.task .box { stroke-width: 1.4; fill: var(--vscode-editorWidget-background, var(--vscode-editor-background)); stroke: var(--border); }
+  g.task .box.dashed { stroke-dasharray: 4 3; }
+  g.task:hover .box { stroke: var(--vscode-focusBorder) !important; }
+  g.task.hl .box { stroke: var(--vscode-focusBorder) !important; stroke-width: 2.2; fill: var(--vscode-editor-selectionHighlightBackground, var(--vscode-list-hoverBackground)); }
   text { fill: var(--vscode-foreground); font-family: var(--vscode-font-family); }
   text.op { fill: var(--vscode-descriptionForeground); font-size: 10px; }
   text.glyph { font-size: 12px; font-weight: 600; }
@@ -105,6 +109,8 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
   marker path { fill: var(--vscode-descriptionForeground); }
   h3 { font-size: 0.85em; text-transform: uppercase; letter-spacing: .04em; margin: 10px 0 4px; color: var(--vscode-descriptionForeground); font-weight: 600; }
   .row { padding: 1px 0; }
+  .legend { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 6px; }
+  .legend .item { display: inline-flex; align-items: center; gap: 4px; }
   .empty { padding: 8px 0; }
 </style>
 </head>
@@ -118,8 +124,22 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const sv = (tag, attrs) => { const e = document.createElementNS(SVG, tag); for (const k in attrs || {}) e.setAttribute(k, String(attrs[k])); return e; };
   const clip = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
-  function icon(kind, x, y, size) {
-    const k = DATA.kinds[kind] || DATA.kinds.other;
+  const look = id => (state && state.families[id]) || { label: "Operator", shape: "rect", color: "#8c959f", glyph: "•" };
+  // DAGUX1: one outline per family shape, inside the W×H box (the shapes come from the preset/settings).
+  function outline(shape, W, H) {
+    const c = 7, pts = a => sv("polygon", { points: a.map(p => p.join(",")).join(" ") });
+    switch (shape) {
+      case "rounded": return sv("rect", { width: W, height: H, rx: 8 });
+      case "pill": return sv("rect", { width: W, height: H, rx: H / 2 });
+      case "hexagon": return pts([[c * 1.6, 0], [W - c * 1.6, 0], [W, H / 2], [W - c * 1.6, H], [c * 1.6, H], [0, H / 2]]);
+      case "parallelogram": return pts([[c * 1.6, 0], [W, 0], [W - c * 1.6, H], [0, H]]);
+      case "chevron": return pts([[0, 0], [W - c * 1.8, 0], [W, H / 2], [W - c * 1.8, H], [0, H]]);
+      case "octagon": return pts([[c, 0], [W - c, 0], [W, c], [W, H - c], [W - c, H], [c, H], [0, H - c], [0, c]]);
+      case "cylinder": return sv("path", { d: "M0," + c + " A" + W / 2 + "," + c + " 0 0 1 " + W + "," + c + " V" + (H - c) + " A" + W / 2 + "," + c + " 0 0 1 0," + (H - c) + " Z M0," + c + " A" + W / 2 + "," + c + " 0 0 0 " + W + "," + c });
+      default: return sv("rect", { width: W, height: H, rx: 3 });
+    }
+  }
+  function icon(k, x, y, size) {
     if (k.path) {
       const [, , w, h] = k.path.vb.split(" ").map(Number);
       const g = sv("g", { transform: "translate(" + x + "," + y + ") scale(" + (size / Math.max(w, h)) + ")" });
@@ -177,6 +197,24 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
     }
     root.appendChild(tools);
     root.appendChild(graph());
+    // DAGUX1: the legend of the families on screen (labels from the preset/settings).
+    const ids = Object.keys(state.families || {});
+    if (ids.length) {
+      const legend = el("div", "legend small muted");
+      legend.id = "legend";
+      for (const id of ids) {
+        const k = state.families[id], item = el("span", "item");
+        const sw = sv("svg", { width: 22, height: 12, viewBox: "0 0 168 38", "aria-hidden": "true", preserveAspectRatio: "none" });
+        const o = outline(k.shape, 168, 38);
+        o.setAttribute("class", "box" + (k.dashed ? " dashed" : ""));
+        o.style.stroke = k.color; o.style.strokeWidth = "8"; o.style.fill = "none";
+        sw.appendChild(o);
+        item.appendChild(sw);
+        item.appendChild(el("span", "", k.label));
+        legend.appendChild(item);
+      }
+      root.appendChild(legend);
+    }
     if (state.unresolved.length) {
       root.appendChild(el("h3", "", "Not resolved statically (" + state.unresolved.length + ")"));
       for (const u of state.unresolved) {
@@ -232,21 +270,23 @@ export function airflowDagHtml(cspSource: string, nonce: string): string {
       svg.appendChild(sv("path", { d, class: "edge", "marker-end": "url(#arrow)" }));
     }
     for (const t of state.tasks) {
-      const p = pos.get(t.id), k = DATA.kinds[t.kind] || DATA.kinds.other;
+      const p = pos.get(t.id), k = look(t.family);
       const g = sv("g", { class: "task" + (t.id === state.highlight ? " hl" : ""), tabindex: 0, role: "button", "data-id": t.id, transform: "translate(" + p.x + "," + p.y + ")" });
       const title = sv("title");
       title.textContent = t.id + "\n" + t.operator + " (" + k.label + ")" + (t.mapped ? ", mapped" : "") + "\nLines " + t.startLine + "–" + t.endLine + (t.callLine ? ", called at line " + t.callLine : "");
       g.appendChild(title);
-      g.appendChild(sv("rect", { class: "box", width: W, height: H, rx: 5 }));
-      const stripe = sv("rect", { width: 4, height: H, rx: 2 });
-      stripe.style.fill = k.color;
-      g.appendChild(stripe);
-      g.appendChild(icon(t.kind, 10, 11, 16));
-      const name = sv("text", { x: 32, y: 16 });
-      name.textContent = clip(t.label, 20) + (t.mapped ? " [ ]" : "");
+      const box = outline(k.shape, W, H);
+      box.setAttribute("class", "box" + (k.dashed ? " dashed" : ""));
+      box.setAttribute("data-shape", k.shape);
+      box.style.stroke = k.color;
+      g.appendChild(box);
+      const inset = k.shape === "hexagon" || k.shape === "parallelogram" ? 12 : k.shape === "pill" ? 8 : 0;
+      g.appendChild(icon(k, 10 + inset, 11, 16));
+      const name = sv("text", { x: 32 + inset, y: 16 });
+      name.textContent = clip(t.label, inset ? 18 : 20) + (t.mapped ? " [ ]" : "");
       g.appendChild(name);
-      const op = sv("text", { x: 32, y: 30, class: "op" });
-      op.textContent = clip((t.group ? t.group + " · " : "") + t.operator, 26);
+      const op = sv("text", { x: 32 + inset, y: 30, class: "op" });
+      op.textContent = clip((t.group ? t.group + " · " : "") + t.operator, inset ? 23 : 26);
       g.appendChild(op);
       const go = () => vscode.postMessage({ type: "reveal", id: t.id });
       g.addEventListener("click", go);

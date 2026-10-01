@@ -1097,6 +1097,16 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.airflow.toggleLayout",
+        "title": "DataPass: Switch the Airflow DAG Layout (Top-Down / Left-Right)",
+        "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "datapass.airflow.choosePlacement",
+        "title": "DataPass: Choose Where the Airflow DAG View Opens",
+        "icon": "$(layout)"
       }
     ],
     "viewsContainers": {
@@ -1111,6 +1121,11 @@
         {
           "id": "datapass-architecture",
           "title": "DataPass Architecture",
+          "icon": "resources/datapass.svg"
+        },
+        {
+          "id": "datapass-airflow",
+          "title": "Airflow DAG",
           "icon": "resources/datapass.svg"
         }
       ],
@@ -1194,7 +1209,15 @@
           "type": "webview",
           "visibility": "collapsed",
           "initialSize": 2,
-          "when": "!datapass.rail && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag"
+          "when": "!datapass.rail && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor"
+        }
+      ],
+      "datapass-airflow": [
+        {
+          "id": "datapass.airflowDagPanel",
+          "name": "Airflow DAG",
+          "type": "webview",
+          "when": "config.datapass.airflow.dagPlacement == panel && !datapass.hidden.view.airflowDag"
         }
       ]
     },
@@ -1644,6 +1667,16 @@
           "command": "datapass.layout.closeBottomPanel",
           "when": "view == datapass.architecture",
           "group": "navigation@99"
+        },
+        {
+          "command": "datapass.airflow.toggleLayout",
+          "when": "view == datapass.airflowDag || view == datapass.airflowDagPanel",
+          "group": "navigation@90"
+        },
+        {
+          "command": "datapass.airflow.choosePlacement",
+          "when": "view == datapass.airflowDag || view == datapass.airflowDagPanel",
+          "group": "navigation@91"
         }
       ],
       "view/item/context": [
@@ -2697,6 +2730,14 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.airflow.toggleLayout",
+          "when": "false"
+        },
+        {
+          "command": "datapass.airflow.choosePlacement",
+          "when": "false"
         }
       ],
       "explorer/context": [
@@ -2750,6 +2791,16 @@
         {
           "command": "datapass.hop.explain",
           "when": "resourceScheme == file && datapass.hop.explained",
+          "group": "navigation@91"
+        },
+        {
+          "command": "datapass.airflow.toggleLayout",
+          "when": "activeWebviewPanelId == datapass.airflowDagEditor",
+          "group": "navigation@90"
+        },
+        {
+          "command": "datapass.airflow.choosePlacement",
+          "when": "activeWebviewPanelId == datapass.airflowDagEditor",
           "group": "navigation@91"
         }
       ],
@@ -3377,6 +3428,92 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.airflow.dagPlacement": {
+          "type": "string",
+          "enum": [
+            "sidebar",
+            "panel",
+            "editor"
+          ],
+          "enumDescriptions": [
+            "In the secondary side bar, beside the code (default).",
+            "In the bottom panel, under the code.",
+            "In an editor tab beside the code."
+          ],
+          "default": "sidebar",
+          "scope": "window",
+          "description": "Where the Airflow DAG view opens. The same view is drawn in each place; \"DataPass: Choose Where the Airflow DAG View Opens\" changes it."
+        },
+        "datapass.airflow.dagLayout": {
+          "type": "string",
+          "enum": [
+            "top-down",
+            "left-right"
+          ],
+          "enumDescriptions": [
+            "Tasks flow from top to bottom.",
+            "Tasks flow from left to right."
+          ],
+          "default": "top-down",
+          "scope": "window",
+          "description": "Direction of the Airflow DAG view. The view's toolbar button switches it."
+        },
+        "datapass.airflow.dagFamilies": {
+          "type": "object",
+          "default": {},
+          "scope": "window",
+          "markdownDescription": "Operator families of the Airflow DAG view, by id (`sensor`, `trigger`, `branch`, `dummy`, `transfer`, `compute`, `sql`, `container`, `bash`, `notify`, `python`, `other`). Each entry overrides the default preset's fields; a new id adds a family, tried before `other`. Example: `{ \"sql\": { \"shape\": \"rect\", \"color\": \"#1f6feb\" }, \"dbt\": { \"label\": \"dbt\", \"shape\": \"hexagon\", \"glyph\": \"▲\", \"color\": \"#ff694b\", \"match\": [\"dbt\"] } }`.",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "shape": {
+                "type": "string",
+                "enum": [
+                  "rect",
+                  "rounded",
+                  "pill",
+                  "hexagon",
+                  "parallelogram",
+                  "cylinder",
+                  "chevron",
+                  "octagon"
+                ]
+              },
+              "icon": {
+                "type": "string",
+                "description": "A bundled diagram icon key (si:… or co:…)."
+              },
+              "glyph": {
+                "type": "string",
+                "description": "Up to 3 characters drawn instead of an icon."
+              },
+              "color": {
+                "type": "string",
+                "pattern": "^#[0-9a-fA-F]{3,8}$"
+              },
+              "dashed": {
+                "type": "boolean"
+              },
+              "match": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Case-insensitive regular expressions tried on the operator name."
+              },
+              "matchCase": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Case-sensitive regular expressions tried on the operator name."
+              }
+            }
+          }
         }
       }
     },

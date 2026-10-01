@@ -1,0 +1,17 @@
+{
+  "$comment": "DAGUX1: default operator families of the Airflow DAG view. Families are tried in this order; the first whose `match` (case-insensitive regex) or `matchCase` (case-sensitive regex) hits the operator wins. Override or add families with the `datapass.airflow.dagFamilies` setting. Shapes: rect, rounded, pill, hexagon, parallelogram, cylinder, chevron, octagon.",
+  "families": [
+    { "id": "sensor", "label": "Sensor", "shape": "pill", "icon": "co:symbol-event", "color": "#a371f7", "match": ["sensor", "^@task\\.sensor$"] },
+    { "id": "trigger", "label": "Trigger / external", "shape": "chevron", "glyph": "↪", "color": "#bf3989", "match": ["trigger", "external_?task"] },
+    { "id": "branch", "label": "Branch", "shape": "hexagon", "icon": "co:git-merge", "color": "#d4a72c", "match": ["branch", "short_?circuit"] },
+    { "id": "dummy", "label": "Dummy / empty", "shape": "rounded", "dashed": true, "glyph": "○", "color": "#8c959f", "match": ["empty", "dummy"] },
+    { "id": "transfer", "label": "Transfer / copy", "shape": "parallelogram", "glyph": "⇄", "color": "#0e8a8a", "match": ["transfer", "copy", "_to_", "sftp", "^@task\\.transfer$"], "matchCase": ["[A-Za-z0-9]To[A-Z]"] },
+    { "id": "compute", "label": "Compute / Spark", "shape": "octagon", "icon": "co:layers", "color": "#e8702a", "match": ["spark", "databricks", "dataproc", "emr", "glue", "livy", "synapse", "batch", "notebook"] },
+    { "id": "sql", "label": "SQL", "shape": "cylinder", "icon": "co:database", "color": "#2da44e", "match": ["sql", "postgres", "mysql", "snowflake", "bigquery", "mssql", "oracle", "redshift", "trino", "presto", "hive", "athena", "sqlite", "vertica", "dbt"] },
+    { "id": "container", "label": "Container", "shape": "rect", "icon": "si:docker", "color": "#2496ed", "match": ["docker", "kubernetes", "pod", "ecs", "container", "gke", "aks"] },
+    { "id": "bash", "label": "Bash", "shape": "rect", "glyph": "$_", "color": "#6e7781", "match": ["bash", "shell", "ssh"] },
+    { "id": "notify", "label": "Notification", "shape": "rounded", "glyph": "✉", "color": "#c69026", "match": ["email", "slack", "teams", "http", "webhook", "sns", "notif"] },
+    { "id": "python", "label": "Python", "shape": "rounded", "icon": "si:python", "color": "#3b82c4", "match": ["python", "virtualenv", "^@task$"] },
+    { "id": "other", "label": "Other operator", "shape": "rect", "icon": "co:package", "color": "#8c959f", "match": [] }
+  ]
+}
