@@ -1125,6 +1125,10 @@
         "icon": "$(list-selection)"
       },
       {
+        "command": "datapass.pedagogy.patternCards",
+        "title": "DataPass: Pattern Cards for This File"
+      },
+      {
         "command": "datapass.explain.export",
         "title": "DataPass: Export Explainer Page (HTML)…",
         "icon": "$(export)"
@@ -2925,6 +2929,10 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.pedagogy.patternCards",
+          "when": "!datapass.hidden.v5.peda1b"
+        },
+        {
           "command": "datapass.nav.tour.saveCurrentPath",
           "when": "!datapass.hidden.v5.tour2"
         },
@@ -3698,6 +3706,10 @@
               "type": "boolean",
               "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
             },
+            "v5.peda1b": {
+              "type": "boolean",
+              "description": "Pattern cards: Pedagogy cards bound to the open file's code: concept cards jump to the project's span, decision cards show the option taken or an owner question"
+            },
             "v5.dbtmat": {
               "type": "boolean",
               "description": "Command Palette: Materialize dbt Models: dbt model(s) → Fabric notebooks as a reviewed proposal: preview diff, write on confirmation, Git steps for you to run"
@@ -3720,6 +3732,21 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.pedagogy.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: pedagogy cards (master switch). Off: the pedagogy commands are not registered and nothing is computed."
+        },
+        "datapass.pedagogy.conceptCards.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: concept cards bound to the project's code (the best matching span replaces the generic example)."
+        },
+        "datapass.pedagogy.decisionCards.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA1b: decision cards showing the option the project took and where, or an owner question when no fact says it."
         },
         "datapass.pedagogy.queryShowcase.enabled": {
           "type": "boolean",

@@ -74,6 +74,8 @@ export const SURFACES: readonly Surface[] = [
   { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" },
   // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).
   { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" },
+  // V5 PEDA1b: pedagogy cards bound to the project's code.
+  { id: "v5.peda1b", kind: "palette", label: "Pattern cards", detail: "Pedagogy cards bound to the open file's code: concept cards jump to the project's span, decision cards show the option taken or an owner question" },
   // V5 TOUR2: guided tours in the Navigator (Learning / Interview, present, save a path as a tour).
   { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" },
   // V5 PEDA3: query showcase cards ("Queries worth showing", interview mode).
