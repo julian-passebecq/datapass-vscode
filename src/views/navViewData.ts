@@ -6,6 +6,7 @@
  */
 import type { NavState, ViewDef } from "../core/navigation/navTypes";
 import type { BindingRow, BoundData } from "../core/navigation/bindings";
+import { isGraphViewDto, toGraphView } from "../core/navigation/bindings/graphView";
 import type { BindingData, Card, Cell, HostMessage, Labels, Row } from "../webview/views/model";
 
 const ROW_META = new Set(["id", "origin"]);
@@ -36,7 +37,7 @@ export function toBindingData(bound: readonly BoundData[]): BindingData[] {
       source, origin: base,
       holes: result.holes.map(h => ({ reason: h.reason, kind: h.kind ?? "binding-empty" })),
       ...(columns ? { columns } : {}), ...(rows ? { rows } : {}), ...(cards ? { cards } : {}),
-      ...(result.graph ? { graph: result.graph } : {}), ...(result.metrics ? { metrics: result.metrics } : {})
+      ...(result.graph ? { graph: isGraphViewDto(result.graph) ? result.graph : toGraphView(result.graph, source) } : {}), ...(result.metrics ? { metrics: result.metrics } : {}), ...(result.steps !== undefined ? { steps: result.steps } : {})
     };
   });
 }

@@ -55,7 +55,7 @@ test("project → subproject → artifact: every offered view renders data, a su
     assert.ok(nav.views().length > 0, `${level} offers views`);
     for (const view of nav.views()) {
       const screen = draw(nav, view);
-      const rendered = ["nv-table", "nv-card", "nv-hole", "nv-surface-open", "nv-layout-surface"].some(c => has(screen, c));
+      const rendered = ["nv-table", "nv-card", "nv-hole", "nv-surface-open", "nv-layout-surface", "nv-graphs", "nv-metrics"].some(c => has(screen, c));
       assert.ok(rendered, `${level}/${view.id} renders something`);
       assert.ok(!has(screen, "nv-loading"), `${level}/${view.id} is not stuck loading`);
       seen.push(`${level}/${view.id}`);

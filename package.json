@@ -2945,7 +2945,8 @@
           "default": {
             "workbench": "datapass.openWorkbench",
             "hop": "datapass.hop.open",
-            "airflow-dag": "datapass.showAirflowDag"
+            "airflow-dag": "datapass.showAirflowDag",
+            "datapass.workbench.diagram": "datapass.openWorkbench"
           },
           "additionalProperties": { "type": "string" },
           "description": "Which existing DataPass view a \"surface\" view opens: surface id → DataPass command id (datapass.* only)."

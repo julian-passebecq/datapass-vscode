@@ -20,7 +20,10 @@ import * as vscode from "vscode";
 import type { ProjectMap } from "../core/project/projectMap";
 import type { NavigationService } from "../core/navigation/navigationService";
 import type { NavLocation, NavState, ViewDef } from "../core/navigation/navTypes";
-import { resolveBindings } from "../core/navigation/bindings";
+import { resolveBindings, type BoundData } from "../core/navigation/bindings";
+import { isCodeStepsInput } from "../webview/views/layouts/codeSteps.layout";
+import type { CodeStepsInput } from "../webview/views/layouts/codeSteps";
+import { bindCodeStepsSamples } from "./pqSampleHost";
 import { viewHtml } from "./viewHtml";
 import { navViewLabels, navViewMessages } from "./navViewData";
 import { fallbackRender, navViewHtml, navViewTitle, parseNavViewMessage, surfaceCommand, type NavRenderer, type NavViewMessage } from "./navViewHtml";
@@ -46,6 +49,9 @@ export class NavViewHost implements vscode.Disposable {
   /** The panel runs the view renderer (dist/navView.js) and receives posted data; else the HTML fallback. */
   private rendererMode = false;
   private readonly selectEmitter = new vscode.EventEmitter<string>();
+  /** PQSAMP1 hook (NAVFIX1, review M7): stored step samples join a code-steps payload; a selected step is the sample target. */
+  private lastSteps?: CodeStepsInput;
+  private readonly samples = bindCodeStepsSamples(() => this.lastSteps, () => this.render());
   /** A node selected in the view (the code link, NAVCODE1, decorates its source). */
   readonly onDidSelect = this.selectEmitter.event;
   /** Messages handled (tests). */
@@ -53,7 +59,7 @@ export class NavViewHost implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly nav: NavigationService, private readonly deps: NavViewDeps) {
     this.subs.push(
-      this.selectEmitter,
+      this.selectEmitter, { dispose: () => this.samples.dispose() },
       nav.onDidChange(() => this.render()),
       vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.navView")) this.render(); })
     );
@@ -124,7 +130,7 @@ export class NavViewHost implements vscode.Disposable {
         const key = `${state.location.nodeId}/${view.id}`;
         if (cmd && this.lastSurface !== key) { this.lastSurface = key; void vscode.commands.executeCommand(cmd); }
       } else this.lastSurface = undefined;
-      const bound = view && view.layout !== "surface" ? resolveBindings(view, { location: state.location, projectMap: this.deps.projectMap() }) : [];
+      const bound = view && view.layout !== "surface" ? this.withSamples(resolveBindings(view, { location: state.location, projectMap: this.deps.projectMap() })) : [];
       for (const m of navViewMessages({ state, views, labels: navViewLabels(config.get("labels", {})), bound })) void panel.webview.postMessage(m);
       return;
     }
@@ -146,12 +152,28 @@ export class NavViewHost implements vscode.Disposable {
     });
   }
 
+  private withSamples(bound: BoundData[]): BoundData[] {
+    this.lastSteps = undefined;
+    return bound.map(b => {
+      if (!isCodeStepsInput(b.result.steps)) return b;
+      const steps = this.samples.input(b.result.steps);
+      this.lastSteps = steps;
+      return { ...b, result: { ...b.result, steps } };
+    });
+  }
+
   private receive(raw: unknown): void {
     const m = parseNavViewMessage(raw);
     if (!m) return;
     this.handled.push(m);
     if (m.type === "nav") this.nav.dispatch(m.command);
-    else if (m.type === "select") this.selectEmitter.fire(m.nodeId);
+    else if (m.type === "select") { this.samples.onMessage(m); this.selectEmitter.fire(m.nodeId); }
+    else if (m.type === "open-surface") {
+      // Only the current place's own surface view, through the same setting map as the automatic open.
+      const view = this.nav.views().find(v => v.id === m.viewId && v.surface === m.surface);
+      const cmd = view && surfaceCommand(view, vscode.workspace.getConfiguration("datapass.navView").get<Record<string, unknown>>("surfaces", {}));
+      if (cmd) void vscode.commands.executeCommand(cmd);
+    }
     else if (m.type === "ready" && this.rendererMode) this.render();
   }
 }
