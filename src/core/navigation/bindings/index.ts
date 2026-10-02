@@ -8,6 +8,7 @@
 import type { ProjectMap } from "../../project/projectMap";
 import type { NavLocation, ViewDef } from "../navTypes";
 import type { GraphView } from "@juliandatapass-group/view-spi";
+import type { HopState } from "../../../views/hopState";
 import { BINDINGS } from "../../../../out/gen/bindings";
 
 /** § 34 origins (open vocabulary: Common may add more). */
@@ -39,6 +40,8 @@ export interface BindingContext {
   readonly params?: Readonly<Record<string, unknown>>;
   /** The current project map, when a project is open. */
   readonly projectMap?: ProjectMap;
+  /** V5HOLE1: the Hop state of the file at a place, when the host has it loaded (undefined: none / not a file). */
+  readonly hop?: (location: NavLocation) => HopState | undefined;
 }
 
 export interface BindingProvider { readonly source: string; provide(ctx: BindingContext): BindingResult }
@@ -50,7 +53,7 @@ const PROVIDERS: readonly BindingProvider[] = BINDINGS;
  * A provider package removes its source from this list; `tests/navData.test.ts` keeps it exact.
  */
 export const UNPROVIDED_SOURCES: readonly string[] = [
-  "volumetry", "spark-perf", "sql-shape", "hop-steps", "rationale", "fabric-item", "execution-unit"
+  "volumetry", "spark-perf", "sql-shape", "rationale", "fabric-item", "execution-unit"
 ];
 
 const BY_SOURCE = new Map(PROVIDERS.map(p => [p.source, p]));
