@@ -118,7 +118,7 @@ export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
       maxBuffer: 32 * 1024 * 1024,
       // Never block on a credential prompt; a failed probe is reported as unreachable.
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", SSH_ASKPASS: "", GCM_INTERACTIVE: "never" }
-    }, (error, stdout, stderr) => resolve({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? "") }));
+    }, (error, stdout, stderr) => resolve({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean((error as { killed?: boolean } | null)?.killed) }));
   });
 
 export class WorkSession implements vscode.Disposable {

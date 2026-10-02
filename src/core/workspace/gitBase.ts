@@ -6,7 +6,8 @@
 import { sha256Bytes, type Sha256 } from "../model/ids";
 import { AZURE_HTTPS_WITH_ORG } from "../project/gitHosts";
 
-export type GitRunner = (args: string[], cwd: string, timeoutMs: number) => Promise<{ ok: boolean; stdout: string; stderr?: string }>;
+/** `timedOut` (DESKHARD3): the command was stopped at its timeout, so its answer says nothing about the repository. */
+export type GitRunner = (args: string[], cwd: string, timeoutMs: number) => Promise<{ ok: boolean; stdout: string; stderr?: string; timedOut?: boolean }>;
 
 export interface RepoRevision {
   revision: string;

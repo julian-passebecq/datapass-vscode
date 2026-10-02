@@ -6,7 +6,7 @@
  */
 import type { RepoGitState, TrackingObservation } from "./resolve";
 
-export interface GitAnswer { ok: boolean; stdout: string; stderr?: string }
+export interface GitAnswer { ok: boolean; stdout: string; stderr?: string; timedOut?: boolean }
 
 /**
  * V1-FLAKE2: on Windows, Git reading the config while another Git process replaces it (a lock file
@@ -49,6 +49,22 @@ export async function readOrigin(git: (args: string[], cwd: string, timeoutMs: n
 export function nearbyOrigin(o: Pick<OriginAnswers, "config" | "answered">): "none" | "other" | "unknown" {
   if (!o.answered) return "unknown";
   return o.config.ok && o.config.stdout.trim() ? "other" : "none";
+}
+
+/**
+ * DESKHARD3: a clone's origin against the address an order declares — the same repository, another
+ * one (or none), or "unknown" when Git did not answer (a timeout under load): never read as "another".
+ */
+export function originVerdict(o: Pick<OriginAnswers, "config" | "answered">, expected: string, identity: (url: string) => string | undefined): "same" | "other" | "unknown" {
+  if (!o.answered) return "unknown";
+  const url = o.config.ok ? o.config.stdout.trim() : "";
+  const id = url ? identity(url) : undefined;
+  return id !== undefined && id === identity(expected) ? "same" : "other";
+}
+
+/** The origin URL a lookup found, if Git answered with one. */
+export function originUrlOf(o: Pick<OriginAnswers, "config" | "answered">): string | undefined {
+  return o.answered && o.config.ok ? o.config.stdout.trim() || undefined : undefined;
 }
 
 /** At most this many file observations run at once. */
