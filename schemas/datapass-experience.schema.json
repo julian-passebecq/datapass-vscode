@@ -89,11 +89,12 @@
                 "view.airflowDag",
                 "palette.full",
                 "view.rail",
+                "v5.dbtmat",
                 "v5.pqsamp",
                 "view.navigator"
               ]
             },
-            "maxItems": 39,
+            "maxItems": 40,
             "minItems": 0
           }
         },

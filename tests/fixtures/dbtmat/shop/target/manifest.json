@@ -1,0 +1,49 @@
+{
+  "metadata": { "dbt_version": "1.8.0", "project_name": "shop" },
+  "nodes": {
+    "model.shop.stg_orders": {
+      "resource_type": "model", "name": "stg_orders", "package_name": "shop", "alias": "stg_orders",
+      "original_file_path": "models/staging/stg_orders.sql",
+      "config": { "materialized": "view" },
+      "relation_name": "\"warehouse\".\"dbt_dev\".\"stg_orders\"",
+      "compiled_code": "select id, customer_id, amount from \"warehouse\".\"raw\".\"orders\"\n",
+      "depends_on": { "nodes": ["source.shop.raw.orders"] }
+    },
+    "model.shop.customer_totals": {
+      "resource_type": "model", "name": "customer_totals", "package_name": "shop", "alias": "customer_totals",
+      "original_file_path": "models/marts/customer_totals.sql",
+      "config": { "materialized": "table" },
+      "relation_name": "\"warehouse\".\"dbt_dev\".\"customer_totals\"",
+      "depends_on": { "nodes": ["model.shop.stg_orders"] }
+    },
+    "model.shop.top_customers": {
+      "resource_type": "model", "name": "top_customers", "package_name": "shop", "alias": "top_customers",
+      "original_file_path": "models/marts/top_customers.sql",
+      "config": { "materialized": "table" },
+      "relation_name": "\"warehouse\".\"dbt_dev\".\"top_customers\"",
+      "depends_on": { "nodes": ["model.shop.customer_totals"] }
+    },
+    "model.shop.int_helper": {
+      "resource_type": "model", "name": "int_helper", "package_name": "shop", "alias": "int_helper",
+      "original_file_path": "models/staging/int_helper.sql",
+      "config": { "materialized": "ephemeral" },
+      "compiled_code": "select 1 as one\n",
+      "depends_on": { "nodes": [] }
+    },
+    "model.shop.order_events": {
+      "resource_type": "model", "name": "order_events", "package_name": "shop", "alias": "order_events",
+      "original_file_path": "models/marts/order_events.sql",
+      "config": { "materialized": "incremental" },
+      "relation_name": "\"warehouse\".\"dbt_dev\".\"order_events\"",
+      "compiled_code": "with __dbt__cte__int_helper as (select 1 as one)\nselect o.id, h.one from \"warehouse\".\"dbt_dev\".\"stg_orders\" o cross join __dbt__cte__int_helper h\n",
+      "depends_on": { "nodes": ["model.shop.stg_orders", "model.shop.int_helper"] }
+    },
+    "test.shop.not_null_stg_orders_id": { "resource_type": "test", "name": "not_null_stg_orders_id", "package_name": "shop" }
+  },
+  "sources": {
+    "source.shop.raw.orders": {
+      "resource_type": "source", "source_name": "raw", "name": "orders", "identifier": "orders",
+      "relation_name": "\"warehouse\".\"raw\".\"orders\""
+    }
+  }
+}

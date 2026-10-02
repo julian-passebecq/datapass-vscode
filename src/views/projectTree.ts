@@ -26,6 +26,7 @@ import { PLAIN_STATE_ICONS, readTreeLook, stateIcon, treeIconColor, type TreeLoo
 import { LENS_CONTEXT_KEY, LENS_INFO, LENSES_WITH_ARCHITECTURE, lensForScreen, lensRow, type LensStore, type TreeLens } from "../core/windows/treeLens";
 import type { GitNode, GitTreeProvider } from "./gitTree";
 import type { LoadedOrder } from "../work/workOrders";
+import { detachBadge, type DetachView } from "../core/materialize/dbtDetach";
 
 type Node =
   | { t: "info"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command; contextValue?: string }
@@ -88,6 +89,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private gitTree?: GitTreeProvider;
   private gitRefresh?: () => void;
   private orders?: () => readonly LoadedOrder[];
+  /** DETACH1: materialized dbt models (detach badge + drift fact). */
+  private detached?: () => readonly DetachView[];
 
   /** V3-THEME: neutral icons by default, the DataPass overlay switch (settings `datapass.tree.*`, `datapass.overlay.*`). */
   private look: TreeLook = this.readLook();
@@ -149,6 +152,12 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   attachWorkOrders(list: () => readonly LoadedOrder[], changed: vscode.Event<void>): void {
     this.orders = list;
     this.subs.push(changed(() => { if (this.lens() === "ai") this.emitter.fire(undefined); }));
+  }
+
+  /** DETACH1: the materialized dbt models (badge "detached" + drift), shown when the project has any. */
+  attachDetached(list: () => readonly DetachView[], changed: vscode.Event<void>): void {
+    this.detached = list;
+    this.subs.push(changed(() => this.emitter.fire(undefined)));
   }
 
   private updateTitle(): void {
@@ -507,6 +516,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
       description: `${map.repositories.filter(r => r.state === "local").length}/${map.repositories.length} cloned${map.repositories.some(r => r.state === "unverified") ? ` · ${map.repositories.filter(r => r.state === "unverified").length} unverified` : ""}${map.repositories.some(r => (r.git?.behind ?? 0) > 0) ? " · updates to get" : ""}`,
       kids: () => map.repositories.map(r => ({ t: "repo" as const, id: `repo:${r.key}`, r }))
     });
+    const dv = this.detached?.() ?? [];
+    if (dv.length) nodes.push(detachSection(dv, ctx.root));
     // Readiness blockers (errors) show in every mode, even when the mode hides the full sections (D-03).
     const r = s.readiness();
     if (show("project.readiness")) nodes.push(...readinessNodes(r));
@@ -712,4 +723,21 @@ function connectionsSection(list: ConnectionView[]): Node {
 
 function esc(s: string): string {
   return s.replace(/[\\`*_{}[\]()#+\-.!|<>]/g, m => `\\${m}`);
+}
+
+/** DETACH1: "dbt materializations": one row per model, `detached · <drift>` or `dbt`; click opens the notebook. */
+function detachSection(views: readonly DetachView[], root: vscode.Uri): Node {
+  const detached = views.filter(v => v.detached);
+  return {
+    t: "section", id: "dbtDetach", label: "dbt materializations", icon: "git-merge", collapsed: !detached.some(v => v.drift?.state !== "in-sync"),
+    description: `${views.length} model(s)${detached.length ? ` · ${detached.length} detached` : ""}`,
+    tooltip: "dbt models materialized as notebooks (MAT1). A detached notebook is the authority: drift is shown as a fact, never re-synced; re-attach is a new proposal.",
+    kids: () => views.map(v => ({
+      t: "info" as const, id: `dbtDetach:${v.recordPath}`, label: v.modelId, description: detachBadge(v),
+      icon: (v.detached ? (v.drift && v.drift.state !== "in-sync" ? ["unlock", "problemsWarningIcon.foreground"] : ["unlock"]) : ["lock"]) as [string, string?],
+      tooltip: [v.notebookPath, v.detachedBy ? `Detached by ${v.detachedBy.actor} on ${v.detachedBy.at}` : "dbt is the authority", v.drift ? `Drift: ${v.drift.label}` : "", ...v.holes.map(h => h.reason)].filter(Boolean).join("\n"),
+      command: { command: "vscode.open", title: "Open", arguments: [vscode.Uri.joinPath(root, ...v.notebookPath.split("/"))] },
+      contextValue: v.detached ? "dbtModel.detached" : "dbtModel.attached"
+    }))
+  };
 }
