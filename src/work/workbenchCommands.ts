@@ -494,6 +494,7 @@ async function recordComponentResult(session: WorkSession, version: string, opKe
   if (!choice) return;
   const note = await vscode.window.showInputBox({ title: `Note: ${op.label}`, prompt: "Optional: error message or what you saw. No passwords or tokens.", validateInput: v => v.length > MAX_NOTE ? `Keep it under ${MAX_NOTE} characters.` : undefined });
   if (note === undefined) return;
+  await session.ensureToolProbes(op.capability.requirements.flatMap(r => r.anyOf));
   await session.recordQualification({
     capabilityId: op.capability.id, label: `${c.label}: ${op.label}`, result: choice.result, note: cleanNote(note),
     projectId: manifest.project.id, scopeId: "project", preflight: op.result.status, at: new Date().toISOString(), dataPassVersion: version,

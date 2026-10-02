@@ -20,6 +20,7 @@ import * as vscode from "vscode";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { executablePath, resolveCommandOrScript } from "../core/exec";
 import { gitHostOf, remoteIdentity, type GitHostRepo } from "../core/project/gitHosts";
 import type { RepoView } from "../core/project/resolve";
@@ -150,6 +151,9 @@ export class GitObserver implements vscode.Disposable {
   private checkedAt?: string;
   /** Test seam: replaces how tools are run (the desktop suite uses the real one with a stub gh). */
   runner: (tool: Tool, args: string[], cwd: string, timeoutMs: number) => Promise<RunResult> = (tool, args, cwd, timeoutMs) => {
+    // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+    const allowed = checkSpawn(tool, args);
+    if (!allowed.allowed) return Promise.resolve({ ok: false, stdout: "", stderr: refusal(allowed), timedOut: false });
     const cmd = toolCommand(tool);
     if (!cmd) return Promise.resolve({ ok: false, stdout: "", stderr: `${tool} was not found`, timedOut: false, missing: true });
     return spawnTool(cmd, args, cwd, timeoutMs);

@@ -85,7 +85,7 @@ export class DbtDetachService implements vscode.Disposable {
     const raw = readDetachRecord(await readText(target.uri) ?? "");
     if (!raw.ok) { void vscode.window.showErrorMessage(`The detach record is not valid: ${raw.reason}`); return; }
     const current = await this.current(root, raw.record.stamp.modelId, raw.record.stamp.notebookPath);
-    const actor = await gitRunner(["config", "user.name"], root.fsPath, 5_000).then(r => (r.ok ? r.stdout.trim() : ""), () => "");
+    const actor = await gitRunner(["config", "--get", "user.name"], root.fsPath, 5_000).then(r => (r.ok ? r.stdout.trim() : ""), () => "");
     const res = detachModel(raw.record, { ...current, actor: { kind: "human", id: actor || "unknown" }, at: new Date().toISOString().replace(/\.\d+Z$/, "Z"), origin: "declared" });
     if (!res.ok) { void vscode.window.showWarningMessage(res.reason); return; }
     await vscode.workspace.fs.writeFile(target.uri, new TextEncoder().encode(serializeDetachRecord(res.record)));
