@@ -3,7 +3,7 @@
  * kind builds from it. Layouts never touch the DOM; `renderer.ts` turns the tree into elements, so the
  * data → view step is tested without a browser.
  */
-import type { LayoutKind, NavLocation, NavState, ViewDef } from "../../core/navigation/navStub";
+import type { LayoutKind, NavLocation, NavState, ViewDef } from "../../core/navigation/navTypes";
 
 /** § 34 origin of a value (static, theoretical, ai-proposed, observed…). Free text: the host's labels name it. */
 export type Origin = string;

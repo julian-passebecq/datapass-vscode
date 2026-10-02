@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { NavState, ViewDef } from "../src/core/navigation/navStub";
+import type { NavState, ViewDef } from "../src/core/navigation/navTypes";
 import { parseHostMessage, type BindingData, type VNode } from "../src/webview/views/model";
 import { navDownCommand, registeredLayouts, registerLayout, screenModel, SVG_NS, toDom } from "../src/webview/views/renderer";
 import { viewHtml } from "../src/views/viewHtml";

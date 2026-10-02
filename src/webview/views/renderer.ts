@@ -6,7 +6,7 @@
  * Host messages are untrusted and validated (`parseHostMessage`); the webview only posts nav commands,
  * a selection or an "open surface" request — it never runs project code.
  */
-import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navStub";
+import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navTypes";
 import { label, parseHostMessage, type BindingData, type Labels, type LayoutModel, type VNode } from "./model";
 import { LAYOUTS } from "../../../out/gen/layouts";
 
