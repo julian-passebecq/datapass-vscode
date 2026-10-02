@@ -73,7 +73,9 @@ export const SURFACES: readonly Surface[] = [
   // V5 PQSAMP1: "Data Sample for a Code Step" in the Command Palette (the code-steps view reaches it in every mode).
   { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" },
   // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).
-  { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" }
+  { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" },
+  // V5 PEDA3: query showcase cards ("Queries worth showing", interview mode).
+  { id: "v5.peda3", kind: "palette", label: "Queries worth showing", detail: "The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

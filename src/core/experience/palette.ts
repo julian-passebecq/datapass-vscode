@@ -95,7 +95,9 @@ const GATED: Record<string, readonly string[]> = {
     "dbt.detach"
   ],
   // V5 DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (TL-5 complement).
-  "v5.dbtmat": ["dbt.materialize"]
+  "v5.dbtmat": ["dbt.materialize"],
+  // V5 PEDA3: query showcase cards.
+  "v5.peda3": ["pedagogy.queriesWorthShowing"]
 };
 
 /** Full command id → gating surface id, or null for the core. */

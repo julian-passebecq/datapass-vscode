@@ -39,6 +39,7 @@ import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
 import { registerNavigation } from "./core/navigation/register";
+import { setQueryShowcaseSource } from "./views/peda-showcase/showcase.surface";
 import type { HomeState } from "./views/homeState";
 import type { HomePage } from "./views/homeHtml";
 import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";
@@ -303,6 +304,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
   // V4-NAV: the one NavigationService; surfaces plug in through src/core/navigation/register.ts.
   registerNavigation(context, session);
+  setQueryShowcaseSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.
   const host = new WorkbenchHost(context, session);

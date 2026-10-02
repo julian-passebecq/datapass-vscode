@@ -1129,6 +1129,10 @@
         "title": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"
       },
       {
+        "command": "datapass.pedagogy.queriesWorthShowing",
+        "title": "DataPass: Queries Worth Showing"
+      },
+      {
         "command": "datapass.codeSteps.sampleStep",
         "title": "DataPass: Data Sample for a Code Step"
       },
@@ -2860,6 +2864,10 @@
           "when": "!datapass.hidden.v5.dbtmat"
         },
         {
+          "command": "datapass.pedagogy.queriesWorthShowing",
+          "when": "!datapass.hidden.v5.peda3"
+        },
+        {
           "command": "datapass.explain.export",
           "when": "!datapass.hidden.palette.full"
         },
@@ -3643,6 +3651,10 @@
               "type": "boolean",
               "description": "Command Palette: Materialize dbt Models: dbt model(s) → Fabric notebooks as a reviewed proposal: preview diff, write on confirmation, Git steps for you to run"
             },
+            "v5.peda3": {
+              "type": "boolean",
+              "description": "Queries worth showing: The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)"
+            },
             "v5.pqsamp": {
               "type": "boolean",
               "description": "Command Palette: code step data sample: Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)"
@@ -3653,6 +3665,18 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.pedagogy.queryShowcase.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA3: show the project's notable queries as showcase cards (\"Queries worth showing\"), ranked by interview value. Off: the command is not registered and nothing is computed. Static facts only: no query is run."
+        },
+        "datapass.pedagogy.queryShowcase.topN": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "V5 PEDA3: how many queries \"Queries worth showing\" lists."
         },
         "datapass.explain.sections": {
           "type": "array",
