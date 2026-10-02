@@ -8,12 +8,13 @@ import { environmentOf, variantStamp, type PackStamp } from "../core/exchange/st
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { promises as fsp } from "node:fs";
 import { executablePath } from "../core/exec";
 import { loadProjectContext, projectFacts, writeLocal, LOCAL_DIR, type ProjectContext } from "../core/workspace/loader";
 import { factNotes, type FactObservation } from "../core/workspace/facts";
 import { observeFileFacts } from "./observe";
-import { probeTools, invalidateToolProbes } from "../core/capabilities/probe";
+import { probeTools, invalidateToolProbes, CLI_TOOL_IDS } from "../core/capabilities/probe";
 import type { ToolObservation } from "../core/capabilities/tools";
 import type { PreflightContext } from "../core/capabilities/preflight";
 import { fabricProjectProfile, routeFabricOperations, type FabricRouting, type NativeBridgeInput } from "../core/capabilities/fabricRouting";
@@ -109,6 +110,9 @@ const MAX_EXCHANGES = 200;
  */
 export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
   new Promise(resolve => {
+    // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+    const allowed = checkSpawn("git", args);
+    if (!allowed.allowed) { resolve({ ok: false, stdout: "", stderr: refusal(allowed) }); return; }
     const git = executablePath("git");
     if (!git) { resolve({ ok: false, stdout: "", stderr: "git was not found on PATH" }); return; }
     execFile(git, ["-c", "core.fsmonitor=false", ...args], {
@@ -126,6 +130,11 @@ export class WorkSession implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private ctx: ProjectContext = { manifestErrors: [], manifestExists: false, packs: [], packErrors: [] };
   private tools: Map<string, ToolObservation> = new Map();
+  /**
+   * V5HOLE3: the CLI tools a view or command asked for in this window. Only these are probed
+   * (`--version`), and never at activation: see ensureToolProbes and core/spawnAllowList.ts.
+   */
+  private readonly wantedTools = new Set<string>();
   /** 0.23: the toolkit files of the hub repositories this window knows. */
   private toolkitFiles: ToolkitFileResult[] = [];
   private catalogueCache?: Catalogue;
@@ -261,7 +270,7 @@ export class WorkSession implements vscode.Disposable {
     const bounded = <T>(name: string, p: Promise<T>, fallback: T) => settleWithin(name, p, REFRESH_STEP_TIMEOUT_MS, fallback, incomplete);
     // V3-HOP2: the "recent projects" step sits between the inventory and the understanding index (its result is unused).
     const [tools, envObs, extensionsObs, bindingObs, inv, , understandingIndex] = await Promise.all([
-      bounded("tool probes", step("probes", probeTools(forceProbe)), this.tools),
+      bounded("tool probes", step("probes", probeTools(forceProbe, this.wantedTools)), this.tools),
       bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs),
       bounded("extensions.json", ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined), this.extensionsObs),
       bounded("binding folders", ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()), this.bindingObs),
@@ -271,6 +280,8 @@ export class WorkSession implements vscode.Disposable {
       bounded("understanding index", ctx.root?.scheme === "file" ? step("understanding", indexUnderstanding(ctx.root.fsPath)) : Promise.resolve(undefined), this.understandingCatalog?.index.bridgeRoot === ctx.root?.fsPath ? this.understandingCatalog?.index : undefined)
     ]);
     if (superseded()) return this.latest;
+    // V5HOLE3: a tool asked for while this refresh ran keeps its observation.
+    for (const id of this.wantedTools) { const o = this.tools.get(id); if (o && !tools.has(id)) tools.set(id, o); }
     this.tools = tools;
     this.envObs = envObs;
     this.extensionsObs = extensionsObs;
@@ -445,6 +456,20 @@ export class WorkSession implements vscode.Disposable {
   }
 
   toolObservations(): ReadonlyMap<string, ToolObservation> { return this.tools; }
+
+  /**
+   * V5HOLE3: probe these CLI tools now (a view showing them was opened, or a command needs them),
+   * and keep them in later refreshes. Ids that are not CLI tools are ignored; tools already asked
+   * for are not started again (the probe cache holds them five minutes).
+   */
+  async ensureToolProbes(ids: Iterable<string>): Promise<void> {
+    const fresh = [...new Set(ids)].filter(id => CLI_TOOL_IDS.has(id) && !this.wantedTools.has(id));
+    if (!fresh.length) return;
+    for (const id of fresh) this.wantedTools.add(id);
+    const probed = await probeTools(false, new Set(fresh));
+    for (const id of fresh) { const o = probed.get(id); if (o) this.tools.set(id, o); }
+    this.changed();
+  }
 
   /** The context every preflight in this window uses (Work view, preflight command, Galaxy cards). */
   preflightContext(): PreflightContext {

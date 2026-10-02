@@ -386,13 +386,16 @@ test("connection checks: the real runner runs from the home folder with stdin cl
     "let stdin = '';",
     "process.stdin.on('data', d => stdin += d);",
     "process.stdin.on('end', () => {",
-    "  if (process.argv.includes('sleep')) { setTimeout(() => {}, 60000); return; }",
+    "  if (process.argv.includes('profiles')) { setTimeout(() => {}, 60000); return; }",
     "  process.stdout.write(JSON.stringify({ cwd: process.cwd(), args: process.argv.slice(2), stdinEnded: true, noColor: process.env.NO_COLOR }));",
     "});"
   ].join("\n"));
-  const name = "dpfakecli";
-  if (process.platform === "win32") fs.writeFileSync(path.join(dir, `${name}.cmd`), `@"${process.execPath}" "%~dp0fake.js" %*\r\n`);
-  else { fs.writeFileSync(path.join(dir, name), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake.js" "$@"\n`); fs.chmodSync(path.join(dir, name), 0o755); }
+  // V5HOLE3: fakes of declared commands (core/spawnAllowList.ts CONNECTION_CHECKS); the databricks one hangs.
+  const name = "az";
+  for (const n of [name, "databricks"]) {
+    if (process.platform === "win32") fs.writeFileSync(path.join(dir, `${n}.cmd`), `@"${process.execPath}" "%~dp0fake.js" %*\r\n`);
+    else { fs.writeFileSync(path.join(dir, n), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/fake.js" "$@"\n`); fs.chmodSync(path.join(dir, n), 0o755); }
+  }
   const saved = { PATH: process.env.PATH, Path: process.env.Path };
   const sep = process.platform === "win32" ? ";" : ":";
   process.env.PATH = `${dir}${sep}${saved.PATH ?? saved.Path ?? ""}`;
@@ -407,10 +410,17 @@ test("connection checks: the real runner runs from the home folder with stdin cl
     assert.deepEqual(seen.args, ["account", "show", "--output", "json"]);
     assert.equal(seen.stdinEnded, true, "stdin is closed: a prompt ends at once");
     assert.equal(seen.noColor, "1");
-    const slow = await defaultConnectionRunner(name, ["sleep"], 1500);
+    const slow = await defaultConnectionRunner("databricks", ["auth", "profiles", "--output", "json"], 1500);
     assert.equal(slow.ok, false); assert.equal(slow.timedOut, true);
-    const missing = await defaultConnectionRunner("dp-no-such-cli-7f3a", ["x"], 2000);
+    // A declared command absent from PATH is "not found" (PATH holds only the fakes here).
+    process.env.PATH = dir;
+    if (process.platform === "win32") process.env.Path = dir;
+    const missing = await defaultConnectionRunner("fab", ["auth", "status"], 2000);
     assert.equal(missing.notFound, true);
+    // An undeclared command is never started, even when it is on PATH.
+    const undeclared = await defaultConnectionRunner(name, ["login"], 2000);
+    assert.equal(undeclared.ok, false);
+    assert.match(undeclared.stderr, /allow-list/);
   } finally {
     process.chdir(oldCwd);
     process.env.PATH = saved.PATH;

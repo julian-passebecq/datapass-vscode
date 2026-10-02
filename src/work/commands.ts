@@ -116,6 +116,8 @@ async function showPreflight(session: WorkSession, capabilityId?: string): Promi
   }
   const cap = CAPABILITY_INDEX.get(id);
   if (!cap) throw new UserFacingError(`Unknown capability ${id}`);
+  // V5HOLE3: the tools this operation needs are probed now, when you ask for its preflight.
+  await session.ensureToolProbes(cap.requirements.flatMap(r => r.anyOf));
   for (;;) {
     // The same context as the Work view and Galaxy: observed facts, and reviews bound to their target digest.
     const r = preflight(cap, session.preflightContext());

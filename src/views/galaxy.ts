@@ -33,13 +33,19 @@ export class GalaxyViewProvider implements vscode.WebviewViewProvider {
   }
 
   private last?: GalaxyState;
+  /** V5HOLE3: told each time the platform state is gathered (the status bar follows it). */
+  onState?: (state: GalaxyState) => void;
 
   /** Whether the Galaxy view is showing (a work view records it, 0.17). */
   isVisible(): boolean { return this.view?.visible ?? false; }
 
+  /** V5HOLE3: the platform state gathered when the view last showed, if any. */
+  lastState(): GalaxyState | undefined { return this.last; }
+
   async refresh(): Promise<GalaxyState> {
     const state = await collectGalaxyState(this.extensionUri);
     this.last = state;
+    this.onState?.(state);
     await this.post(state);
     return state;
   }

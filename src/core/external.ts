@@ -5,6 +5,7 @@
  */
 import * as vscode from "vscode";
 import { spawn } from "node:child_process";
+import { checkSpawn, refusal } from "./spawnAllowList";
 
 export type ExternalOpener = (uri: vscode.Uri) => Thenable<boolean>;
 
@@ -44,6 +45,9 @@ export function setExternalOpenerForTests(impl?: ExternalOpener): void {
  */
 export type AppLauncher = (executable: string) => Promise<void>;
 const systemLauncher: AppLauncher = executable => new Promise((resolve, reject) => {
+  // V5HOLE3: declared in core/spawnAllowList.ts (the configured app, no arguments).
+  const allowed = checkSpawn(executable, [], { launch: true });
+  if (!allowed.allowed) { reject(new Error(refusal(allowed))); return; }
   const child = spawn(executable, [], { detached: true, stdio: "ignore", windowsHide: false, shell: false });
   child.once("error", reject);
   child.once("spawn", () => { child.unref(); resolve(); });

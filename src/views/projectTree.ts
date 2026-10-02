@@ -277,7 +277,10 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
         const kids = node.c.children.map(id => map.components.find(c => c.id === id)).filter((c): c is ComponentView => !!c).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id }));
         return this.remember([...files, ...kids], node);
       }
-      case "section": return this.remember(node.kids(), node);
+      case "section":
+        // V5HOLE3: opening "Tools & versions" is what probes the local tools it lists (never at activation).
+        if (node.id === "tools") void this.session.ensureToolProbes(this.session.readiness().toolchain.entries.filter(e => e.where === "local").map(e => e.tool));
+        return this.remember(node.kids(), node);
       default: return [];
     }
   }

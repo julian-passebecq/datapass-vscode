@@ -15,6 +15,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { executablePath } from "../core/exec";
 import { readProjectManifest } from "../core/projectManifest";
 import { buildCompanyWorkspace, parseWorkspaceFile, workspaceFileName } from "../core/windows/company";
@@ -51,9 +52,13 @@ interface CloneOutcome { ok: boolean; stderr: string }
  */
 function gitClone(url: string, folder: string, cwd: string): Promise<CloneOutcome> {
   return new Promise(resolve => {
+    const args = ["clone", "--origin", "origin", "--", url, folder];
+    // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+    const allowed = checkSpawn("git", args);
+    if (!allowed.allowed) { resolve({ ok: false, stderr: refusal(allowed) }); return; }
     const git = executablePath("git");
     if (!git) { resolve({ ok: false, stderr: "Git was not found on PATH. Install Git (git-scm.com), then retry." }); return; }
-    execFile(git, ["-c", "core.fsmonitor=false", "clone", "--origin", "origin", "--", url, folder], {
+    execFile(git, ["-c", "core.fsmonitor=false", ...args], {
       cwd, timeout: CLONE_TIMEOUT_MS, windowsHide: true, maxBuffer: 8 * 1024 * 1024,
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }
     }, (error, _stdout, stderr) => resolve({ ok: !error, stderr: String(stderr ?? "") || (error ? errorMessage(error) : "") }));
