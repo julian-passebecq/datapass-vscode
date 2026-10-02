@@ -8,8 +8,8 @@ import { contextHtml } from "../src/views/contextHtml";
 
 const loc = { level: "artifact" as const, nodeId: "nb_sales", artifactKind: "spark-notebook" };
 
-test("tabs: six built-in sections, titles overridable by setting", () => {
-  assert.deepEqual(DEFAULT_CONTEXT_TABS.map(t => t.id), ["summary", "process-step", "why", "patterns", "fabric", "evidence"]);
+test("tabs: seven built-in sections, titles overridable by setting", () => {
+  assert.deepEqual(DEFAULT_CONTEXT_TABS.map(t => t.id), ["summary", "process-step", "why", "patterns", "fabric", "authority", "evidence"]);
   const tabs = contextTabs({ fabric: "Sur Fabric", why: "", patterns: 3, evidence: "x".repeat(61) });
   assert.equal(tabs.find(t => t.id === "fabric")?.title, "Sur Fabric");
   assert.equal(tabs.find(t => t.id === "why")?.title, "Why & alternatives");

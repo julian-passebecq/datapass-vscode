@@ -16,6 +16,7 @@ export const DEFAULT_CONTEXT_TABS: readonly ContextTab[] = [
   { id: "why", title: "Why & alternatives" },
   { id: "patterns", title: "Patterns" },
   { id: "fabric", title: "On Fabric" },
+  { id: "authority", title: "Authority" },
   { id: "evidence", title: "Evidence" }
 ];
 
