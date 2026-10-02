@@ -89,6 +89,8 @@ const GATED: Record<string, readonly string[]> = {
     "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
     // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
     "understanding.analyzeDbtProjects",
+    // V5 EXPLAIN1: export the client-shareable explainer page (the lighter modes are at their palette budget).
+    "explain.export",
     // DETACH1: detach a materialized dbt model (authority flip + stamp); also reached from the Project tree section.
     "dbt.detach"
   ],

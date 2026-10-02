@@ -1116,6 +1116,11 @@
         "icon": "$(list-selection)"
       },
       {
+        "command": "datapass.explain.export",
+        "title": "DataPass: Export Explainer Page (HTML)…",
+        "icon": "$(export)"
+      },
+      {
         "command": "datapass.dbt.materialize",
         "title": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"
       },
@@ -2847,6 +2852,10 @@
           "when": "!datapass.hidden.v5.dbtmat"
         },
         {
+          "command": "datapass.explain.export",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.codeSteps.sampleStep",
           "when": "!datapass.hidden.v5.pqsamp"
         },
@@ -3636,6 +3645,54 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.explain.sections": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "title",
+              "source",
+              "layouts"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "layouts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "description": {
+                "type": "string"
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "params": {
+                "type": "object"
+              }
+            }
+          },
+          "markdownDescription": "Sections of the explainer page (**DataPass: Export Explainer Page**), in order. Empty = the built-in set: architecture map, flows, lineage, readiness, next steps, recorded decisions. `layouts` lists layout kinds in preference order."
+        },
+        "datapass.explain.labels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "markdownDescription": "Label overrides for the explainer page (keys such as `marking.internal`, `header.git`, `legend.declared`)."
         },
         "datapass.navView.labels": {
           "type": "object",
