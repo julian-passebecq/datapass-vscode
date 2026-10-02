@@ -50,7 +50,7 @@ const PROVIDERS: readonly BindingProvider[] = BINDINGS;
  * A provider package removes its source from this list; `tests/navData.test.ts` keeps it exact.
  */
 export const UNPROVIDED_SOURCES: readonly string[] = [
-  "volumetry", "spark-perf", "sql-shape", "git-history", "hop-steps", "rationale", "fabric-item", "execution-unit"
+  "volumetry", "spark-perf", "sql-shape", "hop-steps", "rationale", "fabric-item", "execution-unit"
 ];
 
 const BY_SOURCE = new Map(PROVIDERS.map(p => [p.source, p]));
