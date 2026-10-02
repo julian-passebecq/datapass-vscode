@@ -16,7 +16,7 @@ import type { DataPassProjectManifest } from "../core/projectManifestModel";
 import type { GraphItem, ProjectGraph } from "../core/workspace/graph";
 import { componentRepositories } from "../core/project/projectMap";
 import { artifactPlan, COORDINATION_KEY, globMatcher, obsKey, repoNameFromRemote, sameRemote, type FileObservation, type Fingerprint, type RepoObservation, type TrackingObservation } from "../core/project/resolve";
-import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, interpretLsFiles, interpretOrigin, MAX_PLANNED_ENTRIES, OBSERVE_CONCURRENCY, runBounded, type Incompleteness } from "../core/project/observation";
+import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, interpretLsFiles, interpretOrigin, MAX_PLANNED_ENTRIES, nearbyOrigin, OBSERVE_CONCURRENCY, readOrigin, runBounded, type Incompleteness, type OriginAnswers } from "../core/project/observation";
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { statusCounts } from "../core/git/porcelain";
 import { sha256Bytes } from "../core/model/ids";
@@ -36,15 +36,13 @@ async function cacheEntry(folder: string): Promise<{ entry: CachedRepo; gitDir?:
   return { entry: repoCache.entry(folder, fp?.key), gitDir: fp?.gitDir };
 }
 
-/** `git config --get remote.origin.url` (and `git remote` when it failed), once per fingerprint. */
-async function originAnswers(git: GitRunner, folder: string, entry: CachedRepo): Promise<Pick<CachedRepo, "config" | "remotes">> {
-  if (entry.config) return { config: entry.config, remotes: entry.remotes };
-  const config = await gitRead(git, ["config", "--get", "remote.origin.url"], folder, 5000);
-  // A failed `config --get` also means "no such key": `git remote` tells the two apart (F04).
-  const remotes = config.ok ? undefined : await gitRead(git, ["remote"], folder, 5000);
+/** The origin answers of a clone (see readOrigin: 20 s, one retry when Git did not answer), once per fingerprint. */
+async function originAnswers(git: GitRunner, folder: string, entry: CachedRepo): Promise<OriginAnswers> {
+  if (entry.config) return { config: entry.config, remotes: entry.remotes, answered: true };
+  const r = await readOrigin(git, folder);
   // A timeout or a failed start is not an answer worth keeping.
-  if (config.ok || remotes?.ok) { entry.config = config; entry.remotes = remotes; }
-  return { config, remotes };
+  if (r.answered) { entry.config = r.config; entry.remotes = r.remotes; }
+  return r;
 }
 
 export interface ProjectObservation {
@@ -166,13 +164,13 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
   const repos = new Map<string, RepoObservation>();
   const folders = new Map<string, vscode.Uri>();
   // One lookup per folder even when several repositories consider it at once (V1-REF: kept in repoCache too).
-  const originCache = new Map<string, Promise<string | undefined>>();
-  const originOf = (folder: string): Promise<string | undefined> => {
-    if (!o.trusted) return Promise.resolve(undefined);
+  const originCache = new Map<string, Promise<{ url?: string; state: "none" | "other" | "unknown" }>>();
+  const originOf = (folder: string): Promise<{ url?: string; state: "none" | "other" | "unknown" }> => {
+    if (!o.trusted) return Promise.resolve({ state: "unknown" });
     const id = path.resolve(folder);
     if (!originCache.has(id)) originCache.set(id, cacheEntry(folder).then(async ({ entry }) => {
-      const { config } = await originAnswers(o.git, folder, entry);
-      return config?.ok ? config.stdout.trim() || undefined : undefined;
+      const r = await originAnswers(o.git, folder, entry);
+      return { url: r.config.ok ? r.config.stdout.trim() || undefined : undefined, state: nearbyOrigin(r) };
     }));
     return originCache.get(id)!;
   };
@@ -201,9 +199,10 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
       for (const c of candidates) {
         if (!(await exists(c.f))) continue;
         const origin = await originOf(c.f);
-        if (sameRemote(origin, repo.remote.url)) { folder = c.f; source = c.s; break; }
+        if (sameRemote(origin.url, repo.remote.url)) { folder = c.f; source = c.s; break; }
         // A sibling of the right name that is not this remote is never bound; it is only named (V1-STAB).
-        if (c.s === "sibling-folder" && !nearby) nearby = { folderName: path.basename(c.f), origin: origin ? "other" : "none" };
+        // DESKHARD2: when Git did not answer, its origin is "unknown" (not checked), never "none".
+        if (c.s === "sibling-folder" && !nearby) nearby = { folderName: path.basename(c.f), origin: origin.state };
       }
     }
     // Untrusted: an origin cannot be verified without Git, so an unlocated clone is "not inspected", not "not cloned".

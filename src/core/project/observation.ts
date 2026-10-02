@@ -24,6 +24,33 @@ export async function gitRead(git: (args: string[], cwd: string, timeoutMs: numb
   return git(args, cwd, timeoutMs);
 }
 
+/** DESKHARD2: an origin lookup gets this long; under CI load 5 s was not enough and read as "no remote". */
+export const ORIGIN_TIMEOUT_MS = 20000;
+
+export interface OriginAnswers { config: GitAnswer; remotes?: GitAnswer; answered: boolean }
+
+/**
+ * `git config --get remote.origin.url`, and `git remote` when it failed (a failed `config --get`
+ * also means "no such key": `git remote` tells the two apart, F04). DESKHARD2: when neither command
+ * answered (a timeout or a failed start), both are asked once more; `answered` stays false if they
+ * still do not, and the caller then says "not checked", never "no remote".
+ */
+export async function readOrigin(git: (args: string[], cwd: string, timeoutMs: number) => Promise<GitAnswer>, folder: string, timeoutMs = ORIGIN_TIMEOUT_MS, pauseMs = 100): Promise<OriginAnswers> {
+  const once = async () => {
+    const config = await gitRead(git, ["config", "--get", "remote.origin.url"], folder, timeoutMs, pauseMs);
+    const remotes = config.ok ? undefined : await gitRead(git, ["remote"], folder, timeoutMs, pauseMs);
+    return { config, remotes, answered: config.ok || remotes?.ok === true };
+  };
+  const first = await once();
+  return first.answered ? first : once();
+}
+
+/** What a nearby folder's origin lookup says: another remote, none at all, or not checked (Git did not answer). */
+export function nearbyOrigin(o: Pick<OriginAnswers, "config" | "answered">): "none" | "other" | "unknown" {
+  if (!o.answered) return "unknown";
+  return o.config.ok && o.config.stdout.trim() ? "other" : "none";
+}
+
 /** At most this many file observations run at once. */
 export const OBSERVE_CONCURRENCY = 16;
 /** At most this many expected files are observed per refresh; the rest are reported as skipped. */

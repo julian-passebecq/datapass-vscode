@@ -12,7 +12,7 @@ import { buildProjectMap } from "../src/core/project/projectMap";
 import { buildPreparationPack, COORDINATED_CHANGE_RULE } from "../src/core/project/preparation";
 import { AI_TASKS, exportForAi } from "../src/core/project/aiExchange";
 import { COORDINATION_KEY, resolveRepositories, type FileObservation, type RepoObservation } from "../src/core/project/resolve";
-import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, incompleteText, interpretLsFiles, interpretOrigin, MAX_INLINE_HASH_BYTES, MAX_PLANNED_ENTRIES, MAX_STREAM_HASH_BYTES, OBSERVE_CONCURRENCY, runBounded } from "../src/core/project/observation";
+import { ByteBudget, gitRead, HASH_BYTE_BUDGET, hashMode, incompleteness, incompleteText, interpretLsFiles, interpretOrigin, MAX_INLINE_HASH_BYTES, MAX_PLANNED_ENTRIES, MAX_STREAM_HASH_BYTES, nearbyOrigin, OBSERVE_CONCURRENCY, ORIGIN_TIMEOUT_MS, readOrigin, runBounded } from "../src/core/project/observation";
 import { upsertQualification } from "../src/core/qualification/qualification";
 import type { DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { fileObsA, inputA } from "./fixtures/v3/research";
@@ -260,6 +260,34 @@ test("V1-STAB: a sibling of the right name with no origin is named, never bound"
   assert.match(none.detail ?? "", /folder code found, no remote: identity not verified/);
   assert.match(none.nextStep ?? "", /Locate an Existing Clone/);
   assert.match(view({ folderName: "code", origin: "other" }).detail ?? "", /folder code found, its remote is another repository: identity not verified/);
+});
+
+test("DESKHARD2: a Git origin lookup that timed out is retried once, then reported as not checked, never as no remote", async () => {
+  const timedOut = { ok: false, stdout: "", stderr: "timed out" };
+  const calls: Array<{ args: string[]; timeoutMs: number }> = [];
+  const silent = async (args: string[], _cwd: string, timeoutMs: number) => { calls.push({ args, timeoutMs }); return timedOut; };
+  const r = await readOrigin(silent, "/repo", undefined, 1);
+  assert.equal(r.answered, false);
+  assert.equal(nearbyOrigin(r), "unknown");
+  assert.equal(calls.length, 4, "config + remote, then once more");
+  assert.ok(calls.every(c => c.timeoutMs === ORIGIN_TIMEOUT_MS && c.timeoutMs === 20000));
+  // The retry that answers is used.
+  const answers = [timedOut, timedOut, { ok: true, stdout: "https://github.com/o/code.git\n" }];
+  const late = await readOrigin(async () => answers.shift()!, "/repo", 1000, 1);
+  assert.equal(late.answered, true);
+  assert.equal(nearbyOrigin(late), "other");
+  // A real "no origin" (config fails, `git remote` answers nothing) stays "none", without a retry.
+  const none = [{ ok: false, stdout: "" }, { ok: true, stdout: "" }];
+  let n = 0;
+  const noRemote = await readOrigin(async () => { n++; return none.shift()!; }, "/repo", 1000, 1);
+  assert.equal(nearbyOrigin(noRemote), "none");
+  assert.equal(n, 2);
+  // The view says "not checked", not "no remote: identity not verified".
+  const m = { schemaVersion: 3, project: { id: "p", title: "P" }, repositories: { code: { label: "Code", remote: { url: "https://github.com/o/code.git" } } } } as unknown as DataPassProjectManifest;
+  const view = resolveRepositories(m, new Map([["code", { key: "code", source: "none", exists: false, nearby: { folderName: "code", origin: nearbyOrigin(r) } }]]), COORDINATION_KEY).find(x => x.key === "code")!;
+  assert.equal(view.state, "unbound");
+  assert.match(view.detail ?? "", /folder code found, remote not checked \(git did not answer\)/);
+  assert.doesNotMatch(view.detail ?? "", /no remote/);
 });
 
 test("V1-FLAKE2: a Git read that met the config being replaced (Windows) is asked once more; other failures are kept", async () => {
