@@ -1,0 +1,74 @@
+{
+  "schema": "datapass.decision-rationale/1",
+  "project": "shop-lakehouse",
+  "author": "synthetic-fixture",
+  "rationales": [
+    {
+      "id": "fct-orders-dedup",
+      "decisionPoint": "dedup-strategy",
+      "scale": "micro",
+      "domain": "incremental-cdc",
+      "subjects": [
+        {
+          "kind": "path",
+          "id": "dbt/models/staging/stg_orders.sql"
+        }
+      ],
+      "choice": {
+        "option": "row-number-latest",
+        "summary": "Keep the latest ingested row per order_id with row_number()."
+      },
+      "problemSolved": "Order files can be re-sent; returns must be counted once.",
+      "why": [
+        {
+          "constraint": "data-profile",
+          "driver": "The landing folder receives duplicate order files.",
+          "rule": null,
+          "evidence": [
+            {
+              "path": "dbt/models/staging/stg_orders.sql",
+              "startLine": 12,
+              "endLine": 12,
+              "cell": null,
+              "excerpt": "row_number() over (partition by order_id order by _ingested_at desc) as rn"
+            }
+          ]
+        }
+      ],
+      "how": {
+        "mechanism": "Window function in the silver model, filter rn = 1.",
+        "evidence": [
+          {
+            "path": "dbt/models/staging/stg_orders.sql",
+            "startLine": 17,
+            "endLine": 17,
+            "cell": null,
+            "excerpt": "where rn = 1"
+          }
+        ]
+      },
+      "alternatives": [
+        {
+          "option": "merge-upsert",
+          "label": "MERGE into a silver Delta table",
+          "whenBetter": "Very large tables with late updates",
+          "costRisk": "More code and a stateful table",
+          "whyNotHere": "Daily volume is small enough for a full rebuild"
+        }
+      ],
+      "tradeoffs": [
+        "Full rebuild of silver each day"
+      ],
+      "revisitWhen": [
+        {
+          "trigger": "Daily volume above 10 million rows",
+          "constraint": "volume"
+        }
+      ],
+      "confidence": "medium",
+      "origin": "owner-stated",
+      "openQuestions": [],
+      "acceptedFindings": []
+    }
+  ]
+}

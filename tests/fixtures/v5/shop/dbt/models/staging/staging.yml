@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: stg_orders
+    description: Typed, deduplicated orders (one row per order_id).
+    columns:
+      - name: order_id
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: [placed, shipped, returned]

@@ -1,0 +1,38 @@
+{
+  "properties": {
+    "activities": [
+      {
+        "name": "Ingest orders",
+        "type": "TridentNotebook",
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 300
+        },
+        "typeProperties": {
+          "notebookId": "00000000-0000-0000-0000-00000000a001"
+        }
+      },
+      {
+        "name": "Build dbt models",
+        "type": "DbtCommand",
+        "dependsOn": [
+          {
+            "activity": "Ingest orders",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ],
+        "policy": {
+          "timeout": "0.02:00:00",
+          "retry": 1,
+          "retryIntervalInSeconds": 600
+        },
+        "typeProperties": {
+          "command": "dbt build --select stg_orders+"
+        }
+      }
+    ]
+  }
+}

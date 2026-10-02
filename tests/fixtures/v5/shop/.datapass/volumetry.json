@@ -1,0 +1,16 @@
+{
+  "format": "datapass.volumetry",
+  "version": 1,
+  "tables": [
+    {
+      "table": "bronze.orders_raw",
+      "rowsPerDay": 120000,
+      "retentionDays": 730
+    },
+    {
+      "table": "gold.fct_orders",
+      "rowsPerDay": 30000,
+      "retentionDays": 1825
+    }
+  ]
+}

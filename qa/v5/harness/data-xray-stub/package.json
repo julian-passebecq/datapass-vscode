@@ -1,0 +1,13 @@
+{
+  "name": "datapass-data-xray",
+  "displayName": "Data X-Ray (QA stand-in, CSV reader)",
+  "description": "Test-only stand-in for the Data X-Ray sample command in the V5 acceptance run. Never packaged.",
+  "publisher": "datapass",
+  "version": "0.0.0-qa",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "vscode": "^1.90.0" },
+  "activationEvents": ["onCommand:datapass.dataXray._sample"],
+  "main": "./extension.js",
+  "contributes": { "commands": [{ "command": "datapass.dataXray._sample", "title": "Data X-Ray: sample (QA stand-in)" }] }
+}

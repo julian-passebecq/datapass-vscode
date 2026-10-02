@@ -1,0 +1,14 @@
+{
+  "format": "datapass.objectives",
+  "version": 1,
+  "objectives": [
+    {
+      "id": "daily-revenue",
+      "title": "Sales sees yesterday's revenue per customer by 06:00 UTC"
+    },
+    {
+      "id": "trusted-returns",
+      "title": "Returns are counted once, even when an order file is re-sent"
+    }
+  ]
+}
