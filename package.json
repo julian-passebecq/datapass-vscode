@@ -2920,6 +2920,36 @@
           "scope": "application",
           "markdownDescription": "Global navigation chords while a DataPass navigation view is open: `Shift+Alt+P` then an arrow, `Home`, `Backspace` (back), `Shift+Backspace` (forward) or `V` (pick a view). They never fire in the editor, the terminal, a tree or an input box, and no VS Code default uses `Shift+Alt+P`. Plain arrows inside the navigation views work either way. Rebind them in Keyboard Shortcuts (`datapass.nav.`)."
         },
+        "datapass.navigator.miniMap": {
+          "type": "string",
+          "enum": ["architecture-tb", "architecture-lr", "ladder", "off"],
+          "enumDescriptions": ["Architecture, top-down: project → sub-projects → artifacts, current place ringed in red.", "Architecture, left-right.", "The five levels (project → operation) with the current path.", "No mini-map."],
+          "default": "architecture-tb",
+          "description": "Mini-map shown in the DataPass Navigator."
+        },
+        "datapass.navigator.palette": {
+          "type": "string",
+          "enum": ["charts", "overlay", "custom"],
+          "default": "charts",
+          "description": "Colour preset for nodes and tables in navigation views (mini-map, graphs, code steps): theme chart colours, the DataPass overlay hues, or datapass.navigator.paletteColors."
+        },
+        "datapass.navigator.paletteColors": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "default": [],
+          "description": "Colours of the 'custom' navigation palette (#rrggbb). Each node or table id always gets the same one."
+        },
+        "datapass.navigator.paletteAssign": {
+          "type": "object",
+          "additionalProperties": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+          "default": {},
+          "description": "Pinned colour (#rrggbb) per node or table id in navigation views."
+        },
+        "datapass.navigator.hereColor": {
+          "type": "string",
+          "default": "",
+          "description": "Colour (#rrggbb) of the 'you are here' ring in the mini-map. Empty = the theme's red."
+        },
         "datapass.diagramCloud.url": {
           "type": "string",
           "default": "",
