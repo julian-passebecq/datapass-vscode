@@ -7,6 +7,7 @@
  */
 import type { ProjectMap } from "../../project/projectMap";
 import type { NavLocation, ViewDef } from "../navTypes";
+import type { GraphView } from "@juliandatapass-group/view-spi";
 import { BINDINGS } from "../../../../out/gen/bindings";
 
 /** § 34 origins (open vocabulary: Common may add more). */
@@ -16,14 +17,18 @@ export interface BindingRow { readonly id: string; readonly label: string; reado
 export interface BindingCard { readonly title: string; readonly fields: readonly { readonly label: string; readonly value: string; readonly origin: BindingOrigin }[] }
 export interface BindingMetric { readonly id: string; readonly label: string; readonly value: number | string; readonly unit?: string; readonly origin: BindingOrigin }
 export interface BindingGraph {
-  readonly nodes: readonly { readonly id: string; readonly label: string; readonly origin: BindingOrigin }[];
+  /** `kind`: a view-spi node kind when known (dataset, task, job…). */
+  readonly nodes: readonly { readonly id: string; readonly label: string; readonly origin: BindingOrigin; readonly kind?: string }[];
   readonly edges: readonly { readonly source: string; readonly target: string; readonly label?: string; readonly origin: BindingOrigin }[];
 }
 export interface BindingResult {
   readonly rows?: readonly BindingRow[];
-  readonly graph?: BindingGraph;
+  /** A raw graph (the host turns it into a view-spi graph view, bindings/graphView.ts) or an already projected one. */
+  readonly graph?: BindingGraph | GraphView;
   readonly cards?: readonly BindingCard[];
   readonly metrics?: readonly BindingMetric[];
+  /** `code-steps` payload (a `CodeStepsInput`); the host adds the PQSAMP1 samples before sending. */
+  readonly steps?: unknown;
   /** `kind` types the hole (no-project, out-of-scope, not-declared, binding-unavailable, binding-failed…); the host labels it. */
   readonly holes: readonly { readonly reason: string; readonly kind?: string }[];
   readonly origin: BindingOrigin;
