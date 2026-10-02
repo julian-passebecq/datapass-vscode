@@ -42,6 +42,8 @@ export class NavigationService {
 
   /** Apply one command; listeners hear only real changes. Returns the (possibly unchanged) state. */
   dispatch(command: NavCommand): NavState {
+    // A `go` built without the ladder's kinds (tree selection, next-step links) lands on the same node.
+    if (command.type === "go") command = { ...command, location: this.relocate(command.location) ?? command.location };
     return this.commit(reduceNav(this.current, command, this.ladderImpl, (l) => this.viewsAt(l)), command);
   }
 
@@ -62,12 +64,23 @@ export class NavigationService {
 
   private revalidate(): void {
     const s = this.current;
-    const exists = this.reachable(s.location);
-    const location = exists ? s.location : this.ladderImpl.root();
+    const here = this.relocate(s.location);
+    const location = here ?? this.ladderImpl.root();
     const offered = this.viewsAt(location);
     const viewId = s.viewId !== null && offered.some((v) => v.id === s.viewId) ? s.viewId : offered[0]?.id ?? null;
-    const keep = (list: readonly NavLocation[]) => list.filter((l) => this.reachable(l));
+    const keep = (list: readonly NavLocation[]) => list.map((l) => this.relocate(l)).filter((l): l is NavLocation => l !== undefined);
     this.commit({ location, viewId, back: keep(s.back), forward: keep(s.forward) }, null);
+  }
+
+  /**
+   * The same place on the current ladder: unchanged when reachable, else the node with the same level
+   * and id when the ladder can look it up (`entry`, NAVLOC1) and only its kind changed (a10: a file
+   * head read later turns "other" into "spark-notebook"), else undefined.
+   */
+  private relocate(l: NavLocation): NavLocation | undefined {
+    if (this.reachable(l)) return l;
+    const moved = (this.ladderImpl as NavLadder & { entry?(l: NavLocation): { location: NavLocation } | undefined }).entry?.(l)?.location;
+    return moved && moved.level === l.level && moved.nodeId === l.nodeId && this.reachable(moved) ? moved : undefined;
   }
 
   /** On the ladder: the root, or a location whose parent chain reaches the root and lists it as a child. */
