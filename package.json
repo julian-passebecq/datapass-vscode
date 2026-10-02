@@ -560,6 +560,11 @@
         "icon": "$(sparkle)"
       },
       {
+        "command": "datapass.nav.explain.ask",
+        "title": "DataPass: Ask the AI to Explain This Location (Work Order)",
+        "icon": "$(sparkle)"
+      },
+      {
         "command": "datapass.openHome",
         "title": "DataPass: Open Home (modules, layouts, project links)",
         "icon": "$(home)"
@@ -2060,6 +2065,10 @@
       ],
       "commandPalette": [
         {
+          "command": "datapass.nav.explain.ask",
+          "when": "false"
+        },
+        {
           "command": "datapass.navView.open",
           "when": "!datapass.hidden.palette.full"
         },
@@ -3264,6 +3273,12 @@
           "default": true,
           "scope": "application",
           "description": "Show an \"Other repositories\" section in the Git view: the Git repositories directly under datapass.projectsFolders (at most 60), read only when you open the section."
+        },
+        "datapass.nav.explain.labels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": { "type": "string" },
+          "markdownDescription": "Labels of the navigator's AI explanations (NAVAIX1): `button`, `badge` (default \"AI-proposed\"), `stale`, `missing`, `invalid`, `orderTitle`, `orderNote`. Placeholders: `{node}`, `{paths}`, `{reason}`, `{file}`."
         },
         "datapass.ai.workOrders.enabled": {
           "type": "boolean",
