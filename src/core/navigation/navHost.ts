@@ -7,6 +7,7 @@
  */
 import * as vscode from "vscode";
 import type { ProjectMap } from "../project/projectMap";
+import type { OptionsFile } from "../project/options";
 import { NavigationService } from "./navigationService";
 import { type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
 import { builtinCatalog } from "./viewPacks";
@@ -23,6 +24,9 @@ export interface NavSession {
   select(sel: { subproject?: string; component?: string }): Promise<void>;
   readonly onDidChange: vscode.Event<unknown>;
   readonly onDidChangeSelection: vscode.Event<unknown>;
+  /** V5 EXPLAIN1: project folder and parsed project files, for exports (optional; absent in tests). */
+  readonly root?: vscode.Uri;
+  readonly project?: { readonly options?: OptionsFile; readonly manifest?: { readonly project?: { readonly title?: string } } };
   /** Local folder of a repository (a10: file heads for artifact kinds); absent = kinds from paths only. */
   repoFolder?(repoKey: string): vscode.Uri | undefined;
   /** V5HOLE1: a file's Hop explanation (validated, never executed); absent = no `hop-steps` data. */
