@@ -178,6 +178,7 @@ Recorded by the PM so they live in the repository, not only in session memory. M
   - (b) Sélection des tests par impact dans le job unitaire.
   - (c) Train de fusion en lot : tester 2–3 MR ensemble sur `main` et fusionner le lot si c'est vert ; en cas de rouge, couper le lot en deux.
   - (d) Les coders lancent les tests ciblés avant d'ouvrir l'MR. C'est déjà la règle.
+  - (e) Article « Test the diff, not the app » (HackerNoon, qui vend QA.tech) : on garde l'idée, pas le produit. Un niveau de risque par MR (docs → lint ; `src/core` → suite complète) et un contrôle « le diff est couvert » : au moins un test exécute les lignes modifiées (couverture du diff), sinon l'MR est marquée « non vérifiée ». La petite suite de régression critique reste. Les tests jetables générés par agent ne sont pas adoptés : ils ont besoin d'environnements de prévisualisation fiables, que l'extension VS Code n'a pas.
 - Pas de bascule vers GitHub Actions (déjà décidé le 1 Oct). Pas de bacs à sable Kubernetes (le produit vendu par Signadot) : DataPass n'a pas de services à déployer.
 - Le triage des rouges par un agent existe déjà (COORD). Garde-fous gardés : la CI verte reste obligatoire, la règle d'auto-merge « tête contient main » aussi, et `main` ne reçoit aucune fusion non testée.
 
