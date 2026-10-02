@@ -3141,7 +3141,7 @@
           "type": "object",
           "default": {},
           "additionalProperties": { "type": "string", "maxLength": 60 },
-          "markdownDescription": "Titles of the DataPass Context tabs, by id: `summary`, `process-step`, `why`, `patterns`, `fabric`, `evidence`. Empty = the built-in titles."
+          "markdownDescription": "Titles of the DataPass Context tabs, by id: `summary`, `process-step`, `why`, `patterns`, `fabric`, `authority`, `evidence`. Empty = the built-in titles."
         },
         "datapass.layout.architectureInPanel": {
           "type": "boolean",
@@ -3536,7 +3536,7 @@
             },
             "view.context": {
               "type": "boolean",
-              "description": "Context panel: Details of where you are: summary, process step, why, patterns, Fabric, evidence (bottom panel)"
+              "description": "Context panel: Details of where you are: summary, process step, why, patterns, Fabric, authority, evidence (bottom panel)"
             },
             "view.aiExchange": {
               "type": "boolean",
