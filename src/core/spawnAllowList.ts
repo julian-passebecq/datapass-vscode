@@ -137,6 +137,17 @@ export const FABRIC_READS: readonly FixedRead[] = [
   { id: "fab.ls", command: "fab", prefix: ["ls"], args: "ls [<workspace>.Workspace -l]" }
 ];
 
+/**
+ * V5HOLE3: what a Galaxy refresh may do. The platform probes (Galaxy adapters, CLI `--version`) run
+ * when the Galaxy view is showing or a Galaxy command asked for them (Refresh, the test API); an
+ * automatic refresh (activation, file watchers, settings) with the view hidden only re-renders the
+ * last known state.
+ */
+export type GalaxyRefreshTrigger = "automatic" | "command";
+export function galaxyGathers(trigger: GalaxyRefreshTrigger, viewVisible: boolean): boolean {
+  return viewVisible || trigger === "command";
+}
+
 /** The configured desktop app (datapass.powerOps.path), started detached with no arguments. */
 export const APP_LAUNCH_ID = "app.launch";
 

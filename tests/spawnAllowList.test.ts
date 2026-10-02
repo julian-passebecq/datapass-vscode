@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { checkSpawn, GIT_READ_ONLY, SPAWN_ALLOW_LIST, SPAWN_SITES, TOOL_PROBES } from "../src/core/spawnAllowList";
+import { checkSpawn, galaxyGathers, GIT_READ_ONLY, SPAWN_ALLOW_LIST, SPAWN_SITES, TOOL_PROBES } from "../src/core/spawnAllowList";
 import { TOOLS } from "../src/core/capabilities/tools";
 
 const ROOT = join(__dirname, "..");
@@ -109,4 +109,12 @@ test("the harness list is complete data with unique ids", () => {
   for (const tool of ["java", "python", "psql", "docker", "gcloud", "kubectl", "dotnet"]) {
     assert.ok(SPAWN_ALLOW_LIST.some(d => d.trigger === "lazy-probe" && d.command.split("|").some(c => c.startsWith(tool))), `${tool} probe declared`);
   }
+});
+
+test("Galaxy platform probes: gathered when the view shows or a Galaxy command asks, never on an automatic refresh with the view hidden", () => {
+  assert.equal(galaxyGathers("automatic", false), false, "activation / watchers with the view hidden stay lazy");
+  assert.equal(galaxyGathers("automatic", true), true);
+  // Standard hides the Galaxy view: Refresh (and the test API) must still render platform state.
+  assert.equal(galaxyGathers("command", false), true);
+  assert.equal(galaxyGathers("command", true), true);
 });
