@@ -43,8 +43,9 @@ export const MOVE_NAVIGATOR_COMMAND = "datapass.nav.moveNavigator";
 export interface NavigatorSlot {
   readonly id: string;
   readonly messageTypes: readonly string[];
-  readonly onDidChange: (listener: () => unknown) => { dispose(): unknown };
-  html(): string;
+  /** Absent for a script-only slot (it adds behaviour to another slot's markup). */
+  readonly onDidChange?: (listener: () => unknown) => { dispose(): unknown };
+  html?(): string;
   handle(message: unknown): unknown;
   script(api: string): string;
   css?(): string;
@@ -82,7 +83,7 @@ export class NavigatorView implements vscode.WebviewViewProvider, vscode.Disposa
 
   private watchSlots(): void {
     for (const s of this.slotSubs) s.dispose();
-    this.slotSubs = [...slots.values()].map(slot => slot.onDidChange(() => void this.postSlot(slot)));
+    this.slotSubs = [...slots.values()].flatMap(slot => slot.onDidChange ? [slot.onDidChange(() => void this.postSlot(slot))] : []);
   }
 
   /** A slot came or went: re-subscribe and rebuild the pages (their scripts changed). */
@@ -100,6 +101,7 @@ export class NavigatorView implements vscode.WebviewViewProvider, vscode.Disposa
   }
 
   private async postSlot(slot: NavigatorSlot): Promise<void> {
+    if (!slot.html) return;
     const message = { type: slot.id, html: slot.html() };
     for (const [id, v] of this.views) if (this.loaded.has(id)) await v.webview.postMessage(message);
   }
