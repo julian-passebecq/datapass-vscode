@@ -1,0 +1,1198 @@
+{
+ "schema": "datapass-features/1",
+ "generated": "2026-10-02T17:29:45+00:00",
+ "rules": "% = size-weighted share of merged packages; cut excluded; refresh: python D:/PROJ/claude-control/tools/features_status.py",
+ "versions": [
+  {
+   "id": "V4",
+   "title": "Navigation brick, analyzers, cloud (only what is still open)",
+   "target": "2026-10-01",
+   "merged_summary": {
+    "packages": 190,
+    "size_m": 1936,
+    "as_of": "2026-10-02T17:29:23+00:00",
+    "note": "V4 packages (PLAN § V4-RUN/ARCHCORR/NAV, V4-STATUS-REMAINING) whose MRs are all merged; size from PLAN tables, else 10 M",
+    "ids": [
+     "ADFARM1",
+     "AI1",
+     "AIB1",
+     "API0",
+     "API1",
+     "API2",
+     "API3",
+     "APIX1",
+     "APIX2",
+     "APIX3",
+     "ARCHB1",
+     "ARCHCAT1",
+     "ARCHLINT1",
+     "ARCHQ0",
+     "ARCHQ1",
+     "ARCHV1",
+     "BI1",
+     "BI2",
+     "BIPRAC1",
+     "C5a",
+     "C5b",
+     "CAPM1",
+     "CAPROUTE1a",
+     "CAPROUTE1b",
+     "CAT1",
+     "CFG1",
+     "CICD1",
+     "CIFIX1",
+     "CIFLAKE1",
+     "CIPACK1",
+     "CLEAN1",
+     "CONCEPT1a",
+     "CONCEPT1b",
+     "COSTACT1",
+     "COVREG2",
+     "COVREG3",
+     "DAGFACT1",
+     "DASH1",
+     "DATAFORM1",
+     "DBT1",
+     "DBT2",
+     "DBT3",
+     "DBXDASH1",
+     "DEPLOYFAB1",
+     "DQ1",
+     "DQ2",
+     "DQ3b",
+     "EDGEDOM1",
+     "ELT1",
+     "EVORIGIN1",
+     "EXEC1a",
+     "EXEC1b",
+     "EXEC1c",
+     "EXPORT1",
+     "FABEVID1",
+     "FABINT1",
+     "FABITEM1",
+     "FAKE1",
+     "FAKE2",
+     "FIXPRAC1a",
+     "FIXPRAC1b",
+     "FIXRUN1",
+     "FLOWDIR1",
+     "FRESH1",
+     "GITL0",
+     "GITSEM1",
+     "GOV1",
+     "H1",
+     "HG1a",
+     "HG1b",
+     "HOP1a",
+     "HOP1b",
+     "HOP3",
+     "HOP3c",
+     "HOP3d",
+     "HOPC1",
+     "HUBP1",
+     "IAC03",
+     "IAC1",
+     "IAC11",
+     "IAC2",
+     "IAC4",
+     "IAC5",
+     "IAC8",
+     "IAC9",
+     "IACA0",
+     "IACARM1",
+     "IACEV1b",
+     "IACFAB1",
+     "INCR1",
+     "INSIGHT1",
+     "INV1",
+     "K8S1",
+     "L1",
+     "LAYER1",
+     "LAYER1b",
+     "LG0",
+     "MODEL1",
+     "NAVBAR1",
+     "NAVCLOUD1",
+     "NAVCTX1",
+     "NAVCTX2",
+     "NAVDATA1",
+     "NAVERD1",
+     "NAVHIST1",
+     "NAVHOME1",
+     "NAVHOST1",
+     "NAVINTRO1b",
+     "NAVINTRO1c",
+     "NAVKEYS1",
+     "NAVLIN1",
+     "NAVLOC1",
+     "NAVMAP1",
+     "NAVREN1",
+     "NAVREN2",
+     "NAVREN3",
+     "NAVREN4",
+     "NAVSPARK1",
+     "NAVSPI1",
+     "NAVSQL1",
+     "NAVSVC1",
+     "NAVTODO1",
+     "NAVTOUR1",
+     "NAVWIRE1",
+     "OBS1",
+     "OBS2",
+     "OBS3",
+     "OBSFAB1a",
+     "OBSV1a",
+     "OBSV1b",
+     "OBSWSM1",
+     "OL1",
+     "ORC1",
+     "ORC2",
+     "PERF1",
+     "PHYS1",
+     "PRACT1",
+     "PRACT2",
+     "PRACT3a",
+     "PRACT4",
+     "PY2",
+     "RATIO1",
+     "RDL1",
+     "REPIN3",
+     "REPIN4",
+     "RUNX1",
+     "SANKEY1",
+     "SCHED1",
+     "SCHED1b",
+     "SCHED1c",
+     "SCHED1d",
+     "SCHED1e",
+     "SCHED1f",
+     "SDP1",
+     "SEAM1",
+     "SEC1",
+     "SEC2",
+     "SNOWOBJ1",
+     "SPARKPLAN1",
+     "SQLMESH1",
+     "STOR1",
+     "STR1",
+     "SYNWS1",
+     "TBX1a",
+     "TBX1b",
+     "TBX1c",
+     "TOOLPROV1",
+     "TRN1",
+     "UIH1",
+     "UIH2",
+     "UIH3a",
+     "UIH3b",
+     "VIS0",
+     "VIS1",
+     "VIS2",
+     "VIS3",
+     "VIS4",
+     "VIS5",
+     "VIS6",
+     "VIS7",
+     "VM1a",
+     "VM1b",
+     "VM2",
+     "VM3a",
+     "VM3b",
+     "VOL1",
+     "WASTE1",
+     "XMLSHARE1",
+     "XR0",
+     "YAMLSEQ1"
+    ]
+   },
+   "features": [
+    {
+     "id": "nav",
+     "title": "Navigation brick (V4-NAV), still open",
+     "packages": [
+      {
+       "id": "NAVCODE1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 198,
+       "status": "open"
+      },
+      {
+       "id": "NAVFAB1",
+       "size_m": 8,
+       "repo": "datapass-vscode",
+       "mr": 202,
+       "status": "open"
+      },
+      {
+       "id": "NAVAIX1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 203,
+       "status": "open"
+      },
+      {
+       "id": "NAVPRIN1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 204,
+       "status": "open"
+      },
+      {
+       "id": "NAVCAT1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 207,
+       "status": "open"
+      },
+      {
+       "id": "NAVCHG1",
+       "size_m": 12,
+       "repo": "datapass-vscode",
+       "mr": 232,
+       "status": "open"
+      },
+      {
+       "id": "NAVPERF1",
+       "size_m": 12,
+       "repo": "datapass-vscode",
+       "mr": 227,
+       "status": "open"
+      },
+      {
+       "id": "NAVWIRE2",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 246,
+       "status": "open"
+      },
+      {
+       "id": "a10",
+       "size_m": 5,
+       "repo": "datapass-vscode",
+       "mr": 250,
+       "status": "open"
+      },
+      {
+       "id": "NAVINTRO1a",
+       "size_m": 8,
+       "repo": "datapass-vscode",
+       "mr": 239,
+       "status": "open"
+      },
+      {
+       "id": "XRAYOL1",
+       "size_m": 8,
+       "repo": "datapass-data-xray",
+       "mr": 5,
+       "status": "open"
+      },
+      {
+       "id": "NAVE2E1",
+       "size_m": 12,
+       "repo": "datapass-vscode",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    },
+    {
+     "id": "standalone",
+     "title": "Standalone orchestration host",
+     "packages": [
+      {
+       "id": "STDA1a",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 185,
+       "status": "merged"
+      }
+     ]
+    },
+    {
+     "id": "cloud",
+     "title": "Cloud Observe, IaC and execution leftovers",
+     "packages": [
+      {
+       "id": "OBSFAB1b",
+       "size_m": 15,
+       "repo": "datapass-vscode-cloud",
+       "mr": null,
+       "status": "todo"
+      },
+      {
+       "id": "NAV1",
+       "size_m": 6,
+       "repo": "datapass-vscode-cloud",
+       "mr": null,
+       "status": "todo"
+      },
+      {
+       "id": "BI3",
+       "size_m": 10,
+       "repo": "datapass-vscode-cloud",
+       "mr": 65,
+       "status": "open"
+      },
+      {
+       "id": "FIXVM2",
+       "size_m": 10,
+       "repo": "datapass-vscode-cloud",
+       "mr": 50,
+       "status": "open"
+      },
+      {
+       "id": "IACEV1c",
+       "size_m": 6,
+       "repo": "datapass-vscode-common",
+       "mr": null,
+       "status": "todo"
+      },
+      {
+       "id": "EXEC1d",
+       "size_m": 8,
+       "repo": "datapass-vscode-common",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    },
+    {
+     "id": "codex",
+     "title": "Codex-era Common drafts (likely superseded, PM to close or cut)",
+     "packages": [
+      {
+       "id": "A0",
+       "size_m": 10,
+       "repo": "datapass-vscode-common",
+       "mr": 31,
+       "status": "open"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "V5",
+   "title": "dbt detach, multi-repo Git, guided learning, explainer, Studio",
+   "target": "2026-10-04",
+   "features": [
+    {
+     "id": "dbt",
+     "title": "dbt authority and materialization",
+     "children": [
+      {
+       "id": "dbt-detach",
+       "title": "Row 01 · dbt detach and drift",
+       "packages": [
+        {
+         "id": "MAT1",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 188,
+         "status": "merged"
+        },
+        {
+         "id": "DBTRUN1",
+         "size_m": 10,
+         "repo": "datapass-vscode-common",
+         "mr": 131,
+         "status": "merged"
+        },
+        {
+         "id": "DETSPI1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 175,
+         "status": "merged"
+        },
+        {
+         "id": "DBTMAT1",
+         "size_m": 20,
+         "repo": "datapass-vscode",
+         "mr": 218,
+         "status": "open"
+        },
+        {
+         "id": "DETACH1",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 220,
+         "status": "merged"
+        },
+        {
+         "id": "DETACH2",
+         "size_m": 10,
+         "repo": "datapass-vscode-common",
+         "mr": 201,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "sjd-target",
+       "title": "Row 02 · Spark job definition target",
+       "packages": [
+        {
+         "id": "SJDMAT1",
+         "size_m": 8,
+         "repo": "datapass-vscode",
+         "mr": 222,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "authority",
+       "title": "Row 06 · Authority panel",
+       "packages": [
+        {
+         "id": "AUTHPNL1",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 223,
+         "status": "open"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "git",
+     "title": "Multi-repo Git",
+     "children": [
+      {
+       "id": "repo-status",
+       "title": "Row 03 · Repo set, status, history",
+       "packages": [
+        {
+         "id": "GITSPI1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 172,
+         "status": "merged"
+        },
+        {
+         "id": "GITMR1",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 214,
+         "status": "open"
+        },
+        {
+         "id": "GITMR2",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 225,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "repo-impact",
+       "title": "Row 03 · Cross-repo impact and pin drift",
+       "packages": [
+        {
+         "id": "PINDRIFT1",
+         "size_m": 10,
+         "repo": "datapass-vscode-common+datapass-vscode+datapass-vscode-cloud+datapass-studio",
+         "mr": 231,
+         "status": "open"
+        },
+        {
+         "id": "GITMR3",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 238,
+         "status": "cut"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "views",
+     "title": "Views and layout",
+     "children": [
+      {
+       "id": "pq-sample",
+       "title": "Row 05 · Power Query data sample",
+       "packages": [
+        {
+         "id": "PQSAMP1",
+         "size_m": 10,
+         "repo": "datapass-vscode+datapass-data-xray",
+         "mr": 219,
+         "status": "merged"
+        },
+        {
+         "id": "V5HOLE1",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 262,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "dag-ux",
+       "title": "Row 07 · DAG shapes and placement",
+       "packages": [
+        {
+         "id": "DAGUX1",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 240,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "layouts",
+       "title": "Row 08 · Layouts per step",
+       "packages": [
+        {
+         "id": "LAYOUT1",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 224,
+         "status": "cut"
+        }
+       ]
+      },
+      {
+       "id": "endpoints",
+       "title": "Row 04 · FastAPI endpoint view (cut to V5.1)",
+       "packages": [
+        {
+         "id": "OTELSPI1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 173,
+         "status": "cut"
+        },
+        {
+         "id": "OTEL1",
+         "size_m": 15,
+         "repo": "datapass-vscode-cloud",
+         "mr": 128,
+         "status": "cut"
+        },
+        {
+         "id": "OTEL2",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 226,
+         "status": "cut"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "guided",
+     "title": "Guided learning and pedagogy",
+     "children": [
+      {
+       "id": "tours",
+       "title": "Row 09 · Guided tours and whole-picture spine",
+       "packages": [
+        {
+         "id": "TOURSPI1",
+         "size_m": 6,
+         "repo": "datapass-vscode-common",
+         "mr": 206,
+         "status": "merged"
+        },
+        {
+         "id": "TOUR2",
+         "size_m": 16,
+         "repo": "datapass-vscode",
+         "mr": 244,
+         "status": "open"
+        },
+        {
+         "id": "PEDA2",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 252,
+         "status": "open"
+        },
+        {
+         "id": "STEPBAR1",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 253,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "cards",
+       "title": "Row 10 · Concept, decision and query cards",
+       "packages": [
+        {
+         "id": "PEDA1a",
+         "size_m": 17,
+         "repo": "datapass-vscode-common",
+         "mr": 209,
+         "status": "merged"
+        },
+        {
+         "id": "PEDA1a2",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 210,
+         "status": "merged"
+        },
+        {
+         "id": "PEDA1b",
+         "size_m": 13,
+         "repo": "datapass-vscode",
+         "mr": 241,
+         "status": "open"
+        },
+        {
+         "id": "PEDA3",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 229,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "tour-ai",
+       "title": "Row 11 · AI-prepared tour",
+       "packages": [
+        {
+         "id": "TOURAI1",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 243,
+         "status": "open"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "share",
+     "title": "Sharing, review and next steps",
+     "children": [
+      {
+       "id": "explainer",
+       "title": "Row 12 · Explainer export (+ tour player)",
+       "packages": [
+        {
+         "id": "EXPLAIN1",
+         "size_m": 14,
+         "repo": "datapass-vscode",
+         "mr": 233,
+         "status": "merged"
+        },
+        {
+         "id": "TOURSHARE1",
+         "size_m": 8,
+         "repo": "datapass-vscode",
+         "mr": 251,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "architect",
+       "title": "Row 13 · Architect review",
+       "packages": [
+        {
+         "id": "ARCHCALL1",
+         "size_m": 10,
+         "repo": "datapass-vscode-common+datapass-vscode",
+         "mr": 235,
+         "status": "open"
+        }
+       ]
+      },
+      {
+       "id": "gaps",
+       "title": "Gaps and stale evidence in Next steps",
+       "packages": [
+        {
+         "id": "XGAP1",
+         "size_m": 6,
+         "repo": "datapass-vscode-common+datapass-vscode",
+         "mr": 236,
+         "status": "open"
+        },
+        {
+         "id": "TODOSTALE1",
+         "size_m": 4,
+         "repo": "datapass-vscode",
+         "mr": 237,
+         "status": "open"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "studio",
+     "title": "Studio on SQLRooms",
+     "children": [
+      {
+       "id": "studio-base",
+       "title": "Studio shell, CI, Factory adapter",
+       "packages": [
+        {
+         "id": "STUDIO0",
+         "size_m": 10,
+         "repo": "datapass-studio",
+         "mr": 7,
+         "status": "merged"
+        },
+        {
+         "id": "STUDIO1",
+         "size_m": 25,
+         "repo": "datapass-studio",
+         "mr": 10,
+         "status": "merged"
+        },
+        {
+         "id": "STUDIOCI1",
+         "size_m": 6,
+         "repo": "datapass-studio",
+         "mr": 8,
+         "status": "merged"
+        },
+        {
+         "id": "STUDIO2",
+         "size_m": 18,
+         "repo": "datapass-studio",
+         "mr": 11,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "studio-demo",
+       "title": "Row 14 · Studio catalog and demo",
+       "packages": [
+        {
+         "id": "STUDIO3",
+         "size_m": 20,
+         "repo": "datapass-studio",
+         "mr": 13,
+         "status": "merged"
+        },
+        {
+         "id": "STUDIO4",
+         "size_m": 15,
+         "repo": "datapass-studio",
+         "mr": null,
+         "status": "cut"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "contracts",
+     "title": "Contracts, freeze and re-pin (foundation)",
+     "children": [
+      {
+       "id": "evidence",
+       "title": "Evidence contracts (pin, capture, actor)",
+       "packages": [
+        {
+         "id": "EVPIN1",
+         "size_m": 6,
+         "repo": "datapass-vscode-common+datapass-vscode",
+         "mr": 215,
+         "status": "open"
+        },
+        {
+         "id": "EVCAPT1",
+         "size_m": 5,
+         "repo": "datapass-vscode-common",
+         "mr": 178,
+         "status": "merged"
+        },
+        {
+         "id": "EVACTOR1",
+         "size_m": 5,
+         "repo": "datapass-vscode-common",
+         "mr": 180,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "freeze",
+       "title": "Freeze 1/2 and re-pin",
+       "packages": [
+        {
+         "id": "VERBUMP1",
+         "size_m": 4,
+         "repo": "datapass-vscode-common",
+         "mr": 212,
+         "status": "merged"
+        },
+        {
+         "id": "V5FREEZE1",
+         "size_m": 5,
+         "repo": "datapass-vscode-common",
+         "mr": 214,
+         "status": "merged"
+        },
+        {
+         "id": "REPIN5",
+         "size_m": 10,
+         "repo": "datapass-vscode+datapass-vscode-cloud",
+         "mr": 248,
+         "status": "merged"
+        },
+        {
+         "id": "V5FREEZE2",
+         "size_m": 4,
+         "repo": "datapass-vscode-common",
+         "mr": 215,
+         "status": "merged"
+        },
+        {
+         "id": "REPIN8",
+         "size_m": 10,
+         "repo": "datapass-vscode+datapass-vscode-cloud+datapass-studio",
+         "mr": 257,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "multifam",
+       "title": "Multi-family analyzers core",
+       "packages": [
+        {
+         "id": "MULTIFAM1",
+         "size_m": 12,
+         "repo": "datapass-vscode-common",
+         "mr": 208,
+         "status": "merged"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "coverage",
+     "title": "Analyzer coverage (GAPSCAN4)",
+     "children": [
+      {
+       "id": "snowflake",
+       "title": "Snowflake",
+       "packages": [
+        {
+         "id": "SFSTAGE1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 217,
+         "status": "merged"
+        },
+        {
+         "id": "SNOWPARK1",
+         "size_m": 9,
+         "repo": "datapass-vscode-common",
+         "mr": 220,
+         "status": "merged"
+        },
+        {
+         "id": "TFSNOW1",
+         "size_m": 10,
+         "repo": "datapass-vscode-common",
+         "mr": 224,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "spark-dbx",
+       "title": "Databricks and Spark",
+       "packages": [
+        {
+         "id": "DBXFE1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 218,
+         "status": "merged"
+        },
+        {
+         "id": "SCALASPARK1",
+         "size_m": 11,
+         "repo": "datapass-vscode-common",
+         "mr": 219,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "orchestration",
+       "title": "Orchestration",
+       "packages": [
+        {
+         "id": "AFPROV1",
+         "size_m": 9,
+         "repo": "datapass-vscode-common",
+         "mr": 216,
+         "status": "merged"
+        },
+        {
+         "id": "DAGINT1",
+         "size_m": 9,
+         "repo": "datapass-vscode-common",
+         "mr": 221,
+         "status": "merged"
+        }
+       ]
+      },
+      {
+       "id": "dq",
+       "title": "Data quality",
+       "packages": [
+        {
+         "id": "DQPY1",
+         "size_m": 8,
+         "repo": "datapass-vscode-common",
+         "mr": 222,
+         "status": "merged"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    },
+    {
+     "id": "release",
+     "title": "Acceptance and release gate",
+     "children": [
+      {
+       "id": "e2e",
+       "title": "E2E acceptance and its holes",
+       "packages": [
+        {
+         "id": "V5E2E1",
+         "size_m": 12,
+         "repo": "datapass-vscode",
+         "mr": 260,
+         "status": "merged"
+        },
+        {
+         "id": "V5HOLE2",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 261,
+         "status": "merged"
+        },
+        {
+         "id": "V5HOLE3",
+         "size_m": 10,
+         "repo": "datapass-vscode",
+         "mr": 263,
+         "status": "merged"
+        },
+        {
+         "id": "V5E2E1b",
+         "size_m": 6,
+         "repo": "datapass-vscode",
+         "mr": null,
+         "status": "todo"
+        }
+       ]
+      },
+      {
+       "id": "tutorial",
+       "title": "Tutorial with screenshots",
+       "packages": [
+        {
+         "id": "V5TUT1",
+         "size_m": 6,
+         "repo": "datapass-vscode",
+         "mr": null,
+         "status": "todo"
+        }
+       ]
+      },
+      {
+       "id": "rc",
+       "title": "Release gate (V5REL1)",
+       "packages": [
+        {
+         "id": "V5REL1",
+         "size_m": 6,
+         "repo": "datapass-vscode",
+         "mr": null,
+         "status": "todo"
+        }
+       ]
+      }
+     ],
+     "packages": []
+    }
+   ]
+  },
+  {
+   "id": "V5.1",
+   "title": "Cut V5 packages + CI diet and follow-ups",
+   "target": null,
+   "features": [
+    {
+     "id": "cut-v5",
+     "title": "Cut from V5 (CI-load cut, 1 Oct 18:53)",
+     "packages": [
+      {
+       "id": "OTELSPI1",
+       "size_m": 8,
+       "repo": "datapass-vscode-common",
+       "mr": 173,
+       "status": "open"
+      },
+      {
+       "id": "OTEL1",
+       "size_m": 15,
+       "repo": "datapass-vscode-cloud",
+       "mr": 128,
+       "status": "open"
+      },
+      {
+       "id": "OTEL2",
+       "size_m": 14,
+       "repo": "datapass-vscode",
+       "mr": 226,
+       "status": "open"
+      },
+      {
+       "id": "STUDIO4",
+       "size_m": 15,
+       "repo": "datapass-studio",
+       "mr": null,
+       "status": "todo"
+      },
+      {
+       "id": "LAYOUT1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": 224,
+       "status": "open"
+      },
+      {
+       "id": "GITMR3",
+       "size_m": 14,
+       "repo": "datapass-vscode",
+       "mr": 238,
+       "status": "open"
+      }
+     ]
+    },
+    {
+     "id": "cidiet",
+     "title": "CI diet: fewer useless pipelines",
+     "packages": [
+      {
+       "id": "CIDIET1",
+       "size_m": 10,
+       "repo": "datapass-vscode+datapass-vscode-common+datapass-vscode-cloud",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    },
+    {
+     "id": "gitagent",
+     "title": "AI agent lineage in git",
+     "packages": [
+      {
+       "id": "GITAGENT1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    },
+    {
+     "id": "execunit",
+     "title": "Execution-unit hole",
+     "packages": [
+      {
+       "id": "EXECUNIT1",
+       "size_m": 10,
+       "repo": "datapass-vscode",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    },
+    {
+     "id": "studiocommon",
+     "title": "Studio vendors Common view-spi",
+     "packages": [
+      {
+       "id": "STUDIOCOMMON1",
+       "size_m": 10,
+       "repo": "datapass-studio",
+       "mr": null,
+       "status": "todo"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "V6",
+   "title": "Visual engines, small polish + new clients (no packages yet)",
+   "target": null,
+   "features": [
+    {
+     "id": "erd",
+     "title": "ERD of any warehouse + logical/physical diff",
+     "packages": []
+    },
+    {
+     "id": "xray-volumetry",
+     "title": "Data X-ray volumetry, partitions, indexes (table and DAG)",
+     "packages": []
+    },
+    {
+     "id": "tutor",
+     "title": "Join/groupby/pivot visualizer (Pandas Tutor style, Spark too)",
+     "packages": []
+    },
+    {
+     "id": "onboarding",
+     "title": "Guided onboarding: broken pipeline and other guides",
+     "packages": []
+    },
+    {
+     "id": "super-tabs",
+     "title": "Super tabs: 1 to 5 DataPass spaces per window",
+     "packages": []
+    },
+    {
+     "id": "quality-gate",
+     "title": "Architecture quality gate (arch-lint + coverage + pin drift)",
+     "packages": []
+    },
+    {
+     "id": "clients",
+     "title": "Small polish + new clients (V6 frame)",
+     "packages": []
+    }
+   ]
+  }
+ ]
+}
