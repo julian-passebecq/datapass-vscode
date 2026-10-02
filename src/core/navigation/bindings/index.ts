@@ -24,7 +24,8 @@ export interface BindingResult {
   readonly graph?: BindingGraph;
   readonly cards?: readonly BindingCard[];
   readonly metrics?: readonly BindingMetric[];
-  readonly holes: readonly { readonly reason: string }[];
+  /** `kind` types the hole (no-project, out-of-scope, not-declared, binding-unavailable, binding-failed…); the host labels it. */
+  readonly holes: readonly { readonly reason: string; readonly kind?: string }[];
   readonly origin: BindingOrigin;
 }
 
@@ -38,6 +39,14 @@ export interface BindingContext {
 export interface BindingProvider { readonly source: string; provide(ctx: BindingContext): BindingResult }
 
 const PROVIDERS: readonly BindingProvider[] = BINDINGS;
+
+/**
+ * Catalog sources with no standalone provider yet (NAVDATA1): each renders as a typed `binding-unavailable` hole.
+ * A provider package removes its source from this list; `tests/navData.test.ts` keeps it exact.
+ */
+export const UNPROVIDED_SOURCES: readonly string[] = [
+  "volumetry", "spark-perf", "sql-shape", "git-history", "hop-steps", "rationale", "fabric-item", "execution-unit"
+];
 
 const BY_SOURCE = new Map(PROVIDERS.map(p => [p.source, p]));
 
@@ -55,11 +64,11 @@ export interface BoundData { readonly source: string; readonly result: BindingRe
 export function resolveBindings(view: ViewDef, ctx: Omit<BindingContext, "params">): BoundData[] {
   return view.bindings.map(b => {
     const provider = BY_SOURCE.get(b.source);
-    if (!provider) return { source: b.source, result: { holes: [{ reason: `No provider for "${b.source}" yet.` }], origin: "static" } };
+    if (!provider) return { source: b.source, result: { holes: [{ reason: `No provider for "${b.source}" yet.`, kind: "binding-unavailable" }], origin: "static" } };
     try {
       return { source: b.source, result: provider.provide({ ...ctx, params: b.params }) };
     } catch (e) {
-      return { source: b.source, result: { holes: [{ reason: `"${b.source}" failed: ${e instanceof Error ? e.message : String(e)}` }], origin: "static" } };
+      return { source: b.source, result: { holes: [{ reason: `"${b.source}" failed: ${e instanceof Error ? e.message : String(e)}`, kind: "binding-failed" }], origin: "static" } };
     }
   });
 }
