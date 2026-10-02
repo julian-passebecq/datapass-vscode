@@ -16,6 +16,8 @@ export interface Surface {
   label: string;
   /** For views: the contributed view id in package.json. */
   viewId?: string;
+  /** V4-NAV: other contributed ids of the same view (the Navigator's left placement), same `when` gate. */
+  altViewIds?: readonly string[];
   detail: string;
 }
 
@@ -66,7 +68,9 @@ export const SURFACES: readonly Surface[] = [
   // V3-SHELL: the right rail (a thin column of buttons shown instead of the full panel in rail mode).
   { id: "view.rail", kind: "view", viewId: "datapass.rail", label: "Right rail", detail: "A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)" },
   // V5 PQSAMP1: "Data Sample for a Code Step" in the Command Palette (the code-steps view reaches it in every mode).
-  { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" }
+  { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" },
+  // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).
+  { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);
