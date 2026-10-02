@@ -1,0 +1,67 @@
+{
+  "format": "datapass.graph",
+  "version": "0.2",
+  "items": [
+    {
+      "id": "ingest-orders",
+      "kind": "notebook",
+      "label": "ingest_orders",
+      "path": "fabric/ingest_orders.Notebook/notebook-content.py",
+      "role": "bronze"
+    },
+    {
+      "id": "stg-orders",
+      "kind": "model",
+      "label": "stg_orders",
+      "path": "dbt/models/staging/stg_orders.sql",
+      "role": "silver"
+    },
+    {
+      "id": "fct-orders",
+      "kind": "model",
+      "label": "fct_orders",
+      "path": "dbt/models/marts/fct_orders.sql",
+      "role": "gold"
+    },
+    {
+      "id": "daily-orders",
+      "kind": "workflow",
+      "label": "daily_orders",
+      "path": "fabric/daily_orders.DataPipeline/pipeline-content.json"
+    },
+    {
+      "id": "sales-model",
+      "kind": "semantic-model",
+      "label": "Sales",
+      "path": "bi/Sales.SemanticModel/definition/model.tmdl",
+      "classification": "confidential",
+      "description": "Customer revenue per day: marked confidential for the acceptance run."
+    }
+  ],
+  "relations": [
+    {
+      "id": "r1",
+      "source": "ingest-orders",
+      "target": "stg-orders",
+      "relation": "feeds"
+    },
+    {
+      "id": "r2",
+      "source": "stg-orders",
+      "target": "fct-orders",
+      "relation": "feeds"
+    },
+    {
+      "id": "r3",
+      "source": "fct-orders",
+      "target": "sales-model",
+      "relation": "feeds"
+    },
+    {
+      "id": "r4",
+      "source": "daily-orders",
+      "target": "ingest-orders",
+      "relation": "orchestrates"
+    }
+  ]
+}

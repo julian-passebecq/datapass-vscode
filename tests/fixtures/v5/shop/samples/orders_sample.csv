@@ -1,0 +1,6 @@
+order_id,customer_id,order_date,amount,status
+1001,501,2026-09-01,42.50,placed
+1002,502,2026-09-01,18.00,shipped
+1003,501,2026-09-02,99.90,returned
+1004,503,2026-09-02,7.25,placed
+1005,504,2026-09-03,55.00,shipped

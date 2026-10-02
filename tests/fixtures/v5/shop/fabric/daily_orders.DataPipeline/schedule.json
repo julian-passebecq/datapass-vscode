@@ -1,0 +1,14 @@
+{
+  "schedules": [
+    {
+      "enabled": true,
+      "configuration": {
+        "type": "Daily",
+        "times": [
+          "05:30"
+        ],
+        "timeZone": "UTC"
+      }
+    }
+  ]
+}

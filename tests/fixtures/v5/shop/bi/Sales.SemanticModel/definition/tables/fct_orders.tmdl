@@ -1,0 +1,16 @@
+table fct_orders
+	column customer_id
+		dataType: int64
+		sourceColumn: customer_id
+	column order_date
+		dataType: dateTime
+		sourceColumn: order_date
+	column revenue
+		dataType: decimal
+		sourceColumn: revenue
+	measure 'Total revenue' = SUM(fct_orders[revenue])
+	partition fct_orders = entity
+		mode: directLake
+		source
+			entityName: fct_orders
+			schemaName: gold

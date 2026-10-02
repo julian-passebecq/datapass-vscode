@@ -1,0 +1,13 @@
+name: shop
+version: "1.0.0"
+config-version: 2
+profile: shop
+model-paths: ["models"]
+models:
+  shop:
+    staging:
+      +schema: silver
+      +materialized: view
+    marts:
+      +schema: gold
+      +materialized: table

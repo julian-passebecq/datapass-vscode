@@ -154,11 +154,11 @@ async function pickFromQuickInput(page: Page, prefix: string, label: string): Pr
   return problem;
 }
 
-interface StepContext { app: ElectronApplication; page: () => Promise<Page>; journeyId: string; outDir: string; folder?: string }
+export interface StepContext { app: ElectronApplication; page: () => Promise<Page>; journeyId: string; outDir: string; folder?: string }
 
 const result = (problem: string | undefined): StepResult => (problem ? { status: "FAIL", detail: problem } : { status: "PASS" });
 
-async function runStep(ctx: StepContext, step: UiStep): Promise<StepResult> {
+export async function runStep(ctx: StepContext, step: UiStep): Promise<StepResult> {
   const page = await ctx.page();
   switch (step.kind) {
     case "invalid": return { status: "NOT_RUN", detail: step.problem };
