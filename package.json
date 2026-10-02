@@ -2824,7 +2824,7 @@
         },
         {
           "command": "datapass.nav.pickView",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.view.navigator"
         },
         {
           "command": "datapass.codeSteps.sampleStep",
