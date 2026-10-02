@@ -21,8 +21,10 @@ export async function createNativeBackend(extensionPath: string, selectedRoot: s
     runtimeDirectory: join(extensionPath, 'dist/runtime'), manifestBytes, expectedManifestSha256: runtimePin.manifestSha256,
     cachePolicy: { cacheRoot: join(extensionPath, 'dist'), nativePathInspector: inspector } });
   const plugin = createSqlAnalyzerPlugin({ parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.2', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'sqlglot', parserVersion: '30.19.0' })), provider: { start: (request, captures) => host.start(request, captures) } });
+  const python: NativeAnalysisBackend['python'] = { provider: { start: (request, captures) => host.start(request, captures) },
+    parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.2', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'cpython-ast', parserVersion: '3.13.15' })) };
   return {
-    plugin, ruleCatalogDigest: SQL_NO_RULE_EVALUATION_DIGEST,
+    plugin, ruleCatalogDigest: SQL_NO_RULE_EVALUATION_DIGEST, python,
     async acquire(root, path, signal) {
       if (root !== selectedRoot) throw new Error('selected-root-mismatch');
       const captures = await acquireSnapshots({ root, nativePathInspector: inspector }, [path], signal);

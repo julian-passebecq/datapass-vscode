@@ -1,0 +1,9 @@
+{
+  "name": "ds_scada_raw_delta",
+  "description": "SYNTHETIC FIXTURE (foil-synthetic): fabricated, never deployed.",
+  "properties": {
+    "type": "AzureDatabricksDeltaLakeDataset",
+    "linkedServiceName": { "referenceName": "ls_databricks_foilsyn", "type": "LinkedServiceReference" },
+    "typeProperties": { "database": "bronze", "table": "scada_raw" }
+  }
+}
