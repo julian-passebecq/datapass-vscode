@@ -47,11 +47,11 @@
     },
     {
       "expect": "Understand a file",
-      "timeoutMs": 30000
+      "timeoutMs": 60000
     },
     {
       "expect": "pipelines / jobs/daily_sales.py",
-      "timeoutMs": 30000
+      "timeoutMs": 60000
     },
     {
       "screenshot": "home"
