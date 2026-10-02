@@ -1,0 +1,368 @@
+{
+  "format": "datapass.v5-acceptance-report",
+  "version": 1,
+  "part": "a",
+  "generatedAt": "2026-10-02T13:43:20.166Z",
+  "build": {
+    "version": "1.1.0-rc.1",
+    "node": "v26.9.0",
+    "os": "Windows_NT 10.0.26200"
+  },
+  "verdict": {
+    "accepted": false,
+    "counts": {
+      "green": 0,
+      "red": 1,
+      "missing": 6,
+      "cut": 2,
+      "deferred": 5
+    }
+  },
+  "rows": [
+    {
+      "id": "01",
+      "title": "dbt detach",
+      "status": "missing",
+      "detail": "hole: not in this build: command:datapass.dbt.materialize, command:datapass.dbt.detach, source:src/core/materialize/dbtDetach.ts",
+      "missing": [
+        {
+          "id": "command:datapass.dbt.materialize",
+          "provider": "DBTMAT1 !218"
+        },
+        {
+          "id": "command:datapass.dbt.detach",
+          "provider": "DETACH1 !220"
+        },
+        {
+          "id": "source:src/core/materialize/dbtDetach.ts",
+          "provider": "DETACH1 !220"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "02",
+      "title": "Spark-job target",
+      "status": "deferred",
+      "detail": "in V5E2E1b",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "03",
+      "title": "Multi-repo status / history / impact",
+      "status": "missing",
+      "detail": "hole: not in this build: setting:datapass.repoHistory.labels, source:src/core/gitmr/repoSet.ts, source:src/core/gitmr/readOnly.ts, source:src/core/gitmr/repoHistory.ts",
+      "missing": [
+        {
+          "id": "setting:datapass.repoHistory.labels",
+          "provider": "GITMR2 !225"
+        },
+        {
+          "id": "source:src/core/gitmr/repoSet.ts",
+          "provider": "GITMR1 !214"
+        },
+        {
+          "id": "source:src/core/gitmr/readOnly.ts",
+          "provider": "GITMR1 !214"
+        },
+        {
+          "id": "source:src/core/gitmr/repoHistory.ts",
+          "provider": "GITMR2 !225"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "04",
+      "title": "Endpoint view",
+      "status": "cut",
+      "detail": "OTEL2, OTEL1 and OTELSPI1 cut to V5.1 (TL-10 cut order, PM 31 19:00 and 20:06)",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "05",
+      "title": "Power-Query sample",
+      "status": "red",
+      "detail": "V5-05: run \"DataPass: Pick a View Here…\": no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…) | V5-05-HOLE: pick \"Code steps\": no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)",
+      "journeys": [
+        {
+          "id": "V5-05",
+          "kind": "main",
+          "boundary": [
+            "spawn: git remote is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe -c core.fsmonitor=false remote)",
+            "spawn: spawned java: only git is allowed (TL-4) (C:\\Program Files\\Java\\jdk-22\\bin\\java.exe -version)",
+            "spawn: spawned python: only git is allowed (TL-4) (C:\\Python314\\python.exe --version)",
+            "spawn: spawned ssh: only git is allowed (TL-4) (C:\\Program Files\\Git\\usr\\bin\\ssh.exe -V)",
+            "spawn: git (no verb) is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe --version)",
+            "spawn: spawned psql: only git is allowed (TL-4) (C:\\Program Files\\PostgreSQL\\16\\bin\\psql.exe --version)",
+            "spawn: spawned docker: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe --version)",
+            "spawn: spawned cmd: only git is allowed (TL-4) (C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\julia\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd\" --version\")",
+            "spawn: spawned kubectl: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe version --client)",
+            "spawn: spawned dotnet: only git is allowed (TL-4) (C:\\Program Files\\dotnet\\dotnet.exe --version)"
+          ],
+          "steps": [
+            {
+              "step": "open file fabric/ingest_orders.Notebook/notebook-content.py",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 8000 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Pick a View Here…\"",
+              "status": "FAIL",
+              "detail": "no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…)"
+            },
+            {
+              "step": "pick \"Code steps\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"saveAsTable\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "click text \"bronze.orders_raw\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "answer the next file dialog with samples/orders_sample.csv",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "run \"DataPass: Data Sample for a Code Step\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "pick \"From a local data file (Data X-Ray)\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"Sample of orders_sample.csv\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"1003\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "screenshot v5-13-pq-sample",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "press ArrowUp",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no \"Sample of orders_sample.csv\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "run \"DataPass: Pick a View Here…\": no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…)"
+        },
+        {
+          "id": "V5-05-HOLE",
+          "kind": "hole",
+          "boundary": [
+            "spawn: git remote is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe -c core.fsmonitor=false remote)",
+            "spawn: spawned java: only git is allowed (TL-4) (C:\\Program Files\\Java\\jdk-22\\bin\\java.exe -version)",
+            "spawn: spawned python: only git is allowed (TL-4) (C:\\Python314\\python.exe --version)",
+            "spawn: spawned ssh: only git is allowed (TL-4) (C:\\Program Files\\Git\\usr\\bin\\ssh.exe -V)",
+            "spawn: git (no verb) is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe --version)",
+            "spawn: spawned psql: only git is allowed (TL-4) (C:\\Program Files\\PostgreSQL\\16\\bin\\psql.exe --version)",
+            "spawn: spawned docker: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe --version)",
+            "spawn: spawned cmd: only git is allowed (TL-4) (C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\julia\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd\" --version\")",
+            "spawn: spawned kubectl: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe version --client)",
+            "spawn: spawned dotnet: only git is allowed (TL-4) (C:\\Program Files\\dotnet\\dotnet.exe --version)"
+          ],
+          "steps": [
+            {
+              "step": "open file fabric/ingest_orders.Notebook/notebook-content.py",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 8000 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Pick a View Here…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Code steps\"",
+              "status": "FAIL",
+              "detail": "no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)"
+            },
+            {
+              "step": "expect \"saveAsTable\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"No sample\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no \"1003\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "pick \"Code steps\": no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)"
+        }
+      ],
+      "shots": []
+    },
+    {
+      "id": "06",
+      "title": "Authority panel",
+      "status": "missing",
+      "detail": "hole: not in this build: command:datapass.dbt.detach, source:src/core/authority/approvalsPanel.ts",
+      "missing": [
+        {
+          "id": "command:datapass.dbt.detach",
+          "provider": "DETACH1 !220 (row 06 runs after row 01)"
+        },
+        {
+          "id": "source:src/core/authority/approvalsPanel.ts",
+          "provider": "AUTHPNL1 !223"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "07",
+      "title": "DAG UX",
+      "status": "deferred",
+      "detail": "in V5E2E1b",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "08",
+      "title": "Layouts per step",
+      "status": "cut",
+      "detail": "LAYOUT1 cut to V5.1 (TL-10 cut order, PM 31 19:00)",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "09",
+      "title": "Guided tours, Learning/Interview + whole-picture spine",
+      "status": "missing",
+      "detail": "hole: not in this build: command:datapass.nav.tour.setMode, command:datapass.nav.tour.saveCurrentPath, command:datapass.nav.tour.present, command:datapass.pedagogy.interviewPrep, setting:datapass.guided.modes.learning.enabled, setting:datapass.guided.modes.interview.enabled",
+      "missing": [
+        {
+          "id": "command:datapass.nav.tour.setMode",
+          "provider": "TOUR2 !244"
+        },
+        {
+          "id": "command:datapass.nav.tour.saveCurrentPath",
+          "provider": "TOUR2 !244"
+        },
+        {
+          "id": "command:datapass.nav.tour.present",
+          "provider": "TOUR2 !244"
+        },
+        {
+          "id": "command:datapass.pedagogy.interviewPrep",
+          "provider": "PEDA2 !252"
+        },
+        {
+          "id": "setting:datapass.guided.modes.learning.enabled",
+          "provider": "TOUR2 !244"
+        },
+        {
+          "id": "setting:datapass.guided.modes.interview.enabled",
+          "provider": "TOUR2 !244"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "10",
+      "title": "Concept / decision / query cards",
+      "status": "missing",
+      "detail": "hole: not in this build: command:datapass.pedagogy.patternCards, command:datapass.pedagogy.queriesWorthShowing, setting:datapass.pedagogy.queryShowcase.enabled",
+      "missing": [
+        {
+          "id": "command:datapass.pedagogy.patternCards",
+          "provider": "PEDA1b !241"
+        },
+        {
+          "id": "command:datapass.pedagogy.queriesWorthShowing",
+          "provider": "PEDA3 !229"
+        },
+        {
+          "id": "setting:datapass.pedagogy.queryShowcase.enabled",
+          "provider": "PEDA3 !229"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "11",
+      "title": "AI-prepared tour",
+      "status": "deferred",
+      "detail": "in V5E2E1b",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "12",
+      "title": "Explainer export",
+      "status": "missing",
+      "detail": "hole: not in this build: command:datapass.explain.export, setting:datapass.explain.sections",
+      "missing": [
+        {
+          "id": "command:datapass.explain.export",
+          "provider": "EXPLAIN1 !233"
+        },
+        {
+          "id": "setting:datapass.explain.sections",
+          "provider": "EXPLAIN1 !233"
+        }
+      ],
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "13",
+      "title": "Architect review",
+      "status": "deferred",
+      "detail": "in V5E2E1b",
+      "journeys": [],
+      "shots": []
+    },
+    {
+      "id": "14",
+      "title": "Studio demo",
+      "status": "deferred",
+      "detail": "in V5E2E1b",
+      "journeys": [],
+      "shots": []
+    }
+  ]
+}

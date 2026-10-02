@@ -170,6 +170,18 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-02 16:50 (CI et agents ; articles Signadot / HackerNoon « agentic DevOps » ; décidé par PM 32)
+
+- Question : faire moins de CI, comme le suggèrent les articles ? **Non** pour les vérifications. Le seul incident de `main` rouge du 2 Oct vient d'une fusion **sans** pipeline (!197). La CI reste le filet de sécurité des agents.
+- Ce qu'on retient des articles, en V5.1 : **CIDIET1**, moins de pipelines inutiles, pas moins de vérifications :
+  - (a) GitLab `rules: changes` : le job desktop vscode ne tourne que si l'MR touche `src/`, `package.json` ou `qa/` ; les MR docs / handoff le sautent.
+  - (b) Sélection des tests par impact dans le job unitaire.
+  - (c) Train de fusion en lot : tester 2–3 MR ensemble sur `main` et fusionner le lot si c'est vert ; en cas de rouge, couper le lot en deux.
+  - (d) Les coders lancent les tests ciblés avant d'ouvrir l'MR. C'est déjà la règle.
+  - (e) Article « Test the diff, not the app » (HackerNoon, qui vend QA.tech) : on garde l'idée, pas le produit. Un niveau de risque par MR (docs → lint ; `src/core` → suite complète) et un contrôle « le diff est couvert » : au moins un test exécute les lignes modifiées (couverture du diff), sinon l'MR est marquée « non vérifiée ». La petite suite de régression critique reste. Les tests jetables générés par agent ne sont pas adoptés : ils ont besoin d'environnements de prévisualisation fiables, que l'extension VS Code n'a pas.
+- Pas de bascule vers GitHub Actions (déjà décidé le 1 Oct). Pas de bacs à sable Kubernetes (le produit vendu par Signadot) : DataPass n'a pas de services à déployer.
+- Le triage des rouges par un agent existe déjà (COORD). Garde-fous gardés : la CI verte reste obligatoire, la règle d'auto-merge « tête contient main » aussi, et `main` ne reçoit aucune fusion non testée.
+
 ## Idées de Julian — 2026-10-01 23:15 (moteurs visuels V6 + un point git, relayé par ASSISTANT DATAPASS 6 ; détail : effort-board/julian-idea-v6-visual-engines-2026-10-01.md ; décidé par PM 32)
 Principe de Julian : DataPass apporte la valeur de lui-même, analyser plus ET montrer au bon moment avec le bon moteur de visualisation. Sources = inspiration seulement, aucun code copié.
 1. **ERD de tout entrepôt + diff logique/physique** (style erd-studio). → **V6**. Base existante : NAVERD1 (!208, layout erd + schema-erd), TMDL/PBI, NAVSQL1 (faits physiques SQL). Manque : un modèle logique versionné dans le repo (YAML/JSON, données de config) et un diff typé « renommé dans le SQL, pas dans le design ». Lecture statique du DDL/dbt ; schéma live d'entrepôt seulement via lecteur replay opt-in.

@@ -2824,7 +2824,7 @@
         },
         {
           "command": "datapass.nav.pickView",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.view.navigator"
         },
         {
           "command": "datapass.codeSteps.sampleStep",
@@ -3910,7 +3910,8 @@
     "preview:galaxy": "tsx scripts/galaxy-preview.ts",
     "qa:prepare": "tsx scripts/qa/prepare.ts",
     "qa:ui": "tsx scripts/qa/ui-run.ts",
-    "qa:rc": "tsx scripts/qa/rc.ts"
+    "qa:rc": "tsx scripts/qa/rc.ts",
+    "qa:v5": "tsx scripts/qa/v5.ts"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

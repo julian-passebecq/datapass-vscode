@@ -51,7 +51,8 @@ test("palette: lighter modes stay short, grow towards Advanced, and Advanced lis
   for (let i = 1; i < counts.length; i += 1) assert.ok(counts[i]! >= counts[i - 1]!, `${PRESET_IDS[i]} lists at least as many as ${PRESET_IDS[i - 1]}`);
   // V1.1.x-POLISH-4: 63 → 66 for Home, Appearance and "Show DataPass in the Activity Bar", listed in every mode
   // (the last one is how the DataPass side bar comes back when its icon is gone).
-  for (const p of PRESET_IDS.filter(x => x !== "advanced")) assert.ok(paletteOf(p).length <= 66, `${p}: ${paletteOf(p).length} entries`);
+  // V5HOLE2: 66 → 67 for "Pick a View Here…", listed wherever the Navigator is shown (V5 acceptance row 05).
+  for (const p of PRESET_IDS.filter(x => x !== "advanced")) assert.ok(paletteOf(p).length <= 67, `${p}: ${paletteOf(p).length} entries`);
   assert.ok(paletteOf(DEFAULT_PRESET).length <= 60);
   assert.equal(paletteOf("advanced").length, PALETTE_TIERS.size);
   for (const p of PRESET_IDS) for (const t of paletteOf(p)) assert.match(t, /^DataPass: \S/, `${p}: consistent prefix`);
@@ -70,4 +71,19 @@ test("palette: the list per mode matches the committed snapshot", () => {
   const now = Object.fromEntries(PRESET_IDS.map(p => [p, paletteOf(p)]));
   if (process.env.PALETTE_SNAPSHOT === "update") writeFileSync(SNAPSHOT, JSON.stringify(now, null, 2) + "\n");
   assert.deepEqual(now, JSON.parse(readFileSync(SNAPSHOT, "utf8")), "palette changed: review it, then PALETTE_SNAPSHOT=update");
+});
+
+test("palette: Pick a View Here is offered wherever the Navigator is shown, not only in Advanced (V5HOLE2)", () => {
+  // V5E2E1 hole 2: gated on palette.full, it vanished once .datapass/project.json activated DataPass
+  // (the default mode sets datapass.hidden.palette.full). The Navigator's own key decides it now.
+  assert.equal(palette.find(e => e.command === "datapass.nav.pickView")?.when, "!datapass.hidden.view.navigator");
+  assert.equal(PALETTE_TIERS.get("datapass.nav.pickView"), "view.navigator");
+  for (const p of PRESET_IDS) {
+    assert.ok(shownIn(p).has("view.navigator"), `${p} shows the Navigator`);
+    assert.ok(!shownIn(p).has("palette.full") || p === "advanced", `${p}: palette.full is Advanced-only`);
+    assert.ok(paletteOf(p).includes("DataPass: Pick a View Here…"), `${p}: Pick a View Here is listed`);
+  }
+  // Hiding the Navigator (Customize) hides its palette entry with it.
+  const noNav = new Set(resolveExperience(presets, DEFAULT_PRESET, { "view.navigator": false }).surfaces.filter(s => s.visible).map(s => s.id));
+  assert.ok(!listed("datapass.nav.pickView", noNav));
 });

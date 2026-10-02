@@ -1,0 +1,12 @@
+{
+  "name": "datapass-qa-v5-spy",
+  "displayName": "DataPass QA V5 harness (spy + command bridge)",
+  "description": "Test-only: records DataPass network and process calls during the V5 acceptance run. Never packaged.",
+  "publisher": "datapass-qa",
+  "version": "0.0.1",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": { "vscode": "^1.90.0" },
+  "activationEvents": ["*"],
+  "main": "./extension.js"
+}
