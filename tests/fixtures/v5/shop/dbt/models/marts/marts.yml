@@ -1,0 +1,9 @@
+version: 2
+models:
+  - name: fct_orders
+    description: Daily revenue per customer.
+    columns:
+      - name: customer_id
+        tests: [not_null]
+      - name: revenue
+        tests: [not_null]

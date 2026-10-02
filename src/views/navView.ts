@@ -8,16 +8,25 @@
  *             like DataPass Hop. Nothing takes the keyboard focus from the editor.
  *   surface   a `surface` view opens the existing DataPass view (Workbench, Hop, Airflow DAG…)
  *             through the command the `datapass.navView.surfaces` setting maps it to.
- *   data      bindings come from the providers registry (core/navigation/bindings); the body is drawn
- *             by the view renderer (NAVREN1), with a plain fallback until it is wired.
+ *   data      bindings come from the providers registry (core/navigation/bindings). NAVDATA1: the panel loads
+ *             the view renderer (`viewHtml` + dist/navView.js) once and the host posts `nav-state` then
+ *             `view-data` on every Location / view change and on the webview's `ready`; without the bundle
+ *             (tests, unbuilt tree) the plain server-side fallback draws the body.
  *
  * Title format, surfaces and labels are settings/data, not hard-coded here. No client code runs.
  */
+import * as fs from "fs";
 import * as vscode from "vscode";
 import type { ProjectMap } from "../core/project/projectMap";
 import type { NavigationService } from "../core/navigation/navigationService";
 import type { NavLocation, NavState, ViewDef } from "../core/navigation/navTypes";
-import { resolveBindings } from "../core/navigation/bindings";
+import { resolveBindings, type BindingContext, type BoundData } from "../core/navigation/bindings";
+import { isCodeStepsInput } from "../webview/views/layouts/codeSteps.layout";
+import type { CodeStepsInput } from "../webview/views/layouts/codeSteps";
+import { bindCodeStepsSamples } from "./pqSampleHost";
+import type { HopState } from "./hopState";
+import { viewHtml } from "./viewHtml";
+import { navViewLabels, navViewMessages } from "./navViewData";
 import { fallbackRender, navViewHtml, navViewTitle, parseNavViewMessage, surfaceCommand, type NavRenderer, type NavViewMessage } from "./navViewHtml";
 
 export const NAV_VIEW_TYPE = "datapass.navView";
@@ -30,6 +39,9 @@ export interface NavViewDeps {
   labelOf?(location: NavLocation): string;
   /** Ladder override for the ↑/↓ buttons; defaults to the NavigationService ladder (NAVSVC1). */
   ladder?: { parent(l: NavLocation): NavLocation | null; children(l: NavLocation): readonly NavLocation[] };
+  /** V5HOLE1: Hop state of the file at a place (`hop-steps` binding) and when a load finished (redraw). */
+  hop?(location: NavLocation): HopState | undefined;
+  onDidLoadHop?: vscode.Event<void>;
   /** View renderer (NAVREN1). */
   render?: NavRenderer;
 }
@@ -38,7 +50,12 @@ export class NavViewHost implements vscode.Disposable {
   private panel?: vscode.WebviewPanel;
   private readonly subs: vscode.Disposable[] = [];
   private lastSurface?: string;
+  /** The panel runs the view renderer (dist/navView.js) and receives posted data; else the HTML fallback. */
+  private rendererMode = false;
   private readonly selectEmitter = new vscode.EventEmitter<string>();
+  /** PQSAMP1 hook (NAVFIX1, review M7): stored step samples join a code-steps payload; a selected step is the sample target. */
+  private lastSteps?: CodeStepsInput;
+  private readonly samples = bindCodeStepsSamples(() => this.lastSteps, () => this.render());
   /** A node selected in the view (the code link, NAVCODE1, decorates its source). */
   readonly onDidSelect = this.selectEmitter.event;
   /** Messages handled (tests). */
@@ -46,10 +63,11 @@ export class NavViewHost implements vscode.Disposable {
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly nav: NavigationService, private readonly deps: NavViewDeps) {
     this.subs.push(
-      this.selectEmitter,
+      this.selectEmitter, { dispose: () => this.samples.dispose() },
       nav.onDidChange(() => this.render()),
       vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.navView")) this.render(); })
     );
+    if (deps.onDidLoadHop) this.subs.push(deps.onDidLoadHop(() => this.render()));
   }
 
   dispose(): void {
@@ -70,7 +88,14 @@ export class NavViewHost implements vscode.Disposable {
     if (this.panel) {
       if (!this.panel.visible) this.panel.reveal(column, true);
     } else {
-      const panel = vscode.window.createWebviewPanel(NAV_VIEW_TYPE, "DataPass", { viewColumn: column, preserveFocus: true }, { enableScripts: true, localResourceRoots: [] });
+      const dist = vscode.Uri.joinPath(this.context.extensionUri, "dist");
+      const bundle = vscode.Uri.joinPath(dist, "navView.js");
+      this.rendererMode = fs.existsSync(bundle.fsPath);
+      const panel = vscode.window.createWebviewPanel(NAV_VIEW_TYPE, "DataPass", { viewColumn: column, preserveFocus: true },
+        { enableScripts: true, localResourceRoots: this.rendererMode ? [dist] : [] });
+      if (this.rendererMode) {
+        panel.webview.html = viewHtml({ cspSource: panel.webview.cspSource, nonce: makeNonce(), scriptUri: panel.webview.asWebviewUri(bundle).toString(), title: "DataPass" });
+      }
       panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, "resources", "datapass.svg");
       this.panel = panel;
       panel.onDidDispose(() => { if (this.panel === panel) this.panel = undefined; });
@@ -104,15 +129,24 @@ export class NavViewHost implements vscode.Disposable {
     const config = vscode.workspace.getConfiguration("datapass.navView");
     const title = navViewTitle(config.get<string>("titleFormat", DEFAULT_TITLE_FORMAT), this.labelOf(state.location), view, index, views.length);
     panel.title = title;
-    let body: string;
     const cmd = view && surfaceCommand(view, config.get<Record<string, unknown>>("surfaces", {}));
+    if (this.rendererMode) {
+      if (view?.layout === "surface") {
+        const key = `${state.location.nodeId}/${view.id}`;
+        if (cmd && this.lastSurface !== key) { this.lastSurface = key; void vscode.commands.executeCommand(cmd); }
+      } else this.lastSurface = undefined;
+      const bound = view && view.layout !== "surface" ? this.withSamples(resolveBindings(view, this.bindingContext(state.location))) : [];
+      for (const m of navViewMessages({ state, views, labels: navViewLabels(config.get("labels", {})), bound })) void panel.webview.postMessage(m);
+      return;
+    }
+    let body: string;
     if (view?.layout === "surface") {
       body = cmd ? `<p class="desc">Opened in its own DataPass view.</p>` : `<p class="hole">No DataPass view is set for "${view.surface ?? ""}" (setting datapass.navView.surfaces).</p>`;
       const key = `${state.location.nodeId}/${view.id}`;
       if (cmd && this.lastSurface !== key) { this.lastSurface = key; void vscode.commands.executeCommand(cmd); }
     } else {
       this.lastSurface = undefined;
-      const data = view ? resolveBindings(view, { location: state.location, projectMap: this.deps.projectMap() }) : [];
+      const data = view ? resolveBindings(view, this.bindingContext(state.location)) : [];
       body = view ? (this.deps.render ?? fallbackRender)(view, data) : `<p class="hole">No view is defined for this place.</p>`;
     }
     const ladder = this.deps.ladder;
@@ -123,12 +157,34 @@ export class NavViewHost implements vscode.Disposable {
     });
   }
 
+  private bindingContext(location: NavLocation): Omit<BindingContext, "params"> {
+    const hop = this.deps.hop?.bind(this.deps);
+    return { location, projectMap: this.deps.projectMap(), ...(hop ? { hop } : {}) };
+  }
+
+  private withSamples(bound: BoundData[]): BoundData[] {
+    this.lastSteps = undefined;
+    return bound.map(b => {
+      if (!isCodeStepsInput(b.result.steps)) return b;
+      const steps = this.samples.input(b.result.steps);
+      this.lastSteps = steps;
+      return { ...b, result: { ...b.result, steps } };
+    });
+  }
+
   private receive(raw: unknown): void {
     const m = parseNavViewMessage(raw);
     if (!m) return;
     this.handled.push(m);
     if (m.type === "nav") this.nav.dispatch(m.command);
-    else if (m.type === "select") this.selectEmitter.fire(m.nodeId);
+    else if (m.type === "select") { this.samples.onMessage(m); this.selectEmitter.fire(m.nodeId); }
+    else if (m.type === "open-surface") {
+      // Only the current place's own surface view, through the same setting map as the automatic open.
+      const view = this.nav.views().find(v => v.id === m.viewId && v.surface === m.surface);
+      const cmd = view && surfaceCommand(view, vscode.workspace.getConfiguration("datapass.navView").get<Record<string, unknown>>("surfaces", {}));
+      if (cmd) void vscode.commands.executeCommand(cmd);
+    }
+    else if (m.type === "ready" && this.rendererMode) this.render();
   }
 }
 

@@ -1,0 +1,12 @@
+{
+  "name": "ls_databricks_foilsyn",
+  "description": "SYNTHETIC FIXTURE (foil-synthetic): fabricated, never deployed.",
+  "properties": {
+    "type": "AzureDatabricksDeltaLake",
+    "typeProperties": {
+      "domain": "https://adb-7000000000000001.1.azuredatabricks.net",
+      "accessToken": { "type": "SecureString", "value": "SYNTHETIC_ONLY_NOT_A_CREDENTIAL" },
+      "clusterId": "0929-100001-syn0001"
+    }
+  }
+}

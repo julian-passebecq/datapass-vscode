@@ -7,6 +7,8 @@
  */
 import type { ProjectMap } from "../../project/projectMap";
 import type { NavLocation, ViewDef } from "../navTypes";
+import type { GraphView } from "@juliandatapass-group/view-spi";
+import type { HopState } from "../../../views/hopState";
 import { BINDINGS } from "../../../../out/gen/bindings";
 
 /** § 34 origins (open vocabulary: Common may add more). */
@@ -16,15 +18,20 @@ export interface BindingRow { readonly id: string; readonly label: string; reado
 export interface BindingCard { readonly title: string; readonly fields: readonly { readonly label: string; readonly value: string; readonly origin: BindingOrigin }[] }
 export interface BindingMetric { readonly id: string; readonly label: string; readonly value: number | string; readonly unit?: string; readonly origin: BindingOrigin }
 export interface BindingGraph {
-  readonly nodes: readonly { readonly id: string; readonly label: string; readonly origin: BindingOrigin }[];
+  /** `kind`: a view-spi node kind when known (dataset, task, job…). */
+  readonly nodes: readonly { readonly id: string; readonly label: string; readonly origin: BindingOrigin; readonly kind?: string }[];
   readonly edges: readonly { readonly source: string; readonly target: string; readonly label?: string; readonly origin: BindingOrigin }[];
 }
 export interface BindingResult {
   readonly rows?: readonly BindingRow[];
-  readonly graph?: BindingGraph;
+  /** A raw graph (the host turns it into a view-spi graph view, bindings/graphView.ts) or an already projected one. */
+  readonly graph?: BindingGraph | GraphView;
   readonly cards?: readonly BindingCard[];
   readonly metrics?: readonly BindingMetric[];
-  readonly holes: readonly { readonly reason: string }[];
+  /** `code-steps` payload (a `CodeStepsInput`); the host adds the PQSAMP1 samples before sending. */
+  readonly steps?: unknown;
+  /** `kind` types the hole (no-project, out-of-scope, not-declared, binding-unavailable, binding-failed…); the host labels it. */
+  readonly holes: readonly { readonly reason: string; readonly kind?: string }[];
   readonly origin: BindingOrigin;
 }
 
@@ -33,11 +40,21 @@ export interface BindingContext {
   readonly params?: Readonly<Record<string, unknown>>;
   /** The current project map, when a project is open. */
   readonly projectMap?: ProjectMap;
+  /** V5HOLE1: the Hop state of the file at a place, when the host has it loaded (undefined: none / not a file). */
+  readonly hop?: (location: NavLocation) => HopState | undefined;
 }
 
 export interface BindingProvider { readonly source: string; provide(ctx: BindingContext): BindingResult }
 
 const PROVIDERS: readonly BindingProvider[] = BINDINGS;
+
+/**
+ * Catalog sources with no standalone provider yet (NAVDATA1): each renders as a typed `binding-unavailable` hole.
+ * A provider package removes its source from this list; `tests/navData.test.ts` keeps it exact.
+ */
+export const UNPROVIDED_SOURCES: readonly string[] = [
+  "volumetry", "spark-perf", "sql-shape", "rationale", "fabric-item", "execution-unit"
+];
 
 const BY_SOURCE = new Map(PROVIDERS.map(p => [p.source, p]));
 
@@ -55,11 +72,11 @@ export interface BoundData { readonly source: string; readonly result: BindingRe
 export function resolveBindings(view: ViewDef, ctx: Omit<BindingContext, "params">): BoundData[] {
   return view.bindings.map(b => {
     const provider = BY_SOURCE.get(b.source);
-    if (!provider) return { source: b.source, result: { holes: [{ reason: `No provider for "${b.source}" yet.` }], origin: "static" } };
+    if (!provider) return { source: b.source, result: { holes: [{ reason: `No provider for "${b.source}" yet.`, kind: "binding-unavailable" }], origin: "static" } };
     try {
       return { source: b.source, result: provider.provide({ ...ctx, params: b.params }) };
     } catch (e) {
-      return { source: b.source, result: { holes: [{ reason: `"${b.source}" failed: ${e instanceof Error ? e.message : String(e)}` }], origin: "static" } };
+      return { source: b.source, result: { holes: [{ reason: `"${b.source}" failed: ${e instanceof Error ? e.message : String(e)}`, kind: "binding-failed" }], origin: "static" } };
     }
   });
 }

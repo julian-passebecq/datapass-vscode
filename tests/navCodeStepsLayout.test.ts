@@ -8,7 +8,7 @@ import { codeStepsLayoutModel, isCodeStepsInput } from "../src/webview/views/lay
 import { withSamples, type CodeStepsInput } from "../src/webview/views/layouts/codeSteps";
 import { registeredLayouts } from "../src/webview/views/renderer";
 import type { BindingData, VNode } from "../src/webview/views/model";
-import type { ViewDef } from "../src/core/navigation/navStub";
+import type { ViewDef } from "../src/core/navigation/navTypes";
 
 const view = { id: "steps", title: "Steps", layout: "code-steps" } as unknown as ViewDef;
 const location = { level: "artifact", nodeId: "join", artifactKind: "sql" } as never;

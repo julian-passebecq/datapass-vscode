@@ -1,0 +1,16 @@
+# SYNTHETIC FIXTURE (foil-synthetic): fabricated, never executed. Not a client payload.
+bundle:
+  name: wind-etl
+include:
+  - resources/*.yml
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://adb-7000000000000001.1.azuredatabricks.net
+  prod:
+    mode: production
+    workspace:
+      host: https://adb-7000000000000001.1.azuredatabricks.net
+      root_path: /Workspace/foil-syn/wind-etl

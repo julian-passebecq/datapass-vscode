@@ -1,0 +1,13 @@
+{
+  "name": "ds_scada_landing",
+  "description": "SYNTHETIC FIXTURE (foil-synthetic): fabricated, never deployed.",
+  "properties": {
+    "type": "DelimitedText",
+    "linkedServiceName": { "referenceName": "ls_adls_foilsyn", "type": "LinkedServiceReference" },
+    "typeProperties": {
+      "location": { "type": "AzureBlobFSLocation", "fileSystem": "landing", "folderPath": "scada/daily" },
+      "columnDelimiter": ",",
+      "firstRowAsHeader": true
+    }
+  }
+}

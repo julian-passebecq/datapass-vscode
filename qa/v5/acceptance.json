@@ -1,0 +1,418 @@
+{
+  "format": "datapass.v5-acceptance",
+  "version": 1,
+  "part": "a",
+  "rows": [
+    {
+      "id": "01",
+      "title": "dbt detach",
+      "packages": ["DBTMAT1", "DETSPI1", "DETACH1", "DETACH2"],
+      "part": "a",
+      "requires": {"commands": ["datapass.dbt.materialize", "datapass.dbt.detach"], "sources": ["src/core/materialize/dbtDetach.ts"]},
+      "providers": {"datapass.dbt.materialize": "DBTMAT1 !218", "datapass.dbt.detach": "DETACH1 !220", "src/core/materialize/dbtDetach.ts": "DETACH1 !220"},
+      "shots": ["v5-01-detach-confirm", "v5-02-detached-badge", "v5-03-drift-both"],
+      "notes": ["Steps drafted against the !218/!220 labels; the first run after they merge confirms them."],
+      "journeys": [
+        {
+          "id": "V5-01", "kind": "main", "title": "Materialize fct_orders, detach it, edit both sides, re-attach as a proposal", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
+            {"quickPick": "fct_orders"},
+            {"quickPick": "fabric-notebook"},
+            {"click": "Write", "role": "button"},
+            {"expectFile": "^\\.datapass/materialization/.*fct_orders.*\\.json$"},
+            {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
+            {"quickPick": "fct_orders"},
+            {"expect": "notebook becomes the authority"},
+            {"shot": "v5-01-detach-confirm"},
+            {"click": "Detach", "role": "button"},
+            {"expectFileText": "^\\.datapass/materialization/.*fct_orders.*\\.json$", "text": "\"authority\": \"notebook\""},
+            {"expectFileText": "^\\.datapass/materialization/.*fct_orders.*\\.json$", "text": "sha256"},
+            {"openView": "DataPass"},
+            {"expect": "detached"},
+            {"shot": "v5-02-detached-badge"},
+            {"appendFile": "fct_orders.*notebook-content\\.py$", "match": true, "text": "\n# edited in the notebook\n"},
+            {"expect": "notebook edited", "timeoutMs": 20000},
+            {"appendFile": "dbt/models/marts/fct_orders.sql", "text": "\n-- edited in dbt\n"},
+            {"expect": "both", "timeoutMs": 20000},
+            {"expectAbsent": "in sync"},
+            {"shot": "v5-03-drift-both"},
+            {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
+            {"quickPick": "fct_orders"},
+            {"quickPick": "Re-attach"},
+            {"expect": "re-attach proposed", "timeoutMs": 20000},
+            {"expectNoFile": "^\\.git/refs/heads/datapass"}
+          ]
+        },
+        {
+          "id": "V5-01-HOLE", "kind": "hole", "title": "The stamp's notebook is deleted: target missing, never in sync", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
+            {"quickPick": "fct_orders"},
+            {"quickPick": "fabric-notebook"},
+            {"click": "Write", "role": "button"},
+            {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
+            {"quickPick": "fct_orders"},
+            {"click": "Detach", "role": "button"},
+            {"deleteFile": "fabric/fct_orders.Notebook/notebook-content.py"},
+            {"openView": "DataPass"},
+            {"expect": "target missing", "timeoutMs": 20000},
+            {"expectAbsent": "in sync"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "02",
+      "title": "Spark-job target",
+      "packages": ["SJDMAT1"],
+      "part": "b",
+      "requires": {"commands": ["datapass.dbt.materialize"], "sources": ["src/core/materialize/sjdWheel.ts"]},
+      "providers": {"datapass.dbt.materialize": "DBTMAT1 !218", "src/core/materialize/sjdWheel.ts": "SJDMAT1 !222"},
+      "shots": ["v5-04-sjd-target", "v5-05-sjd-plan"],
+      "journeys": []
+    },
+    {
+      "id": "03",
+      "title": "Multi-repo status / history / impact",
+      "packages": ["GITMR1", "GITMR2", "GITMR3", "GITSPI1"],
+      "part": "a",
+      "requires": {"settings": ["datapass.repoHistory.labels"], "sources": ["src/core/gitmr/repoSet.ts", "src/core/gitmr/readOnly.ts", "src/core/gitmr/repoHistory.ts"]},
+      "providers": {"datapass.repoHistory.labels": "GITMR2 !225", "src/core/gitmr/repoSet.ts": "GITMR1 !214", "src/core/gitmr/readOnly.ts": "GITMR1 !214", "src/core/gitmr/repoHistory.ts": "GITMR2 !225"},
+      "shots": ["v5-06-repo-lanes", "v5-07-repo-history", "v5-08-cross-impact", "v5-09-pin-drift"],
+      "notes": ["Impact and pin drift (steps 3-4) are GITMR3, cut to V5.1 (TL-10): journey V5-03-IMPACT is cut, lanes and history still run."],
+      "journeys": [
+        {
+          "id": "V5-03", "kind": "main", "title": "Three lanes with branch, ahead/behind and dirty; history of transform", "fixture": "repo-set",
+          "steps": [
+            {"openView": "Git"},
+            {"expect": "ingest"},
+            {"expect": "feature/order-channel"},
+            {"expect": "1 ahead"},
+            {"expect": "transform"},
+            {"expect": "bi"},
+            {"shot": "v5-06-repo-lanes"},
+            {"click": "transform", "role": "treeitem"},
+            {"expect": "transform: vendor semantic-core 0.1.0"},
+            {"expect": "transform: fct_orders"},
+            {"shot": "v5-07-repo-history"}
+          ]
+        },
+        {
+          "id": "V5-03-IMPACT", "kind": "main", "title": "A change in ingest lists the bi report; pin drift vendored vs local Common", "fixture": "repo-set", "cut": "GITMR3 cut to V5.1 (TL-10 cut order, PM 31 19:00)",
+          "steps": [
+            {"openView": "Git"},
+            {"expect": "Sales.Report"},
+            {"shot": "v5-08-cross-impact"},
+            {"expect": "pin drift"},
+            {"shot": "v5-09-pin-drift"}
+          ]
+        },
+        {
+          "id": "V5-03-HOLE", "kind": "hole", "title": "bi clone removed: a missing-clone lane, never a silent drop", "fixture": "repo-set-no-bi",
+          "steps": [
+            {"openView": "Git"},
+            {"expect": "ingest"},
+            {"expect": "missing clone", "timeoutMs": 20000},
+            {"expectAbsent": "up to date"}
+          ]
+        },
+        {
+          "id": "V5-03-HOLE-COMMON", "kind": "hole", "title": "No Common clone: drift unknown, never up to date", "fixture": "repo-set-no-common", "cut": "pin drift is GITMR3, cut to V5.1 (TL-10)",
+          "steps": [
+            {"openView": "Git"},
+            {"expect": "unknown"},
+            {"expectAbsent": "up to date"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "04",
+      "title": "Endpoint view",
+      "packages": ["OTELSPI1", "OTEL1", "OTEL2"],
+      "part": "b",
+      "cut": "OTEL2, OTEL1 and OTELSPI1 cut to V5.1 (TL-10 cut order, PM 31 19:00 and 20:06)",
+      "requires": {},
+      "shots": ["v5-10-endpoints-static", "v5-11-endpoints-replay", "v5-12-trace-tree"],
+      "journeys": []
+    },
+    {
+      "id": "05",
+      "title": "Power-Query sample",
+      "packages": ["PQSAMP1", "NAVREN4"],
+      "part": "a",
+      "requires": {"commands": ["datapass.codeSteps.sampleStep"], "sources": ["src/views/pqSampleHost.ts", "src/webview/views/layouts/codeSteps.layout.ts"]},
+      "shots": ["v5-13-pq-sample"],
+      "notes": ["Runs on v5/shop (its ingest notebook and samples/orders_sample.csv): qa/hop-client is a configuration of remote repositories, not a local fixture.", "The sample comes through the Data X-Ray command; the run loads qa/v5/harness/data-xray-stub, a CSV reader standing in for the separate X-Ray extension (DQ2 not merged)."],
+      "journeys": [
+        {
+          "id": "V5-05", "kind": "main", "title": "Code steps of the ingest notebook; a step's sample comes from the X-Ray sample", "fixture": "shop", "stubs": ["data-xray-stub"],
+          "steps": [
+            {"openFile": "fabric/ingest_orders.Notebook/notebook-content.py"},
+            {"wait": 8000},
+            {"run": "DataPass: Pick a View Here…"},
+            {"quickPick": "Code steps"},
+            {"expect": "saveAsTable"},
+            {"click": "bronze.orders_raw"},
+            {"chooseFile": "samples/orders_sample.csv"},
+            {"run": "DataPass: Data Sample for a Code Step"},
+            {"quickPick": "From a local data file (Data X-Ray)"},
+            {"expect": "Sample of orders_sample.csv", "timeoutMs": 20000},
+            {"expect": "1003"},
+            {"shot": "v5-13-pq-sample"},
+            {"press": "ArrowUp"},
+            {"expectAbsent": "Sample of orders_sample.csv"}
+          ]
+        },
+        {
+          "id": "V5-05-HOLE", "kind": "hole", "title": "shop-bare: no sample is a hole, never generated rows", "fixture": "shop-bare",
+          "steps": [
+            {"openFile": "fabric/ingest_orders.Notebook/notebook-content.py"},
+            {"wait": 8000},
+            {"run": "DataPass: Pick a View Here…"},
+            {"quickPick": "Code steps"},
+            {"expect": "saveAsTable"},
+            {"expect": "No sample"},
+            {"expectAbsent": "1003"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "06",
+      "title": "Authority panel",
+      "packages": ["AUTHPNL1"],
+      "part": "a",
+      "requires": {"commands": ["datapass.context.show", "datapass.dbt.detach"], "sources": ["src/core/authority/approvalsPanel.ts"]},
+      "providers": {"src/core/authority/approvalsPanel.ts": "AUTHPNL1 !223", "datapass.dbt.detach": "DETACH1 !220 (row 06 runs after row 01)"},
+      "shots": ["v5-14-authority-panel"],
+      "journeys": [
+        {
+          "id": "V5-06", "kind": "main", "title": "Each artifact with its authority; the detached row shows stamp, approver and date", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
+            {"quickPick": "fct_orders"},
+            {"quickPick": "fabric-notebook"},
+            {"click": "Write", "role": "button"},
+            {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
+            {"quickPick": "fct_orders"},
+            {"click": "Detach", "role": "button"},
+            {"openFile": "dbt/models/marts/fct_orders.sql"},
+            {"run": "DataPass: Show Context"},
+            {"click": "Authority", "role": "tab"},
+            {"expect": "detached"},
+            {"expect": "dbt"},
+            {"expect": "notebook"},
+            {"shot": "v5-14-authority-panel"}
+          ]
+        },
+        {
+          "id": "V5-06-HOLE", "kind": "hole", "title": "No approval record: no approval recorded, never approved", "fixture": "shop",
+          "steps": [
+            {"openFile": "dbt/models/marts/fct_orders.sql"},
+            {"run": "DataPass: Show Context"},
+            {"click": "Authority", "role": "tab"},
+            {"expect": "no approval recorded"},
+            {"expectAbsent": "Approved"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "07",
+      "title": "DAG UX",
+      "packages": ["DAGUX1"],
+      "part": "b",
+      "requires": {"commands": ["datapass.airflow.toggleLayout", "datapass.airflow.choosePlacement"], "settings": ["datapass.airflow.dagLayout", "datapass.airflow.dagPlacement"]},
+      "providers": {"datapass.airflow.toggleLayout": "DAGUX1 !240", "datapass.airflow.choosePlacement": "DAGUX1 !240", "datapass.airflow.dagLayout": "DAGUX1 !240", "datapass.airflow.dagPlacement": "DAGUX1 !240"},
+      "shots": ["v5-15-dag-default", "v5-16-dag-options"],
+      "journeys": []
+    },
+    {
+      "id": "08",
+      "title": "Layouts per step",
+      "packages": ["LAYOUT1"],
+      "part": "b",
+      "cut": "LAYOUT1 cut to V5.1 (TL-10 cut order, PM 31 19:00)",
+      "requires": {},
+      "shots": ["v5-17-layout-step"],
+      "journeys": []
+    },
+    {
+      "id": "09",
+      "title": "Guided tours, Learning/Interview + whole-picture spine",
+      "packages": ["TOURSPI1", "TOUR2", "PEDA2"],
+      "part": "a",
+      "requires": {"commands": ["datapass.nav.tour.setMode", "datapass.nav.tour.saveCurrentPath", "datapass.nav.tour.present", "datapass.pedagogy.interviewPrep"], "settings": ["datapass.guided.enabled", "datapass.guided.modes.learning.enabled", "datapass.guided.modes.interview.enabled"]},
+      "providers": {"datapass.nav.tour.setMode": "TOUR2 !244", "datapass.nav.tour.saveCurrentPath": "TOUR2 !244", "datapass.nav.tour.present": "TOUR2 !244", "datapass.pedagogy.interviewPrep": "PEDA2 !252", "datapass.guided.modes.learning.enabled": "TOUR2 !244", "datapass.guided.modes.interview.enabled": "TOUR2 !244", "datapass.guided.enabled": "NAVTOUR1 (merged)"},
+      "shots": ["v5-18-tour-learning", "v5-19-tour-step-box", "v5-20-tour-interview-step0", "v5-21-tour-save"],
+      "journeys": [
+        {
+          "id": "V5-09", "kind": "main", "title": "Learning: the whole picture with keys 1-5; Interview step 0; save the path as a tour", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Guided Mode (Learning / Interview)…"},
+            {"quickPick": "Learning"},
+            {"quickPick": "The whole picture"},
+            {"expect": "arrive"},
+            {"shot": "v5-18-tour-learning"},
+            {"press": "2"},
+            {"expect": "live"},
+            {"press": "3"},
+            {"expect": "change"},
+            {"press": "4"},
+            {"expect": "run"},
+            {"press": "5"},
+            {"expect": "trust"},
+            {"shot": "v5-19-tour-step-box"},
+            {"run": "DataPass: Guided Mode (Learning / Interview)…"},
+            {"quickPick": "Interview"},
+            {"expect": "Explain the project"},
+            {"expect": "Sales sees yesterday's revenue per customer"},
+            {"expect": "120000"},
+            {"shot": "v5-20-tour-interview-step0"},
+            {"run": "DataPass: Save Current Path as Tour…"},
+            {"type": "acceptance path"},
+            {"press": "Enter"},
+            {"expectFileText": "^\\.datapass/tours\\.json$", "text": "datapass.tour/1"},
+            {"run": "DataPass: Present Tour (Read-Only)"},
+            {"quickPick": "acceptance path"},
+            {"expectAbsent": "Add This Screen"},
+            {"shot": "v5-21-tour-save"}
+          ]
+        },
+        {
+          "id": "V5-09-OFF", "kind": "main", "title": "datapass.guided.enabled=false removes every Guided entry", "fixture": "shop", "settings": {"datapass.guided.enabled": false},
+          "steps": [
+            {"commandPaletteSearch": "Guided"},
+            {"expectAbsent": "Guided Mode"},
+            {"press": "Escape"}
+          ]
+        },
+        {
+          "id": "V5-09-HOLE", "kind": "hole", "title": "shop-bare: objectives and volumetry are holes; a spine step with no Location is a visible hole step", "fixture": "shop-bare",
+          "steps": [
+            {"run": "DataPass: Guided Mode (Learning / Interview)…"},
+            {"quickPick": "Interview"},
+            {"expect": "Explain the project"},
+            {"expect": "No objectives"},
+            {"expect": "No volumetry"},
+            {"expectAbsent": "120000"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "title": "Concept / decision / query cards",
+      "packages": ["PEDA1a", "PEDA1b", "PEDA3"],
+      "part": "a",
+      "requires": {"commands": ["datapass.pedagogy.patternCards", "datapass.pedagogy.queriesWorthShowing"], "settings": ["datapass.pedagogy.queryShowcase.enabled"]},
+      "providers": {"datapass.pedagogy.patternCards": "PEDA1b !241", "datapass.pedagogy.queriesWorthShowing": "PEDA3 !229", "datapass.pedagogy.queryShowcase.enabled": "PEDA3 !229"},
+      "shots": ["v5-22-concept-card", "v5-23-decision-card", "v5-24-query-showcase"],
+      "journeys": [
+        {
+          "id": "V5-10", "kind": "main", "title": "A concept card cites the code, a decision card shows the option taken, the top 5 queries", "fixture": "shop",
+          "steps": [
+            {"openFile": "dbt/models/staging/stg_orders.sql"},
+            {"run": "DataPass: Pattern Cards for This File"},
+            {"expect": "stg_orders.sql"},
+            {"expect": "row_number()"},
+            {"shot": "v5-22-concept-card"},
+            {"expect": "row-number-latest"},
+            {"expect": "MERGE into a silver Delta table"},
+            {"shot": "v5-23-decision-card"},
+            {"run": "DataPass: Queries Worth Showing"},
+            {"expect": "fct_orders"},
+            {"expect": "Sample output"},
+            {"shot": "v5-24-query-showcase"}
+          ]
+        },
+        {
+          "id": "V5-10-OFF", "kind": "main", "title": "queryShowcase.enabled=false hides Queries worth showing", "fixture": "shop", "settings": {"datapass.pedagogy.queryShowcase.enabled": false},
+          "steps": [
+            {"commandPaletteSearch": "Queries Worth Showing"},
+            {"expectAbsent": "Queries Worth Showing"},
+            {"press": "Escape"}
+          ]
+        },
+        {
+          "id": "V5-10-HOLE", "kind": "hole", "title": "shop-bare: no rationale = class-A owner question; query sample is a hole; spanless concept = generic card", "fixture": "shop-bare",
+          "steps": [
+            {"openFile": "dbt/models/staging/stg_orders.sql"},
+            {"run": "DataPass: Pattern Cards for This File"},
+            {"expect": "datapass-guidance"},
+            {"expect": "owner"},
+            {"expectAbsent": "row-number-latest"},
+            {"run": "DataPass: Queries Worth Showing"},
+            {"expect": "No sample"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "title": "AI-prepared tour",
+      "packages": ["TOURAI1"],
+      "part": "b",
+      "requires": {"commands": ["datapass.nav.tour.pick"], "sources": ["src/core/navigation/tours/tourAi.ts"]},
+      "providers": {"src/core/navigation/tours/tourAi.ts": "TOURAI1 !243"},
+      "shots": ["v5-25-tourai-request", "v5-26-tourai-imported"],
+      "journeys": []
+    },
+    {
+      "id": "12",
+      "title": "Explainer export",
+      "packages": ["EXPLAIN1"],
+      "part": "a",
+      "requires": {"commands": ["datapass.explain.export"], "settings": ["datapass.explain.sections"]},
+      "providers": {"datapass.explain.export": "EXPLAIN1 !233", "datapass.explain.sections": "EXPLAIN1 !233"},
+      "shots": ["v5-27-explainer-page"],
+      "notes": ["Stepping through the exported page in Chromium with the network off is V5E2E1b; here the file is asserted self-contained (no http:// or https://)."],
+      "journeys": [
+        {
+          "id": "V5-12", "kind": "main", "title": "Export one self-contained HTML page with header, origins legend and the confidential mark", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Export Explainer Page (HTML)…"},
+            {"expectFile": "^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$"},
+            {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "Shop lakehouse"},
+            {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "confidential"},
+            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "http://"},
+            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"},
+            {"shot": "v5-27-explainer-page"}
+          ]
+        },
+        {
+          "id": "V5-12-HOLE", "kind": "hole", "title": "shop-bare: readiness and decisions are holes, never an empty chart as data", "fixture": "shop-bare",
+          "steps": [
+            {"run": "DataPass: Export Explainer Page (HTML)…"},
+            {"expectFile": "^\\.datapass/explain/export-.*\\.html$"},
+            {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "hole"},
+            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"},
+            {"expectAbsent": "0 %"}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "title": "Architect review",
+      "packages": ["ARCHCALL1"],
+      "part": "b",
+      "requires": {"commands": ["datapass.ai.architectReview", "datapass.ai.importArchitectReview"]},
+      "providers": {"datapass.ai.architectReview": "ARCHCALL1 !235", "datapass.ai.importArchitectReview": "ARCHCALL1 !235"},
+      "shots": ["v5-28-architect-review"],
+      "journeys": []
+    },
+    {
+      "id": "14",
+      "title": "Studio demo",
+      "packages": ["STUDIO2", "STUDIO3", "STUDIO4"],
+      "part": "b",
+      "requires": {},
+      "notes": ["Runs in datapass-studio (Chromium), not in this extension; STUDIO4 is cut to V5.1."],
+      "shots": ["v5-29-studio-catalog", "v5-30-studio-query"],
+      "journeys": []
+    }
+  ]
+}

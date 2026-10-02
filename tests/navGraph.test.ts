@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { NavLocation, ViewDef } from "../src/core/navigation/navStub";
+import type { NavLocation, ViewDef } from "../src/core/navigation/navTypes";
 import type { BindingData, VNode } from "../src/webview/views/model";
 import { graphModel, isGraphView, styleColor, type GraphViewLike } from "../src/webview/views/layouts/graph";
 

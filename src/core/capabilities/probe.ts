@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { defaultProbeRunner, type ProbeRunner } from "../detection";
-import { TOOLS, type ToolObservation } from "./tools";
+import { TOOLS, type ToolDefinition, type ToolObservation } from "./tools";
 import { cliVersion } from "../toolchain/versions";
 import { mcpServerNames } from "../evidence/registration";
 import { runBounded } from "../project/observation";
@@ -8,28 +8,23 @@ import { runBounded } from "../project/observation";
 const TTL_MS = 5 * 60_000;
 /** V1-REF: CLI probes running at once (each starts a process; the rest wait their turn). */
 export const PROBE_CONCURRENCY = 6;
-let cache: { at: number; map: Map<string, ToolObservation> } | undefined;
-/** The probe run in progress: a second refresh waits for it instead of starting the CLIs again. */
-let inflight: Promise<Map<string, ToolObservation>> | undefined;
+/** V5HOLE3: one cache entry per CLI tool, so a view needing one tool never starts the others. */
+const cliCache = new Map<string, { at: number; obs: ToolObservation }>();
+/** Probes in progress, per tool: a second request waits for it instead of starting the CLI again. */
+const inflight = new Map<string, Promise<ToolObservation>>();
 
-/** Cached, timestamped tool probes. CLI probes are cheap `--version` calls with a timeout. */
-export async function probeTools(force = false, runner: ProbeRunner = defaultProbeRunner): Promise<Map<string, ToolObservation>> {
-  if (!force && cache && Date.now() - cache.at < TTL_MS) {
-    // V1-STAB: workspace files are read again every time (local and cheap), so a new .vscode/mcp.json
-    // shows on Re-inspect Project without waiting for the CLI probes' TTL.
-    const now = new Date().toISOString();
-    for (const tool of TOOLS.filter(t => t.kind === "workspace-file")) cache.map.set(tool.id, await probeWorkspaceFile(tool.id, now));
-    return cache.map;
-  }
-  if (!force && inflight) return inflight;
-  const run = probeAll(runner).finally(() => { if (inflight === run) inflight = undefined; });
-  inflight = run;
-  return run;
-}
+/** The ids of the tools probed by starting a process (`--version`-style, core/spawnAllowList.ts TOOL_PROBES). */
+export const CLI_TOOL_IDS: ReadonlySet<string> = new Set(TOOLS.filter(t => t.kind === "cli").map(t => t.id));
 
-async function probeAll(runner: ProbeRunner): Promise<Map<string, ToolObservation>> {
+/**
+ * Timestamped tool probes. Extensions and workspace files are read every time (no process). V5HOLE3:
+ * a CLI tool is probed only when its id is in `cliIds` (a view or a command that needs it asked for
+ * it), never by default; the result is cached for five minutes unless `force`.
+ */
+export async function probeTools(force = false, cliIds: ReadonlySet<string> = new Set(), runner: ProbeRunner = defaultProbeRunner): Promise<Map<string, ToolObservation>> {
   const now = new Date().toISOString();
-  const entries = await runBounded(TOOLS, PROBE_CONCURRENCY, async (tool): Promise<ToolObservation> => {
+  const wanted = TOOLS.filter(t => t.kind !== "cli" || cliIds.has(t.id));
+  const entries = await runBounded(wanted, PROBE_CONCURRENCY, async (tool): Promise<ToolObservation> => {
     switch (tool.kind) {
       case "extension": {
         for (const id of tool.extensionIds ?? []) {
@@ -38,20 +33,31 @@ async function probeAll(runner: ProbeRunner): Promise<Map<string, ToolObservatio
         }
         return { toolId: tool.id, state: "absent", observedAt: now };
       }
-      case "cli": {
-        const cli = tool.cli!;
-        const command = process.platform === "win32" && cli.windowsCommand ? cli.windowsCommand : cli.command;
-        const r = await runner(command, cli.args, 2000);
-        return { toolId: tool.id, state: r.ok ? "present" : "absent", via: command, version: r.ok ? cliVersion(r.output) : undefined, observedAt: now };
-      }
+      case "cli": return probeCli(tool, force, runner);
       case "workspace-file":
         return probeWorkspaceFile(tool.id, now);
       case "desktop-app":
         return { toolId: tool.id, state: "unknown", observedAt: now };
     }
   });
-  cache = { at: Date.now(), map: new Map(entries.map(e => [e.toolId, e])) };
-  return cache.map;
+  return new Map(entries.map(e => [e.toolId, e]));
+}
+
+function probeCli(tool: ToolDefinition, force: boolean, runner: ProbeRunner): Promise<ToolObservation> {
+  const hit = cliCache.get(tool.id);
+  if (!force && hit && Date.now() - hit.at < TTL_MS) return Promise.resolve(hit.obs);
+  const running = inflight.get(tool.id);
+  if (running) return running;
+  const run = (async (): Promise<ToolObservation> => {
+    const cli = tool.cli!;
+    const command = process.platform === "win32" && cli.windowsCommand ? cli.windowsCommand : cli.command;
+    const r = await runner(command, cli.args, 2000);
+    const obs: ToolObservation = { toolId: tool.id, state: r.ok ? "present" : "absent", via: command, version: r.ok ? cliVersion(r.output) : undefined, observedAt: new Date().toISOString() };
+    cliCache.set(tool.id, { at: Date.now(), obs });
+    return obs;
+  })().finally(() => { if (inflight.get(tool.id) === run) inflight.delete(tool.id); });
+  inflight.set(tool.id, run);
+  return run;
 }
 
 async function probeWorkspaceFile(toolId: string, now: string): Promise<ToolObservation> {
@@ -64,5 +70,5 @@ async function probeWorkspaceFile(toolId: string, now: string): Promise<ToolObse
 }
 
 export function invalidateToolProbes(): void {
-  cache = undefined;
+  cliCache.clear();
 }

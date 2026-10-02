@@ -20,6 +20,7 @@ import * as vscode from "vscode";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { executablePath, resolveCommandOrScript } from "../core/exec";
 import { gitHostOf, remoteIdentity, type GitHostRepo } from "../core/project/gitHosts";
 import type { RepoView } from "../core/project/resolve";
@@ -28,7 +29,7 @@ import { isBranchName, isSha, oldestDate, parseDefaultBranch, parseMergeLog, par
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, parseGhOpen, parseGlabMrs, recentMerged, type HostPrs } from "../core/git/hostPrs";
 import { gitSummary, hasRemoteFor, needsYou, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
-import { cmdLine, Limiter } from "../core/git/run";
+import { cmdLine, Limiter, retryOnTimeout } from "../core/git/run";
 import type { WorkSession } from "./session";
 import { cloneParents } from "./session";
 
@@ -150,6 +151,9 @@ export class GitObserver implements vscode.Disposable {
   private checkedAt?: string;
   /** Test seam: replaces how tools are run (the desktop suite uses the real one with a stub gh). */
   runner: (tool: Tool, args: string[], cwd: string, timeoutMs: number) => Promise<RunResult> = (tool, args, cwd, timeoutMs) => {
+    // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+    const allowed = checkSpawn(tool, args);
+    if (!allowed.allowed) return Promise.resolve({ ok: false, stdout: "", stderr: refusal(allowed), timedOut: false });
     const cmd = toolCommand(tool);
     if (!cmd) return Promise.resolve({ ok: false, stdout: "", stderr: `${tool} was not found`, timedOut: false, missing: true });
     return spawnTool(cmd, args, cwd, timeoutMs);
@@ -196,7 +200,8 @@ export class GitObserver implements vscode.Disposable {
     const key = `${tool}\0${cwd}\0${args.join("\u0001")}`;
     const hit = this.cache.get(key);
     if (hit && Date.now() - hit.at < ttl) return hit.value;
-    const value = this.limiter.run(() => this.runner(tool, args, cwd, timeoutMs));
+    // DESKHARD3: a command that timed out (CI load, gh starting slowly) is asked once more with 20 s, outside the slot it held.
+    const value = retryOnTimeout(t => this.limiter.run(() => this.runner(tool, args, cwd, t)), timeoutMs);
     this.cache.set(key, { at: Date.now(), value });
     // A timeout or failure is not remembered: the next refresh tries again.
     void value.then(r => { if (!r.ok && !r.missing && this.cache.get(key)?.value === value) this.cache.delete(key); });
@@ -349,7 +354,7 @@ export class GitObserver implements vscode.Disposable {
     // The latest merged PR is not in this clone (only checked on the default branch).
     const latest = merged[0];
     if (latest?.mergeCommit && !detached && r.branch === r.defaultBranch) {
-      const anc = await this.limiter.run(() => this.runner("git", ["merge-base", "--is-ancestor", latest.mergeCommit!, "HEAD"], folder, COMMAND_TIMEOUT_MS));
+      const anc = await retryOnTimeout(t => this.limiter.run(() => this.runner("git", ["merge-base", "--is-ancestor", latest.mergeCommit!, "HEAD"], folder, t)), COMMAND_TIMEOUT_MS);
       if (!anc.ok && !anc.timedOut && !anc.missing) r.mergeNotPulled = { number: latest.number, title: latest.title, fetched: anc.code === 1 };
     }
     return r;

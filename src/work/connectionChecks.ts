@@ -14,6 +14,7 @@
  */
 import * as os from "node:os";
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { resolveWindowsCommand, windowsInvocation } from "../core/detection";
 import { resolveExecutable } from "../core/exec";
 import { TOOL_INDEX } from "../core/capabilities/tools";
@@ -28,6 +29,9 @@ export const CHECK_TIMEOUT_MS = 30_000;
 const isFile = (p: string) => { try { return fs.statSync(p).isFile(); } catch { return false; } };
 
 export const defaultConnectionRunner: ConnectionRunner = (command, args, timeoutMs) => new Promise(resolve => {
+  // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+  const allowed = checkSpawn(command, args);
+  if (!allowed.allowed) { resolve({ ok: false, stdout: "", stderr: refusal(allowed) }); return; }
   let file: string | undefined;
   let argv = [...args];
   let verbatim = false;

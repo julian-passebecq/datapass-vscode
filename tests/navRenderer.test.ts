@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { NavState, ViewDef } from "../src/core/navigation/navStub";
+import type { NavState, ViewDef } from "../src/core/navigation/navTypes";
 import { parseHostMessage, type BindingData, type VNode } from "../src/webview/views/model";
 import { navDownCommand, registeredLayouts, registerLayout, screenModel, SVG_NS, toDom } from "../src/webview/views/renderer";
 import { viewHtml } from "../src/views/viewHtml";
@@ -63,10 +63,10 @@ test("surface: open button asks the host; missing surface is a typed hole", () =
 });
 
 test("unregistered layout kind is a typed hole; registering one draws it", () => {
-  const v: ViewDef[] = [{ id: "m", title: "M", layout: "metrics", bindings: [] }];
+  const v: ViewDef[] = [{ id: "m", title: "M", layout: "context-text", bindings: [] }];
   const s = { ...state, viewId: "m" };
   assert.equal(byCls(screenModel({ state: s, views: v, labels, data: [] }), "nv-hole")[0]!.attrs?.["data-hole-kind"], "layout-unregistered");
-  registerLayout("metrics", () => ({ tag: "div", cls: "metrics-ok" }));
+  registerLayout("context-text", () => ({ tag: "div", cls: "metrics-ok" }));
   assert.equal(byCls(screenModel({ state: s, views: v, labels, data: [] }), "metrics-ok").length, 1);
 });
 

@@ -27,6 +27,7 @@ export const SURFACES: readonly Surface[] = [
   { id: "view.work", kind: "view", viewId: "datapass.work", label: "Work view", detail: "Module cards and capability operations (V2)" },
   { id: "view.galaxy", kind: "view", viewId: "datapass.galaxy", label: "Galaxy view", detail: "Platform cards and qualification (V1)" },
   { id: "view.architecture", kind: "view", viewId: "datapass.architecture", label: "Architecture panel", detail: "The project diagram (bottom panel)" },
+  { id: "view.context", kind: "view", viewId: "datapass.context", label: "Context panel", detail: "Details of where you are: summary, process step, why, patterns, Fabric, evidence (bottom panel)" },
   { id: "view.aiExchange", kind: "view", viewId: "datapass.aiExchange", label: "AI view", detail: "Copy a DataPass file for your AI, paste its answer (secondary side bar)" },
   { id: "view.details", kind: "view", viewId: "datapass.details", label: "Details", detail: "The selected component or sub-project (secondary side bar)" },
   { id: "ai.agent", kind: "aiTab", label: "AI view: Agent tab", detail: "Work orders for Claude Code or Codex (still opt-in per machine and project type)" },
@@ -67,6 +68,8 @@ export const SURFACES: readonly Surface[] = [
   { id: "palette.full", kind: "palette", label: "Command Palette: every DataPass command", detail: "Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)" },
   // V3-SHELL: the right rail (a thin column of buttons shown instead of the full panel in rail mode).
   { id: "view.rail", kind: "view", viewId: "datapass.rail", label: "Right rail", detail: "A thin column of buttons that expands to the full DataPass panel (secondary side bar, rail mode)" },
+  // V5 DBTMAT1: the dbt materialization command (Advanced only for now).
+  { id: "v5.dbtmat", kind: "palette", label: "Command Palette: Materialize dbt Models", detail: "dbt model(s) → Fabric notebooks as a reviewed proposal: preview diff, write on confirmation, Git steps for you to run" },
   // V5 PQSAMP1: "Data Sample for a Code Step" in the Command Palette (the code-steps view reaches it in every mode).
   { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" },
   // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).

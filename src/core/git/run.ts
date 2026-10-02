@@ -30,3 +30,17 @@ export function cmdLine(script: string, args: readonly string[]): string | undef
   return `""${script}" ${args.map(a => `"${a}"`).join(" ")}"`;
 }
 
+
+/** DESKHARD3: a command that timed out is asked once more with at least this long (CI load, a slow first start). */
+export const RETRY_TIMEOUT_MS = 20_000;
+
+/**
+ * Run once with `timeoutMs`; when that attempt timed out (and only then), run once more with at
+ * least RETRY_TIMEOUT_MS. A real answer (success or failure) is never retried, so a refusal stays a
+ * refusal; a second timeout is returned as is and the caller says "not checked", never "no".
+ */
+export async function retryOnTimeout<R extends { ok: boolean; timedOut?: boolean }>(run: (timeoutMs: number) => Promise<R>, timeoutMs: number, retryMs = RETRY_TIMEOUT_MS): Promise<R> {
+  const first = await run(timeoutMs);
+  if (first.ok || !first.timedOut) return first;
+  return run(Math.max(timeoutMs, retryMs));
+}

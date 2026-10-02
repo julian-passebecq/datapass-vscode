@@ -19,6 +19,7 @@ import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { pathToFileURL } from "node:url";
+import { fixtureTempEnv } from "./desktop/tempEnv";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToLatest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
 import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
@@ -720,6 +721,11 @@ async function main(): Promise<void> {
     ];
     if (realExtensions) launchArgs.push("--extensions-dir", path.join(os.homedir(), ".vscode", "extensions"));
     else launchArgs.push("--disable-extensions", "--extensions-dir", path.join(scratch, "extensions"));
+    // DESKHARD3: this run's own temp folder (removed with the scratch). Concurrent desktop jobs on one runner
+    // shared C:\Windows\TEMP, so one job's QA run root (%TEMP%\datapass-qa\<minute>-…) was overwritten or
+    // cleaned up by another job's.
+    const tempDir = path.join(scratch, "tmp", name);
+    fs.mkdirSync(tempDir, { recursive: true });
     console.log(`\n▶ fixture ${name}${realExtensions ? " (with installed extensions)" : ""}`);
     try {
       await runTests({
@@ -727,7 +733,7 @@ async function main(): Promise<void> {
         extensionDevelopmentPath: repo,
         extensionTestsPath: path.join(out, "suite.js"),
         launchArgs,
-        extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile, ...env }
+        extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile, ...fixtureTempEnv(tempDir), ...env }
       });
     } catch {
       failed++;

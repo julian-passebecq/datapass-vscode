@@ -57,6 +57,7 @@
                 "view.work",
                 "view.galaxy",
                 "view.architecture",
+                "view.context",
                 "view.aiExchange",
                 "view.details",
                 "ai.agent",
@@ -88,12 +89,13 @@
                 "view.airflowDag",
                 "palette.full",
                 "view.rail",
+                "v5.dbtmat",
                 "v5.pqsamp",
                 "view.navigator",
                 "v5.tour2"
               ]
             },
-            "maxItems": 39,
+            "maxItems": 41,
             "minItems": 0
           }
         },

@@ -6,9 +6,10 @@
  * Host messages are untrusted and validated (`parseHostMessage`); the webview only posts nav commands,
  * a selection or an "open surface" request — it never runs project code.
  */
-import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navStub";
+import type { LayoutKind, NavCommand, NavState, ViewDef } from "../../core/navigation/navTypes";
 import { label, parseHostMessage, type BindingData, type Labels, type LayoutModel, type VNode } from "./model";
 import { LAYOUTS } from "../../../out/gen/layouts";
+import { navCommandForKey } from "../navKeys";
 
 const registry = new Map<string, LayoutModel>();
 export function registerLayout(kind: LayoutKind, draw: LayoutModel): void { registry.set(kind, draw); }
@@ -102,9 +103,14 @@ export function mountNavView(root: HTMLElement, post: (m: WebviewOut) => void, w
   root.addEventListener("keydown", e => {
     const t = e.target as HTMLElement;
     const group = t.closest(".nv-views") ? ".nv-tab" : t.matches(".nv-selectable, .nv-card[tabindex]") ? ".nv-selectable, .nv-card[tabindex]" : null;
-    if (!group) return;
-    const next = t.closest(".nv-views") ? (e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0) : (e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0);
-    if (!next) return;
+    const next = !group || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey ? 0
+      : t.closest(".nv-views") ? (e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0) : (e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0);
+    if (!group || !next) {
+      // NAVKEYS1 plain keys (NAVFIX1, review M5): what focus movement does not use navigates; Alt+Left/Right stay VS Code's Back/Forward.
+      const cmd = navCommandForKey(e, t.closest?.("[data-nav-dblclick]")?.getAttribute("data-nav-dblclick") || undefined);
+      if (cmd) { e.preventDefault(); post({ type: "nav", command: cmd }); }
+      return;
+    }
     const items = Array.from(root.querySelectorAll<HTMLElement>(group));
     const i = items.indexOf(t);
     items[(i + next + items.length) % items.length]?.focus();

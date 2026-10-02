@@ -1,0 +1,49 @@
+{
+  "schema": "datapass.principles/1",
+  "origin": "datapass-guidance",
+  "label": "DataPass guidance",
+  "cards": [
+    {
+      "id": "medallion-layers",
+      "title": "Layers: staging → processed → curated",
+      "text": "Raw data lands in staging unchanged, is cleaned and conformed in processed, and is shaped for consumers in curated. Each layer is a contract: readers of curated never reach back into staging, and every artifact belongs to exactly one layer.",
+      "concepts": ["medallion-contract", "layer-object-kind", "contracts"],
+      "check": "layers"
+    },
+    {
+      "id": "lineage",
+      "title": "Lineage: know where every table comes from",
+      "text": "Every table should have a known producer and known inputs. With lineage you can answer what breaks if a source changes and where a wrong number came from. A table nobody can trace is a table nobody can safely change.",
+      "concepts": ["audit-ownership"],
+      "check": "lineage"
+    },
+    {
+      "id": "idempotence",
+      "title": "Idempotence: a rerun gives the same result",
+      "text": "A job that fails halfway will be rerun. Overwrite, partition overwrite or merge on a key leave the same result after a rerun; a blind append duplicates rows. Pick the write mode so that running twice is harmless.",
+      "concepts": ["idempotent-write", "load-mode", "merge-ordering"],
+      "check": "idempotence"
+    },
+    {
+      "id": "dq-gates",
+      "title": "Quality gates between layers",
+      "text": "Check data where it crosses a layer boundary: keys unique, required columns filled, volumes plausible. A failed check stops or quarantines the load instead of passing bad rows on to the next layer and to reports.",
+      "concepts": ["gate-action", "check-types", "contracts"],
+      "check": "dq-gates"
+    },
+    {
+      "id": "scd",
+      "title": "Slowly changing dimensions",
+      "text": "When a customer moves or a product is renamed, decide per attribute whether history matters. Type 1 overwrites; type 2 keeps a dated row per version, through snapshots or a merge on the dimension key. Not deciding silently loses history.",
+      "concepts": ["scd-choice", "keys"],
+      "check": "scd"
+    },
+    {
+      "id": "partitioning",
+      "title": "Partitioning large tables",
+      "text": "Partition big tables on the column most queries and loads filter on, usually a date. Readers then skip whole folders and reloads replace one partition. Too many small partitions cost more than none.",
+      "concepts": ["partition-key", "partition-value-expression", "file-size-and-type"],
+      "check": "partitioning"
+    }
+  ]
+}

@@ -47,14 +47,20 @@ test(".cmd shims run through cmd.exe only with arguments cmd cannot reinterpret"
 
 test("defaultProbeRunner finds a real .cmd shim on Windows", { skip: process.platform !== "win32" }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "datapass-shim-"));
-  writeFileSync(join(dir, "datapass-fake-cli.cmd"), ["@echo off", "echo fake-cli 1.2.3 %1", ""].join("\r\n"));
+  writeFileSync(join(dir, "gcx.cmd"), ["@echo off", "echo fake-cli 1.2.3 %1", ""].join("\r\n"));
   const saved = process.env.PATH;
   process.env.PATH = `${dir};${saved ?? ""}`;
   try {
-    const r = await defaultProbeRunner("datapass-fake-cli", ["--version"], 5000);
+    // V5HOLE3: a declared probe (gcx --version, core/spawnAllowList.ts) through a .cmd shim.
+    const r = await defaultProbeRunner("gcx", ["--version"], 5000);
     assert.deepEqual(r, { ok: true, output: "fake-cli 1.2.3 --version" });
-    const refused = await defaultProbeRunner("datapass-fake-cli", ["&", "whoami"], 5000);
+    const refused = await defaultProbeRunner("gcx", ["&", "whoami"], 5000);
     assert.equal(refused.ok, false);
+    // An undeclared command is never started, even when it is on PATH.
+    writeFileSync(join(dir, "datapass-fake-cli.cmd"), ["@echo off", "echo ran", ""].join("\r\n"));
+    const undeclared = await defaultProbeRunner("datapass-fake-cli", ["--version"], 5000);
+    assert.equal(undeclared.ok, false);
+    assert.match(undeclared.error ?? "", /allow-list/);
   } finally {
     process.env.PATH = saved;
     rmSync(dir, { recursive: true, force: true });

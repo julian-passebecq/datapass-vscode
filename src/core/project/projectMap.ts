@@ -451,6 +451,8 @@ function toolNeeds(comps: ComponentView[], tools: ReadonlyMap<string, ToolObserv
       for (const req of o.capability.requirements) {
         if (req.need !== "required") continue;
         if (req.anyOf.some(id => tools.get(id)?.state === "present")) continue;
+        // V5HOLE3: a CLI not probed yet (probes are lazy) is not reported missing.
+        if (req.anyOf.some(id => TOOL_INDEX.get(id)?.kind === "cli" && !tools.has(id))) continue;
         const id = req.anyOf.join("|");
         const n = needs.get(id) ?? {
           id, label: req.anyOf.map(t => TOOL_INDEX.get(t)?.label ?? t).join(" or "), toolIds: [...req.anyOf],

@@ -5,11 +5,14 @@
  */
 import { NAV_LEVELS, type NavCommand, type NavLocation, type ViewDef } from "../core/navigation/navTypes";
 import type { BoundData } from "../core/navigation/bindings";
+import { DEFAULT_NAV_KEYS } from "../webview/navKeys";
 
 /** Renders one view's bound data to an HTML fragment (escaped, no script). */
 export type NavRenderer = (view: ViewDef, data: readonly BoundData[]) => string;
 
-export type NavViewMessage = { type: "nav"; command: NavCommand } | { type: "select"; nodeId: string } | { type: "ready" };
+export type NavViewMessage = { type: "nav"; command: NavCommand } | { type: "select"; nodeId: string } | { type: "ready" }
+  /** The renderer's "Open" button on a surface view (NAVFIX1, review M6); the host maps it through `surfaceCommand`. */
+  | { type: "open-surface"; surface: string; viewId: string };
 
 /** Title from the `datapass.navView.titleFormat` setting: {location}, {view}, {n}, {N}. */
 export function navViewTitle(format: string, location: string, view: ViewDef | undefined, index: number, count: number): string {
@@ -53,6 +56,7 @@ export function parseNavViewMessage(raw: unknown): NavViewMessage | undefined {
   if (m.type === "ready") return { type: "ready" };
   if (m.type === "select") return isId(m.nodeId) ? { type: "select", nodeId: m.nodeId } : undefined;
   if (m.type === "nav") { const command = parseCommand(m.command); return command && { type: "nav", command }; }
+  if (m.type === "open-surface") return isId(m.surface) && isId(m.viewId) ? { type: "open-surface", surface: m.surface, viewId: m.viewId } : undefined;
   return undefined;
 }
 
@@ -96,10 +100,14 @@ document.addEventListener("click", e => {
   const n = e.target.closest("[data-node]");
   if (n) vscode.postMessage({ type: "select", nodeId: n.dataset.node });
 });
-const KEYS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", Home: "home" };
+// NAVKEYS1 plain keys (DEFAULT_NAV_KEYS); Alt+Left/Right stay VS Code's own Back/Forward (NAVFIX1, review M5).
+const KEYS = ${JSON.stringify(DEFAULT_NAV_KEYS)};
 document.addEventListener("keydown", e => {
-  if (e.altKey && KEYS[e.key]) { e.preventDefault(); nav({ type: KEYS[e.key] }); }
-  else if (e.altKey && e.key === "Backspace") { e.preventDefault(); nav({ type: "back" }); }
+  if (e.defaultPrevented || e.isComposing || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  const t = e.target;
+  if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable)) return;
+  const k = KEYS.find(k => k.key === e.key && !!k.alt === e.altKey);
+  if (k) { e.preventDefault(); nav({ type: k.command }); }
 });
 vscode.postMessage({ type: "ready" });
 `;
@@ -137,9 +145,9 @@ a { color: var(--vscode-textLink-foreground); text-decoration: none; }
 </style></head>
 <body>
 <header>
-${btn("up", "↑", "Coarser (Alt+Up)", p.canUp)}${btn("down", "↓", "Finer (Alt+Down)", p.canDown)}
+${btn("up", "↑", "Coarser (Up)", p.canUp)}${btn("down", "↓", "Finer (Down)", p.canDown)}
 <h2>${esc(p.title)}</h2>
-${btn("left", "←", "Previous view (Alt+Left)", p.viewCount > 1)}${btn("right", "→", "Next view (Alt+Right)", p.viewCount > 1)}
+${btn("left", "←", "Previous view (Left)", p.viewCount > 1)}${btn("right", "→", "Next view (Right)", p.viewCount > 1)}
 </header>
 <main>${p.body}</main>
 <script nonce="${p.nonce}">${SCRIPT}</script>

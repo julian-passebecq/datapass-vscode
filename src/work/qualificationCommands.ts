@@ -55,6 +55,7 @@ async function record(session: WorkSession, version: string, arg: unknown): Prom
   });
   if (note === undefined) return;
   const toolIds = [...new Set(op.capability.requirements.flatMap(r => r.anyOf))];
+  await session.ensureToolProbes(toolIds);
   await session.recordQualification({
     capabilityId: op.capability.id, label: op.capability.label, result: choice.result, note: cleanNote(note),
     projectId: manifest.project.id, scopeId: model.scope.id, preflight: op.result.status,
@@ -64,6 +65,8 @@ async function record(session: WorkSession, version: string, arg: unknown): Prom
 }
 
 async function exportReport(session: WorkSession, version: string): Promise<void> {
+  // V5HOLE3: the report's environment table needs the tools the recorded results depend on.
+  await session.ensureToolProbes(session.qualification().flatMap(r => Object.keys(r.tools)));
   const text = qualificationReport({
     records: session.qualification(), dataPassVersion: version, vscodeVersion: vscode.version,
     platform: `${process.platform} ${process.arch}`, generatedAt: new Date().toISOString(), tools: session.toolObservations()

@@ -1,0 +1,25 @@
+{
+  "name": "pl_adf_scada_to_bronze",
+  "description": "SYNTHETIC FIXTURE (foil-synthetic): fabricated, never deployed.",
+  "properties": {
+    "activities": [
+      {
+        "name": "copy_scada_landing_to_bronze",
+        "type": "Copy",
+        "inputs": [{ "referenceName": "ds_scada_landing", "type": "DatasetReference" }],
+        "outputs": [{ "referenceName": "ds_scada_raw_delta", "type": "DatasetReference" }],
+        "typeProperties": {
+          "source": { "type": "DelimitedTextSource" },
+          "sink": { "type": "AzureDatabricksDeltaLakeSink" }
+        }
+      },
+      {
+        "name": "run_silver_transform",
+        "type": "DatabricksJob",
+        "dependsOn": [{ "activity": "copy_scada_landing_to_bronze", "dependencyConditions": ["Succeeded"] }],
+        "linkedServiceName": { "referenceName": "ls_databricks_foilsyn", "type": "LinkedServiceReference" },
+        "typeProperties": { "jobId": "91002" }
+      }
+    ]
+  }
+}

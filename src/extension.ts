@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
 import { executeGalaxyAction, setReadinessSource } from "./core/actions";
 import type { GalaxyState } from "./core/types";
+import { detectActiveProject } from "./core/projectState";
+import { galaxyGathers, type GalaxyRefreshTrigger } from "./core/spawnAllowList";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
@@ -13,6 +15,8 @@ import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
 import { registerFileContextCommands } from "./work/fileContextCommands";
 import { registerVariantCommands } from "./work/variantCommands";
+import { registerDbtMaterialize } from "./views/dbtMaterialize";
+import { registerDbtDetach } from "./views/dbtDetach";
 import { ActiveVariantService, registerActiveVariantCommands } from "./work/activeVariantCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
@@ -308,6 +312,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   projectTree.attach(projectView);
   projectTree.setSurfaces(experience.shows, experience.onDidChange);
   registerVariantCommands(context, session, projectTree);
+  // DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (preview, then write on confirmation).
+  registerDbtMaterialize(context, () => session.project.root);
+  // DETACH1: detach a materialized dbt model; the tree shows the badge and the drift fact.
+  const dbtDetach = registerDbtDetach(context, () => session.project.root, session.onDidChange);
+  projectTree.attachDetached(() => dbtDetach.views(), dbtDetach.onDidChange);
   // V3-SHELL: tree lenses, rail mode, the bottom-panel Architecture view (off by default), close buttons.
   const shell = new ShellService(context, projectTree, projectView);
   registerShellCommands(context, shell);
@@ -335,7 +344,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerHopCommands(context, session, hop);
   const nativeUnderstanding = new NativeAnalysisHost(session, root => createNativeBackend(context.extensionPath, root));
   context.subscriptions.push(nativeUnderstanding, vscode.commands.registerCommand("datapass.understanding.analyzeSelection", selectedAnalysisCommand(nativeUnderstanding, () => startup)),
-    vscode.commands.registerCommand("datapass.understanding.analyzeDbtProjects", async () => { await startup; await nativeUnderstanding.analyzeDbtProjects(); }));
+    vscode.commands.registerCommand("datapass.understanding.analyzeDbtProjects", async () => { await startup; await nativeUnderstanding.analyzeDbtProjects(); }),
+    vscode.commands.registerCommand("datapass.understanding.analyzeOrchestration", async () => { await startup; await nativeUnderstanding.analyzeOrchestration(); }));
   registerWorkbenchCommands(context, session, host, uri => hop.openIfExplained(uri));
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);
@@ -435,12 +445,22 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const showStatus = () => { if (experience.shows("status.health")) status.show(); else status.hide(); };
   showStatus();
   context.subscriptions.push(status, experience.onDidChange(showStatus));
+  galaxy.onState = state => updateStatusBar(status, state);
 
-  const refreshState = async (): Promise<GalaxyState> => {
+  const refreshState = async (trigger: GalaxyRefreshTrigger = "automatic"): Promise<GalaxyState> => {
     // V1-REF: the session paints the project first; the Galaxy cards are gathered while it finishes
     // (probes, readiness, inventory). Operation readiness reaches the cards when the session settles.
     const done = session.refresh();
     await Promise.race([nextPaint(session), done]);
+    // V5HOLE3: the Galaxy cards probe platform CLIs (--version), so they are gathered only while the
+    // Galaxy view is showing (opening it gathers them, views/galaxy.ts) or a Galaxy command asks for
+    // them (Refresh; the view may be hidden by the mode, e.g. Standard); never at activation.
+    if (!galaxyGathers(trigger, galaxy.isVisible())) {
+      await done;
+      const last = galaxy.lastState();
+      if (last) return last;
+      return { generatedAt: new Date().toISOString(), project: await detectActiveProject(), platforms: [] };
+    }
     const [state] = await Promise.all([galaxy.refresh(), done]);
     await galaxy.refreshOperations();
     updateStatusBar(status, state);
@@ -449,7 +469,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
 
   context.subscriptions.push(
     vscode.commands.registerCommand("datapass.refresh", async () => {
-      await refreshState();
+      await refreshState("command");
     }),
     vscode.commands.registerCommand("datapass.openGalaxy", async () => {
       // VS Code generates `<viewId>.focus` for every contributed view.
@@ -583,7 +603,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     },
     ergonomics,
     gitDiagram: { refresh: () => gitDiagram.refresh(), setsOf: (id: string) => gitDiagram.setsOf(id) },
-    refresh: refreshState,
+    refresh: () => refreshState("command"),
     workModel: () => session.model(),
     project: () => session.project,
     toolObservations: () => session.toolObservations(),

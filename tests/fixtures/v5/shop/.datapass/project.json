@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 3,
+  "project": {
+    "id": "shop-lakehouse",
+    "title": "Shop lakehouse",
+    "description": "Daily order revenue for the sales team: land orders, clean them, publish one fact table and a report."
+  },
+  "repositories": {
+    "shop": {
+      "path": ".",
+      "label": "Shop lakehouse",
+      "description": "Notebooks, dbt models, pipeline and semantic model"
+    }
+  },
+  "graph": ".datapass/graph.json"
+}
