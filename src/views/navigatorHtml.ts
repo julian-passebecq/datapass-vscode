@@ -141,8 +141,11 @@ export function parseNavigatorMessage(m: unknown): NavigatorMessage | undefined 
   }
 }
 
-/** The view's page: one inline script allowed by nonce, everything drawn from the posted model. */
-export function navigatorHtml(cspSource: string, nonce: string): string {
+/**
+ * The view's page: one inline script allowed by nonce, everything drawn from the posted model.
+ * `extra` carries the CSS and scripts of the registered slots (`#minimap`, `#tours`, …), run under the same nonce.
+ */
+export function navigatorHtml(cspSource: string, nonce: string, extra: { readonly css?: string; readonly script?: string } = {}): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,6 +168,7 @@ export function navigatorHtml(cspSource: string, nonce: string): string {
   li button.current { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
   li button:hover { background: var(--vscode-list-hoverBackground); }
   .empty { opacity: .7; font-style: italic; }
+${extra.css ?? ""}
 </style>
 </head>
 <body>
@@ -212,6 +216,7 @@ export function navigatorHtml(cspSource: string, nonce: string): string {
     }
   }
   window.addEventListener("message", e => { const m = e.data; if (m && m.type === "nav-state" && m.model) draw(m.model); });
+${extra.script ?? ""}
   vscode.postMessage({ type: "ready" });
 </script>
 </body>

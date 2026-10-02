@@ -23,6 +23,7 @@ class EventEmitter<T> {
 const noEvent = () => ({ dispose() { /* none */ } });
 const vscodeStub = {
   EventEmitter,
+  Disposable: class { constructor(private readonly fn: () => void) {} dispose() { this.fn(); } },
   ViewColumn: { One: 1, Two: 2 },
   Uri: { joinPath: (...p: unknown[]) => p.join("/") },
   commands: {
@@ -42,7 +43,9 @@ const vscodeStub = {
     }
   },
   workspace: {
+    workspaceFolders: undefined,
     onDidChangeConfiguration: noEvent,
+    createFileSystemWatcher: () => ({ onDidChange: noEvent, onDidCreate: noEvent, onDidDelete: noEvent, dispose() { /* none */ } }),
     getConfiguration: () => ({ get: <T>(_k: string, d: T) => d })
   }
 };

@@ -1,0 +1,187 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "datapass.tour/1",
+  "type": "object",
+  "required": [
+    "schema",
+    "tours"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "enum": [
+        "datapass.tour/1"
+      ]
+    },
+    "tours": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "titleRef",
+          "steps"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+          },
+          "titleRef": {
+            "type": "string",
+            "maxLength": 300,
+            "pattern": "^[a-z][a-z0-9-]*:\\S{1,240}$"
+          },
+          "audience": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+          },
+          "mode": {
+            "enum": [
+              "learning",
+              "interview",
+              "general"
+            ]
+          },
+          "journey": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+          },
+          "generation": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "include": {
+                "type": "array",
+                "maxItems": 100,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+                }
+              },
+              "exclude": {
+                "type": "array",
+                "maxItems": 100,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "maxLength": 128,
+                  "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+                }
+              }
+            }
+          },
+          "steps": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/$defs/step"
+            }
+          }
+        }
+      }
+    },
+    "texts": {
+      "type": "object",
+      "maxProperties": 5000,
+      "propertyNames": {
+        "type": "string",
+        "maxLength": 128,
+        "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+      },
+      "additionalProperties": {
+        "type": "string",
+        "maxLength": 2000,
+        "pattern": "^[\\s\\S]+$"
+      }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": [
+        "location",
+        "viewId",
+        "explanationRef",
+        "origin"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+        },
+        "section": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+        },
+        "location": {
+          "type": "object",
+          "required": [
+            "level",
+            "nodeId",
+            "artifactKind"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "enum": [
+                "project",
+                "subproject",
+                "artifact",
+                "step",
+                "operation"
+              ]
+            },
+            "nodeId": {
+              "type": "string",
+              "maxLength": 1024,
+              "pattern": "^.+$"
+            },
+            "artifactKind": {
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,62}[a-z0-9])?$"
+            }
+          }
+        },
+        "viewId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$"
+        },
+        "explanationRef": {
+          "type": "string",
+          "maxLength": 300,
+          "pattern": "^[a-z][a-z0-9-]*:\\S{1,240}$"
+        },
+        "origin": {
+          "enum": [
+            "datapass-guidance",
+            "ai-proposed",
+            "user"
+          ]
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "substeps": {
+          "type": "array",
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/step"
+          }
+        }
+      }
+    }
+  }
+}

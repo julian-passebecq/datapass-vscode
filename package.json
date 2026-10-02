@@ -1113,6 +1113,26 @@
         "command": "datapass.nav.moveNavigator",
         "title": "DataPass: Move the Navigator (Right / Left)",
         "icon": "$(arrow-swap)"
+      },
+      {
+        "command": "datapass.nav.tour.pick",
+        "title": "DataPass: Pick a Tour…",
+        "icon": "$(milestone)"
+      },
+      {
+        "command": "datapass.nav.tour.next",
+        "title": "DataPass: Next Tour Step",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "datapass.nav.tour.prev",
+        "title": "DataPass: Previous Tour Step",
+        "icon": "$(arrow-left)"
+      },
+      {
+        "command": "datapass.nav.jump",
+        "title": "DataPass: Jump to a Box…",
+        "icon": "$(search)"
       }
     ],
     "viewsContainers": {
@@ -2790,6 +2810,22 @@
         {
           "command": "datapass.nav.moveNavigator",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.pick",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.next",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.prev",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.jump",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -3548,6 +3584,25 @@
             "ownWindow"
           ],
           "description": "The quick icons of the Navigator, in order (the right rail's buttons)."
+      },
+        "datapass.guided.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours (journey tours, Navigator Tours section, tour commands). Off: no tour UI or command, nothing computed."
+        },
+        "datapass.guided.generatedJourneys.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Offer built-in journey tours generated from the project's lineage and execution facts. Your own tours live in `.datapass/tours.json`."
+        },
+        "datapass.guided.labels": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "default": {},
+          "markdownDescription": "Override the words of guided tours, key by key (e.g. `journey.lineage`, `journey.execution.unit`, `ui.next`). Built-in keys: `resources/guided/labels.json`."
         }
       }
     },
@@ -3643,6 +3698,12 @@
           "**/.datapass/work-log.json"
         ],
         "url": "./schemas/datapass-work-log.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/tours.json"
+        ],
+        "url": "./schemas/datapass-tour.schema.json"
       }
     ],
     "walkthroughs": [

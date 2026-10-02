@@ -34,25 +34,81 @@ export interface NavigatorExtras {
 
 export const MOVE_NAVIGATOR_COMMAND = "datapass.nav.moveNavigator";
 
+/**
+ * A section another package draws inside the Navigator (`#tours` NAVTOUR1, `#minimap` NAVMAP1, …).
+ * The Navigator posts `{type: id, html}` on `onDidChange`, includes `script("vscode")` under its nonce
+ * and forwards every webview message whose `type` is one of `messageTypes` to `handle`. The Navigator never
+ * imports a slot: the slot's package calls `addNavigatorSlot` and disposes the result when it turns off.
+ */
+export interface NavigatorSlot {
+  readonly id: string;
+  readonly messageTypes: readonly string[];
+  readonly onDidChange: (listener: () => unknown) => { dispose(): unknown };
+  html(): string;
+  handle(message: unknown): unknown;
+  script(api: string): string;
+  css?(): string;
+}
+
+const slots = new Map<string, NavigatorSlot>();
+const slotsChanged = new vscode.EventEmitter<void>();
+
+/** Plug a section into every Navigator view (live: open views reload). */
+export function addNavigatorSlot(slot: NavigatorSlot): vscode.Disposable {
+  slots.set(slot.id, slot);
+  slotsChanged.fire();
+  return new vscode.Disposable(() => { if (slots.get(slot.id) === slot) { slots.delete(slot.id); slotsChanged.fire(); } });
+}
+
+/** The registered slots (tests). */
+export const navigatorSlots = (): readonly NavigatorSlot[] => [...slots.values()];
+
 const config = () => vscode.workspace.getConfiguration("datapass.navigator");
 
 export class NavigatorView implements vscode.WebviewViewProvider, vscode.Disposable {
   private readonly views = new Map<string, vscode.WebviewView>();
   private readonly loaded = new Set<string>();
   private readonly subs: vscode.Disposable[] = [];
+  private slotSubs: { dispose(): unknown }[] = [];
 
   constructor(private readonly nav: NavigationLike, private readonly extras: NavigatorExtras = {}) {
     this.subs.push(nav.onDidChange(() => void this.post()) as vscode.Disposable);
     this.subs.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.navigator")) void this.post(); }));
+    this.subs.push(slotsChanged.event(() => this.reloadSlots()));
+    this.watchSlots();
   }
 
-  dispose(): void { for (const s of this.subs) s.dispose(); }
+  dispose(): void { for (const s of [...this.subs, ...this.slotSubs]) s.dispose(); }
+
+  private watchSlots(): void {
+    for (const s of this.slotSubs) s.dispose();
+    this.slotSubs = [...slots.values()].map(slot => slot.onDidChange(() => void this.postSlot(slot)));
+  }
+
+  /** A slot came or went: re-subscribe and rebuild the pages (their scripts changed). */
+  private reloadSlots(): void {
+    this.watchSlots();
+    for (const [id, v] of this.views) { this.loaded.delete(id); v.webview.html = this.page(v.webview); }
+  }
+
+  private page(webview: vscode.Webview): string {
+    const all = [...slots.values()];
+    return navigatorHtml(webview.cspSource, makeNonce(), {
+      css: all.map(s => s.css?.() ?? "").join("\n"),
+      script: all.map(s => s.script("vscode")).join("\n")
+    });
+  }
+
+  private async postSlot(slot: NavigatorSlot): Promise<void> {
+    const message = { type: slot.id, html: slot.html() };
+    for (const [id, v] of this.views) if (this.loaded.has(id)) await v.webview.postMessage(message);
+  }
 
   resolveWebviewView(view: vscode.WebviewView): void {
     const id = view.viewType;
     this.views.set(id, view);
     view.webview.options = { enableScripts: true, localResourceRoots: [] };
-    view.webview.html = navigatorHtml(view.webview.cspSource, makeNonce());
+    view.webview.html = this.page(view.webview);
     view.webview.onDidReceiveMessage(m => void this.handle(id, m));
     view.onDidChangeVisibility(() => { if (!view.visible) this.loaded.delete(id); });
     view.onDidDispose(() => { this.views.delete(id); this.loaded.delete(id); });
@@ -78,9 +134,19 @@ export class NavigatorView implements vscode.WebviewViewProvider, vscode.Disposa
 
   private async handle(id: string, raw: unknown): Promise<void> {
     const m = parseNavigatorMessage(raw);
-    if (!m) return;
+    if (!m) {
+      const type = raw && typeof raw === "object" ? (raw as { type?: unknown }).type : undefined;
+      const slot = [...slots.values()].find(s => typeof type === "string" && s.messageTypes.includes(type));
+      if (slot) await slot.handle(raw);
+      return;
+    }
     switch (m.type) {
-      case "ready": this.loaded.add(id); return this.post();
+      case "ready": {
+        this.loaded.add(id);
+        await this.post();
+        for (const slot of slots.values()) await this.postSlot(slot);
+        return;
+      }
       case "nav": return this.nav.dispatch(m.command);
       case "select": {
         const trail = this.extras.trail?.(this.nav.state.location) ?? [this.nav.state.location];
