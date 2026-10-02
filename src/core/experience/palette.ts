@@ -88,8 +88,12 @@ const GATED: Record<string, readonly string[]> = {
     // its title button on an explained file and the Home tile reach it in every mode).
     "hop.explain", "hop.showExplained", "workOrders.newForExplanation", "understanding.analyzeSelection",
     // DBT3W: static read of the workspace dbt projects with their profiles.yml targets.
-    "understanding.analyzeDbtProjects"
-  ]
+    "understanding.analyzeDbtProjects",
+    // DETACH1: detach a materialized dbt model (authority flip + stamp); also reached from the Project tree section.
+    "dbt.detach"
+  ],
+  // V5 DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (TL-5 complement).
+  "v5.dbtmat": ["dbt.materialize"]
 };
 
 /** Full command id → gating surface id, or null for the core. */

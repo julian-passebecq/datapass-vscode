@@ -1072,6 +1072,10 @@
         "title": "DataPass: Analyze dbt Projects (static, with profiles.yml targets)"
       },
       {
+        "command": "datapass.dbt.detach",
+        "title": "DataPass: Detach dbt Model (the notebook becomes the authority)"
+      },
+      {
         "command": "datapass.nav.up",
         "title": "DataPass: Navigate Up (coarser level)",
         "icon": "$(arrow-up)"
@@ -1110,6 +1114,10 @@
         "command": "datapass.nav.pickView",
         "title": "DataPass: Pick a View Here…",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "datapass.dbt.materialize",
+        "title": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"
       },
       {
         "command": "datapass.codeSteps.sampleStep",
@@ -1767,6 +1775,10 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "datapass.dbt.detach",
+          "when": "view == datapass.project && viewItem == dbtModel.attached"
+        },
         {
           "command": "datapass.openComponentEntry",
           "when": "view == datapass.project && viewItem =~ /^component.*\\.entry/",
@@ -2795,6 +2807,10 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.dbt.detach",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.nav.up",
           "when": "!datapass.hidden.palette.full"
         },
@@ -2825,6 +2841,10 @@
         {
           "command": "datapass.nav.pickView",
           "when": "!datapass.hidden.view.navigator"
+        },
+        {
+          "command": "datapass.dbt.materialize",
+          "when": "!datapass.hidden.v5.dbtmat"
         },
         {
           "command": "datapass.codeSteps.sampleStep",
@@ -2958,6 +2978,12 @@
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.dbt.driftLabels": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "DETACH1: labels of the drift states of a detached dbt model (keys `in-sync`, `dbt-changed`, `notebook-edited`, `both-changed`, `unknown`). Empty keeps the defaults.",
+          "additionalProperties": { "type": "string", "maxLength": 80 }
+        },
         "datapass.navView.titleFormat": {
           "type": "string",
           "default": "{location} · {view} {n}/{N}",
@@ -3595,6 +3621,10 @@
             "palette.full": {
               "type": "boolean",
               "description": "Command Palette: every DataPass command: Also list the second-level, V1/V2 and client-profile commands in the Command Palette (they stay reachable from their views either way)"
+            },
+            "v5.dbtmat": {
+              "type": "boolean",
+              "description": "Command Palette: Materialize dbt Models: dbt model(s) → Fabric notebooks as a reviewed proposal: preview diff, write on confirmation, Git steps for you to run"
             },
             "v5.pqsamp": {
               "type": "boolean",
