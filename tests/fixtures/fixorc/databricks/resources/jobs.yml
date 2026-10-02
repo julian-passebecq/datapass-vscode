@@ -1,0 +1,35 @@
+# SYNTHETIC FIXTURE (foil-synthetic): fabricated, never executed. Not a client payload.
+resources:
+  jobs:
+    wind_bronze_ingest:
+      name: wind-bronze-ingest
+      tasks:
+        - task_key: bronze_ingest
+          notebook_task:
+            notebook_path: /Repos/foil-syn/wind-etl/notebooks/bronze_ingest
+          existing_cluster_id: 0929-100001-syn0001
+    wind_silver_transform:
+      name: wind-silver-transform
+      tasks:
+        - task_key: silver_transform
+          depends_on: []
+          notebook_task:
+            notebook_path: /Repos/foil-syn/wind-etl/notebooks/silver_transform
+          existing_cluster_id: 0929-100001-syn0001
+        - task_key: gold_kpi
+          depends_on:
+            - task_key: silver_transform
+          sql_task:
+            warehouse_id: syn0wh0000000001
+            file:
+              path: /Repos/foil-syn/wind-etl/sql/gold_turbine_kpi_daily.sql
+    wind_forecast_train:
+      name: wind-forecast-train
+      tasks:
+        - task_key: forecast_train
+          notebook_task:
+            notebook_path: /Repos/foil-syn/wind-etl/notebooks/forecast_train
+          existing_cluster_id: 0929-100002-syn0002
+        - task_key: run_silver
+          run_job_task:
+            job_id: ${resources.jobs.wind_silver_transform.id}

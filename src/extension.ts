@@ -344,7 +344,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerHopCommands(context, session, hop);
   const nativeUnderstanding = new NativeAnalysisHost(session, root => createNativeBackend(context.extensionPath, root));
   context.subscriptions.push(nativeUnderstanding, vscode.commands.registerCommand("datapass.understanding.analyzeSelection", selectedAnalysisCommand(nativeUnderstanding, () => startup)),
-    vscode.commands.registerCommand("datapass.understanding.analyzeDbtProjects", async () => { await startup; await nativeUnderstanding.analyzeDbtProjects(); }));
+    vscode.commands.registerCommand("datapass.understanding.analyzeDbtProjects", async () => { await startup; await nativeUnderstanding.analyzeDbtProjects(); }),
+    vscode.commands.registerCommand("datapass.understanding.analyzeOrchestration", async () => { await startup; await nativeUnderstanding.analyzeOrchestration(); }));
   registerWorkbenchCommands(context, session, host, uri => hop.openIfExplained(uri));
   registerOptionsCommands(context, session, host);
   registerBoardCommands(context, session, host);

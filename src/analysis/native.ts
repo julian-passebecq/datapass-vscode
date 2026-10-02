@@ -7,12 +7,15 @@ import type { AnalysisRequest, AnalysisResult } from '@juliandatapass-group/anal
 import type { WorkSession } from '../work/session';
 import { selectedCapture, selectedRequest, sessionIdentity, editorOffsets, type SelectedCapture } from './capture';
 import { collectDbtWorkspace, dbtSections, extractDbt } from './dbt';
+import { collectOrchestrationWorkspace, extractOrchestration, orchestrationSections, type PythonFactsHost } from './orchestration';
 
 /** Installed trusted host only; never obtain a module or executable from workspace settings. */
 export interface NativeAnalysisBackend {
   readonly plugin: AnalyzerPlugin;
   readonly ruleCatalogDigest: AnalysisRequest['header']['ruleCatalogDigest'];
   acquire(root: string, relativePath: string, signal: AbortSignal): Promise<Uint8Array>;
+  /** STDA1a: the same installed host as CPython-AST facts provider (Airflow, Dagster, Prefect); never a workspace interpreter. */
+  readonly python?: PythonFactsHost;
   dispose(): Promise<void>;
 }
 const escape = (s: string): string => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -161,6 +164,35 @@ export class NativeAnalysisHost implements vscode.Disposable {
       this.show(`${graph.nodes.length} nodes, ${graph.edges.length} lineage edges, ${gaps.length} coverage gaps. Static reading only; dbt was not run.`, undefined, dbtSections(result));
     } catch {
       if (generation === this.generation && !this.disposed) this.show('Analysis unavailable: the dbt projects could not be read. No result was accepted.');
+    }
+  }
+  /**
+   * STDA1a: user-triggered static read of the workspace orchestration files through the Common extractors. Python files are
+   * parsed by the installed host only when it is qualified here; otherwise they are listed unknown. Nothing is run or deployed.
+   */
+  async analyzeOrchestration(): Promise<void> {
+    if (this.disposed) return;
+    this.invalidate();
+    const generation = this.generation;
+    if (!vscode.workspace.isTrusted) return this.show('Analysis unavailable: trust this local workspace before analyzing orchestration files.');
+    const folder = (this.session.root && vscode.workspace.getWorkspaceFolder(this.session.root)) || vscode.workspace.workspaceFolders?.[0];
+    if (vscode.env.remoteName || !folder || folder.uri.scheme !== 'file') return this.show('Analysis unavailable: open a local workspace folder.');
+    const abort = this.abort = new AbortController();
+    this.show('Reading orchestration files… Files are read statically; no DAG, flow or pipeline is imported, run or deployed.');
+    let backend: NativeAnalysisBackend | undefined;
+    try {
+      const files = await collectOrchestrationWorkspace(folder.uri.fsPath, abort.signal);
+      if (this.backendFactory) backend = await this.backendFactory(folder.uri.fsPath).catch(() => undefined);
+      const result = await extractOrchestration(files, { python: backend?.python, cancelled: () => abort.signal.aborted });
+      if (generation !== this.generation || this.disposed) return;
+      if (!result) return this.show('No orchestration file found: no Airflow DAG, Databricks bundle, ADF/Synapse or Fabric pipeline, Step Functions, Argo, GCP Workflows, Dagster or Prefect file in this workspace.');
+      const { graph, gaps, files: covered } = result.extraction;
+      this.show(`${covered.length} orchestration files, ${graph.nodes.length} nodes, ${graph.edges.length} links, ${result.schedules.length} schedules, ${gaps.length} coverage gaps. Static reading only; nothing was run.`, undefined, orchestrationSections(result));
+    } catch (error) {
+      if (generation !== this.generation || this.disposed) return;
+      this.show('Analysis unavailable: the orchestration files could not be read. No result was accepted.');
+    } finally {
+      await backend?.dispose().catch(() => undefined);
     }
   }
   private show(message: string, result?: AnalysisResult, sections = ''): void {

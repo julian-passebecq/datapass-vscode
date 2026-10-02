@@ -159,6 +159,7 @@
   ],
   "advanced": [
     "DataPass: Abandon a Work Order…",
+    "DataPass: Analyze Orchestration (Airflow, bundles, ADF, Fabric, Step Functions, Argo, Dagster, Prefect; static)",
     "DataPass: Analyze Output Impact",
     "DataPass: Analyze Selected SQL File",
     "DataPass: Analyze dbt Projects (static, with profiles.yml targets)",

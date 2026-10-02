@@ -1,0 +1,13 @@
+# SYNTHETIC FIXTURE (foil-synthetic): fabricated, never executed. Not a client payload.
+resources:
+  pipelines:
+    wind_dlt_silver:
+      name: wind-dlt-silver
+      catalog: wind_syn
+      target: silver
+      libraries:
+        - notebook:
+            path: /Repos/foil-syn/wind-etl/pipelines/dlt_turbine_dim
+      configuration:
+        source_table: wind_syn.bronze.scada_raw
+        target_table: wind_syn.silver.turbine_dim
