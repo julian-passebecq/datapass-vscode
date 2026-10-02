@@ -91,10 +91,11 @@
                 "view.rail",
                 "v5.dbtmat",
                 "v5.pqsamp",
-                "view.navigator"
+                "view.navigator",
+                "v5.peda3"
               ]
             },
-            "maxItems": 40,
+            "maxItems": 41,
             "minItems": 0
           }
         },
