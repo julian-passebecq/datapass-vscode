@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { GalaxyViewProvider } from "./views/galaxy";
 import { executeGalaxyAction, setReadinessSource } from "./core/actions";
 import type { GalaxyState } from "./core/types";
+import { detectActiveProject } from "./core/projectState";
 import { WorkSession } from "./work/session";
 import { WorkTreeProvider } from "./views/workTree";
 import { registerWorkCommands } from "./work/commands";
@@ -435,12 +436,21 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   const showStatus = () => { if (experience.shows("status.health")) status.show(); else status.hide(); };
   showStatus();
   context.subscriptions.push(status, experience.onDidChange(showStatus));
+  galaxy.onState = state => updateStatusBar(status, state);
 
   const refreshState = async (): Promise<GalaxyState> => {
     // V1-REF: the session paints the project first; the Galaxy cards are gathered while it finishes
     // (probes, readiness, inventory). Operation readiness reaches the cards when the session settles.
     const done = session.refresh();
     await Promise.race([nextPaint(session), done]);
+    // V5HOLE3: the Galaxy cards probe platform CLIs (--version), so they are gathered only while the
+    // Galaxy view is showing (opening it gathers them, views/galaxy.ts); never at activation.
+    if (!galaxy.isVisible()) {
+      await done;
+      const last = galaxy.lastState();
+      if (last) return last;
+      return { generatedAt: new Date().toISOString(), project: await detectActiveProject(), platforms: [] };
+    }
     const [state] = await Promise.all([galaxy.refresh(), done]);
     await galaxy.refreshOperations();
     updateStatusBar(status, state);

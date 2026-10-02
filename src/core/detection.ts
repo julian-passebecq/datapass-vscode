@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { checkSpawn, refusal } from "./spawnAllowList";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { ToolProbe } from "./types";
@@ -69,6 +70,9 @@ function isFileSync(p: string): boolean {
 }
 
 export const defaultProbeRunner: ProbeRunner = async (command, args, timeoutMs) => {
+  // V5HOLE3: only what core/spawnAllowList.ts declares is started.
+  const allowed = checkSpawn(command, args);
+  if (!allowed.allowed) return { ok: false, error: refusal(allowed) };
   let file = command;
   let argv = args;
   let verbatim = false;
