@@ -32,3 +32,5 @@ Durable things learned by sessions (pitfalls, working commands, Julian's prefere
 
 - 2026-10-01 (TECH LEAD GLOBAL): plain `git push/fetch` can hang on the Windows Credential Manager; push with `git -c credential.helper= -c 'credential.helper=!"C:/Users/julia/AppData/Local/Programs/glab/glab.exe" auth git-credential' push`.
 - 2026-10-01 (TECH LEAD GLOBAL): architect passes as parallel subagents (merge simulation, contract review, design-vs-code notes) found S1s that plan reading missed (empty views, stale vendoring, frozen-schema breaks).
+
+- 2026-10-02 (NAV-TRAIN R1): a GitLab MR pipeline tests the branch, not main; after a CI fix lands on main, rebase the MR before re-running it, or it fails the same way.
