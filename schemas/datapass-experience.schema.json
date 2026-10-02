@@ -92,11 +92,12 @@
                 "v5.dbtmat",
                 "v5.pqsamp",
                 "view.navigator",
+                "v5.peda1b",
                 "v5.tour2",
                 "v5.peda3"
               ]
             },
-            "maxItems": 42,
+            "maxItems": 43,
             "minItems": 0
           }
         },

@@ -96,6 +96,8 @@ const GATED: Record<string, readonly string[]> = {
   ],
   // V5 DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (TL-5 complement).
   "v5.dbtmat": ["dbt.materialize"],
+  // V5 PEDA1b: pedagogy cards bound to the project.
+  "v5.peda1b": ["pedagogy.patternCards"],
   // V5 PEDA3: query showcase cards.
   "v5.peda3": ["pedagogy.queriesWorthShowing"]
 };
