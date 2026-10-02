@@ -13,6 +13,8 @@ import { registerReadinessCommands } from "./work/readinessCommands";
 import { registerToolchainCommands } from "./work/toolchainCommands";
 import { registerFileContextCommands } from "./work/fileContextCommands";
 import { registerVariantCommands } from "./work/variantCommands";
+import { registerDbtMaterialize } from "./views/dbtMaterialize";
+import { registerDbtDetach } from "./views/dbtDetach";
 import { ActiveVariantService, registerActiveVariantCommands } from "./work/activeVariantCommands";
 import type { ConnectionRunner } from "./work/connectionChecks";
 import { registerResourceCommands } from "./work/resourceCommands";
@@ -308,6 +310,11 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   projectTree.attach(projectView);
   projectTree.setSurfaces(experience.shows, experience.onDidChange);
   registerVariantCommands(context, session, projectTree);
+  // DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (preview, then write on confirmation).
+  registerDbtMaterialize(context, () => session.project.root);
+  // DETACH1: detach a materialized dbt model; the tree shows the badge and the drift fact.
+  const dbtDetach = registerDbtDetach(context, () => session.project.root, session.onDidChange);
+  projectTree.attachDetached(() => dbtDetach.views(), dbtDetach.onDidChange);
   // V3-SHELL: tree lenses, rail mode, the bottom-panel Architecture view (off by default), close buttons.
   const shell = new ShellService(context, projectTree, projectView);
   registerShellCommands(context, shell);
