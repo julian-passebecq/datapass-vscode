@@ -3,5 +3,5 @@ import type { NavSurface } from "../core/navigation/register";
 import { registerNavView } from "./navView";
 
 export default ((context, host) => {
-  registerNavView(context, host.nav, { projectMap: () => host.projectMap(), labelOf: (l) => host.label(l) });
+  registerNavView(context, host.nav, { projectMap: () => host.projectMap(), labelOf: (l) => host.label(l), hop: (l) => host.hop(l), onDidLoadHop: host.onDidLoadHop });
 }) satisfies NavSurface;

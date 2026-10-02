@@ -13,6 +13,8 @@ import { builtinCatalog } from "./viewPacks";
 import { buildLadder, type ProjectLadder } from "./ladder";
 import { FileHeads } from "./fileHeads";
 import { locationLabel, locationOf, locationPath } from "./projectLadder";
+import type { UnderstandingEntry } from "../understanding/load";
+import { hopState, type HopState } from "../../views/hopState";
 
 /** The part of the session the host needs (kept small for tests). */
 export interface NavSession {
@@ -23,6 +25,8 @@ export interface NavSession {
   readonly onDidChangeSelection: vscode.Event<unknown>;
   /** Local folder of a repository (a10: file heads for artifact kinds); absent = kinds from paths only. */
   repoFolder?(repoKey: string): vscode.Uri | undefined;
+  /** V5HOLE1: a file's Hop explanation (validated, never executed); absent = no `hop-steps` data. */
+  understandingByPath?(repositoryKey: string, nativePath: string): Promise<UnderstandingEntry | undefined>;
 }
 
 export const NAV_COMMANDS = ["up", "down", "left", "right", "home", "back", "forward", "pickView"] as const;
@@ -43,6 +47,11 @@ export class NavHost implements vscode.Disposable {
   private readonly subs: vscode.Disposable[] = [];
   private readonly heads: FileHeads;
   private ladder: ProjectLadder;
+  /** V5HOLE1: Hop state per file key (null: loading or none), cleared when the session changes. */
+  private readonly hops = new Map<string, HopState | null>();
+  private readonly hopLoaded = new vscode.EventEmitter<void>();
+  /** A Hop explanation finished loading: views bound to `hop-steps` redraw. */
+  readonly onDidLoadHop = this.hopLoaded.event;
 
   constructor(readonly session: NavSession) {
     this.heads = new FileHeads((k) => session.repoFolder?.(k));
@@ -52,7 +61,7 @@ export class NavHost implements vscode.Disposable {
     const navSub = this.nav.onDidChange((e) => { void this.toSession(e.state.location); void this.updateKeys(); });
     this.subs.push({ dispose: () => navSub.dispose() },
       session.onDidChangeSelection(() => this.fromSession()),
-      session.onDidChange(() => { this.heads.clear(); this.rebuild(); }));
+      session.onDidChange(() => { this.heads.clear(); this.hops.clear(); this.rebuild(); }), this.hopLoaded);
     this.warm();
     void this.updateKeys();
   }
@@ -91,6 +100,23 @@ export class NavHost implements vscode.Disposable {
     const pick = await vscode.window.showQuickPick(views.map((v) => ({ label: v.title, description: v.id === this.nav.state.viewId ? "current" : undefined, detail: v.description, id: v.id })),
       { placeHolder: `Views of ${this.label(this.nav.state.location)}` });
     if (pick) this.nav.dispatch({ type: "view", viewId: pick.id });
+  }
+
+  /** V5HOLE1: the Hop state of the file at a place, synchronously from the cache; a miss loads it and fires `onDidLoadHop`. */
+  hop(l: NavLocation): HopState | undefined {
+    const file = this.ladder.entry(l)?.file;
+    const load = this.session.understandingByPath?.bind(this.session);
+    if (!file || !load) return undefined;
+    const k = `${file.repoKey}:${file.repoPath}`;
+    if (this.hops.has(k)) return this.hops.get(k) ?? undefined;
+    this.hops.set(k, null);
+    void load(file.repoKey, file.repoPath).then((entry) => {
+      if (!entry || this.hops.get(k) !== null) return;
+      this.hops.set(k, hopState({ fileName: file.repoPath.split("/").pop() ?? file.repoPath, located: { repositoryKey: file.repoKey, nativePath: file.repoPath },
+        entry, hasProject: true, workOrdersEnabled: false, canGoBack: false }));
+      this.hopLoaded.fire();
+    }, () => undefined);
+    return undefined;
   }
 
   label(l: NavLocation): string { return this.ladder.entry(l)?.label ?? locationLabel(this.session.projectMap(), l); }

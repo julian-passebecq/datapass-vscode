@@ -20,10 +20,11 @@ import * as vscode from "vscode";
 import type { ProjectMap } from "../core/project/projectMap";
 import type { NavigationService } from "../core/navigation/navigationService";
 import type { NavLocation, NavState, ViewDef } from "../core/navigation/navTypes";
-import { resolveBindings, type BoundData } from "../core/navigation/bindings";
+import { resolveBindings, type BindingContext, type BoundData } from "../core/navigation/bindings";
 import { isCodeStepsInput } from "../webview/views/layouts/codeSteps.layout";
 import type { CodeStepsInput } from "../webview/views/layouts/codeSteps";
 import { bindCodeStepsSamples } from "./pqSampleHost";
+import type { HopState } from "./hopState";
 import { viewHtml } from "./viewHtml";
 import { navViewLabels, navViewMessages } from "./navViewData";
 import { fallbackRender, navViewHtml, navViewTitle, parseNavViewMessage, surfaceCommand, type NavRenderer, type NavViewMessage } from "./navViewHtml";
@@ -38,6 +39,9 @@ export interface NavViewDeps {
   labelOf?(location: NavLocation): string;
   /** Ladder override for the ↑/↓ buttons; defaults to the NavigationService ladder (NAVSVC1). */
   ladder?: { parent(l: NavLocation): NavLocation | null; children(l: NavLocation): readonly NavLocation[] };
+  /** V5HOLE1: Hop state of the file at a place (`hop-steps` binding) and when a load finished (redraw). */
+  hop?(location: NavLocation): HopState | undefined;
+  onDidLoadHop?: vscode.Event<void>;
   /** View renderer (NAVREN1). */
   render?: NavRenderer;
 }
@@ -63,6 +67,7 @@ export class NavViewHost implements vscode.Disposable {
       nav.onDidChange(() => this.render()),
       vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.navView")) this.render(); })
     );
+    if (deps.onDidLoadHop) this.subs.push(deps.onDidLoadHop(() => this.render()));
   }
 
   dispose(): void {
@@ -130,7 +135,7 @@ export class NavViewHost implements vscode.Disposable {
         const key = `${state.location.nodeId}/${view.id}`;
         if (cmd && this.lastSurface !== key) { this.lastSurface = key; void vscode.commands.executeCommand(cmd); }
       } else this.lastSurface = undefined;
-      const bound = view && view.layout !== "surface" ? this.withSamples(resolveBindings(view, { location: state.location, projectMap: this.deps.projectMap() })) : [];
+      const bound = view && view.layout !== "surface" ? this.withSamples(resolveBindings(view, this.bindingContext(state.location))) : [];
       for (const m of navViewMessages({ state, views, labels: navViewLabels(config.get("labels", {})), bound })) void panel.webview.postMessage(m);
       return;
     }
@@ -141,7 +146,7 @@ export class NavViewHost implements vscode.Disposable {
       if (cmd && this.lastSurface !== key) { this.lastSurface = key; void vscode.commands.executeCommand(cmd); }
     } else {
       this.lastSurface = undefined;
-      const data = view ? resolveBindings(view, { location: state.location, projectMap: this.deps.projectMap() }) : [];
+      const data = view ? resolveBindings(view, this.bindingContext(state.location)) : [];
       body = view ? (this.deps.render ?? fallbackRender)(view, data) : `<p class="hole">No view is defined for this place.</p>`;
     }
     const ladder = this.deps.ladder;
@@ -150,6 +155,11 @@ export class NavViewHost implements vscode.Disposable {
       canUp: ladder ? ladder.parent(state.location) !== null : this.nav.canUp(),
       canDown: ladder ? ladder.children(state.location).length > 0 : this.nav.canDown()
     });
+  }
+
+  private bindingContext(location: NavLocation): Omit<BindingContext, "params"> {
+    const hop = this.deps.hop?.bind(this.deps);
+    return { location, projectMap: this.deps.projectMap(), ...(hop ? { hop } : {}) };
   }
 
   private withSamples(bound: BoundData[]): BoundData[] {
