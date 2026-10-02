@@ -1133,6 +1133,26 @@
         "command": "datapass.nav.jump",
         "title": "DataPass: Jump to a Box…",
         "icon": "$(search)"
+      },
+      {
+        "command": "datapass.nav.tour.saveCurrentPath",
+        "title": "DataPass: Save Current Path as Tour…",
+        "icon": "$(record)"
+      },
+      {
+        "command": "datapass.nav.tour.addScreen",
+        "title": "DataPass: Add This Screen to a Tour…",
+        "icon": "$(add)"
+      },
+      {
+        "command": "datapass.nav.tour.present",
+        "title": "DataPass: Present Tour (Read-Only)",
+        "icon": "$(play)"
+      },
+      {
+        "command": "datapass.nav.tour.setMode",
+        "title": "DataPass: Guided Mode (Learning / Interview)…",
+        "icon": "$(mortar-board)"
       }
     ],
     "viewsContainers": {
@@ -2826,6 +2846,22 @@
         {
           "command": "datapass.nav.jump",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.tour.saveCurrentPath",
+          "when": "!datapass.hidden.v5.tour2"
+        },
+        {
+          "command": "datapass.nav.tour.addScreen",
+          "when": "!datapass.hidden.v5.tour2"
+        },
+        {
+          "command": "datapass.nav.tour.present",
+          "when": "!datapass.hidden.v5.tour2"
+        },
+        {
+          "command": "datapass.nav.tour.setMode",
+          "when": "!datapass.hidden.v5.tour2"
         }
       ],
       "explorer/context": [
@@ -3539,6 +3575,10 @@
             "view.navigator": {
               "type": "boolean",
               "description": "Navigator: Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)"
+          },
+            "v5.tour2": {
+              "type": "boolean",
+              "description": "Command Palette: guided tours: Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
@@ -3603,6 +3643,45 @@
           },
           "default": {},
           "markdownDescription": "Override the words of guided tours, key by key (e.g. `journey.lineage`, `journey.execution.unit`, `ui.next`). Built-in keys: `resources/guided/labels.json`."
+        },
+        "datapass.guided.modes.learning.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: offer `learning` tours (mode switch in the Navigator). Off: those tours are hidden."
+        },
+        "datapass.guided.modes.interview.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: offer `interview` tours (mode switch in the Navigator). Off: those tours are hidden."
+        },
+        "datapass.guided.modes.general.enabled": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: offer `general` tours (mode switch in the Navigator). Off: those tours are hidden."
+        },
+        "datapass.guided.panels.explanationBox": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: show the explanation box of the current step (Navigator and Context view)."
+        },
+        "datapass.guided.panels.cards": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: show pedagogy cards as tour sub-steps."
+        },
+        "datapass.guided.panels.miniMapHighlight": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Guided tours: show the current step highlighted on the mini-map."
+        },
+        "datapass.guided.disabledTours": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "default": [],
+          "markdownDescription": "Guided tours hidden by id (e.g. `datapass.journey.lineage.1`)."
         }
       }
     },

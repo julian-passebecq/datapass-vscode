@@ -27,6 +27,8 @@ export interface ToursModel {
   readonly steps: readonly { index: number; number: string; depth: number; label: string; preview: string; status: StepStatus; current: boolean }[];
   /** The current step's explanation; `null` = typed hole (ref not resolved). */
   readonly explanation: string | null;
+  /** The explanation box under the current step (TOUR2 setting `datapass.guided.panels.explanationBox`); absent = shown. */
+  readonly explanationBox?: boolean;
   readonly canPrev: boolean; readonly canNext: boolean;
   readonly jump: { readonly query: string; readonly hits: readonly { index: number; label: string; kind: string }[] };
 }
@@ -72,7 +74,7 @@ export function toursHtml(m: ToursModel): string {
   const steps = m.steps.length
     ? `<ol class="tour-steps">${m.steps.map((s) => {
       const hole = s.status === "ok" ? "" : badge(L(s.status === "unknown-location" ? "unknownLocation" : "unknownView"));
-      const box = s.current ? `<div class="tour-text">${m.explanation === null ? `<span class="tour-hole">${esc(L("noExplanation"))}</span>` : esc(m.explanation)}</div>` : "";
+      const box = s.current && m.explanationBox !== false ? `<div class="tour-text">${m.explanation === null ? `<span class="tour-hole">${esc(L("noExplanation"))}</span>` : esc(m.explanation)}</div>` : "";
       return `<li class="tour-step depth-${Math.min(s.depth, 4)}${s.current ? " current" : ""}${s.status === "ok" ? "" : " stale"}"><button data-tour-step="${s.index}" title="${esc(s.preview)}"${s.status === "unknown-location" ? " disabled" : ""}${s.current ? " aria-current=\"step\"" : ""}><span class="tour-n">${esc(s.number)}</span> ${esc(s.label)}${hole}</button>${box}</li>`;
     }).join("")}</ol>
       <div class="tour-nav"><button data-tour-action="prev"${m.canPrev ? "" : " disabled"}>${esc(L("previous"))}</button><button data-tour-action="next"${m.canNext ? "" : " disabled"}>${esc(L("next"))}</button></div>`

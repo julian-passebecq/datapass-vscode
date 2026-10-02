@@ -70,7 +70,9 @@ export const SURFACES: readonly Surface[] = [
   // V5 PQSAMP1: "Data Sample for a Code Step" in the Command Palette (the code-steps view reaches it in every mode).
   { id: "v5.pqsamp", kind: "palette", label: "Command Palette: code step data sample", detail: "Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)" },
   // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).
-  { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" }
+  { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" },
+  // V5 TOUR2: guided tours in the Navigator (Learning / Interview, present, save a path as a tour).
+  { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

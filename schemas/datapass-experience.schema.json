@@ -89,10 +89,11 @@
                 "palette.full",
                 "view.rail",
                 "v5.pqsamp",
-                "view.navigator"
+                "view.navigator",
+                "v5.tour2"
               ]
             },
-            "maxItems": 38,
+            "maxItems": 39,
             "minItems": 0
           }
         },
