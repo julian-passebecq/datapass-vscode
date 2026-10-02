@@ -3543,6 +3543,34 @@
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
         },
+        "datapass.navView.labels": {
+          "type": "object",
+          "default": {
+            "level.project": "Project",
+            "level.subproject": "Subproject",
+            "level.artifact": "Artifact",
+            "level.step": "Step",
+            "level.operation": "Operation",
+            "origin.static": "declared",
+            "origin.observed": "observed",
+            "origin.theoretical": "theoretical",
+            "origin.ai-proposed": "AI proposed",
+            "origin.title": "Where this value comes from",
+            "hole.binding-unavailable": "Not available yet",
+            "hole.binding-failed": "Could not be read",
+            "hole.no-project": "No project",
+            "hole.not-declared": "Not declared",
+            "hole.out-of-scope": "Elsewhere",
+            "hole.layout-unregistered": "View kind not available yet",
+            "view.loading": "Loading…",
+            "view.none": "No view is defined for this place.",
+            "view.noRows": "Nothing to list here.",
+            "view.noCards": "Nothing to show here.",
+            "value.empty": "—"
+          },
+          "additionalProperties": { "type": "string" },
+          "description": "Labels of the DataPass view (left of the code): level, origin, hole and message keys → text. Keys not listed show as themselves."
+        },
         "datapass.navigator.location": {
           "type": "string",
           "enum": [
