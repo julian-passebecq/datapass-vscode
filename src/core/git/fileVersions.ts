@@ -150,3 +150,17 @@ export function historyLabel(r: FileRevision, i: number, revs: readonly FileRevi
   const prev = previousPath(revs, i);
   return { label: base.label, description: base.description, detail: prev && prev !== r.path ? `renamed ${prev} → ${r.path} · opens the diff with the previous version` : "opens the diff with the previous version" };
 }
+
+/**
+ * EVPIN1: the Git object id of the working file as it is now (`git hash-object`, no `-w`: nothing is
+ * written to the object store). Equal to the blob id in HEAD when the file is unchanged.
+ */
+export function fileBlobArgs(relPath: string): string[] {
+  return ["hash-object", "--", relPath];
+}
+
+/** The blob id printed by `git hash-object` (SHA-1 or SHA-256 repositories), or `null`. */
+export function parseBlobSha(stdout: string): string | null {
+  const sha = stdout.trim().toLowerCase();
+  return /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(sha) ? sha : null;
+}
