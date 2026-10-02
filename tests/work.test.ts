@@ -235,7 +235,7 @@ test("package.json contributes every registered command and every datapass.* cap
   assert.deepEqual(views, ["datapass.project", "datapass.git", "datapass.work", "datapass.galaxy"]);
   assert.ok(pkg.activationEvents.includes("onView:datapass.git"));
   assert.equal(pkg.contributes.configuration.properties["datapass.git.ghPath"].scope, "machine", "a workspace can never choose the gh program");
-  assert.deepEqual(pkg.contributes.viewsContainers.panel.map((v: { id: string }) => v.id), ["datapass-architecture"]);
+  assert.deepEqual(pkg.contributes.viewsContainers.panel.map((v: { id: string }) => v.id), ["datapass-architecture", "datapass-context"]);
   assert.deepEqual(pkg.contributes.viewsContainers.secondarySidebar.map((v: { id: string }) => v.id), ["datapass-details"]);
   assert.deepEqual(pkg.contributes.views["datapass-architecture"].map((v: { id: string }) => v.id), ["datapass.architecture"]);
   // 0.24: the Claude & Codex panel between the AI view and Details.

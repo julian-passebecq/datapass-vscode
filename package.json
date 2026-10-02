@@ -22,6 +22,7 @@
     "onView:datapass.agentPanel",
     "onView:datapass.aiExchange",
     "onView:datapass.rail",
+    "onView:datapass.context",
     "workspaceContains:.datapass/project.json",
     "workspaceContains:.datapass/catalog.json",
     "workspaceContains:**/databricks.yml",
@@ -34,6 +35,11 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "datapass.context.show",
+        "title": "DataPass: Show Context",
+        "icon": "$(info)"
+      },
       {
         "command": "datapass.refresh",
         "title": "DataPass: Refresh Control Plane",
@@ -1153,6 +1159,11 @@
           "id": "datapass-architecture",
           "title": "DataPass Architecture",
           "icon": "resources/datapass.svg"
+        },
+        {
+          "id": "datapass-context",
+          "title": "DataPass Context",
+          "icon": "resources/datapass.svg"
         }
       ],
       "secondarySidebar": [
@@ -1198,6 +1209,14 @@
           "name": "Architecture",
           "type": "webview",
           "when": "datapass.layout.architectureInPanel && !datapass.hidden.view.architecture"
+        }
+      ],
+      "datapass-context": [
+        {
+          "id": "datapass.context",
+          "name": "Context",
+          "type": "webview",
+          "when": "!datapass.hidden.view.context"
         }
       ],
       "datapass-details": [
@@ -2021,6 +2040,10 @@
         },
         {
           "command": "datapass.hop.explain",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.context.show",
           "when": "!datapass.hidden.palette.full"
         },
         {
@@ -3054,6 +3077,12 @@
           "scope": "window",
           "description": "The first time a DataPass project opens in a workspace, show DataPass (AI exchange and Details) in the secondary side bar instead of VS Code's Chat. VS Code then remembers the tab you use there; Chat stays one click away at the top of that side bar."
         },
+        "datapass.context.tabTitles": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": { "type": "string", "maxLength": 60 },
+          "markdownDescription": "Titles of the DataPass Context tabs, by id: `summary`, `process-step`, `why`, `patterns`, `fabric`, `evidence`. Empty = the built-in titles."
+        },
         "datapass.layout.architectureInPanel": {
           "type": "boolean",
           "default": false,
@@ -3438,6 +3467,10 @@
             "view.architecture": {
               "type": "boolean",
               "description": "Architecture panel: The project diagram (bottom panel)"
+            },
+            "view.context": {
+              "type": "boolean",
+              "description": "Context panel: Details of where you are: summary, process step, why, patterns, Fabric, evidence (bottom panel)"
             },
             "view.aiExchange": {
               "type": "boolean",
