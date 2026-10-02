@@ -27,7 +27,9 @@
     "workspaceContains:**/databricks.yml",
     "workspaceContains:**/databricks.yaml",
     "onLanguage:dockerfile",
-    "onLanguage:dockercompose"
+    "onLanguage:dockercompose",
+    "onView:datapass.navigator",
+    "onView:datapass.navigatorLeft"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -1106,6 +1108,11 @@
       {
         "command": "datapass.codeSteps.sampleStep",
         "title": "DataPass: Data Sample for a Code Step"
+      },
+      {
+        "command": "datapass.nav.moveNavigator",
+        "title": "DataPass: Move the Navigator (Right / Left)",
+        "icon": "$(arrow-swap)"
       }
     ],
     "viewsContainers": {
@@ -1113,6 +1120,11 @@
         {
           "id": "datapass",
           "title": "DataPass",
+          "icon": "resources/datapass.svg"
+        },
+        {
+          "id": "datapass-navigator",
+          "title": "DataPass Navigator",
           "icon": "resources/datapass.svg"
         }
       ],
@@ -1170,6 +1182,13 @@
       ],
       "datapass-details": [
         {
+          "id": "datapass.navigator",
+          "name": "Navigator",
+          "type": "webview",
+          "initialSize": 1,
+          "when": "config.datapass.navigator.location != left && !datapass.hidden.view.navigator"
+        },
+        {
           "id": "datapass.rail",
           "name": "Rail",
           "type": "tree",
@@ -1204,6 +1223,14 @@
           "visibility": "collapsed",
           "initialSize": 2,
           "when": "!datapass.rail && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag"
+        }
+      ],
+      "datapass-navigator": [
+        {
+          "id": "datapass.navigatorLeft",
+          "name": "Navigator",
+          "type": "webview",
+          "when": "config.datapass.navigator.location == left && !datapass.hidden.view.navigator"
         }
       ]
     },
@@ -1693,6 +1720,11 @@
           "command": "datapass.layout.closeBottomPanel",
           "when": "view == datapass.architecture",
           "group": "navigation@99"
+        },
+        {
+          "command": "datapass.nav.moveNavigator",
+          "when": "view == datapass.navigator || view == datapass.navigatorLeft",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -2754,6 +2786,10 @@
         {
           "command": "datapass.codeSteps.sampleStep",
           "when": "!datapass.hidden.v5.pqsamp"
+        },
+        {
+          "command": "datapass.nav.moveNavigator",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -3456,9 +3492,55 @@
             "v5.pqsamp": {
               "type": "boolean",
               "description": "Command Palette: code step data sample: Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)"
+            },
+            "view.navigator": {
+              "type": "boolean",
+              "description": "Navigator: Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)"
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.navigator.location": {
+          "type": "string",
+          "enum": [
+            "right",
+            "left"
+          ],
+          "default": "right",
+          "enumDescriptions": [
+            "The secondary side bar (first view of the DataPass container)",
+            "Its own container in the Activity Bar, next to the DataPass tree"
+          ],
+          "description": "Where the Navigator shows. `DataPass: Move the Navigator` flips it; you can also drag the view, VS Code remembers where."
+        },
+        "datapass.navigator.quickIcons": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "expand",
+              "details",
+              "ai",
+              "git",
+              "airflow",
+              "copyForAi",
+              "importFromAi",
+              "workViews",
+              "ownWindow"
+            ]
+          },
+          "uniqueItems": true,
+          "default": [
+            "details",
+            "ai",
+            "git",
+            "airflow",
+            "copyForAi",
+            "importFromAi",
+            "workViews",
+            "ownWindow"
+          ],
+          "description": "The quick icons of the Navigator, in order (the right rail's buttons)."
         }
       }
     },

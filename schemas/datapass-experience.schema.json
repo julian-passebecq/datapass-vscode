@@ -88,10 +88,11 @@
                 "view.airflowDag",
                 "palette.full",
                 "view.rail",
-                "v5.pqsamp"
+                "v5.pqsamp",
+                "view.navigator"
               ]
             },
-            "maxItems": 37,
+            "maxItems": 38,
             "minItems": 0
           }
         },

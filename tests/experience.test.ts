@@ -57,7 +57,7 @@ test("experience: presets grow from Vanilla to Advanced, as the plan's table say
     for (const s of lighter) assert.ok(heavier.has(s), `${PRESET_IDS[i]} keeps ${s} from ${PRESET_IDS[i - 1]}`);
   }
   // Vanilla: Git view and the AI view with the guided tab only.
-  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git", "view.rail"]);
+  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git", "view.navigator", "view.rail"]);
   assert.ok(!shown("vanilla").has("ai.agent") && !shown("vanilla").has("ai.manual"));
   // Standard adds the architecture and Details, lands on the architecture and marks alternatives instead of the Options section.
   for (const s of ["view.architecture", "view.details", "landing.architecture", "badge.alternatives"]) assert.ok(shown("standard").has(s), s);
@@ -120,11 +120,13 @@ test("experience: customizing keeps only the differences from the preset", () =>
 test("experience: every contributed view has a surface id and is gated by its when clause", () => {
   const views = (Object.values(pkg.contributes.views) as Array<Array<{ id: string; when?: string }>>).flat();
   const surfaceViews = SURFACES.filter(s => s.kind === "view");
-  assert.deepEqual(views.map(v => v.id).sort(), surfaceViews.map(s => s.viewId).sort(), "the view list and the surface list agree");
+  assert.deepEqual(views.map(v => v.id).sort(), surfaceViews.flatMap(s => [s.viewId, ...(s.altViewIds ?? [])]).sort(), "the view list and the surface list agree");
   for (const v of views) {
-    const s = surfaceViews.find(x => x.viewId === v.id)!;
+    const s = surfaceViews.find(x => x.viewId === v.id || x.altViewIds?.includes(v.id))!;
     // V3-SHELL: a layout key may come first (bottom-panel Architecture off by default; rail mode swaps the right-side views).
-    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && " };
+    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && ",
+      // V4-NAV NAVBAR1: the Navigator's placement setting picks one of its two view ids.
+      "datapass.navigator": "config.datapass.navigator.location != left && ", "datapass.navigatorLeft": "config.datapass.navigator.location == left && " };
     // V1.1.x-POLISH-3: a layout key may also come last (the Git view hides while the Git lens repeats it; a rail button unfolds its own view alone).
     const after: Record<string, string> = { "datapass.git": " && datapass.tree.lens != git", ...Object.fromEntries(RAIL_PANEL_VIEWS.map(x => [`datapass.${x}`, soloWhenSuffix(x)])) };
     assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}${after[v.id] ?? ""}`, `${v.id} is shown unless its mode (or the layout) hides it`);

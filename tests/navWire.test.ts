@@ -33,6 +33,7 @@ const vscodeStub = {
     activeTextEditor: undefined,
     showInformationMessage: async () => undefined,
     showQuickPick: async () => undefined,
+    registerWebviewViewProvider: () => ({ dispose() { /* none */ } }),
     createWebviewPanel: (_t: string, title: string) => {
       const panel = { title, visible: true, viewColumn: 1, iconPath: undefined as unknown, webview: { html: "", cspSource: "vscode-resource:", onDidReceiveMessage: noEvent },
         onDidDispose: noEvent, onDidChangeViewState: noEvent, reveal() { /* shown */ }, dispose() { /* closed */ } };
