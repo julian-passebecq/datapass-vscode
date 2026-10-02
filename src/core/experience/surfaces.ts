@@ -75,7 +75,9 @@ export const SURFACES: readonly Surface[] = [
   // V4-NAV NAVBAR1: the Navigator (secondary side bar by default, or left: `datapass.navigator.location`).
   { id: "view.navigator", kind: "view", viewId: "datapass.navigator", altViewIds: ["datapass.navigatorLeft"], label: "Navigator", detail: "Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)" },
   // V5 TOUR2: guided tours in the Navigator (Learning / Interview, present, save a path as a tour).
-  { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" }
+  { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" },
+  // V5 PEDA3: query showcase cards ("Queries worth showing", interview mode).
+  { id: "v5.peda3", kind: "palette", label: "Queries worth showing", detail: "The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);
