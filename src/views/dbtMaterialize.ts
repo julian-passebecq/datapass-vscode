@@ -77,7 +77,7 @@ export async function materializeDbt(root: vscode.Uri | undefined, out: vscode.O
   const rev = await gitRunner(["log", "-1", "--format=%H", "--", "."], dir.fsPath, 10_000);
   const dbtRevision = rev.ok ? rev.stdout.trim() : "";
   if (!dbtRevision) { void vscode.window.showWarningMessage("The dbt project has no committed revision: commit it first, the notebooks are stamped with that exact SHA."); return; }
-  const user = await gitRunner(["config", "user.name"], root.fsPath, 5_000).then(r => (r.ok ? r.stdout.trim() : ""), () => "");
+  const user = await gitRunner(["config", "--get", "user.name"], root.fsPath, 5_000).then(r => (r.ok ? r.stdout.trim() : ""), () => "");
 
   const result = materializeDbtModels({
     files, environment, environments: cfg.environments, dbtRevision, models: models.map(m => m.id),
