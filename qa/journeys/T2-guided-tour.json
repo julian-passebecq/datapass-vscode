@@ -1,0 +1,79 @@
+{
+  "format": "datapass.test-journey",
+  "version": 1,
+  "id": "T2",
+  "kind": "app",
+  "title": "Walk the built-in 3-step execution tour in guided mode",
+  "as": "An engineer presenting the project to a manager by clicking only the Navigator",
+  "goal": "In a disposable copy of the doc-pipeline example, start the execution journey tour (orchestrate → process → results), step through its three steps, then present it read-only.",
+  "setup": {
+    "open": "fixture",
+    "fixture": "doc-pipeline"
+  },
+  "hints": [
+    "The execution tour is generated from the example's facts: orchestrate orchestrates process, process produces results."
+  ],
+  "expected": [
+    "The tour has three numbered steps and each step moves the Navigator to its box with its view.",
+    "Present hides the edit controls (save path, add screen) and the jump field."
+  ],
+  "features": [
+    "architecture",
+    "modes"
+  ],
+  "outOfScope": [
+    "Editing any file outside this disposable copy"
+  ],
+  "ui": [
+    {
+      "run": "DataPass: Open Project Workbench"
+    },
+    {
+      "expect": "PDF inbox",
+      "timeoutMs": 60000
+    },
+    {
+      "run": "DataPass: Pick a Tour…"
+    },
+    {
+      "expect": "Run the batch (script) → JSON results"
+    },
+    {
+      "quickPick": "Execution"
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "screenshot": "step-1"
+    },
+    {
+      "run": "DataPass: Next Tour Step"
+    },
+    {
+      "run": "DataPass: Next Tour Step"
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "expect": "JSON results"
+    },
+    {
+      "screenshot": "step-3"
+    },
+    {
+      "run": "DataPass: Present Tour (Read-Only)"
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "expectAbsent": "Save path as tour",
+      "timeoutMs": 3000
+    },
+    {
+      "screenshot": "presenting"
+    }
+  ]
+}

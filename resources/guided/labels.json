@@ -19,5 +19,22 @@
   "ui.jump": "Jump to a box…",
   "ui.jumpEmpty": "No box matches.",
   "ui.pickTour": "Pick a tour",
-  "ui.off": "Guided tours are off (setting datapass.guided.enabled)."
+  "ui.off": "Guided tours are off (setting datapass.guided.enabled).",
+  "mode.all": "All",
+  "mode.learning": "Learning",
+  "mode.interview": "Interview",
+  "mode.general": "General",
+  "ui.present": "Present",
+  "ui.stopPresenting": "Stop presenting",
+  "ui.pickMode": "Guided mode",
+  "ui.savePath": "Save path as tour",
+  "ui.addScreen": "Add this screen",
+  "ui.tourTitle": "Tour title",
+  "ui.stepText": "Explanation for this step",
+  "ui.pickUserTour": "Add this screen to which tour?",
+  "ui.newTour": "New tour…",
+  "ui.saved": "saved tour",
+  "ui.pathTooShort": "Visit at least two screens first, then save the path.",
+  "ui.noScreen": "This place offers no view to add.",
+  "ui.noProject": "Open a DataPass project first."
 }
