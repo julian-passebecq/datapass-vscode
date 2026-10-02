@@ -27,11 +27,11 @@ export interface FileRevision {
 }
 
 /** `git log` of one file, following renames; each record: header line, then the file's name at that commit. */
-export function fileLogArgs(relPath: string): string[] {
-  return ["log", "--follow", `-n`, String(LOG_LIMIT), `--format=${REC}%H${SEP}%an${SEP}%aI${SEP}%s`, "--name-only", "--", relPath];
+export function fileLogArgs(relPath: string, limit = LOG_LIMIT): string[] {
+  return ["log", "--follow", `-n`, String(limit), `--format=${REC}%H${SEP}%an${SEP}%aI${SEP}%s`, "--name-only", "--", relPath];
 }
 
-export function parseFileLog(stdout: string, relPath: string): FileRevision[] {
+export function parseFileLog(stdout: string, relPath: string, limit = LOG_LIMIT): FileRevision[] {
   const out: FileRevision[] = [];
   for (const record of stdout.split(REC)) {
     const lines = record.split(/\r?\n/);
@@ -42,7 +42,7 @@ export function parseFileLog(stdout: string, relPath: string): FileRevision[] {
     const path = lines.slice(1).map(l => l.trim()).find(Boolean) ?? relPath;
     const pr = /\(#(\d{1,7})\)\s*$/.exec(subject)?.[1];
     out.push({ sha, author: (author ?? "").trim(), date: (date ?? "").trim(), subject, path, ...(pr ? { pr: Number(pr) } : {}) });
-    if (out.length >= LOG_LIMIT) break;
+    if (out.length >= limit) break;
   }
   return out;
 }
