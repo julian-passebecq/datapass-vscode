@@ -30,6 +30,10 @@ const stubCalls = (): Array<{ args: string[]; cwd: string; order: string | null 
   fs.existsSync(env().claudeStub + ".log") ? fs.readFileSync(env().claudeStub + ".log", "utf8").split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)) : [];
 const same = (a: string, b: string) => fs.realpathSync.native(a).toLowerCase() === fs.realpathSync.native(b).toLowerCase();
 
+/** DESKHARD3: waits on processes outside the extension host (the stub agent; gh through VS Code's Node), sized for a loaded runner. */
+const AGENT_RESULT_WAIT_MS = 120_000;
+const HOST_PRS_WAIT_MS = 90_000;
+
 export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
   const api = () => getApi();
   const F = ["v20-work-orders"];
@@ -48,7 +52,8 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
     return ui;
   };
   const untilResult = (id: string, state: "valid" | "refused" = "valid") =>
-    waitFor(`the result of ${id}`, async () => { await api().workOrders.reload(); const o = order(id); return o.result.state === state ? o : undefined; }, 45000);
+    // DESKHARD3: the stub agent runs several git worktree/commit/push commands in its own terminal; under CI load 45 s was not enough.
+    waitFor(`the result of ${id}`, async () => { await api().workOrders.reload(); const o = order(id); return o.result.state === state ? o : undefined; }, AGENT_RESULT_WAIT_MS);
 
   test("0.20: work orders stay off until the machine setting is on; the Agent tab says why", async () => {
     await cfg().update("git.ghPath", env().ghStub, vscode.ConfigurationTarget.Global);
@@ -113,7 +118,7 @@ export function registerWorkOrderFlows(getApi: () => DataPassTestApi): void {
     assert.ok(same(call.cwd, env().pipeline), "the first repository to change is the working folder");
     assert.match(git(env().pipeline, "ls-remote", "origin", `dp/${id}`), /refs\/heads\/dp\//);
     await api().git.refresh(true);
-    const withPrs = await waitFor("the PRs found by branch", async () => { await api().workOrders.reload(); const x = order(id); return x.outputs.every(y => y.access === "read" || y.state === "open") ? x : undefined; }, 30000);
+    const withPrs = await waitFor("the PRs found by branch", async () => { await api().workOrders.reload(); const x = order(id); return x.outputs.every(y => y.access === "read" || y.state === "open") ? x : undefined; }, HOST_PRS_WAIT_MS);
     assert.deepEqual(withPrs.outputs.map(x => [x.ref, x.state, x.pr?.ci ?? "-"]), [["pipeline", "open", "passing"], ["coordination", "open", "passing"]]);
     assert.deepEqual(withPrs.outputs.map(x => x.pr?.url), ["https://github.com/example-org/research-pipeline/pull/101", "https://github.com/example-org/research-library/pull/100"]);
     assert.deepEqual(withPrs.summary!.needs, ["1 question from the agent"], "the agent merges on green in a dev project: no review asked");

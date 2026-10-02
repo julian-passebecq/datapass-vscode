@@ -124,7 +124,8 @@ export class ControlService implements vscode.Disposable {
     if (!base) { this.set({ state: "bad-url", detail: "datapass.control.url must be http://127.0.0.1:<port> or http://localhost:<port>.", projects: [], tried: [], orders: new Map(), checkedAt: at }); return; }
     const client = this.clientFactory(base);
     const health = await client.health();
-    if (!health.ok) { this.set({ state: "off", detail: health.detail, projects: [], tried: this.names(), orders: new Map(), checkedAt: at }); return; }
+    // DESKHARD3: no answer even after the retry is "not checked" (unknown), not "Control is off".
+    if (!health.ok) { this.set({ state: health.reason === "timeout" ? "unknown" : "off", detail: health.detail, projects: [], tried: this.names(), orders: new Map(), checkedAt: at }); return; }
     const tried = this.names();
     const plan = await client.plan();
     const projects: ControlProject[] = [];

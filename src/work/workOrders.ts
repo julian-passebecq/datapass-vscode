@@ -33,6 +33,7 @@ import type { NeedsYou } from "../core/git/gitReport";
 import type { GitObserver } from "./gitObserver";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
+import { retryOnTimeout } from "../core/git/run";
 import type { ClosedPullRequest } from "../core/git/hostPrs";
 import { errorMessage, jsonBytes } from "./io";
 
@@ -365,8 +366,10 @@ export class WorkOrderService implements vscode.Disposable {
     if (!this.pulling.has(cacheKey)) {
       this.pulling.add(cacheKey);
       const branch = this.git.report(key)?.defaultBranch ?? "main";
-      void gitRunner(["merge-base", "--is-ancestor", pr.mergeCommit, `refs/heads/${branch}`], folder, 5000).then(r => {
+      // DESKHARD3: 5 s, then 20 s once on a timeout; a timeout is "not checked" (asked again at the next reload), never "not pulled".
+      void retryOnTimeout(t => gitRunner(["merge-base", "--is-ancestor", pr.mergeCommit!, `refs/heads/${branch}`], folder, t), 5000).then(r => {
         this.pulling.delete(cacheKey);
+        if (r.timedOut) return;
         // Not an ancestor, or the commit is not even fetched: not pulled here. A later Get updates changes the answer.
         this.pulled.set(cacheKey, r.ok);
         if (!r.ok) setTimeout(() => this.pulled.delete(cacheKey), GIT_REFRESH_MS);

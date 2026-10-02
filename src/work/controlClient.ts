@@ -23,6 +23,8 @@ export const DEFAULT_CONTROL_URL = "http://127.0.0.1:7430";
 const LOOPBACK = /^http:\/\/(127\.0\.0\.1|localhost):(\d{2,5})\/?$/;
 export const HEALTH_TIMEOUT_MS = 800;
 export const READ_TIMEOUT_MS = 3000;
+/** DESKHARD3: a read that timed out is asked once more with this long (a loaded machine, not a missing Control). */
+export const RETRY_TIMEOUT_MS = 20_000;
 export const MAX_RESPONSE_BYTES = 2 * 1024 * 1024;
 export const MAX_ORDER_IDS = 50;
 const ORDER_ID = /^wo-\d{8}-\d{4}-[0-9a-z]{4}$/;
@@ -186,29 +188,38 @@ export function parseWorkOrders(x: unknown, asked: readonly string[]): Map<strin
 // ------------------------------------------------------------------ the client
 
 export class ControlClient {
-  constructor(private readonly base: string, private readonly fetch: typeof getJson = getJson) {}
+  constructor(private readonly base: string, private readonly fetch: typeof getJson = getJson, private readonly retryMs = RETRY_TIMEOUT_MS) {}
+
+  /**
+   * DESKHARD3: one GET, and once more with RETRY_TIMEOUT_MS when it timed out. "Not running"
+   * (connection refused) and every other answer are final at once, so a stopped Control stays fast.
+   */
+  private async get(pathAndQuery: string, timeoutMs = READ_TIMEOUT_MS): Promise<Fetched<unknown>> {
+    const r = await this.fetch(this.base, pathAndQuery, timeoutMs);
+    return !r.ok && r.reason === "timeout" ? this.fetch(this.base, pathAndQuery, Math.max(timeoutMs, this.retryMs)) : r;
+  }
 
   async health(): Promise<Fetched<boolean>> {
-    const r = await this.fetch(this.base, "/api/health", HEALTH_TIMEOUT_MS);
+    const r = await this.get("/api/health", HEALTH_TIMEOUT_MS);
     if (!r.ok) return r;
     return parseHealth(r.data) ? { ok: true, data: true } : { ok: false, reason: "bad-json", detail: "Something answers on Claude Control's port, but not Claude Control." };
   }
 
   async plan(): Promise<Fetched<ControlPlan>> {
-    const r = await this.fetch(this.base, "/api/status");
+    const r = await this.get("/api/status");
     return r.ok ? { ok: true, data: parsePlan(r.data) } : r;
   }
 
   async project(name: string): Promise<Fetched<{ project?: ControlProject; known?: string[] }>> {
     if (!/^[A-Za-z0-9 _.()-]{1,100}$/.test(name)) return { ok: false, reason: "bad-url", detail: "Not a project folder name." };
-    const r = await this.fetch(this.base, `/api/project/${encodeURIComponent(name)}`);
+    const r = await this.get(`/api/project/${encodeURIComponent(name)}`);
     return r.ok ? { ok: true, data: parseProject(r.data, name) } : r;
   }
 
   async workOrders(ids: readonly string[]): Promise<Fetched<Map<string, OrderConversation[]>>> {
     const asked = [...new Set(ids.filter(i => ORDER_ID.test(i)))].slice(0, MAX_ORDER_IDS);
     if (!asked.length) return { ok: true, data: new Map() };
-    const r = await this.fetch(this.base, `/api/work-orders?ids=${asked.join(",")}`);
+    const r = await this.get(`/api/work-orders?ids=${asked.join(",")}`);
     return r.ok ? { ok: true, data: parseWorkOrders(r.data, asked) } : r;
   }
 }

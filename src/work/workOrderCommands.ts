@@ -45,6 +45,8 @@ import { readProjectManifest } from "../core/projectManifest";
 import { LOCAL_DIR, readOptional } from "../core/workspace/loader";
 import type { WorkSession } from "./session";
 import { gitRunner } from "./session";
+import { ORIGIN_TIMEOUT_MS, originUrlOf, originVerdict, readOrigin } from "../core/project/observation";
+import { retryOnTimeout } from "../core/git/run";
 import { activeVariantHeader } from "./activeVariantCommands";
 import { contextGuard, packStamp, selectionStamp } from "./packStamps";
 import type { GitObserver } from "./gitObserver";
@@ -178,7 +180,7 @@ function folderOfKey(session: WorkSession, key: string): vscode.Uri | undefined 
   return session.repoFolder(key);
 }
 
-async function git(args: string[], cwd: string, timeoutMs = 15000): Promise<{ ok: boolean; stdout: string; stderr?: string }> {
+async function git(args: string[], cwd: string, timeoutMs = 15000): Promise<{ ok: boolean; stdout: string; stderr?: string; timedOut?: boolean }> {
   return gitRunner(args, cwd, timeoutMs);
 }
 
@@ -188,7 +190,8 @@ async function baseBranchOf(session: WorkSession, gitObs: GitObserver, key: stri
   if (view?.branch) return view.branch;
   const rep = gitObs.report(key);
   if (rep?.defaultBranch) return rep.defaultBranch;
-  const r = await git(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], folder, 5000);
+  // DESKHARD3: 20 s and one retry on a timeout (5 s under CI load fell back to "main" for a clone whose origin HEAD is another branch).
+  const r = await retryOnTimeout(t => git(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"], folder, t), ORIGIN_TIMEOUT_MS);
   const b = r.ok ? r.stdout.trim().replace(/^origin\//, "") : "";
   return /^[A-Za-z0-9._/-]{1,200}$/.test(b) ? b : "main";
 }
@@ -251,7 +254,13 @@ export class WorkOrderFlows {
         continue;
       }
       let remote = view?.remoteUrl;
-      if (!remote) { const r = await git(["config", "--get", "remote.origin.url"], folder.fsPath, 5000); remote = r.ok && remoteIdentity(r.stdout.trim()) ? r.stdout.trim() : undefined; }
+      if (!remote) {
+        // DESKHARD3: 20 s and one retry (readOrigin); Git not answering is "not checked", never an order without its remote.
+        const o = await readOrigin(git, folder.fsPath);
+        if (!o.answered) throw new UserFacingError(`${view?.label ?? key}: Git did not answer when DataPass read its origin (not checked). Write the order again.`);
+        const url = originUrlOf(o);
+        remote = url && remoteIdentity(url) ? url : undefined;
+      }
       // Never a user, token or port: the address goes into the order and, through the summary, into a committed file.
       remote = publicRemote(remote);
       plan.push({ key, ref: refOfKey(key, map.coordinationKey, manifestKeys), label: view?.label ?? "coordination repository", access: a, folder: folder.fsPath, remote, state: view?.state ?? "local" });
@@ -646,8 +655,10 @@ export class WorkOrderFlows {
       if (!folder || (view && view.state !== "local")) throw new UserFacingError(`${r.ref}: its clone is not usable here (${view?.detail ?? "not found"}).`);
       if (!samePath(folder.fsPath, r.localPath)) throw new UserFacingError(`${r.ref}: the order names ${r.localPath}, but the project's clone is ${folder.fsPath}. Revise the order.`);
       if (r.remote) {
-        const origin = await git(["config", "--get", "remote.origin.url"], folder.fsPath, 5000);
-        if (!origin.ok || remoteIdentity(origin.stdout.trim()) !== remoteIdentity(r.remote)) throw new UserFacingError(`${r.ref}: the clone's origin is not ${r.remote}.`);
+        // DESKHARD3: 20 s and one retry (readOrigin). Not launched either way, but Git not answering is said as such, not as another origin.
+        const verdict = originVerdict(await readOrigin(git, folder.fsPath), r.remote, remoteIdentity);
+        if (verdict === "unknown") throw new UserFacingError(`${r.ref}: Git did not answer when DataPass read the clone's origin (not checked), so nothing was launched. Launch again.`);
+        if (verdict === "other") throw new UserFacingError(`${r.ref}: the clone's origin is not ${r.remote}.`);
       }
     }
   }
@@ -883,13 +894,17 @@ export class WorkOrderFlows {
     if (!setting || !setting.trim()) return { ok: false };
     const folder = setting.trim();
     if (!path.isAbsolute(folder) || !fs.existsSync(path.join(folder, ".git"))) return { ok: false, why: `${folder} is not a Git clone (datapass.ai.workLog.privateRepository)` };
-    const origin = await git(["config", "--get", "remote.origin.url"], folder, 5000);
+    // DESKHARD3: 20 s and one retry (readOrigin); Git not answering is "not checked", not "no origin".
+    const answers = await readOrigin(git, folder);
+    if (!answers.answered) return { ok: false, why: `${folder}: Git did not answer when DataPass read its origin (not checked)` };
+    const originUrl = answers.config.ok ? answers.config.stdout.trim() : "";
     const manifest = this.session.project.manifest;
-    const verdict = privateRepoVerdict(origin.ok ? origin.stdout.trim() : undefined, [...Object.values(manifest?.repositories ?? {}).map(r => r.remote?.url), ...this.session.projectMap().repositories.map(r => r.remoteUrl)]);
+    const verdict = privateRepoVerdict(answers.config.ok ? originUrl : undefined, [...Object.values(manifest?.repositories ?? {}).map(r => r.remote?.url), ...this.session.projectMap().repositories.map(r => r.remoteUrl)]);
     if (!verdict.ok) return { ok: false, why: `${folder}: ${verdict.why}` };
-    const host = gitHostOf(origin.stdout.trim());
+    const host = gitHostOf(originUrl);
     if (host?.kind === "github" && host.owner) {
-      const r = await this.gitObs.runner("gh", ["repo", "view", `${host.owner}/${host.name}`, "--json", "visibility", "--jq", ".visibility"], folder, 10000);
+      // DESKHARD3: 20 s and one retry on a timeout, so a slow gh is asked again before the "could not check" question.
+      const r = await retryOnTimeout(t => this.gitObs.runner("gh", ["repo", "view", `${host.owner}/${host.name}`, "--json", "visibility", "--jq", ".visibility"], folder, t), ORIGIN_TIMEOUT_MS);
       const vis = r.ok ? r.stdout.trim().toUpperCase() : "";
       if (vis === "PUBLIC") return { ok: false, why: `${host.owner}/${host.name} is public on GitHub` };
       if (vis !== "PRIVATE" && vis !== "INTERNAL") {
@@ -897,7 +912,7 @@ export class WorkOrderFlows {
         if (!go) return { ok: false, why: "not confirmed private" };
       }
     } else {
-      const go = await confirmModal(`DataPass cannot check that ${remoteIdentity(origin.stdout.trim()) ?? folder} is private.`, "Only GitHub repositories can be checked (through gh). Write the private log anyway? It holds ids, titles, statuses and pull-request links, never secrets.", "Write it anyway");
+      const go = await confirmModal(`DataPass cannot check that ${remoteIdentity(originUrl) ?? folder} is private.`, "Only GitHub repositories can be checked (through gh). Write the private log anyway? It holds ids, titles, statuses and pull-request links, never secrets.", "Write it anyway");
       if (!go) return { ok: false, why: "not confirmed private" };
     }
     const file = privateLogFile(manifest?.project.id ?? "project");

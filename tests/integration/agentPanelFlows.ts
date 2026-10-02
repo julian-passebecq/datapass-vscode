@@ -132,7 +132,7 @@ export function registerAgentPanelFlows(getApi: () => DataPassTestApi): void {
     assert.deepEqual(opened.opened, ["claude://claude.ai/epitaxy/local_needs", "https://chatgpt.com/"], "only allowlisted links open");
 
     // The Work orders view: conversation, how it is linked, tokens.
-    const wb = await waitFor("conversations in the Work orders view", () => { const w = api().workbenchState().workOrders; return w?.orders.find(o => o.id === term.id)?.conversation ? w : undefined; });
+    const wb = await waitFor("conversations in the Work orders view", () => { const w = api().workbenchState().workOrders; return w?.orders.find(o => o.id === term.id)?.conversation ? w : undefined; }, 60_000);
     assert.equal(wb.control, "on");
     const row = wb.orders.find(o => o.id === term.id)!;
     assert.equal(row.conversation!.linked, "desktop");
