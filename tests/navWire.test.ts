@@ -5,7 +5,10 @@
  * `vscode` is replaced by a small in-memory stub (no VS Code needed).
  */
 import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import Module from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import type { ProjectMap } from "../src/core/project/projectMap";
 import type { NavLadder, NavLocation, ViewCatalog } from "../src/core/navigation/navTypes";
@@ -25,7 +28,7 @@ const vscodeStub = {
   EventEmitter,
   Disposable: class { constructor(private readonly fn: () => void) {} dispose() { this.fn(); } },
   ViewColumn: { One: 1, Two: 2 },
-  Uri: { joinPath: (...p: unknown[]) => p.join("/") },
+  Uri: { joinPath: (base: unknown, ...p: string[]) => (base && typeof base === "object" ? { scheme: "file", fsPath: join((base as { fsPath: string }).fsPath, ...p) } : [base, ...p].join("/")) },
   commands: {
     registerCommand: (id: string, fn: (...a: unknown[]) => unknown) => { commands.set(id, fn); return { dispose: () => commands.delete(id) }; },
     executeCommand: async (id: string) => { executed.push(id); }
@@ -71,7 +74,7 @@ const { DEFAULT_VIEW_CATALOG, sameLocation } = require("../src/core/navigation/n
 const map = {
   project: { id: "p", title: "Demo", schemaVersion: 2 },
   subprojects: [{ id: "ingest", title: "Ingest", componentIds: ["nb1"], health: "ok", summary: { components: 1 }, nextStep: "none" }],
-  components: [{ id: "nb1", label: "Load raw", kind: "notebook", headline: "ready", nextStep: "run", incoming: [], outgoing: [] }]
+  components: [{ id: "nb1", label: "Load raw", kind: "notebook", headline: "ready", nextStep: "run", incoming: [], outgoing: [], children: [] }]
 } as unknown as ProjectMap;
 
 function session() {
@@ -179,4 +182,38 @@ test("view packs: the host's catalog is DEFAULT_VIEW_CATALOG + every *.pack.ts, 
   assert.equal(sub.views.filter(v => v.id === DEFAULT_VIEW_CATALOG.entries[1]!.views[0]!.id).length, 1, "a base view id wins");
   assert.ok(composed.entries.some(e => e.artifactKind === "dbt-model" && e.views.some(v => v.id === "erd")));
   assert.equal(DEFAULT_VIEW_CATALOG.entries.find(e => e.artifactKind === "subproject")!.views.some(v => v.id === "erd"), false, "base not mutated");
+});
+
+test("a10: the host ladder takes artifact kinds from file heads read from the repository folder", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "dp-a10-"));
+  mkdirSync(join(dir, "nb")); mkdirSync(join(dir, "sql"));
+  writeFileSync(join(dir, "nb", "load.ipynb"), JSON.stringify({ cells: [{ cell_type: "code", source: ["df = spark.read.parquet('raw')"] }], metadata: {} }));
+  writeFileSync(join(dir, "sql", "orders.sql"), "select * from orders");
+  const file = (repoPath: string) => ({ path: repoPath, repoPath, kind: "file", role: "source", requiredFor: [], optional: false, source: "declared", state: "found" });
+  const comp = (id: string, entry: string) => ({ id, label: id, kind: "job", children: [], incoming: [], outgoing: [],
+    artifacts: { repoKey: "lake", root: "", entry: file(entry), files: [file(entry)] } });
+  const kindMap = { coordinationKey: "a10", project: { id: "p", title: "A10" },
+    subprojects: [{ id: "s", title: "S", componentIds: ["nb", "q"] }], components: [comp("nb", "nb/load.ipynb"), comp("q", "sql/orders.sql")] } as unknown as ProjectMap;
+  let selection: { subproject?: string; component?: string } = { subproject: "s", component: "nb" };
+  const sel = new EventEmitter<unknown>();
+  const host = registerNavigation(context(), {
+    projectMap: () => kindMap, selection: () => selection, select: async (s) => { selection = s; },
+    onDidChange: new EventEmitter<unknown>().event, onDidChangeSelection: sel.event,
+    repoFolder: (k: string) => (k === "lake" ? { scheme: "file", fsPath: dir } : undefined) as never
+  });
+  const kinds = () => Object.fromEntries(host.nav.ladder.children({ level: "subproject", nodeId: "s", artifactKind: "subproject" }).map(c => [c.nodeId, c.artifactKind]));
+  assert.equal(kinds().nb, "other", "before the head is read: no guess");
+  assert.equal(kinds().q, "sql-script", "SQL is known from its path");
+  assert.equal(host.nav.state.location.nodeId, "nb");
+  for (let i = 0; i < 50 && kinds().nb === "other"; i++) await new Promise(r => setTimeout(r, 10));
+  assert.equal(kinds().nb, "spark-notebook", "after the 4 KB head is read");
+  assert.deepEqual([host.nav.state.location.nodeId, host.nav.state.location.artifactKind], ["nb", "spark-notebook"], "the location follows its new kind, not reset to the root");
+  // A tree selection (kind-free) lands on the classified node; a file below the component maps back to it.
+  selection = { subproject: "s", component: "q" }; sel.fire(undefined);
+  assert.deepEqual([host.nav.state.location.nodeId, host.nav.state.location.artifactKind], ["q", "sql-script"]);
+  host.nav.dispatch({ type: "down" });
+  assert.equal(host.nav.state.location.nodeId, "lake:sql/orders.sql");
+  await new Promise(r => setTimeout(r, 0));
+  assert.deepEqual(selection, { subproject: "s", component: "q" });
+  host.dispose();
 });

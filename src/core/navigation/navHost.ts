@@ -8,9 +8,11 @@
 import * as vscode from "vscode";
 import type { ProjectMap } from "../project/projectMap";
 import { NavigationService } from "./navigationService";
-import { sameLocation, type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
+import { type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
 import { builtinCatalog } from "./viewPacks";
-import { locationLabel, locationOf, locationPath, projectLadder, selectionOf } from "./projectLadder";
+import { buildLadder, type ProjectLadder } from "./ladder";
+import { FileHeads } from "./fileHeads";
+import { locationLabel, locationOf, locationPath } from "./projectLadder";
 
 /** The part of the session the host needs (kept small for tests). */
 export interface NavSession {
@@ -19,6 +21,8 @@ export interface NavSession {
   select(sel: { subproject?: string; component?: string }): Promise<void>;
   readonly onDidChange: vscode.Event<unknown>;
   readonly onDidChangeSelection: vscode.Event<unknown>;
+  /** Local folder of a repository (a10: file heads for artifact kinds); absent = kinds from paths only. */
+  repoFolder?(repoKey: string): vscode.Uri | undefined;
 }
 
 export const NAV_COMMANDS = ["up", "down", "left", "right", "home", "back", "forward", "pickView"] as const;
@@ -37,16 +41,37 @@ export interface NavStateMessage {
 export class NavHost implements vscode.Disposable {
   readonly nav: NavigationService;
   private readonly subs: vscode.Disposable[] = [];
+  private readonly heads: FileHeads;
+  private ladder: ProjectLadder;
 
   constructor(readonly session: NavSession) {
-    const map = () => this.projectMap();
-    this.nav = new NavigationService(projectLadder(map), builtinCatalog());
-    this.nav.dispatch({ type: "go", location: locationOf(session.selection(), map()) });
+    this.heads = new FileHeads((k) => session.repoFolder?.(k));
+    this.ladder = this.buildLadder();
+    this.nav = new NavigationService(this.ladder, builtinCatalog());
+    this.nav.dispatch({ type: "go", location: locationOf(session.selection(), this.projectMap()) });
     const navSub = this.nav.onDidChange((e) => { void this.toSession(e.state.location); void this.updateKeys(); });
     this.subs.push({ dispose: () => navSub.dispose() },
       session.onDidChangeSelection(() => this.fromSession()),
-      session.onDidChange(() => { this.nav.setLadder(projectLadder(map)); void this.updateKeys(); }));
+      session.onDidChange(() => { this.heads.clear(); this.rebuild(); }));
+    this.warm();
     void this.updateKeys();
+  }
+
+  /** NAVLOC1 ladder over the session map; kinds from path + cached file heads (a10). */
+  private buildLadder(): ProjectLadder {
+    return buildLadder({ map: this.projectMap(), head: (k, p) => this.heads.get(k, p) });
+  }
+
+  private rebuild(): void {
+    this.ladder = this.buildLadder();
+    this.nav.setLadder(this.ladder);
+    void this.updateKeys();
+    this.warm();
+  }
+
+  /** Read the missing file heads in the background; rebuild once when some were read. */
+  private warm(): void {
+    void this.heads.warm(this.projectMap()).then((read) => { if (read) { this.ladder = this.buildLadder(); this.nav.setLadder(this.ladder); void this.updateKeys(); } }, () => undefined);
   }
 
   /** Commands and their palette-free behaviour; `pickView` offers the location's views. */
@@ -68,7 +93,7 @@ export class NavHost implements vscode.Disposable {
     if (pick) this.nav.dispatch({ type: "view", viewId: pick.id });
   }
 
-  label(l: NavLocation): string { return locationLabel(this.session.projectMap(), l); }
+  label(l: NavLocation): string { return this.ladder.entry(l)?.label ?? locationLabel(this.session.projectMap(), l); }
 
   /**
    * The project map the NavigationService's ladder walks: the same session getter `projectLadder`
@@ -93,15 +118,23 @@ export class NavHost implements vscode.Disposable {
   /** Tree or Workbench selection → `go`. */
   private fromSession(): void {
     const to = locationOf(this.session.selection(), this.session.projectMap());
-    if (!sameLocation(to, this.nav.state.location)) this.nav.dispatch({ type: "go", location: to });
+    const here = this.nav.state.location;
+    if (to.level === here.level && to.nodeId === here.nodeId) return;
+    if (to.level === "project" && here.level === "project") return;
+    // A component/sub-project selection that the current file, step or operation already sits in keeps it.
+    const e = this.ladder.entry(here);
+    if (to.level === "artifact" && e?.componentId === to.nodeId && here.nodeId !== to.nodeId && here.level !== "subproject") return;
+    this.nav.dispatch({ type: "go", location: to.level === "project" ? this.ladder.root() : to });
   }
 
   /** Location → session selection (the tree reveals, the Workbench repaints). The project root keeps the selection. */
   private async toSession(l: NavLocation): Promise<void> {
     if (l.level === "project") return;
-    const map = this.session.projectMap();
-    if (sameLocation(locationOf(this.session.selection(), map), l)) return;
-    await this.session.select(selectionOf(l, this.nav.ladder));
+    const e = this.ladder.entry(l);
+    const sel = { subproject: e?.subprojectId, component: e?.componentId };
+    const cur = this.session.selection();
+    if (cur.subproject === sel.subproject && cur.component === sel.component) return;
+    await this.session.select(sel);
   }
 
   private async updateKeys(): Promise<void> {
