@@ -2926,6 +2926,13 @@
           "scope": "application",
           "description": "Where DiagramCloud runs (https://…, or http://localhost for a dev server). Opened by \"Open Architecture in DiagramCloud\"; no project data is ever put in the URL."
         },
+        "datapass.nav.dashboardTiles": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["readiness", "open-items", "drift", "ci", "reviews"] },
+          "default": ["readiness", "open-items", "drift", "ci", "reviews"],
+          "scope": "window",
+          "description": "Project dashboard tiles, in display order. CI comes only from the cached pull-request status, never a new remote call."
+        },
         "datapass.fabric.toolboxRoot": {
           "type": "string",
           "default": "",
