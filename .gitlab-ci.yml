@@ -110,6 +110,25 @@ desktop_acceptance:
       policy: pull
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        # CIDIET1: an MR runs the desktop jobs only when it touches what they build or exercise; docs/,
+        # handoff/ and root *.md MRs skip them. main and web pipelines always run them (rules below).
+        paths: &desktop_inputs
+          - src/**/*
+          - vendor/**/*
+          - contracts/**/*
+          - schemas/**/*
+          - resources/**/*
+          - examples/**/*
+          - tests/**/*
+          - qa/**/*
+          - scripts/**/*
+          - package.json
+          - package-lock.json
+          - tsconfig.json
+          - esbuild.mjs
+          - .vscodeignore
+          - .gitlab-ci.yml
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: manual
@@ -145,6 +164,8 @@ ui_smoke:
       policy: pull
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        paths: *desktop_inputs
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: manual

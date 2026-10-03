@@ -632,15 +632,16 @@ async function vscodeExecutable(): Promise<string> {
 
 /**
  * DESKSHARD1: CI splits the fixtures over parallel jobs (`parallel:` sets CI_NODE_INDEX/CI_NODE_TOTAL).
- * Weights are seconds measured on runner 56844575 (passing run, 1 Oct 2026); a fixture missing here
+ * Weights are median seconds per fixture on runner 56844575 (CIDIET1: job logs of the 10 last green
+ * pipelines, 3 Oct 2026; v20-work-orders alone sets the floor, so a 5th shard would not shorten the run); a fixture missing here
  * gets DEFAULT_FIXTURE_SECONDS, so a new fixture always runs in some shard. Fixtures that read another
  * fixture's output stay in one group, in order. Longest group first into the lightest shard: deterministic.
  */
 const FIXTURE_SECONDS: Record<string, number> = {
-  "v20-work-orders": 428, "v25-doc-pipeline": 190, "v22-modes": 143, "v3-research": 137, "v19-git": 117,
-  "empty": 99, "v18-toolchain": 79, "v1-honest-doc-pipeline": 67, "v22-versions": 64, "v2-retail": 56,
-  "v17-company": 54, "v26-open-client-window": 54, "v26-open-client": 49, "v4-cloudflare": 36, "v3-devops": 33,
-  "v3-hop": 30, "v1-foil": 28, "v3-monorepo": 19, "broken": 18, "v22-checks": 14
+  "v20-work-orders": 506, "v3-research": 247, "v2-retail": 200, "v22-versions": 119, "v4-cloudflare": 117,
+  "v22-modes": 107, "v18-toolchain": 105, "v25-doc-pipeline": 91, "v17-company": 72, "v3-monorepo": 66,
+  "v3-hop": 65, "v1-foil": 63, "v26-open-client-window": 58, "broken": 46, "empty": 44, "v26-open-client": 38,
+  "v22-checks": 31, "v3-devops": 21, "v19-git": 21, "v1-honest-doc-pipeline": 14
 };
 const DEFAULT_FIXTURE_SECONDS = 120;
 const FIXTURE_GROUPS: string[][] = [["v26-open-client", "v26-open-client-window"]];
