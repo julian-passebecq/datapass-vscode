@@ -6,6 +6,7 @@ import {
   diagramCloudRealizationSnapshot,
   galaxyEntityId
 } from "../src/core/diagramcloud/galaxyPublication";
+import { DIAGRAMCLOUD_DEEP_LINK_ROUTE, resolveDiagramCloudDeepLink } from "../src/core/diagramcloud/galaxyLink";
 
 const producerRevision = "58f7d2da51647c261c2b000416751ad570f64e32";
 
@@ -157,4 +158,19 @@ test("verified claims refuse synthetic evidence and links refuse embedded creden
   };
   assert.throws(() => diagramCloudRealizationSnapshot({ ...common, claim: "verified" }), /synthetic evidence cannot back a verified claim/);
   assert.throws(() => diagramCloudRealizationSnapshot({ ...common, claim: "observed", evidence: { ...common.evidence, synthetic: false }, openUri: "https://user:pw@example.com/run" }), /without embedded credentials/);
+});
+
+
+test("DataPass resolves the registered DiagramCloud project/view/node deep-link route", () => {
+  assert.equal(DIAGRAMCLOUD_DEEP_LINK_ROUTE.route_id, "diagramcloud.project-view-node/1");
+  assert.equal(
+    resolveDiagramCloudDeepLink("https://diagramcloud.example/app/?old=1#x", { project: "total-project-controls", view: "validation", node: "checks" }),
+    "https://diagramcloud.example/app/?project=total-project-controls&view=validation&node=checks"
+  );
+  assert.equal(
+    resolveDiagramCloudDeepLink("https://diagramcloud.example", { project: "total-project-controls" }),
+    "https://diagramcloud.example/?project=total-project-controls"
+  );
+  assert.throws(() => resolveDiagramCloudDeepLink("https://diagramcloud.example", { project: "<script>" }), /stable ID/);
+  assert.throws(() => resolveDiagramCloudDeepLink("https://user:pw@diagramcloud.example", { project: "total-project-controls" }), /without embedded credentials/);
 });
