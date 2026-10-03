@@ -230,7 +230,7 @@
             {"run": "DataPass: Pick a View Here…"},
             {"quickPick": "Steps"},
             {"expect": "saveAsTable"},
-            {"expect": "No sample"},
+            {"expect": "No Hop explanation for this place: pick a file that has one."},
             {"expectAbsent": "1003"}
           ]
         }
@@ -531,6 +531,7 @@
           "steps": [
             {"run": "DataPass: Export Explainer Page (HTML)…"},
             {"quickPick": "internal"},
+            {"quickPick": "No tour"},
             {"expectFile": "^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$"},
             {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "Shop lakehouse"},
             {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "confidential"},
@@ -543,6 +544,7 @@
           "steps": [
             {"run": "DataPass: Export Explainer Page (HTML)…"},
             {"quickPick": "internal"},
+            {"quickPick": "No tour"},
             {"expectFile": "^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$"},
             {"openInChromium": "^\\.datapass/explain/export-.*\\.html$"},
             {"expect": "Shop lakehouse"},

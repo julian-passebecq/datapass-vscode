@@ -138,6 +138,17 @@ async function pickRow(page: Page, label: string, typed: string): Promise<string
       await page.waitForTimeout(100);
     }
   }
+  // The walk can lose the list focus to a webview while the picker stays open: the list has stopped filtering by
+  // now, so click the row itself (the exact one first) as a person would.
+  for (const target of [exact, row]) {
+    if (!(await target.isVisible().catch(() => false))) continue;
+    try {
+      await target.scrollIntoViewIfNeeded({ timeout: 2_000 }).catch(() => undefined);
+      lastPicked = (await target.innerText({ timeout: 1_000 }).catch(() => label)).replace(/\s+/g, " ").slice(0, 80);
+      await target.click({ timeout: 5_000 });
+      return undefined;
+    } catch { /* fall through */ }
+  }
   await page.keyboard.press("Escape");
   return `the entry "${label}" is listed but the keyboard never reached it`;
 }
@@ -168,7 +179,12 @@ export async function runStep(ctx: StepContext, step: UiStep): Promise<StepResul
       const loc = await findVisible(page, f => (step.role ? f.getByRole(step.role, { name: step.text }) : f.getByText(step.text)), 15_000);
       if (!loc) return { status: "FAIL", detail: `nothing visible ${step.role ? `with role ${step.role} and name` : "with the text"} "${step.text}"` };
       // A modal editor or a re-rendering webview can keep a target "unstable": click where it is then.
-      try { await loc.click({ timeout: 10_000 }); } catch { await loc.click({ force: true, timeout: 5_000 }); }
+      // A target inside a scrolled webview pane is "visible" but off the viewport: scroll it in first (force cannot click it).
+      await loc.scrollIntoViewIfNeeded({ timeout: 3_000 }).catch(() => undefined);
+      try { await loc.click({ timeout: 10_000 }); } catch {
+        // A tab inside a cramped webview pane is outside the outer viewport even when forced: send the click event itself.
+        try { await loc.click({ force: true, timeout: 5_000 }); } catch { await loc.dispatchEvent("click", undefined, { timeout: 5_000 }); }
+      }
       return { status: "PASS" };
     }
     case "expect": {
