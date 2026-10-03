@@ -2,7 +2,7 @@
  * V5 GITMR3: local structural stubs of the three packages it builds on, so it can merge before them.
  *   - GITMR1/GITSPI1 `datapass.repo-set/1` (repos, edges, vendored pins): the subset GITMR3 reads.
  *   - NAVCHG1 `ChangedFile` and `ImpactLineageLike` (lineage-core `datapass.lineage-graph/1` subset).
- *   - PINDRIFT1 `datapass.pin-drift-report/1` (Common `tools/pin-drift`).
+ *   - PINDRIFT1 `datapass.pin-drift-report/1`: re-exported from the vendored project-contracts `pin-drift` subpath.
  * Same field names and enumerations as those rows; once each is merged, these types become imports and this file goes.
  * Pure types and constants.
  */
@@ -24,15 +24,11 @@ export interface ImpactLineageLike {
   readonly edges: readonly { readonly id: string; readonly kind: string; readonly fromId: string; readonly toId: string }[];
 }
 
-// ---- PINDRIFT1 report ---- STUB until REPIN8 (project-contracts `pin-drift` subpath, V5FREEZE2)
-export const PIN_DRIFT_REPORT_SCHEMA = "datapass.pin-drift-report/1" as const;
-export const PIN_STATUSES = ["ok", "behind", "digest-mismatch", "unknown"] as const;
-export type PinStatus = (typeof PIN_STATUSES)[number];
-export interface PinDriftRow {
-  readonly name: string; readonly pinned: string; readonly sha256: string | null; readonly sourceCommit: string | null;
-  readonly common: string | null; readonly status: PinStatus; readonly reason: string;
-}
-export interface PinDriftReport {
-  readonly schema: typeof PIN_DRIFT_REPORT_SCHEMA; readonly ref: string; readonly commit: string | null;
-  readonly drift: boolean; readonly counts: Readonly<Record<PinStatus, number>>; readonly packages: readonly PinDriftRow[];
-}
+// ---- PINDRIFT1 report: vendored project-contracts `pin-drift` subpath (V5FREEZE2) ----
+export {
+  PIN_DRIFT_REPORT_SCHEMA,
+  PIN_DRIFT_STATUSES as PIN_STATUSES,
+  type PinDriftStatus as PinStatus,
+  type PinDriftRow,
+  type PinDriftReport
+} from "@juliandatapass-group/project-contracts/pin-drift";

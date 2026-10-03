@@ -26,6 +26,7 @@ import {
   recordPath,
   validateMaterializationDetach
 } from "./dbtNotebook";
+import { digestJson, unwrap } from "@juliandatapass-group/semantic-core";
 import type { DiffEntry } from "./flow";
 
 export const DETACH_COMMAND = "datapass.dbt.detach";
@@ -76,6 +77,9 @@ export const DETACHED_BADGE = "detached";
 export function readDetachRecord(text: string): { ok: true; record: MaterializationDetach } | { ok: false; reason: string } {
   let value: unknown;
   try { value = JSON.parse(text); } catch { return { ok: false, reason: "not valid JSON" }; }
+  // v1.2.0-rc.1 wrote the readable proposal slug in `reattach.proposalId`; the contract wants a wire id: upgrade on read.
+  const re = (value as { reattach?: { proposalId?: unknown } } | null)?.reattach;
+  if (re && typeof re === "object" && typeof re.proposalId === "string" && !WIRE_ID.test(re.proposalId)) re.proposalId = reattachWireId(re.proposalId);
   return validateMaterializationDetach(value);
 }
 
@@ -171,7 +175,7 @@ export interface DetachView {
   targetMissing: string | null;
   /** Only for a detached model; null while dbt is the authority (no drift to measure). Revision = Git oid, hash = digest value. */
   drift: null | { state: DetachViewState; label: string; dbtRevision: string | null; notebookHash: string | null; checkedAt: string };
-  detachedBy?: { actor: string; at: string; origin: DetachOrigin };
+  detachedBy?: { actor: string; at: string; origin: DetachStamp["origin"] };
   reattachPending?: { proposalId: string; actor: string; at: string };
   holes: DetachHole[];
 }
@@ -256,10 +260,16 @@ export interface ReattachRequest {
   at: string;
 }
 
-/** A proposal id that is a safe wire id (lowercase letters, digits, dashes). */
+/** The readable proposal slug (lowercase letters, digits, dashes): the MR branch name and the message text. */
 export function reattachProposalId(modelId: string, at: string): string {
   const slug = modelId.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "model";
   return `reattach-${slug}-${at.replace(/[^0-9]/g, "").slice(0, 14)}`;
+}
+
+const WIRE_ID = /^datapass:[a-z]+(?:-[a-z]+)*:[0-9a-f]{64}$/;
+/** The `reattach.proposalId` written to the record: project-contracts wants a wire id, derived from the readable slug. */
+export function reattachWireId(proposalId: string): string {
+  return WIRE_ID.test(proposalId) ? proposalId : `datapass:reattach-proposal:${unwrap(digestJson({ kind: "reattach-proposal", proposalId })).value}`;
 }
 
 /**
@@ -271,7 +281,7 @@ export function reattachProposal(result: DbtMaterializeResult, existing: Readonl
   const rec = result.records.find(r => r.modelId === req.modelId);
   if (!rec) return { ok: false, reason: `The model ${req.modelId} was not materialized (see the materialization holes).` };
   const unit = result.files.find(f => f.path === rec.record.stamp.notebookPath)?.unit;
-  const record: MaterializationDetach = { ...rec.record, reattach: { proposalId: req.proposalId, actor: req.actor, at: req.at } };
+  const record: MaterializationDetach = { ...rec.record, reattach: { proposalId: reattachWireId(req.proposalId), actor: req.actor, at: req.at } };
   const files = result.files
     .filter(f => f.unit === unit)
     .map(f => (f.path === rec.path ? { ...f, content: serializeDetachRecord(record) } : f));
