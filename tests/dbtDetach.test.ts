@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import test from "node:test";
 import { type DbtFile, type DbtMaterializeInput, detachStampDigest, materializeDbtModels, notebookSourceHash, previewDbtDiff, validateMaterializationDetach } from "../src/core/materialize/dbtNotebook";
-import { DBT_SOURCE_FOLDERS, DETACH_COMMAND, DETACH_MESSAGES, REATTACH_COMMAND, dbtEditedSince, isDbtSourcePath, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
+import { detachSectionHead, DBT_SOURCE_FOLDERS, DETACH_COMMAND, DETACH_MESSAGES, REATTACH_COMMAND, dbtEditedSince, isDbtSourcePath, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
 import { PALETTE_TIERS } from "../src/core/experience/palette";
 
 const ROOT = join(__dirname, "fixtures", "dbtmat");
@@ -229,4 +229,15 @@ test("V5HOLE7: re-attach wording is data and says the proposal is only proposed"
   assert.match(detachMessage("reattachConfirmDetail", vars), /nothing is run, deployed or committed/);
   assert.match(detachMessage("reattachAction", vars), /^Re-attach model\.shop\.fct_orders/);
   assert.equal(detachMessage("keepDetached", vars, { keepDetached: "Leave {model} alone" }), "Leave model.shop.fct_orders alone");
+});
+
+test("V5HOLE10: the dbt materializations section id carries a drift marker so it comes up expanded", () => {
+  const view = (detached: boolean, state?: string) => ({ detached, drift: state ? { state } : null }) as unknown as Parameters<typeof detachSectionHead>[0][number];
+  assert.deepEqual(detachSectionHead([view(true, "in-sync"), view(false)]), { id: "dbtDetach", collapsed: true });
+  assert.deepEqual(detachSectionHead([view(false)]), { id: "dbtDetach", collapsed: true });
+  for (const state of ["notebook-edited", "target-missing", "unknown"]) {
+    const head = detachSectionHead([view(true, "in-sync"), view(true, state)]);
+    assert.deepEqual(head, { id: "dbtDetach#drift", collapsed: false }, state);
+    assert.ok(!head.id.startsWith("dbtDetach:"), "never parsed as a model row id");
+  }
 });

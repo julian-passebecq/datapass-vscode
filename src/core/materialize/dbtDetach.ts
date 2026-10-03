@@ -208,6 +208,17 @@ export function detachView(path: string, record: MaterializationDetach, current:
   };
 }
 
+/**
+ * V5HOLE10: the Project tree "dbt materializations" section head. VS Code keeps a tree item's expand state by its id,
+ * so the id carries a drift marker (`#drift`, never `:` — `dbtDetach:<path>` is a model row) when any detached model
+ * has drift: drift appearing later makes a new item that comes up Expanded. All in sync: plain id, collapsed.
+ */
+export const DETACH_SECTION_ID = "dbtDetach";
+export function detachSectionHead(views: readonly DetachView[]): { id: string; collapsed: boolean } {
+  const drift = views.some(v => v.detached && !!v.drift && v.drift.state !== "in-sync");
+  return drift ? { id: `${DETACH_SECTION_ID}#drift`, collapsed: false } : { id: DETACH_SECTION_ID, collapsed: true };
+}
+
 /** Tree row text: `detached · notebook edited since detach`. */
 export function detachBadge(v: DetachView): string {
   if (!v.detached) return [v.reattachPending ? "dbt · re-attach proposed" : "dbt", v.targetMissing].filter(Boolean).join(" · ");
