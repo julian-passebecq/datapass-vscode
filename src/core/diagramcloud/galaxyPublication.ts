@@ -42,7 +42,7 @@ export interface GalaxyEvidenceRefV1 {
 export interface GalaxyPublicationSnapshotV1 {
   schema_version: 1;
   snapshot_id: string;
-  producer: { app_id: "datapass-vscode"; product_version?: string; source_revision?: string };
+  producer: { app_id: "datapass_vscode"; product_version?: string; source_revision?: string };
   subject: GalaxyEntityV1;
   created_at: string;
   review: {
@@ -66,7 +66,7 @@ export interface GalaxyPublicationSnapshotV1 {
     subject_entity_id: string;
     state: GalaxyRealizationState;
     observed_at?: string;
-    producer_app?: "datapass-vscode";
+    producer_app?: "datapass_vscode";
     authority?: string;
     summary: string;
     caveat?: string;
@@ -88,6 +88,14 @@ const iso = (value: string, label: string): string => {
   const time = Date.parse(value);
   if (!Number.isFinite(time) || !/(?:Z|[+-]\d\d:\d\d)$/.test(value)) throw new Error(`${label} must be an ISO timestamp with timezone`);
   return new Date(time).toISOString();
+};
+
+const assertOpenUri = (value: string): void => {
+  let url: URL;
+  try { url = new URL(value); } catch { throw new Error("openUri must be an http(s) or vscode URI"); }
+  if (!["http:", "https:", "vscode:"].includes(url.protocol) || url.username || url.password) {
+    throw new Error("openUri must be an http(s) or vscode URI without embedded credentials");
+  }
 };
 
 const diagramEntity = (type: "project" | "node", localId: string, revision: string, label: string): GalaxyEntityV1 => {
@@ -152,7 +160,11 @@ export function diagramCloudRealizationSnapshot(input: {
   if (!input.authority || input.authority.length > 160) throw new Error("authority must be 1..160 chars");
   if (!input.summary || input.summary.length > 500) throw new Error("summary must be 1..500 chars");
   if (input.caveat && input.caveat.length > 1000) throw new Error("caveat must be <=1000 chars");
+  if (input.openUri) assertOpenUri(input.openUri);
   if (input.intendedVisibility === "public" && !input.humanConfirmed) throw new Error("public snapshot requires human confirmation");
+  if (input.intendedVisibility === "public" && input.evidence.visibility !== "public") throw new Error("public snapshot cannot include non-public evidence");
+  if (input.intendedVisibility === "public" && input.evidence.reviewState === "unreviewed") throw new Error("public snapshot cannot include unreviewed evidence");
+  if (input.claim === "verified" && input.evidence.synthetic) throw new Error("synthetic evidence cannot back a verified claim");
 
   const revision = String(input.projectRevision);
   const project = diagramEntity("project", input.projectId, revision, input.projectTitle);
@@ -170,7 +182,7 @@ export function diagramCloudRealizationSnapshot(input: {
     synthetic: input.evidence.synthetic,
     review_state: input.evidence.reviewState,
     ...(input.evidence.qualificationLevel ? { qualification_level: input.evidence.qualificationLevel } : {}),
-    producer_app: "datapass-vscode",
+    producer_app: "datapass_vscode",
     ...(input.evidence.notes ? { notes: input.evidence.notes } : {})
   };
 
@@ -178,7 +190,7 @@ export function diagramCloudRealizationSnapshot(input: {
     schema_version: 1,
     snapshot_id: input.snapshotId,
     producer: {
-      app_id: "datapass-vscode",
+      app_id: "datapass_vscode",
       product_version: input.productVersion,
       source_revision: input.producerRevision
     },
@@ -196,7 +208,7 @@ export function diagramCloudRealizationSnapshot(input: {
       { ...node, label: input.nodeLabel, kind: "node", visibility: input.intendedVisibility }
     ],
     relationships: [{
-      relationship_id: galaxyEntityId("datapass-vscode", "relationship", `${input.projectId}:${input.nodeId}`),
+      relationship_id: galaxyEntityId("datapass_vscode", "relationship", `${input.projectId}:${input.nodeId}`),
       from_entity_id: project.entity_id,
       to_entity_id: node.entity_id,
       type: "describes_component",
@@ -208,7 +220,7 @@ export function diagramCloudRealizationSnapshot(input: {
       subject_entity_id: node.entity_id,
       state: input.claim,
       observed_at: iso(input.observedAt, "observedAt"),
-      producer_app: "datapass-vscode",
+      producer_app: "datapass_vscode",
       authority: input.authority,
       summary: input.summary,
       ...(input.caveat ? { caveat: input.caveat } : {}),
