@@ -17,6 +17,7 @@
 import * as vscode from "vscode";
 import { LENS_CONTEXT_KEY, LENS_INFO, LensStore, TREE_HINT_KEY, TREE_LENSES, lensStatus, parseLens, shouldHintTree, type TreeLens } from "../core/windows/treeLens";
 import { RAIL_BUTTON_VIEW, soloContext, type RailPanelView } from "../core/windows/railSolo";
+import { placementOf } from "../core/dagux/placement";
 import { EXPAND_STEPS, FOLD_STEPS, NARROW_FOCUSED, WIDEN_FOCUSED } from "../core/windows/railFold";
 import type { ProjectTreeProvider } from "../views/projectTree";
 import { RAIL_BUTTONS, RAIL_BUTTON_IDS, railButtonCommand } from "../views/railHtml";
@@ -205,7 +206,8 @@ export class ShellService implements vscode.Disposable {
   async showDag(): Promise<void> {
     const uri = await this.dagOpener();
     if (!uri) return;
-    await this.expand("datapass.airflowDag", RAIL_BUTTON_VIEW.airflow);
+    // DAGUX1: the side bar unfolds only when the DAG view lives there (else it opens in the panel or an editor tab).
+    if (placementOf(vscode.workspace.getConfiguration("datapass").get("airflow.dagPlacement")) === "sidebar") await this.expand("datapass.airflowDag", RAIL_BUTTON_VIEW.airflow);
     await vscode.commands.executeCommand("datapass.showAirflowDag");
   }
 

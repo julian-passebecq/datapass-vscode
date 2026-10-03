@@ -124,7 +124,9 @@ test("experience: every contributed view has a surface id and is gated by its wh
   for (const v of views) {
     const s = surfaceViews.find(x => x.viewId === v.id || x.altViewIds?.includes(v.id))!;
     // V3-SHELL: a layout key may come first (bottom-panel Architecture off by default; rail mode swaps the right-side views).
-    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ", "datapass.airflowDag": "!datapass.rail && ",
+    const layout: Record<string, string> = { "datapass.architecture": "datapass.layout.architectureInPanel && ", "datapass.rail": "datapass.rail && ", "datapass.aiExchange": "!datapass.rail && ", "datapass.agentPanel": "!datapass.rail && ", "datapass.details": "!datapass.rail && ",
+      // DAGUX1: the Airflow DAG view's placement setting picks its side-bar or bottom-panel view id.
+      "datapass.airflowDag": "!datapass.rail && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor && ", "datapass.airflowDagPanel": "config.datapass.airflow.dagPlacement == panel && ",
       // V4-NAV NAVBAR1: the Navigator's placement setting picks one of its two view ids.
       "datapass.navigator": "config.datapass.navigator.location != left && ", "datapass.navigatorLeft": "config.datapass.navigator.location == left && " };
     // V1.1.x-POLISH-3: a layout key may also come last (the Git view hides while the Git lens repeats it; a rail button unfolds its own view alone).
