@@ -6,9 +6,11 @@
  */
 import * as vscode from "vscode";
 import { gitRunner } from "../work/session";
-import { MATERIALIZATION_TARGETS, materializeDbtModels, previewDbtDiff, readDbtArtifacts, type DbtFile, type MaterializationTarget } from "../core/materialize/dbtNotebook";
+import { previewDbtDiff, readDbtArtifacts, type DbtFile } from "../core/materialize/dbtNotebook";
+import { materializeDbt as materializeDbtTarget, previewDbtSparkJobDiff } from "../core/materialize/dbtSparkJob";
 import { DBT_MATERIALIZE_COMMAND, DBT_MATERIALIZE_CONFIG, dbtMaterializePreview, parseDbtMaterializeConfig, type DbtMaterializeConfig } from "../core/materialize/dbtMaterialize";
 import { materializationGitPlan } from "../core/materialize/flow";
+import { chooseTarget, materializationTargetCard, parseTargetCardSettings, targetCardLines, targetCardPicks } from "../core/materialize/targetCard";
 
 const MAX_FILES = 2000;
 const EXCLUDE = "**/{node_modules,dbt_packages,.git}/**";
@@ -62,16 +64,23 @@ export async function materializeDbt(root: vscode.Uri | undefined, out: vscode.O
   if (!project) { void vscode.window.showWarningMessage(holes[0]?.nextAction ?? "No dbt manifest found."); return; }
   const own = project.models.filter(m => !project.projectName || m.packageName === project.projectName);
   const models = await vscode.window.showQuickPick(own.map(m => ({ label: m.name, description: m.materialized, detail: m.uniqueId, picked: true, id: m.uniqueId })), {
-    title: `Materialize dbt models (${project.projectName ?? project.projectDir})`, canPickMany: true, placeHolder: "Models to materialize as notebooks"
+    title: `Materialize dbt models (${project.projectName ?? project.projectDir})`, canPickMany: true, placeHolder: "Models to materialize"
   });
   if (!models?.length) return;
-  const target = await vscode.window.showQuickPick(MATERIALIZATION_TARGETS.map(t => ({ label: t, description: t === "fabric-notebook" ? "default" : "with SJDMAT1" })), { title: "Materialization target" });
-  if (!target) return;
   const cfg = await config(root);
   if (!cfg) return;
   const envIds = Object.keys(cfg.environments);
   const environment = envIds.length === 1 ? envIds[0] : (await vscode.window.showQuickPick(envIds, { title: "Environment (table names come from the config)" }));
   if (!environment) return;
+  // SJDMAT1 step 3: the EXEC1c target card. DataPass recommends, the person picks; both options are always offered.
+  const cardSettings = parseTargetCardSettings(cfg.targetCard);
+  const proposed = materializationTargetCard({ modelCount: models.length, environment, unitTestsWanted: cardSettings.unitTestsWanted }, cardSettings.policy, cardSettings.text);
+  out.clear();
+  for (const l of targetCardLines(proposed, cardSettings.text)) out.appendLine(l);
+  out.show(true);
+  const pick = await vscode.window.showQuickPick(targetCardPicks(proposed, cardSettings.text), { title: proposed.question, placeHolder: proposed.recommendation.reasons.join(" ") });
+  if (!pick) return;
+  const card = chooseTarget(proposed, pick.target);
 
   const dir = vscode.Uri.joinPath(root, ...(project.projectDir === "." ? [] : project.projectDir.split("/")));
   const rev = await gitRunner(["log", "-1", "--format=%H", "--", "."], dir.fsPath, 10_000);
@@ -79,19 +88,21 @@ export async function materializeDbt(root: vscode.Uri | undefined, out: vscode.O
   if (!dbtRevision) { void vscode.window.showWarningMessage("The dbt project has no committed revision: commit it first, the notebooks are stamped with that exact SHA."); return; }
   const user = await gitRunner(["config", "--get", "user.name"], root.fsPath, 5_000).then(r => (r.ok ? r.stdout.trim() : ""), () => "");
 
-  const result = materializeDbtModels({
+  const result = materializeDbtTarget({
     files, environment, environments: cfg.environments, dbtRevision, models: models.map(m => m.id),
     rootDirectory: cfg.rootDirectory, notebookPrefix: cfg.notebookPrefix, pipelineName: cfg.pipelineName,
-    target: target.label as MaterializationTarget, actor: user ? { kind: "human", id: user } : undefined, at: now()
+    target: card.choice!.target, actor: user ? { kind: "human", id: user } : undefined, at: now()
   });
   const existing = new Map<string, string>();
   for (const f of result.files) {
     const text = await readText(vscode.Uri.joinPath(root, ...f.path.split("/")));
     if (text !== undefined) existing.set(f.path, text);
   }
-  const diff = previewDbtDiff(result, existing);
+  const diff = result.target === "spark-job-definition" ? previewDbtSparkJobDiff(result, existing) : previewDbtDiff(result, existing);
   const preview = dbtMaterializePreview(result, diff);
   out.clear();
+  for (const l of targetCardLines(card, cardSettings.text)) out.appendLine(l);
+  out.appendLine("");
   for (const l of preview.lines) out.appendLine(l);
   out.show(true);
   if (preview.blocked) { void vscode.window.showWarningMessage("Nothing to write: see the DataPass dbt output for holes and unchanged or kept files."); return; }
@@ -116,6 +127,11 @@ export async function materializeDbt(root: vscode.Uri | undefined, out: vscode.O
     for (const c of plan.commands) out.appendLine(`  ${c.label}: ${c.tool} ${c.args.map(a => (/[\s"]/.test(a) ? JSON.stringify(a) : a)).join(" ")}`);
   } catch (e) {
     out.appendLine(`Git steps not planned: ${(e as Error).message}`);
+  }
+  if (result.target === "spark-job-definition" && result.nextActions.length) {
+    out.appendLine("");
+    out.appendLine("Next (outside DataPass):");
+    for (const a of result.nextActions) out.appendLine(`  ${a}`);
   }
   void vscode.window.showInformationMessage(`${preview.writes.length} file(s) written. The Git steps are in the DataPass dbt output.`);
 }

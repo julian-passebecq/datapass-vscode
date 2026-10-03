@@ -18,6 +18,8 @@ export interface DbtMaterializeConfig {
   rootDirectory: string;
   notebookPrefix?: string;
   pipelineName?: string;
+  /** Raw `targetCard` block (policy, signals, wording of the EXEC1c target card); parsed by targetCard.ts. */
+  targetCard?: unknown;
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -52,7 +54,8 @@ export function parseDbtMaterializeConfig(text: string): { ok: true; config: Dbt
       environments,
       rootDirectory,
       ...(typeof raw.notebookPrefix === "string" ? { notebookPrefix: raw.notebookPrefix } : {}),
-      ...(typeof raw.pipelineName === "string" && raw.pipelineName ? { pipelineName: raw.pipelineName } : {})
+      ...(typeof raw.pipelineName === "string" && raw.pipelineName ? { pipelineName: raw.pipelineName } : {}),
+      ...(isObj(raw.targetCard) ? { targetCard: raw.targetCard } : {})
     }
   };
 }
@@ -68,7 +71,8 @@ export interface DbtMaterializePreview {
 
 const MARK: Record<DiffEntry["status"], string> = { added: "+", modified: "~", unchanged: "=", "blocked-detached": "!" };
 
-export function dbtMaterializePreview(result: DbtMaterializeResult, diff: readonly DiffEntry[]): DbtMaterializePreview {
+/** Works for either MAT1 target: only the candidate, holes and issues are read. */
+export function dbtMaterializePreview(result: Pick<DbtMaterializeResult, "candidate" | "holes" | "issues">, diff: readonly DiffEntry[]): DbtMaterializePreview {
   const writes = diff.filter(e => e.status === "added" || e.status === "modified").map(e => e.path);
   const lines = [
     `dbt materialization proposal: ${result.candidate.logicalId} @ ${result.candidate.revision.slice(0, 12)} (${result.candidate.environment})`,

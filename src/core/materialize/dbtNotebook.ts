@@ -197,8 +197,7 @@ export interface DbtHole {
     | "dbt.incremental-full-refresh"
     | "dbt.ref-unresolved"
     | "dbt.environment-unknown"
-    | "dbt.materialization-unknown"
-    | "dbt.target-not-yet";
+    | "dbt.materialization-unknown";
   severity: "error" | "warning";
   modelId?: string;
   path: string;
@@ -272,14 +271,14 @@ export interface DbtEnvironmentTables {
   sources?: Record<string, string>;
 }
 
-/** MAT1 targets a dbt model can be materialized to (TL-5). Only the Fabric notebook is generated today. */
+/** MAT1 targets a dbt model can be materialized to (TL-5): notebooks here, the Spark job definition in `./dbtSparkJob`. */
 export const MATERIALIZATION_TARGETS = ["fabric-notebook", "spark-job-definition"] as const;
 export type MaterializationTarget = typeof MATERIALIZATION_TARGETS[number];
 export const DEFAULT_MATERIALIZATION_TARGET: MaterializationTarget = "fabric-notebook";
 
 export interface DbtMaterializeInput {
   files: readonly DbtFile[];
-  /** MAT1 target, default `fabric-notebook`. `spark-job-definition` is SJDMAT1's: a `dbt.target-not-yet` hole, no files. */
+  /** MAT1 target, default `fabric-notebook`. Read by `materializeDbt` (`./dbtSparkJob`), the dispatcher; `materializeDbtModels` is the notebook target. */
   target?: MaterializationTarget;
   environment: string;
   environments: Readonly<Record<string, DbtEnvironmentTables>>;
@@ -352,13 +351,14 @@ function replaceRelation(sql: string, from: string, to: string): { sql: string; 
   return { sql: parts.join(to), found: parts.length > 1 };
 }
 
-const SQL_KEYWORD_FOR: Record<string, string> = { table: "TABLE", incremental: "TABLE", view: "VIEW", materialized_view: "VIEW" };
+const SQL_KEYWORD_FOR: Record<string, "TABLE" | "VIEW"> = { table: "TABLE", incremental: "TABLE", view: "VIEW", materialized_view: "VIEW" };
 
 /**
  * Notebooks a model waits for: its direct dependencies that have a notebook, and, through a dependency that has none
  * (ephemeral, not selected, or a hole), that dependency's own dependencies, transitively. Sources end the walk.
+ * Also SJDMAT1's job order (`./dbtSparkJob`), with model id → module name as `notebookOf`.
  */
-function notebookDeps(id: string, byId: ReadonlyMap<string, DbtModel>, notebookOf: ReadonlyMap<string, string>): string[] {
+export function notebookDeps(id: string, byId: ReadonlyMap<string, DbtModel>, notebookOf: ReadonlyMap<string, string>): string[] {
   const out = new Set<string>();
   const seen = new Set<string>([id]);
   const walk = (deps: readonly string[]) => {
@@ -378,11 +378,40 @@ function sqlCell(lines: string[]): string {
   return ["%%sql", ...lines].map(l => (l ? `# MAGIC ${l}` : "# MAGIC")).join("\n");
 }
 
-export function materializeDbtModels(input: DbtMaterializeInput): DbtMaterializeResult {
+/** One dbt model resolved for one environment: its compiled SQL with refs/sources rewritten, ready for any MAT1 target. */
+export interface ResolvedDbtModel {
+  model: DbtModel;
+  /** Repository-relative path of the dbt model file (or its unique id). */
+  path: string;
+  kind: "TABLE" | "VIEW";
+  /** Fully qualified target table of the environment. */
+  target: string;
+  /** One SQL comment line naming the model, environment and authority. */
+  header: string;
+  /** `CREATE OR REPLACE … AS` followed by the rewritten compiled SQL, one entry per line. */
+  statement: string[];
+}
+
+export interface ResolvedDbtProject {
+  project?: DbtArtifacts;
+  env?: DbtEnvironmentTables;
+  /** Candidate shell (no units yet): logical id, revision, environment, root directory. */
+  candidate: ArchitectureCandidate;
+  byId: Map<string, DbtModel>;
+  /** Resolved models in selection order (ephemeral, missing or Jinja-holding models are holes instead). */
+  models: ResolvedDbtModel[];
+  holes: DbtHole[];
+  issues: ValidationIssue[];
+}
+
+/**
+ * The target-independent half of DBTMAT1: read the artefacts, pick the models, rewrite refs/sources to the environment's
+ * tables. Shared by the notebook target (below) and the Spark job target (SJDMAT1, `./dbtSparkJob`).
+ */
+export function resolveDbtModels(input: DbtMaterializeInput): ResolvedDbtProject {
   const { projects, holes } = readDbtArtifacts(input.files);
   const env = input.environments[input.environment];
   const project = projects.find(p => p.projectDir === ".") ?? projects[0];
-  const prefix = input.notebookPrefix ?? "dbt_";
   const candidate: ArchitectureCandidate = {
     logicalId: `dbt:${project?.projectName ?? project?.projectDir ?? "project"}`,
     revision: input.dbtRevision,
@@ -396,14 +425,9 @@ export function materializeDbtModels(input: DbtMaterializeInput): DbtMaterialize
   if (!env) {
     holes.push({ code: "dbt.environment-unknown", severity: "error", path: input.environment, nextAction: `Add the table mapping of environment "${input.environment}" to the project config.` });
   }
-  const target = input.target ?? DEFAULT_MATERIALIZATION_TARGET;
-  if (target !== "fabric-notebook") {
-    holes.push({ code: "dbt.target-not-yet", severity: "error", path: target, nextAction: `Target "${target}" comes with SJDMAT1 (wheel skeleton + entry script); materialize to "fabric-notebook" for now.` });
-    return { candidate, files: [], records: [], holes, issues };
-  }
-  if (!project || !env) return { candidate, files: [], records: [], holes, issues };
+  const byId = new Map((project?.models ?? []).map(m => [m.uniqueId, m]));
+  if (!project || !env) return { project, env, candidate, byId, models: [], holes, issues };
 
-  const byId = new Map(project.models.map(m => [m.uniqueId, m]));
   const sources = new Map(project.sources.map(s => [s.uniqueId, s]));
   const wanted = input.models?.length
     ? input.models.map(sel => {
@@ -413,8 +437,7 @@ export function materializeDbtModels(input: DbtMaterializeInput): DbtMaterialize
     }).filter((m): m is DbtModel => !!m)
     : project.models.filter(m => !project.projectName || m.packageName === project.projectName);
 
-  const notebookOf = new Map<string, string>();
-  const units: CandidateUnit[] = [];
+  const models: ResolvedDbtModel[] = [];
   for (const m of [...new Set(wanted)]) {
     const path = m.originalFilePath ? (m.projectDir === "." ? m.originalFilePath : `${m.projectDir}/${m.originalFilePath}`) : m.uniqueId;
     if (m.materialized === "ephemeral") {
@@ -450,19 +473,33 @@ export function materializeDbtModels(input: DbtMaterializeInput): DbtMaterialize
     if (m.materialized === "incremental") {
       holes.push({ code: "dbt.incremental-full-refresh", severity: "warning", modelId: m.uniqueId, path, nextAction: "Incremental model generated as a full refresh (CREATE OR REPLACE): add the merge logic by hand if needed." });
     }
-    const kind = SQL_KEYWORD_FOR[m.materialized];
-    if (!kind) {
-      holes.push({ code: "dbt.materialization-unknown", severity: "warning", modelId: m.uniqueId, path, nextAction: `Materialization "${m.materialized}" is not one DataPass knows: generated as a Delta TABLE, check the notebook by hand.` });
+    const known = SQL_KEYWORD_FOR[m.materialized];
+    if (!known) {
+      holes.push({ code: "dbt.materialization-unknown", severity: "warning", modelId: m.uniqueId, path, nextAction: `Materialization "${m.materialized}" is not one DataPass knows: generated as a Delta TABLE, check the generated SQL by hand.` });
     }
-    const sqlKind = kind ?? "TABLE";
-    const table = modelTable(env, m);
+    const kind = known ?? "TABLE";
+    const target = modelTable(env, m);
+    models.push({
+      model: m, path, kind, target,
+      header: `-- dbt ${m.uniqueId} (${m.materialized}) for environment ${input.environment}. Authority: dbt; change the dbt model, then re-materialize.`,
+      statement: [`CREATE OR REPLACE ${kind} ${target}${kind === "TABLE" ? " USING DELTA" : ""} AS`, ...sql.split("\n")]
+    });
+  }
+  return { project, env, candidate, byId, models, holes, issues };
+}
+
+export function materializeDbtModels(input: DbtMaterializeInput): DbtMaterializeResult {
+  const { project, env, candidate, byId, models, holes, issues } = resolveDbtModels(input);
+  if (!project || !env) return { candidate, files: [], records: [], holes, issues };
+  const prefix = input.notebookPrefix ?? "dbt_";
+
+  const notebookOf = new Map<string, string>();
+  const units: CandidateUnit[] = [];
+  for (const r of models) {
+    const m = r.model;
     const name = `${prefix}${m.name}`;
     notebookOf.set(m.uniqueId, name);
-    const cell = sqlCell([
-      `-- dbt ${m.uniqueId} (${m.materialized}) for environment ${input.environment}. Authority: dbt; change the dbt model, then re-materialize.`,
-      `CREATE OR REPLACE ${sqlKind} ${table}${sqlKind === "TABLE" ? " USING DELTA" : ""} AS`,
-      ...sql.split("\n")
-    ]);
+    const cell = sqlCell([r.header, ...r.statement]);
     const unit: NotebookUnit = { kind: "notebook", name, description: `dbt ${m.uniqueId} materialized as a notebook (proposal).`, cells: [cell], defaultLakehouse: env.lakehouse };
     units.push(unit);
   }
