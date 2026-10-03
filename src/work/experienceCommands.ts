@@ -14,6 +14,7 @@ import * as vscode from "vscode";
 import { experienceTooltip, hiddenSurfaces, isVisible, overridesFor, parsePresets, resolveExperience, type Experience, type PresetsFile } from "../core/experience/presets";
 import { DEFAULT_PRESET, hiddenKey, PRESET_IDS, SURFACES, type PresetId } from "../core/experience/surfaces";
 import { output } from "./io";
+import { autoLandingAllowed, LANDING_SHOWN_KEY } from "../core/experience/landing";
 
 const INTRO_SHOWN = "datapass.experience.introShown";
 const config = () => vscode.workspace.getConfiguration("datapass.experience");
@@ -117,7 +118,10 @@ function loadPresets(extensionPath: string): PresetsFile {
  * panel when it is switched on (V3-SHELL: off by default), else the Workbench tab. A work view
  * applied at startup (0.17 `datapass.startupView`, or a launcher's request) wins.
  */
-export async function landOnArchitecture(experience: ExperienceService, hasProject: boolean, applied: string | undefined, openWorkbench?: () => void): Promise<boolean> {
+/** The automatic (startup) landing: its once-per-install memory, and whether that memory is ignored (tests). */
+export interface AutoLanding { state: vscode.Memento; ignoreShown?: boolean }
+
+export async function landOnArchitecture(experience: ExperienceService, hasProject: boolean, applied: string | undefined, openWorkbench?: () => void, auto?: AutoLanding): Promise<boolean> {
   if (!hasProject || applied || !experience.shows("landing.architecture")) return false;
   const startup = vscode.workspace.getConfiguration("datapass").inspect<string>("startupView");
   if (startup?.workspaceValue || startup?.workspaceFolderValue) return false;
@@ -125,6 +129,13 @@ export async function landOnArchitecture(experience: ExperienceService, hasProje
   const inPanel = experience.shows("view.architecture") && vscode.workspace.getConfiguration("datapass.layout").get<boolean>("architectureInPanel", false) === true;
   if (!inPanel) {
     if (!openWorkbench) return false;
+    // V5HOLE11: a webview editor created while the person works takes the keyboard (an open Quick
+    // Pick closes): the automatic landing is once per install, onto an empty editor area only.
+    if (auto) {
+      const openTabs = vscode.window.tabGroups.all.reduce((n, g) => n + g.tabs.length, 0);
+      if (!autoLandingAllowed({ alreadyShown: !auto.ignoreShown && auto.state.get<boolean>(LANDING_SHOWN_KEY) === true, openTabs })) return false;
+      void auto.state.update(LANDING_SHOWN_KEY, true);
+    }
     openWorkbench();
     return true;
   }
