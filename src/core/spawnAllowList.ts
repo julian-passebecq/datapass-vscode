@@ -167,6 +167,8 @@ const startsWith = (a: readonly string[], prefix: readonly string[]) => prefix.e
 function checkGit(args: readonly string[]): SpawnDecision {
   let rest = [...args];
   if (startsWith(rest, GIT_PREFIX)) rest = rest.slice(GIT_PREFIX.length);
+  // `--no-optional-locks` (GITMR1 readOnlyGit) only removes writes: git skips even the index refresh.
+  if (rest[0] === "--no-optional-locks") rest = rest.slice(1);
   const [verb, ...tail] = rest;
   if (!verb) return { allowed: false, reason: "git with no command" };
   const options = tail.slice(0, tail.includes("--") ? tail.indexOf("--") : tail.length);
