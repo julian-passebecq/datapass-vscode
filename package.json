@@ -1129,6 +1129,21 @@
         "icon": "$(list-selection)"
       },
       {
+        "command": "datapass.nav.customizeViews",
+        "title": "DataPass: Customize Views Here",
+        "icon": "$(settings-edit)"
+      },
+      {
+        "command": "datapass.nav.hideView",
+        "title": "DataPass: Hide This View",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "datapass.nav.resetViews",
+        "title": "DataPass: Reset Views to Defaults",
+        "icon": "$(discard)"
+      },
+      {
         "command": "datapass.ai.architectReview",
         "title": "DataPass: Ask an Architect Review (AI exchange)…"
       },
@@ -2974,6 +2989,18 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.nav.customizeViews",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.hideView",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.nav.resetViews",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.ai.architectReview",
           "when": "!datapass.hidden.palette.full"
         },
@@ -4377,6 +4404,12 @@
           "**/.datapass/work-log.json"
         ],
         "url": "./schemas/datapass-work-log.schema.json"
+      },
+      {
+        "fileMatch": [
+          "**/.datapass/views.json"
+        ],
+        "url": "./schemas/datapass-view-overrides.schema.json"
       },
       {
         "fileMatch": [

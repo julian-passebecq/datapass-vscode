@@ -105,6 +105,20 @@ test("nav: user overrides reorder, hide and rename views", () => {
   assert.equal(nav.state.viewId, "detail", "the current view is kept when still offered");
 });
 
+test("nav: the overrides getter reflects what setCatalog wrote (the only write path)", () => {
+  const map = mapOf({ ingest: ["a"] });
+  const nav = new NavigationService(projectLadder(() => map), CATALOG);
+  assert.equal(nav.overrides, null);
+  const o = { schema: "datapass.view-overrides/1", entries: [{ artifactKind: "*", level: "artifact", hidden: ["lineage"] }] } as const;
+  nav.setCatalog(CATALOG, o);
+  assert.equal(nav.overrides, o);
+  nav.setCatalog(CATALOG);
+  assert.equal(nav.overrides, o, "a catalog-only update keeps the overrides");
+  nav.setCatalog(CATALOG, null);
+  assert.equal(nav.overrides, null);
+  assert.equal(Object.getOwnPropertyDescriptor(NavigationService.prototype, "overrides")?.set, undefined, "read-only");
+});
+
 test("ladder: labels, path and the session selection bridge", () => {
   const map = mapOf({ ingest: ["a"] });
   const ladder = projectLadder(() => map);

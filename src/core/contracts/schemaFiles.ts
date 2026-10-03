@@ -13,6 +13,7 @@ import { TOOLKIT_SCHEMA } from "../toolkit/toolkit";
 import { EXPERIENCE_SCHEMA } from "../experience/presets";
 import { UNDERSTANDING_SCHEMA } from "../understanding/contract";
 import { CODEX_TESTS_SCHEMA, QA_REPORT_SCHEMA, TEST_JOURNEY_SCHEMA } from "../../qa/formats";
+import { viewOverridesEditorSchema } from "../navigation/catalogStore";
 import type { Schema } from "./schemaDsl";
 
 const withMeta = (schema: Schema, id: string, title: string) =>
@@ -40,6 +41,7 @@ export function emittedSchemaFiles(): Record<string, unknown> {
   out["schemas/datapass-codex-tests.schema.json"] = withMeta(CODEX_TESTS_SCHEMA, "datapass-codex-tests.schema.json", "DataPass Codex tests configuration (1)");
   out["schemas/datapass-test-journey.schema.json"] = withMeta(TEST_JOURNEY_SCHEMA, "datapass-test-journey.schema.json", "DataPass test journey (1)");
   out["schemas/datapass-qa-report.schema.json"] = withMeta(QA_REPORT_SCHEMA, "datapass-qa-report.schema.json", "DataPass QA report (1)");
+  out["schemas/datapass-view-overrides.schema.json"] = withMeta(viewOverridesEditorSchema() as Schema, "datapass-view-overrides.schema.json", "DataPass view overrides (1)");
   return out;
 }
 
