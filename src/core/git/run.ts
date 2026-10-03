@@ -44,3 +44,20 @@ export async function retryOnTimeout<R extends { ok: boolean; timedOut?: boolean
   if (first.ok || !first.timedOut) return first;
   return run(Math.max(timeoutMs, retryMs));
 }
+
+/**
+ * V5HOLE14: how long past its own timeout a spawned command may take to report. On Windows, `execFile` calls back only
+ * when stdout/stderr close; a grandchild that inherited them keeps them open after the timeout killed the parent, and the
+ * check would never settle. Past this grace the caller resolves "timed out" itself.
+ */
+export const SPAWN_GRACE_MS = 2_000;
+
+/** `p`, or `fallback()` when `p` has not settled within `ms` (a rejection also gives the fallback). Never hangs. */
+export function settleWithin<T>(p: Promise<T>, ms: number, fallback: () => T): Promise<T> {
+  return new Promise<T>(resolve => {
+    let done = false;
+    const finish = (v: T) => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+    const timer = setTimeout(() => finish(fallback()), ms);
+    p.then(finish, () => finish(fallback()));
+  });
+}
