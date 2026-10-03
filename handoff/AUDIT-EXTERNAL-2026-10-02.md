@@ -11,11 +11,18 @@ You are the auditor. The Claude PM stays the architect, and your findings become
 ## Scope
 | Repo (D:\PROJ\datapass\…) | SHA |
 |---|---|
-| datapass-vscode | 08c7237 |
-| datapass-vscode-common | a311b0f |
+| datapass-vscode | 48656541 (tag v1.2.0-rc.1, V5 release candidate) |
+| datapass-vscode-common | a311b0fb (pinned by v1.2.0-rc.1) |
 | datapass-vscode-cloud, datapass-studio, datapass-vscode-hub | current origin/main |
 
 Context: `datapass-vscode/handoff/CURRENT.md`, `PLAN.md`, `ARCH_DECISIONS.md`, `FEATURES.json` (what V4 and V5 claim to deliver), `go/V5-ACCEPTANCE.md`.
+
+## Known at release (PM 32, 3 Oct 22:26; confirm or refute, don't just repeat)
+- VSIX 13.8 MB, 87 % of it the bundled Python/sqlglot parser runtime. Accepted for the rc; a platform-specific VSIX is planned for V5.1.
+- Activation median 336 ms (budget 500 ms), measured while CI was running.
+- 9 local Common stub markers came back in 7 src files after REPIN8.
+- Cloud and Studio are not re-pinned to Common a311b0fb.
+- Report: go/handoff-inbox/V5REL1-report.md in the D:\PROJ\datapass workspace.
 
 ## What to audit, in priority order
 1. **Claims vs reality:** for each V4/V5 feature in FEATURES.json marked merged, is it really reachable and working, or only scaffolded, a stub or a typed hole? Give a list per feature.
