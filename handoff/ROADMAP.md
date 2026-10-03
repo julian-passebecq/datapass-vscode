@@ -170,6 +170,18 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-03 16:00 (aller plus vite en dev pour V6 ; décidé par PM 32)
+
+- Mesure du 1 au 3 Oct : un pipeline vscode dure 20 min en médiane (max 44 min), avec 0 min d'attente du runner. Une MR met 17 h en médiane entre ouverture et fusion. Le goulot n'est donc ni le runner ni la CI cloud : c'est l'enchaînement en série (rebase « tête contient main » une MR à la fois, relances de tests instables, réveils de COORD) et les bugs trouvés tard, à la recette finale.
+- Pas de runner en plus, pas de bascule CI cloud, pas de CI en moins sur les vérifications.
+- En V5.1 / V6, dans cet ordre :
+  - **MERGEQ1** : un train de fusion par script, sans LLM. Il teste les MR en lot sur une branche d'intégration et fusionne le lot si c'est vert ; si c'est rouge, il coupe le lot en deux. Il remplace COORD comme fusionneur. Objectif : MR ouverte → fusionnée en moins de 2 h.
+  - **ACCEPT-LEFT1** : chaque MR de fonctionnalité apporte son parcours de recette (`qa/`), et la CI le rejoue. Un parcours rouge bloque la MR, pas la release. Les 5 rouges de V5FINAL2 étaient des fonctionnalités fusionnées mais injoignables dans l'appli réelle.
+  - **QA-NIGHTLY1** : `qa:v5` complet chaque nuit sur `main`, avec un rapport dans brief.md et le premier rouge transformé en paquet le matin.
+  - **CIDIET1** : (a) à (d) déjà décidés, plus la répartition de desktop_acceptance (4 shards de 20 à 29 min) par durée mesurée, pour viser 15 min par shard.
+  - **Coders « spec d'abord »** : le GO contient le parcours de recette ; le coder le fait passer dans l'appli réelle avant d'ouvrir la MR.
+- Plus d'agents seulement quand le train de fusion suit. Aujourd'hui, des coders en plus ne feraient qu'allonger la file.
+
 ## Idées de Julian — 2026-10-02 16:50 (CI et agents ; articles Signadot / HackerNoon « agentic DevOps » ; décidé par PM 32)
 
 - Question : faire moins de CI, comme le suggèrent les articles ? **Non** pour les vérifications. Le seul incident de `main` rouge du 2 Oct vient d'une fusion **sans** pipeline (!197). La CI reste le filet de sécurité des agents.
