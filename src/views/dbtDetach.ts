@@ -7,7 +7,7 @@
 import * as vscode from "vscode";
 import { gitRunner } from "../work/session";
 import { RECORD_ROOT } from "../core/materialize/dbtNotebook";
-import { DETACH_COMMAND, DRIFT_LABELS, detachBadge, detachContextSection, detachModel, detachView, readDetachRecord, serializeDetachRecord, type DetachView } from "../core/materialize/dbtDetach";
+import { DETACH_COMMAND, DRIFT_LABELS, detachBadge, detachMessage, type DetachMessageKey, detachContextSection, detachModel, detachView, readDetachRecord, serializeDetachRecord, type DetachView } from "../core/materialize/dbtDetach";
 
 interface Loaded { uri: vscode.Uri; view: DetachView }
 
@@ -16,6 +16,8 @@ export class DbtDetachService implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private loaded: Loaded[] = [];
   private readonly subs: vscode.Disposable[] = [this.emitter];
+  /** Watches the stamped notebooks themselves, so a deleted target shows "target missing" without a manual refresh. */
+  private notebookWatch?: { key: string; watcher: vscode.Disposable };
 
   constructor(private readonly root: () => vscode.Uri | undefined) {
     const w = vscode.workspace.createFileSystemWatcher(`**/${RECORD_ROOT}/**/*.detach.json`);
@@ -28,7 +30,21 @@ export class DbtDetachService implements vscode.Disposable {
   /** The Context section for a file (NAVCTX1 provider result shape). */
   contextFor(filePath: string | undefined) { return detachContextSection(this.views(), filePath); }
 
-  dispose(): void { for (const s of this.subs) s.dispose(); }
+  dispose(): void { for (const s of this.subs) s.dispose(); this.notebookWatch?.watcher.dispose(); }
+
+  /** One watcher over the notebooks the records name (create / delete only; saves are already covered). */
+  private watchNotebooks(root: vscode.Uri): void {
+    const paths = [...new Set(this.loaded.map(l => l.view.notebookPath))].sort();
+    const key = `${root.toString()}|${paths.join("|")}`;
+    if (this.notebookWatch?.key === key) return;
+    this.notebookWatch?.watcher.dispose();
+    this.notebookWatch = undefined;
+    if (!paths.length) return;
+    const glob = paths.length === 1 ? paths[0]! : `{${paths.join(",")}}`;
+    const w = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(root, glob), false, true, false);
+    const again = () => void this.refresh();
+    this.notebookWatch = { key, watcher: vscode.Disposable.from(w, w.onDidCreate(again), w.onDidDelete(again)) };
+  }
 
   async refresh(): Promise<void> {
     const root = this.root();
@@ -44,17 +60,23 @@ export class DbtDetachService implements vscode.Disposable {
       out.push({ uri, view: detachView(relative(root, uri), r.record, current, at, labels) });
     }
     this.loaded = out;
+    this.watchNotebooks(root);
     this.emitter.fire();
   }
 
-  /** Current notebook text and dbt revision (null when unreadable: the drift is then `unknown`). */
-  async current(root: vscode.Uri, modelId: string, notebookPath: string): Promise<{ notebookContent: string | null; dbtRevision: string | null }> {
-    const notebookContent = await readText(vscode.Uri.joinPath(root, ...notebookPath.split("/")));
+  /**
+   * Current notebook text, whether it still exists (fs stat only: a missing target is "target missing", never "in sync")
+   * and the dbt revision (null when unreadable: the drift is then `unknown`).
+   */
+  async current(root: vscode.Uri, modelId: string, notebookPath: string): Promise<{ notebookContent: string | null; dbtRevision: string | null; notebookExists: boolean }> {
+    const nb = vscode.Uri.joinPath(root, ...notebookPath.split("/"));
+    const notebookExists = await targetExists(nb);
+    const notebookContent = notebookExists ? await readText(nb) : null;
     const dir = await dbtProjectDir(root, modelId);
-    if (!dir || !vscode.workspace.isTrusted) return { notebookContent, dbtRevision: null };
+    if (!dir || !vscode.workspace.isTrusted) return { notebookContent, dbtRevision: null, notebookExists };
     const r = await gitRunner(["log", "-1", "--format=%H", "--", "."], dir.fsPath, 10_000);
     const sha = r.ok ? r.stdout.trim() : "";
-    return { notebookContent, dbtRevision: sha || null };
+    return { notebookContent, dbtRevision: sha || null, notebookExists };
   }
 
   /** The command: pick an attached model, confirm, flip the authority and write the stamp. */
@@ -68,7 +90,7 @@ export class DbtDetachService implements vscode.Disposable {
     let target = argPath ? this.loaded.find(l => argPath.endsWith(l.view.notebookPath) || argPath.endsWith(l.view.recordPath)) : undefined;
     if (!target) {
       if (!this.loaded.length) { void vscode.window.showInformationMessage("No materialized dbt model here: materialize one first (a MAT1 proposal writes its record under .datapass/materialization)."); return; }
-      const pick = await vscode.window.showQuickPick(this.loaded.map(l => ({ label: l.view.modelId, description: detachBadge(l.view), detail: l.view.notebookPath, l })), { title: "Detach a dbt model (the notebook becomes the authority)" });
+      const pick = await vscode.window.showQuickPick(this.loaded.map(l => ({ label: l.view.modelId, description: detachBadge(l.view), detail: l.view.notebookPath, l })), { title: msg("pickTitle", {}) });
       if (!pick) return;
       target = pick.l;
     }
@@ -77,8 +99,8 @@ export class DbtDetachService implements vscode.Disposable {
       return;
     }
     const ok = await vscode.window.showWarningMessage(
-      `Detach ${target.view.modelId}?`,
-      { modal: true, detail: `The notebook ${target.view.notebookPath} becomes the authority. Later dbt changes are no longer materialized into it; drift is shown as a fact, never re-synced. DataPass records who and when in ${target.view.recordPath}. Commit that file through your normal Git flow.` },
+      msg("confirm", { model: target.view.modelId }),
+      { modal: true, detail: msg("confirmDetail", { model: target.view.modelId, notebook: target.view.notebookPath, record: target.view.recordPath }) },
       "Detach"
     );
     if (ok !== "Detach") return;
@@ -90,8 +112,17 @@ export class DbtDetachService implements vscode.Disposable {
     if (!res.ok) { void vscode.window.showWarningMessage(res.reason); return; }
     await vscode.workspace.fs.writeFile(target.uri, new TextEncoder().encode(serializeDetachRecord(res.record)));
     await this.refresh();
-    void vscode.window.showInformationMessage(`${target.view.modelId} is detached: the notebook is the authority.`);
+    void vscode.window.showInformationMessage(msg("detached", { model: target.view.modelId, notebook: target.view.notebookPath, record: target.view.recordPath }));
   }
+}
+
+/** Detach wording from `datapass.dbt.detachMessages` (data), defaults in DETACH_MESSAGES. */
+const msg = (key: DetachMessageKey, vars: { model?: string; notebook?: string; record?: string }): string =>
+  detachMessage(key, vars, vscode.workspace.getConfiguration("datapass.dbt").get<Record<string, unknown>>("detachMessages") ?? {});
+
+/** fs stat only: does the stamped notebook still exist as a file? */
+async function targetExists(uri: vscode.Uri): Promise<boolean> {
+  try { return ((await vscode.workspace.fs.stat(uri)).type & vscode.FileType.File) !== 0; } catch { return false; }
 }
 
 async function readText(uri: vscode.Uri): Promise<string | null> {
