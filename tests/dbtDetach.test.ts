@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import test from "node:test";
 import { type DbtFile, type DbtMaterializeInput, detachStampDigest, materializeDbtModels, notebookSourceHash, previewDbtDiff, validateMaterializationDetach } from "../src/core/materialize/dbtNotebook";
-import { DETACH_COMMAND, DETACH_MESSAGES, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
+import { DBT_SOURCE_FOLDERS, DETACH_COMMAND, DETACH_MESSAGES, REATTACH_COMMAND, dbtEditedSince, isDbtSourcePath, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
 import { PALETTE_TIERS } from "../src/core/experience/palette";
 
 const ROOT = join(__dirname, "fixtures", "dbtmat");
@@ -168,4 +168,65 @@ test("detach wording is data: the toast says the notebook becomes the authority 
   const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { contributes: { configuration: Array<{ properties: Record<string, unknown> }> | { properties: Record<string, unknown> } } };
   const conf = ([] as Array<{ properties: Record<string, unknown> }>).concat(pkg.contributes.configuration);
   assert.ok(conf.some(c => "datapass.dbt.detachMessages" in c.properties));
+});
+
+test("V5HOLE7: an uncommitted dbt edit (fs stat) is a dbt change; with a notebook edit it is both, never in sync", () => {
+  const d = detached();
+  const view = (notebookContent: string, dbtEditedSinceDetach?: boolean) => detachView(rec.path, d, { notebookContent, dbtRevision: REV, notebookExists: true, ...(dbtEditedSinceDetach === undefined ? {} : { dbtEditedSinceDetach }) }, AT);
+  assert.equal(view(nbText).drift!.state, "in-sync");
+  assert.equal(view(nbText, false).drift!.state, "in-sync");
+  assert.equal(view(`${nbText}\n# edited in the notebook\n`).drift!.state, "notebook-edited");
+  assert.equal(view(`${nbText}\n# edited in the notebook\n`).drift!.label, "notebook edited since detach");
+  assert.equal(view(nbText, true).drift!.state, "dbt-changed");
+  const both = view(`${nbText}\n# edited in the notebook\n`, true);
+  assert.equal(both.drift!.state, "both-changed");
+  assert.equal(detachBadge(both), "detached · dbt changed and notebook edited");
+  // A committed dbt change plus an uncommitted one is still one dbt change; unknown and target-missing stay as they are.
+  assert.equal(detachView(rec.path, d, { notebookContent: nbText, dbtRevision: REV2, dbtEditedSinceDetach: true }, AT).drift!.state, "dbt-changed");
+  assert.equal(detachView(rec.path, d, { notebookContent: nbText, dbtRevision: null, dbtEditedSinceDetach: true }, AT).drift!.state, "unknown");
+  assert.equal(detachView(rec.path, d, { notebookContent: null, dbtRevision: REV, notebookExists: false, dbtEditedSinceDetach: true }, AT).drift!.state, "target-missing");
+  // An attached model has no drift to measure, whatever the fs says.
+  assert.equal(detachView(rec.path, rec.record, { notebookContent: nbText, dbtRevision: REV, dbtEditedSinceDetach: true }, AT).drift, null);
+});
+
+test("V5HOLE7: dbt sources edited after the detach, from fs stat (build output and other folders never count)", () => {
+  const t = Date.parse(AT);
+  assert.ok(isDbtSourcePath("models/marts/fct_orders.sql"));
+  assert.ok(isDbtSourcePath("dbt_project.yml"));
+  assert.ok(isDbtSourcePath("macros\\cents.sql"));
+  assert.ok(!isDbtSourcePath("target/compiled/shop/models/marts/fct_orders.sql"));
+  assert.ok(!isDbtSourcePath("models/dbt_packages/x.sql"));
+  assert.ok(!isDbtSourcePath("fabric/dbt_fct_orders.Notebook/notebook-content.py"));
+  assert.ok(!isDbtSourcePath(".gitlab-ci.yml"));
+  for (const f of DBT_SOURCE_FOLDERS) assert.ok(isDbtSourcePath(`${f}/a.sql`), f);
+  const before = [{ path: "models/marts/fct_orders.sql", mtimeMs: t - 60_000 }, { path: "dbt_project.yml", mtimeMs: t - 1 }];
+  assert.equal(dbtEditedSince(before, AT), false);
+  // The stamp instant is truncated to the second: an mtime inside that second is not distinguishable, the next one counts.
+  assert.equal(dbtEditedSince([{ path: "models/marts/fct_orders.sql", mtimeMs: t + 999 }], AT), false);
+  assert.equal(dbtEditedSince([...before, { path: "models/marts/fct_orders.sql", mtimeMs: t + 1000 }], AT), true);
+  assert.equal(dbtEditedSince([{ path: "target/manifest.json", mtimeMs: t + 60_000 }, { path: "logs/dbt.log", mtimeMs: t + 60_000 }], AT), false);
+  assert.equal(dbtEditedSince([{ path: "models/a.sql", mtimeMs: t + 60_000 }], "not an instant"), false);
+  // The source folders are data: a caller may pass its own.
+  assert.equal(dbtEditedSince([{ path: "src/a.sql", mtimeMs: t + 60_000 }], AT, ["src"]), true);
+});
+
+test("V5HOLE7: re-attach has an entry point: command classified, on the detached tree row, in the palette snapshot", () => {
+  assert.equal(REATTACH_COMMAND, "datapass.dbt.reattach");
+  assert.equal(PALETTE_TIERS.get(REATTACH_COMMAND), "palette.full");
+  const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { contributes: { commands: Array<{ command: string; title: string }>; menus: Record<string, Array<{ command: string; when?: string }>> } };
+  assert.match(pkg.contributes.commands.find(c => c.command === REATTACH_COMMAND)!.title, /^DataPass: Re-attach dbt Model/);
+  assert.ok(pkg.contributes.menus["view/item/context"]!.some(m => m.command === REATTACH_COMMAND && m.when === "view == datapass.project && viewItem == dbtModel.detached"));
+  assert.ok(pkg.contributes.menus["view/item/context"]!.some(m => m.command === DETACH_COMMAND && m.when === "view == datapass.project && viewItem == dbtModel.attached"));
+  assert.equal(pkg.contributes.menus.commandPalette!.find(m => m.command === REATTACH_COMMAND)?.when, "!datapass.hidden.palette.full");
+  const snap = JSON.parse(readFileSync(join(__dirname, "fixtures", "palette-snapshot.json"), "utf8")) as Record<string, string[]>;
+  assert.ok(snap.advanced!.includes("DataPass: Re-attach dbt Model (propose a fresh materialization)"));
+});
+
+test("V5HOLE7: re-attach wording is data and says the proposal is only proposed", () => {
+  const vars = { model: "model.shop.fct_orders", proposal: "reattach-model-shop-fct-orders-20261001090000", count: "2", notebook: "fabric/n.py", record: "r.json" };
+  assert.match(detachMessage("reattachProposed", vars), /^model\.shop\.fct_orders: re-attach proposed \(reattach-model-shop-fct-orders-20261001090000\)\./);
+  assert.match(detachMessage("reattachConfirm", vars), /re-attach proposed\. Write 2 file\(s\)/);
+  assert.match(detachMessage("reattachConfirmDetail", vars), /nothing is run, deployed or committed/);
+  assert.match(detachMessage("reattachAction", vars), /^Re-attach model\.shop\.fct_orders/);
+  assert.equal(detachMessage("keepDetached", vars, { keepDetached: "Leave {model} alone" }), "Leave model.shop.fct_orders alone");
 });
