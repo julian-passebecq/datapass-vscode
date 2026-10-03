@@ -170,3 +170,40 @@ ui_smoke:
       - out/qa-ui/
       - out/qa-ui-hop/
 
+
+# PINDRIFT1: report drift between vendor/common/manifest.json (version + digest pins) and Common main, with
+# Common's tools/pin-drift (ok | behind | digest-mismatch | unknown). Informational: allow_failure, never a
+# required check in V5. --strict turns drift into a visible warning; the JSON report is kept as an artifact.
+common_pin_drift:
+  stage: verify
+  timeout: 10m
+  allow_failure: true
+  cache: []
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  before_script:
+    - . ./scripts/ci-windows.ps1 -Node
+  script:
+    - |
+      $common = Join-Path $env:TEMP "datapass-pin-drift-$env:CI_JOB_ID"
+      try {
+        # Common is not anonymous: clone with the job token (this project must be on Common's job-token allowlist); never prompt.
+        $env:GIT_TERMINAL_PROMPT = '0'
+        Invoke-CiNative git -c credential.helper= clone --quiet --single-branch --no-checkout "https://gitlab-ci-token:$($env:CI_JOB_TOKEN)@gitlab.com/juliandatapass-group/datapass-vscode-common.git" $common
+        Invoke-CiNative git -C $common checkout --quiet HEAD -- tools/pin-drift
+        # The tool imports @juliandatapass-group/project-contracts/pin-drift; the clone has no node_modules and this job runs no npm ci,
+        # so unpack this repo's vendored (pinned) contracts tarball next to the tool for Node to resolve it.
+        $spec = (Get-Content -Raw package.json | ConvertFrom-Json).dependencies.'@juliandatapass-group/project-contracts'
+        if ($spec -notlike 'file:*') { throw "project-contracts is not vendored: $spec" }
+        $pkg = Join-Path $common 'node_modules\@juliandatapass-group\project-contracts'
+        New-Item -ItemType Directory -Force -Path $pkg | Out-Null
+        Invoke-CiNative (Join-Path $env:SystemRoot 'System32\tar.exe') -xzf $spec.Substring(5) -C $pkg --strip-components=1
+        Invoke-CiNative node "$common/tools/pin-drift/cli.mjs" --manifest vendor/common/manifest.json --common $common --ref origin/main --json pin-drift.json --strict
+      } finally {
+        Remove-Item -LiteralPath $common -Recurse -Force -ErrorAction SilentlyContinue
+      }
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - pin-drift.json
