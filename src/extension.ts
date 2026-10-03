@@ -41,6 +41,7 @@ import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
 import { registerNavigation } from "./core/navigation/register";
 import { setProjectCardsSource } from "./views/peda-cards/cards.surface";
 import { setQueryShowcaseSource } from "./views/peda-showcase/showcase.surface";
+import { setInterviewSource } from "./views/peda-interview/interview.surface";
 import type { HomeState } from "./views/homeState";
 import type { HomePage } from "./views/homeHtml";
 import { PANES, type DiagramMode, type DiagramUi, type Pane, type WorkViewsFile } from "./core/windows/workViews";
@@ -307,6 +308,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerNavigation(context, session);
   setProjectCardsSource({ locate: uri => session.understandingLocate(uri), load: uri => session.understandingFor(uri) });
   setQueryShowcaseSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
+  setInterviewSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
 
   // V3 Workbench: Project tree (left), Architecture diagram (bottom panel), AI exchange and Details (secondary side bar), Workbench tab.
   const host = new WorkbenchHost(context, session);

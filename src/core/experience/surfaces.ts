@@ -80,6 +80,8 @@ export const SURFACES: readonly Surface[] = [
   { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" },
   // V5 PEDA3: query showcase cards ("Queries worth showing", interview mode).
   { id: "v5.peda3", kind: "palette", label: "Queries worth showing", detail: "The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)" },
+  // V5 PEDA2: interview prep (ranked notions, questions, where and why; model answers through the manual exchange).
+  { id: "v5.peda2", kind: "palette", label: "Interview prep", detail: "The notions this project really uses, ranked, with interview questions, where they are and why (or a hole); model answers through your own AI (ai-proposed)" },
   // TOURAI1: guided tours prepared by your AI through the manual exchange.
   { id: "v5.tourai1", kind: "aiTab", label: "AI guided tours", detail: "Ask your AI for a guided tour on a topic (BI, ingestion…); its answer is checked against the project and shown as a diff" }
 ];
