@@ -85,6 +85,16 @@ test("TL-4 read-only Git: allowed forms, including git remote -v and git --versi
   assert.ok(GIT_READ_ONLY.some(v => v.verb === "remote") && GIT_READ_ONLY.some(v => v.verb === "--version"));
 });
 
+test("SJDMAT1/DETACH1: git config --get user.name (the stamp actor) is a declared read-only form; setting it is refused", () => {
+  for (const args of [["config", "--get", "user.name"], ["-c", "core.fsmonitor=false", "config", "--get", "user.name"]]) {
+    const d = checkSpawn("git", args);
+    assert.ok(d.allowed && d.trigger === "read-only", `git ${args.join(" ")}`);
+  }
+  for (const args of [["config", "user.name"], ["config", "user.name", "x"], ["config", "--global", "user.name", "x"], ["config", "--get", "user.name", "--unset"]]) {
+    assert.equal(checkSpawn("git", args).allowed, false, `git ${args.join(" ")} must be refused`);
+  }
+});
+
 test("undeclared spawns are refused", () => {
   const refused: Array<[string, string[]]> = [
     ["git", ["push"]], ["git", ["pull"]], ["git", ["checkout", "main"]], ["git", ["reset", "--hard"]], ["git", ["commit", "-m", "x"]],

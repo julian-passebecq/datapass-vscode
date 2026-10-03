@@ -13,6 +13,7 @@ import {
   readDbtArtifacts,
   recordPath
 } from "../src/core/materialize/dbtNotebook";
+import { materializeDbt } from "../src/core/materialize/dbtSparkJob";
 import { materializationGitPlan } from "../src/core/materialize/flow";
 
 const ROOT = join(__dirname, "fixtures", "dbtmat");
@@ -172,16 +173,19 @@ test("diff → branch/MR through MAT1; a detached notebook is never overwritten"
   assert.equal(e2.find(e => e.path === rec.path)!.status, "blocked-detached");
 });
 
-test("target: fabric-notebook by default; spark-job-definition is a hole with no files (SJDMAT1)", () => {
+test("target: fabric-notebook by default; materializeDbt dispatches spark-job-definition to SJDMAT1", () => {
   const byDefault = materializeDbtModels(input());
   const explicit = materializeDbtModels(input({ target: "fabric-notebook" }));
   assert.deepEqual(byDefault.files, explicit.files);
   assert.ok(byDefault.files.some(f => f.path.endsWith(".Notebook/notebook-content.py")));
-  const sjd = materializeDbtModels(input({ target: "spark-job-definition" }));
-  assert.deepEqual(sjd.holes.map(h => h.code), ["dbt.target-not-yet"]);
-  assert.match(sjd.holes[0]!.nextAction, /SJDMAT1/);
-  assert.equal(sjd.files.length, 0);
-  assert.equal(sjd.records.length, 0);
+  const viaDispatch = materializeDbt(input());
+  assert.equal(viaDispatch.target, "fabric-notebook");
+  assert.deepEqual(viaDispatch.files, byDefault.files);
+  const sjd = materializeDbt(input({ target: "spark-job-definition" }));
+  assert.equal(sjd.target, "spark-job-definition");
+  assert.ok(!sjd.holes.some(h => (h.code as string) === "dbt.target-not-yet"));
+  assert.ok(sjd.files.some(f => f.path.includes(".SparkJobDefinition/")));
+  assert.ok(!sjd.files.some(f => f.path.endsWith("notebook-content.py")));
 });
 
 test("re-run at the same revision with a new `at` keeps every record unchanged", () => {
