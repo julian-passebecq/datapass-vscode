@@ -77,7 +77,7 @@ test("every literal Git command in the sources is on the allow-list", () => {
 
 test("TL-4 read-only Git: allowed forms, including git remote -v and git --version", () => {
   for (const args of [["--version"], ["remote"], ["remote", "-v"], ["status", "--porcelain=v2"], ["-c", "core.fsmonitor=false", "log", "-n", "5"],
-    ["config", "--get", "remote.origin.url"], ["worktree", "list", "--porcelain"], ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], ["reflog", "-n", "20", "HEAD"]]) {
+    ["config", "--get", "remote.origin.url"], ["worktree", "list", "--porcelain"], ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], ["reflog", "-n", "20", "HEAD"], ["--no-optional-locks", "status", "--porcelain=v2", "--branch"]]) {
     const d = checkSpawn("C:\\Program Files\\Git\\cmd\\git.exe", args);
     assert.ok(d.allowed, `git ${args.join(" ")}`);
   }
@@ -92,7 +92,7 @@ test("undeclared spawns are refused", () => {
     ["git", ["symbolic-ref", "HEAD", "refs/heads/x"]], ["git", ["remote", "add", "o", "u"]], ["git", ["reflog", "expire"]],
     ["git", ["diff", "--output=f"]], ["git", ["diff", "--ext-diff"]], ["git", ["-c", "core.pager=x", "status"]], ["git", ["status", "-c", "x"]],
     ["git", ["hash-object", "-w", "--", "f"]], ["git", ["fetch", "--upload-pack=x"]], ["git", ["clone", "-u", "x", "--", "u", "f"]],
-    ["git", ["merge", "main"]], ["git", []],
+    ["git", ["merge", "main"]], ["git", []], ["git", ["--no-optional-locks", "push"]],
     ["java", ["-jar", "app.jar"]], ["java", ["--version"]], ["python", ["script.py"]], ["python3", ["-c", "print(1)"]], ["node", ["x.js"]],
     ["docker", ["run", "x"]], ["kubectl", ["apply", "-f", "x"]], ["dotnet", ["run"]], ["psql", ["-c", "select 1"]], ["gcloud", ["auth", "login"]],
     ["fab", ["auth", "login"]], ["az", ["login"]], ["gh", ["pr", "merge"]], ["powershell", ["-Command", "x"]], ["cmd", ["/c", "dir"]]
