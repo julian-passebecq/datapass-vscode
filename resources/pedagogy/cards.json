@@ -1,0 +1,113 @@
+{
+  "schema": "datapass.pedagogy-cards/1",
+  "note": "Concept and decision cards (go/TOUR-PEDA-contract.md § 5). Generic teaching data, no client content. codeSignals are case-insensitive patterns matched line by line on the comment-stripped code (read, never run). decisionPoint = the decision-rationale/1 decisionPoint this card answers; concepts = the concept cards shown with it.",
+  "entries": [
+    {
+      "id": "concept.sql.cte", "domain": "sql", "title": "CTE (WITH)", "options": [],
+      "card": {
+        "family": "sql-technique", "order": 1, "question": "How do you keep a long query readable?",
+        "codeExample": { "lang": "sql", "text": "WITH paid AS (SELECT * FROM orders WHERE status = 'paid')\nSELECT customer_id, SUM(amount) FROM paid GROUP BY customer_id" },
+        "takeaways": ["One CTE per business step", "Read the query top-down"],
+        "interviewQuestions": ["When would you use a temp table instead of a CTE?", "Is a CTE materialised?"],
+        "implementedBy": [{ "kind": "analyzer", "id": "peda3-tagger" }],
+        "codeSignals": ["^\\s*with\\s+(recursive\\s+)?[a-z_]\\w*\\s+as\\s*\\("]
+      }
+    },
+    {
+      "id": "concept.sql.row-number-dedup", "domain": "sql", "title": "Latest row per key (ROW_NUMBER)", "options": [],
+      "card": {
+        "family": "sql-technique", "order": 2, "question": "How do you keep one row per key when the source sends duplicates?",
+        "codeExample": { "lang": "sql", "text": "SELECT * FROM (\n  SELECT o.*, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY loaded_at DESC) AS rn\n  FROM orders o\n) t\nWHERE rn = 1" },
+        "output": "One row per order_id: the most recently loaded version.",
+        "takeaways": ["ROW_NUMBER() = 1 per key keeps exactly one row", "The ORDER BY decides which duplicate wins", "RANK keeps ties, ROW_NUMBER does not"],
+        "interviewQuestions": ["ROW_NUMBER, RANK or DENSE_RANK: which one for dedup, and why?", "What happens when two rows share the same ORDER BY value?"],
+        "implementedBy": [{ "kind": "analyzer", "id": "peda3-tagger" }],
+        "codeSignals": ["\\brow_number\\s*\\(\\s*\\)\\s*over\\b", "\\brow_number\\s*\\(\\s*\\)\\.over\\b"]
+      }
+    },
+    {
+      "id": "concept.sql.merge-upsert", "domain": "sql", "title": "MERGE (upsert)", "options": [],
+      "card": {
+        "family": "sql-technique", "order": 3, "question": "How do you insert new rows and update changed ones in one statement?",
+        "codeExample": { "lang": "sql", "text": "MERGE INTO silver.orders AS t\nUSING staged AS s ON t.order_id = s.order_id\nWHEN MATCHED THEN UPDATE SET *\nWHEN NOT MATCHED THEN INSERT *" },
+        "takeaways": ["The ON condition must match at most one target row", "Deduplicate the source before merging", "The target keeps state between runs"],
+        "interviewQuestions": ["What fails when the source has two rows for one key?", "When is a full rebuild simpler than a MERGE?"],
+        "implementedBy": [{ "kind": "analyzer", "id": "peda3-tagger" }],
+        "codeSignals": ["\\bmerge\\s+into\\b", "\\.merge\\s*\\("]
+      }
+    },
+    {
+      "id": "concept.sql.anti-join-nulls", "domain": "sql", "title": "Anti-join and NULLs", "options": [],
+      "card": {
+        "family": "sql-technique", "order": 8, "question": "How do you find rows with no match?",
+        "codeExample": { "lang": "sql", "text": "SELECT c.* FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)" },
+        "takeaways": ["NOT EXISTS is NULL-safe", "NOT IN breaks on a NULL"],
+        "interviewQuestions": ["Why can NOT IN return no rows?", "LEFT JOIN … IS NULL or NOT EXISTS?"],
+        "implementedBy": [{ "kind": "analyzer", "id": "peda3-tagger" }],
+        "codeSignals": ["\\bnot\\s+exists\\s*\\(", "\\bleft\\s+anti\\s+join\\b", "[\"']left_anti[\"']"]
+      }
+    },
+    {
+      "id": "concept.spark-perf.join-strategy", "domain": "spark-perf", "title": "Broadcast join", "options": [],
+      "card": {
+        "family": "spark-sql", "order": 5, "question": "How do you avoid shuffling a big table to join a small one?",
+        "codeExample": { "lang": "pyspark", "text": "from pyspark.sql.functions import broadcast\nbig.join(broadcast(small), 'id')" },
+        "takeaways": ["Broadcast the small side only", "Check the plan for BroadcastHashJoin"],
+        "interviewQuestions": ["When does a broadcast join fail?", "What is autoBroadcastJoinThreshold?"],
+        "implementedBy": [{ "kind": "fact", "id": "spark-join" }],
+        "codeSignals": ["\\bbroadcast\\s*\\(", "/\\*\\+\\s*broadcast"]
+      }
+    },
+    {
+      "id": "concept.layout.partition-key", "domain": "layout", "title": "Partition or not",
+      "options": [{ "id": "none", "title": "No partitioning" }, { "id": "by-filter-column", "title": "Partition by the main filter column" }],
+      "decisionCard": {
+        "family": "storage", "order": 2, "question": "Partition this table or not?", "options": ["none", "by-filter-column"],
+        "rule": "Partition when most queries filter on one low-cardinality column and each partition still holds large files.",
+        "maxim": "Design storage around the queries, not around the source.",
+        "ask": { "text": "Which column do most queries filter on, and how much data arrives per value?", "why": "Pruning helps only for the common filter and only with large partitions.", "constraint": "volume" }
+      }
+    },
+    {
+      "id": "concept.modelling.scd-choice", "domain": "modelling", "title": "Latest or history",
+      "options": [{ "id": "overwrite", "title": "Latest only (overwrite)" }, { "id": "scd2", "title": "History (SCD2 / snapshots)" }],
+      "decisionCard": {
+        "family": "data-modeling", "order": 2, "question": "Keep only the latest value or the history?", "options": ["overwrite", "scd2"],
+        "rule": "Keep history when someone must report as of a past date or audit a change; otherwise overwrite.",
+        "maxim": "Define the row before writing the transformation.",
+        "ask": { "text": "Does anyone need to know what the value was on a past date?", "why": "Point-in-time needs decide history.", "constraint": "consumer" }
+      }
+    },
+    {
+      "id": "concept.modelling.dedup-strategy", "domain": "modelling", "title": "Deduplicate: latest row or MERGE",
+      "options": [{ "id": "row-number-latest", "title": "Keep the latest row per key" }, { "id": "merge-upsert", "title": "Upsert into a stateful table (MERGE)" }],
+      "decisionCard": {
+        "family": "data-modeling", "order": 3, "question": "How does this pipeline keep one row per key?", "options": ["row-number-latest", "merge-upsert"],
+        "rule": "Rebuild with ROW_NUMBER() = 1 per key while a full rebuild fits the window; MERGE into a stateful table when volume or late updates make rebuilding too slow.",
+        "maxim": "Decide what a duplicate is before choosing how to remove it.",
+        "ask": { "text": "Can the source send the same key twice, and which version should win?", "why": "The dedup rule depends on how duplicates arrive and on the business key.", "constraint": "data-profile" },
+        "decisionPoint": "dedup-strategy",
+        "concepts": ["concept.sql.row-number-dedup", "concept.sql.merge-upsert"]
+      }
+    },
+    {
+      "id": "concept.architecture.retry-policy", "domain": "architecture", "title": "Retry or stop",
+      "options": [{ "id": "retry", "title": "Retry with backoff" }, { "id": "stop", "title": "Stop and alert" }],
+      "decisionCard": {
+        "family": "recovery-change", "order": 1, "question": "Retry automatically or stop the pipeline?", "options": ["retry", "stop"],
+        "rule": "Retry transient failures on idempotent steps; stop on data or code errors that a retry cannot fix.",
+        "maxim": "Plan for failure before the first production run.",
+        "ask": { "text": "Are these steps safe to run twice, and which failures are transient?", "why": "Only idempotent steps can be retried safely.", "constraint": "platform" }
+      }
+    },
+    {
+      "id": "concept.ingestion.load-mode", "domain": "ingestion", "title": "Full refresh or incremental",
+      "options": [{ "id": "full", "title": "Full refresh each run" }, { "id": "incremental", "title": "Incremental (append or merge)" }],
+      "decisionCard": {
+        "family": "recovery-change", "order": 4, "question": "Full refresh or incremental load?", "options": ["full", "incremental"],
+        "rule": "Refresh fully while the table is small enough to rebuild within the window; go incremental when rebuild time or cost no longer fits.",
+        "ask": { "text": "How long does a full rebuild take, and what window do you have?", "why": "Rebuild time against the window decides the load mode.", "constraint": "sla-freshness" }
+      }
+    }
+  ]
+}

@@ -109,10 +109,20 @@ export const PALETTE_TIERS: ReadonlyMap<string, string | null> = new Map<string,
   ...[GATED, ...PALETTE].flatMap(t => Object.entries(t).flatMap(([surface, cmds]) => cmds.map(c => [`datapass.${c}`, surface] as [string, string])))
 ]);
 
+/**
+ * Commands that exist only while a setting is on (the feature unregisters them when it is off): full command id →
+ * the boolean settings, all of which must be true for the palette to list it (V5HOLE9, V5 acceptance row 10).
+ */
+export const PALETTE_SETTINGS: ReadonlyMap<string, readonly string[]> = new Map([
+  ["datapass.pedagogy.patternCards", ["datapass.pedagogy.enabled"]],
+  ["datapass.pedagogy.queriesWorthShowing", ["datapass.pedagogy.queryShowcase.enabled"]]
+]);
+
 /** The palette `when` clause a command must carry (undefined = none, listed in every mode). */
 export const paletteWhen = (command: string): string | undefined => {
   const s = PALETTE_TIERS.get(command);
-  return s ? `!datapass.hidden.${s}` : undefined;
+  const parts = [...(s ? [`!datapass.hidden.${s}`] : []), ...(PALETTE_SETTINGS.get(command) ?? []).map(k => `config.${k}`)];
+  return parts.length ? parts.join(" && ") : undefined;
 };
 
 /** Commands the palette lists when exactly the given surfaces are shown. */

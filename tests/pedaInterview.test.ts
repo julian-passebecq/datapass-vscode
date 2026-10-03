@@ -129,8 +129,11 @@ test("tours: three built-ins, deterministic, contract § 4 shape", () => {
   assert.deepEqual(change.substeps!.map(s => [s.explanationRef, s.section, s.location.nodeId]), [
     ["concept:concept.spark-perf.join-strategy", "concept-cards", "c.jobs"],
     ["concept:concept.sql.cte", "concept-cards", "c.sql"],
+    ["concept:concept.sql.row-number-dedup", "concept-cards", "c.sql"],
+    ["concept:concept.sql.merge-upsert", "concept-cards", "c.sql"],
     ["concept:concept.sql.anti-join-nulls", "concept-cards", "c.sql"],
-    ["decision:concept.modelling.scd-choice", "decision-cards", "c.sql"]
+    ["decision:concept.modelling.scd-choice", "decision-cards", "c.sql"],
+    ["decision:concept.modelling.dedup-strategy", "decision-cards", "c.sql"]
   ]);
   assert.ok(learning!.steps.every(s => !s.substeps?.some(x => x.section === "ask-yourself")), "learning has no prompts");
   // interview: explain-project, the 5 spine steps with ranked notions, then queries worth showing
