@@ -78,6 +78,7 @@ import { NativeAnalysisHost, selectedAnalysisCommand } from "./analysis/native";
 import { createNativeBackend } from "./analysis/backend";
 import { HopHost, registerHopCommands } from "./views/hop";
 import type { HopState } from "./views/hopState";
+import { AUTO_OPEN } from "./core/experience/landing";
 
 /**
  * Read-only hooks for the desktop integration suite (tests/integration). Returned only when
@@ -560,7 +561,9 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   );
 
   // V3-SHELL: without the bottom-panel Architecture view, the landing opens the Workbench tab (keyboard stays where it is).
-  const landOnWorkbench = () => { host.openPanel(vscode.ViewColumn.Active, "architecture", undefined, true); };
+  // V5HOLE11: automatic, so it never takes the keyboard (AUTO_OPEN) and the startup path is once per install.
+  const landOnWorkbench = () => { host.openPanel(vscode.ViewColumn.Active, "architecture", undefined, AUTO_OPEN.preserveFocus); };
+  const autoLanding = { state: context.globalState, ignoreShown: context.extensionMode === vscode.ExtensionMode.Test };
   let landed: Promise<boolean> = Promise.resolve(false);
   // Once the project is loaded: DataPass in the secondary side bar (first time, 0.15.1), then the
   // startup work view or a launcher's request (0.17), which may arrange the panes differently.
@@ -576,7 +579,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     })
     .then(() => showDataPassSideBar(context, session).catch(() => undefined))
     .then(() => windows.startup())
-    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied, landOnWorkbench).catch(() => false); await landed; experience.introduce(); return applied; })
+    .then(async applied => { landed = landOnArchitecture(experience, session.project.manifestExists, applied, landOnWorkbench, autoLanding).catch(() => false); await landed; experience.introduce(); return applied; })
     .catch(error => {
       output().appendLine(`[startup] ${error instanceof Error ? error.message : String(error)}`);
       return undefined;
