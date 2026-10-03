@@ -3007,7 +3007,7 @@
         },
         {
           "command": "datapass.pedagogy.queriesWorthShowing",
-          "when": "!datapass.hidden.v5.peda3"
+          "when": "!datapass.hidden.v5.peda3 && config.datapass.pedagogy.queryShowcase.enabled"
         },
         {
           "command": "datapass.pedagogy.interviewPrep",
@@ -3075,7 +3075,7 @@
         },
         {
           "command": "datapass.pedagogy.patternCards",
-          "when": "!datapass.hidden.v5.peda1b"
+          "when": "!datapass.hidden.v5.peda1b && config.datapass.pedagogy.enabled"
         },
         {
           "command": "datapass.nav.tour.saveCurrentPath",

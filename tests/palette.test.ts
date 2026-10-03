@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync, writeFileSync } from "node:fs";
-import { paletteWhen, PALETTE_TIERS } from "../src/core/experience/palette";
+import { paletteWhen, PALETTE_SETTINGS, PALETTE_TIERS } from "../src/core/experience/palette";
 import { parsePresets, resolveExperience } from "../src/core/experience/presets";
 import { DEFAULT_PRESET, PRESET_IDS, SURFACE_IDS } from "../src/core/experience/surfaces";
 
@@ -19,14 +19,18 @@ const commands = pkg.contributes.commands as Array<{ command: string; title: str
 const palette = pkg.contributes.menus.commandPalette as Array<{ command: string; when: string }>;
 const title = (id: string) => commands.find(c => c.command === id)!.title;
 
-/** Evaluate a palette `when` of the forms this repository uses: "false", or `!datapass.hidden.<surface>`. */
-function listed(command: string, shown: ReadonlySet<string>): boolean {
+/**
+ * Evaluate a palette `when` of the forms this repository uses: "false", or `!datapass.hidden.<surface>` optionally
+ * followed by `&& config.<boolean setting>` terms (settings default to their package.json default, or `settings`).
+ */
+function listed(command: string, shown: ReadonlySet<string>, settings: Readonly<Record<string, boolean>> = {}): boolean {
   const e = palette.find(x => x.command === command);
   if (!e) return true;
   if (e.when === "false") return false;
-  const m = /^!datapass\.hidden\.([\w.]+)$/.exec(e.when);
+  const m = /^!datapass\.hidden\.([\w.]+)((?: && config\.[\w.]+)*)$/.exec(e.when);
   assert.ok(m, `${command}: unexpected palette when "${e.when}"`);
-  return shown.has(m[1]!);
+  const keys = [...m[2]!.matchAll(/config\.([\w.]+)/g)].map(k => k[1]!);
+  return shown.has(m[1]!) && keys.every(k => settings[k] ?? pkg.contributes.configuration.properties[k]?.default === true);
 }
 
 const shownIn = (preset: string) => new Set(resolveExperience(presets, preset, undefined).surfaces.filter(s => s.visible).map(s => s.id));
@@ -86,4 +90,20 @@ test("palette: Pick a View Here is offered wherever the Navigator is shown, not 
   // Hiding the Navigator (Customize) hides its palette entry with it.
   const noNav = new Set(resolveExperience(presets, DEFAULT_PRESET, { "view.navigator": false }).surfaces.filter(s => s.visible).map(s => s.id));
   assert.ok(!listed("datapass.nav.pickView", noNav));
+});
+
+test("palette: a command that a setting unregisters leaves the palette with it (V5HOLE9, V5 acceptance row 10)", () => {
+  // V5-10-OFF: with datapass.pedagogy.queryShowcase.enabled=false the command is disposed, so the palette must not list it.
+  assert.equal(palette.find(e => e.command === "datapass.pedagogy.queriesWorthShowing")?.when,
+    "!datapass.hidden.v5.peda3 && config.datapass.pedagogy.queryShowcase.enabled");
+  assert.equal(palette.find(e => e.command === "datapass.pedagogy.patternCards")?.when,
+    "!datapass.hidden.v5.peda1b && config.datapass.pedagogy.enabled");
+  const shown = shownIn("advanced");
+  assert.ok(listed("datapass.pedagogy.queriesWorthShowing", shown), "listed while the setting is on (its default)");
+  assert.ok(!listed("datapass.pedagogy.queriesWorthShowing", shown, { "datapass.pedagogy.queryShowcase.enabled": false }), "hidden when the setting is off");
+  assert.ok(listed("datapass.pedagogy.patternCards", shown, { "datapass.pedagogy.queryShowcase.enabled": false }), "the showcase switch does not hide the pattern cards");
+  assert.ok(!listed("datapass.pedagogy.patternCards", shown, { "datapass.pedagogy.enabled": false }), "the pedagogy master switch hides the pattern cards");
+  for (const [command, keys] of PALETTE_SETTINGS) for (const k of keys) {
+    assert.equal(pkg.contributes.configuration.properties[k]?.type, "boolean", `${command}: ${k} is a boolean setting`);
+  }
 });

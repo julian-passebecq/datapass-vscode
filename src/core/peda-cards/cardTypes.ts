@@ -1,10 +1,11 @@
 /**
- * V5 PEDA1b: the ONE standalone re-export of the pedagogy card contract (go/TOUR-PEDA-contract.md § 5, arch-catalog
- * concept-entry/1 additive: `card` / `decisionCard` on a ConceptEntry). STUB until REPIN5 vendors PEDA1a (concept
- * cards) and PEDA1a2 (decision cards, SQL techniques): then these types and `CARD_ENTRIES` come from
- * `@juliandatapass-group/arch-catalog` and this file only re-exports. Card texts are catalog data. Pure (no `vscode`).
+ * V5 PEDA1b: the pedagogy card contract (go/TOUR-PEDA-contract.md § 5, arch-catalog concept-entry/1 additive: `card` /
+ * `decisionCard` on a ConceptEntry). The card texts are data: resources/pedagogy/cards.json (generic teaching content,
+ * no client content), read and checked by `parseCardCatalog`. When REPIN5 vendors PEDA1a / PEDA1a2 the family lists
+ * come from `@juliandatapass-group/arch-catalog` and the data file follows its entries. Pure (no `vscode`).
  */
-import type { ConceptEntry, ConceptOption, OwnerQuestion } from "@juliandatapass-group/arch-catalog";
+import { CONSTRAINT_KINDS, type ConceptEntry, type ConceptOption, type OwnerQuestion } from "@juliandatapass-group/arch-catalog";
+import catalogData from "../../../resources/pedagogy/cards.json";
 
 export type { OwnerQuestion };
 export const CONCEPT_CARD_FAMILIES = ["ingestion", "storage", "transformation", "orchestration", "quality", "spark-sql", "sql-technique"] as const; // STUB until REPIN5
@@ -20,12 +21,18 @@ export interface ConceptCard {
   readonly codeExample: CodeExample; readonly output?: string;
   readonly comparison?: { readonly columns: readonly string[]; readonly rows: readonly (readonly string[])[] };
   readonly takeaways: readonly string[]; readonly interviewQuestions: readonly string[]; readonly implementedBy: readonly ImplementedBy[];
+  /** Case-insensitive patterns matched line by line on the comment-stripped code (static, nothing run): each hit is a span. */
+  readonly codeSignals?: readonly string[];
 }
 export interface DecisionCard {
   readonly family: DecisionCardFamily; readonly order: number; readonly question: string;
   /** Ids of this entry's `options`. */
   readonly options: readonly [string, string];
   readonly rule: string; readonly ask: OwnerQuestion; readonly maxim?: string; readonly example?: CodeExample;
+  /** The decision-rationale/1 `decisionPoint` this card answers (default: the entry id). */
+  readonly decisionPoint?: string;
+  /** Concept entry ids shown with this card; when set, the open question is listed only for a file using one of them. */
+  readonly concepts?: readonly string[];
 }
 
 /** The part of a concept entry the cards use (a full ConceptEntry with `card` / `decisionCard` satisfies it). */
@@ -35,33 +42,63 @@ export type CardEntry = Pick<ConceptEntry, "id" | "domain" | "title"> & {
   readonly decisionCard?: DecisionCard;
 };
 
-const opt = (id: string, title: string) => ({ id, title });
+export class CardCatalogError extends Error {}
 
-/** STUB entries (a few cards of PEDA1a / PEDA1a2 so binding is built and tested before the re-pin). */
-export const CARD_ENTRIES: readonly CardEntry[] = [
-  { id: "concept.sql.cte", domain: "sql", title: "CTE (WITH)", options: [], card: { family: "sql-technique", order: 1, question: "How do you keep a long query readable?",
-    codeExample: { lang: "sql", text: "WITH paid AS (SELECT * FROM orders WHERE status = 'paid')\nSELECT customer_id, SUM(amount) FROM paid GROUP BY customer_id" },
-    takeaways: ["One CTE per business step", "Read the query top-down"], interviewQuestions: ["When would you use a temp table instead of a CTE?", "Is a CTE materialised?"], implementedBy: [{ kind: "analyzer", id: "peda3-tagger" }] } },
-  { id: "concept.sql.anti-join-nulls", domain: "sql", title: "Anti-join and NULLs", options: [], card: { family: "sql-technique", order: 8, question: "How do you find rows with no match?",
-    codeExample: { lang: "sql", text: "SELECT c.* FROM customers c\nWHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)" },
-    takeaways: ["NOT EXISTS is NULL-safe", "NOT IN breaks on a NULL"], interviewQuestions: ["Why can NOT IN return no rows?", "LEFT JOIN … IS NULL or NOT EXISTS?"], implementedBy: [{ kind: "analyzer", id: "peda3-tagger" }] } },
-  { id: "concept.spark-perf.join-strategy", domain: "spark-perf", title: "Broadcast join", options: [], card: { family: "spark-sql", order: 5, question: "How do you avoid shuffling a big table to join a small one?",
-    codeExample: { lang: "pyspark", text: "from pyspark.sql.functions import broadcast\nbig.join(broadcast(small), 'id')" },
-    takeaways: ["Broadcast the small side only", "Check the plan for BroadcastHashJoin"], interviewQuestions: ["When does a broadcast join fail?", "What is autoBroadcastJoinThreshold?"], implementedBy: [{ kind: "fact", id: "spark-join" }] } },
-  { id: "concept.layout.partition-key", domain: "layout", title: "Partition or not", options: [opt("none", "No partitioning"), opt("by-filter-column", "Partition by the main filter column")],
-    decisionCard: { family: "storage", order: 2, question: "Partition this table or not?", options: ["none", "by-filter-column"],
-      rule: "Partition when most queries filter on one low-cardinality column and each partition still holds large files.", maxim: "Design storage around the queries, not around the source.",
-      ask: { text: "Which column do most queries filter on, and how much data arrives per value?", why: "Pruning helps only for the common filter and only with large partitions.", constraint: "volume" } } },
-  { id: "concept.modelling.scd-choice", domain: "modelling", title: "Latest or history", options: [opt("overwrite", "Latest only (overwrite)"), opt("scd2", "History (SCD2 / snapshots)")],
-    decisionCard: { family: "data-modeling", order: 2, question: "Keep only the latest value or the history?", options: ["overwrite", "scd2"],
-      rule: "Keep history when someone must report as of a past date or audit a change; otherwise overwrite.", maxim: "Define the row before writing the transformation.",
-      ask: { text: "Does anyone need to know what the value was on a past date?", why: "Point-in-time needs decide history.", constraint: "consumer" } } },
-  { id: "concept.architecture.retry-policy", domain: "architecture", title: "Retry or stop", options: [opt("retry", "Retry with backoff"), opt("stop", "Stop and alert")],
-    decisionCard: { family: "recovery-change", order: 1, question: "Retry automatically or stop the pipeline?", options: ["retry", "stop"],
-      rule: "Retry transient failures on idempotent steps; stop on data or code errors that a retry cannot fix.", maxim: "Plan for failure before the first production run.",
-      ask: { text: "Are these steps safe to run twice, and which failures are transient?", why: "Only idempotent steps can be retried safely.", constraint: "platform" } } },
-  { id: "concept.ingestion.load-mode", domain: "ingestion", title: "Full refresh or incremental", options: [opt("full", "Full refresh each run"), opt("incremental", "Incremental (append or merge)")],
-    decisionCard: { family: "recovery-change", order: 4, question: "Full refresh or incremental load?", options: ["full", "incremental"],
-      rule: "Refresh fully while the table is small enough to rebuild within the window; go incremental when rebuild time or cost no longer fits.",
-      ask: { text: "How long does a full rebuild take, and what window do you have?", why: "Rebuild time against the window decides the load mode.", constraint: "sla-freshness" } } }
-];
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+const isStr = (v: unknown): v is string => typeof v === "string" && v.trim().length > 0;
+const isStrs = (v: unknown): v is string[] => Array.isArray(v) && v.every(isStr);
+const oneOf = <T extends string>(list: readonly T[], v: unknown): v is T => typeof v === "string" && (list as readonly string[]).includes(v);
+
+function checkExample(where: string, v: unknown): void {
+  if (!isObj(v) || !oneOf(CODE_LANGS, v.lang) || typeof v.text !== "string") throw new CardCatalogError(`${where}: codeExample needs lang (${CODE_LANGS.join(", ")}) and text`);
+}
+
+function checkConcept(id: string, c: unknown): void {
+  if (!isObj(c)) throw new CardCatalogError(`${id}: card must be an object`);
+  if (!oneOf(CONCEPT_CARD_FAMILIES, c.family)) throw new CardCatalogError(`${id}: unknown concept family ${String(c.family)}`);
+  if (typeof c.order !== "number" || !isStr(c.question)) throw new CardCatalogError(`${id}: card needs order and question`);
+  checkExample(id, c.codeExample);
+  if (!isStrs(c.takeaways) || !isStrs(c.interviewQuestions)) throw new CardCatalogError(`${id}: takeaways and interviewQuestions are string lists`);
+  if (!Array.isArray(c.implementedBy) || !c.implementedBy.every(x => isObj(x) && oneOf(["detector", "analyzer", "fact", "view"], x.kind) && isStr(x.id))) throw new CardCatalogError(`${id}: implementedBy`);
+  if (c.output !== undefined && typeof c.output !== "string") throw new CardCatalogError(`${id}: output is text`);
+  if (c.codeSignals !== undefined) {
+    if (!isStrs(c.codeSignals)) throw new CardCatalogError(`${id}: codeSignals are patterns`);
+    for (const p of c.codeSignals) { try { new RegExp(p, "i"); } catch { throw new CardCatalogError(`${id}: bad codeSignal ${p}`); } }
+  }
+}
+
+function checkDecision(id: string, optionIds: readonly string[], d: unknown): void {
+  if (!isObj(d)) throw new CardCatalogError(`${id}: decisionCard must be an object`);
+  if (!oneOf(DECISION_CARD_FAMILIES, d.family)) throw new CardCatalogError(`${id}: unknown decision family ${String(d.family)}`);
+  if (typeof d.order !== "number" || !isStr(d.question) || !isStr(d.rule)) throw new CardCatalogError(`${id}: decisionCard needs order, question and rule`);
+  if (!isStrs(d.options) || d.options.length !== 2 || !d.options.every(o => optionIds.includes(o))) throw new CardCatalogError(`${id}: decisionCard.options are two ids of the entry's options`);
+  const a = d.ask;
+  if (!isObj(a) || !isStr(a.text) || !isStr(a.why) || !oneOf(CONSTRAINT_KINDS, a.constraint)) throw new CardCatalogError(`${id}: ask needs text, why and a known constraint`);
+  if (d.maxim !== undefined && !isStr(d.maxim)) throw new CardCatalogError(`${id}: maxim is text`);
+  if (d.example !== undefined) checkExample(id, d.example);
+  if (d.decisionPoint !== undefined && !isStr(d.decisionPoint)) throw new CardCatalogError(`${id}: decisionPoint is an id`);
+  if (d.concepts !== undefined && !isStrs(d.concepts)) throw new CardCatalogError(`${id}: concepts are entry ids`);
+}
+
+/** Read and check a `datapass.pedagogy-cards/1` document; throws `CardCatalogError` on the first problem. */
+export function parseCardCatalog(doc: unknown): CardEntry[] {
+  if (!isObj(doc) || doc.schema !== "datapass.pedagogy-cards/1" || !Array.isArray(doc.entries)) throw new CardCatalogError("not a datapass.pedagogy-cards/1 document");
+  const ids = new Set<string>();
+  for (const e of doc.entries as unknown[]) {
+    if (!isObj(e) || !isStr(e.id) || !isStr(e.domain) || !isStr(e.title)) throw new CardCatalogError("an entry needs id, domain and title");
+    if (ids.has(e.id)) throw new CardCatalogError(`${e.id}: duplicate id`);
+    ids.add(e.id);
+    if (!Array.isArray(e.options) || !e.options.every(o => isObj(o) && isStr(o.id) && isStr(o.title))) throw new CardCatalogError(`${e.id}: options are {id, title}`);
+    if (e.card === undefined && e.decisionCard === undefined) throw new CardCatalogError(`${e.id}: no card`);
+    if (e.card !== undefined) checkConcept(e.id, e.card);
+    if (e.decisionCard !== undefined) checkDecision(e.id, (e.options as { id: string }[]).map(o => o.id), e.decisionCard);
+  }
+  const entries = doc.entries as CardEntry[];
+  for (const e of entries) for (const c of e.decisionCard?.concepts ?? []) {
+    if (!entries.some(x => x.id === c && x.card)) throw new CardCatalogError(`${e.id}: ${c} is not a concept card`);
+  }
+  return entries;
+}
+
+/** The built-in cards (resources/pedagogy/cards.json). */
+export const CARD_ENTRIES: readonly CardEntry[] = parseCardCatalog(catalogData);

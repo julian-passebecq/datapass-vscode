@@ -43,7 +43,11 @@ export type Excerpt =
   | { readonly source: "guidance"; readonly lang: string; readonly text: string; readonly origin: "datapass-guidance" };
 export interface BoundConcept { readonly entry: CardEntry; readonly excerpt: Excerpt }
 
-export interface DecisionTaken { readonly option: string; readonly label: string; readonly at: CodeSpan | null; readonly origin: Origin; readonly summary?: string }
+export interface DecisionTaken {
+  readonly option: string; readonly label: string; readonly at: CodeSpan | null; readonly origin: Origin; readonly summary?: string;
+  /** The alternatives the project's record weighed (its own labels), when it lists any. */
+  readonly alternatives?: readonly string[];
+}
 export interface ClassAQuestion extends OwnerQuestion { readonly class: "A"; readonly entryId: string }
 export type BoundDecision =
   | { readonly entry: CardEntry; readonly taken: readonly DecisionTaken[]; readonly ask?: undefined }
@@ -73,9 +77,12 @@ const optionLabel = (entry: CardEntry, id: string) => entry.options.find(o => o.
 /** Which option the project took and where; with neither record nor fact, a class-A owner question. */
 export function bindDecision(entry: CardEntry, facts: readonly ProjectFact[], rationales: readonly DecisionRationale[] = [], repositoryKey = ""): BoundDecision {
   const d = entry.decisionCard;
-  const records = rationales.filter(r => r.decisionPoint === entry.id);
-  if (records.length) return { entry, taken: records.map(r => ({ option: r.choice.option ?? "", label: r.choice.option ? optionLabel(entry, r.choice.option) : r.choice.summary,
-    summary: r.choice.summary, at: rationaleSpan(r, repositoryKey), origin: r.origin })) };
+  const records = rationales.filter(r => r.decisionPoint === entry.id || (d?.decisionPoint !== undefined && r.decisionPoint === d.decisionPoint));
+  if (records.length) return { entry, taken: records.map(r => {
+    const alternatives = (r.alternatives ?? []).map(a => a.label).filter(Boolean);
+    return { option: r.choice.option ?? "", label: r.choice.option ? optionLabel(entry, r.choice.option) : r.choice.summary,
+      summary: r.choice.summary, at: rationaleSpan(r, repositoryKey), origin: r.origin, ...(alternatives.length ? { alternatives } : {}) };
+  }) };
   const signal = DECISION_SIGNALS[entry.id];
   const hits = signal && d ? facts.filter(f => f.signal === signal && f.option !== undefined && d.options.includes(f.option)).sort((a, b) => cmpSpan(a.at, b.at)) : [];
   if (hits.length && d) {
@@ -109,7 +116,8 @@ export function decisionCardView(b: BoundDecision): { card: Card; holes: Hole[] 
   const fields: { label: string; value: Cell }[] = [
     { label: "pedagogy.question", value: g(d?.question ?? null) },
     ...(b.ask ? [{ label: "pedagogy.ownerQuestion", value: { value: b.ask.text, origin: "owner-question" } as Cell }] : []),
-    ...b.taken.map(t => ({ label: "pedagogy.projectChoice", value: { value: `${t.label}${where(t.at) ? ` @ ${where(t.at)}` : ""}`, origin: t.origin } as Cell })),
+    ...b.taken.map(t => ({ label: "pedagogy.projectChoice", value: { value: `${t.label}${t.option && t.option !== t.label ? ` (${t.option})` : ""}${where(t.at) ? ` @ ${where(t.at)}` : ""}`, origin: t.origin } as Cell })),
+    ...b.taken.flatMap(t => t.alternatives?.length ? [{ label: "pedagogy.alternatives", value: { value: t.alternatives.join("; "), origin: t.origin } as Cell }] : []),
     { label: "pedagogy.rule", value: g(d?.rule ?? null) },
     ...(d?.maxim ? [{ label: "pedagogy.maxim", value: g(d.maxim) }] : [])
   ];
@@ -123,7 +131,7 @@ export interface CardInputs {
   readonly rationales?: readonly DecisionRationale[]; readonly repositoryKey?: string; readonly settings?: CardSettings;
 }
 
-interface Built { readonly card: Card; readonly holes: readonly Hole[]; readonly span: CodeSpan | null; readonly decision: boolean }
+interface Built { readonly card: Card; readonly holes: readonly Hole[]; readonly span: CodeSpan | null; readonly decision: boolean; readonly entry: CardEntry }
 
 function buildAll(entries: readonly CardEntry[], inputs: CardInputs): Built[] {
   const s = inputs.settings ?? ALL_CARDS;
@@ -136,12 +144,12 @@ function buildAll(entries: readonly CardEntry[], inputs: CardInputs): Built[] {
   for (const e of sorted) {
     if (e.card && s.conceptCards) {
       const b = bindConcept(e, inputs.facts);
-      out.push({ card: conceptCardView(b), holes: [], span: b.excerpt.source === "project" ? b.excerpt.at : null, decision: false });
+      out.push({ card: conceptCardView(b), holes: [], span: b.excerpt.source === "project" ? b.excerpt.at : null, decision: false, entry: e });
     }
     if (e.decisionCard && s.decisionCards) {
       const b = bindDecision(e, inputs.facts, inputs.rationales, inputs.repositoryKey);
       const v = decisionCardView(b);
-      out.push({ card: v.card, holes: v.holes, span: b.taken[0]?.at ?? null, decision: true });
+      out.push({ card: v.card, holes: v.holes, span: b.taken[0]?.at ?? null, decision: true, entry: e });
     }
   }
   return out;
@@ -152,11 +160,22 @@ function toBinding(built: readonly Built[]): BindingData {
     cards: built.map(b => b.card), holes: built.flatMap(b => b.holes) };
 }
 
-/** Context "Patterns" / Navigator artifact level: cards bound to this file, plus the open decisions of a file that has facts. */
+/**
+ * Context "Patterns" / Navigator artifact level: cards bound to this file, plus the open decisions of a file that has
+ * facts (a decision card naming `concepts` only when the file uses one of them), plus the concept cards a listed
+ * decision card names (bound elsewhere or the generic example marked datapass-guidance: the other option, explained).
+ */
 export function cardsForArtifact(inputs: CardInputs, repositoryKey: string, path: string): BindingData {
   const inFile = (s: CodeSpan | null) => !!s && s.repositoryKey === repositoryKey && s.path === path;
-  const fileHasFacts = inputs.facts.some(f => inFile(f.at));
-  return toBinding(buildAll(inputs.entries, inputs).filter(b => inFile(b.span) || (b.decision && b.span === null && fileHasFacts)));
+  const fileFacts = inputs.facts.filter(f => inFile(f.at));
+  const openHere = (e: CardEntry) => {
+    const want = e.decisionCard?.concepts;
+    return want ? want.some(c => fileFacts.some(f => f.signal === `concept:${c}`)) : fileFacts.length > 0;
+  };
+  const all = buildAll(inputs.entries, inputs);
+  const shown = all.filter(b => inFile(b.span) || (b.decision && b.span === null && openHere(b.entry)));
+  const related = new Set(shown.flatMap(b => b.decision ? b.entry.decisionCard?.concepts ?? [] : []));
+  return toBinding(all.filter(b => shown.includes(b) || (!b.decision && related.has(b.entry.id))));
 }
 
 /** NAVPRIN1 principle cards: the cards of the given entry ids, bound to the project, guidance fallback kept. */

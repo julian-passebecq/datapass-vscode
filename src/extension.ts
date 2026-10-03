@@ -39,7 +39,7 @@ import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
 import { registerNavigation } from "./core/navigation/register";
-import { setProjectCardsSource } from "./views/peda-cards/cards.surface";
+import { readDecisionRecords, setProjectCardsSource } from "./views/peda-cards/cards.surface";
 import { setQueryShowcaseSource } from "./views/peda-showcase/showcase.surface";
 import { setInterviewSource } from "./views/peda-interview/interview.surface";
 import type { HomeState } from "./views/homeState";
@@ -306,7 +306,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
   // V4-NAV: the one NavigationService; surfaces plug in through src/core/navigation/register.ts.
   registerNavigation(context, session);
-  setProjectCardsSource({ locate: uri => session.understandingLocate(uri), load: uri => session.understandingFor(uri) });
+  setProjectCardsSource({ locate: uri => session.understandingLocate(uri), load: uri => session.understandingFor(uri), rationales: () => readDecisionRecords(session.project.root) });
   setQueryShowcaseSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
   setInterviewSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
 
