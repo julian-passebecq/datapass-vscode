@@ -3081,8 +3081,14 @@
         "datapass.dbt.driftLabels": {
           "type": "object",
           "default": {},
-          "markdownDescription": "DETACH1: labels of the drift states of a detached dbt model (keys `in-sync`, `dbt-changed`, `notebook-edited`, `both-changed`, `unknown`). Empty keeps the defaults.",
+          "markdownDescription": "DETACH1: labels of the drift states of a detached dbt model (keys `in-sync`, `dbt-changed`, `notebook-edited`, `both-changed`, `unknown`, `target-missing`). Empty keeps the defaults.",
           "additionalProperties": { "type": "string", "maxLength": 80 }
+        },
+        "datapass.dbt.detachMessages": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "DETACH1: wording of the detach command (keys `pickTitle`, `confirm`, `confirmDetail`, `detached` = the toast after a detach). `{model}`, `{notebook}` and `{record}` are filled in. Empty keeps the defaults (toast: `{model} is detached: the notebook becomes the authority.`).",
+          "additionalProperties": { "type": "string", "maxLength": 400 }
         },
         "datapass.navView.titleFormat": {
           "type": "string",

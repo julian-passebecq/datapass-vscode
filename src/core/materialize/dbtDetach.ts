@@ -4,7 +4,8 @@
  *
  *   readDetachRecord(text)                 → a validated DETSPI1 record, or why it is not one
  *   detachModel(record, current)           → the record with `authority: "notebook"` and a fresh stamp (current hashes)
- *   detachView(path, record, current, at)  → badge + drift fact (in-sync / dbt changed / notebook edited / both / unknown)
+ *   detachView(path, record, current, at)  → badge + drift fact (in-sync / dbt changed / notebook edited / both / unknown
+ *                                            / target missing: the stamped notebook no longer exists, from an fs stat)
  *   reattachProposal(result, existing, r)  → re-attach = a NEW MAT1 proposal (diff of that model's files), never automatic
  *
  * DataPass never runs dbt nor the notebook. The current dbt revision is read by the caller (Git, last commit of the dbt
@@ -29,14 +30,37 @@ import type { DiffEntry } from "./flow";
 
 export const DETACH_COMMAND = "datapass.dbt.detach";
 
+/**
+ * The state a view shows: a DETSPI1 drift state, or `target-missing` when the stamped notebook is gone (fs stat says it
+ * does not exist). `target-missing` is a view fact only, never written to a record, and never reads as "in sync".
+ */
+export type DetachViewState = DetachDriftState | "target-missing";
+
 /** Labels are data: a caller may override them (settings), the defaults keep the meaning plain. */
-export const DRIFT_LABELS: Readonly<Record<DetachDriftState, string>> = {
+export const DRIFT_LABELS: Readonly<Record<DetachViewState, string>> = {
   "in-sync": "in sync since detach",
   "dbt-changed": "dbt changed since detach",
   "notebook-edited": "notebook edited since detach",
   "both-changed": "dbt changed and notebook edited",
-  unknown: "drift unknown"
+  unknown: "drift unknown",
+  "target-missing": "target missing"
 };
+
+/** Detach command wording (data; `datapass.dbt.detachMessages` overrides any key). `{model}`, `{notebook}`, `{record}` are filled in. */
+export const DETACH_MESSAGES = {
+  pickTitle: "Detach a dbt model (the notebook becomes the authority)",
+  confirm: "Detach {model}?",
+  confirmDetail: "The notebook {notebook} becomes the authority. Later dbt changes are no longer materialized into it; drift is shown as a fact, never re-synced. DataPass records who and when in {record}. Commit that file through your normal Git flow.",
+  detached: "{model} is detached: the notebook becomes the authority."
+} as const;
+export type DetachMessageKey = keyof typeof DETACH_MESSAGES;
+
+/** One message, override first (blank overrides are ignored), placeholders filled. */
+export function detachMessage(key: DetachMessageKey, vars: { model?: string; notebook?: string; record?: string }, overrides: Partial<Record<string, unknown>> = {}): string {
+  const o = overrides[key];
+  const template = typeof o === "string" && o.trim() ? o : DETACH_MESSAGES[key];
+  return template.replace(/\{(model|notebook|record)\}/g, (m, k: "model" | "notebook" | "record") => vars[k] ?? m);
+}
 export const DETACHED_BADGE = "detached";
 
 export function readDetachRecord(text: string): { ok: true; record: MaterializationDetach } | { ok: false; reason: string } {
@@ -47,10 +71,15 @@ export function readDetachRecord(text: string): { ok: true; record: Materializat
 
 export const serializeDetachRecord = (record: MaterializationDetach): string => `${JSON.stringify(record, null, 2)}\n`;
 
-/** What the caller read now: the notebook file (null = missing) and the dbt project revision as a Git SHA (null = unknown). */
+/**
+ * What the caller read now: the notebook file (null = unreadable) and the dbt project revision as a Git SHA (null =
+ * unknown). `notebookExists` is an fs stat of the stamped notebook path: `false` = the target is gone ("target missing");
+ * omitted = not checked (an unreadable notebook is then only "drift unknown").
+ */
 export interface DetachCurrent {
   notebookContent: string | null;
   dbtRevision: string | null;
+  notebookExists?: boolean;
 }
 
 export interface DetachRequest extends DetachCurrent {
@@ -101,25 +130,38 @@ export interface DetachView {
   recordPath: string;
   authority: "dbt" | "notebook";
   detached: boolean;
+  /** The label shown when the stamped notebook no longer exists (fs stat), else null. Set for attached models too. */
+  targetMissing: string | null;
   /** Only for a detached model; null while dbt is the authority (no drift to measure). Revision = Git oid, hash = digest value. */
-  drift: null | { state: DetachDriftState; label: string; dbtRevision: string | null; notebookHash: string | null; checkedAt: string };
+  drift: null | { state: DetachViewState; label: string; dbtRevision: string | null; notebookHash: string | null; checkedAt: string };
   detachedBy?: { actor: string; at: string; origin: DetachOrigin };
   reattachPending?: { proposalId: string; actor: string; at: string };
   holes: DetachHole[];
 }
 
-export function detachView(path: string, record: MaterializationDetach, current: DetachCurrent, checkedAt: string, labels: Partial<Record<DetachDriftState, string>> = {}): DetachView {
+/** The hole for a stamped notebook that no longer exists (detached or not). */
+export const targetMissingHole = (notebookPath: string, detached: boolean): DetachHole => ({
+  reason: detached
+    ? `Target missing: the detached notebook ${notebookPath} no longer exists. DataPass never recreates it: restore it from Git, or re-attach to propose a fresh materialization.`
+    : `Target missing: the materialized notebook ${notebookPath} no longer exists. Re-run the materialization (MAT1) to propose it again.`
+});
+
+export function detachView(path: string, record: MaterializationDetach, current: DetachCurrent, checkedAt: string, labels: Partial<Record<DetachViewState, string>> = {}): DetachView {
   const base = { modelId: record.stamp.modelId, notebookPath: record.stamp.notebookPath, recordPath: path, authority: record.authority };
   const reattachPending = record.reattach ? { proposalId: record.reattach.proposalId, actor: record.reattach.actor.id, at: record.reattach.at } : undefined;
-  if (record.authority === "dbt") return { ...base, detached: false, drift: null, holes: [], ...(reattachPending ? { reattachPending } : {}) };
-  const notebookHash = current.notebookContent === null ? null : notebookSourceHash(current.notebookContent);
+  const missing = current.notebookExists === false;
+  const targetMissing = missing ? labels["target-missing"] ?? DRIFT_LABELS["target-missing"] : null;
+  if (record.authority === "dbt") return { ...base, detached: false, targetMissing, drift: null, holes: missing ? [targetMissingHole(record.stamp.notebookPath, false)] : [], ...(reattachPending ? { reattachPending } : {}) };
+  // A deleted target is never measured (no content → no hash): its state is `target-missing`, never in sync.
+  const notebookHash = missing || current.notebookContent === null ? null : notebookSourceHash(current.notebookContent);
   const dbtRevision = (current.dbtRevision === null ? undefined : gitObjectId(current.dbtRevision)) ?? null;
-  const state = detachDriftState(record.stamp, { dbtRevision, notebookHash });
+  const state: DetachViewState = missing ? "target-missing" : detachDriftState(record.stamp, { dbtRevision, notebookHash });
   const holes: DetachHole[] = [];
-  if (notebookHash === null) holes.push({ reason: `The detached notebook ${record.stamp.notebookPath} is missing.` });
+  if (missing) holes.push(targetMissingHole(record.stamp.notebookPath, true));
+  else if (notebookHash === null) holes.push({ reason: `The detached notebook ${record.stamp.notebookPath} is missing or unreadable.` });
   if (dbtRevision === null) holes.push({ reason: "The dbt project revision could not be read from Git (not a repository, or the project folder has no commit)." });
   return {
-    ...base, detached: true,
+    ...base, detached: true, targetMissing,
     drift: { state, label: labels[state] ?? DRIFT_LABELS[state], dbtRevision: dbtRevision?.oid ?? null, notebookHash: notebookHash?.value ?? null, checkedAt },
     detachedBy: { actor: record.stamp.actor.id, at: record.recordedAt, origin: record.stamp.origin },
     ...(reattachPending ? { reattachPending } : {}),
@@ -129,7 +171,7 @@ export function detachView(path: string, record: MaterializationDetach, current:
 
 /** Tree row text: `detached · notebook edited since detach`. */
 export function detachBadge(v: DetachView): string {
-  if (!v.detached) return v.reattachPending ? "dbt · re-attach proposed" : "dbt";
+  if (!v.detached) return [v.reattachPending ? "dbt · re-attach proposed" : "dbt", v.targetMissing].filter(Boolean).join(" · ");
   return [DETACHED_BADGE, v.drift?.label].filter(Boolean).join(" · ");
 }
 
@@ -138,6 +180,7 @@ export function detachContextBody(v: DetachView): string {
   const lines = [`Model: ${v.modelId}`, `Notebook: ${v.notebookPath}`, `Authority: ${v.authority === "notebook" ? "the notebook (detached from dbt)" : "dbt (the notebook is generated)"}`];
   if (v.detachedBy) lines.push(`Detached by ${v.detachedBy.actor} on ${v.detachedBy.at}${v.detachedBy.origin === "declared" ? "" : ` (${v.detachedBy.origin})`}`);
   if (v.drift) lines.push(`Drift: ${v.drift.label} (checked ${v.drift.checkedAt})`);
+  else if (v.targetMissing) lines.push(`Notebook: ${v.targetMissing}`);
   if (v.reattachPending) lines.push(`Re-attach proposed: ${v.reattachPending.proposalId} by ${v.reattachPending.actor} on ${v.reattachPending.at}`);
   if (v.detached) lines.push("Changes are never re-synced: re-attach is a new materialization proposal you review.");
   return lines.join("\n");

@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import test from "node:test";
 import { type DbtFile, type DbtMaterializeInput, detachStampDigest, materializeDbtModels, notebookSourceHash, previewDbtDiff, validateMaterializationDetach } from "../src/core/materialize/dbtNotebook";
-import { DETACH_COMMAND, detachBadge, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
+import { DETACH_COMMAND, DETACH_MESSAGES, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
 import { PALETTE_TIERS } from "../src/core/experience/palette";
 
 const ROOT = join(__dirname, "fixtures", "dbtmat");
@@ -130,4 +130,42 @@ test("MAT1 keeps a detached notebook; re-attach is a new proposal for that model
 
 test("the command is classified in the palette", () => {
   assert.equal(PALETTE_TIERS.get(DETACH_COMMAND), "palette.full");
+});
+
+test("V5-01-HOLE: a deleted target is \"target missing\" with a hole, never in sync or a guessed drift", () => {
+  const d = detached();
+  const gone = detachView(rec.path, d, { notebookContent: null, dbtRevision: REV, notebookExists: false }, AT);
+  assert.equal(gone.drift!.state, "target-missing");
+  assert.equal(gone.drift!.label, "target missing");
+  assert.equal(gone.drift!.notebookHash, null);
+  assert.equal(gone.targetMissing, "target missing");
+  assert.equal(detachBadge(gone), "detached · target missing");
+  assert.doesNotMatch(detachBadge(gone), /in sync/);
+  assert.match(gone.holes[0]!.reason, /^Target missing: .*no longer exists/);
+  assert.match(detachContextSection([gone], rec.record.stamp.notebookPath)!.body, /Drift: target missing/);
+  // Even stale content handed in by a caller is not measured once the stat says the file is gone.
+  const stale = detachView(rec.path, d, { notebookContent: nbText, dbtRevision: REV, notebookExists: false }, AT);
+  assert.equal(stale.drift!.state, "target-missing");
+  // The label is data.
+  const relabelled = detachView(rec.path, d, { notebookContent: null, dbtRevision: REV, notebookExists: false }, AT, { "target-missing": "notebook deleted" });
+  assert.equal(detachBadge(relabelled), "detached · notebook deleted");
+  // A present target keeps the usual drift facts; existence unchecked keeps the old "unknown".
+  assert.equal(detachView(rec.path, d, { notebookContent: nbText, dbtRevision: REV, notebookExists: true }, AT).targetMissing, null);
+  assert.equal(detachView(rec.path, d, { notebookContent: null, dbtRevision: REV }, AT).drift!.state, "unknown");
+  // An attached model whose notebook is gone: no drift, but the target-missing fact and hole.
+  const attached = detachView(rec.path, rec.record, { notebookContent: null, dbtRevision: REV, notebookExists: false }, AT);
+  assert.equal(attached.drift, null);
+  assert.equal(detachBadge(attached), "dbt · target missing");
+  assert.match(attached.holes[0]!.reason, /^Target missing/);
+});
+
+test("detach wording is data: the toast says the notebook becomes the authority (spec V5-01), overrides apply", () => {
+  assert.equal(detachMessage("detached", { model: "fct_orders" }), "fct_orders is detached: the notebook becomes the authority.");
+  assert.match(DETACH_MESSAGES.pickTitle, /the notebook becomes the authority/);
+  assert.match(detachMessage("confirmDetail", { notebook: "fabric/x.Notebook/notebook-content.py", record: "r.json" }), /^The notebook fabric\/x\.Notebook\/notebook-content\.py becomes the authority\..* in r\.json\./);
+  assert.equal(detachMessage("detached", { model: "m" }, { detached: "{model} now follows its notebook" }), "m now follows its notebook");
+  assert.equal(detachMessage("detached", { model: "m" }, { detached: "  " }), "m is detached: the notebook becomes the authority.");
+  const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")) as { contributes: { configuration: Array<{ properties: Record<string, unknown> }> | { properties: Record<string, unknown> } } };
+  const conf = ([] as Array<{ properties: Record<string, unknown> }>).concat(pkg.contributes.configuration);
+  assert.ok(conf.some(c => "datapass.dbt.detachMessages" in c.properties));
 });
