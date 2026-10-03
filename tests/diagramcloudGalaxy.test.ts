@@ -7,7 +7,7 @@ import {
   galaxyEntityId
 } from "../src/core/diagramcloud/galaxyPublication";
 
-const producerRevision = "1c8dc4ac796687cb7ede4d8acaf4d2717bc0446c";
+const producerRevision = "58f7d2da51647c261c2b000416751ad570f64e32";
 
 const build = () => diagramCloudRealizationSnapshot({
   snapshotId: "datapass-total-checks-20261003",
@@ -30,7 +30,7 @@ const build = () => diagramCloudRealizationSnapshot({
   summary: "DataPass can identify the DiagramCloud SQL quality checks component at the recorded repository revision.",
   caveat: "This is contract interoperability evidence, not a runtime or production deployment verification.",
   evidence: {
-    evidenceId: "galaxy:datapass-vscode:evidence:bridge-code-1c8dc4a",
+    evidenceId: "galaxy:datapass_vscode:evidence:bridge-code-58f7d2d",
     kind: "repo_commit",
     sourceSystem: "github",
     locator: {
@@ -57,7 +57,7 @@ test("Galaxy identity points to DiagramCloud-owned stable project/node IDs", () 
   assert.equal(out.subject.entity_id, galaxyEntityId("diagramcloud", "project", "total-project-controls"));
   assert.equal(out.entities[1]!.entity_id, galaxyEntityId("diagramcloud", "node", "checks"));
   assert.equal(out.entities[1]!.owner_app, "diagramcloud");
-  assert.equal(out.realization_claims[0]!.producer_app, "datapass-vscode");
+  assert.equal(out.realization_claims[0]!.producer_app, "datapass_vscode");
   assert.deepEqual(out.contract_versions, [...GALAXY_DIAGRAMCLOUD_CONTRACTS]);
 });
 
@@ -91,4 +91,70 @@ test("DataPass cannot publish a public snapshot without explicit human confirmat
       reviewState: "reviewed"
     }
   }), /public snapshot requires human confirmation/);
+});
+
+
+test("public snapshots cannot carry internal evidence even after human confirmation", () => {
+  assert.throws(() => diagramCloudRealizationSnapshot({
+    snapshotId: "public-private-evidence",
+    productVersion: "1.1.0-rc.1",
+    producerRevision,
+    createdAt: "2026-10-03T01:30:00Z",
+    reviewedAt: "2026-10-03T01:31:00Z",
+    humanConfirmed: true,
+    intendedVisibility: "public",
+    projectId: "total-project-controls",
+    projectTitle: "TotalEnergies project controls",
+    projectRevision: 0,
+    nodeId: "checks",
+    nodeLabel: "SQL quality checks",
+    claimId: "claim-public",
+    claim: "observed",
+    observedAt: "2026-10-03T01:29:00Z",
+    authority: "DataPass repository bridge",
+    summary: "Observed mapping.",
+    evidence: {
+      evidenceId: "galaxy:datapass_vscode:evidence:internal",
+      kind: "repo_commit",
+      sourceSystem: "github",
+      locator: { repository: "julian-passebecq/datapass-vscode" },
+      capturedAt: "2026-10-03T01:29:00Z",
+      visibility: "internal",
+      synthetic: false,
+      reviewState: "reviewed"
+    }
+  }), /public snapshot cannot include non-public evidence/);
+});
+
+test("verified claims refuse synthetic evidence and links refuse embedded credentials", () => {
+  const common = {
+    snapshotId: "guarded",
+    productVersion: "1.1.0-rc.1",
+    producerRevision,
+    createdAt: "2026-10-03T01:30:00Z",
+    reviewedAt: "2026-10-03T01:31:00Z",
+    humanConfirmed: true,
+    intendedVisibility: "internal" as const,
+    projectId: "total-project-controls",
+    projectTitle: "TotalEnergies project controls",
+    projectRevision: 0,
+    nodeId: "checks",
+    nodeLabel: "SQL quality checks",
+    claimId: "claim-guarded",
+    observedAt: "2026-10-03T01:29:00Z",
+    authority: "DataPass repository bridge",
+    summary: "Observed mapping.",
+    evidence: {
+      evidenceId: "galaxy:datapass_vscode:evidence:synthetic",
+      kind: "test_run" as const,
+      sourceSystem: "ci" as const,
+      locator: { run_id: "42" },
+      capturedAt: "2026-10-03T01:29:00Z",
+      visibility: "internal" as const,
+      synthetic: true,
+      reviewState: "reviewed" as const
+    }
+  };
+  assert.throws(() => diagramCloudRealizationSnapshot({ ...common, claim: "verified" }), /synthetic evidence cannot back a verified claim/);
+  assert.throws(() => diagramCloudRealizationSnapshot({ ...common, claim: "observed", evidence: { ...common.evidence, synthetic: false }, openUri: "https://user:pw@example.com/run" }), /without embedded credentials/);
 });
