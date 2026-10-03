@@ -1,7 +1,7 @@
 {
   "schema": "datapass.vendored-common/1",
   "sourceRepository": "https://gitlab.com/juliandatapass-group/datapass-vscode-common",
-  "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491",
+  "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f",
   "internalOnly": true,
   "registryStatus": "Packed from Common with npm pack (scripts/pack-vendor.mjs); not published.",
   "artifacts": [
@@ -11,7 +11,7 @@
       "file": "juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
       "sha256": "83724c6a27d9c1fc932638a4138b59851f2a5f42e63a34955e2ec0fab394268b",
       "integrity": "sha512-wNfyl/KZUZHvfZU88ETFBovla3aVDabaGFp3iqbajDvLqB4y5zeEhIwYimpYNwRSJ/UTlJlu8tIkQnCWOwt3Bg==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analysis-protocol",
@@ -19,7 +19,7 @@
       "file": "juliandatapass-group-analysis-protocol-0.1.0-alpha.4.tgz",
       "sha256": "b8a18f31f4010753520c9905477490d1d929d158f49c2292ae01dd55a8de0e9d",
       "integrity": "sha512-2ntXuU43jGrofwSwSEZaYWEREepiZpYSLJ1Nd0tgjQNYOWrBIeceHbjrckCmpp/w/6cEG36h7WxsV1M4SRjSrg==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/exchange-protocol",
@@ -27,7 +27,7 @@
       "file": "juliandatapass-group-exchange-protocol-0.1.0-alpha.6.tgz",
       "sha256": "77acdea6f5ecf0a720378d2cc17f28d099ec054f1026584f6daee4e7a34e66a3",
       "integrity": "sha512-gSmUs04dkuR03nt651mmpj0+zBfYZe1aMsI9eBNWi3BSn40Ar/9+Oapw9/F1JDYBYm7u9UZJPukBAoL2+U0fMA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/compat-v3",
@@ -35,7 +35,7 @@
       "file": "juliandatapass-group-compat-v3-0.1.0-alpha.3.tgz",
       "sha256": "3bf6182c09a78dcce3cdcde610d79440a337ba9db3d082768080096738e5c022",
       "integrity": "sha512-5szyC/H4EX5MnSJM3JSJcR4wB8AYDV6GcOsX+IlnUJuzVJfDi/xBdPX7C0Vg8mzlQLB050QTgBFK/bvGUH5RnA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/tool-catalog",
@@ -43,7 +43,7 @@
       "file": "juliandatapass-group-tool-catalog-0.1.0-alpha.3.tgz",
       "sha256": "80f1db67a9c9d7e8b14eea4060f83d1080264bf0611694ce139241846dfeddbf",
       "integrity": "sha512-NLslqS/oAE76FkD7Zx5nWJYoR9U4uqUwl4QJqoylQ0g3TE91w6GX8epB+zJ/DcFZSpHQoyX0hLbSRN9azSO1vQ==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/capability-router",
@@ -51,7 +51,7 @@
       "file": "juliandatapass-group-capability-router-0.1.0-alpha.2.tgz",
       "sha256": "bcbb5279a5b622ca531d7542daec52b7bea2b4e3a79d51b0d4db1af5552e023c",
       "integrity": "sha512-CuocIVTstF4WyBZZStwANipvRUnza3pOFWUs+yTxNxbY4NRATIrK9KfcuxgOZJ9uaZT96iZRB0Ewj/tjezD9VA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/project-contracts",
@@ -59,7 +59,7 @@
       "file": "juliandatapass-group-project-contracts-0.1.0-alpha.6.tgz",
       "sha256": "3fbe5289a8f7fba18f8e67db9e0b0c5301cfa16150a71f9a0b70d11b60ce9693",
       "integrity": "sha512-6rv9pz1Q2e+TgoE+/vTzxdU9z2P31CmRFfH8nVlakKG0b18S1pgGXrUYcaOnYU/z4RbDRuiI5TGZYMe+NNT7Ig==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/lineage-core",
@@ -67,7 +67,7 @@
       "file": "juliandatapass-group-lineage-core-0.1.0-alpha.4.tgz",
       "sha256": "fe380b4b147b203fbb2e159e081ccf39eb6cc7f868bc543f802f108366d270da",
       "integrity": "sha512-scKyT+/MrRxj6IMO5eqQ4pz2lcpB9/p/ad0IqLuNfplMq1c0YioBhSzepS649pG1gfBWH8B4d8lox+u/hmTPOg==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/view-spi",
@@ -75,15 +75,15 @@
       "file": "juliandatapass-group-view-spi-0.1.0-alpha.4.tgz",
       "sha256": "87cc117b7eb7b92fedeebc1e1385296ab2897facfaef8320436db6a034dfe338",
       "integrity": "sha512-DKFojagTOvwfpyMcY6483NqQRaNlTAMITOiHo3ueJDWL1qaLmV0fJ5c7rW/1Cd5YSYF6psmMwS4mKVvyiWAd5Q==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analyzers",
       "version": "0.1.0-alpha.10",
       "file": "juliandatapass-group-analyzers-0.1.0-alpha.10.tgz",
-      "sha256": "3e724a4a1c2d1946c5d1697edde84068b141d248497b893732568fca9e3add69",
-      "integrity": "sha512-TqzX1FyK5qQfyWKrgGTHTcoscVgwbHuCy5KuRS5Z6JKkf1EXNQ7+yw3hj5RADtkeG8uJdIAx7uzZRmWF5JdKxA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sha256": "6514552ad7d2566d18e3b6fc801169a5f49e101cb15c0296c2ce7817151a5c16",
+      "integrity": "sha512-yihYad/ekw7Ive9CvnzJ8siOGPX8UtWgSuB54gtCMayEBAwUm3fl3Z/9y3ZyWGmEoJl3wRM3LJ1jrblRf02CUg==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analyzers-dbt",
@@ -91,7 +91,7 @@
       "file": "juliandatapass-group-analyzers-dbt-0.1.0-alpha.4.tgz",
       "sha256": "d8539000fb2f67bb33aa8c5b468083aaefe4de1fbf1a2a0838cecaca2774fa59",
       "integrity": "sha512-T/GEV6KCvyQT3k5KLNK0XFEHvxxhyldyUYQOqqfWLSZV1tF3kik696iab7kGWT8DigwjQIClDaHITlr0V8grbQ==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analyzers-api",
@@ -99,39 +99,7 @@
       "file": "juliandatapass-group-analyzers-api-0.1.0-alpha.4.tgz",
       "sha256": "3c00e869bebf7512ae45bde7573f777d951d0979d0a3fbc0000925d105a07583",
       "integrity": "sha512-Vxt2lxEEZ/035yrH2L5TRFGZmUBiKk1Uc7LbYwDfn98VXgFJYeZRFfNiWSH+XGUzEc1yRlUGuirBW/RQzfBiJQ==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
-    },
-    {
-      "name": "@juliandatapass-group/arch-decisions",
-      "version": "0.1.0-alpha.4",
-      "file": "juliandatapass-group-arch-decisions-0.1.0-alpha.4.tgz",
-      "sha256": "fcacf540e8b82a1d48913fd6888976c53bed80280a1d013689748a8ff68ae2f9",
-      "integrity": "sha512-S+M2s5hf41AZkMJ+xGkLBeNBf17UfIZfRV/LugTaSN+48EUP4r9JEydidllfY+7gmdauHy1WxEdBSbZUC2TBFA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
-    },
-    {
-      "name": "@juliandatapass-group/arch-catalog",
-      "version": "0.1.0-alpha.4",
-      "file": "juliandatapass-group-arch-catalog-0.1.0-alpha.4.tgz",
-      "sha256": "a3336ecaf0856f516c3c25deee768a0bc109c4f95a534f63e530001205b72e00",
-      "integrity": "sha512-sO+mxGyxnKC3Eq1KS8KoTEwc3F0VCD5SIlr8ZkgqO5uc82xCXPTG8PFtrSofFFrn2tp09YHu3wbJvSfjMQgdJw==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
-    },
-    {
-      "name": "@juliandatapass-group/decision-rationale",
-      "version": "0.1.0-alpha.4",
-      "file": "juliandatapass-group-decision-rationale-0.1.0-alpha.4.tgz",
-      "sha256": "b9a469876d9b7a0c196d91325f320cc7c11814147d383ee18279f1ac5a089126",
-      "integrity": "sha512-PTaS2a91946UvvKig0Emb7JlSTiAMm9qnLLvzJNkhZQogidzmWtRmaCL/hMOD73z2mVAAu5L3PKCD7wzTXAYuw==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
-    },
-    {
-      "name": "@juliandatapass-group/analysis-host-node",
-      "version": "0.1.0-alpha.7",
-      "file": "juliandatapass-group-analysis-host-node-0.1.0-alpha.7.tgz",
-      "sha256": "137f5399813315863bfed1f25ff265d5f50e7a09957dd65b264d487dab3fd35b",
-      "integrity": "sha512-bwQKZzJYjK4tau+guh8O1a8Nib+FG+E9Ey0a2OejQrRAxGqfgPMKqQtaOT65j0kb6upo/UeBOp40KpvBxwCgLA==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analyzers-airflow",
@@ -139,15 +107,39 @@
       "file": "juliandatapass-group-analyzers-airflow-0.1.0-alpha.6.tgz",
       "sha256": "02cdd974c905cb4fae27129ea8a3daacaf97b2bbe8a24831fc3ed64b7fd3c86a",
       "integrity": "sha512-sTuZsY7iYf4pjC5k11SKTMkbMXzLlqcvxBrBtD62ULeET+kRBcElU/L/tP+M6qlhW7e3fa53xOb7ct5OerH4Qg==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/analyzers-orchestration",
-      "version": "0.1.0-alpha.6",
-      "file": "juliandatapass-group-analyzers-orchestration-0.1.0-alpha.6.tgz",
-      "sha256": "39a99f90183e01226e390c07d5efe581c35c74398a41e0813ed2824399b18895",
-      "integrity": "sha512-IOE4Unq7iFnp5dn8yibX7CXAsk2f5zkErhcCVY6eO/yUJFfs6wd2eolKjJG6tyi1OxdPbS9cKJKiHApicHL8Ug==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "version": "0.1.0-alpha.9",
+      "file": "juliandatapass-group-analyzers-orchestration-0.1.0-alpha.9.tgz",
+      "sha256": "cb96b4bb7c87835b7ccd9964a2846caf43342bd88a8c4eef5c62d03137fdda12",
+      "integrity": "sha512-i+3mucaR6RwocSbZQml+0ouFb2DZWDA7cxMYvwrhZSt96r+JjKmnoBzeIMLQR8pHBOTLabmS0W7YHg3OmUrn3g==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
+    },
+    {
+      "name": "@juliandatapass-group/arch-decisions",
+      "version": "0.1.0-alpha.4",
+      "file": "juliandatapass-group-arch-decisions-0.1.0-alpha.4.tgz",
+      "sha256": "fcacf540e8b82a1d48913fd6888976c53bed80280a1d013689748a8ff68ae2f9",
+      "integrity": "sha512-S+M2s5hf41AZkMJ+xGkLBeNBf17UfIZfRV/LugTaSN+48EUP4r9JEydidllfY+7gmdauHy1WxEdBSbZUC2TBFA==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
+    },
+    {
+      "name": "@juliandatapass-group/arch-catalog",
+      "version": "0.1.0-alpha.4",
+      "file": "juliandatapass-group-arch-catalog-0.1.0-alpha.4.tgz",
+      "sha256": "a3336ecaf0856f516c3c25deee768a0bc109c4f95a534f63e530001205b72e00",
+      "integrity": "sha512-sO+mxGyxnKC3Eq1KS8KoTEwc3F0VCD5SIlr8ZkgqO5uc82xCXPTG8PFtrSofFFrn2tp09YHu3wbJvSfjMQgdJw==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
+    },
+    {
+      "name": "@juliandatapass-group/decision-rationale",
+      "version": "0.1.0-alpha.4",
+      "file": "juliandatapass-group-decision-rationale-0.1.0-alpha.4.tgz",
+      "sha256": "b9a469876d9b7a0c196d91325f320cc7c11814147d383ee18279f1ac5a089126",
+      "integrity": "sha512-PTaS2a91946UvvKig0Emb7JlSTiAMm9qnLLvzJNkhZQogidzmWtRmaCL/hMOD73z2mVAAu5L3PKCD7wzTXAYuw==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     },
     {
       "name": "@juliandatapass-group/semantic-diff",
@@ -155,7 +147,15 @@
       "file": "juliandatapass-group-semantic-diff-0.1.0-alpha.6.tgz",
       "sha256": "c802e4a34510c4ab446276a18a85fab05d8224adcb79e0a3db9aeba409cd2772",
       "integrity": "sha512-XhioYum4QOUrfViYqByesIcPm86iJUxHzFharkTKKkfAT4+narXpJEZatt4dGqamRQDXAmRKTgiB9soNSIR06w==",
-      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
+    },
+    {
+      "name": "@juliandatapass-group/analysis-host-node",
+      "version": "0.1.0-alpha.7",
+      "file": "juliandatapass-group-analysis-host-node-0.1.0-alpha.7.tgz",
+      "sha256": "137f5399813315863bfed1f25ff265d5f50e7a09957dd65b264d487dab3fd35b",
+      "integrity": "sha512-bwQKZzJYjK4tau+guh8O1a8Nib+FG+E9Ey0a2OejQrRAxGqfgPMKqQtaOT65j0kb6upo/UeBOp40KpvBxwCgLA==",
+      "sourceCommit": "a311b0fb18065584bcbd9948170a8512ebc9087f"
     }
   ],
   "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins.",
@@ -166,5 +166,6 @@
   "repin5Note": "REPIN5 (TL-13): all vendored Common packages re-packed with scripts/pack-vendor.mjs from merged V5FREEZE1 a6b7ad332d206b95867e795ff896350827518bfc. analyzers-api vendored for OTEL2, not wired. Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.5, lineage-core@0.1.0-alpha.3, view-spi@0.1.0-alpha.3, analyzers@0.1.0-alpha.9, analyzers-dbt@0.1.0-alpha.3, analyzers-api@0.1.0-alpha.3, arch-decisions@0.1.0-alpha.3, arch-catalog@0.1.0-alpha.3, decision-rationale@0.1.0-alpha.3, analysis-host-node@0.1.0-alpha.6.",
   "repin8Note": "REPIN8 (ARCH-REVIEW S1): all vendored Common packages re-packed with scripts/pack-vendor.mjs from merged V5FREEZE2 ae07f9e; exchange-protocol added to the vendored set. Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, exchange-protocol@0.1.0-alpha.6, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.6, lineage-core@0.1.0-alpha.4, view-spi@0.1.0-alpha.4, analyzers@0.1.0-alpha.10, analyzers-dbt@0.1.0-alpha.4, analyzers-api@0.1.0-alpha.4, arch-decisions@0.1.0-alpha.4, arch-catalog@0.1.0-alpha.4, decision-rationale@0.1.0-alpha.4, analysis-host-node@0.1.0-alpha.7.",
   "stda1aNote": "STDA1a (PM 31 TL-13 ruling, re-vendored at merge with main REPIN8): analyzers-airflow and analyzers-orchestration packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491; their Common deps re-pack byte-identical to the REPIN8 pins, no other package changed. Versions: analyzers-airflow@0.1.0-alpha.6, analyzers-orchestration@0.1.0-alpha.6.",
-  "navchg1Note": "NAVCHG1 (re-vendored at merge with main REPIN8): semantic-diff packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491 (replaces alpha.3 from d6770bf, which pinned project-contracts alpha.3); its Common deps re-pack byte-identical to the REPIN8 pins. Version: semantic-diff@0.1.0-alpha.6."
+  "navchg1Note": "NAVCHG1 (re-vendored at merge with main REPIN8): semantic-diff packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491 (replaces alpha.3 from d6770bf, which pinned project-contracts alpha.3); its Common deps re-pack byte-identical to the REPIN8 pins. Version: semantic-diff@0.1.0-alpha.6.",
+  "v5rel1Note": "V5REL1: all vendored Common packages re-packed with scripts/pack-vendor.mjs from Common main a311b0fb18065584bcbd9948170a8512ebc9087f (clears the analyzers digest-mismatch; analyzers-orchestration alpha.6 -> alpha.9). Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, exchange-protocol@0.1.0-alpha.6, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.6, lineage-core@0.1.0-alpha.4, view-spi@0.1.0-alpha.4, analyzers@0.1.0-alpha.10, analyzers-dbt@0.1.0-alpha.4, analyzers-api@0.1.0-alpha.4, analyzers-airflow@0.1.0-alpha.6, analyzers-orchestration@0.1.0-alpha.9, arch-decisions@0.1.0-alpha.4, arch-catalog@0.1.0-alpha.4, decision-rationale@0.1.0-alpha.4, semantic-diff@0.1.0-alpha.6, analysis-host-node@0.1.0-alpha.7."
 }
