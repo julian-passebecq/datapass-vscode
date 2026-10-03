@@ -307,6 +307,7 @@
     "DataPass: Previous View Here",
     "DataPass: Publish the Work-Order Summary (work-log.json)",
     "DataPass: Queries Worth Showing",
+    "DataPass: Re-attach dbt Model (propose a fresh materialization)",
     "DataPass: Re-inspect Project (files and Git state, no network)",
     "DataPass: Re-read the Codex Tests",
     "DataPass: Re-read the Work Orders",

@@ -92,7 +92,8 @@ const GATED: Record<string, readonly string[]> = {
     // V5 EXPLAIN1: export the client-shareable explainer page (the lighter modes are at their palette budget).
     "explain.export",
     // DETACH1: detach a materialized dbt model (authority flip + stamp); also reached from the Project tree section.
-    "dbt.detach"
+    // V5HOLE7: re-attach = a new MAT1 proposal; also on a detached tree row and offered by Detach on a detached model.
+    "dbt.detach", "dbt.reattach"
   ],
   // V5 DBTMAT1: dbt model(s) → Fabric notebooks as a MAT1 proposal (TL-5 complement).
   "v5.dbtmat": ["dbt.materialize"],

@@ -22,7 +22,7 @@ async function readText(uri: vscode.Uri): Promise<string | undefined> {
 const rel = (root: vscode.Uri, uri: vscode.Uri): string => uri.path.slice(root.path.replace(/\/$/, "").length + 1);
 const now = (): string => new Date().toISOString().replace(/\.\d+Z$/, "Z");
 
-async function dbtFiles(root: vscode.Uri): Promise<DbtFile[]> {
+export async function dbtFiles(root: vscode.Uri): Promise<DbtFile[]> {
   const uris = [
     ...await vscode.workspace.findFiles(new vscode.RelativePattern(root, "**/target/manifest.json"), EXCLUDE, 50),
     ...await vscode.workspace.findFiles(new vscode.RelativePattern(root, "**/target/compiled/**/*.sql"), EXCLUDE, MAX_FILES)
@@ -35,7 +35,7 @@ async function dbtFiles(root: vscode.Uri): Promise<DbtFile[]> {
   return out;
 }
 
-async function config(root: vscode.Uri): Promise<DbtMaterializeConfig | undefined> {
+export async function dbtMaterializeConfig(root: vscode.Uri): Promise<DbtMaterializeConfig | undefined> {
   const text = await readText(vscode.Uri.joinPath(root, ...DBT_MATERIALIZE_CONFIG.split("/")));
   if (text !== undefined) {
     const r = parseDbtMaterializeConfig(text);
@@ -67,7 +67,7 @@ export async function materializeDbt(root: vscode.Uri | undefined, out: vscode.O
     title: `Materialize dbt models (${project.projectName ?? project.projectDir})`, canPickMany: true, placeHolder: "Models to materialize"
   });
   if (!models?.length) return;
-  const cfg = await config(root);
+  const cfg = await dbtMaterializeConfig(root);
   if (!cfg) return;
   const envIds = Object.keys(cfg.environments);
   const environment = envIds.length === 1 ? envIds[0] : (await vscode.window.showQuickPick(envIds, { title: "Environment (table names come from the config)" }));

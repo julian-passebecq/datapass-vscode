@@ -29,6 +29,8 @@ import {
 import type { DiffEntry } from "./flow";
 
 export const DETACH_COMMAND = "datapass.dbt.detach";
+/** V5HOLE7: re-attach a detached model = open a new MAT1 proposal for it (never automatic, no Git write). */
+export const REATTACH_COMMAND = "datapass.dbt.reattach";
 
 /**
  * The state a view shows: a DETSPI1 drift state, or `target-missing` when the stamped notebook is gone (fs stat says it
@@ -51,15 +53,23 @@ export const DETACH_MESSAGES = {
   pickTitle: "Detach a dbt model (the notebook becomes the authority)",
   confirm: "Detach {model}?",
   confirmDetail: "The notebook {notebook} becomes the authority. Later dbt changes are no longer materialized into it; drift is shown as a fact, never re-synced. DataPass records who and when in {record}. Commit that file through your normal Git flow.",
-  detached: "{model} is detached: the notebook becomes the authority."
+  detached: "{model} is detached: the notebook becomes the authority.",
+  reattachPickTitle: "Re-attach a detached dbt model (opens a new materialization proposal)",
+  alreadyDetachedTitle: "{model} is already detached",
+  reattachAction: "Re-attach {model}: propose a fresh materialization from dbt",
+  keepDetached: "Keep {model} detached",
+  reattachProposed: "{model}: re-attach proposed ({proposal}). Review the MAT1 proposal below; nothing is written until you confirm.",
+  reattachConfirm: "{model}: re-attach proposed. Write {count} file(s) of the proposal?",
+  reattachConfirmDetail: "The notebook {notebook} is replaced by a fresh materialization from dbt and {record} names the proposal; the diff is in the DataPass dbt output. Files are written to the working tree only; nothing is run, deployed or committed. Review them in a merge request: dbt is the authority again once it merges."
 } as const;
 export type DetachMessageKey = keyof typeof DETACH_MESSAGES;
 
 /** One message, override first (blank overrides are ignored), placeholders filled. */
-export function detachMessage(key: DetachMessageKey, vars: { model?: string; notebook?: string; record?: string }, overrides: Partial<Record<string, unknown>> = {}): string {
+export type DetachMessageVars = Partial<Record<"model" | "notebook" | "record" | "proposal" | "count", string>>;
+export function detachMessage(key: DetachMessageKey, vars: DetachMessageVars, overrides: Partial<Record<string, unknown>> = {}): string {
   const o = overrides[key];
   const template = typeof o === "string" && o.trim() ? o : DETACH_MESSAGES[key];
-  return template.replace(/\{(model|notebook|record)\}/g, (m, k: "model" | "notebook" | "record") => vars[k] ?? m);
+  return template.replace(/\{(model|notebook|record|proposal|count)\}/g, (m, k: keyof DetachMessageVars) => vars[k] ?? m);
 }
 export const DETACHED_BADGE = "detached";
 
@@ -80,6 +90,33 @@ export interface DetachCurrent {
   notebookContent: string | null;
   dbtRevision: string | null;
   notebookExists?: boolean;
+  /**
+   * V5HOLE7: a dbt source file of the model's project was modified after the detach (fs stat, see `dbtEditedSince`), so
+   * an uncommitted dbt edit counts as "dbt changed" even while the last commit is still the stamped one.
+   */
+  dbtEditedSinceDetach?: boolean;
+}
+
+/** The dbt project's own source folders (paths relative to the folder of `dbt_project.yml`). Build output is never a source. */
+export const DBT_SOURCE_FOLDERS: readonly string[] = ["models", "macros", "seeds", "snapshots", "analyses", "tests"];
+const DBT_NOT_SOURCE = /(^|\/)(target|dbt_packages|logs|node_modules|\.git)\//;
+
+/** Is this path (relative to the dbt project folder) a dbt source: `dbt_project.yml` or a file under a source folder? */
+export function isDbtSourcePath(path: string, folders: readonly string[] = DBT_SOURCE_FOLDERS): boolean {
+  const p = path.replace(/\\/g, "/").replace(/^\.\//, "");
+  if (p === "dbt_project.yml") return true;
+  return !DBT_NOT_SOURCE.test(p) && folders.some(f => p.startsWith(`${f}/`));
+}
+
+/**
+ * Was any dbt source modified after the detach? `recordedAt` is truncated to the second, so a file counts only from the
+ * next whole second (an edit made in the same second as the detach is not distinguishable and is not counted). A file
+ * list from fs stat; no Git, no dbt.
+ */
+export function dbtEditedSince(files: ReadonlyArray<{ path: string; mtimeMs: number }>, recordedAt: string, folders?: readonly string[]): boolean {
+  const t = Date.parse(recordedAt);
+  if (Number.isNaN(t)) return false;
+  return files.some(f => isDbtSourcePath(f.path, folders) && f.mtimeMs >= t + 1000);
 }
 
 export interface DetachRequest extends DetachCurrent {
@@ -155,7 +192,9 @@ export function detachView(path: string, record: MaterializationDetach, current:
   // A deleted target is never measured (no content → no hash): its state is `target-missing`, never in sync.
   const notebookHash = missing || current.notebookContent === null ? null : notebookSourceHash(current.notebookContent);
   const dbtRevision = (current.dbtRevision === null ? undefined : gitObjectId(current.dbtRevision)) ?? null;
-  const state: DetachViewState = missing ? "target-missing" : detachDriftState(record.stamp, { dbtRevision, notebookHash });
+  const measured = missing ? "target-missing" : detachDriftState(record.stamp, { dbtRevision, notebookHash });
+  // An uncommitted dbt edit (fs stat) is a dbt change too; an unknown or missing state stays as it is.
+  const state: DetachViewState = !current.dbtEditedSinceDetach ? measured : measured === "in-sync" ? "dbt-changed" : measured === "notebook-edited" ? "both-changed" : measured;
   const holes: DetachHole[] = [];
   if (missing) holes.push(targetMissingHole(record.stamp.notebookPath, true));
   else if (notebookHash === null) holes.push({ reason: `The detached notebook ${record.stamp.notebookPath} is missing or unreadable.` });

@@ -1089,6 +1089,10 @@
         "title": "DataPass: Detach dbt Model (the notebook becomes the authority)"
       },
       {
+        "command": "datapass.dbt.reattach",
+        "title": "DataPass: Re-attach dbt Model (propose a fresh materialization)"
+      },
+      {
         "command": "datapass.nav.up",
         "title": "DataPass: Navigate Up (coarser level)",
         "icon": "$(arrow-up)"
@@ -1903,6 +1907,10 @@
         {
           "command": "datapass.dbt.detach",
           "when": "view == datapass.project && viewItem == dbtModel.attached"
+        },
+        {
+          "command": "datapass.dbt.reattach",
+          "when": "view == datapass.project && viewItem == dbtModel.detached"
         },
         {
           "command": "datapass.openComponentEntry",
@@ -2958,6 +2966,10 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.dbt.reattach",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.nav.up",
           "when": "!datapass.hidden.palette.full"
         },
@@ -3247,7 +3259,7 @@
         "datapass.dbt.detachMessages": {
           "type": "object",
           "default": {},
-          "markdownDescription": "DETACH1: wording of the detach command (keys `pickTitle`, `confirm`, `confirmDetail`, `detached` = the toast after a detach). `{model}`, `{notebook}` and `{record}` are filled in. Empty keeps the defaults (toast: `{model} is detached: the notebook becomes the authority.`).",
+          "markdownDescription": "DETACH1: wording of the detach and re-attach commands (keys `pickTitle`, `confirm`, `confirmDetail`, `detached` = the toast after a detach; V5HOLE7: `reattachPickTitle`, `alreadyDetachedTitle`, `reattachAction`, `keepDetached`, `reattachProposed`, `reattachConfirm`, `reattachConfirmDetail`). `{model}`, `{notebook}`, `{record}`, `{proposal}` and `{count}` are filled in. Empty keeps the defaults (toast: `{model} is detached: the notebook becomes the authority.`).",
           "additionalProperties": { "type": "string", "maxLength": 400 }
         },
         "datapass.navView.titleFormat": {
