@@ -19,6 +19,11 @@ export interface ExplainFacts {
   readonly options?: OptionsFile;
   /** Ids of the components left out for this audience (counted on the page, never named). */
   readonly omitted: readonly string[];
+  /**
+   * V5HOLE6: false when the opened folder has no DataPass project (no `.datapass`). Every project-only section then
+   * draws a declared `no-project` hole instead of calling its provider. Undefined means a prepared project.
+   */
+  readonly prepared?: boolean;
 }
 
 export type ExplainProvider = (facts: ExplainFacts, params: Readonly<Record<string, unknown>>) => BindingData[];
@@ -53,6 +58,11 @@ export function filterFacts(audience: ExplainAudience, map: ProjectMap, options?
   };
   const decisions = options?.decisions.filter(d => !(d.concerns ?? []).some(id => hidden.has(id))) ?? [];
   return { audience, map: filtered, ...(options ? { options: { ...options, decisions } } : {}), omitted };
+}
+
+/** V5HOLE6: the facts of a bare folder (no DataPass project): an empty map, nothing omitted, `prepared: false`. */
+export function bareFacts(audience: ExplainAudience, map: ProjectMap): ExplainFacts {
+  return { ...filterFacts(audience, map), prepared: false };
 }
 
 const groupOf = (map: ProjectMap, c: ComponentView): string =>

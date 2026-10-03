@@ -56,7 +56,9 @@ export function buildExplainHtml(input: ExplainInput): ExplainResult {
   for (const section of input.sections) {
     const provider = explainProvider(section.source);
     if (!provider) { if (section.optional) { skipped.push(section.id); continue; } }
-    const data: BindingData[] = provider ? provider(facts, section.params ?? {})
+    const data: BindingData[] = facts.prepared === false
+      ? [{ source: section.source, origin: "declared", holes: [{ kind: "no-project", field: section.source, reason: label(labels, "hole.no-project") }] }]
+      : provider ? provider(facts, section.params ?? {})
       : [{ source: section.source, origin: "static", holes: [{ kind: "no-provider", field: section.source, reason: label(labels, "hole.no-provider") }] }];
     collectOrigins(data, origins);
     const layout = pickLayout(section.layouts, layouts, data);
