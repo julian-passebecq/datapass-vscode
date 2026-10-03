@@ -4049,7 +4049,7 @@
           "type": "object",
           "default": {},
           "scope": "window",
-          "description": "Overrides for the cross-repository history views of the navigation catalog: lanesTitle, componentsTitle, repositories, components, commits ({n} = count), unplaced, noComponent, logFailed. The views read git log only; nothing is fetched."
+          "description": "Overrides for the cross-repository history views of the navigation catalog: lanesTitle, componentsTitle, repositories, components, commits ({n} = count), unplaced, noComponent, logFailed, treeHistory and noCommits (the history row under each repository of the Git view). The views read git log only; nothing is fetched."
         },
         "datapass.pedagogy.enabled": {
           "type": "boolean",

@@ -39,6 +39,9 @@ export interface RepoHistoryLabels {
   readonly unplaced: string;
   readonly noComponent: string;
   readonly logFailed: string;
+  /** V5HOLE8: the history row of a repository in the Git view, and its empty case. */
+  readonly treeHistory: string;
+  readonly noCommits: string;
 }
 export const DEFAULT_REPO_HISTORY_LABELS: RepoHistoryLabels = {
   lanesTitle: "Repository history",
@@ -48,7 +51,9 @@ export const DEFAULT_REPO_HISTORY_LABELS: RepoHistoryLabels = {
   commits: "{n} commits",
   unplaced: "Changed files outside any component",
   noComponent: "No component of the project model lives in this repository",
-  logFailed: "Git history could not be read"
+  logFailed: "Git history could not be read",
+  treeHistory: "Repository history",
+  noCommits: "No commit yet"
 };
 
 /** Default labels with any string override (≤ 80 chars) from settings; unknown keys and other types are ignored. */
@@ -265,4 +270,28 @@ export async function readRepoLogs(set: Repos, absPath: (repoPath: string) => st
 export function repoHistoryBinding(facet: unknown, set: Repos, logs: readonly RepoLog[], components: readonly ComponentPlace[],
   labels: RepoHistoryLabels = DEFAULT_REPO_HISTORY_LABELS): LanesData | SankeyData {
   return facet === "sankey" ? buildRepoSankey(set, logs, components, labels) : buildRepoLanes(set, logs, labels);
+}
+
+// ------------------------------------------------------------------ Git view rows (V5HOLE8)
+
+/** Commits listed under a repository in the Git view. */
+export const REPO_TREE_HISTORY_LIMIT = 20;
+
+export interface HistoryTreeRow { readonly id: string; readonly label: string; readonly description: string; readonly tooltip: string }
+
+/**
+ * V5HOLE8: one repository's history as Git view rows (newest first), with no DataPass project needed: the Git view lists
+ * the repo set from `.datapass/repos.json` or the workspace folders, so the history is reachable there even when the
+ * Navigator has no project to hang the `repo-lanes` view on (V5 acceptance row 03). A failed log is a message, never empty.
+ */
+export function historyTreeRows(log: RepoLog, labels: RepoHistoryLabels = DEFAULT_REPO_HISTORY_LABELS, limit = REPO_TREE_HISTORY_LIMIT): { rows: HistoryTreeRow[]; message?: string } {
+  if (log.error) return { rows: [], message: `${labels.logFailed}: ${log.error}` };
+  if (!log.commits.length) return { rows: [], message: labels.noCommits };
+  return {
+    rows: log.commits.slice(0, limit).map(c => ({
+      id: c.rev, label: c.message || c.rev.slice(0, 7),
+      description: [c.rev.slice(0, 7), c.author, c.date.slice(0, 10)].filter(Boolean).join(" · "),
+      tooltip: [c.message, c.rev, `${c.author}${c.date ? `, ${c.date}` : ""}`, ...c.files.slice(0, 10), c.files.length > 10 ? `+${c.files.length - 10} more` : ""].filter(Boolean).join("\n")
+    }))
+  };
 }

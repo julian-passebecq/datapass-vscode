@@ -184,6 +184,20 @@ const CI_MARK: Record<string, string> = { failing: "✗", running: "●", passin
 export const ciMark = (pr: PullRequest) => CI_MARK[pr.ci.state] ?? "?";
 
 /** One line for the repository row: role · host · branch and sync · changes · last fetch. */
+/** V5HOLE8: detail of a repository whose folder is declared (repo set, project map) but absent on disk. */
+export const MISSING_CLONE_DETAIL = "missing clone";
+
+/**
+ * V5HOLE8: state and detail when `git status` failed. A declared folder that does not exist is a missing clone
+ * ("not-cloned"), not "not a Git repository" (V5 acceptance row 03 hole: the `bi` clone removed).
+ */
+export function statusFailureReport(status: { readonly timedOut?: boolean; readonly missing?: boolean }, folderExists: boolean): { state: RepoReportState; detail: string } {
+  if (status.timedOut) return { state: "not-checked", detail: "not checked (Git took more than 5 s)" };
+  if (status.missing) return { state: "not-a-repo", detail: "git was not found on PATH" };
+  if (!folderExists) return { state: "not-cloned", detail: MISSING_CLONE_DETAIL };
+  return { state: "not-a-repo", detail: "not a Git repository" };
+}
+
 export function repoLine(r: GitRepoReport, now = Date.now()): string {
   const parts: string[] = [r.role === "coordination" ? "coordination" : "", r.host?.label ?? ""];
   if (r.state !== "ok") return [...parts, r.detail ?? r.state].filter(Boolean).join(" · ");
