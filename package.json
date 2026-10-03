@@ -3056,6 +3056,28 @@
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.nav.codeLink.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Navigation: selecting a box or an operation opens its source beside the view, revealed and highlighted."
+        },
+        "datapass.nav.codeLink.followCursor": {
+          "type": "boolean",
+          "default": true,
+          "description": "Navigation: moving the cursor in the code selects the innermost step or operation holding it."
+        },
+        "datapass.nav.codeLink.debounceMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "description": "Navigation: wait this long (ms) after the cursor stops before following it."
+        },
+        "datapass.nav.codeLink.holeLabels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": { "type": "string" },
+          "description": "Navigation: status texts per hole reason (level-without-code, no-source, span-beyond-file, not-analyzed) replacing the defaults; {detail} is replaced."
+        },
         "datapass.dbt.driftLabels": {
           "type": "object",
           "default": {},

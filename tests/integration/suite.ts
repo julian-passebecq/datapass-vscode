@@ -49,10 +49,17 @@ const exists = async (uri: vscode.Uri) => { try { await vscode.workspace.fs.stat
 
 /** Run a command that may open a quick pick, then dismiss whatever UI it opened. */
 async function runAndDismiss(command: string, ...args: unknown[]): Promise<void> {
-  const pending = Promise.resolve(vscode.commands.executeCommand(command, ...args));
+  let settled = false;
+  const pending = Promise.resolve(vscode.commands.executeCommand(command, ...args)).finally(() => { settled = true; });
+  // The UI can appear late on a loaded runner (e.g. preflight probes tools first): keep dismissing
+  // until the command settles, instead of one close that may land before the quick pick exists.
+  const deadline = Date.now() + 15000;
   await sleep(600);
-  await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
-  await Promise.race([pending, sleep(5000).then(() => { throw new Error(`${command} did not settle after its UI was dismissed`); })]);
+  while (!settled && Date.now() < deadline) {
+    await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+    await Promise.race([pending.catch(() => undefined), sleep(500)]);
+  }
+  await Promise.race([pending, sleep(Math.max(0, deadline - Date.now()) + 100).then(() => { throw new Error(`${command} did not settle after its UI was dismissed`); })]);
 }
 
 test("extension activates in desktop VS Code and exposes the Test-mode hooks", async () => {

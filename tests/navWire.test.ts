@@ -35,6 +35,10 @@ const vscodeStub = {
   },
   window: {
     activeTextEditor: undefined,
+    visibleTextEditors: [],
+    onDidChangeTextEditorSelection: noEvent,
+    onDidChangeVisibleTextEditors: noEvent,
+    setStatusBarMessage: () => ({ dispose() { /* none */ } }),
     showInformationMessage: async () => undefined,
     showQuickPick: async () => undefined,
     registerWebviewViewProvider: () => ({ dispose() { /* none */ } }),
@@ -98,12 +102,19 @@ function walk(ladder: NavLadder, from: NavLocation, out: NavLocation[] = []): Na
 test("every self-registered NAV surface plugs into the host", () => {
   assert.ok(SURFACES.length > 0 && SURFACES.length === SURFACES_FILES.length);
   assert.ok(SURFACES_FILES.includes("src/views/navView.surface"));
+  assert.ok(SURFACES_FILES.includes("src/core/navigation/codeLink.surface"), "NAVCODE1: the code link self-registers");
   const ctx = context();
   const host = registerNavigation(ctx, session());
   for (const [i, surface] of SURFACES.entries()) {
     const own = context() as unknown as { subscriptions: unknown[] };
     const ret = surface(own as never, host);
     assert.ok(own.subscriptions.length > 0 || ret, `${SURFACES_FILES[i]} registers nothing`);
+  }
+  { // NAVCODE1: the code link surface activates a CodeLink on the host's NavigationService.
+    const { CodeLink } = require("../src/core/navigation/codeLinkHost") as typeof import("../src/core/navigation/codeLinkHost");
+    const own = context() as unknown as { subscriptions: unknown[] };
+    SURFACES[SURFACES_FILES.indexOf("src/core/navigation/codeLink.surface")]!(own as never, host);
+    assert.ok(own.subscriptions.some(d => d instanceof CodeLink), "the code link surface registers a CodeLink");
   }
   for (const id of ["datapass.navView.open", "datapass.nav.up", "datapass.nav.down", "datapass.nav.pickView"]) assert.ok(commands.has(id), id);
   assert.equal(host.projectMap(), map, "the host exposes the map its NavigationService ladder walks, not a copy");
