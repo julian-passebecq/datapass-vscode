@@ -40,7 +40,7 @@ export interface NavViewDeps {
   /** Ladder override for the ↑/↓ buttons; defaults to the NavigationService ladder (NAVSVC1). */
   ladder?: { parent(l: NavLocation): NavLocation | null; children(l: NavLocation): readonly NavLocation[] };
   /** V5HOLE1: Hop state of the file at a place (`hop-steps` binding) and when a load finished (redraw). */
-  hop?(location: NavLocation): HopState | undefined;
+  hop?(location: NavLocation): HopState | "loading" | undefined;
   onDidLoadHop?: vscode.Event<void>;
   /** View renderer (NAVREN1). */
   render?: NavRenderer;

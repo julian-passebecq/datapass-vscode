@@ -13,6 +13,8 @@ export const CODE_STEPS_SOURCE = "hop-steps";
 
 export const CODE_STEPS_UNWIRED = "Code steps need the Hop explanations, which this view host does not pass.";
 export const CODE_STEPS_NO_FILE = "No Hop explanation for this place: pick a file that has one.";
+/** V5HOLE15: the explanation is still being read; the view redraws when it is. */
+export const CODE_STEPS_LOADING = "Loading the Hop explanation…";
 
 /** Hop state of the file at a place → binding result. Steps carry their own holes; no steps → binding holes only. */
 export function codeStepsResult(state: HopState | undefined): BindingResult {
@@ -27,5 +29,7 @@ export function codeStepsResult(state: HopState | undefined): BindingResult {
 
 export function provideCodeSteps(ctx: BindingContext): BindingResult {
   if (!ctx.hop) return { holes: [{ reason: CODE_STEPS_UNWIRED, kind: "binding-unavailable" }], origin: "static" };
-  return codeStepsResult(ctx.hop(ctx.location));
+  const state = ctx.hop(ctx.location);
+  if (state === "loading") return { holes: [{ reason: CODE_STEPS_LOADING, kind: "loading" }], origin: "static" };
+  return codeStepsResult(state);
 }

@@ -1,0 +1,26 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "shop",
+    "path": "fabric/ingest_orders.Notebook/notebook-content.py",
+    "sha256": "0b0cd0d89e69d9b701eb037e19d28ce4b338ec85420fe3ce15a921153e8f998b",
+    "language": "pyspark"
+  },
+  "title": "Ingest orders",
+  "summary": "Reads the landing order CSV files, stamps each row with its ingestion time and appends them to bronze.orders_raw, then logs the table's row count.",
+  "component": "ingest-orders",
+  "steps": [
+    { "id": "read", "title": "Read the landing order files", "kind": "read", "lines": [10, 10], "inputs": ["Files/landing/orders/*.csv"], "outputs": ["raw"], "note": "CSV with a header row; every column is read as text.", "provenance": "declared" },
+    { "id": "stamp", "title": "Stamp the ingestion time", "kind": "transform", "lines": [11, 11], "inputs": ["raw"], "outputs": ["bronze"], "columns": [
+      { "name": "_ingested_at", "from": [], "note": "current_timestamp() at run time" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Append to the bronze table", "kind": "write", "lines": [12, 12], "inputs": ["bronze"], "outputs": ["bronze.orders_raw"], "note": "saveAsTable in append mode: a rerun of the same files adds their rows again.", "provenance": "inferred" },
+    { "id": "count", "title": "Row count for the run log", "kind": "other", "lines": [16, 16], "inputs": ["bronze.orders_raw"], "outputs": [], "provenance": "declared" }
+  ],
+  "links": [
+    { "from": "read", "to": "stamp", "kind": "data" },
+    { "from": "stamp", "to": "write", "kind": "data" },
+    { "from": "write", "to": "count", "kind": "dependency" }
+  ]
+}
