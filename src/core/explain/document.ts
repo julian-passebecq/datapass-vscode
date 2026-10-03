@@ -12,6 +12,7 @@ import { label, type BindingData, type Labels, type VNode } from "../../webview/
 import type { LayoutKind, NavState, ViewDef } from "../navigation/navTypes";
 import { explainProvider, type ExplainFacts } from "./sources";
 import type { ExplainSection } from "./presets";
+import { tourPlayerParts, type PlayerTour } from "./tourPlayer";
 
 /** A guided tour as the page lists it (TOUR2 `datapass.tour/1` steps, mapped to section anchors by the host). */
 export interface ExplainTour { readonly id: string; readonly title: string; readonly steps: readonly { readonly title: string; readonly text?: string; readonly sectionId?: string }[] }
@@ -27,6 +28,8 @@ export interface ExplainInput {
   readonly date: string;
   readonly generator: string;
   readonly tours?: readonly ExplainTour[];
+  /** V5 TOURSHARE1: one saved tour played inside the page (read-only, no script); absent = no player. */
+  readonly tourPlayer?: PlayerTour;
 }
 
 export interface ExplainResult { readonly html: string; readonly included: readonly string[]; readonly skipped: readonly string[] }
@@ -70,6 +73,8 @@ export function buildExplainHtml(input: ExplainInput): ExplainResult {
     rendered.push({ section, body });
   }
 
+  const player = input.tourPlayer ? tourPlayerParts(input.tourPlayer, rendered.map(r => ({ id: r.section.id, body: r.body })), labels) : undefined;
+  player?.origins.forEach(o => origins.add(o));
   const L = (k: string) => escapeHtml(label(labels, k));
   const marking = `marking.${facts.audience}`;
   const gitText = input.git ? `${escapeHtml(input.git.revision)}${input.git.dirty ? ` (${L("header.dirty")})` : ""}` : L("header.noGit");
@@ -79,7 +84,8 @@ export function buildExplainHtml(input: ExplainInput): ExplainResult {
   const tours = (input.tours ?? []).filter(t => t.steps.length).map(t => `<section class="xp-tour" aria-label="${escapeHtml(t.title)}"><h3>${escapeHtml(t.title)}</h3><ol>${
     t.steps.map(s => `<li>${s.sectionId && rendered.some(r => r.section.id === s.sectionId) ? `<a href="#xp-${escapeHtml(s.sectionId)}">${escapeHtml(s.title)}</a>` : escapeHtml(s.title)}${s.text ? ` — <span class="nv-muted">${escapeHtml(s.text)}</span>` : ""}</li>`).join("")}</ol></section>`).join("");
   const sections = rendered.map(r => `<section class="xp-section" id="xp-${escapeHtml(r.section.id)}"><h2>${escapeHtml(r.section.title)}</h2>${
-    r.section.description ? `<p class="nv-muted">${escapeHtml(r.section.description)}</p>` : ""}${toHtml(r.body)}</section>`).join("\n");
+    r.section.description ? `<p class="nv-muted">${escapeHtml(r.section.description)}</p>` : ""}${player?.boxes.get(r.section.id) ?? ""}${
+    toHtml(player?.bodies.get(r.section.id) ?? r.body)}</section>`).join("\n");
   const title = escapeHtml(input.projectTitle);
 
   const html = `<!doctype html>
@@ -90,7 +96,7 @@ export function buildExplainHtml(input: ExplainInput): ExplainResult {
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;" />
 <meta name="generator" content="${escapeHtml(input.generator)}" />
 <title>${title}</title>
-<style>${navViewCss()}${explainCss()}</style>
+<style>${navViewCss()}${explainCss()}${player?.css ?? ""}</style>
 </head>
 <body>
 <div class="nv-root xp">
@@ -106,7 +112,7 @@ ${legend ? `<section class="xp-legend"><h2>${L("legend.title")}</h2><ul>${legend
 </header>
 <nav class="xp-toc" aria-label="${L("page.contents")}"><ul>${toc}</ul></nav>
 ${tours ? `<section class="xp-tours"><h2>${L("page.tours")}</h2>${tours}</section>` : ""}
-<main>
+${player ? `${player.panel}\n` : ""}<main>
 ${sections}
 </main>
 <footer class="xp-foot nv-muted">${L("page.generator")} (${escapeHtml(input.generator)}). ${L("page.static")}</footer>

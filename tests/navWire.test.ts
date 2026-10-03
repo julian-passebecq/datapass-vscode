@@ -52,8 +52,10 @@ const vscodeStub = {
   workspace: {
     workspaceFolders: undefined,
     onDidChangeConfiguration: noEvent,
+    // TOUR2 surfaces (NAVTOUR1 tours, guided mode) watch and read `.datapass/tours.json`.
     createFileSystemWatcher: () => ({ onDidChange: noEvent, onDidCreate: noEvent, onDidDelete: noEvent, dispose() { /* none */ } }),
-    getConfiguration: () => ({ get: <T>(_k: string, d: T) => d })
+    getConfiguration: () => ({ get: <T>(_k: string, d: T) => d }),
+    fs: { readFile: async () => { throw new Error("no file"); } }
   }
 };
 const mod = Module as unknown as { _resolveFilename: (r: string, ...a: unknown[]) => string; _cache: Record<string, unknown> };
