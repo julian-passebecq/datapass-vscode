@@ -73,7 +73,7 @@
       "kind": "repo_commit",
       "source_system": "github",
       "locator": {
-        "repository": "julian-passebecq/datapass_vscode",
+        "repository": "julian-passebecq/datapass-vscode",
         "commit": "58f7d2da51647c261c2b000416751ad570f64e32",
         "path": "src/core/diagramcloud/galaxyPublication.ts"
       },
