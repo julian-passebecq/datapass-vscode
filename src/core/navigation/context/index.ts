@@ -41,6 +41,15 @@ export interface ContextSectionProvider {
 }
 
 const providers = new Map<string, ContextSectionProvider>();
+const changeListeners = new Set<() => void>();
+
+/** Listen for "a provider's data changed" (e.g. an architect review was imported); returns its disposer. */
+export function onDidChangeContext(listener: () => void): { dispose(): void } {
+  changeListeners.add(listener);
+  return { dispose: () => { changeListeners.delete(listener); } };
+}
+/** Tell the Context view to rebuild its sections. */
+export function notifyContextChanged(): void { for (const l of [...changeListeners]) { try { l(); } catch { /* a listener never breaks another */ } } }
 
 /** Register a provider for its tab (the last one wins); returns its disposer. */
 export function registerContextProvider(p: ContextSectionProvider): { dispose(): void } {

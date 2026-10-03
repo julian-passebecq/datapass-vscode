@@ -175,10 +175,13 @@ export class WorkSession implements vscode.Disposable {
   private readonly selectionEmitter = new vscode.EventEmitter<Selection>();
   /** Fires when the selection changes (tree, diagram, workbench); views follow it. */
   readonly onDidChangeSelection = this.selectionEmitter.event;
+  private readonly checklistEmitter = new vscode.EventEmitter<{ key: string; state: ChecklistState; previous?: ChecklistState }>();
+  /** Fires after a checklist item's state is written (ARCHCALL1 offers a review when a readiness item becomes done). */
+  readonly onDidSetChecklist = this.checklistEmitter.event;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
-  dispose(): void { this.emitter.dispose(); this.selectionEmitter.dispose(); this.paintEmitter.dispose(); }
+  dispose(): void { this.emitter.dispose(); this.selectionEmitter.dispose(); this.paintEmitter.dispose(); this.checklistEmitter.dispose(); }
 
   get project(): ProjectContext { return this.ctx; }
   get extensionUri(): vscode.Uri { return this.context.extensionUri; }
@@ -522,9 +525,11 @@ export class WorkSession implements vscode.Disposable {
   /** Scope items use `scope/item`; component items use `component:<id>/<item>` (V3). */
   async setChecklistByKey(key: string, state: ChecklistState, note?: string): Promise<void> {
     const all = { ...(this.state<Record<string, ChecklistRecord>>(KEYS.checklist) ?? {}) };
+    const previous = all[key]?.state;
     all[key] = { state, note: note?.slice(0, 500) || undefined, at: new Date().toISOString() };
     await this.context.workspaceState.update(KEYS.checklist, all);
     this.changed();
+    this.checklistEmitter.fire({ key, state, previous });
   }
 
   /** Projects opened on this machine (for "Switch project"); titles and folders only. */

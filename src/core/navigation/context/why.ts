@@ -70,3 +70,45 @@ export function resolveWhy(
   const holes: ContextHole[] = cards.length === 0 ? [{ reason: fillLabel(labels.none, { node: location.nodeId }), fill: "ask-ai" }] : [];
   return { cards, holes, origin: strongestOrigin(cards.map(c => c.origin)) };
 }
+
+/** Texts of the "Why & alternatives" tab body (data; `datapass.architectReview.labels` may carry them later). */
+export interface WhyTextLabels {
+  readonly origin: string; readonly confidence: string; readonly problem: string; readonly why: string;
+  readonly alternatives: string; readonly tradeoffs: string; readonly openQuestions: string; readonly noLocation: string;
+}
+export const DEFAULT_WHY_TEXT_LABELS: WhyTextLabels = {
+  origin: "Origin", confidence: "Confidence", problem: "Problem", why: "Why", alternatives: "Alternatives",
+  tradeoffs: "Trade-offs", openQuestions: "Open questions", noLocation: "No location yet: navigate the project to see why it is built this way."
+};
+
+/** Plain text of the cards; every card states its origin and confidence (e.g. "ai-proposed", "unverified"). */
+export function whyText(cards: readonly WhyCard[], t: WhyTextLabels = DEFAULT_WHY_TEXT_LABELS): string {
+  return cards.map(c => [
+    c.choice.summary,
+    `${t.origin}: ${c.origin} · ${t.confidence}: ${c.confidence}`,
+    c.problemSolved ? `${t.problem}: ${c.problemSolved}` : "",
+    c.drivers.length ? `${t.why}:\n${c.drivers.map(d => `- ${d.constraint}${d.driver ? `: ${d.driver}` : ""}`).join("\n")}` : "",
+    c.alternatives.length ? `${t.alternatives}:\n${c.alternatives.map(a => `- ${a.label}${a.costRisk ? ` (${a.costRisk})` : ""}${a.whyNotHere ? `: ${a.whyNotHere}` : ""}`).join("\n")}` : "",
+    c.tradeoffs.length ? `${t.tradeoffs}:\n${c.tradeoffs.map(x => `- ${x}`).join("\n")}` : "",
+    c.openQuestions.length ? `${t.openQuestions}:\n${c.openQuestions.map(q => `- ${q}`).join("\n")}` : ""
+  ].filter(Boolean).join("\n")).join("\n\n");
+}
+
+/**
+ * The Context "why" tab provider (shape of `ContextSectionProvider`, kept structural to avoid an import cycle with
+ * context/index): reads rationales from `source` (e.g. imported architect reviews) and resolves them with `resolveWhy`.
+ */
+export function whyProvider(
+  source: () => readonly RationaleInput[] | Promise<readonly RationaleInput[]>,
+  labels: WhyLabels = DEFAULT_WHY_LABELS,
+  text: WhyTextLabels = DEFAULT_WHY_TEXT_LABELS
+): { readonly tab: "why"; provide(input: { readonly location: NavLocation | null }): Promise<{ body: string; origin: string; holes: readonly { reason: string }[] }> } {
+  return {
+    tab: "why",
+    async provide({ location }) {
+      if (!location) return { body: "", origin: "none", holes: [{ reason: text.noLocation }] };
+      const r = resolveWhy(location, await source(), {}, labels);
+      return { body: whyText(r.cards, text), origin: r.cards.length ? r.origin : "none", holes: r.holes.map(h => ({ reason: h.reason })) };
+    }
+  };
+}

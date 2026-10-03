@@ -1129,6 +1129,14 @@
         "icon": "$(list-selection)"
       },
       {
+        "command": "datapass.ai.architectReview",
+        "title": "DataPass: Ask an Architect Review (AI exchange)…"
+      },
+      {
+        "command": "datapass.ai.importArchitectReview",
+        "title": "DataPass: Import the Architect Review Answer…"
+      },
+      {
         "command": "datapass.airflow.toggleLayout",
         "title": "DataPass: Switch the Airflow DAG Layout (Top-Down / Left-Right)",
         "icon": "$(arrow-swap)"
@@ -2966,6 +2974,14 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.ai.architectReview",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.ai.importArchitectReview",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.airflow.toggleLayout",
           "when": "false"
         },
@@ -3867,6 +3883,34 @@
             }
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
+        },
+        "datapass.architectReview.suggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Offer an architect review (through the AI exchange, never automatic) when a change touches many components, when the same check fails twice in a row, or before a readiness milestone is marked done."
+        },
+        "datapass.architectReview.largeChangeComponents": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Architect review: a change is large when its diff touches more components than this."
+        },
+        "datapass.architectReview.repeatedFailures": {
+          "type": "number",
+          "default": 2,
+          "minimum": 2,
+          "description": "Architect review: offer it when the same check fails this many times in a row."
+        },
+        "datapass.architectReview.labels": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Architect review texts: `triggers`, `questions` and `suggestion` (each keyed by `large-change`, `repeated-failure`, `before-done`), `answerRules`, `problemSolved`, `unverified`, `unverifiedFiles`. Placeholders: `{subjects}`, `{count}`, `{threshold}`, `{check}`, `{milestone}`, `{change}`, `{trigger}`, `{files}`. Missing keys keep the built-in texts."
+        },
+        "datapass.architectReview.citedFileExtensions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["sql", "py", "ipynb", "scala", "r", "java", "kt", "ts", "js", "json", "yml", "yaml", "toml", "cfg", "ini", "xml", "md", "txt", "csv", "sh", "ps1", "tmdl", "bim", "pbip", "pbir", "dax", "m", "pq", "dbt"],
+          "description": "Architect review: file extensions recognised in an imported answer. A cited file that is not found in the project flags the review \"unverified\"."
         },
         "datapass.airflow.dagPlacement": {
           "type": "string",
