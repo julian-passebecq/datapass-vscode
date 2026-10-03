@@ -112,7 +112,7 @@ Implemented on top of the `claude0.9` code line (V2.2 Work view):
 | Acceptance step (contract README) | Where |
 | --- | --- |
 | 2. Detect `.datapass/diagramcloud.json` | `src/core/diagramcloud/bridge.ts` `inspectSidecar` (identity and revision only; DiagramCloud validates the whole document) |
-| 3. Open architecture | **DataPass: Open Architecture in DiagramCloud** opens the configured `datapass.diagramCloud.url` with no data in the URL, then DiagramCloud → JSON / AI → Open project folder… |
+| 3. Open architecture | **DataPass: Open Architecture in DiagramCloud** resolves `diagramcloud.project-view-node/1` against `datapass.diagramCloud.url`; when the sidecar is readable it sends only `?project=<stable-id>` (never the project document), then DiagramCloud resolves that local project or asks for import. |
 | 4. Copy AI context | **DataPass: Copy DiagramCloud AI Context (JSON)…**: `buildBridgeContext`, checked against `datapass-ai-context-v1` before copying |
 | 5–7. Validate plan, check base revisions, review | **DataPass: Import DiagramCloud AI Plan…**: strict JSON → `planIssues` → `reviewPlan` (manifest + sidecar revisions) → per-operation approval (nothing pre-ticked) → confirmation |
 | 8. Apply accepted changes | `applyApproved` + `applyWithJournal` against the reviewed bytes' SHA-256; only `set-project-metadata` and `link-node-workspace` in V1 |
