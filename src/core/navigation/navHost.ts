@@ -9,7 +9,7 @@ import * as vscode from "vscode";
 import type { ProjectMap } from "../project/projectMap";
 import type { OptionsFile } from "../project/options";
 import { NavigationService } from "./navigationService";
-import { type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
+import { sameLocation, type NavCommand, type NavLocation, type NavState, type ViewDef } from "./navTypes";
 import { builtinCatalog } from "./viewPacks";
 import { buildLadder, type ProjectLadder } from "./ladder";
 import { FileHeads } from "./fileHeads";
@@ -31,6 +31,8 @@ export interface NavSession {
   repoFolder?(repoKey: string): vscode.Uri | undefined;
   /** V5HOLE1: a file's Hop explanation (validated, never executed); absent = no `hop-steps` data. */
   understandingByPath?(repositoryKey: string, nativePath: string): Promise<UnderstandingEntry | undefined>;
+  /** V5HOLE4: repository key and path of a project file (no read); absent = "Here" is the selection only. */
+  understandingLocate?(uri: vscode.Uri): { repositoryKey: string; nativePath: string } | undefined;
 }
 
 export const NAV_COMMANDS = ["up", "down", "left", "right", "home", "back", "forward", "pickView"] as const;
@@ -98,12 +100,29 @@ export class NavHost implements vscode.Disposable {
     }));
   }
 
+  /**
+   * V5HOLE4: "Here" is the active editor. Its file, when the ladder knows it, is the place whose views are
+   * offered (picking one goes there); otherwise the Navigator's location (the session selection). One-shot:
+   * no continuous editor → Navigator sync.
+   */
   async pickView(): Promise<void> {
-    const views = this.nav.views();
+    const here = this.editorLocation() ?? this.nav.state.location;
+    const views = this.nav.viewsAt(here);
     if (!views.length) { void vscode.window.showInformationMessage("DataPass: no view is offered here."); return; }
-    const pick = await vscode.window.showQuickPick(views.map((v) => ({ label: v.title, description: v.id === this.nav.state.viewId ? "current" : undefined, detail: v.description, id: v.id })),
-      { placeHolder: `Views of ${this.label(this.nav.state.location)}` });
-    if (pick) this.nav.dispatch({ type: "view", viewId: pick.id });
+    const atNav = sameLocation(here, this.nav.state.location);
+    const pick = await vscode.window.showQuickPick(views.map((v) => ({ label: v.title, description: atNav && v.id === this.nav.state.viewId ? "current" : undefined, detail: v.description, id: v.id })),
+      { placeHolder: `Views of ${this.label(here)}` });
+    if (!pick) return;
+    if (!sameLocation(here, this.nav.state.location)) this.nav.dispatch({ type: "go", location: here });
+    this.nav.dispatch({ type: "view", viewId: pick.id });
+  }
+
+  /** The catalog artifact of the active editor's file (text or notebook), or undefined. Nothing is read or run. */
+  private editorLocation(): NavLocation | undefined {
+    const w = vscode.window as { activeTextEditor?: { document: { uri: vscode.Uri } }; activeNotebookEditor?: { notebook: { uri: vscode.Uri } } };
+    const uri = [w.activeTextEditor?.document.uri, w.activeNotebookEditor?.notebook.uri].find((u) => u?.scheme === "file");
+    const at = uri && this.session.understandingLocate?.(uri);
+    return at ? this.ladder.locate(at.repositoryKey, at.nativePath) : undefined;
   }
 
   /** V5HOLE1: the Hop state of the file at a place, synchronously from the cache; a miss loads it and fires `onDidLoadHop`. */

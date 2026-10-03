@@ -228,3 +228,44 @@ test("a10: the host ladder takes artifact kinds from file heads read from the re
   assert.deepEqual(selection, { subproject: "s", component: "q" });
   host.dispose();
 });
+
+test("V5HOLE4: Pick a View Here offers the active editor's artifact views, else the selection's", async () => {
+  const file = (repoPath: string) => ({ path: repoPath, repoPath, kind: "file", role: "source", requiredFor: [], optional: false, source: "declared", state: "found" });
+  const hereMap = { coordinationKey: "h4", project: { id: "p", title: "H4" }, subprojects: [{ id: "s", title: "S", componentIds: ["nb"] }],
+    components: [{ id: "nb", label: "nb", kind: "job", children: [], incoming: [], outgoing: [],
+      artifacts: { repoKey: "lake", root: "", entry: file("nb/ingest.ipynb"), files: [file("nb/ingest.ipynb")] } }] } as unknown as ProjectMap;
+  const located: string[] = [];
+  const host = registerNavigation(context(), {
+    projectMap: () => hereMap, selection: () => ({}), select: async () => undefined,
+    onDidChange: new EventEmitter<unknown>().event, onDidChangeSelection: new EventEmitter<unknown>().event,
+    understandingLocate: (uri: { fsPath: string }) => { located.push(uri.fsPath); return uri.fsPath === "/lake/nb/ingest.ipynb" ? { repositoryKey: "lake", nativePath: "nb/ingest.ipynb" } : undefined; }
+  } as never);
+  const win = vscodeStub.window as unknown as { activeTextEditor?: unknown; activeNotebookEditor?: unknown; showQuickPick: (items: { label: string; id: string }[], o: { placeHolder: string }) => Promise<unknown> };
+  let offered: string[] = []; let placeHolder = ""; let choose: string | undefined;
+  win.showQuickPick = async (items, o) => { offered = items.map(i => i.label); placeHolder = o.placeHolder; return items.find(i => i.label === choose); };
+  const projectViews = host.nav.viewsAt(host.nav.ladder.root()).map(v => v.title);
+  assert.equal(host.nav.state.location.level, "project");
+  try {
+    // No editor: today's behaviour (the Navigator's location).
+    await host.pickView();
+    assert.deepEqual(offered, projectViews); assert.ok(!offered.includes("Code steps"));
+    // An editor on a file the catalog does not know: fallback too.
+    win.activeTextEditor = { document: { uri: { scheme: "file", fsPath: "/elsewhere/notes.txt" } } };
+    await host.pickView();
+    assert.deepEqual(offered, projectViews);
+    // A notebook editor on the ingest notebook: its artifact views, Code steps included; picking goes there.
+    win.activeTextEditor = undefined;
+    win.activeNotebookEditor = { notebook: { uri: { scheme: "file", fsPath: "/lake/nb/ingest.ipynb" } } };
+    choose = "Code steps";
+    await host.pickView();
+    assert.ok(offered.includes("Code steps"), `artifact views offered: ${offered.join(", ")}`);
+    assert.notDeepEqual(offered, projectViews);
+    assert.match(placeHolder, /ingest/);
+    assert.deepEqual([host.nav.state.location.level, host.nav.state.location.nodeId], ["artifact", "lake:nb/ingest.ipynb"]);
+    assert.equal(host.nav.state.viewId, "steps");
+    assert.deepEqual(located, ["/elsewhere/notes.txt", "/lake/nb/ingest.ipynb"], "only file editors are located");
+  } finally {
+    win.activeTextEditor = undefined; win.activeNotebookEditor = undefined; win.showQuickPick = async () => undefined;
+    host.dispose();
+  }
+});
