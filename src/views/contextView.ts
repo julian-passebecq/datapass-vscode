@@ -8,7 +8,7 @@
  * Nothing here runs client code.
  */
 import * as vscode from "vscode";
-import { buildSections, contextTabs, ORIGIN_LABELS } from "../core/navigation/context";
+import { buildSections, contextTabs, onDidChangeContext, ORIGIN_LABELS } from "../core/navigation/context";
 import type { NavCommand, NavState } from "../core/navigation/navTypes";
 import { contextHtml } from "./contextHtml";
 
@@ -28,6 +28,7 @@ export class ContextView implements vscode.WebviewViewProvider, vscode.Disposabl
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly nav?: NavSource) {
     if (nav) this.subs.push(nav.onDidChange(() => void this.post()));
+    this.subs.push(onDidChangeContext(() => void this.post()));
     this.subs.push(vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.context")) void this.post(); }));
   }
 
