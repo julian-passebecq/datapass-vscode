@@ -3066,19 +3066,19 @@
         },
         {
           "command": "datapass.nav.tour.pick",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.palette.full && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.tour.next",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.palette.full && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.tour.prev",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.palette.full && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.jump",
-          "when": "!datapass.hidden.palette.full"
+          "when": "!datapass.hidden.palette.full && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.pedagogy.patternCards",
@@ -3086,19 +3086,19 @@
         },
         {
           "command": "datapass.nav.tour.saveCurrentPath",
-          "when": "!datapass.hidden.v5.tour2"
+          "when": "!datapass.hidden.v5.tour2 && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.tour.addScreen",
-          "when": "!datapass.hidden.v5.tour2"
+          "when": "!datapass.hidden.v5.tour2 && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.tour.present",
-          "when": "!datapass.hidden.v5.tour2"
+          "when": "!datapass.hidden.v5.tour2 && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.tour.setMode",
-          "when": "!datapass.hidden.v5.tour2"
+          "when": "!datapass.hidden.v5.tour2 && config.datapass.guided.enabled"
         },
         {
           "command": "datapass.nav.changeSummary",
@@ -3106,7 +3106,7 @@
         },
         {
           "command": "datapass.nav.tour.askAi",
-          "when": "!datapass.hidden.v5.tourai1"
+          "when": "!datapass.hidden.v5.tourai1 && config.datapass.guided.enabled && config.datapass.guided.ai.enabled"
         },
         {
           "command": "datapass.explain.exportWithTour",

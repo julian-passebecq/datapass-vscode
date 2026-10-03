@@ -43,7 +43,17 @@ async function readCode(file: string | undefined): Promise<string | undefined> {
 
 interface Gathered { readonly prep: InterviewPrep; readonly files: ReadonlyMap<string, string>; readonly queries: readonly QueryFact[] }
 
-async function gather(host: NavHost): Promise<Gathered> {
+/** V5HOLE12: a cheap key of the Hop files (path, size, mtime): stats only, nothing is loaded or parsed. */
+export async function hopFingerprint(): Promise<string> {
+  const files = source?.index()?.files ?? [];
+  const parts = await Promise.all(files.map(async (f) => {
+    try { const s = await fsp.stat(f.file); return `${f.file}|${s.size}|${s.mtimeMs}`; } catch { return `${f.file}|-`; }
+  }));
+  return parts.sort().join("\n");
+}
+
+/** Also the source of the in-memory built-in tours the Navigator lists (V5HOLE12, guided.ts). */
+export async function gather(host: NavHost): Promise<Gathered> {
   const facts: ProjectFact[] = [], qf: QueryFact[] = [], files = new Map<string, string>();
   for (const f of source?.index()?.files ?? []) {
     const entry = await source!.load(f.repositoryKey, f.nativePath);

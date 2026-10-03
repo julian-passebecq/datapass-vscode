@@ -78,3 +78,9 @@ export function resolveProjectRef(ref: string, brief: ProjectBrief): TopicText |
     }
   }
 }
+
+/** V5HOLE12: a `project:` ref as one line of text for the tour explanation box (holes say why); undefined = not a project ref. */
+export function projectRefText(ref: string, brief: ProjectBrief): string | undefined {
+  const t = resolveProjectRef(ref, brief);
+  return t && [...t.lines.map(l => l.text), ...t.holes.map(h => `hole: ${h.reason}`)].join(" · ");
+}

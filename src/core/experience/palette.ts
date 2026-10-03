@@ -113,9 +113,13 @@ export const PALETTE_TIERS: ReadonlyMap<string, string | null> = new Map<string,
  * Commands that exist only while a setting is on (the feature unregisters them when it is off): full command id →
  * the boolean settings, all of which must be true for the palette to list it (V5HOLE9, V5 acceptance row 10).
  */
-export const PALETTE_SETTINGS: ReadonlyMap<string, readonly string[]> = new Map([
+export const PALETTE_SETTINGS: ReadonlyMap<string, readonly string[]> = new Map<string, readonly string[]>([
   ["datapass.pedagogy.patternCards", ["datapass.pedagogy.enabled"]],
-  ["datapass.pedagogy.queriesWorthShowing", ["datapass.pedagogy.queryShowcase.enabled"]]
+  ["datapass.pedagogy.queriesWorthShowing", ["datapass.pedagogy.queryShowcase.enabled"]],
+  // V5HOLE12 (V5-09-OFF): `datapass.guided.enabled` off unregisters every tour command (NAVTOUR1, TOUR2, TOURAI1).
+  ...["nav.tour.pick", "nav.tour.next", "nav.tour.prev", "nav.jump", "nav.tour.saveCurrentPath", "nav.tour.addScreen", "nav.tour.present", "nav.tour.setMode"]
+    .map(c => [`datapass.${c}`, ["datapass.guided.enabled"]] as [string, string[]]),
+  ["datapass.nav.tour.askAi", ["datapass.guided.enabled", "datapass.guided.ai.enabled"]]
 ]);
 
 /** The palette `when` clause a command must carry (undefined = none, listed in every mode). */
