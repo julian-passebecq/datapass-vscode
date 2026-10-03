@@ -3761,6 +3761,12 @@
           },
           "markdownDescription": "Your changes to the mode: surface id → `true` (show) or `false` (hide). Kept when you switch mode. Easier with **DataPass: Customize DataPass Mode**."
         },
+        "datapass.repoHistory.labels": {
+          "type": "object",
+          "default": {},
+          "scope": "window",
+          "description": "Overrides for the cross-repository history views of the navigation catalog: lanesTitle, componentsTitle, repositories, components, commits ({n} = count), unplaced, noComponent, logFailed. The views read git log only; nothing is fetched."
+        },
         "datapass.pedagogy.enabled": {
           "type": "boolean",
           "default": true,

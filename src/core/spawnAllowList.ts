@@ -72,6 +72,7 @@ export const GIT_READ_ONLY: readonly GitVerb[] = [
   { verb: "symbolic-ref", args: "[-q] [--short] <name> (read form)", ok: rest => !rest.some(a => a === "-d" || a === "--delete" || a === "-m") && positional(rest).length === 1 },
   { verb: "reflog", args: "[show] -n <n> --format … <ref>", ok: rest => rest.length === 0 || rest[0] === "show" || rest[0]!.startsWith("-") },
   { verb: "worktree", args: "list [--porcelain]", ok: rest => rest[0] === "list" },
+  { verb: "submodule", args: "status (GITMR repo set)", ok: rest => rest[0] === "status" },
   { verb: "remote", args: "(none) | -v | get-url <name>", ok: rest => rest.length === 0 || (rest.length === 1 && (rest[0] === "-v" || rest[0] === "--verbose")) || (rest[0] === "get-url" && rest.length === 2) },
   { verb: "config", args: "--get | --get-all | --get-regexp | --list", ok: rest => ["--get", "--get-all", "--get-regexp", "--list", "-l"].includes(rest[0] ?? "") && !rest.some(a => /^(--add|--unset.*|--replace-all|--edit|-e|--rename-section|--remove-section)$/.test(a)) }
 ];
