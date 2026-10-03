@@ -79,7 +79,9 @@ export const SURFACES: readonly Surface[] = [
   // V5 TOUR2: guided tours in the Navigator (Learning / Interview, present, save a path as a tour).
   { id: "v5.tour2", kind: "palette", label: "Command Palette: guided tours", detail: "Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)" },
   // V5 PEDA3: query showcase cards ("Queries worth showing", interview mode).
-  { id: "v5.peda3", kind: "palette", label: "Queries worth showing", detail: "The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)" }
+  { id: "v5.peda3", kind: "palette", label: "Queries worth showing", detail: "The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)" },
+  // TOURAI1: guided tours prepared by your AI through the manual exchange.
+  { id: "v5.tourai1", kind: "aiTab", label: "AI guided tours", detail: "Ask your AI for a guided tour on a topic (BI, ingestion…); its answer is checked against the project and shown as a diff" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);
