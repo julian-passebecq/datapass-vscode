@@ -321,6 +321,41 @@
               "type": "null"
             }
           ]
+        },
+        "gaps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "location": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096,
+                "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+              },
+              "question": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000,
+                "pattern": "^\\S(?:[\\s\\S]*\\S)?$"
+              },
+              "reason": {
+                "enum": [
+                  "missing-source",
+                  "ambiguous",
+                  "out-of-scope"
+                ]
+              }
+            },
+            "required": [
+              "location",
+              "question",
+              "reason"
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 0
         }
       },
       "required": [

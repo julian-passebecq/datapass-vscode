@@ -9,6 +9,7 @@ import { parseStrictJson } from "../model/strictJson";
 import { sha256Bytes } from "../model/ids";
 import { jsonEqual } from "../model/deepEqual";
 import { validateSchema, type SchemaIssue } from "./schemaDsl";
+import { duplicateGaps } from "../exchange/exchangeGaps";
 import {
   ENVELOPE_KINDS, SCHEMAS,
   type AppExchangePayload, type ArchitectureViewPayload, type AuthoritySnapshotPayload,
@@ -70,6 +71,8 @@ export function validateEnvelope(doc: unknown): asserts doc is Envelope {
       if (p.resultState === "succeeded" && !p.executionEvidenceRef) throw new ContractError("Success needs evidence reference");
       const artifactIds = p.outputArtifacts.map(a => a.id);
       if (new Set(artifactIds).size !== artifactIds.length) throw new ContractError("Duplicate artifact identity");
+      if (p.gaps && p.direction === "request") throw new ContractError("Only a result can flag gaps");
+      if (p.gaps && duplicateGaps(p.gaps).length) throw new ContractError(`Duplicate gap: ${duplicateGaps(p.gaps)[0]}`);
       break;
     }
     case "authority-snapshot": {
