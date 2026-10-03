@@ -107,3 +107,17 @@ test("palette: a command that a setting unregisters leaves the palette with it (
     assert.equal(pkg.contributes.configuration.properties[k]?.type, "boolean", `${command}: ${k} is a boolean setting`);
   }
 });
+
+test("palette: Guided off hides every tour command (V5HOLE12, V5 acceptance row 09-OFF)", () => {
+  // registerNavTours / registerGuided register nothing when datapass.guided.enabled is false, so the palette must not list them.
+  const tourCommands = ["nav.tour.pick", "nav.tour.next", "nav.tour.prev", "nav.jump", "nav.tour.saveCurrentPath", "nav.tour.addScreen",
+    "nav.tour.present", "nav.tour.setMode", "nav.tour.askAi"].map(c => `datapass.${c}`);
+  assert.equal(palette.find(e => e.command === "datapass.nav.tour.setMode")?.when, "!datapass.hidden.v5.tour2 && config.datapass.guided.enabled");
+  const shown = shownIn("advanced");
+  for (const c of tourCommands) {
+    assert.ok(palette.find(e => e.command === c)?.when?.includes("config.datapass.guided.enabled"), `${c} is gated on Guided`);
+    assert.ok(listed(c, shown), `${c} listed while Guided is on (its default)`);
+    assert.ok(!listed(c, shown, { "datapass.guided.enabled": false }), `${c} hidden when Guided is off`);
+  }
+  assert.ok(!listed("datapass.nav.tour.askAi", shown, { "datapass.guided.ai.enabled": false }), "the AI switch hides Prepare a tour with AI");
+});

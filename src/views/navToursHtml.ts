@@ -21,6 +21,8 @@ export function labelPack(overrides: unknown): LabelPack {
 export const uiLabel = (pack: LabelPack, key: string): string => pack[`ui.${key}`] ?? key;
 
 export interface ToursModel {
+  /** V5HOLE12: the section is folded to its heading (built-in tours are built only once it is expanded). */
+  readonly collapsed?: boolean;
   readonly labels: LabelPack;
   readonly journeys: readonly { id: string; label: string; active: boolean }[];
   readonly tours: readonly { id: string; title: string; badge?: "ai-proposed" | "user"; active: boolean }[];
@@ -38,7 +40,7 @@ export type ToursMessage =
   | { type: "tour"; action: "journey"; journey: string }
   | { type: "tour"; action: "select"; tourId: string }
   | { type: "tour"; action: "step"; index: number }
-  | { type: "tour"; action: "next" | "prev" }
+  | { type: "tour"; action: "next" | "prev" | "toggle" }
   | { type: "tour"; action: "jump-query"; query: string }
   | { type: "tour"; action: "jump-go"; index: number };
 
@@ -52,7 +54,7 @@ export function parseToursMessage(raw: unknown): ToursMessage | null {
     case "journey": return s(m.journey, 128) ? { type: "tour", action: "journey", journey: m.journey as string } : null;
     case "select": return s(m.tourId, 128) ? { type: "tour", action: "select", tourId: m.tourId as string } : null;
     case "step": return n(m.index) ? { type: "tour", action: "step", index: m.index as number } : null;
-    case "next": case "prev": return { type: "tour", action: m.action };
+    case "next": case "prev": case "toggle": return { type: "tour", action: m.action };
     case "jump-query": return s(m.query) ? { type: "tour", action: "jump-query", query: m.query as string } : null;
     case "jump-go": return n(m.index) ? { type: "tour", action: "jump-go", index: m.index as number } : null;
     default: return null;
@@ -82,7 +84,10 @@ export function toursHtml(m: ToursModel): string {
   const hits = m.jump.query
     ? (m.jump.hits.length ? `<ul class="tour-hits">${m.jump.hits.map((h) => `<li><button data-tour-jump="${h.index}">${esc(h.label)} <span class="tour-kind">${esc(h.kind)}</span></button></li>`).join("")}</ul>` : `<p class="tour-none">${esc(L("jumpEmpty"))}</p>`)
     : "";
-  return `<section class="tours" aria-label="${esc(L("heading"))}"><h3>${esc(L("heading"))}</h3>`
+  const open = !m.collapsed;
+  const heading = `<h3><button class="tour-toggle" data-tour-action="toggle" aria-expanded="${open}">${open ? "\u25be" : "\u25b8"} ${esc(L("heading"))}</button></h3>`;
+  if (!open) return `<section class="tours collapsed" aria-label="${esc(L("heading"))}">${heading}</section>`;
+  return `<section class="tours" aria-label="${esc(L("heading"))}">${heading}`
     + `<input class="tour-jump" type="search" placeholder="${esc(L("jump"))}" aria-label="${esc(L("jump"))}" value="${esc(m.jump.query)}">${hits}`
     + `${journeysRow}${tours}${steps}</section>`;
 }
@@ -101,6 +106,7 @@ export function toursCss(): string {
   .tour-step.stale > button { opacity: .6; }
   .tour-step.depth-1 { padding-left: 10px; } .tour-step.depth-2 { padding-left: 20px; } .tour-step.depth-3 { padding-left: 30px; } .tour-step.depth-4 { padding-left: 40px; }
   .tour-n { opacity: .7; }
+  .tour-toggle { background: none; border: none; color: inherit; font: inherit; padding: 0; cursor: pointer; }
   .tour-text { margin: 2px 4px 6px; padding: 4px 6px; border-left: 2px solid var(--vscode-textLink-foreground); white-space: pre-wrap; }
   .tour-hole, .tour-none { opacity: .7; font-style: italic; }
   .tour-badge, .tour-kind { font-size: 10px; opacity: .75; border: 1px solid var(--vscode-badge-background); border-radius: 3px; padding: 0 3px; }

@@ -17,7 +17,7 @@ import {
 } from "../src/core/guided/guided";
 import { registerExplanationScheme, resolveExplanation } from "../src/core/guided/explanations";
 import { guidedHtml, parseGuidedMessage } from "../src/views/guided/guidedHtml";
-import { labelPack, toursHtml, type ToursModel } from "../src/views/navToursHtml";
+import { labelPack, parseToursMessage, toursHtml, uiLabel, type ToursModel } from "../src/views/navToursHtml";
 
 const MAP = {
   project: { id: "demo", title: "Demo", schemaVersion: 1 },
@@ -117,4 +117,119 @@ test("present: read-only strips edit controls and the jump field; messages are v
   assert.equal(parseGuidedMessage({ type: "guided", action: "key", key: "0" }), null);
   assert.equal(parseGuidedMessage({ type: "guided", action: "mode", mode: "general" }), null);
   assert.deepEqual(parseGuidedMessage({ type: "guided", action: "wheel", deltaY: 1e9 }), { type: "guided", action: "wheel", deltaY: 10_000 });
+});
+
+// V5HOLE12 (V5 acceptance row 09): the PEDA2 built-in tours in the Navigator's catalog, and what picking a mode opens.
+import { builtinTours, BUILTIN_TOUR_IDS } from "../src/core/peda-interview/builtinTours";
+import { spineStops } from "../src/core/peda-interview/spine";
+import { briefFromMap, projectRefText } from "../src/core/peda-interview/projectTopics";
+import { flattenSteps, mergeTours } from "../src/core/navigation/tours/store";
+import { toursForPickedMode } from "../src/core/guided/guided";
+import type { NavLocation } from "../src/core/navigation/navTypes";
+
+const ROOT: NavLocation = { level: "project", nodeId: "demo", artifactKind: "project" } as NavLocation;
+const SPINE = spineStops([], ROOT);
+const BUILTIN = builtinTours({ root: ROOT, spine: SPINE, entries: [], spanOf: () => null, notions: [], queries: [], locate: () => null, viewAt: () => "overview" }).tours as readonly Tour[];
+const USER_TOURS = loadTourFile(JSON.stringify({ schema: TOUR_SCHEMA_ID, tours: [FIXTURE], texts: { "t.title": "Mine" } }));
+
+test("built-in tours: listed next to the person's tours, valid datapass.tour/1, titles come from the label pack (V5HOLE12)", () => {
+  const { document, holes } = mergeTours(BUILTIN, USER_TOURS);
+  assert.deepEqual(holes, []);
+  assert.deepEqual(document.tours.map((t) => t.id), [BUILTIN_TOUR_IDS.wholePicture, BUILTIN_TOUR_IDS.learning, BUILTIN_TOUR_IDS.interview, "user.fixture"]);
+  assert.ok(validateTourDocument({ schema: TOUR_SCHEMA_ID, tours: BUILTIN }).ok, "the built-ins validate as datapass.tour/1");
+  // Same journey bucket as the user's tours (none), so the Tours section shows them side by side.
+  assert.ok(document.tours.every((t) => t.journey === undefined));
+  const pack = labelPack(undefined);
+  for (const t of BUILTIN) assert.ok("text" in resolveExplanation(t.titleRef, { guide: pack, tour: t }), `${t.id} has a title`);
+  assert.deepEqual(resolveExplanation(BUILTIN[0]!.titleRef, { guide: pack }), { text: "The whole picture" });
+  // Learning shows learning + general (the whole picture); Interview shows interview + general.
+  assert.deepEqual(visibleTours(document.tours, "learning", DEFAULT_GUIDED_SETTINGS).map((t) => t.id), [BUILTIN_TOUR_IDS.wholePicture, BUILTIN_TOUR_IDS.learning, "user.fixture"]);
+});
+
+test("pick a mode: Interview starts the interview tour at step 0 'Explain the project'; several fits = a quick pick (V5HOLE12)", () => {
+  const all = mergeTours(BUILTIN, USER_TOURS).document.tours;
+  const interview = toursForPickedMode(visibleTours(all, "interview", DEFAULT_GUIDED_SETTINGS), "interview");
+  assert.equal(interview.start?.id, BUILTIN_TOUR_IDS.interview, "the only interview tour starts right away");
+  const cursor = startTour(interview.start!);
+  assert.equal(cursor.index, 0);
+  const step0 = flattenSteps(interview.start!.steps)[cursor.index]!.step;
+  assert.equal(step0.id, "explain-project");
+  assert.equal(step0.explanationRef, "project:explain");
+  assert.deepEqual(step0.substeps?.map((s) => s.id), ["objectives", "volumetry", "platforms"]);
+  // A second interview tour (the person's own) = offer both, built-in first, start none.
+  const mine: Tour = { ...FIXTURE, id: "user.interview", mode: "interview" };
+  const two = toursForPickedMode(visibleTours([...all, mine], "interview", DEFAULT_GUIDED_SETTINGS), "interview");
+  assert.equal(two.start, undefined);
+  assert.deepEqual(two.offer.map((t) => t.id), [BUILTIN_TOUR_IDS.interview, "user.interview"]);
+  // Learning: its one tour starts; All: every visible tour is offered.
+  assert.equal(toursForPickedMode(visibleTours(all, "learning", DEFAULT_GUIDED_SETTINGS), "learning").start?.id, BUILTIN_TOUR_IDS.learning);
+  assert.equal(toursForPickedMode(all, "all").offer.length, all.length);
+  // Interview turned off in settings: built-ins without it offer the general tours, nothing is started.
+  const noInterview = builtinTours({ root: ROOT, spine: SPINE, entries: [], spanOf: () => null, notions: [], queries: [], locate: () => null, viewAt: () => "overview" }, { interview: false }).tours as readonly Tour[];
+  const none = toursForPickedMode(noInterview.filter((t) => t.mode !== "interview"), "interview");
+  assert.equal(none.start, undefined);
+  assert.deepEqual(none.offer.map((t) => t.id), [BUILTIN_TOUR_IDS.wholePicture]);
+});
+
+test("project: explanations of the built-in tours resolve against the brief; missing facts are holes, not invented text (V5HOLE12)", () => {
+  const brief = briefFromMap(MAP, { spine: SPINE });
+  const explain = projectRefText("project:explain", brief)!;
+  assert.match(explain, /Demo/);
+  assert.match(explain, /hole: .*volumetry/i);
+  assert.match(projectRefText("project:whole-picture.arrive", brief)!, /^hole: /);
+  assert.equal(projectRefText("text:x", brief), undefined);
+  const scheme = registerExplanationScheme("project", (key) => projectRefText(`project:${key}`, brief));
+  try { assert.match((resolveExplanation("project:explain", { guide: labelPack(undefined) }) as { text: string }).text, /Demo/); } finally { scheme.dispose(); }
+});
+
+// V5HOLE12 (PM ruling): built-in tours are built lazily and cached per Hop-files fingerprint.
+import { LazyBuiltins } from "../src/core/guided/lazyBuiltins";
+
+/** A fake Hop source: `files` is the index (path → mtime); `loads` counts files read by the build. */
+function fakeHop(expanded: { on: boolean }) {
+  const files = new Map<string, number>([["a.json", 1], ["b.json", 1]]);
+  const counter = { loads: 0 };
+  const lazy = new LazyBuiltins({
+    fingerprint: async () => [...files].map(([f, m]) => `${f}|${m}`).join("\n"),
+    build: async () => { for (const _ of files.keys()) counter.loads++; return BUILTIN; },
+    expanded: () => expanded.on
+  });
+  return { files, counter, lazy };
+}
+
+test("lazy built-ins: a session change with Tours collapsed loads no Hop file; expand or a mode pick builds once (V5HOLE12)", async () => {
+  const expanded = { on: false };
+  const { files, counter, lazy } = fakeHop(expanded);
+  assert.equal(await lazy.onSessionChange(), false);
+  assert.equal(await lazy.onSessionChange(), false);
+  assert.equal(counter.loads, 0, "collapsed: no Hop file loaded");
+  assert.equal(lazy.value, undefined);
+  // A mode pick builds even while collapsed (it needs the tours).
+  assert.equal(await lazy.ensure(), true);
+  assert.equal(counter.loads, 2);
+  assert.equal(lazy.value, BUILTIN);
+  // Expanded + session change with the same Hop files = cache hit.
+  expanded.on = true;
+  assert.equal(await lazy.onSessionChange(), false);
+  assert.equal(await lazy.ensure(), false);
+  assert.equal(counter.loads, 2, "same Hop files: no reload");
+  // A Hop file changed: collapsed waits, expanded rebuilds once.
+  files.set("b.json", 2);
+  expanded.on = false;
+  assert.equal(await lazy.onSessionChange(), false);
+  assert.equal(counter.loads, 2);
+  expanded.on = true;
+  const [x, y] = await Promise.all([lazy.onSessionChange(), lazy.ensure()]);
+  assert.deepEqual([x, y], [true, false], "concurrent triggers build once");
+  assert.equal(counter.loads, 4);
+});
+
+test("Tours section: folded to its heading when collapsed, toggle message validated (V5HOLE12)", () => {
+  const labels = labelPack(undefined);
+  const m: ToursModel = { labels, journeys: [], tours: [], steps: [], explanation: null, canPrev: false, canNext: false, jump: { query: "", hits: [] } };
+  const folded = toursHtml({ ...m, collapsed: true });
+  assert.ok(folded.includes(`data-tour-action="toggle" aria-expanded="false"`));
+  assert.ok(!folded.includes("tour-jump") && !folded.includes(uiLabel(labels, "none")), "collapsed: heading only");
+  assert.ok(toursHtml(m).includes(`aria-expanded="true"`) && toursHtml(m).includes("tour-jump"));
+  assert.deepEqual(parseToursMessage({ type: "tour", action: "toggle" }), { type: "tour", action: "toggle" });
 });

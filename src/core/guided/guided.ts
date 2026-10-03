@@ -47,6 +47,18 @@ export function visibleTours(tours: readonly Tour[], mode: GuidedMode, s: Guided
   return toursForMode(tours, effective, (m) => s.modes[m]).filter((t) => !s.disabledTours.includes(t.id));
 }
 
+/**
+ * V5HOLE12 (V5-09 step 3): what picking a guided mode opens. Learning / Interview: the visible tours of exactly that
+ * mode (built-in first, then the person's own). One tour = start it at step 0; several = offer them; none = offer the
+ * mode's general tours. "All": offer every visible tour.
+ */
+export function toursForPickedMode(visible: readonly Tour[], mode: GuidedMode): { readonly start?: Tour; readonly offer: readonly Tour[] } {
+  if (mode === "all") return { offer: visible };
+  const exact = visible.filter((t) => t.mode === mode);
+  if (exact.length === 1) return { start: exact[0], offer: exact };
+  return { offer: exact.length ? exact : visible.filter((t) => (t.mode ?? "general") === "general") };
+}
+
 /** Keys 1–9: the n-th top-level step (its index in the flattened list); anything else: null. */
 export function keyToStepIndex(tour: Tour, key: string): number | null {
   if (!/^[1-9]$/.test(key)) return null;

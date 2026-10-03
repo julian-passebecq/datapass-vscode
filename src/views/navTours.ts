@@ -32,6 +32,10 @@ const config = () => vscode.workspace.getConfiguration("datapass.guided");
 
 /** TOUR2 (and later packages) extend the tours surface without editing it: filter, model, html, messages. */
 export interface ToursExtension {
+  /** In-memory built-in tours (V5HOLE12: PEDA2's whole-picture / learning / interview), listed next to the file's tours. */
+  tours?(): readonly Tour[];
+  /** The Tours section was expanded: lazy built-ins may build now. */
+  expand?(): void;
   filter?(tours: readonly Tour[]): readonly Tour[];
   model?(m: ToursModel): ToursModel;
   html?(inner: string, m: ToursModel): string;
@@ -50,6 +54,8 @@ export class NavTours implements vscode.Disposable {
   readonly onDidChange = this.emitter.event;
   private readonly subs: vscode.Disposable[] = [this.emitter];
   private readonly extensions: ToursExtension[] = [];
+  /** V5HOLE12: folded by default, so nothing heavy is built until someone opens it (or picks a mode). */
+  private expanded = false;
 
   constructor(private readonly host: NavHost) {
     const watcher = vscode.workspace.createFileSystemWatcher(`**/${TOURS_FILE.join("/")}`);
@@ -68,6 +74,15 @@ export class NavTours implements vscode.Disposable {
     this.emitter.fire();
     return { dispose: () => { const i = this.extensions.indexOf(e); if (i >= 0) this.extensions.splice(i, 1); this.emitter.fire(); } };
   }
+  isExpanded(): boolean { return this.expanded; }
+  /** Fold or unfold the section; unfolding lets extensions build their lazy tours. */
+  setExpanded(on: boolean): void {
+    if (this.expanded === on) return;
+    this.expanded = on;
+    if (on) for (const e of this.extensions) e.expand?.();
+    this.emitter.fire();
+  }
+
   /** Repaint (an extension's state changed). */
   refresh(): void { this.emitter.fire(); }
 
@@ -96,7 +111,7 @@ export class NavTours implements vscode.Disposable {
   loaded(): LoadedTours {
     const builtin = config().get<boolean>("generatedJourneys.enabled", true)
       ? generateTours(this.host.session.projectMap(), { locate: this.locate, viewsAt: (l) => this.host.nav.viewsAt(l) }) : [];
-    return mergeTours(builtin, this.file);
+    return mergeTours([...builtin, ...this.extensions.flatMap((e) => e.tours?.() ?? [])], this.file);
   }
   tours(): readonly Tour[] { return this.loaded().document.tours; }
 
@@ -122,8 +137,8 @@ export class NavTours implements vscode.Disposable {
     const flat = active ? flattenSteps(active.steps) : [];
     const current = active && this.cursor ? flat[this.cursor.index] : undefined;
     const model: ToursModel = {
-      labels,
-      journeys: js.map((id) => ({ id, label: labels[`journey.${id}`] ?? id, active: id === journey })),
+      labels, collapsed: !this.expanded,
+      journeys: js.map((id) => ({ id, label: id ? labels[`journey.${id}`] ?? id : uiLabel(labels, "otherTours"), active: id === journey })),
       tours: tours.filter((t) => (t.journey ?? "") === journey).map((t) => {
         const o = tourOrigin(t);
         return { id: t.id, title: this.title(t, labels, document.texts), ...(o === "datapass-guidance" ? {} : { badge: o }), active: t.id === active?.id };
@@ -160,6 +175,7 @@ export class NavTours implements vscode.Disposable {
       case "step": return this.goStep(m.index);
       case "next": return this.next();
       case "prev": return this.prev();
+      case "toggle": return this.setExpanded(!this.expanded);
       case "jump-query":
         this.query = m.query;
         this.jumpHits = m.query.trim() ? jumpSearch(this.jumpEntries(), m.query, 20) : [];
@@ -173,22 +189,22 @@ export class NavTours implements vscode.Disposable {
     }
   }
 
-  start(tour: Tour): void { this.journey = tour.journey ?? ""; this.cursor = startTour(tour); this.show(tour); }
+  start(tour: Tour): void { this.expanded = true; this.journey = tour.journey ?? ""; this.cursor = startTour(tour); this.show(tour); }
   next(): void { const t = this.activeTour(); if (t && this.cursor) { this.cursor = nextStep(t, this.cursor); this.show(t); } }
   prev(): void { const t = this.activeTour(); if (t && this.cursor) { this.cursor = prevStep(t, this.cursor); this.show(t); } }
   goStep(index: number): void { const t = this.activeTour(); if (t) { this.cursor = stepTo(t, index); this.show(t); } }
 
-  /** QuickPick over every tour (journey as the description). */
-  async pick(): Promise<void> {
+  /** QuickPick over every tour, or over `among` (journey as the description). */
+  async pick(among?: readonly Tour[], placeHolder?: string): Promise<void> {
     const { document } = this.loaded();
     const labels = labelPack(config().get("labels"));
-    const tours = this.visible(document.tours);
+    const tours = among ?? this.visible(document.tours);
     if (!tours.length) { void vscode.window.showInformationMessage(`DataPass: ${uiLabel(labels, "none")}`); return; }
     const pick = await vscode.window.showQuickPick(tours.map((t) => {
       const o = tourOrigin(t);
       return { label: this.title(t, labels, document.texts), description: t.journey ? labels[`journey.${t.journey}`] ?? t.journey : undefined,
         detail: o === "datapass-guidance" ? undefined : uiLabel(labels, o === "ai-proposed" ? "aiProposed" : "user"), id: t.id };
-    }), { placeHolder: uiLabel(labels, "pickTour"), matchOnDescription: true });
+    }), { placeHolder: placeHolder ?? uiLabel(labels, "pickTour"), matchOnDescription: true });
     const t = pick && tours.find((x) => x.id === pick.id);
     if (t) this.start(t);
   }

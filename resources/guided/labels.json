@@ -36,5 +36,10 @@
   "ui.saved": "saved tour",
   "ui.pathTooShort": "Visit at least two screens first, then save the path.",
   "ui.noScreen": "This place offers no view to add.",
-  "ui.noProject": "Open a DataPass project first."
+  "ui.noProject": "Open a DataPass project first.",
+  "ui.otherTours": "Guided tours",
+  "ui.pickModeTour": "Pick a tour for this mode",
+  "tour.datapass.whole-picture": "The whole picture",
+  "tour.datapass.learning": "The whole picture, concept by concept",
+  "tour.datapass.interview": "Interview: explain the project"
 }
