@@ -30,6 +30,7 @@ TEXT = {"type": "string", "minLength": 1, "maxLength": 4000}
 ID = {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,79}$"}
 DIGEST = {"type": "string", "pattern": "^[a-f0-9]{64}$"}
 TIME = {"type": "string", "format": "date-time"}
+TRIMMED = {"type": "string", "minLength": 1, "pattern": r"^\S(?:[\s\S]*\S)?$"}
 REFS = arr(ID)
 HASH = obj({"algorithm": {"const": "sha256"}, "value": DIGEST})
 BASIS = enum("source-reported", "assumption", "model-output", "measured", "target")
@@ -64,7 +65,12 @@ SCHEMAS = {
     "appRef": ID, "operation": enum("prepare-candidate", "validate", "package", "describe"),
     "inputRefs": REFS, "outputArtifacts": arr(ARTIFACT, 50),
     "requestHash": {"anyOf": [HASH, {"type": "null"}]}, "resultState": enum("not-run", "succeeded", "failed", "partial"),
-    "executionEvidenceRef": {"anyOf": [ID, {"type": "null"}]}})),
+    "executionEvidenceRef": {"anyOf": [ID, {"type": "null"}]},
+    # XGAP1: optional, results only; mirrors Common datapass.exchange-gaps/1.
+    "gaps": arr(obj({"location": {**TRIMMED, "maxLength": 4096}, "question": {**TRIMMED, "maxLength": 2000},
+                     "reason": enum("missing-source", "ambiguous", "out-of-scope")}))},
+    ["direction", "correlationId", "appRef", "operation", "inputRefs", "outputArtifacts",
+     "requestHash", "resultState", "executionEvidenceRef"])),
  "authority-snapshot": envelope("authority-snapshot", obj({
     "querySpecRef": ID, "querySpecHash": HASH, "asOf": TIME,
     "state": enum("complete", "partial", "empty", "error", "not-authorized"),
@@ -138,6 +144,10 @@ def validate(doc: dict[str, Any]) -> None:
             raise ValueError("Result must state its observed outcome")
         if p["resultState"] == "succeeded" and not p["executionEvidenceRef"]:
             raise ValueError("Success needs evidence reference")
+        if "gaps" in p and p["direction"] == "request":
+            raise ValueError("Only a result can flag gaps")
+        keys = [(g["location"], g["question"]) for g in p.get("gaps", [])]
+        if len(set(keys)) != len(keys): raise ValueError("Duplicate gap")
     if kind == "authority-snapshot":
         if p["state"] == "empty" and p["recordRefs"]: raise ValueError("Empty contains records")
         if p["state"] in ["error", "not-authorized"] and p["recordRefs"]:

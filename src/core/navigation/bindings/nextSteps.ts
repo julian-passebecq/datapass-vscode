@@ -11,6 +11,7 @@ import type { BoardView } from "../../project/board";
 import { sameLocation, type NavLadder, type NavLocation } from "../navTypes";
 import type { NavHole, NavOrigin } from "./origin";
 import type { ProcessStep } from "../context/processStep";
+import { NEXT_STEP_SOURCES, type NextStepSource, type NextStepSourceFacts } from "./nextStepSources";
 
 /** Lifecycle step of a Location (the host builds it from NAVCTX2 `resolveProcessStep(location, facts).current`). */
 export type ProcessStepOf = (location: NavLocation) => ProcessStep | null;
@@ -20,7 +21,7 @@ export const unknownProcessStep: ProcessStepOf = () => null;
 export const NEXT_STEPS_SOURCE = "next-steps";
 export const MAX_NEXT_STEPS = 500;
 
-export const NEXT_STEP_KINDS = ["readiness", "check", "evidence", "hole", "board"] as const;
+export const NEXT_STEP_KINDS = ["readiness", "check", "evidence", "hole", "board", "ai-gap", "stale"] as const;
 export type NextStepKind = (typeof NEXT_STEP_KINDS)[number];
 export type NextStepSeverity = "error" | "warning" | "info";
 
@@ -39,7 +40,7 @@ export interface NextStepRow {
 /** Missing evidence as reported by the `evidence` binding (when present). */
 export interface MissingEvidence { readonly location: NavLocation; readonly text: string; readonly origin: NavOrigin; readonly viewId?: string }
 
-export interface NextStepsFacts {
+export interface NextStepsFacts extends NextStepSourceFacts {
   readonly map?: Pick<ProjectMap, "components" | "subprojects" | "problems" | "nextStep">;
   readonly readiness?: Pick<Readiness, "checks" | "files">;
   readonly board?: Pick<BoardView, "cards">;
@@ -73,6 +74,8 @@ const SEVERITY_RANK: Record<NextStepSeverity, number> = { error: 0, warning: 1, 
 /** Collects the rows for `scope` (project root = everything, else the Location and its subtree). */
 export function collectNextSteps(facts: NextStepsFacts, locator: NextStepsLocator, opts: {
   scope?: NavLocation; ladder?: NavLadder; processStep?: ProcessStepOf; max?: number;
+  /** Extra sources (default NEXT_STEP_SOURCES). */
+  sources?: readonly NextStepSource[];
 } = {}): NextStepsResult {
   const stepOf = opts.processStep ?? unknownProcessStep;
   const out: NextStepRow[] = [];
@@ -128,6 +131,8 @@ export function collectNextSteps(facts: NextStepsFacts, locator: NextStepsLocato
 
   for (const e of facts.missingEvidence ?? []) add(e.location, "evidence", e.text, "warning", e.origin, e.viewId);
   for (const h of facts.holes ?? []) add(h.location ?? null, "hole", h.reason, "info", "static");
+  for (const source of opts.sources ?? NEXT_STEP_SOURCES)
+    for (const i of source.collect(facts, locator)) add(i.location, i.kind, i.text, i.severity, i.origin, i.viewId);
 
   const scoped = opts.scope && !sameLocation(opts.scope, locator.root) ? out.filter(row => within(row.location, opts.scope!, opts.ladder)) : out;
   const countByLocation = new Map<string, number>();

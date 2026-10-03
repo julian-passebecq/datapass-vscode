@@ -6,6 +6,7 @@
  * divergence is a deliberate, reviewed change rather than drift.
  */
 import { anyOf, arr, BOOL, constOf, DIGEST, enumOf, ID, NULL, obj, TEXT, TIME, type Schema } from "./schemaDsl";
+import { EXCHANGE_GAPS_SCHEMA, type ExchangeGap } from "../exchange/exchangeGaps";
 
 export const CONTRACT_VERSION = "0.1-draft";
 export const ENVELOPE_KINDS = ["io-contract", "app-exchange", "authority-snapshot", "architecture-view", "publication-brief"] as const;
@@ -55,8 +56,8 @@ export const SCHEMAS: Record<EnvelopeKind, Schema> = {
     appRef: ID, operation: enumOf("prepare-candidate", "validate", "package", "describe"),
     inputRefs: REFS, outputArtifacts: arr(ARTIFACT, 50),
     requestHash: anyOf(HASH, NULL), resultState: enumOf("not-run", "succeeded", "failed", "partial"),
-    executionEvidenceRef: anyOf(ID, NULL)
-  })),
+    executionEvidenceRef: anyOf(ID, NULL), gaps: EXCHANGE_GAPS_SCHEMA
+  }, ["direction", "correlationId", "appRef", "operation", "inputRefs", "outputArtifacts", "requestHash", "resultState", "executionEvidenceRef"])),
   "authority-snapshot": envelope("authority-snapshot", obj({
     querySpecRef: ID, querySpecHash: HASH, asOf: TIME,
     state: enumOf("complete", "partial", "empty", "error", "not-authorized"),
@@ -120,6 +121,8 @@ export interface AppExchangePayload {
   inputRefs: string[]; outputArtifacts: ArtifactRef[];
   requestHash: HashRef | null; resultState: "not-run" | "succeeded" | "failed" | "partial";
   executionEvidenceRef: string | null;
+  /** XGAP1: optional, results only — what the answer could not determine (Common exchange-gaps/1). */
+  gaps?: ExchangeGap[];
 }
 export interface AuthoritySnapshotPayload {
   querySpecRef: string; querySpecHash: HashRef; asOf: string;

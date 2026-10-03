@@ -7,6 +7,7 @@ import { parseStrictJson } from "../model/strictJson";
 import { observe, type Observation } from "../model/evidence";
 import { CONTRACT_VERSION, type AppExchangePayload, type BaseRef, type Classification, type Envelope, type SourceRef } from "../contracts/envelopes";
 import { checkResult, validateEnvelope, MAX_ENVELOPE_BYTES } from "../contracts/validate";
+import { answerGaps, type AiGapFact } from "./exchangeGaps";
 
 export interface AppRequestInput {
   id: string;
@@ -66,6 +67,8 @@ export interface ResultAssessment {
   result?: Envelope<"app-exchange", AppExchangePayload>;
   artifacts: ArtifactCheck[];
   observations: Observation[];
+  /** XGAP1: what a candidate answer could not determine (empty when quarantined: an untrusted answer flags nothing). */
+  gaps: AiGapFact[];
 }
 
 /**
@@ -127,11 +130,12 @@ export function assessAppResult(
     warnings,
     result,
     artifacts,
-    observations
+    observations,
+    gaps: reasons.length ? [] : answerGaps(result)
   };
 
   function quarantine(why: string[]): ResultAssessment {
-    return { status: "quarantined", reasons: why, warnings, artifacts: [], observations: [observe("file-received", "unknown", "datapass", "import", now)] };
+    return { status: "quarantined", reasons: why, warnings, artifacts: [], gaps: [], observations: [observe("file-received", "unknown", "datapass", "import", now)] };
   }
 }
 
