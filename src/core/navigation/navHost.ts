@@ -22,6 +22,8 @@ export interface NavSession {
   projectMap(): ProjectMap;
   selection(): { subproject?: string; component?: string };
   select(sel: { subproject?: string; component?: string }): Promise<void>;
+  /** Folder of a repository on this computer (surfaces that run Git, e.g. NAVCHG1). */
+  repoFolder?(key: string): vscode.Uri | undefined;
   readonly onDidChange: vscode.Event<unknown>;
   readonly onDidChangeSelection: vscode.Event<unknown>;
   /** V5 EXPLAIN1: project folder and parsed project files, for exports (optional; absent in tests). */
@@ -149,6 +151,9 @@ export class NavHost implements vscode.Disposable {
    * reads, never a copy, so surfaces and bindings see exactly what `nav` navigates.
    */
   projectMap(): ProjectMap { return this.session.projectMap(); }
+
+  /** A repository's folder on this computer, when the session knows it. */
+  repoFolder(key: string): vscode.Uri | undefined { return this.session.repoFolder?.(key); }
 
   /** The message every nav webview renders. */
   message(): NavStateMessage {

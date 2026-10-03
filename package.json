@@ -1205,6 +1205,11 @@
         "icon": "$(mortar-board)"
       },
       {
+        "command": "datapass.nav.changeSummary",
+        "title": "DataPass: Change Summary…",
+        "icon": "$(git-compare)"
+      },
+      {
         "command": "datapass.nav.tour.askAi",
         "title": "DataPass: Ask the AI for a Guided Tour…",
         "icon": "$(milestone)"
@@ -2082,6 +2087,16 @@
           "command": "datapass.git.openCiRun",
           "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr/",
           "group": "1_git@1"
+        },
+        {
+          "command": "datapass.nav.changeSummary",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitPr/",
+          "group": "1_git@0"
+        },
+        {
+          "command": "datapass.nav.changeSummary",
+          "when": "view =~ /^datapass[.](git|project)$/ && viewItem =~ /^gitRepo[.]project[.]/",
+          "group": "1_git@9"
         },
         {
           "command": "datapass.git.copyBranch",
@@ -3003,6 +3018,10 @@
           "when": "!datapass.hidden.v5.tour2"
         },
         {
+          "command": "datapass.nav.changeSummary",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.nav.tour.askAi",
           "when": "!datapass.hidden.v5.tourai1"
         }
@@ -3394,6 +3413,17 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Architecture diagram: show **Git on the diagram** — a small badge on each block whose files are touched by an open pull request (branch already fetched) or by this computer's uncommitted or unpushed changes, with the worst CI state. Read-only; DataPass never fetches for it. Also hidden while `datapass.overlay.enabled` is off."
+        },
+        "datapass.nav.changeSummary.labels": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Texts of the Change summary views (keys of `DEFAULT_CHANGE_LABELS`, e.g. `assumptionsTitle`, `askAi`); empty keeps the built-in texts."
+        },
+        "datapass.nav.changeSummary.fileKinds": {
+          "type": "array",
+          "default": [],
+          "items": { "type": "object", "properties": { "pattern": { "type": "string" }, "kind": { "type": "string" } } },
+          "markdownDescription": "Artifact kind of a changed file: the first `{ pattern, kind }` whose regular expression matches its path. Empty keeps the built-in rules (SQL, notebooks, DAGs, IaC, pipelines, config)."
         },
         "datapass.company": {
           "type": "string",
@@ -4468,6 +4498,7 @@
     "@juliandatapass-group/lineage-core": "file:vendor/common/juliandatapass-group-lineage-core-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/project-contracts": "file:vendor/common/juliandatapass-group-project-contracts-0.1.0-alpha.6.tgz",
     "@juliandatapass-group/semantic-core": "file:vendor/common/juliandatapass-group-semantic-core-0.1.0-alpha.4.tgz",
+    "@juliandatapass-group/semantic-diff": "file:vendor/common/juliandatapass-group-semantic-diff-0.1.0-alpha.6.tgz",
     "@juliandatapass-group/tool-catalog": "file:vendor/common/juliandatapass-group-tool-catalog-0.1.0-alpha.3.tgz",
     "@juliandatapass-group/view-spi": "file:vendor/common/juliandatapass-group-view-spi-0.1.0-alpha.4.tgz"
   }

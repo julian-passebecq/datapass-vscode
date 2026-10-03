@@ -148,6 +148,14 @@
       "sha256": "39a99f90183e01226e390c07d5efe581c35c74398a41e0813ed2824399b18895",
       "integrity": "sha512-IOE4Unq7iFnp5dn8yibX7CXAsk2f5zkErhcCVY6eO/yUJFfs6wd2eolKjJG6tyi1OxdPbS9cKJKiHApicHL8Ug==",
       "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
+    },
+    {
+      "name": "@juliandatapass-group/semantic-diff",
+      "version": "0.1.0-alpha.6",
+      "file": "juliandatapass-group-semantic-diff-0.1.0-alpha.6.tgz",
+      "sha256": "c802e4a34510c4ab446276a18a85fab05d8224adcb79e0a3db9aeba409cd2772",
+      "integrity": "sha512-XhioYum4QOUrfViYqByesIcPm86iJUxHzFharkTKKkfAT4+narXpJEZatt4dGqamRQDXAmRKTgiB9soNSIR06w==",
+      "sourceCommit": "ae07f9e81e588cc9bfeb563b6ebf96e000838491"
     }
   ],
   "dbt3wNote": "DBT3W: analyzers, analyzers-dbt, lineage-core and project-contracts packed with scripts/pack-vendor.mjs from green Common main 2622064 (the REPIN5 pin); semantic-core and analysis-protocol are byte-identical there. host-node and compat-v3 keep their earlier pins.",
@@ -157,5 +165,6 @@
   "sourceDirty": false,
   "repin5Note": "REPIN5 (TL-13): all vendored Common packages re-packed with scripts/pack-vendor.mjs from merged V5FREEZE1 a6b7ad332d206b95867e795ff896350827518bfc. analyzers-api vendored for OTEL2, not wired. Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.5, lineage-core@0.1.0-alpha.3, view-spi@0.1.0-alpha.3, analyzers@0.1.0-alpha.9, analyzers-dbt@0.1.0-alpha.3, analyzers-api@0.1.0-alpha.3, arch-decisions@0.1.0-alpha.3, arch-catalog@0.1.0-alpha.3, decision-rationale@0.1.0-alpha.3, analysis-host-node@0.1.0-alpha.6.",
   "repin8Note": "REPIN8 (ARCH-REVIEW S1): all vendored Common packages re-packed with scripts/pack-vendor.mjs from merged V5FREEZE2 ae07f9e; exchange-protocol added to the vendored set. Versions: semantic-core@0.1.0-alpha.4, analysis-protocol@0.1.0-alpha.4, exchange-protocol@0.1.0-alpha.6, compat-v3@0.1.0-alpha.3, tool-catalog@0.1.0-alpha.3, capability-router@0.1.0-alpha.2, project-contracts@0.1.0-alpha.6, lineage-core@0.1.0-alpha.4, view-spi@0.1.0-alpha.4, analyzers@0.1.0-alpha.10, analyzers-dbt@0.1.0-alpha.4, analyzers-api@0.1.0-alpha.4, arch-decisions@0.1.0-alpha.4, arch-catalog@0.1.0-alpha.4, decision-rationale@0.1.0-alpha.4, analysis-host-node@0.1.0-alpha.7.",
-  "stda1aNote": "STDA1a (PM 31 TL-13 ruling, re-vendored at merge with main REPIN8): analyzers-airflow and analyzers-orchestration packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491; their Common deps re-pack byte-identical to the REPIN8 pins, no other package changed. Versions: analyzers-airflow@0.1.0-alpha.6, analyzers-orchestration@0.1.0-alpha.6."
+  "stda1aNote": "STDA1a (PM 31 TL-13 ruling, re-vendored at merge with main REPIN8): analyzers-airflow and analyzers-orchestration packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491; their Common deps re-pack byte-identical to the REPIN8 pins, no other package changed. Versions: analyzers-airflow@0.1.0-alpha.6, analyzers-orchestration@0.1.0-alpha.6.",
+  "navchg1Note": "NAVCHG1 (re-vendored at merge with main REPIN8): semantic-diff packed with scripts/pack-vendor.mjs from V5FREEZE2 ae07f9e81e588cc9bfeb563b6ebf96e000838491 (replaces alpha.3 from d6770bf, which pinned project-contracts alpha.3); its Common deps re-pack byte-identical to the REPIN8 pins. Version: semantic-diff@0.1.0-alpha.6."
 }
