@@ -1244,6 +1244,11 @@
         "command": "datapass.nav.tour.askAi",
         "title": "DataPass: Ask the AI for a Guided Tour…",
         "icon": "$(milestone)"
+      },
+      {
+        "command": "datapass.explain.exportWithTour",
+        "title": "DataPass: Export Explainer Page with a Tour (HTML)…",
+        "icon": "$(export)"
       }
     ],
     "viewsContainers": {
@@ -3083,6 +3088,10 @@
         {
           "command": "datapass.nav.tour.askAi",
           "when": "!datapass.hidden.v5.tourai1"
+        },
+        {
+          "command": "datapass.explain.exportWithTour",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
