@@ -31,6 +31,7 @@ export type V5Step =
   | UiStep
   | { kind: "shot"; name: string }                       // the acceptance screenshot qa/v5/shots/<name>.png
   | { kind: "chooseFile"; path: string }                  // the next open-file dialog answers this fixture file
+  | { kind: "chooseSave"; answer: "default" }             // the next save dialog is accepted as offered (the user presses Save on the default location)
   | { kind: "appendFile"; path: string; text: string; match?: boolean } // a user edit of a fixture file (`match`: path is a regex, first hit)
   | { kind: "deleteFile"; path: string }                  // a user deletion (hole cases)
   | { kind: "expectFile"; pattern: string }               // a file whose fixture-relative path matches the regex exists
@@ -98,7 +99,7 @@ const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 
 const strs = (v: unknown): v is string[] => Array.isArray(v) && v.every(x => typeof x === "string" && x.length > 0);
 const REL = /^(?![A-Za-z]:)(?!\/)(?!.*(?:^|\/)\.\.(?:\/|$))[^\\\0]+$/;
 
-const EXTRA_KEYS = ["shot", "chooseFile", "appendFile", "deleteFile", "expectFile", "expectNoFile", "expectFileText", "expectFileLacks", "command",
+const EXTRA_KEYS = ["shot", "chooseFile", "chooseSave", "appendFile", "deleteFile", "expectFile", "expectNoFile", "expectFileText", "expectFileLacks", "command",
   "chooseCassette", "acceptWrites", "expectElement", "expectNoOverlap", "expectClipboard", "openInChromium", "closeChromium"] as const;
 const CASSETTE = /^[a-z0-9][a-z0-9-]*\.(json|md|txt)$/;
 
@@ -112,6 +113,7 @@ export function parseV5Step(raw: unknown): V5Step {
       switch (key) {
         case "shot": return typeof v === "string" && V5_SHOT_PATTERN.test(v) ? { kind: "shot", name: v } : bad("shot takes a name v5-NN-slug");
         case "chooseFile": return typeof v === "string" && REL.test(v) ? { kind: "chooseFile", path: v } : bad("chooseFile takes a fixture-relative path");
+        case "chooseSave": return v === "default" ? { kind: "chooseSave", answer: "default" } : bad("chooseSave takes \"default\" (accept the location the dialog offers)");
         case "deleteFile": return typeof v === "string" && REL.test(v) ? { kind: "deleteFile", path: v } : bad("deleteFile takes a fixture-relative path");
         case "appendFile": {
           if (typeof v !== "string" || typeof raw.text !== "string" || (raw.match !== undefined && typeof raw.match !== "boolean")) return bad("appendFile takes a fixture-relative path (or a regex with match: true) and a text");
@@ -201,7 +203,7 @@ export function parseV5Acceptance(text: string): V5Acceptance {
 }
 
 /** Steps that drive the VS Code workbench or its files; a Chromium journey has none of them. */
-const VSCODE_ONLY: readonly V5Step["kind"][] = ["run", "openView", "quickPick", "commandPaletteSearch", "settingsSearch", "openFile", "chooseFolder", "chooseFile",
+const VSCODE_ONLY: readonly V5Step["kind"][] = ["run", "openView", "quickPick", "commandPaletteSearch", "settingsSearch", "openFile", "chooseFolder", "chooseFile", "chooseSave",
   "chooseCassette", "appendFile", "deleteFile", "expectFile", "expectNoFile", "expectFileText", "expectFileLacks", "command", "acceptWrites", "expectClipboard", "openInChromium", "closeChromium"];
 
 const SURFACE = /^(view|command|click):.+$/;
@@ -326,6 +328,7 @@ export function describeV5Step(s: V5Step): string {
     case "expectFileText": return `expect /${s.pattern}/ to contain "${s.text.slice(0, 40)}"`;
     case "expectFileLacks": return `expect /${s.pattern}/ not to contain "${s.text.slice(0, 40)}"`;
     case "command": return `execute ${s.id}`;
+    case "chooseSave": return "accept the next save dialog at its default location";
     case "chooseCassette": return `answer the next file dialog with the cassette ${s.name}`;
     case "acceptWrites": return `accept the files /${s.pattern}/ written by the confirmed action`;
     case "expectElement": return `expect an element ${s.selector}`;

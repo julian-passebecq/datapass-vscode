@@ -32,13 +32,13 @@
           "steps": [
             {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
             {"quickPick": "fct_orders"},
-            {"quickPick": "fabric-notebook"},
+            {"quickPick": "Materialize as notebook"},
             {"click": "Write", "role": "button"},
             {"acceptWrites": "^fabric/"},
             {"expectFile": "^\\.datapass/materialization/.*fct_orders.*\\.json$"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
             {"quickPick": "fct_orders"},
-            {"expect": "notebook becomes the authority"},
+            {"expect": "becomes the authority. Later dbt changes are no longer materialized into it"},
             {"shot": "v5-01-detach-confirm"},
             {"click": "Detach", "role": "button"},
             {"expectFileText": "^\\.datapass/materialization/.*fct_orders.*\\.json$", "text": "\"authority\": \"notebook\""},
@@ -49,7 +49,7 @@
             {"appendFile": "fct_orders.*notebook-content\\.py$", "match": true, "text": "\n# edited in the notebook\n"},
             {"expect": "notebook edited", "timeoutMs": 20000},
             {"appendFile": "dbt/models/marts/fct_orders.sql", "text": "\n-- edited in dbt\n"},
-            {"expect": "both", "timeoutMs": 20000},
+            {"expect": "dbt changed and notebook edited", "timeoutMs": 20000},
             {"expectAbsent": "in sync"},
             {"shot": "v5-03-drift-both"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
@@ -64,7 +64,7 @@
           "steps": [
             {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
             {"quickPick": "fct_orders"},
-            {"quickPick": "fabric-notebook"},
+            {"quickPick": "Materialize as notebook"},
             {"click": "Write", "role": "button"},
             {"acceptWrites": "^fabric/"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
@@ -92,10 +92,11 @@
           "steps": [
             {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
             {"quickPick": "fct_orders"},
-            {"expect": "default: one notebook per model"},
-            {"expect": "one Spark job + Python wheel project"},
+            {"expect": "Materialize these dbt models as notebooks or as a Spark job?"},
+            {"expect": "One Fabric notebook per model: easy to open, read and run by hand."},
+            {"expect": "One Spark job definition + a Python wheel (one module per model, tests stub)"},
             {"shot": "v5-04-sjd-target"},
-            {"quickPick": "spark-job-definition"},
+            {"quickPick": "Materialize as Spark job"},
             {"expect": "dbt materialization proposal", "timeoutMs": 20000},
             {"expect": "Nothing is run or deployed"},
             {"click": "Write", "role": "button"},
@@ -108,8 +109,7 @@
             {"expect": "Git steps (run them yourself, after review)", "timeoutMs": 20000},
             {"expect": "DataPass never builds it"},
             {"shot": "v5-05-sjd-plan"},
-            {"expectNoFile": "^\\.git/refs/heads/datapass"},
-            {"expect": "Materialize these dbt models as notebooks or as a Spark job?"}
+            {"expectNoFile": "^\\.git/refs/heads/datapass"}
           ]
         },
         {
@@ -117,7 +117,7 @@
           "steps": [
             {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
             {"quickPick": "fct_orders"},
-            {"quickPick": "spark-job-definition"},
+            {"quickPick": "Materialize as Spark job"},
             {"expect": "dbt.compiled-sql-jinja", "timeoutMs": 20000},
             {"expectAbsent": "models/fct_orders.py"},
             {"press": "Escape"},
@@ -144,11 +144,12 @@
             {"openView": "Git"},
             {"expect": "ingest"},
             {"expect": "feature/order-channel"},
-            {"expect": "1 ahead"},
+            {"expect": "feature/order-channel ↑1"},
             {"expect": "transform"},
             {"expect": "bi"},
             {"shot": "v5-06-repo-lanes"},
-            {"click": "transform", "role": "treeitem"},
+            {"run": "DataPass: Pick a View Here…"},
+            {"quickPick": "Repository history"},
             {"expect": "transform: vendor semantic-core 0.1.0"},
             {"expect": "transform: fct_orders"},
             {"shot": "v5-07-repo-history"}
@@ -208,9 +209,9 @@
             {"openFile": "fabric/ingest_orders.Notebook/notebook-content.py"},
             {"wait": 8000},
             {"run": "DataPass: Pick a View Here…"},
-            {"quickPick": "Code steps"},
+            {"quickPick": "Steps"},
             {"expect": "saveAsTable"},
-            {"click": "bronze.orders_raw"},
+            {"click": "bronze.orders_raw", "role": "option"},
             {"chooseFile": "samples/orders_sample.csv"},
             {"run": "DataPass: Data Sample for a Code Step"},
             {"quickPick": "From a local data file (Data X-Ray)"},
@@ -227,7 +228,7 @@
             {"openFile": "fabric/ingest_orders.Notebook/notebook-content.py"},
             {"wait": 8000},
             {"run": "DataPass: Pick a View Here…"},
-            {"quickPick": "Code steps"},
+            {"quickPick": "Steps"},
             {"expect": "saveAsTable"},
             {"expect": "No sample"},
             {"expectAbsent": "1003"}
@@ -249,7 +250,7 @@
           "steps": [
             {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
             {"quickPick": "fct_orders"},
-            {"quickPick": "fabric-notebook"},
+            {"quickPick": "Materialize as notebook"},
             {"click": "Write", "role": "button"},
             {"acceptWrites": "^fabric/"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
@@ -440,7 +441,7 @@
           "steps": [
             {"openFile": "dbt/models/staging/stg_orders.sql"},
             {"run": "DataPass: Pattern Cards for This File"},
-            {"expect": "datapass-guidance"},
+            {"expect": "DataPass guidance"},
             {"expect": "owner"},
             {"expectAbsent": "row-number-latest"},
             {"run": "DataPass: Queries Worth Showing"},
@@ -463,7 +464,7 @@
           "steps": [
             {"run": "DataPass: Ask the AI for a Guided Tour…"},
             {"quickPick": "Understand the BI part"},
-            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"expect": "copied the guided-tour request", "timeoutMs": 20000},
             {"expectClipboard": "Prepare a guided tour of my project on this topic: understand the BI part"},
             {"expectClipboard": "{\"exclude\":[\"query-showcase\"]}"},
             {"shot": "v5-25-tourai-request"},
@@ -475,12 +476,12 @@
           "steps": [
             {"run": "DataPass: Ask the AI for a Guided Tour…"},
             {"quickPick": "Understand the BI part"},
-            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"expect": "copied the guided-tour request", "timeoutMs": 20000},
             {"chooseCassette": "tour-bi.json"},
             {"run": "DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)"},
             {"click": "From a file…"},
             {"wait": 1500},
-            {"click": "Show the diff and write…", "role": "button"},
+            {"click": "Show and create tours.json…", "role": "button"},
             {"expect": "guided tours (tours.json)", "timeoutMs": 20000},
             {"click": "Create the file", "role": "button"},
             {"expectFile": "^\\.datapass/tours\\.json$"},
@@ -499,12 +500,12 @@
           "steps": [
             {"run": "DataPass: Ask the AI for a Guided Tour…"},
             {"quickPick": "Understand the BI part"},
-            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"expect": "copied the guided-tour request", "timeoutMs": 20000},
             {"chooseCassette": "tour-bi-unknown.json"},
             {"run": "DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)"},
             {"click": "From a file…"},
             {"wait": 1500},
-            {"click": "Show the diff and write…", "role": "button"},
+            {"click": "Show and create tours.json…", "role": "button"},
             {"expect": "does not exist in this project", "timeoutMs": 20000},
             {"click": "Create the file", "role": "button"},
             {"expectFile": "^\\.datapass/tours\\.json$"},
@@ -523,7 +524,7 @@
       "requires": {"commands": ["datapass.explain.export"], "settings": ["datapass.explain.sections"]},
       "providers": {"datapass.explain.export": "EXPLAIN1 !233", "datapass.explain.sections": "EXPLAIN1 !233"},
       "shots": ["v5-27-explainer-page"],
-      "notes": ["V5-12-OFFLINE (V5E2E1b) opens the exported page in Playwright Chromium with the network off (offline context, every non-file request aborted and reported) and steps through its contents; the screenshot is that page. Section names follow origin/v5/explain1."],
+      "notes": ["V5-12-OFFLINE (V5E2E1b) opens the exported page in Playwright Chromium with the network off (offline context, every non-file request aborted and reported) and steps through its contents; the screenshot is that page. Section names follow origin/v5/explain1.", "V5-12-HOLE: shop-bare has no .datapass/, so the export asks where to save (core/explain/target.ts V5HOLE6) and the journey accepts the default it offers, datapass-explain-<date>.html at the folder root (chooseSave + acceptWrites)."],
       "journeys": [
         {
           "id": "V5-12", "kind": "main", "title": "Export one self-contained HTML page with header, origins legend and the confidential mark", "fixture": "shop",
@@ -562,11 +563,13 @@
         {
           "id": "V5-12-HOLE", "kind": "hole", "title": "shop-bare: readiness and decisions are holes, never an empty chart as data", "fixture": "shop-bare",
           "steps": [
+            {"chooseSave": "default"},
             {"run": "DataPass: Export Explainer Page (HTML)…"},
             {"quickPick": "internal"},
-            {"expectFile": "^\\.datapass/explain/export-.*\\.html$"},
-            {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "hole"},
-            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"},
+            {"expectFile": "^datapass-explain-\\d{4}-\\d{2}-\\d{2}\\.html$"},
+            {"acceptWrites": "^datapass-explain-\\d{4}-\\d{2}-\\d{2}\\.html$"},
+            {"expectFileText": "^datapass-explain-.*\\.html$", "text": "hole"},
+            {"expectFileLacks": "^datapass-explain-.*\\.html$", "text": "https://"},
             {"expectAbsent": "0 %"}
           ]
         }
@@ -613,6 +616,7 @@
             {"click": "Keep it", "role": "button"},
             {"expectFileText": "^\\.datapass/local/architect-reviews\\.json$", "text": "\"origin\": \"ai-proposed\""},
             {"command": "datapass.context.show"},
+            {"click": "Why & alternatives"},
             {"expect": "Add a dbt source freshness check", "timeoutMs": 20000},
             {"expect": "ai-proposed"},
             {"shot": "v5-28-architect-review"}
@@ -632,8 +636,10 @@
             {"chooseCassette": "architect-review-unverified.json"},
             {"quickPick": "From a file…"},
             {"expectAbsent": "Not imported"},
+            {"expect": "Keep this architect review?", "timeoutMs": 20000},
             {"click": "Keep it", "role": "button"},
             {"command": "datapass.context.show"},
+            {"click": "Why & alternatives"},
             {"expect": "Remove the second refund pass", "timeoutMs": 20000},
             {"expect": "unverified"}
           ]

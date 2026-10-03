@@ -1,8 +1,8 @@
 {
   "format": "datapass.v5-acceptance-report",
   "version": 1,
-  "part": "a",
-  "generatedAt": "2026-10-02T13:43:20.166Z",
+  "part": "all",
+  "generatedAt": "2026-10-03T07:10:47.001Z",
   "build": {
     "version": "1.1.0-rc.1",
     "node": "v26.9.0",
@@ -11,69 +11,488 @@
   "verdict": {
     "accepted": false,
     "counts": {
-      "green": 0,
-      "red": 1,
-      "missing": 6,
+      "green": 6,
+      "red": 5,
+      "missing": 1,
+      "pending-merge": 0,
       "cut": 2,
-      "deferred": 5
+      "deferred": 0
     }
   },
   "rows": [
     {
       "id": "01",
       "title": "dbt detach",
-      "status": "missing",
-      "detail": "hole: not in this build: command:datapass.dbt.materialize, command:datapass.dbt.detach, source:src/core/materialize/dbtDetach.ts",
-      "missing": [
+      "status": "red",
+      "detail": "V5-01: expect \"notebook edited\": \"notebook edited\" not shown within 20000 ms | V5-01-HOLE: expect \"target missing\": \"target missing\" not shown within 20000 ms",
+      "journeys": [
         {
-          "id": "command:datapass.dbt.materialize",
-          "provider": "DBTMAT1 !218"
+          "id": "V5-01",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"fct_orderstable model.shop.fct_orders\""
+            },
+            {
+              "step": "pick \"Materialize as notebook\"",
+              "status": "PASS",
+              "detail": "picked \"Materialize as notebookrecommended One Fabric notebook per model: easy to open, \""
+            },
+            {
+              "step": "click button \"Write\"",
+              "status": "PASS"
+            },
+            {
+              "step": "accept the files /^fabric// written by the confirmed action",
+              "status": "PASS",
+              "detail": "4 file(s)"
+            },
+            {
+              "step": "expect a file /^\\.datapass/materialization/.*fct_orders.*\\.json$/",
+              "status": "PASS",
+              "detail": ".datapass/materialization/fabric/dbt_fct_orders.Notebook/notebook-content.py.detach.json"
+            },
+            {
+              "step": "run \"DataPass: Detach dbt Model (the notebook becomes the authority)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"model.shop.fct_ordersdbt fabric/dbt_fct_orders.Notebook/notebook-content.py\""
+            },
+            {
+              "step": "expect \"becomes the authority. Later dbt changes are no longer materialized into it\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-01-detach-confirm",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-01-detach-confirm.png"
+            },
+            {
+              "step": "click button \"Detach\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect /^\\.datapass/materialization/.*fct_orders.*\\.json$/ to contain \"\"authority\": \"notebook\"\"",
+              "status": "PASS",
+              "detail": ".datapass/materialization/fabric/dbt_fct_orders.Notebook/notebook-content.py.detach.json"
+            },
+            {
+              "step": "expect /^\\.datapass/materialization/.*fct_orders.*\\.json$/ to contain \"sha256\"",
+              "status": "PASS",
+              "detail": ".datapass/materialization/fabric/dbt_fct_orders.Notebook/notebook-content.py.detach.json"
+            },
+            {
+              "step": "open view \"DataPass\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"detached\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-02-detached-badge",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-02-detached-badge.png"
+            },
+            {
+              "step": "edit fct_orders.*notebook-content\\.py$",
+              "status": "PASS",
+              "detail": "fabric/dbt_fct_orders.Notebook/notebook-content.py"
+            },
+            {
+              "step": "expect \"notebook edited\"",
+              "status": "FAIL",
+              "detail": "\"notebook edited\" not shown within 20000 ms"
+            },
+            {
+              "step": "edit dbt/models/marts/fct_orders.sql",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"dbt changed and notebook edited\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no \"in sync\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "screenshot v5-03-drift-both",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "run \"DataPass: Detach dbt Model (the notebook becomes the authority)\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "pick \"Re-attach\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"re-attach proposed\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no file /^\\.git/refs/heads/datapass/",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"notebook edited\": \"notebook edited\" not shown within 20000 ms"
         },
         {
-          "id": "command:datapass.dbt.detach",
-          "provider": "DETACH1 !220"
-        },
-        {
-          "id": "source:src/core/materialize/dbtDetach.ts",
-          "provider": "DETACH1 !220"
+          "id": "V5-01-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"fct_orderstable model.shop.fct_orders\""
+            },
+            {
+              "step": "pick \"Materialize as notebook\"",
+              "status": "PASS",
+              "detail": "picked \"Materialize as notebookrecommended One Fabric notebook per model: easy to open, \""
+            },
+            {
+              "step": "click button \"Write\"",
+              "status": "PASS"
+            },
+            {
+              "step": "accept the files /^fabric// written by the confirmed action",
+              "status": "PASS",
+              "detail": "4 file(s)"
+            },
+            {
+              "step": "run \"DataPass: Detach dbt Model (the notebook becomes the authority)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"model.shop.fct_ordersdbt fabric/dbt_fct_orders.Notebook/notebook-content.py\""
+            },
+            {
+              "step": "click button \"Detach\"",
+              "status": "PASS"
+            },
+            {
+              "step": "delete fabric/dbt_fct_orders.Notebook/notebook-content.py",
+              "status": "PASS"
+            },
+            {
+              "step": "open view \"DataPass\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"target missing\"",
+              "status": "FAIL",
+              "detail": "\"target missing\" not shown within 20000 ms"
+            },
+            {
+              "step": "expect no \"in sync\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"target missing\": \"target missing\" not shown within 20000 ms"
         }
       ],
-      "journeys": [],
-      "shots": []
+      "shots": [
+        "v5-01-detach-confirm",
+        "v5-02-detached-badge"
+      ]
     },
     {
       "id": "02",
       "title": "Spark-job target",
-      "status": "deferred",
-      "detail": "in V5E2E1b",
-      "journeys": [],
-      "shots": []
+      "status": "green",
+      "detail": "2 journey(s) passed",
+      "journeys": [
+        {
+          "id": "V5-02",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"fct_orderstable model.shop.fct_orders\""
+            },
+            {
+              "step": "expect \"Materialize these dbt models as notebooks or as a Spark job?\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"One Fabric notebook per model: easy to open, read and run by hand.\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"One Spark job definition + a Python wheel (one module per model, tests stub)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-04-sjd-target",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-04-sjd-target.png"
+            },
+            {
+              "step": "pick \"Materialize as Spark job\"",
+              "status": "PASS",
+              "detail": "picked \"Materialize as Spark job One Spark job definition + a Python wheel (one module p\""
+            },
+            {
+              "step": "expect \"dbt materialization proposal\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Nothing is run or deployed\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Write\"",
+              "status": "PASS"
+            },
+            {
+              "step": "accept the files /^(fabric|jobs)// written by the confirmed action",
+              "status": "PASS",
+              "detail": "10 file(s)"
+            },
+            {
+              "step": "expect a file /^jobs/dbt_shop_jobs/pyproject\\.toml$/",
+              "status": "PASS",
+              "detail": "jobs/dbt_shop_jobs/pyproject.toml"
+            },
+            {
+              "step": "expect a file /^jobs/dbt_shop_jobs/src/dbt_shop_jobs/models/fct_orders\\.py$/",
+              "status": "PASS",
+              "detail": "jobs/dbt_shop_jobs/src/dbt_shop_jobs/models/fct_orders.py"
+            },
+            {
+              "step": "expect a file /\\.SparkJobDefinition//",
+              "status": "PASS",
+              "detail": ".datapass/provenance/fabric/dbt_shop_job.SparkJobDefinition/.platform.provenance.json"
+            },
+            {
+              "step": "expect no file /\\.whl$/",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no file /^jobs/dbt_shop_jobs/(dist|build)//",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Git steps (run them yourself, after review)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"DataPass never builds it\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-05-sjd-plan",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-05-sjd-plan.png"
+            },
+            {
+              "step": "expect no file /^\\.git/refs/heads/datapass/",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-02-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"fct_orderstable model.shop.fct_orders\""
+            },
+            {
+              "step": "pick \"Materialize as Spark job\"",
+              "status": "PASS",
+              "detail": "picked \"Materialize as Spark job One Spark job definition + a Python wheel (one module p\""
+            },
+            {
+              "step": "expect \"dbt.compiled-sql-jinja\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no \"models/fct_orders.py\"",
+              "status": "PASS"
+            },
+            {
+              "step": "press Escape",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no file /models/fct_orders\\.py$/",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "shots": [
+        "v5-04-sjd-target",
+        "v5-05-sjd-plan"
+      ]
     },
     {
       "id": "03",
       "title": "Multi-repo status / history / impact",
-      "status": "missing",
-      "detail": "hole: not in this build: setting:datapass.repoHistory.labels, source:src/core/gitmr/repoSet.ts, source:src/core/gitmr/readOnly.ts, source:src/core/gitmr/repoHistory.ts",
-      "missing": [
+      "status": "red",
+      "detail": "V5-03: expect \"transform: vendor semantic-core 0.1.0\": \"transform: vendor semantic-core 0.1.0\" not shown within 15000 ms | V5-03-HOLE: expect \"missing clone\": \"missing clone\" not shown within 20000 ms",
+      "journeys": [
         {
-          "id": "setting:datapass.repoHistory.labels",
-          "provider": "GITMR2 !225"
+          "id": "V5-03",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open view \"Git\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"ingest\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"feature/order-channel\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"feature/order-channel ↑1\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"transform\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"bi\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-06-repo-lanes",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-06-repo-lanes.png"
+            },
+            {
+              "step": "run \"DataPass: Pick a View Here…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Repository history\"",
+              "status": "PASS",
+              "detail": "picked \"Repository history Commits of every repository of the workspace, one lane per re\""
+            },
+            {
+              "step": "expect \"transform: vendor semantic-core 0.1.0\"",
+              "status": "FAIL",
+              "detail": "\"transform: vendor semantic-core 0.1.0\" not shown within 15000 ms"
+            },
+            {
+              "step": "expect \"transform: fct_orders\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "screenshot v5-07-repo-history",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"transform: vendor semantic-core 0.1.0\": \"transform: vendor semantic-core 0.1.0\" not shown within 15000 ms"
         },
         {
-          "id": "source:src/core/gitmr/repoSet.ts",
-          "provider": "GITMR1 !214"
+          "id": "V5-03-IMPACT",
+          "kind": "main",
+          "boundary": [],
+          "steps": [],
+          "status": "CUT",
+          "detail": "GITMR3 cut to V5.1 (TL-10 cut order, PM 31 19:00)"
         },
         {
-          "id": "source:src/core/gitmr/readOnly.ts",
-          "provider": "GITMR1 !214"
+          "id": "V5-03-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open view \"Git\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"ingest\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"missing clone\"",
+              "status": "FAIL",
+              "detail": "\"missing clone\" not shown within 20000 ms"
+            },
+            {
+              "step": "expect no \"up to date\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"missing clone\": \"missing clone\" not shown within 20000 ms"
         },
         {
-          "id": "source:src/core/gitmr/repoHistory.ts",
-          "provider": "GITMR2 !225"
+          "id": "V5-03-HOLE-COMMON",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [],
+          "status": "CUT",
+          "detail": "pin drift is GITMR3, cut to V5.1 (TL-10)"
         }
       ],
-      "journeys": [],
-      "shots": []
+      "shots": [
+        "v5-06-repo-lanes"
+      ]
     },
     {
       "id": "04",
@@ -87,23 +506,12 @@
       "id": "05",
       "title": "Power-Query sample",
       "status": "red",
-      "detail": "V5-05: run \"DataPass: Pick a View Here…\": no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…) | V5-05-HOLE: pick \"Code steps\": no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)",
+      "detail": "V5-05: pick \"From a local data file (Data X-Ray)\": no entry \"From a local data file (Data X-Ray)\" in the quick input after typing \"From a local data file (Data X-Ray)\" (input \"From a local data file (Data X-Ray)\"; rows: none) | V5-05-HOLE: pick \"Steps\": the entry \"Steps\" is listed but the keyboard never reached it",
       "journeys": [
         {
           "id": "V5-05",
           "kind": "main",
-          "boundary": [
-            "spawn: git remote is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe -c core.fsmonitor=false remote)",
-            "spawn: spawned java: only git is allowed (TL-4) (C:\\Program Files\\Java\\jdk-22\\bin\\java.exe -version)",
-            "spawn: spawned python: only git is allowed (TL-4) (C:\\Python314\\python.exe --version)",
-            "spawn: spawned ssh: only git is allowed (TL-4) (C:\\Program Files\\Git\\usr\\bin\\ssh.exe -V)",
-            "spawn: git (no verb) is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe --version)",
-            "spawn: spawned psql: only git is allowed (TL-4) (C:\\Program Files\\PostgreSQL\\16\\bin\\psql.exe --version)",
-            "spawn: spawned docker: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe --version)",
-            "spawn: spawned cmd: only git is allowed (TL-4) (C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\julia\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd\" --version\")",
-            "spawn: spawned kubectl: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe version --client)",
-            "spawn: spawned dotnet: only git is allowed (TL-4) (C:\\Program Files\\dotnet\\dotnet.exe --version)"
-          ],
+          "boundary": [],
           "steps": [
             {
               "step": "open file fabric/ingest_orders.Notebook/notebook-content.py",
@@ -115,38 +523,33 @@
             },
             {
               "step": "run \"DataPass: Pick a View Here…\"",
-              "status": "FAIL",
-              "detail": "no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…)"
+              "status": "PASS"
             },
             {
-              "step": "pick \"Code steps\"",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "step": "pick \"Steps\"",
+              "status": "PASS",
+              "detail": "picked \"Steps\""
             },
             {
               "step": "expect \"saveAsTable\"",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "status": "PASS"
             },
             {
               "step": "click text \"bronze.orders_raw\"",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "status": "PASS"
             },
             {
               "step": "answer the next file dialog with samples/orders_sample.csv",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "status": "PASS"
             },
             {
               "step": "run \"DataPass: Data Sample for a Code Step\"",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "status": "PASS"
             },
             {
               "step": "pick \"From a local data file (Data X-Ray)\"",
-              "status": "NOT_RUN",
-              "detail": "an earlier step failed"
+              "status": "FAIL",
+              "detail": "no entry \"From a local data file (Data X-Ray)\" in the quick input after typing \"From a local data file (Data X-Ray)\" (input \"From a local data file (Data X-Ray)\"; rows: none)"
             },
             {
               "step": "expect \"Sample of orders_sample.csv\"",
@@ -175,23 +578,12 @@
             }
           ],
           "status": "FAIL",
-          "detail": "run \"DataPass: Pick a View Here…\": no entry \"DataPass: Pick a View Here…\" in the quick input after typing \">DataPass: Pick a View Here…\" (input \">DataPass: Pick a View Here…\"; rows: Git: Cherry Pick... similar commands | DataPass: Copy a DataPass File for the AI… | DataPass: Customize DataPass Mode…)"
+          "detail": "pick \"From a local data file (Data X-Ray)\": no entry \"From a local data file (Data X-Ray)\" in the quick input after typing \"From a local data file (Data X-Ray)\" (input \"From a local data file (Data X-Ray)\"; rows: none)"
         },
         {
           "id": "V5-05-HOLE",
           "kind": "hole",
-          "boundary": [
-            "spawn: git remote is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe -c core.fsmonitor=false remote)",
-            "spawn: spawned java: only git is allowed (TL-4) (C:\\Program Files\\Java\\jdk-22\\bin\\java.exe -version)",
-            "spawn: spawned python: only git is allowed (TL-4) (C:\\Python314\\python.exe --version)",
-            "spawn: spawned ssh: only git is allowed (TL-4) (C:\\Program Files\\Git\\usr\\bin\\ssh.exe -V)",
-            "spawn: git (no verb) is not on the TL-4 read-only list (C:\\Program Files\\Git\\mingw64\\bin\\git.exe --version)",
-            "spawn: spawned psql: only git is allowed (TL-4) (C:\\Program Files\\PostgreSQL\\16\\bin\\psql.exe --version)",
-            "spawn: spawned docker: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe --version)",
-            "spawn: spawned cmd: only git is allowed (TL-4) (C:\\WINDOWS\\system32\\cmd.exe /d /s /c \"\"C:\\Users\\julia\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin\\gcloud.cmd\" --version\")",
-            "spawn: spawned kubectl: only git is allowed (TL-4) (C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe version --client)",
-            "spawn: spawned dotnet: only git is allowed (TL-4) (C:\\Program Files\\dotnet\\dotnet.exe --version)"
-          ],
+          "boundary": [],
           "steps": [
             {
               "step": "open file fabric/ingest_orders.Notebook/notebook-content.py",
@@ -206,9 +598,9 @@
               "status": "PASS"
             },
             {
-              "step": "pick \"Code steps\"",
+              "step": "pick \"Steps\"",
               "status": "FAIL",
-              "detail": "no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)"
+              "detail": "the entry \"Steps\" is listed but the keyboard never reached it"
             },
             {
               "step": "expect \"saveAsTable\"",
@@ -227,7 +619,7 @@
             }
           ],
           "status": "FAIL",
-          "detail": "pick \"Code steps\": no entry \"Code steps\" in the quick input after typing \"Code steps\" (input \"Code steps\"; rows: none)"
+          "detail": "pick \"Steps\": the entry \"Steps\" is listed but the keyboard never reached it"
         }
       ],
       "shots": []
@@ -235,28 +627,264 @@
     {
       "id": "06",
       "title": "Authority panel",
-      "status": "missing",
-      "detail": "hole: not in this build: command:datapass.dbt.detach, source:src/core/authority/approvalsPanel.ts",
-      "missing": [
+      "status": "green",
+      "detail": "2 journey(s) passed",
+      "journeys": [
         {
-          "id": "command:datapass.dbt.detach",
-          "provider": "DETACH1 !220 (row 06 runs after row 01)"
+          "id": "V5-06",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"fct_orderstable model.shop.fct_orders\""
+            },
+            {
+              "step": "pick \"Materialize as notebook\"",
+              "status": "PASS",
+              "detail": "picked \"Materialize as notebookrecommended One Fabric notebook per model: easy to open, \""
+            },
+            {
+              "step": "click button \"Write\"",
+              "status": "PASS"
+            },
+            {
+              "step": "accept the files /^fabric// written by the confirmed action",
+              "status": "PASS",
+              "detail": "4 file(s)"
+            },
+            {
+              "step": "run \"DataPass: Detach dbt Model (the notebook becomes the authority)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"fct_orders\"",
+              "status": "PASS",
+              "detail": "picked \"model.shop.fct_ordersdbt fabric/dbt_fct_orders.Notebook/notebook-content.py\""
+            },
+            {
+              "step": "click button \"Detach\"",
+              "status": "PASS"
+            },
+            {
+              "step": "open file dbt/models/marts/fct_orders.sql",
+              "status": "PASS"
+            },
+            {
+              "step": "execute datapass.context.show",
+              "status": "PASS"
+            },
+            {
+              "step": "click tab \"Authority\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"detached\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"dbt\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"notebook\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-14-authority-panel",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-14-authority-panel.png"
+            }
+          ],
+          "status": "PASS"
         },
         {
-          "id": "source:src/core/authority/approvalsPanel.ts",
-          "provider": "AUTHPNL1 !223"
+          "id": "V5-06-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open file dbt/models/marts/fct_orders.sql",
+              "status": "PASS"
+            },
+            {
+              "step": "execute datapass.context.show",
+              "status": "PASS"
+            },
+            {
+              "step": "click tab \"Authority\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"No approval is recorded\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no \"Approved\"",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
         }
       ],
-      "journeys": [],
-      "shots": []
+      "shots": [
+        "v5-14-authority-panel"
+      ]
     },
     {
       "id": "07",
       "title": "DAG UX",
-      "status": "deferred",
-      "detail": "in V5E2E1b",
-      "journeys": [],
-      "shots": []
+      "status": "green",
+      "detail": "2 journey(s) passed",
+      "journeys": [
+        {
+          "id": "V5-07",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open file dags/orders_daily.py",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Show Airflow DAG\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"build_gold\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Top to bottom\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no overlap between g.task",
+              "status": "PASS",
+              "detail": "7 element(s), no overlap"
+            },
+            {
+              "step": "expect an element g.task[data-id=\"build_gold\"] [data-shape=\"hexagon\"]",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Navigator\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-15-dag-default",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-15-dag-default.png"
+            },
+            {
+              "step": "click button \"Top to bottom\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Left to right\"",
+              "status": "PASS"
+            },
+            {
+              "step": "execute datapass.airflow.choosePlacement",
+              "status": "PASS",
+              "detail": "still running (picker open)"
+            },
+            {
+              "step": "pick \"Bottom panel\"",
+              "status": "PASS",
+              "detail": "picked \"Bottom panel\""
+            },
+            {
+              "step": "run \"DataPass: Show Airflow DAG\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"build_gold\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Left to right\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no overlap between g.task",
+              "status": "PASS",
+              "detail": "7 element(s), no overlap"
+            },
+            {
+              "step": "screenshot v5-16-dag-options",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-16-dag-options.png"
+            },
+            {
+              "step": "run \"Developer: Reload Window\"",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 10000 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "open file dags/orders_daily.py",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Show Airflow DAG\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Left to right\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element g.task[data-id=\"build_gold\"] [data-shape=\"hexagon\"]",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-07-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open file dags/odd_operators.py",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Show Airflow DAG\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"zorb_step\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element g.task[data-id=\"zorb_step\"] [data-shape=\"rect\"]",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"unclassified\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no \"Other operator\"",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "shots": [
+        "v5-15-dag-default",
+        "v5-16-dag-options"
+      ]
     },
     {
       "id": "08",
@@ -270,31 +898,11 @@
       "id": "09",
       "title": "Guided tours, Learning/Interview + whole-picture spine",
       "status": "missing",
-      "detail": "hole: not in this build: command:datapass.nav.tour.setMode, command:datapass.nav.tour.saveCurrentPath, command:datapass.nav.tour.present, command:datapass.pedagogy.interviewPrep, setting:datapass.guided.modes.learning.enabled, setting:datapass.guided.modes.interview.enabled",
+      "detail": "hole: not in this build: command:datapass.pedagogy.interviewPrep",
       "missing": [
-        {
-          "id": "command:datapass.nav.tour.setMode",
-          "provider": "TOUR2 !244"
-        },
-        {
-          "id": "command:datapass.nav.tour.saveCurrentPath",
-          "provider": "TOUR2 !244"
-        },
-        {
-          "id": "command:datapass.nav.tour.present",
-          "provider": "TOUR2 !244"
-        },
         {
           "id": "command:datapass.pedagogy.interviewPrep",
           "provider": "PEDA2 !252"
-        },
-        {
-          "id": "setting:datapass.guided.modes.learning.enabled",
-          "provider": "TOUR2 !244"
-        },
-        {
-          "id": "setting:datapass.guided.modes.interview.enabled",
-          "provider": "TOUR2 !244"
         }
       ],
       "journeys": [],
@@ -303,66 +911,836 @@
     {
       "id": "10",
       "title": "Concept / decision / query cards",
-      "status": "missing",
-      "detail": "hole: not in this build: command:datapass.pedagogy.patternCards, command:datapass.pedagogy.queriesWorthShowing, setting:datapass.pedagogy.queryShowcase.enabled",
-      "missing": [
+      "status": "red",
+      "detail": "V5-10: expect \"row-number-latest\": \"row-number-latest\" not shown within 15000 ms | V5-10-OFF: expect no \"Queries Worth Showing\": \"Queries Worth Showing\" is shown (Queries Worth Showing) | V5-10-HOLE: expect \"DataPass guidance\": \"DataPass guidance\" not shown within 15000 ms",
+      "journeys": [
         {
-          "id": "command:datapass.pedagogy.patternCards",
-          "provider": "PEDA1b !241"
+          "id": "V5-10",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open file dbt/models/staging/stg_orders.sql",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Pattern Cards for This File\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"stg_orders.sql\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"row_number()\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-22-concept-card",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-22-concept-card.png"
+            },
+            {
+              "step": "expect \"row-number-latest\"",
+              "status": "FAIL",
+              "detail": "\"row-number-latest\" not shown within 15000 ms"
+            },
+            {
+              "step": "expect \"MERGE into a silver Delta table\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "screenshot v5-23-decision-card",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "run \"DataPass: Queries Worth Showing\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"fct_orders\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"Sample output\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "screenshot v5-24-query-showcase",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"row-number-latest\": \"row-number-latest\" not shown within 15000 ms"
         },
         {
-          "id": "command:datapass.pedagogy.queriesWorthShowing",
-          "provider": "PEDA3 !229"
+          "id": "V5-10-OFF",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "search the Command Palette for \"Queries Worth Showing\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no \"Queries Worth Showing\"",
+              "status": "FAIL",
+              "detail": "\"Queries Worth Showing\" is shown (Queries Worth Showing)"
+            },
+            {
+              "step": "press Escape",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect no \"Queries Worth Showing\": \"Queries Worth Showing\" is shown (Queries Worth Showing)"
         },
         {
-          "id": "setting:datapass.pedagogy.queryShowcase.enabled",
-          "provider": "PEDA3 !229"
+          "id": "V5-10-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "open file dbt/models/staging/stg_orders.sql",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Pattern Cards for This File\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"DataPass guidance\"",
+              "status": "FAIL",
+              "detail": "\"DataPass guidance\" not shown within 15000 ms"
+            },
+            {
+              "step": "expect \"owner\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no \"row-number-latest\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "run \"DataPass: Queries Worth Showing\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect \"No sample\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect \"DataPass guidance\": \"DataPass guidance\" not shown within 15000 ms"
         }
       ],
-      "journeys": [],
-      "shots": []
+      "shots": [
+        "v5-22-concept-card"
+      ]
     },
     {
       "id": "11",
       "title": "AI-prepared tour",
-      "status": "deferred",
-      "detail": "in V5E2E1b",
-      "journeys": [],
-      "shots": []
+      "status": "green",
+      "detail": "3 journey(s) passed",
+      "journeys": [
+        {
+          "id": "V5-11",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Ask the AI for a Guided Tour…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Understand the BI part\"",
+              "status": "PASS",
+              "detail": "picked \"Understand the BI part understand the BI part\""
+            },
+            {
+              "step": "expect \"copied the guided-tour request\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect the clipboard to hold \"Prepare a guided tour of my project on t\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect the clipboard to hold \"{\"exclude\":[\"query-showcase\"]}\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-25-tourai-request",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-25-tourai-request.png"
+            },
+            {
+              "step": "expect a file /^\\.datapass/.*tour.*request/",
+              "status": "PASS",
+              "detail": ".datapass/local/ai-exchange/tour-request.ai.bi.md"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-11-IMPORT",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Ask the AI for a Guided Tour…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Understand the BI part\"",
+              "status": "PASS",
+              "detail": "picked \"Understand the BI part understand the BI part\""
+            },
+            {
+              "step": "expect \"copied the guided-tour request\"",
+              "status": "PASS"
+            },
+            {
+              "step": "answer the next file dialog with the cassette tour-bi.json",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click text \"From a file…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 1500 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Show and create tours.json…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"guided tours (tours.json)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Create the file\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect a file /^\\.datapass/tours\\.json$/",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "expect /^\\.datapass/tours\\.json$/ to contain \"\"ai.bi\"\"",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "expect /^\\.datapass/tours\\.json$/ to contain \"\"origin\": \"ai-proposed\"\"",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "expect /^\\.datapass/tours\\.json$/ not to contain \"\"section\": \"query-showcase\"\"",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "expect /^\\.datapass/tours\\.json$/ not to contain \"\"origin\": \"user\"\"",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "run \"DataPass: Pick a Tour…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Understand the BI part\"",
+              "status": "PASS",
+              "detail": "picked \"Understand the BI part AI-proposed\""
+            },
+            {
+              "step": "expect \"ai-proposed\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-26-tourai-imported",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-26-tourai-imported.png"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-11-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Ask the AI for a Guided Tour…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Understand the BI part\"",
+              "status": "PASS",
+              "detail": "picked \"Understand the BI part understand the BI part\""
+            },
+            {
+              "step": "expect \"copied the guided-tour request\"",
+              "status": "PASS"
+            },
+            {
+              "step": "answer the next file dialog with the cassette tour-bi-unknown.json",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click text \"From a file…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 1500 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Show and create tours.json…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"does not exist in this project\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Create the file\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect a file /^\\.datapass/tours\\.json$/",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            },
+            {
+              "step": "expect /^\\.datapass/tours\\.json$/ not to contain \"finance-cube\"",
+              "status": "PASS",
+              "detail": ".datapass/tours.json"
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "shots": [
+        "v5-25-tourai-request",
+        "v5-26-tourai-imported"
+      ]
     },
     {
       "id": "12",
       "title": "Explainer export",
-      "status": "missing",
-      "detail": "hole: not in this build: command:datapass.explain.export, setting:datapass.explain.sections",
-      "missing": [
+      "status": "red",
+      "detail": "V5-12-HOLE: expect a file /^\\.datapass/explain/export-.*\\.html$/: no file matches /^\\.datapass/explain/export-.*\\.html$/",
+      "journeys": [
         {
-          "id": "command:datapass.explain.export",
-          "provider": "EXPLAIN1 !233"
+          "id": "V5-12",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Export Explainer Page (HTML)…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"internal\"",
+              "status": "PASS",
+              "detail": "picked \"internal Public and internal items; confidential and unclassified-as-confidentia\""
+            },
+            {
+              "step": "expect a file /^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$/",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ to contain \"Shop lakehouse\"",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ to contain \"confidential\"",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ not to contain \"http://\"",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ not to contain \"https://\"",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            }
+          ],
+          "status": "PASS"
         },
         {
-          "id": "setting:datapass.explain.sections",
-          "provider": "EXPLAIN1 !233"
+          "id": "V5-12-OFFLINE",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Export Explainer Page (HTML)…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"internal\"",
+              "status": "PASS",
+              "detail": "picked \"internal Public and internal items; confidential and unclassified-as-confidentia\""
+            },
+            {
+              "step": "expect a file /^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$/",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "open /^\\.datapass/explain/export-.*\\.html$/ in Chromium, network off",
+              "status": "PASS",
+              "detail": ".datapass/explain/export-2026-10-03.html"
+            },
+            {
+              "step": "expect \"Shop lakehouse\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Where each value comes from\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click link \"Architecture map\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element #xp-architecture",
+              "status": "PASS"
+            },
+            {
+              "step": "click link \"Data and control flows\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element #xp-flows",
+              "status": "PASS"
+            },
+            {
+              "step": "click link \"Readiness\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element #xp-readiness",
+              "status": "PASS"
+            },
+            {
+              "step": "click link \"Recorded decisions\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element #xp-decisions",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"confidential\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-27-explainer-page",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-27-explainer-page.png"
+            },
+            {
+              "step": "close Chromium",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-12-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Export Explainer Page (HTML)…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"internal\"",
+              "status": "PASS",
+              "detail": "picked \"internal Public and internal items; confidential and unclassified-as-confidentia\""
+            },
+            {
+              "step": "expect a file /^\\.datapass/explain/export-.*\\.html$/",
+              "status": "FAIL",
+              "detail": "no file matches /^\\.datapass/explain/export-.*\\.html$/"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ to contain \"hole\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect /^\\.datapass/explain/export-.*\\.html$/ not to contain \"https://\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            },
+            {
+              "step": "expect no \"0 %\"",
+              "status": "NOT_RUN",
+              "detail": "an earlier step failed"
+            }
+          ],
+          "status": "FAIL",
+          "detail": "expect a file /^\\.datapass/explain/export-.*\\.html$/: no file matches /^\\.datapass/explain/export-.*\\.html$/"
         }
       ],
-      "journeys": [],
-      "shots": []
+      "shots": [
+        "v5-27-explainer-page"
+      ]
     },
     {
       "id": "13",
       "title": "Architect review",
-      "status": "deferred",
-      "detail": "in V5E2E1b",
-      "journeys": [],
-      "shots": []
+      "status": "green",
+      "detail": "3 journey(s) passed",
+      "journeys": [
+        {
+          "id": "V5-13",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "execute datapass.setProjectChecklist",
+              "status": "PASS",
+              "detail": "still running (picker open)"
+            },
+            {
+              "step": "pick \"Done\"",
+              "status": "PASS",
+              "detail": "picked \" Done\""
+            },
+            {
+              "step": "expect \"ask an architect review through the AI exchange?\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Not now\"",
+              "status": "PASS"
+            },
+            {
+              "step": "execute datapass.setProjectChecklist",
+              "status": "PASS",
+              "detail": "still running (picker open)"
+            },
+            {
+              "step": "pick \"To do\"",
+              "status": "PASS",
+              "detail": "picked \" To do\""
+            },
+            {
+              "step": "expect no \"Architect review request copied\"",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-13-REVIEW",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Ask an Architect Review (AI exchange)…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Before marking done\"",
+              "status": "PASS",
+              "detail": "picked \"Before marking done\""
+            },
+            {
+              "step": "type \"gold-ready\"",
+              "status": "PASS"
+            },
+            {
+              "step": "press Enter",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 800 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "press Enter",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Architect review request copied\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect the clipboard to hold \"architect-review/1\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect the clipboard to hold \"datapass:architect-review:19abba7b3ab96c\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect /^\\.datapass/local/architect-reviews\\.json$/ to contain \"\"milestoneId\": \"gold-ready\"\"",
+              "status": "PASS",
+              "detail": ".datapass/local/architect-reviews.json"
+            },
+            {
+              "step": "run \"DataPass: Import the Architect Review Answer…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "answer the next file dialog with the cassette architect-review.json",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"From a file…\"",
+              "status": "PASS",
+              "detail": "picked \" From a file…\""
+            },
+            {
+              "step": "expect \"Keep this architect review?\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Keep it\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect /^\\.datapass/local/architect-reviews\\.json$/ to contain \"\"origin\": \"ai-proposed\"\"",
+              "status": "PASS",
+              "detail": ".datapass/local/architect-reviews.json"
+            },
+            {
+              "step": "execute datapass.context.show",
+              "status": "PASS"
+            },
+            {
+              "step": "click text \"Why & alternatives\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Add a dbt source freshness check\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"ai-proposed\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-28-architect-review",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-28-architect-review.png"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-13-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "run \"DataPass: Ask an Architect Review (AI exchange)…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"Before marking done\"",
+              "status": "PASS",
+              "detail": "picked \"Before marking done\""
+            },
+            {
+              "step": "type \"gold-ready\"",
+              "status": "PASS"
+            },
+            {
+              "step": "press Enter",
+              "status": "PASS"
+            },
+            {
+              "step": "wait 800 ms",
+              "status": "PASS"
+            },
+            {
+              "step": "press Enter",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Architect review request copied\"",
+              "status": "PASS"
+            },
+            {
+              "step": "run \"DataPass: Import the Architect Review Answer…\"",
+              "status": "PASS"
+            },
+            {
+              "step": "answer the next file dialog with the cassette architect-review-unverified.json",
+              "status": "PASS"
+            },
+            {
+              "step": "pick \"From a file…\"",
+              "status": "PASS",
+              "detail": "picked \" From a file…\""
+            },
+            {
+              "step": "expect no \"Not imported\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Keep this architect review?\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Keep it\"",
+              "status": "PASS"
+            },
+            {
+              "step": "execute datapass.context.show",
+              "status": "PASS"
+            },
+            {
+              "step": "click text \"Why & alternatives\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"Remove the second refund pass\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"unverified\"",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "shots": [
+        "v5-28-architect-review"
+      ]
     },
     {
       "id": "14",
       "title": "Studio demo",
-      "status": "deferred",
-      "detail": "in V5E2E1b",
-      "journeys": [],
-      "shots": []
+      "status": "green",
+      "detail": "2 journey(s) passed",
+      "journeys": [
+        {
+          "id": "V5-14",
+          "kind": "main",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "expect \"Medallion Demo (DataPass export)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element [data-table=\"silver_orders\"][data-status=\"loaded\"]",
+              "status": "PASS"
+            },
+            {
+              "step": "click tab \"Shared view catalog\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element [data-testid=\"catalog-sheet\"] .dp-catalog-location",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element .dp-catalog-view[data-kind=\"metrics\"] .wb-kpi",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-29-studio-catalog",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-29-studio-catalog.png"
+            },
+            {
+              "step": "click tab \"Orders by status\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click button \"Run SQL\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element .dp-result[data-rows]",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"shipped\"",
+              "status": "PASS"
+            },
+            {
+              "step": "screenshot v5-30-studio-query",
+              "status": "PASS",
+              "detail": "qa/v5/shots/v5-30-studio-query.png"
+            }
+          ],
+          "status": "PASS"
+        },
+        {
+          "id": "V5-14-HOLE",
+          "kind": "hole",
+          "boundary": [],
+          "steps": [
+            {
+              "step": "expect \"(no health data)\"",
+              "status": "PASS"
+            },
+            {
+              "step": "click tab \"Shared view catalog\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect an element .dp-catalog-holes",
+              "status": "PASS"
+            },
+            {
+              "step": "expect \"No data was exported for this view.\"",
+              "status": "PASS"
+            },
+            {
+              "step": "expect no \"SQL scripts read\"",
+              "status": "PASS"
+            }
+          ],
+          "status": "PASS"
+        }
+      ],
+      "shots": [
+        "v5-29-studio-catalog",
+        "v5-30-studio-query"
+      ]
     }
   ]
 }
