@@ -1179,6 +1179,14 @@
         "title": "DataPass: Queries Worth Showing"
       },
       {
+        "command": "datapass.pedagogy.interviewPrep",
+        "title": "DataPass: Interview Prep for This Project"
+      },
+      {
+        "command": "datapass.pedagogy.askModelAnswers",
+        "title": "DataPass: Ask Your AI for Model Interview Answers"
+      },
+      {
         "command": "datapass.codeSteps.sampleStep",
         "title": "DataPass: Data Sample for a Code Step"
       },
@@ -2985,6 +2993,14 @@
           "when": "!datapass.hidden.v5.peda3"
         },
         {
+          "command": "datapass.pedagogy.interviewPrep",
+          "when": "!datapass.hidden.v5.peda2"
+        },
+        {
+          "command": "datapass.pedagogy.askModelAnswers",
+          "when": "!datapass.hidden.v5.peda2"
+        },
+        {
           "command": "datapass.explain.export",
           "when": "!datapass.hidden.palette.full"
         },
@@ -3892,6 +3908,10 @@
               "type": "boolean",
               "description": "Queries worth showing: The project's notable queries as showcase cards, ranked by interview value (static facts, nothing is run)"
             },
+            "v5.peda2": {
+              "type": "boolean",
+              "description": "Interview prep: The notions this project really uses, ranked, with interview questions, where they are and why (or a hole); model answers through your own AI (ai-proposed)"
+            },
             "v5.pqsamp": {
               "type": "boolean",
               "description": "Command Palette: code step data sample: Give a code step a small data sample, from a local file read by Data X-Ray or proposed by your AI (ai-proposed)"
@@ -3899,7 +3919,7 @@
             "view.navigator": {
               "type": "boolean",
               "description": "Navigator: Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)"
-          },
+            },
             "v5.tour2": {
               "type": "boolean",
               "description": "Command Palette: guided tours: Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)"
@@ -4058,6 +4078,28 @@
           "maximum": 50,
           "description": "V5 PEDA3: how many queries \"Queries worth showing\" lists."
         },
+        "datapass.pedagogy.interviewPrep.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA2: interview prep (ranked notions, questions, where and why; built-in whole-picture, learning and interview tours). Off: the commands are not registered and nothing is computed."
+        },
+        "datapass.pedagogy.interviewPrep.maxNotions": {
+          "type": "integer",
+          "default": 15,
+          "minimum": 10,
+          "maximum": 20,
+          "description": "V5 PEDA2: how many notions the interview prep ranks (the ones the project really uses, by use and blast radius)."
+        },
+        "datapass.pedagogy.askYourself.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA2: show the \"ask yourself\" interview questions in interview mode."
+        },
+        "datapass.pedagogy.modelAnswers.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "V5 PEDA2: \"Ask your AI for model interview answers\" through the manual AI exchange (answers are ai-proposed). Off: the command is not registered."
+        },
         "datapass.explain.sections": {
           "type": "array",
           "default": [],
@@ -4175,7 +4217,7 @@
             "ownWindow"
           ],
           "description": "The quick icons of the Navigator, in order (the right rail's buttons)."
-      },
+        },
         "datapass.guided.enabled": {
           "type": "boolean",
           "default": true,
