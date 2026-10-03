@@ -38,6 +38,9 @@ import { analyzeOptions, currentPicks, evaluatePicks, optionComponentRepositorie
 import { sheetProblems } from "../core/project/sheet";
 import { boardProblems, boardView, cardFileLocation, type BoardView } from "../core/project/board";
 import { INCOMING_LOG_ARGS, parseIncomingLog, parseNameStatus, type IncomingCommit } from "../core/project/gitSync";
+import { discoverRepoSet } from "../core/gitmr/repoSet";
+import { readRepoLogs, repoHistoryLabels, REPO_HISTORY_LABELS_SETTING } from "../core/gitmr/repoHistory";
+import type { RepoHistoryInput } from "../core/navigation/bindings";
 import { buildCatalogue, hubToolchainTools, recipeView, type Catalogue, type RecipeFacts, type RecipeView } from "../core/toolkit/toolkit";
 import { loadToolkitFiles } from "./toolkitFiles";
 import type { ToolkitFileResult } from "../core/toolkit/toolkit";
@@ -131,6 +134,13 @@ export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
     }, (error, stdout, stderr) => finish({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean((error as { killed?: boolean } | null)?.killed) })); }
     catch (e) { finish({ ok: false, stdout: "", stderr: String((e as Error)?.message ?? e) }); }
   });
+
+/** V5HOLE17: `u` is `root` or inside it (case-insensitive on Windows). */
+function isUnder(u: vscode.Uri, root: vscode.Uri): boolean {
+  const n = (p: string) => { const x = path.resolve(p).replace(/[\\/]+$/, ""); return process.platform === "win32" ? x.toLowerCase() : x; };
+  const a = n(u.fsPath), r = n(root.fsPath);
+  return a === r || a.startsWith(r + path.sep);
+}
 
 export class WorkSession implements vscode.Disposable {
   private readonly emitter = new vscode.EventEmitter<void>();
@@ -341,6 +351,24 @@ export class WorkSession implements vscode.Disposable {
     return f ? this.understandingCatalog!.load(f) : undefined;
   }
 
+  /**
+   * V5HOLE17: the workspace repo set (folders, submodules, .datapass/repos.json; no Git) and each repository's recent
+   * read-only `git log`, for the Navigator's "Repository history" views. Works with no DataPass project; no Git in
+   * Restricted Mode.
+   */
+  async repoHistoryLogs(): Promise<RepoHistoryInput> {
+    const labels = repoHistoryLabels(vscode.workspace.getConfiguration("datapass").get(REPO_HISTORY_LABELS_SETTING));
+    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
+    if (!folders.length) return { set: { repos: [] }, logs: [], labels };
+    if (!vscode.workspace.isTrusted) return { set: { repos: [] }, logs: [], labels, error: "Restricted Mode: DataPass runs no Git in an untrusted workspace." };
+    const root = folders[0]!;
+    const { set } = await discoverRepoSet(root, folders, { readFile: p => fsp.readFile(p, "utf8").catch(() => undefined) });
+    const logs = await readRepoLogs(set, rel => rel === "." ? root : path.join(root, ...rel.split("/")), gitRunner);
+    // A workspace folder that is not a repository is no lane (and no hole): only its log failing says so.
+    const kept = set.repos.filter((r, i) => !(r.source === "workspace-folder" && r.role === "other" && logs[i]?.error));
+    return { set: { repos: kept }, logs: logs.filter(l => kept.some(r => r.id === l.repo)), labels };
+  }
+
   // ------------------------------------------------------------ qualification (per user, all projects)
 
   qualification(): QualificationRecord[] { return this.context.globalState.get<QualificationRecord[]>(QUALIFICATION_KEY) ?? []; }
@@ -365,11 +393,15 @@ export class WorkSession implements vscode.Disposable {
     if (!root) return { at: Date.now(), assets: [], truncated: false, repos: [] };
     const repos = this.readRepositories(ctx);
     const markers = this.scanMarkers(root);
+    // V5HOLE17: searched under the project root only (results outside it were dropped anyway). A workspace-wide search
+    // starts one ripgrep per workspace folder, and on Windows each start blocks the extension host (row 03: a four-folder
+    // repo set froze it for 9-13 s, so the Git view could not show its lanes in time).
+    const under = (glob: string) => new vscode.RelativePattern(root, glob);
     const [named, py, platform, pipelines] = await Promise.all([
-      vscode.workspace.findFiles("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}", INVENTORY_EXCLUDE, 2000),
-      vscode.workspace.findFiles("**/*.py", INVENTORY_EXCLUDE, MAX_PY_FILES),
-      vscode.workspace.findFiles("**/.platform", INVENTORY_EXCLUDE, 1000),
-      vscode.workspace.findFiles("**/pipeline/*.json", INVENTORY_EXCLUDE, 500)
+      vscode.workspace.findFiles(under("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}"), INVENTORY_EXCLUDE, 2000),
+      vscode.workspace.findFiles(under("**/*.py"), INVENTORY_EXCLUDE, MAX_PY_FILES),
+      vscode.workspace.findFiles(under("**/.platform"), INVENTORY_EXCLUDE, 1000),
+      vscode.workspace.findFiles(under("**/pipeline/*.json"), INVENTORY_EXCLUDE, 500)
     ]);
     // Windows drive letters can differ in case between the workspace URI and search results.
     const norm = (p: string) => process.platform === "win32" ? p.replace(/^\/([A-Za-z]):/, (_m, d: string) => `/${d.toLowerCase()}:`) : p;
@@ -399,9 +431,12 @@ export class WorkSession implements vscode.Disposable {
   }
 
   private async scanMarkers(root: vscode.Uri): Promise<InventoryMarkers> {
+    // V5HOLE17: the root and the workspace folders outside it (a folder nested in the root is searched once, with it).
+    const bases = [root, ...(vscode.workspace.workspaceFolders ?? []).map(f => f.uri).filter(u => !isUnder(u, root))];
+    const anyFile = async (glob: string) => (await Promise.all(bases.map(b => vscode.workspace.findFiles(new vscode.RelativePattern(b, glob), INVENTORY_EXCLUDE, 1)))).flat();
     const [dbt, parameter, git] = await Promise.all([
-      vscode.workspace.findFiles("**/dbt_project.{yml,yaml}", INVENTORY_EXCLUDE, 1),
-      vscode.workspace.findFiles("**/parameter.{yml,yaml}", INVENTORY_EXCLUDE, 1),
+      anyFile("**/dbt_project.{yml,yaml}"),
+      anyFile("**/parameter.{yml,yaml}"),
       Promise.resolve(vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".git"))).then(() => true, () => false)
     ]);
     return { dbtProject: dbt.length > 0, fabricCicdParameterFile: parameter.length > 0, gitRepository: git };

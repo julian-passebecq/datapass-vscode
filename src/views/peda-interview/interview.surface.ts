@@ -21,6 +21,8 @@ import { factsFromUnderstanding as queryFacts } from "../../core/peda-showcase/f
 import { topQueries, type QueryFact } from "../../core/peda-showcase/score";
 import { interviewPrep, type InterviewPrep } from "../../core/peda-interview/prep";
 import { resolveProjectRef } from "../../core/peda-interview/projectTopics";
+import { OBJECTIVES_FILE, objectivesFromFile, VOLUMETRY_FILE, volumetryFromFile } from "../../core/peda-interview/projectFiles";
+import { projectRoot } from "../../core/workspace/root";
 import { locateInMap, rootOf, spineNodesFromMap, WHOLE_PICTURE_STEP_IDS } from "../../core/peda-interview/spine";
 import { modelAnswersRequest, readModelAnswers } from "../../core/peda-interview/modelAnswers";
 
@@ -45,11 +47,21 @@ interface Gathered { readonly prep: InterviewPrep; readonly files: ReadonlyMap<s
 
 /** V5HOLE12: a cheap key of the Hop files (path, size, mtime): stats only, nothing is loaded or parsed. */
 export async function hopFingerprint(): Promise<string> {
-  const files = source?.index()?.files ?? [];
-  const parts = await Promise.all(files.map(async (f) => {
-    try { const s = await fsp.stat(f.file); return `${f.file}|${s.size}|${s.mtimeMs}`; } catch { return `${f.file}|-`; }
+  const root = projectRoot();
+  // V5HOLE19: the brief also reads the project's objectives and volumetry files.
+  const own = root ? [OBJECTIVES_FILE, VOLUMETRY_FILE].map((rel) => vscode.Uri.joinPath(root, ...rel).fsPath) : [];
+  const files = [...(source?.index()?.files ?? []).map((f) => f.file), ...own];
+  const parts = await Promise.all(files.map(async (file) => {
+    try { const s = await fsp.stat(file); return `${file}|${s.size}|${s.mtimeMs}`; } catch { return `${file}|-`; }
   }));
   return parts.sort().join("\n");
+}
+
+/** A `.datapass/` file of the open project as text; undefined when there is no project or no file. */
+async function readProjectFile(rel: readonly string[]): Promise<string | undefined> {
+  const root = projectRoot();
+  if (!root) return undefined;
+  try { return new TextDecoder().decode(await vscode.workspace.fs.readFile(vscode.Uri.joinPath(root, ...rel))); } catch { return undefined; }
 }
 
 /** Also the source of the in-memory built-in tours the Navigator lists (V5HOLE12, guided.ts). */
@@ -67,9 +79,11 @@ export async function gather(host: NavHost): Promise<Gathered> {
   const cfg = vscode.workspace.getConfiguration(CONFIG);
   const locate = locateInMap(map);
   const root = rootOf(map);
+  const [objectives, volumetry] = await Promise.all([readProjectFile(OBJECTIVES_FILE), readProjectFile(VOLUMETRY_FILE)]);
   const top = topQueries(qf, Math.max(1, Math.min(50, cfg.get<number>("queryShowcase.topN", QUERY_TOP_N))));
   const prep = interviewPrep({
     entries: CARD_ENTRIES, facts, map, root, spineNodes: spineNodesFromMap(map), locate,
+    objectives: objectivesFromFile(objectives), volumetry: volumetryFromFile(volumetry),
     queries: top.map(q => ({ title: q.fact.title, location: locate(q.fact) ?? root })),
     viewAt: l => host.nav.viewsAt(l)[0]?.id ?? "",
     settings: { maxNotions: cfg.get<number>("interviewPrep.maxNotions", 15), askYourself: cfg.get<boolean>("askYourself.enabled", true),

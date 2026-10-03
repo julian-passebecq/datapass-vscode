@@ -185,3 +185,19 @@ test("model answers: manual exchange, paths not code, answers ai-proposed, unask
   assert.equal(other.ok, false);
   assert.equal(readModelAnswers("no json", req).ok, false);
 });
+
+test("V5HOLE19: objectives/volumetry files feed 'Explain the project'; a missing file stays a hole", async () => {
+  const { objectivesFromFile, volumetryFromFile } = await import("../src/core/peda-interview/projectFiles");
+  const { briefFromMap } = await import("../src/core/peda-interview/projectTopics");
+  const objectives = objectivesFromFile(JSON.stringify({ format: "datapass.objectives", version: 1, objectives: [{ id: "a", title: "Revenue by 06:00" }, { id: "b" }] }));
+  const volumetry = volumetryFromFile(JSON.stringify({ format: "datapass.volumetry", version: 1, tables: [{ table: "bronze.raw", rowsPerDay: 120000, retentionDays: 730 }, { table: "x" }] }));
+  assert.deepEqual(objectives.map(o => o.text), ["Revenue by 06:00"]);
+  assert.deepEqual(volumetry.map(v => v.text), ["bronze.raw: 120000 rows/day, kept 730 days"]);
+  assert.deepEqual(objectivesFromFile("not json"), []);
+  assert.deepEqual(volumetryFromFile(JSON.stringify({ format: "other", tables: [{ table: "t", rowsPerDay: 1 }] })), []);
+  const full = resolveProjectRef("project:explain", briefFromMap(undefined, { spine: [], objectives, volumetry }))!;
+  assert.deepEqual(full.lines.map(l => l.text), ["Revenue by 06:00", "bronze.raw: 120000 rows/day, kept 730 days"]);
+  assert.equal(full.holes.length, 0);
+  const bare = resolveProjectRef("project:explain", briefFromMap(undefined, { spine: [] }))!;
+  assert.deepEqual(bare.holes.map(h => h.reason.split(":")[0]), ["No objectives yet", "No volumetry fact (VOL1) yet"]);
+});

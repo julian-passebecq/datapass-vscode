@@ -1,0 +1,26 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "shop",
+    "path": "dbt/models/marts/fct_orders.sql",
+    "sha256": "884ff8640852b2709dc4eda8c371405058a439fe603f604f137c84ce0b92cb58",
+    "language": "sql"
+  },
+  "title": "Daily orders per customer (fct_orders)",
+  "summary": "Gold fact for the sales report: one row per customer and day with the order count, the revenue and the number of returned orders.",
+  "component": "fct-orders",
+  "steps": [
+    { "id": "read", "title": "Read the silver orders", "kind": "read", "lines": [8, 8], "inputs": ["stg_orders"], "outputs": ["orders"], "provenance": "declared" },
+    { "id": "daily", "title": "Count orders, revenue and returns per customer and day", "kind": "aggregate", "lines": [2, 9], "inputs": ["orders"], "outputs": ["fct_orders"], "columns": [
+      { "name": "orders", "from": [], "note": "count(*)" },
+      { "name": "revenue", "from": ["amount"], "note": "sum(amount)" },
+      { "name": "returns", "from": ["status"], "note": "conditional sum of returned orders" }
+    ], "provenance": "declared" },
+    { "id": "write", "title": "Publish the gold fact", "kind": "write", "lines": [2, 9], "inputs": ["fct_orders"], "outputs": ["fct_orders"], "note": "Materialized by dbt as the model fct_orders.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "read", "to": "daily", "kind": "data" },
+    { "from": "daily", "to": "write", "kind": "data" }
+  ]
+}

@@ -27,6 +27,8 @@ export interface InterviewInputs extends RankInputs {
   readonly spineNodes: readonly SpineNode[];
   readonly queries?: readonly { readonly title: string; readonly location: NavLocation }[];
   readonly volumetry?: readonly Said[];
+  /** The project's declared objectives (`.datapass/objectives.json`, V5HOLE19). */
+  readonly objectives?: readonly Said[];
   readonly locate: (span: CodeSpan) => NavLocation | null;
   readonly viewAt: (location: NavLocation) => string;
   readonly settings?: InterviewSettings;
@@ -44,7 +46,7 @@ export function interviewPrep(i: InterviewInputs): InterviewPrep {
   const notions = rankNotions(i, clampMaxNotions(s.maxNotions));
   const spine = spineStops(i.spineNodes, i.root);
   const queries = i.queries ?? [];
-  const brief = briefFromMap(i.map, { rationales: i.rationales, volumetry: i.volumetry, spine, queries: queries.map(q => q.title) });
+  const brief = briefFromMap(i.map, { rationales: i.rationales, volumetry: i.volumetry, objectives: i.objectives, spine, queries: queries.map(q => q.title) });
   const spanOf = (ref: string): CodeSpan | null => {
     const m = /^(concept|decision):(\S+)$/.exec(ref);
     const entry = m && i.entries.find(e => e.id === m[2]);

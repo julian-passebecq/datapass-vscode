@@ -93,7 +93,7 @@ test("a workspace with a submodule, a declared repos.json and a plain folder giv
       "repo without a path inside the workspace", 'unknown role "boss"', "pin @syn/x digest is not sha256:<hex>"
     ].sort());
 
-    const status = await repoSetStatus(set, ws, deps(calls).git);
+    const status = await repoSetStatus(set, ws, deps(calls).git!);
     const wind = status.find(s => s.id === "wind")!;
     assert.deepEqual([wind.state, wind.branch, wind.upstream, wind.ahead, wind.behind], ["ok", "main", "origin/main", 1, 0]);
     assert.ok((wind.dirty ?? 0) >= 1);

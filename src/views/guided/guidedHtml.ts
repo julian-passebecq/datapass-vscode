@@ -68,6 +68,14 @@ export function guidedScript(api: string): string {
     if (e.target.classList && e.target.classList.contains("tour-jump")) return;
     if (/^[1-9]$|^Arrow(Left|Right|Up|Down)$|^Page(Up|Down)$/.test(e.key)) { e.preventDefault(); ${api}.postMessage({ type: "guided", action: "key", key: e.key }); }
   });
+  // V5HOLE19: a started tour reveals the Navigator with the focus on its page, not in this slot: 1–9 still pick the
+  // step there while a tour lists steps (never from a text field; arrows stay slot-only for the Navigator's own use).
+  document.addEventListener("keydown", (e) => {
+    const t = e.target;
+    if (slot.contains(t) || !/^[1-9]$/.test(e.key) || !slot.querySelector(".tour-step")) return;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ""))) return;
+    e.preventDefault(); ${api}.postMessage({ type: "guided", action: "key", key: e.key });
+  });
   slot.addEventListener("wheel", (e) => {
     if (!e.target.closest(".tour-steps")) return;
     const now = Date.now(); if (now - wheelAt < 350) return;

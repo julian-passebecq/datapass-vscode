@@ -20,7 +20,7 @@ function isSample(x: unknown): boolean {
 
 /** Untrusted `steps` payload → a `CodeStepsInput`, or false (the view then shows a `steps-invalid` hole). */
 export function isCodeStepsInput(x: unknown): x is CodeStepsInput {
-  return obj(x) && arr(x.steps) && arr(x.holes) && str(x.origin) && x.holes.every(h => obj(h) && str(h.reason))
+  return obj(x) && arr(x.steps) && arr(x.holes) && str(x.origin) && (x.selected === undefined || str(x.selected)) && x.holes.every(h => obj(h) && str(h.reason))
     && x.steps.every(s => obj(s) && str(s.id) && str(s.kind) && str(s.label) && str(s.origin)
       && arr(s.tables) && s.tables.every(t => obj(t) && str(t.id) && str(t.role))
       && arr(s.params) && s.params.every(p => obj(p) && str(p.name) && str(p.value) && str(p.origin))
@@ -54,8 +54,9 @@ function stepNode(r: CodeStepRow, showNotes: boolean, labels: CodeStepsLabels): 
   if (r.params.length) children.push({ tag: "dl", cls: "dp-step-params", attrs: { "aria-label": labels.params }, children: r.params.flatMap(p => [
     { tag: "dt", text: p.name }, { tag: "dd", children: [{ tag: "span", text: p.value }, badge(p.origin, false)] }]) });
   if (showNotes && r.note) children.push({ tag: "p", cls: "dp-step-note", attrs: { "aria-label": labels.note }, children: [{ tag: "span", text: r.note.text }, badge(r.note.origin, r.note.aiProposed)] });
-  children.push(sampleNode(r.sample, labels));
-  return { tag: "li", cls: "dp-step nv-selectable", attrs: { role: "option", "aria-selected": String(r.selected), tabindex: "0", "data-node-id": r.id },
+  if (r.showSample) children.push(sampleNode(r.sample, labels));
+  // V5HOLE18: arrow keys select the step they move to (`data-select-on-focus`), so stepping back updates the sample.
+  return { tag: "li", cls: "dp-step nv-selectable", attrs: { role: "option", "aria-selected": String(r.selected), tabindex: "0", "data-node-id": r.id, "data-select-on-focus": "" },
     on: { action: "select", nodeId: r.id }, children };
 }
 

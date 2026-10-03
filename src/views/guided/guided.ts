@@ -9,7 +9,7 @@
  * = nothing registered.
  * V5HOLE12: PEDA2's built-in tours (whole picture, learning, interview) are listed in the Tours section next to the
  * person's own, their `project:` explanations resolve against the project brief, and picking a mode opens its tours
- * (one = started at step 0, several = a quick pick).
+ * (one = started at step 0, several = a quick pick). V5HOLE19: the Navigator is revealed so the started tour is seen.
  */
 import * as vscode from "vscode";
 import { registerExplanationScheme } from "../../core/guided/explanations";
@@ -24,7 +24,7 @@ import { serializeTourFile, TOURS_FILE } from "../../core/navigation/tours/store
 import type { Tour, TourDocument } from "../../core/navigation/tours/tourTypes";
 import { projectRefText, type ProjectBrief } from "../../core/peda-interview/projectTopics";
 import { projectRoot } from "../../core/workspace/root";
-import { addNavigatorSlot } from "../navigator";
+import { addNavigatorSlot, revealNavigator } from "../navigator";
 import { navTours, onDidChangeNavTours, type NavTours } from "../navTours";
 import { labelPack, uiLabel } from "../navToursHtml";
 import { gather, hopFingerprint } from "../peda-interview/interview.surface";
@@ -106,11 +106,31 @@ export class Guided implements vscode.Disposable {
     this.tours.refresh();
   }
 
+  /**
+   * V5HOLE19: "Present Tour (Read-Only)" from the palette: while presenting, stop; else pick the tour to present (the
+   * visible ones of the current mode), start it read-only and show the Navigator. The Navigator's own button toggles.
+   */
+  async present(): Promise<void> {
+    if (this.presenting) { this.togglePresent(false); return; }
+    const t = await this.tours.pick(this.tours.visible(), uiLabel(labels(), "pickTour"));
+    if (!t) return;
+    this.togglePresent(true);
+    await revealNavigator().then(undefined, () => undefined);
+  }
+
   async pickMode(): Promise<void> {
     const L = labels();
-    const pick = await vscode.window.showQuickPick(availableModes(settings()).map((m) => ({ label: L[`mode.${m}`] ?? m, m, description: m === this.mode ? "current" : undefined })),
-      { placeHolder: uiLabel(L, "pickMode") });
-    if (pick) await this.chooseMode(pick.m);
+    // V5HOLE19: continue only once the pick is hidden, so its focus restore cannot take the focus back from the Navigator.
+    const qp = vscode.window.createQuickPick<vscode.QuickPickItem & { m: GuidedMode }>();
+    qp.items = availableModes(settings()).map((m) => ({ label: L[`mode.${m}`] ?? m, m, description: m === this.mode ? "current" : undefined }));
+    qp.placeholder = uiLabel(L, "pickMode");
+    const pick = await new Promise<GuidedMode | undefined>((resolve) => {
+      let chosen: GuidedMode | undefined;
+      qp.onDidAccept(() => { chosen = qp.selectedItems[0]?.m; qp.hide(); });
+      qp.onDidHide(() => { qp.dispose(); resolve(chosen); });
+      qp.show();
+    });
+    if (pick) await this.chooseMode(pick);
   }
 
   /** Set the mode, then open its tours: one = start it at step 0, several = quick pick (V5HOLE12). */
@@ -118,8 +138,11 @@ export class Guided implements vscode.Disposable {
     this.setMode(mode);
     await this.loadBuiltins();
     const { start, offer } = toursForPickedMode(this.tours.visible(), this.mode);
-    if (start) this.tours.start(start);
-    else if (offer.length) await this.tours.pick(offer, uiLabel(labels(), "pickModeTour"));
+    // V5HOLE19: the tour plays in the Navigator: show and focus it first (1–9 keys), also when DataPass was activated by
+    // this command alone (no project yet).
+    const reveal = () => revealNavigator().then(undefined, () => undefined);
+    if (start) { await reveal(); this.tours.start(start); }
+    else if (offer.length) { await this.tours.pick(offer, uiLabel(labels(), "pickModeTour")); await reveal(); }
   }
 
   /** "Save current path as tour": the screens visited since the last save (or activation). */
@@ -219,7 +242,7 @@ export function registerGuided(_context: vscode.ExtensionContext, host: NavHost)
     live = [g,
       vscode.commands.registerCommand(GUIDED_COMMANDS.saveCurrentPath, () => g.saveCurrentPath()),
       vscode.commands.registerCommand(GUIDED_COMMANDS.addScreen, () => g.addScreen()),
-      vscode.commands.registerCommand(GUIDED_COMMANDS.present, (on?: unknown) => g.togglePresent(typeof on === "boolean" ? on : undefined)),
+      vscode.commands.registerCommand(GUIDED_COMMANDS.present, (on?: unknown) => (typeof on === "boolean" ? g.togglePresent(on) : g.present())),
       vscode.commands.registerCommand(GUIDED_COMMANDS.setMode, (mode?: unknown) => (mode === "all" || mode === "learning" || mode === "interview" ? g.chooseMode(mode) : g.pickMode())),
       // Script-only slot: keys, wheel and mode buttons inside the tours slot; NavTours routes the messages to this extension.
       addNavigatorSlot({ id: "guided", messageTypes: ["guided"], handle: (m) => tours.handle(m), script: guidedScript })];
