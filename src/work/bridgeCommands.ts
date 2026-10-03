@@ -1,7 +1,7 @@
 /**
  * DataPass ↔ DiagramCloud Bridge V1 commands (contracts/diagramcloud/README.md, "First implementation acceptance").
  *
- *   Open Architecture in DiagramCloud   detect .datapass/diagramcloud.json, open the app (no data in the URL)
+ *   Open Architecture in DiagramCloud   detect .datapass/diagramcloud.json, open the registered stable project deep link
  *   Copy DiagramCloud AI Context        sanitized datapass.ai-context V1 JSON for ChatGPT/Claude
  *   Import DiagramCloud AI Plan         parse → schema → base revisions → per-operation approval → journaled write
  *   Copy Project/Scope Summary          short plain-text summary for a person or an AI chat
@@ -23,6 +23,7 @@ import { readRepoRevision } from "../core/workspace/gitBase";
 import { applyWithJournal } from "../core/exchange/journal";
 import { newLocalId, sha256Bytes } from "../core/model/ids";
 import { DATAPASS_MANIFEST_PATH } from "../core/projectManifestModel";
+import { resolveDiagramCloudDeepLink } from "../core/diagramcloud/galaxyLink";
 import {
   APPLICABLE_V1, PlanRejected, SIDECAR_PATH, applyApproved, buildBridgeContext, inspectSidecar, manifestRevision,
   parsePlan, projectSummary, readSidecarDocument, reviewPlan, sidecarOutline, type AiContextV1, type SidecarOutline, type SidecarState
@@ -78,14 +79,17 @@ async function openArchitecture(session: WorkSession): Promise<void> {
     choice = await vscode.window.showWarningMessage(`${SIDECAR_PATH} is not readable as a DiagramCloud document.`, { modal: true, detail: state.error }, "Show file", "Open DiagramCloud");
   } else {
     choice = await vscode.window.showInformationMessage(`DiagramCloud: “${state.title}” (${state.documentId}), revision ${state.revision}`, {
-      modal: true, detail: `${steps}\n\nNothing is sent in the URL; the browser reads the file from disk only after you pick the folder.`
+      modal: true, detail: `${steps}\n\nOnly the stable DiagramCloud project ID is sent in the URL. The document itself is never placed in the URL.`
     }, "Open DiagramCloud", "Show file");
   }
   if (choice === "Show file") {
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(fileUri(root, SIDECAR_PATH)), { preview: true });
   } else if (choice === "Open DiagramCloud") {
-    const url = await diagramCloudUrl();
-    if (url) await openExternal(vscode.Uri.parse(url, true));
+    const base = await diagramCloudUrl();
+    if (base) {
+      const url = state.present && state.ok ? resolveDiagramCloudDeepLink(base, { project: state.documentId }) : base;
+      await openExternal(vscode.Uri.parse(url, true));
+    }
   }
 }
 
