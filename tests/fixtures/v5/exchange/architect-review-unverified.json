@@ -1,0 +1,21 @@
+{
+  "schema": "datapass.architect-review-answer/1",
+  "protocol": "architect-review/1",
+  "requestId": "datapass:architect-review:19abba7b3ab96c97181285774e85588fdea314237d720107d5ad9ce1cc0c8c93",
+  "origin": "ai-proposed",
+  "findings": [
+    {
+      "severity": "risk",
+      "subjectNodeIds": ["shop-lakehouse"],
+      "summary": "Refunds are applied twice",
+      "detail": "src/payments/refund_job.py subtracts returns that fct_orders already counts.",
+      "evidenceRefIds": ["milestone"]
+    }
+  ],
+  "recommendation": {
+    "summary": "Remove the second refund pass in src/payments/refund_job.py",
+    "alternatives": []
+  },
+  "model": "cassette (no model called)",
+  "responder": "V5 acceptance cassette"
+}
