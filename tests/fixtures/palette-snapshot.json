@@ -171,6 +171,7 @@
     "DataPass: Ask the AI to Compare Architecture Options",
     "DataPass: Ask the AI to Explain This File (Work Order)",
     "DataPass: Changed by the Last Update…",
+    "DataPass: Check Common Pin Drift",
     "DataPass: Check Connections (read-only: az account show, databricks auth profiles, fab auth status)",
     "DataPass: Check This File",
     "DataPass: Check This Repository",
