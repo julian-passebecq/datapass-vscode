@@ -31,7 +31,9 @@ import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, 
 import { gitSummary, hasRemoteFor, needsYou, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
 import { cmdLine, Limiter, retryOnTimeout } from "../core/git/run";
 import type { WorkSession } from "./session";
-import { cloneParents } from "./session";
+import { cloneParents, gitRunner } from "./session";
+import { discoverRepoSet } from "../core/gitmr/repoSet";
+import { repoSetLensTargets } from "../core/gitmr/lensTargets";
 
 export const COMMAND_TIMEOUT_MS = 5000;
 export const MAX_PARALLEL = 4;
@@ -273,7 +275,20 @@ export class GitObserver implements vscode.Disposable {
 
   private async observeProject(): Promise<GitRepoReport[]> {
     const targets = this.projectTargets();
+    targets.push(...await this.repoSetTargets(targets));
     return Promise.all(targets.map(t => this.observe(t)));
+  }
+
+  /** GITMR2: the workspace's repo set (folders, submodules, .datapass/repos.json) beyond the project map's repositories. */
+  private async repoSetTargets(project: readonly Target[]): Promise<Target[]> {
+    const folders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath);
+    if (!folders.length || !vscode.workspace.isTrusted) return [];
+    const readFile = (p: string) => fs.promises.readFile(p, "utf8").catch(() => undefined);
+    try {
+      const { set } = await discoverRepoSet(folders[0]!, folders, { git: gitRunner, readFile });
+      const shown = project.map(t => t.folder).filter((f): f is string => !!f);
+      return repoSetLensTargets(set, folders[0]!, shown).map(t => ({ ...t, section: "project" as const, role: "project" as const }));
+    } catch { return []; }
   }
 
   /** One repository: status, default branch, worktrees, host PRs, merges and the derived facts. */

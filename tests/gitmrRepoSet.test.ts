@@ -1,6 +1,7 @@
 /**
  * V5 GITMR1: repo-set discovery (workspace folders, submodules, `.datapass/repos.json`) and the read-only status per repo,
- * on synthetic Git repositories in a temporary folder; plus the "Repositories" Context section text.
+ * on synthetic Git repositories in a temporary folder; plus the "Repositories" Context section text and the Git-lens rows
+ * the set adds (GITMR2, one repo-status surface).
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -11,6 +12,7 @@ import { execFile, execFileSync } from "node:child_process";
 import { discoverRepoSet, parseGitmodules, repoSetStatus, repoSlug, workspaceRelative, type RepoSetDeps } from "../src/core/gitmr/repoSet";
 import { redactRemoteUrl, remoteHost } from "../src/core/gitmr/repoSetContract";
 import { createRepositoriesProvider, repositoriesBody, repositoriesLabels } from "../src/views/gitmr/repoSection";
+import { repoSetLensTargets, REPO_SET_KEY_PREFIX } from "../src/core/gitmr/lensTargets";
 import type { GitRunner } from "../src/core/workspace/gitBase";
 import { GitWriteRefused, gitReadOnly, readOnlyGit } from "../src/core/gitmr/readOnly";
 
@@ -112,6 +114,16 @@ test("a workspace with a submodule, a declared repos.json and a plain folder giv
     const section = await createRepositoriesProvider(async () => ({ set, statuses: status, issues })).provide();
     assert.equal(section.origin, "observed");
     assert.equal(section.holes.length, issues.length);
+
+    // Git lens (GITMR2): the set's repos become Git-view rows, except folders the project map already shows.
+    const rows = repoSetLensTargets(set, tmp, [tmp]);
+    assert.ok(!rows.some(r => r.folder === tmp), "the root repo is already a project row");
+    const commonRow = rows.find(r => r.key === `${REPO_SET_KEY_PREFIX}common`)!;
+    assert.equal(commonRow.folder, path.join(tmp, "libs", "common"));
+    assert.equal(commonRow.remoteUrl, "https://github.com/syn/common.git");
+    assert.equal(commonRow.role, "common");
+    assert.equal(commonRow.defaultHint, "trunk");
+    assert.deepEqual(rows.map(r => r.key), set.repos.filter(r => r.path !== ".").map(r => `${REPO_SET_KEY_PREFIX}${r.id}`));
   } finally { cleanup(tmp); }
 });
 
@@ -123,6 +135,7 @@ test("an unreadable repos.json and a workspace without repos are holes, never gu
     assert.deepEqual(set.repos, []);
     assert.deepEqual(issues.map(i => i.reason), ["workspace folder outside the workspace root", "not valid JSON"]);
     assert.equal(repositoriesBody(set, []), "No repository found in this workspace.");
+    assert.deepEqual(repoSetLensTargets(set, tmp, []), []);
   } finally { cleanup(tmp); }
 });
 
