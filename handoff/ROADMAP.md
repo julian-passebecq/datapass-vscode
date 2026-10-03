@@ -170,6 +170,12 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-03 22:40 (V5.1 cette nuit, à comparer par l'audit externe ; décidé par PM 32)
+
+- Julian propose de faire cette nuit les améliorations V5.1 que le PM juge sûres, pour que les audits externes (Codex, GPT 6 Pro) puissent comparer V4/V5 (tag `v1.2.0-rc.1`) avec ce que le PM a fait ensuite.
+- Décision : vague de nuit limitée aux paquets que les audits ne peuvent pas rendre caducs : CIDIET1, STUB2, REPINCS1 (cloud + studio), PERF1, MERGEQ1 en mode ombre. Pas de nouvelle fonctionnalité produit avant les rapports d'audit.
+- Les audits restent sur le tag figé. Le brief d'audit leur demande en plus de relire les MR V5.1 postérieures au tag : est-ce qu'elles corrigent de vrais problèmes ?
+
 ## Idées de Julian — 2026-10-03 16:00 (aller plus vite en dev pour V6 ; décidé par PM 32)
 
 - Mesure du 1 au 3 Oct : un pipeline vscode dure 20 min en médiane (max 44 min), avec 0 min d'attente du runner. Une MR met 17 h en médiane entre ouverture et fusion. Le goulot n'est donc ni le runner ni la CI cloud : c'est l'enchaînement en série (rebase « tête contient main » une MR à la fois, relances de tests instables, réveils de COORD) et les bugs trouvés tard, à la recette finale.

@@ -33,6 +33,8 @@ Context: `datapass-vscode/handoff/CURRENT.md`, `PLAN.md`, `ARCH_DECISIONS.md`, `
 6. **CI and the merge process:** `.gitlab-ci.yml`, and whether a merge can land untested (the 2 Oct incident: !197).
 7. **UX coherence** of V5 navigation, from the code and the qa/ screenshots.
 
+8. **Comparison (Julian, 3 Oct):** after the tag, the PM merges a V5.1 night wave: CIDIET1, STUB2, REPINCS1, PERF1, MERGEQ1 shadow; see `git log v1.2.0-rc.1..origin/main` and go/handoff-inbox/<pkg>-report.md. Rate each one: does it fix a real problem you also found, miss the root cause, or add risk? Add a short "PM V5.1 vs audit" table.
+
 ## Output
 - One file: `datapass-vscode/handoff/audits/EXTERNAL-AUDIT-2026-10.md`, committed and pushed with `git push -o ci.skip origin HEAD:main`. This is the only push allowed.
 - An executive summary of at most 15 lines, with a verdict per area.
