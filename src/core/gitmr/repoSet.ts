@@ -30,7 +30,11 @@ const SLUG = /^[a-z0-9][a-z0-9._-]*$/;
 export interface RepoSetIssue { readonly path: string; readonly reason: string }
 
 export interface RepoSetDeps {
-  readonly git: GitRunner;
+  /**
+   * V5HOLE17: absent = discovery without any Git spawn (folders, `.gitmodules` and repos.json only; no remote or default
+   * branch is read). The Git view uses that so its lanes appear at once; each lane's own check reads the clone.
+   */
+  readonly git?: GitRunner;
   /** File text, or undefined when it does not exist. */
   readonly readFile: (absPath: string) => Promise<string | undefined>;
 }
@@ -90,7 +94,7 @@ const str = (v: unknown): string | undefined => typeof v === "string" && v.trim(
  * `folders` are the absolute workspace folders. Returns the set and what was left out.
  */
 export async function discoverRepoSet(root: string, folders: readonly string[], deps: RepoSetDeps): Promise<{ set: RepoSet; issues: RepoSetIssue[] }> {
-  const git = readOnlyGit(deps.git);
+  const git = deps.git ? readOnlyGit(deps.git) : undefined;
   const issues: RepoSetIssue[] = [];
   const found = new Map<string, Found>();
   const add = (f: Found) => {
@@ -124,20 +128,28 @@ export async function discoverRepoSet(root: string, folders: readonly string[], 
   const sorted = [...found.values()].sort((a, b) => a.path === b.path ? 0 : a.path === REPO_SET_ROOT_PATH ? -1 : b.path === REPO_SET_ROOT_PATH ? 1 : a.path < b.path ? -1 : 1);
   // Declared ids first, so a discovered repo never takes a declared id.
   for (const f of sorted) if (f.id) ids.add(f.id);
-  for (const f of sorted) {
+  const named = sorted.map(f => {
     let id = f.id;
     if (!id) {
       const base = repoSlug(f.path === REPO_SET_ROOT_PATH ? path.basename(root) : f.path.slice(f.path.lastIndexOf("/") + 1));
       id = base; for (let n = 2; ids.has(id); n++) id = `${base}-${n}`;
       ids.add(id);
     }
+    return { f, id };
+  });
+  // V5HOLE17: the repos are asked in parallel (each one's questions stay in order), not one after the other.
+  repos.push(...await Promise.all(named.map(async ({ f, id }): Promise<RepoSetRepo> => {
     const abs = f.path === REPO_SET_ROOT_PATH ? root : path.join(root, f.path);
     // A plain folder inside another repo must not borrow that repo's remote: ask Git only at a repo's top level.
-    const top = (f.remote === undefined || f.defaultBranch === undefined) && await isRepoTop(git, abs);
-    const remote = f.remote !== undefined ? f.remote : top ? remoteOf(await gitLine(git, abs, ["config", "--get", "remote.origin.url"])) : null;
-    const defaultBranch = f.defaultBranch !== undefined ? f.defaultBranch : top ? defaultBranchOf(await gitLine(git, abs, ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"])) : null;
-    repos.push({ id, repositoryId: null, path: f.path, role: f.role ?? "other", remote, defaultBranch, source: f.source });
-  }
+    const top = !!git && (f.remote === undefined || f.defaultBranch === undefined) && await isRepoTop(git, abs);
+    const [origin, head] = top && git ? await Promise.all([
+      f.remote === undefined ? gitLine(git, abs, ["config", "--get", "remote.origin.url"]) : Promise.resolve(undefined),
+      f.defaultBranch === undefined ? gitLine(git, abs, ["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"]) : Promise.resolve(undefined)
+    ]) : [undefined, undefined];
+    const remote = f.remote !== undefined ? f.remote : top ? remoteOf(origin) : null;
+    const defaultBranch = f.defaultBranch !== undefined ? f.defaultBranch : top ? defaultBranchOf(head) : null;
+    return { id, repositoryId: null, path: f.path, role: f.role ?? "other", remote, defaultBranch, source: f.source };
+  })));
 
   const byId = new Set(repos.map(r => r.id));
   const edges: RepoEdge[] = []; const edgeKeys = new Set<string>();

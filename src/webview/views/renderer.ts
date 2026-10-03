@@ -78,7 +78,19 @@ export function mountNavView(root: HTMLElement, post: (m: WebviewOut) => void, w
     const s = screen;
     const viewId = (s.views.find(v => v.id === s.state.viewId) ?? s.views[0])?.id ?? "";
     root.replaceChildren(toDom(screenModel(s), doc, on => post(on.action === "select" ? { type: "select", nodeId: on.nodeId } : { type: "open-surface", surface: on.surface, viewId })));
+    if (doc.hasFocus()) refocus();
   };
+  // V5HOLE18: a redraw replaces the nodes; the keyboard focus goes back to the node it was on (a step selected with
+  // the arrows, or before a command that redrew the view), now or when the view gets the focus back. Never taken
+  // from elsewhere: only while the focus is on nothing (the body) inside this view.
+  let lastNode: string | null = null;
+  root.addEventListener("focusin", e => { const id = (e.target as HTMLElement).getAttribute?.("data-node-id"); if (id) lastNode = id; });
+  const refocus = (): void => {
+    const active = doc.activeElement;
+    if (!lastNode || (active && active !== doc.body && active !== root)) return;
+    Array.from(root.querySelectorAll<HTMLElement>("[data-node-id]")).find(e => e.getAttribute("data-node-id") === lastNode)?.focus();
+  };
+  win.addEventListener("focus", () => refocus());
   win.addEventListener("message", (event: MessageEvent) => {
     const msg = parseHostMessage(event.data);
     if (!msg) return;
@@ -113,7 +125,11 @@ export function mountNavView(root: HTMLElement, post: (m: WebviewOut) => void, w
     }
     const items = Array.from(root.querySelectorAll<HTMLElement>(group));
     const i = items.indexOf(t);
-    items[(i + next + items.length) % items.length]?.focus();
+    const to = items[(i + next + items.length) % items.length];
+    to?.focus();
+    // V5HOLE18: an item marked `data-select-on-focus` (a code step) is selected as the arrows reach it.
+    const id = to?.hasAttribute("data-select-on-focus") ? to.getAttribute("data-node-id") : null;
+    if (id) post({ type: "select", nodeId: id });
     e.preventDefault();
   });
   post({ type: "ready" });

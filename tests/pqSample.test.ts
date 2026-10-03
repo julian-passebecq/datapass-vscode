@@ -72,6 +72,11 @@ test("code-steps rows carry the sample slot: table with origin badge, AI marked,
   assert.deepEqual(c!.sample, { kind: "hole", reason: DEFAULT_STEP_SAMPLE_LABELS.hole });
   const labels = { ...DEFAULT_CODE_STEPS_LABELS, sampleLabels: { ...DEFAULT_STEP_SAMPLE_LABELS, hole: "Pas d'échantillon" } };
   assert.deepEqual(codeStepsModel(input, { labels }).rows[2]!.sample, { kind: "hole", reason: "Pas d'échantillon" });
+  // V5HOLE18: no step selected = every slot shows; a selected step shows only its own (stepping back updates it).
+  assert.deepEqual(codeStepsModel(input).rows.map(r => r.showSample), [true, true, true]);
+  const picked = codeStepsModel({ ...input, selected: "b" }).rows;
+  assert.deepEqual(picked.map(r => [r.selected, r.showSample]), [[false, false], [true, true], [false, false]]);
+  assert.deepEqual(codeStepsModel({ ...input, selected: "gone" }).rows.map(r => r.showSample), [true, true, true]);
 });
 
 test("wiring: withSamples reads the store per step id; stepSubjectOf gives the command its subject", () => {

@@ -143,11 +143,15 @@ export class NavTours implements vscode.Disposable {
         const o = tourOrigin(t);
         return { id: t.id, title: this.title(t, labels, document.texts), ...(o === "datapass-guidance" ? {} : { badge: o }), active: t.id === active?.id };
       }),
-      steps: flat.map((f, index) => ({
-        index, number: f.number, depth: f.path.length - 1, label: this.host.label(f.step.location),
-        preview: clampPreview(this.explain(f.step.explanationRef, f.step, active) ?? ""), status: stepStatus(f.step, ctx),
-        current: index === this.cursor?.index && f.step.location.nodeId === here.nodeId && f.step.location.level === here.level
-      })),
+      steps: flat.map((f, index) => {
+        const status = stepStatus(f.step, ctx);
+        // V5HOLE19: a step whose box is missing cannot be reached, so the cursor alone makes it current (a visible hole step).
+        const at = status === "unknown-location" || (f.step.location.nodeId === here.nodeId && f.step.location.level === here.level);
+        return {
+          index, number: f.number, depth: f.path.length - 1, label: this.host.label(f.step.location),
+          preview: clampPreview(this.explain(f.step.explanationRef, f.step, active) ?? ""), status, current: index === this.cursor?.index && at
+        };
+      }),
       explanation: current ? this.explain(current.step.explanationRef, current.step, active) ?? null : null,
       canPrev: !!active && (this.cursor?.index ?? 0) > 0, canNext: !!active && (this.cursor?.index ?? 0) < flat.length - 1,
       jump: { query: this.query, hits: this.jumpHits.map((h, index) => ({ index, label: h.label, kind: h.location.artifactKind })) }
@@ -195,11 +199,11 @@ export class NavTours implements vscode.Disposable {
   goStep(index: number): void { const t = this.activeTour(); if (t) { this.cursor = stepTo(t, index); this.show(t); } }
 
   /** QuickPick over every tour, or over `among` (journey as the description). */
-  async pick(among?: readonly Tour[], placeHolder?: string): Promise<void> {
+  async pick(among?: readonly Tour[], placeHolder?: string): Promise<Tour | undefined> {
     const { document } = this.loaded();
     const labels = labelPack(config().get("labels"));
     const tours = among ?? this.visible(document.tours);
-    if (!tours.length) { void vscode.window.showInformationMessage(`DataPass: ${uiLabel(labels, "none")}`); return; }
+    if (!tours.length) { void vscode.window.showInformationMessage(`DataPass: ${uiLabel(labels, "none")}`); return undefined; }
     const pick = await vscode.window.showQuickPick(tours.map((t) => {
       const o = tourOrigin(t);
       return { label: this.title(t, labels, document.texts), description: t.journey ? labels[`journey.${t.journey}`] ?? t.journey : undefined,
@@ -207,6 +211,7 @@ export class NavTours implements vscode.Disposable {
     }), { placeHolder: placeHolder ?? uiLabel(labels, "pickTour"), matchOnDescription: true });
     const t = pick && tours.find((x) => x.id === pick.id);
     if (t) this.start(t);
+    return t;
   }
 
   /** QuickPick 'Jump to a box' (VS Code's own fuzzy filter over label + kind). */

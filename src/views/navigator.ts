@@ -173,6 +173,11 @@ export async function moveNavigator(to?: NavigatorLocation): Promise<NavigatorLo
   return target;
 }
 
+/** Show the Navigator where it lives now (a started tour must be seen even when no view was open, V5HOLE19). */
+export async function revealNavigator(): Promise<void> {
+  await vscode.commands.executeCommand(`${NAVIGATOR_VIEW_IDS[navigatorLocation(config().get("location"))]}.focus`);
+}
+
 /** The one line `register.ts` calls (NAVSVC1). */
 export function registerNavigator(context: vscode.ExtensionContext, nav: NavigationLike, extras?: NavigatorExtras): NavigatorView {
   const view = new NavigatorView(nav, extras);

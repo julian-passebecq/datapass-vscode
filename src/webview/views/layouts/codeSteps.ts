@@ -37,6 +37,9 @@ export interface CodeStepsInput {
   readonly steps: readonly CodeStepInput[];
   readonly holes: readonly { readonly reason: string }[];
   readonly origin: ValueOrigin;
+  /** V5HOLE18: the step the person selected in the view (host-side); only its sample slot is shown, like a
+   *  Power Query step preview. Absent = no step selected: every step shows its slot. */
+  readonly selected?: string;
 }
 
 export interface CodeStepsLabels {
@@ -124,6 +127,8 @@ export interface CodeStepRow {
   readonly lines?: string;
   readonly sample: CodeStepSampleView;
   readonly selected: boolean;
+  /** V5HOLE18: the sample slot is drawn (the selected step's, or every step's while none is selected). */
+  readonly showSample: boolean;
 }
 export interface CodeStepsModel {
   readonly title?: string;
@@ -142,6 +147,8 @@ export function codeStepsModel(input: CodeStepsInput, opts: { labels?: CodeSteps
   const steps = input.steps.slice(0, MAX_CODE_STEPS);
   const holes = input.holes.map(h => h.reason);
   if (input.steps.length > MAX_CODE_STEPS) holes.push(`${input.steps.length - MAX_CODE_STEPS} more steps not shown`);
+  const picked = input.selected !== undefined && steps.some(s => s.id === input.selected) ? input.selected : undefined;
+  const selectedId = picked ?? opts.selected;
   const rows = steps.map((s, index): CodeStepRow => {
     const kind = labels.kinds[s.kind] ?? labels.kinds.other ?? { label: s.kind, icon: "circle-small" };
     const seen = new Set<string>();
@@ -154,7 +161,8 @@ export function codeStepsModel(input: CodeStepsInput, opts: { labels?: CodeSteps
       note: s.note && s.note.text.trim() ? { text: s.note.text, origin: labels.origins[s.note.origin], aiProposed: s.note.origin === "ai-proposed" } : undefined,
       lines: s.lines ? (s.lines[0] === s.lines[1] ? `${s.lines[0]}` : `${s.lines[0]}–${s.lines[1]}`) : undefined,
       sample: sampleView(s.sample, labels),
-      selected: opts.selected === s.id
+      selected: selectedId === s.id,
+      showSample: picked === undefined || picked === s.id
     };
   });
   return { title: input.title, rows, holes, showNotes: rows.some(r => r.note), empty: rows.length ? undefined : labels.empty };

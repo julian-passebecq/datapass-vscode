@@ -233,8 +233,11 @@ test("V5HOLE7: re-attach wording is data and says the proposal is only proposed"
 
 test("V5HOLE10: the dbt materializations section id carries a drift marker so it comes up expanded", () => {
   const view = (detached: boolean, state?: string) => ({ detached, drift: state ? { state } : null }) as unknown as Parameters<typeof detachSectionHead>[0][number];
-  assert.deepEqual(detachSectionHead([view(true, "in-sync"), view(false)]), { id: "dbtDetach", collapsed: true });
+  // V5HOLE16: a detached model keeps the section open even in sync; only all-attached models collapse it.
+  assert.deepEqual(detachSectionHead([view(true, "in-sync"), view(false)]), { id: "dbtDetach#detached", collapsed: false });
   assert.deepEqual(detachSectionHead([view(false)]), { id: "dbtDetach", collapsed: true });
+  const missing = { detached: false, drift: null, targetMissing: "target missing" } as unknown as Parameters<typeof detachSectionHead>[0][number];
+  assert.deepEqual(detachSectionHead([missing]), { id: "dbtDetach#drift", collapsed: false }, "an attached model whose notebook is gone opens it");
   for (const state of ["notebook-edited", "target-missing", "unknown"]) {
     const head = detachSectionHead([view(true, "in-sync"), view(true, state)]);
     assert.deepEqual(head, { id: "dbtDetach#drift", collapsed: false }, state);

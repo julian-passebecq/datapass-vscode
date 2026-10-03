@@ -16,6 +16,11 @@ export interface RepoSetLensTarget {
   readonly folder: string;
   readonly remoteUrl?: string;
   readonly defaultHint?: string;
+  /**
+   * V5HOLE17: only a workspace folder (not declared in repos.json, no submodule): when it is not a Git repository it is no
+   * lane at all, so a workspace outside any repository shows the view's "no repository" state.
+   */
+  readonly optional?: boolean;
 }
 
 /** Folder identity for comparisons (case-insensitive on Windows). */
@@ -32,7 +37,8 @@ export function repoSetLensTargets(set: Pick<RepoSet, "repos">, root: string, sh
     if (shown.some(f => sameFolder(f, folder)) || out.some(t => sameFolder(t.folder, folder))) continue;
     out.push({
       key: `${REPO_SET_KEY_PREFIX}${r.id}`, label: path.basename(folder) || r.id, role: r.role, folder,
-      ...(r.remote ? { remoteUrl: r.remote.url } : {}), ...(r.defaultBranch ? { defaultHint: r.defaultBranch } : {})
+      ...(r.remote ? { remoteUrl: r.remote.url } : {}), ...(r.defaultBranch ? { defaultHint: r.defaultBranch } : {}),
+      ...(r.source === "workspace-folder" && r.role === "other" ? { optional: true } : {})
     });
   }
   return out;

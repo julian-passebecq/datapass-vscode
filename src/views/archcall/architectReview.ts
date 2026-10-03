@@ -170,7 +170,9 @@ export function registerArchitectReview(context: vscode.ExtensionContext, navSes
     if (!(await confirmModal("Keep this architect review?", `${answer.findings.length} finding(s); recommendation: ${answer.recommendation.summary.slice(0, 300)}${flag ? `\n\n${flag}` : ""}\n\nIt is shown in Context › Why & alternatives as ai-proposed. Nothing in the project changes.`, "Keep it"))) return;
     await save(reviews.map(r => r === stored ? { ...r, answer, importedAt: new Date().toISOString(), unverified } : r));
     await ws().recordExchange({ id: newLocalId("ai-import"), kind: "ai-context", label: `Architect review answer (${stored.request.trigger.kind})`, status: "imported", digest: sha256Bytes(JSON.stringify(answer)).value, file: `${LOCAL_DIR}/${STORE_FILE}`, scopeRef: ws().model().scope.id, at: new Date().toISOString() });
-    report(`Architect review imported (ai-proposed${flag ? `, ${settings.labels.unverified}` : ""})`, [...(flag ? [flag] : []),...answer.findings.map(f => `${f.severity}: ${f.summary}`), `Recommendation: ${answer.recommendation.summary}`]);
+    report(`Architect review imported (ai-proposed${flag ? `, ${settings.labels.unverified}` : ""})`, [...(flag ? [flag] : []),...answer.findings.map(f => `${f.severity}: ${f.summary}`), `Recommendation: ${answer.recommendation.summary}`], { reveal: false });
+    // V5HOLE20: the result lives in Context › Why & alternatives; show it there, never pull the Output panel over it.
+    await vscode.commands.executeCommand("datapass.context.show");
   };
 
   const offer = async (s: Suggestion | undefined): Promise<void> => {

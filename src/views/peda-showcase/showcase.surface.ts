@@ -88,7 +88,8 @@ async function showQueriesWorthShowing(): Promise<void> {
   const items: Item[] = (data.cards ?? []).map(c => {
     const v = (key: string, hole = "—") => { const x = c.fields.find(f => f.label === key)?.value; const val = x !== null && typeof x === "object" ? x.value : x; return val === null || val === undefined ? hole : String(val); };
     const sampled = v("showcase.sample", "");
-    const sample = sampled ? `sample ${sampled}` : SAMPLE_HOLE;
+    // V5HOLE18: the spec's wording (row 10): "Sample output: <file: columns (N rows)>", else the declared "No sample" hole.
+    const sample = sampled ? `Sample output: ${sampled}` : SAMPLE_HOLE.charAt(0).toUpperCase() + SAMPLE_HOLE.slice(1);
     return { label: c.title, nodeId: c.nodeId,
       description: c.nodeId ? `${v("showcase.score")} · ${v("showcase.query")}` : "DataPass guidance (not from this project)",
       detail: c.nodeId ? `${v("showcase.techniques")} — ${v("showcase.context")} — ${sample}` : `${v("showcase.teaches")} — ${v("showcase.tip")} — ${sample}` };

@@ -15,13 +15,16 @@ export function output(): vscode.OutputChannel {
   return channel;
 }
 
-/** Print a report block to the DataPass output channel and reveal it. */
-export function report(title: string, lines: string[]): void {
+/**
+ * Print a report block to the DataPass output channel and reveal it. `reveal: false` only logs it,
+ * for results that are shown where they live (e.g. an imported Architect review in Context).
+ */
+export function report(title: string, lines: string[], opts: { reveal?: boolean } = {}): void {
   const ch = output();
   ch.appendLine("");
   ch.appendLine(`== ${title} — ${new Date().toISOString()}`);
   for (const l of lines) ch.appendLine(l);
-  ch.show(true);
+  if (opts.reveal !== false) ch.show(true);
 }
 
 export function requireRoot(root: vscode.Uri | undefined): vscode.Uri {

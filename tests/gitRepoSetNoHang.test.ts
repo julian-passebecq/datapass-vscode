@@ -88,10 +88,50 @@ test("repo-set with a non-repo root and a deleted clone: the Git view leaves 'ch
     assert.equal(byLabel.get("transform")?.state, "ok");
     assert.equal(byLabel.get("bi")?.state, "not-cloned");
     assert.equal(byLabel.get("bi")?.detail, "missing clone");
-    assert.equal(byLabel.get(path.basename(root))?.state, "not-a-repo");
+    // V5HOLE17 (PM 32): an undeclared workspace folder that is not a repository is no lane.
+    assert.equal(byLabel.get(path.basename(root)), undefined);
     const roots = await tree.getChildren();
     assert.ok(!roots.some(n => n.id === "checking"), "the view no longer says Checking the repositories…");
     assert.ok(!cwds.some(c => path.basename(c) === "bi"), "no Git spawn in the deleted clone");
+  } finally {
+    tree.dispose(); observer.dispose();
+    if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = prevCeiling;
+    try { fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* Windows may still hold the folder */ }
+  }
+});
+
+test("V5HOLE17: lanes are shown before any check settles, and a folder outside any repository gives the no-repository state within 5 s", { timeout: 20_000 }, async () => {
+  const root = fixture();
+  const prevCeiling = process.env.GIT_CEILING_DIRECTORIES;
+  process.env.GIT_CEILING_DIRECTORIES = path.dirname(root);
+  const session = { projectMap: () => ({ repositories: [] }), projectObservation: () => undefined, repoFolder: () => undefined };
+  const observer = new GitObserver(session as never);
+  const tree = new GitTreeProvider(observer);
+  const orig = observer.runner;
+  let release!: () => void; const gate = new Promise<void>(r => { release = r; });
+  // Every Git answer is held until the lanes were seen.
+  observer.runner = async (t, a, c, ms) => { await gate; return orig(t, a, c, ms); };
+  try {
+    workspace.workspaceFolders = [root, path.join(root, "ingest"), path.join(root, "transform")].map(f => ({ uri: { fsPath: f } }));
+    const run = observer.refresh();
+    const t0 = Date.now();
+    while (observer.observation().project.length < 3 && Date.now() - t0 < 5_000) await new Promise(r => setTimeout(r, 20));
+    const early = observer.observation().project.map(r => [r.label, r.state, r.detail]);
+    assert.ok(early.some(([l, s, d]) => l === "ingest" && s === "not-checked" && d === "checking…"), JSON.stringify(early));
+    release(); await run;
+
+    // A plain folder outside any repository: the view says so within 5 s (no lane, no "Checking the repositories…").
+    const plain = fs.mkdtempSync(path.join(os.tmpdir(), "dp-v5hole17-plain-"));
+    process.env.GIT_CEILING_DIRECTORIES = path.dirname(plain);
+    workspace.workspaceFolders = [{ uri: { fsPath: plain } }];
+    observer.runner = orig;
+    const t1 = Date.now();
+    await observer.refresh(true);
+    assert.ok(Date.now() - t1 < 5_000, `took ${Date.now() - t1} ms`);
+    assert.deepEqual(observer.observation().project, []);
+    const roots = await tree.getChildren();
+    assert.ok(roots.some(n => n.id === "empty") && !roots.some(n => n.id === "checking"));
+    fs.rmSync(plain, { recursive: true, force: true });
   } finally {
     tree.dispose(); observer.dispose();
     if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = prevCeiling;
@@ -120,6 +160,32 @@ test("one repository whose Git never answers is 'not checked'; the others are sh
     assert.equal(byLabel.get("ingest")?.state, "not-checked");
     assert.equal(byLabel.get("transform")?.state, "ok");
     assert.equal(byLabel.get("bi")?.detail, "missing clone");
+  } finally {
+    observer.dispose();
+    if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = prevCeiling;
+    try { fs.rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* Windows may still hold the folder */ }
+  }
+});
+
+test("a repository whose status answered but whose later reads hang keeps its status (not 'not checked'); checking ends", { timeout: 20_000 }, async () => {
+  const root = fixture();
+  const prevCeiling = process.env.GIT_CEILING_DIRECTORIES;
+  process.env.GIT_CEILING_DIRECTORIES = path.dirname(root);
+  workspace.workspaceFolders = [root, path.join(root, "ingest"), path.join(root, "transform")].map(f => ({ uri: { fsPath: f } }));
+  const session = { projectMap: () => ({ repositories: [] }), projectObservation: () => undefined, repoFolder: () => undefined };
+  const observer = new GitObserver(session as never);
+  observer.repoDeadlineMs = 2_000;
+  const orig = observer.runner;
+  // transform answers `git status`, then every later Git read hangs forever; ingest never answers at all.
+  observer.runner = (t, a, c, ms) => path.basename(c) === "ingest" || (path.basename(c) === "transform" && a[0] !== "status") ? new Promise(() => { /* never */ }) : orig(t, a, c, ms);
+  try {
+    await observer.refresh();
+    const o = observer.observation();
+    assert.equal(o.checking, false);
+    const byLabel = new Map(o.project.map(r => [r.label, r]));
+    assert.equal(byLabel.get("ingest")?.state, "not-checked");
+    assert.equal(byLabel.get("transform")?.state, "ok");
+    assert.equal(byLabel.get("transform")?.branch, "main");
   } finally {
     observer.dispose();
     if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES; else process.env.GIT_CEILING_DIRECTORIES = prevCeiling;

@@ -13,9 +13,11 @@ import { sameLocation, type NavCommand, type NavLocation, type NavState, type Vi
 import { builtinCatalog } from "./viewPacks";
 import { buildLadder, type ProjectLadder } from "./ladder";
 import { FileHeads } from "./fileHeads";
+import { classifyArtifactKind } from "./artifactKind";
 import { locationLabel, locationOf, locationPath } from "./projectLadder";
 import type { UnderstandingEntry } from "../understanding/load";
 import { hopState, type HopState } from "../../views/hopState";
+import type { RepoHistoryInput } from "./bindings";
 
 /** The part of the session the host needs (kept small for tests). */
 export interface NavSession {
@@ -35,7 +37,12 @@ export interface NavSession {
   understandingByPath?(repositoryKey: string, nativePath: string): Promise<UnderstandingEntry | undefined>;
   /** V5HOLE4: repository key and path of a project file (no read); absent = "Here" is the selection only. */
   understandingLocate?(uri: vscode.Uri): { repositoryKey: string; nativePath: string } | undefined;
+  /** V5HOLE17: the workspace repo set and each repository's read-only log; absent = no `repo-history` data. */
+  repoHistoryLogs?(): Promise<RepoHistoryInput>;
 }
+
+/** V5HOLE17: a read repo history is reused this long; an older one is shown while it is read again. */
+const REPO_HISTORY_TTL_MS = 60_000;
 
 export const NAV_COMMANDS = ["up", "down", "left", "right", "home", "back", "forward", "pickView"] as const;
 export type NavCommandId = (typeof NAV_COMMANDS)[number];
@@ -50,16 +57,30 @@ export interface NavStateMessage {
   readonly labels: Readonly<Record<string, string>>; readonly path: readonly NavLocation[];
 }
 
+/** How long a selection the Navigator pushed counts as its own echo (as the project tree's own reveals, 0.17). */
+const ECHO_MS = 3000;
+/** A component is one key whatever sub-project a surface names with it (the tree adds its parent). */
+const selectionKey = (s: { subproject?: string; component?: string }) => (s.component ? `c|${s.component}` : `s|${s.subproject ?? ""}`);
+
 export class NavHost implements vscode.Disposable {
   readonly nav: NavigationService;
   private readonly subs: vscode.Disposable[] = [];
   private readonly heads: FileHeads;
+  /**
+   * V5HOLE19: selections `toSession` pushed, with when. Their change events can come back after the Navigator already
+   * moved on (tour steps 1–9 in a row): within ECHO_MS such an event is an echo, not a person's pick.
+   */
+  private readonly pushed = new Map<string, number>();
   private ladder: ProjectLadder;
   /** V5HOLE1: Hop state per file key ("loading", or null: none), cleared when the session changes. */
   private readonly hops = new Map<string, HopState | "loading" | null>();
   private readonly hopLoaded = new vscode.EventEmitter<void>();
   /** A Hop explanation finished loading: views bound to `hop-steps` redraw. */
   readonly onDidLoadHop = this.hopLoaded.event;
+  private repoHist?: { at: number; value?: RepoHistoryInput; reading?: Promise<void> };
+  private readonly repoHistLoaded = new vscode.EventEmitter<void>();
+  /** V5HOLE17: the repo history finished reading: views bound to `repo-history` redraw. */
+  readonly onDidLoadRepoHistory = this.repoHistLoaded.event;
 
   constructor(readonly session: NavSession) {
     this.heads = new FileHeads((k) => session.repoFolder?.(k));
@@ -69,7 +90,7 @@ export class NavHost implements vscode.Disposable {
     const navSub = this.nav.onDidChange((e) => { void this.toSession(e.state.location); void this.updateKeys(); });
     this.subs.push({ dispose: () => navSub.dispose() },
       session.onDidChangeSelection(() => this.fromSession()),
-      session.onDidChange(() => { this.heads.clear(); this.hops.clear(); this.rebuild(); }), this.hopLoaded);
+      session.onDidChange(() => { this.heads.clear(); this.hops.clear(); this.rebuild(); }), this.hopLoaded, this.repoHistLoaded);
     this.warm();
     void this.updateKeys();
   }
@@ -108,7 +129,7 @@ export class NavHost implements vscode.Disposable {
    * no continuous editor → Navigator sync.
    */
   async pickView(): Promise<void> {
-    const here = this.editorLocation() ?? this.nav.state.location;
+    const here = this.editorLocation() ?? this.unmappedEditorFile() ?? this.nav.state.location;
     const views = this.nav.viewsAt(here);
     if (!views.length) { void vscode.window.showInformationMessage("DataPass: no view is offered here."); return; }
     const atNav = sameLocation(here, this.nav.state.location);
@@ -117,12 +138,36 @@ export class NavHost implements vscode.Disposable {
     if (!pick) return;
     if (!sameLocation(here, this.nav.state.location)) this.nav.dispatch({ type: "go", location: here });
     this.nav.dispatch({ type: "view", viewId: pick.id });
+    // V5HOLE17/V5HOLE18 (one implementation): the picked view's body lives in the DataPass view panel (navView).
+    // Picking a view is asking to see it, so the panel opens (or comes forward); a surface view opens its own
+    // DataPass view instead. A failing open is ignored.
+    if (views.find((v) => v.id === pick.id)?.layout !== "surface") {
+      await Promise.resolve(vscode.commands.executeCommand("datapass.navView.open")).catch(() => undefined);
+    }
+  }
+
+  /**
+   * V5HOLE18: the active editor's file when the project map does not hold it (no DataPass project, or a file no
+   * component lists): an artifact place of its own, keyed by its workspace-relative path, so its file views are
+   * still offered and show their holes (Steps: "No Hop explanation for this place") instead of the project's views.
+   */
+  private unmappedEditorFile(): NavLocation | undefined {
+    const uri = this.activeFileUri();
+    const folder = uri && vscode.workspace.getWorkspaceFolder?.(uri);
+    if (!uri || !folder) return undefined; // a file outside the open folders keeps the Navigator's place
+    const rel = uri.fsPath.slice(folder.uri.fsPath.length).split("\\").join("/").replace(/^\/+/, "");
+    if (!rel) return undefined;
+    return { level: "artifact", nodeId: rel, artifactKind: classifyArtifactKind(rel) };
+  }
+
+  private activeFileUri(): vscode.Uri | undefined {
+    const w = vscode.window as { activeTextEditor?: { document: { uri: vscode.Uri } }; activeNotebookEditor?: { notebook: { uri: vscode.Uri } } };
+    return [w.activeTextEditor?.document.uri, w.activeNotebookEditor?.notebook.uri].find((u) => u?.scheme === "file");
   }
 
   /** The catalog artifact of the active editor's file (text or notebook), or undefined. Nothing is read or run. */
   private editorLocation(): NavLocation | undefined {
-    const w = vscode.window as { activeTextEditor?: { document: { uri: vscode.Uri } }; activeNotebookEditor?: { notebook: { uri: vscode.Uri } } };
-    const uri = [w.activeTextEditor?.document.uri, w.activeNotebookEditor?.notebook.uri].find((u) => u?.scheme === "file");
+    const uri = this.activeFileUri();
     const at = uri && this.session.understandingLocate?.(uri);
     return at ? this.ladder.locate(at.repositoryKey, at.nativePath) : undefined;
   }
@@ -148,6 +193,23 @@ export class NavHost implements vscode.Disposable {
       located: { repositoryKey: file.repoKey, nativePath: file.repoPath }, entry, hasProject: true, workOrdersEnabled: false, canGoBack: false }) : null),
     () => settle(null));
     return "loading";
+  }
+
+  /**
+   * V5HOLE17: the `repo-history` data, synchronously from the cache. A miss starts the read and returns "loading"; a
+   * read older than REPO_HISTORY_TTL_MS is read again in the background while the old one stays shown.
+   */
+  repoHistory(): RepoHistoryInput | "loading" | undefined {
+    const read = this.session.repoHistoryLogs?.bind(this.session);
+    if (!read) return undefined;
+    const c = this.repoHist;
+    if (!c || (!c.reading && Date.now() - c.at > REPO_HISTORY_TTL_MS)) {
+      const entry: { at: number; value?: RepoHistoryInput; reading?: Promise<void> } = { at: Date.now(), value: c?.value };
+      entry.reading = read().then(v => { entry.value = v; }, (e: unknown) => { entry.value = { set: { repos: [] }, logs: [], error: e instanceof Error ? e.message : String(e) }; })
+        .finally(() => { entry.reading = undefined; entry.at = Date.now(); if (this.repoHist === entry) this.repoHistLoaded.fire(); });
+      this.repoHist = entry;
+    }
+    return this.repoHist!.value ?? "loading";
   }
 
   label(l: NavLocation): string { return this.ladder.entry(l)?.label ?? locationLabel(this.session.projectMap(), l); }
@@ -177,7 +239,11 @@ export class NavHost implements vscode.Disposable {
 
   /** Tree or Workbench selection → `go`. */
   private fromSession(): void {
-    const to = locationOf(this.session.selection(), this.session.projectMap());
+    // Our own push coming back late (the Navigator moved on meanwhile): never pull the Navigator back to it.
+    const picked = this.session.selection();
+    const at = this.pushed.get(selectionKey(picked));
+    if (at !== undefined && Date.now() - at < ECHO_MS) return;
+    const to = locationOf(picked, this.session.projectMap());
     const here = this.nav.state.location;
     if (to.level === here.level && to.nodeId === here.nodeId) return;
     if (to.level === "project" && here.level === "project") return;
@@ -191,9 +257,13 @@ export class NavHost implements vscode.Disposable {
   private async toSession(l: NavLocation): Promise<void> {
     if (l.level === "project") return;
     const e = this.ladder.entry(l);
-    const sel = { subproject: e?.subprojectId, component: e?.componentId };
+    if (!e) return; // V5HOLE18: a place the project map does not hold (an unmapped file) keeps the selection
+    const sel = { subproject: e.subprojectId, component: e.componentId };
     const cur = this.session.selection();
     if (cur.subproject === sel.subproject && cur.component === sel.component) return;
+    const now = Date.now();
+    for (const [k, t] of this.pushed) if (now - t >= ECHO_MS) this.pushed.delete(k);
+    this.pushed.set(selectionKey(sel), now);
     await this.session.select(sel);
   }
 

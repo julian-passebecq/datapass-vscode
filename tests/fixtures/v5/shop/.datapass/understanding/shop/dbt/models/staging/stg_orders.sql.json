@@ -1,0 +1,26 @@
+{
+  "format": "datapass.understanding",
+  "version": 1,
+  "target": {
+    "repository": "shop",
+    "path": "dbt/models/staging/stg_orders.sql",
+    "sha256": "1d13b4dfd5d6c6cfecf280ae959d339a1b83303aa0718682004a33e69e26e34b",
+    "language": "sql"
+  },
+  "title": "Silver orders (stg_orders)",
+  "summary": "Types the raw bronze orders and keeps only the latest ingested version of each order, so a re-ingested file never doubles an order in silver.",
+  "component": "stg-orders",
+  "steps": [
+    { "id": "source", "title": "Read the bronze orders", "kind": "read", "lines": [2, 4], "inputs": ["bronze.orders_raw"], "outputs": ["source"], "provenance": "declared" },
+    { "id": "typed", "title": "Type the columns and rank each order's versions", "kind": "transform", "lines": [5, 14], "inputs": ["source"], "outputs": ["typed"], "columns": [
+      { "name": "order_id", "from": ["order_id"], "note": "cast to bigint" },
+      { "name": "amount", "from": ["amount"], "note": "cast to decimal(12, 2)" },
+      { "name": "rn", "from": ["order_id", "_ingested_at"], "note": "row_number() per order, latest ingestion first" }
+    ], "provenance": "declared" },
+    { "id": "latest", "title": "Keep the latest version of each order", "kind": "write", "lines": [15, 17], "inputs": ["typed"], "outputs": ["stg_orders"], "note": "rn = 1 drops the older copies of a re-ingested order.", "provenance": "inferred" }
+  ],
+  "links": [
+    { "from": "source", "to": "typed", "kind": "data" },
+    { "from": "typed", "to": "latest", "kind": "data" }
+  ]
+}

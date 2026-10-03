@@ -210,13 +210,18 @@ export function detachView(path: string, record: MaterializationDetach, current:
 
 /**
  * V5HOLE10: the Project tree "dbt materializations" section head. VS Code keeps a tree item's expand state by its id,
- * so the id carries a drift marker (`#drift`, never `:` — `dbtDetach:<path>` is a model row) when any detached model
- * has drift: drift appearing later makes a new item that comes up Expanded. All in sync: plain id, collapsed.
+ * so the id carries a marker (`#…`, never `:` — `dbtDetach:<path>` is a model row) whenever the section needs to be
+ * seen: a marker appearing later makes a new item that comes up Expanded.
+ * V5HOLE16 (PM decision): the section stays expanded whenever any model is detached (`#detached`, even in sync) and,
+ * stronger, when a detached model has drift or any stamped notebook is missing (`#drift`), so drift appearing on an
+ * in-sync detached model opens it again. Only all-attached models with their notebooks present: plain id, collapsed.
  */
 export const DETACH_SECTION_ID = "dbtDetach";
 export function detachSectionHead(views: readonly DetachView[]): { id: string; collapsed: boolean } {
-  const drift = views.some(v => v.detached && !!v.drift && v.drift.state !== "in-sync");
-  return drift ? { id: `${DETACH_SECTION_ID}#drift`, collapsed: false } : { id: DETACH_SECTION_ID, collapsed: true };
+  const drift = views.some(v => !!v.targetMissing || (v.detached && !!v.drift && v.drift.state !== "in-sync"));
+  if (drift) return { id: `${DETACH_SECTION_ID}#drift`, collapsed: false };
+  if (views.some(v => v.detached)) return { id: `${DETACH_SECTION_ID}#detached`, collapsed: false };
+  return { id: DETACH_SECTION_ID, collapsed: true };
 }
 
 /** Tree row text: `detached · notebook edited since detach`. */

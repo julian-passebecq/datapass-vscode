@@ -12,6 +12,11 @@ import { WHOLE_PICTURE_STEP_IDS, type SpineStop } from "./spine";
 
 export const PROJECT_TOPICS = ["explain", "objectives", "volumetry", "platforms", "whole-picture", "queries-worth-showing"] as const;
 
+/** V5HOLE19: the question each whole-picture step answers, shown after the node so the step box names its spine step. */
+export const WHOLE_PICTURE_QUESTIONS: Readonly<Record<(typeof WHOLE_PICTURE_STEP_IDS)[number], string>> = {
+  arrive: "how does the data arrive?", live: "where does it live?", change: "how does it change?", run: "what makes it run?", trust: "why can it be trusted?"
+};
+
 /** What the project's files and facts say about it (each item keeps its origin). */
 export interface ProjectBrief {
   readonly title: string | null;
@@ -29,8 +34,10 @@ export interface ProjectBrief {
 export function briefFromMap(map: ProjectMap | undefined, extra: {
   readonly rationales?: readonly DecisionRationale[]; readonly volumetry?: readonly Said[];
   readonly spine: readonly SpineStop[]; readonly queries?: readonly string[];
+  /** `.datapass/objectives.json` (V5HOLE19), listed first. */
+  readonly objectives?: readonly Said[];
 }): ProjectBrief {
-  const objectives: Said[] = [];
+  const objectives: Said[] = [...(extra.objectives ?? [])];
   for (const s of map?.subprojects ?? []) if (s.objective) objectives.push({ text: `${s.title}: ${s.objective}`, origin: "declared" });
   const seen = new Set<string>();
   for (const r of extra.rationales ?? []) if (r.problemSolved && !seen.has(r.problemSolved)) { seen.add(r.problemSolved); objectives.push({ text: r.problemSolved, origin: r.origin }); }
@@ -57,10 +64,10 @@ export function resolveProjectRef(ref: string, brief: ProjectBrief): TopicText |
       const lines: Said[] = [
         ...(brief.title ? [{ text: brief.title, origin: "declared" }] : []),
         ...(brief.description ? [brief.description] : []),
-        ...brief.objectives.slice(0, 3), ...brief.platforms.length ? [{ text: brief.platforms.map(p => p.text).join(", "), origin: "declared" }] : []
+        ...brief.objectives.slice(0, 3), ...brief.volumetry.slice(0, 2), ...brief.platforms.length ? [{ text: brief.platforms.map(p => p.text).join(", "), origin: "declared" }] : []
       ];
       const holes: Hole[] = [];
-      if (!brief.description && !brief.objectives.length) holes.push({ kind: "missing-objectives", field: "project:explain", reason: "The manifest and decision records say nothing about the project's purpose yet (ask the owner)." });
+      if (!brief.description && !brief.objectives.length) holes.push({ kind: "missing-objectives", field: "project:explain", reason: "No objectives yet: the manifest and decision records say nothing about the project's purpose (ask the owner)." });
       if (!brief.volumetry.length) holes.push({ kind: "missing-volumetry", field: "project:volumetry", reason: "No volumetry fact (VOL1) yet: data sizes and frequencies are unknown." });
       return { lines, holes };
     }
@@ -74,7 +81,7 @@ export function resolveProjectRef(ref: string, brief: ProjectBrief): TopicText |
       const step = w && (WHOLE_PICTURE_STEP_IDS as readonly string[]).includes(w[1]!) ? brief.spine.find(s => s.step === w[1]) : undefined;
       if (!step) return hole(topic, "explanation-not-found", `Unknown project topic "${topic}".`);
       return step.hole ? hole(topic, "missing-spine-node", `No project node answers "${step.step}" yet: the project root is shown.`)
-        : { lines: [{ text: step.label ?? step.location.nodeId, origin: "static" }], holes: [] };
+        : { lines: [{ text: step.label ?? step.location.nodeId, origin: "static" }, { text: WHOLE_PICTURE_QUESTIONS[step.step], origin: "static" }], holes: [] };
     }
   }
 }

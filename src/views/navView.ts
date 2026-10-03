@@ -20,7 +20,7 @@ import * as vscode from "vscode";
 import type { ProjectMap } from "../core/project/projectMap";
 import type { NavigationService } from "../core/navigation/navigationService";
 import type { NavLocation, NavState, ViewDef } from "../core/navigation/navTypes";
-import { resolveBindings, type BindingContext, type BoundData } from "../core/navigation/bindings";
+import { resolveBindings, type BindingContext, type BoundData, type RepoHistoryInput } from "../core/navigation/bindings";
 import { isCodeStepsInput } from "../webview/views/layouts/codeSteps.layout";
 import type { CodeStepsInput } from "../webview/views/layouts/codeSteps";
 import { bindCodeStepsSamples } from "./pqSampleHost";
@@ -42,6 +42,9 @@ export interface NavViewDeps {
   /** V5HOLE1: Hop state of the file at a place (`hop-steps` binding) and when a load finished (redraw). */
   hop?(location: NavLocation): HopState | "loading" | undefined;
   onDidLoadHop?: vscode.Event<void>;
+  /** V5HOLE17: the repo set and logs of the `repo-history` binding, and when a read finished (redraw). */
+  repoHistory?(): RepoHistoryInput | "loading" | undefined;
+  onDidLoadRepoHistory?: vscode.Event<void>;
   /** View renderer (NAVREN1). */
   render?: NavRenderer;
 }
@@ -55,7 +58,14 @@ export class NavViewHost implements vscode.Disposable {
   private readonly selectEmitter = new vscode.EventEmitter<string>();
   /** PQSAMP1 hook (NAVFIX1, review M7): stored step samples join a code-steps payload; a selected step is the sample target. */
   private lastSteps?: CodeStepsInput;
-  private readonly samples = bindCodeStepsSamples(() => this.lastSteps, () => this.render());
+  /** V5HOLE18: the code step selected in the view, for the place and view it was selected in (`<node>/<view>`). */
+  private selectedStep?: { readonly at: string; readonly id: string };
+  // V5HOLE18: a step sample the person just asked for (set or cleared) redraws the view and gives it the focus
+  // back, so the arrow keys keep moving through the steps (the webview puts it on the step it was on).
+  private readonly samples = bindCodeStepsSamples(() => this.lastSteps, () => {
+    this.render();
+    if (this.panel?.visible) this.panel.reveal(this.panel.viewColumn, false);
+  });
   /** A node selected in the view (the code link, NAVCODE1, decorates its source). */
   readonly onDidSelect = this.selectEmitter.event;
   /** Messages handled (tests). */
@@ -68,6 +78,7 @@ export class NavViewHost implements vscode.Disposable {
       vscode.workspace.onDidChangeConfiguration(e => { if (e.affectsConfiguration("datapass.navView")) this.render(); })
     );
     if (deps.onDidLoadHop) this.subs.push(deps.onDidLoadHop(() => this.render()));
+    if (deps.onDidLoadRepoHistory) this.subs.push(deps.onDidLoadRepoHistory(() => this.render()));
   }
 
   dispose(): void {
@@ -159,14 +170,17 @@ export class NavViewHost implements vscode.Disposable {
 
   private bindingContext(location: NavLocation): Omit<BindingContext, "params"> {
     const hop = this.deps.hop?.bind(this.deps);
-    return { location, projectMap: this.deps.projectMap(), ...(hop ? { hop } : {}) };
+    const repoHistory = this.deps.repoHistory?.bind(this.deps);
+    return { location, projectMap: this.deps.projectMap(), ...(hop ? { hop } : {}), ...(repoHistory ? { repoHistory } : {}) };
   }
 
   private withSamples(bound: BoundData[]): BoundData[] {
     this.lastSteps = undefined;
     return bound.map(b => {
       if (!isCodeStepsInput(b.result.steps)) return b;
-      const steps = this.samples.input(b.result.steps);
+      const at = `${this.nav.state.location.nodeId}/${this.nav.state.viewId ?? ""}`;
+      const picked = this.selectedStep?.at === at && b.result.steps.steps.some(s => s.id === this.selectedStep!.id) ? this.selectedStep.id : undefined;
+      const steps = { ...this.samples.input(b.result.steps), ...(picked ? { selected: picked } : {}) };
       this.lastSteps = steps;
       return { ...b, result: { ...b.result, steps } };
     });
@@ -177,7 +191,15 @@ export class NavViewHost implements vscode.Disposable {
     if (!m) return;
     this.handled.push(m);
     if (m.type === "nav") this.nav.dispatch(m.command);
-    else if (m.type === "select") { this.samples.onMessage(m); this.selectEmitter.fire(m.nodeId); }
+    else if (m.type === "select") {
+      this.samples.onMessage(m);
+      // V5HOLE18: a selected code step shows its sample (the others hide theirs), so the view redraws.
+      if (this.lastSteps?.steps.some(s => s.id === m.nodeId)) {
+        this.selectedStep = { at: `${this.nav.state.location.nodeId}/${this.nav.state.viewId ?? ""}`, id: m.nodeId };
+        this.render();
+      }
+      this.selectEmitter.fire(m.nodeId);
+    }
     else if (m.type === "open-surface") {
       // Only the current place's own surface view, through the same setting map as the automatic open.
       const view = this.nav.views().find(v => v.id === m.viewId && v.surface === m.surface);

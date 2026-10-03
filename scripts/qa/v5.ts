@@ -225,13 +225,19 @@ async function runV5Step(ctx: Ctx, step: V5Step): Promise<StepOutcome> {
       if (!fs.existsSync(abs(step.path))) return { status: "FAIL", detail: `${step.path} does not exist` };
       fs.rmSync(abs(step.path), { force: true }); ctx.touched.add(step.path); return { status: "PASS" };
     case "acceptWrites": {
-      // The confirmed action writes after its button closes: poll like expectFile does.
+      // The confirmed action writes after its button closes: poll like expectFile does, and (V5HOLE16) keep polling
+      // until its writes settle (2 s without a new or changed match), so a multi-file write is accepted whole instead
+      // of only the files that landed before the first poll.
       const re = new RegExp(step.pattern);
       const end = Date.now() + 15_000;
       let hits: [string, string][] = [];
+      let seen = "";
+      let since = Date.now();
       for (;;) {
         hits = [...fileStamps(ctx.fixtureRoot)].filter(([f, s]) => re.test(f) && ctx.before.get(f) !== s);
-        if (hits.length || Date.now() > end) break;
+        const sig = hits.map(([f, s]) => `${f}=${s}`).sort().join("|");
+        if (sig !== seen) { seen = sig; since = Date.now(); }
+        if ((hits.length && Date.now() - since >= 2_000) || Date.now() > end) break;
         await new Promise(r => setTimeout(r, 500));
       }
       for (const [f, s] of hits) ctx.accepted.set(f, s);

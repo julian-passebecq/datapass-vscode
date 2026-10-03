@@ -266,6 +266,16 @@ test("V5HOLE4: Pick a View Here offers the active editor's artifact views, else 
     assert.deepEqual([host.nav.state.location.level, host.nav.state.location.nodeId], ["artifact", "lake:nb/ingest.ipynb"]);
     assert.equal(host.nav.state.viewId, "steps");
     assert.deepEqual(located, ["/elsewhere/notes.txt", "/lake/nb/ingest.ipynb"], "only file editors are located");
+    assert.ok(executed.includes("datapass.navView.open"), "V5HOLE18: picking a view opens the DataPass view panel");
+    // V5HOLE18: a file inside the open folder that no component lists is a place of its own: Code steps offered (its hole).
+    const ws = vscodeStub.workspace as unknown as { getWorkspaceFolder?: (u: { fsPath: string }) => unknown };
+    ws.getWorkspaceFolder = (u) => (u.fsPath.startsWith("/lake/") ? { uri: { fsPath: "/lake" } } : undefined);
+    win.activeNotebookEditor = undefined;
+    win.activeTextEditor = { document: { uri: { scheme: "file", fsPath: "/lake/sql/loose.sql" } } };
+    await host.pickView();
+    assert.ok(offered.includes("Code steps"), `unmapped file views: ${offered.join(", ")}`);
+    assert.deepEqual([host.nav.state.location.level, host.nav.state.location.nodeId], ["artifact", "sql/loose.sql"]);
+    delete ws.getWorkspaceFolder;
   } finally {
     win.activeTextEditor = undefined; win.activeNotebookEditor = undefined; win.showQuickPick = async () => undefined;
     host.dispose();

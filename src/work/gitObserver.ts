@@ -31,7 +31,7 @@ import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, 
 import { gitSummary, hasRemoteFor, needsYou, statusFailureReport, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
 import { cmdLine, Limiter, retryOnTimeout, RETRY_TIMEOUT_MS, settleWithin, SPAWN_GRACE_MS } from "../core/git/run";
 import type { WorkSession } from "./session";
-import { cloneParents, gitRunner } from "./session";
+import { cloneParents } from "./session";
 import { discoverRepoSet } from "../core/gitmr/repoSet";
 import { repoSetLensTargets } from "../core/gitmr/lensTargets";
 import { gitReadOnly } from "../core/gitmr/readOnly";
@@ -44,6 +44,8 @@ export const MAX_PARALLEL = 4;
  * "not checked" and the others are shown; the next refresh asks again. Discovery of the repo set is bounded the same way.
  */
 export const REPO_CHECK_DEADLINE_MS = 3 * (COMMAND_TIMEOUT_MS + RETRY_TIMEOUT_MS);
+/** V5HOLE17: discovery of the repo set (files only, no Git) is given this long; past it the view goes on without it. */
+export const DISCOVERY_DEADLINE_MS = 5000;
 export const MAX_OTHER_REPOSITORIES = 60;
 const GIT_TTL_MS = 60_000;
 const HOST_TTL_MS = 120_000;
@@ -129,6 +131,13 @@ interface Target {
   remoteUrl?: string;
   defaultHint?: string;
   view?: RepoView;
+  /** V5HOLE17: an undeclared workspace folder: no lane when it is not a Git repository. */
+  optional?: boolean;
+}
+
+/** A lane whose check has not settled yet (V5HOLE17): shown at once, replaced by the real report. */
+function checkingReport(t: Target): GitRepoReport {
+  return { key: t.key, label: t.label, section: t.section, role: t.role, state: "not-checked", detail: "checking…", worktrees: [], merges: [], hostData: { kind: "no-host" } };
 }
 
 /** Folder identity for comparisons (case-insensitive on Windows). */
@@ -275,7 +284,8 @@ export class GitObserver implements vscode.Disposable {
 
   private projectTargets(): Target[] {
     const map = this.session.projectMap();
-    return map.repositories.map(r => ({
+    // V5HOLE17: with no DataPass project, the workspace root is a lane only when it is a clone (else the repo set decides).
+    return map.repositories.filter(r => map.project || r.state === "local").map(r => ({
       // The coordination repository by its folder name: "This repository" means nothing in a list of repositories.
       key: r.key, label: r.coordination && r.folderName ? r.folderName : r.label, section: "project" as const, role: r.coordination ? "coordination" as const : "project" as const,
       folder: this.session.repoFolder(r.key)?.fsPath, remoteUrl: r.state === "planned" ? undefined : r.remoteUrl, defaultHint: r.branch, view: r
@@ -300,12 +310,34 @@ export class GitObserver implements vscode.Disposable {
     return out;
   }
 
+  /**
+   * V5HOLE17: the lanes are published as soon as the targets are known (from files only, no Git), each one "checking…"
+   * until its own check settles, and every settled check replaces its lane at once: the view never waits for the slowest
+   * repository (row 03 stayed on "Checking the repositories…" while discovery and every check ran one after the other).
+   */
   private async observeProject(): Promise<GitRepoReport[]> {
     const targets = this.projectTargets();
     // V5HOLE14: discovery and every repository settle in bounded time; one stuck check never holds the others.
-    targets.push(...await settleWithin(this.repoSetTargets(targets), this.repoDeadlineMs, () => []));
-    return Promise.all(targets.map(t => this.observeBounded(t)));
+    targets.push(...await settleWithin(this.repoSetTargets(targets), this.discoveryDeadlineMs, () => []));
+    const previous = new Map(this.project.map(r => [r.key, r]));
+    const lanes: Array<GitRepoReport | undefined> = targets.map(t => previous.get(t.key) ?? checkingReport(t));
+    this.project = lanes.filter((l): l is GitRepoReport => !!l);
+    this.emitter.fire();
+    const gen = ++this.generation;
+    const settled = await Promise.all(targets.map(async (t, i): Promise<GitRepoReport | undefined> => {
+      // V5HOLE17: a lane shows its branch, ahead/behind and changes as soon as `git status` answered (one spawn), while
+      // the rest (origin, worktrees, PRs, merges) is still read: each process start can block the host on Windows.
+      const r = await this.observeBounded(t, early => {
+        if (lanes[i]?.state === "not-checked" && this.generation === gen) { lanes[i] = early; this.project = lanes.filter((l): l is GitRepoReport => !!l); this.emitter.fire(); }
+      });
+      const shown = t.optional && r.state === "not-a-repo" ? undefined : r;
+      lanes[i] = shown;
+      if (this.generation === gen) { this.project = lanes.filter((l): l is GitRepoReport => !!l); this.emitter.fire(); }
+      return shown;
+    }));
+    return settled.filter((l): l is GitRepoReport => !!l);
   }
+  private generation = 0;
 
   /** GITMR2: the workspace's repo set (folders, submodules, .datapass/repos.json) beyond the project map's repositories. */
   private async repoSetTargets(project: readonly Target[]): Promise<Target[]> {
@@ -313,7 +345,8 @@ export class GitObserver implements vscode.Disposable {
     if (!folders.length || !vscode.workspace.isTrusted) return [];
     const readFile = (p: string) => fs.promises.readFile(p, "utf8").catch(() => undefined);
     try {
-      const { set } = await discoverRepoSet(folders[0]!, folders, { git: gitRunner, readFile });
+      // V5HOLE17: no Git here (folders, .gitmodules, repos.json): each lane's own check reads its clone.
+      const { set } = await discoverRepoSet(folders[0]!, folders, { readFile });
       const shown = project.map(t => t.folder).filter((f): f is string => !!f);
       return repoSetLensTargets(set, folders[0]!, shown).map(t => ({ ...t, section: "project" as const, role: "project" as const }));
     } catch { return []; }
@@ -321,16 +354,22 @@ export class GitObserver implements vscode.Disposable {
 
   /** Test seam: the per-repository deadline (REPO_CHECK_DEADLINE_MS). */
   repoDeadlineMs = REPO_CHECK_DEADLINE_MS;
+  /** Test seam: the discovery deadline (DISCOVERY_DEADLINE_MS). */
+  discoveryDeadlineMs = DISCOVERY_DEADLINE_MS;
 
-  private observeBounded(t: Target): Promise<GitRepoReport> {
-    return settleWithin(this.observe(t), this.repoDeadlineMs, () => ({
+  private observeBounded(t: Target, early?: (r: GitRepoReport) => void): Promise<GitRepoReport> {
+    // A repository whose `git status` answered keeps that answer when the rest (origin, worktrees, PRs, merges) is past the
+    // deadline: "not checked" means Git never answered, not that a later read was slow (V5HOLE17 shows that lane at once).
+    let partial: GitRepoReport | undefined;
+    const seen = (r: GitRepoReport) => { partial = r; early?.(r); };
+    return settleWithin(this.observe(t, seen), this.repoDeadlineMs, () => partial ?? ({
       key: t.key, label: t.label, section: t.section, role: t.role, state: "not-checked" as const, detail: "not checked (Git did not answer in time)",
       worktrees: [], merges: [], hostData: { kind: "no-host" as const }
     }));
   }
 
   /** One repository: status, default branch, worktrees, host PRs, merges and the derived facts. */
-  private async observe(t: Target): Promise<GitRepoReport> {
+  private async observe(t: Target, early?: (r: GitRepoReport) => void): Promise<GitRepoReport> {
     const base: GitRepoReport = { key: t.key, label: t.label, section: t.section, role: t.role, state: "ok", worktrees: [], merges: [], hostData: { kind: "no-host" } };
     const declaredHost = gitHostOf(t.remoteUrl);
     if (declaredHost) base.host = { kind: declaredHost.kind, label: declaredHost.label, web: declaredHost.web };
@@ -358,6 +397,9 @@ export class GitObserver implements vscode.Disposable {
         const exists = status.timedOut || status.missing ? true : await fs.promises.stat(folder).then(st => st.isDirectory(), () => false);
         return { ...base, ...statusFailureReport(status, exists) };
       }
+      const s0 = parseStatusV2(status.stdout);
+      early?.({ ...base, branch: s0.branch === "(detached)" ? undefined : s0.branch, detached: s0.branch === "(detached)", head: s0.head, upstream: s0.upstream,
+        ahead: s0.ahead, behind: s0.behind, counts: statusCounts(status.stdout), checkedAt: new Date().toISOString() });
       const origin = await this.git(["config", "--get", "remote.origin.url"], folder);
       // Exit 1 is also "no such key": `git remote` tells the two apart (never cached: it is asked only then).
       const remotes = origin.ok ? undefined : await this.git(["remote"], folder, 0);

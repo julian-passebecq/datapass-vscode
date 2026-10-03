@@ -9,6 +9,8 @@ import type { ProjectMap } from "../../project/projectMap";
 import type { NavLocation, ViewDef } from "../navTypes";
 import type { GraphView } from "@juliandatapass-group/view-spi";
 import type { HopState } from "../../../views/hopState";
+import type { RepoSet } from "../../gitmr/repoSetContract";
+import type { RepoHistoryLabels, RepoLog } from "../../gitmr/repoHistory";
 import { BINDINGS } from "../../../../out/gen/bindings";
 
 /** § 34 origins (open vocabulary: Common may add more). */
@@ -45,6 +47,16 @@ export interface BindingContext {
    * V5HOLE15: "loading" while the host is still reading it (it redraws when the read ends).
    */
   readonly hop?: (location: NavLocation) => HopState | "loading" | undefined;
+  /** V5HOLE17: the workspace repo set and each repository's log as the host read them ("loading" while it reads). */
+  readonly repoHistory?: () => RepoHistoryInput | "loading" | undefined;
+}
+
+/** V5HOLE17: what the host read for the `repo-history` binding (`error`: why nothing could be read). */
+export interface RepoHistoryInput {
+  readonly set: Pick<RepoSet, "repos">;
+  readonly logs: readonly RepoLog[];
+  readonly labels?: RepoHistoryLabels;
+  readonly error?: string;
 }
 
 export interface BindingProvider { readonly source: string; provide(ctx: BindingContext): BindingResult }

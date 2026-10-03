@@ -353,7 +353,6 @@
           "steps": [
             {"run": "DataPass: Guided Mode (Learning / Interview)…"},
             {"quickPick": "Learning"},
-            {"quickPick": "The whole picture"},
             {"expect": "arrive"},
             {"shot": "v5-18-tour-learning"},
             {"press": "2"},
