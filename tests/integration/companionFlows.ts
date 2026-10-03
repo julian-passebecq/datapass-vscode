@@ -80,10 +80,10 @@ export function registerBridgeAndCompanionFlows(getApi: () => DataPassTestApi): 
     assert.deepEqual(await read(".datapass/diagramcloud.json"), before);
   }, ["v2-retail"]);
 
-  test("bridge: Open in DiagramCloud asks for its address once and opens it with no project data", async () => {
+  test("bridge: Open in DiagramCloud asks for its address once and sends only the stable project ID", async () => {
     const ui = await withUi([{ button: "Open DiagramCloud" }, { input: "http://localhost:5173" }], () => run("datapass.diagramCloud.openArchitecture"));
     assert.match(ui.prompts.find(p => p.modal)?.text ?? "", /Renamed by plan.*revision 1/s);
-    assert.deepEqual(ui.opened, ["http://localhost:5173/"]);
+    assert.deepEqual(ui.opened, ["http://localhost:5173/?project=total-project-controls"]);
     assert.equal(setting("diagramCloud.url"), "http://localhost:5173/");
   }, ["v2-retail"]);
 
