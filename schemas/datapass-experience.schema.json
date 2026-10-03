@@ -94,10 +94,11 @@
                 "view.navigator",
                 "v5.peda1b",
                 "v5.tour2",
-                "v5.peda3"
+                "v5.peda3",
+                "v5.tourai1"
               ]
             },
-            "maxItems": 43,
+            "maxItems": 44,
             "minItems": 0
           }
         },

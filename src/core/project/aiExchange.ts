@@ -21,8 +21,10 @@ import { BOARD_FORMAT, BOARD_PATH, boardProblems, parseBoard } from "./board";
 import { parseToolkitFile, TOOLKIT_FORMAT, TOOLKIT_SINCE, TOOLKIT_TOOLS_PATH } from "../toolkit/toolkit";
 import type { OptionsFile } from "./options";
 import { scrub } from "../exchange/aiContext";
+import { importTourAnswer, TOURS_PATH, type TourImportContext } from "../guided-ai/tourExchange";
+import { TOUR_SCHEMA_ID } from "../navigation/tours/tourTypes";
 
-export type ExchangeKind = "manifest" | "graph" | "options" | "sheet" | "catalog" | "board" | "toolkit";
+export type ExchangeKind = "manifest" | "graph" | "options" | "sheet" | "catalog" | "board" | "toolkit" | "tour";
 
 export const EXCHANGE_FILES: Readonly<Record<ExchangeKind, { path: string; label: string }>> = {
   manifest: { path: ".datapass/project.json", label: "project manifest (project.json)" },
@@ -31,8 +33,20 @@ export const EXCHANGE_FILES: Readonly<Record<ExchangeKind, { path: string; label
   sheet: { path: SHEET_PATH, label: "project sheet (sheet.json)" },
   catalog: { path: ".datapass/catalog.json", label: "project catalog (catalog.json)" },
   board: { path: BOARD_PATH, label: "project board (board.json)" },
-  toolkit: { path: TOOLKIT_TOOLS_PATH, label: "toolkit catalogue (toolkit/tools.json)" }
+  toolkit: { path: TOOLKIT_TOOLS_PATH, label: "toolkit catalogue (toolkit/tools.json)" },
+  // TOURAI1: the answer is one datapass.tour/1 file, merged into tours.json.
+  tour: { path: TOURS_PATH, label: "guided tours (tours.json)" }
 };
+
+/**
+ * The files the AI exchange view lists, copies and opens (one row each), in display order.
+ * TOURAI1: "tour" is answer-only: a tour request is copied from the Tours view
+ * (datapass.nav.tour.askAi, .datapass/local/ai-exchange/tour-request.<id>.md), never listed here,
+ * but a pasted datapass.tour/1 answer is still recognised, checked and merged into tours.json.
+ */
+export const EXCHANGE_VIEW_KINDS: readonly ExchangeKind[] = ["options", "sheet", "board", "graph", "manifest", "catalog", "toolkit"];
+/** Every kind a pasted answer may be (the listed files plus the answer-only ones). */
+export const ANSWER_KINDS: readonly ExchangeKind[] = [...EXCHANGE_VIEW_KINDS, "tour"];
 
 export const MAX_EXCHANGE_BYTES = 2 * 1024 * 1024;
 
@@ -56,6 +70,7 @@ export function detectKind(doc: unknown): ExchangeKind | undefined {
   if (d.format === "datapass.catalog") return "catalog";
   if (d.format === BOARD_FORMAT) return "board";
   if (d.format === TOOLKIT_FORMAT) return "toolkit";
+  if (d.schema === TOUR_SCHEMA_ID) return "tour";
   if (d.schemaVersion !== undefined && d.project !== undefined) return "manifest";
   return undefined;
 }
@@ -87,7 +102,7 @@ export interface IncomingFile {
   warnings: string[];
 }
 
-export interface ProjectContextForImport { manifest?: DataPassProjectManifest; graph?: ProjectGraph; graphPath?: string; decisionIds?: string[]; options?: OptionsFile; dataPassVersion?: string }
+export interface ProjectContextForImport { manifest?: DataPassProjectManifest; graph?: ProjectGraph; graphPath?: string; decisionIds?: string[]; options?: OptionsFile; dataPassVersion?: string; tour?: TourImportContext }
 
 /**
  * Validate an AI answer as one DataPass file. Throws with a plain explanation when it cannot be
@@ -99,9 +114,9 @@ export function checkIncoming(raw: string, ctx: ProjectContextForImport, expecte
   const { json } = extractJson(raw);
   const doc = parseStrictJson(json, { maxBytes: MAX_EXCHANGE_BYTES, maxEntries: 200_000 });
   const kind = detectKind(doc);
-  if (!kind) throw new Error("This JSON is not a DataPass file (no \"format\": \"datapass.graph\" / \"datapass.options\" / \"datapass.sheet\" / \"datapass.board\" / \"datapass.catalog\" / \"datapass.toolkit\", and not a project manifest).");
+  if (!kind) throw new Error("This JSON is not a DataPass file (no \"format\": \"datapass.graph\" / \"datapass.options\" / \"datapass.sheet\" / \"datapass.board\" / \"datapass.catalog\" / \"datapass.toolkit\" / \"schema\": \"datapass.tour/1\", and not a project manifest).");
   if (expected && kind !== expected) throw new Error(`Expected the ${EXCHANGE_FILES[expected].label}, got the ${EXCHANGE_FILES[kind].label}.`);
-  const text = JSON.stringify(doc, null, 2) + "\n";
+  let text = JSON.stringify(doc, null, 2) + "\n";
   const sensitive = sensitiveFindings(text);
   if (sensitive.length) throw new Error(`Refused: the file contains ${sensitive.length > 1 ? "lines that look" : "a line that looks"} sensitive. Ask the AI to remove it (secrets go to Key Vault or app settings; paths must be repository-relative).\n${sensitive.join("\n")}`);
   const warnings: string[] = [];
@@ -135,6 +150,14 @@ export function checkIncoming(raw: string, ctx: ProjectContextForImport, expecte
       // The AI's file is refused whole when an entry is not valid: nothing is skipped silently on import.
       const t = parseToolkitFile(json, TOOLKIT_TOOLS_PATH, ctx.dataPassVersion ?? TOOLKIT_SINCE, true);
       if (t.requests.length) warnings.push(`The file asks for ${t.requests.length} change(s) of DataPass itself (datapassRequests): listed in the Toolkit view as "Needs a newer DataPass".`);
+      break;
+    }
+    case "tour": {
+      // TOURAI1: checked against the real Locations and views, stamped ai-proposed, merged into tours.json.
+      if (!ctx.tour) throw new Error("AI guided tours are off (setting datapass.guided.ai.enabled), or no project is open: a tour is checked against the project's Locations.");
+      const t = importTourAnswer(doc, ctx.tour);
+      text = t.text;
+      warnings.push(...t.warnings);
       break;
     }
     case "board": {
@@ -206,6 +229,10 @@ export const AI_TASKS: Readonly<Record<ExchangeKind, readonly AiTask[]>> = {
     { id: "update", label: "Update the board from the project's work", ask: "Update this board from what you know of the project's repositories and our conversation: add cards for new bugs, tasks and questions (with the components and repository-relative files they concern), move a card whose pull request is merged to the \"review\" column (or the last open column when there is none): a merged PR is evidence that the work was implemented, not that the card is done. Move a card to a done column only when its own acceptance criteria are met or a rule of this project says so, and say which. Link each card to its pull request, issue or work item. Keep every existing id; never delete a card; statuses are column ids." },
     { id: "sprint", label: "Plan the next sprint", ask: "Plan the next sprint on this board: add it to \"sprints\" (id, title, start, end, goal), with the dates and capacity I give you in the chat (ask me when I have not given them; never assume a sprint length or team size), put in it the cards that fit that capacity (field \"sprint\"), highest priority first, and say in the chat what you left out and why. Keep every existing id; never delete a card." },
     { id: "free", label: "Something else (I explain in the chat)", ask: "Update this board as I explain in the chat. Keep every existing id; never delete a card." }
+  ],
+  // TOURAI1: the topic is picked from the datapass.tourAi.topics presets when the request is copied.
+  tour: [
+    { id: "topic", label: "Prepare a guided tour on a topic", ask: "Prepare a guided tour of this project on the topic I pick." }
   ]
 };
 
