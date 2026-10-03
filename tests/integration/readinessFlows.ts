@@ -29,11 +29,19 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
   const api = () => getApi();
   type Row = Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>>[number];
   const row = (rows: Row[], id: string) => rows.find(r => r.id === id);
+  // V5 STEPBAR1 (CEO ARCHI REVIEW B1): the Project lens is git-pure; the readiness sections and their
+  // one-click rows live in the Readiness lens (and the Steps view). Render that lens, then restore the chosen one.
+  const readinessRows = async (): Promise<Row[]> => {
+    const before = api().shell.chosenLens();
+    await api().shell.chooseLens("readiness");
+    try { return await api().renderProjectTree(); } finally { await api().shell.chooseLens(before); }
+  };
 
   test("readiness: the Project tree shows the expected env files and variable names, which are missing, and no value", async () => {
     await run("datapass.refreshProject");
-    const rows = await api().renderProjectTree();
-    noSecret("Project tree", JSON.stringify(rows));
+    noSecret("Project tree", JSON.stringify(await api().renderProjectTree()));
+    const rows = await readinessRows();
+    noSecret("Readiness lens", JSON.stringify(rows));
     assert.equal(row(rows, "env")?.label, "Local environment");
     assert.match(row(rows, "env:file::.env")?.description ?? "", /^found · 3 expected name\(s\)$/);
     assert.equal(row(rows, "env:file::.env.local")?.description, "optional · not present");
@@ -50,7 +58,7 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
   }, ["v4-cloudflare"]);
 
   test("readiness: DiagramCloud switched off shows only \"optional module disabled\"; legacy Mongoku fields load and show nothing", async () => {
-    const rows = await api().renderProjectTree();
+    const rows = [...await readinessRows(), ...await api().renderProjectTree()];
     assert.equal(api().project().manifestErrors.length, 0, api().project().manifestErrors.join(" | "));
     assert.equal(row(rows, "companion:mongoku"), undefined);
     assert.ok(!rows.some(x => /mongoku/i.test(`${x.id} ${x.label} ${x.description ?? ""}`)), "the project tree never mentions Mongoku");
@@ -64,7 +72,7 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
   }, ["v4-cloudflare"]);
 
   test("readiness: Copy CLOUDFLARE_ACCOUNT_ID is one click (the tree row's own command) and copies the name only", async () => {
-    const rows = await api().renderProjectTree();
+    const rows = await readinessRows();
     const key = row(rows, "env:key:CLOUDFLARE_ACCOUNT_ID")!;
     assert.equal(key.command, "datapass.env.copyKeyName");
     const ui = await withUi([], () => run(key.command!, ...(key.commandArgs ?? [])));
@@ -80,7 +88,7 @@ export function registerReadinessFlows(getApi: () => DataPassTestApi): void {
   }, ["v4-cloudflare"]);
 
   test("readiness: Open .env is one click and opens the file in the editor", async () => {
-    const rows = await api().renderProjectTree();
+    const rows = await readinessRows();
     const file = row(rows, "env:file::.env")!;
     assert.equal(file.command, "datapass.env.openFile");
     await withUi([], () => run(file.command!, ...(file.commandArgs ?? [])));

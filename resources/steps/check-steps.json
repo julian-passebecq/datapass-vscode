@@ -1,0 +1,24 @@
+{
+  "schema": "datapass.check-steps/1",
+  "areas": {
+    "manifest": "first",
+    "environment": "first",
+    "tools": "first",
+    "connection": "first",
+    "repository": "first",
+    "companion": "project-checks",
+    "files": "component"
+  },
+  "labels": {
+    "heading": "Steps",
+    "projectChecks": "Project checks",
+    "explore": "Explore the project",
+    "pass": "pass",
+    "fail": "fail",
+    "not-checked": "not checked",
+    "hole": "hole",
+    "readinessReport": "Show readiness report",
+    "checkConnections": "Check connections",
+    "start": "Start here"
+  }
+}

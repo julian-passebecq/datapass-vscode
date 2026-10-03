@@ -134,7 +134,9 @@ export function registerExperienceFlows(getApi: () => DataPassTestApi): void {
     await run("datapass.galaxy.focus");
     await waitFor("the Galaxy view", () => panes().includes("galaxy"));
     const sections = await treeSections();
-    for (const shown of ["options", "sheet", "board", "repositories", "readiness"]) assert.ok(sections.includes(shown), `${shown} in Advanced: ${sections.join(", ")}`);
+    for (const shown of ["options", "sheet", "board", "repositories"]) assert.ok(sections.includes(shown), `${shown} in Advanced: ${sections.join(", ")}`);
+    // V5 STEPBAR1 (B1): the checks moved to the Steps view; the Readiness lens keeps the sections.
+    assert.ok(!sections.includes("readiness"), sections.join(", "));
     assert.deepEqual(api().workbenchState().experience?.hiddenViews, []);
     assert.deepEqual((await api().aiExchange.state() as { hiddenTabs?: string[] }).hiddenTabs, []);
     record("modes.advanced", { panes: panes(), sections });

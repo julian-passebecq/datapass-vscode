@@ -96,10 +96,11 @@
                 "v5.tour2",
                 "v5.peda3",
                 "v5.peda2",
-                "v5.tourai1"
+                "v5.tourai1",
+                "view.steps"
               ]
             },
-            "maxItems": 45,
+            "maxItems": 46,
             "minItems": 0
           }
         },

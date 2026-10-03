@@ -1347,6 +1347,13 @@
           "when": "config.datapass.navigator.location != left && !datapass.hidden.view.navigator"
         },
         {
+          "id": "datapass.steps",
+          "name": "Steps",
+          "type": "webview",
+          "initialSize": 1,
+          "when": "!datapass.hidden.view.steps"
+        },
+        {
           "id": "datapass.rail",
           "name": "Rail",
           "type": "tree",
@@ -3941,6 +3948,10 @@
               "type": "boolean",
               "description": "Navigator: Location, arrows, back/forward, quick icons and the views of the current location (secondary side bar or left)"
             },
+            "view.steps": {
+              "type": "boolean",
+              "description": "Steps: The steps of the project's journey, each with its small checks (pass, fail, not checked, hole); checks with no step under Project checks"
+            },
             "v5.tour2": {
               "type": "boolean",
               "description": "Command Palette: guided tours: Present a tour, switch Learning / Interview, save the path you walked or add this screen to a tour (.datapass/tours.json)"
@@ -4296,6 +4307,24 @@
           },
           "default": [],
           "markdownDescription": "Guided tours hidden by id (e.g. `datapass.journey.lineage.1`)."
+        },
+        "datapass.tree.order": {
+          "type": "string",
+          "enum": [
+            "architecture",
+            "git"
+          ],
+          "default": "architecture",
+          "enumDescriptions": [
+            "Sub-projects → components → files (the architecture)",
+            "The found files per repository as Git sees them: Tracked, Untracked; ignored files hidden"
+          ],
+          "markdownDescription": "Project lens order. Every found file carries VS Code's own Git marks (M, A, U); the checks live in the **Steps** view."
+        },
+        "datapass.guided.checkSteps": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Steps view: which step a check sits under, by check area (`environment`, `tools`, `connection`, `manifest`, `repository`, `companion`, `files`) → `first`, `component`, `project-checks`, or a step id, section, box id, artifact kind or level. Built-in map: `resources/steps/check-steps.json`. Unmapped checks go to \"Project checks\". `{ \"labels\": {…} }` overrides the words."
         },
         "datapass.guided.ai.enabled": {
           "type": "boolean",
