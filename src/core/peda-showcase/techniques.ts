@@ -1,18 +1,18 @@
 /**
  * V5 PEDA3: the SQL technique tagger (go/TOUR-PEDA-contract.md § 5: no analyzer emits technique tags yet, PEDA3
  * owns this pure tagger). It strips comments and string literals, then matches tokens; it never parses or runs
- * the query. `SQL_TECHNIQUE_IDS` is a STUB copy of arch-catalog's (PEDA1a2) until the re-pin; the rarity weights
- * are PEDA3's own scoring data. Pure (no `vscode`).
+ * the query. `SQL_TECHNIQUE_IDS` comes from the vendored arch-catalog (PEDA1a2); the rarity weights are PEDA3's own
+ * scoring data. Pure (no `vscode`).
  */
+import { SQL_TECHNIQUE_IDS, type SqlTechniqueId } from "@juliandatapass-group/arch-catalog";
 
-export const SQL_TECHNIQUE_IDS = ["cte", "row-number-rank", "lag-lead", "date-trunc", "having", "count-distinct", "self-join", "anti-join", "pivot", "merge"] as const; // STUB until REPIN5
-export type SqlTechniqueId = typeof SQL_TECHNIQUE_IDS[number];
+export { SQL_TECHNIQUE_IDS, type SqlTechniqueId };
 
 export interface TechniqueWeight {
   readonly id: SqlTechniqueId;
   /** 0..1: how rare the technique is in a typical project (feeds the interview-value score). */
   readonly rarity: number;
-  /** STUB texts until the technique's concept card (arch-catalog `SQL_TECHNIQUES[].conceptId`) is vendored. */
+  /** Short tagger texts; the full lesson is the technique's concept card (arch-catalog `SQL_TECHNIQUES[].conceptId`). */
   readonly teaches: string;
   readonly tip: string;
 }

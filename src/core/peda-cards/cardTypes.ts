@@ -1,19 +1,17 @@
 /**
  * V5 PEDA1b: the pedagogy card contract (go/TOUR-PEDA-contract.md § 5, arch-catalog concept-entry/1 additive: `card` /
  * `decisionCard` on a ConceptEntry). The card texts are data: resources/pedagogy/cards.json (generic teaching content,
- * no client content), read and checked by `parseCardCatalog`. When REPIN5 vendors PEDA1a / PEDA1a2 the family lists
- * come from `@juliandatapass-group/arch-catalog` and the data file follows its entries. Pure (no `vscode`).
+ * no client content), read and checked by `parseCardCatalog`. The family and language lists come from the vendored
+ * `@juliandatapass-group/arch-catalog` (PEDA1a / PEDA1a2). Pure (no `vscode`).
  */
-import { CONSTRAINT_KINDS, type ConceptEntry, type ConceptOption, type OwnerQuestion } from "@juliandatapass-group/arch-catalog";
+import {
+  CODE_LANGS, CONCEPT_CARD_FAMILIES, CONSTRAINT_KINDS, DECISION_CARD_FAMILIES,
+  type CodeLang, type ConceptCardFamily, type ConceptEntry, type ConceptOption, type DecisionCardFamily, type OwnerQuestion
+} from "@juliandatapass-group/arch-catalog";
 import catalogData from "../../../resources/pedagogy/cards.json";
 
 export type { OwnerQuestion };
-export const CONCEPT_CARD_FAMILIES = ["ingestion", "storage", "transformation", "orchestration", "quality", "spark-sql", "sql-technique"] as const; // STUB until REPIN5
-export const DECISION_CARD_FAMILIES = ["storage", "data-modeling", "recovery-change", "quality-performance"] as const; // STUB until REPIN5
-export const CODE_LANGS = ["sql", "pyspark", "python", "scala", "dax", "yaml", "text"] as const; // STUB until REPIN5
-export type ConceptCardFamily = typeof CONCEPT_CARD_FAMILIES[number];
-export type DecisionCardFamily = typeof DECISION_CARD_FAMILIES[number];
-export type CodeLang = typeof CODE_LANGS[number];
+export { CODE_LANGS, CONCEPT_CARD_FAMILIES, DECISION_CARD_FAMILIES, type CodeLang, type ConceptCardFamily, type DecisionCardFamily };
 export interface CodeExample { readonly lang: CodeLang; readonly text: string }
 export interface ImplementedBy { readonly kind: "detector" | "analyzer" | "fact" | "view"; readonly id: string }
 export interface ConceptCard {

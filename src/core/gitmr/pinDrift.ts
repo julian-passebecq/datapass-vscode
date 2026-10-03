@@ -1,6 +1,6 @@
 /**
- * STUB until REPIN8 (PM 30 ruling B4): port of the PURE PINDRIFT1 logic (Common !231 tools/pin-drift); REPIN8 swaps it for
- * the vendored project-contracts `pin-drift` subpath (V5FREEZE2). Git input only through gitReadOnly (TL-4), never execFileSync.
+ * Report shape, statuses and `compareVersions` come from the vendored project-contracts `pin-drift` subpath (PINDRIFT1,
+ * V5FREEZE2). Git input only through gitReadOnly (TL-4), never execFileSync.
  *
  * V5 GITMR3: Common pin drift (AC-V2). A consumer repository pins each vendored Common package by version + tarball
  * digest + source commit (`vendor/common/manifest.json`, `datapass.vendored-common/1`, and the repo-set `pins`). This
@@ -14,11 +14,12 @@
  * question is answered with `rev-parse` and `diff` between the pinned commit and main. The classifier is pure.
  */
 import type { GitRunner } from "../workspace/gitBase";
+import { VENDORED_COMMON_SCHEMA, compareVersions } from "@juliandatapass-group/project-contracts/pin-drift";
 import { readOnlyGit } from "./readOnly";
 import { PIN_DRIFT_REPORT_SCHEMA, PIN_STATUSES, type PinDriftReport, type PinDriftRow, type PinStatus, type RepoSetLike } from "./stubs";
 
 export const VENDOR_MANIFEST_PATH = "vendor/common/manifest.json";
-const VENDOR_SCHEMA = "datapass.vendored-common/1";
+const VENDOR_SCHEMA = VENDORED_COMMON_SCHEMA;
 const SCOPE = "@juliandatapass-group/";
 const TARBALL = /^juliandatapass-group-(.+)-(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\.tgz$/;
 /** Files that never reach the packed tarball do not count as drift (same rule as PINDRIFT1). */
@@ -56,23 +57,8 @@ export function mergePins(...lists: readonly (readonly Pin[])[]): Pin[] {
   return [...out.values()];
 }
 
-/** Semver precedence, prerelease aware (port of PINDRIFT1 `compareVersions`). */
-export function compareVersions(a: string, b: string): number {
-  const split = (v: string): [number[], string[]] => { const [core = "", ...pre] = v.split("-"); return [core.split(".").map(Number), pre.length ? pre.join("-").split(".") : []]; };
-  const [ac, ap] = split(a), [bc, bp] = split(b);
-  for (let i = 0; i < 3; i++) if ((ac[i] ?? 0) !== (bc[i] ?? 0)) return (ac[i] ?? 0) - (bc[i] ?? 0);
-  if (!ap.length || !bp.length) return bp.length - ap.length;
-  for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-    const x = ap[i], y = bp[i];
-    if (x === undefined) return -1;
-    if (y === undefined) return 1;
-    const xn = /^\d+$/.test(x), yn = /^\d+$/.test(y);
-    if (xn && yn && Number(x) !== Number(y)) return Number(x) - Number(y);
-    if (xn !== yn) return xn ? -1 : 1;
-    if (x !== y) return x < y ? -1 : 1;
-  }
-  return 0;
-}
+/** Semver precedence, prerelease aware (project-contracts `pin-drift`). */
+export { compareVersions };
 
 /** What changed under `packages/` between one pinned commit and the Common ref. */
 export interface CommitDelta {

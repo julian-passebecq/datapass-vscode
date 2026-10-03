@@ -12,7 +12,14 @@
  *
  * Authority: every record written here says `authority: "dbt"`; only DETACH1 flips it to `notebook`.
  */
-import { digestJson, digestNotebookSource, digestsEqual, unwrap, type Digest } from "@juliandatapass-group/semantic-core";
+import { digestNotebookSource, digestsEqual, unwrap, type Digest, type GitObjectId } from "@juliandatapass-group/semantic-core";
+import {
+  MATERIALIZATION_DETACH_SCHEMA_ID,
+  detachStampDigest as contractStampDigest,
+  validateMaterializationDetach as contractValidateDetach,
+  type DetachStamp,
+  type MaterializationDetach
+} from "@juliandatapass-group/project-contracts";
 import {
   type ArchitectureCandidate,
   type CandidateUnit,
@@ -26,45 +33,27 @@ import {
 import { previewDiff, type DiffEntry } from "./flow";
 import { GENERATOR_NAME, normalizeContent, readInlineStamp } from "./stamp";
 
-// --- DETSPI1 stub ---------------------------------------------------------------------------------
-// STUB until REPIN5: local copy of the reviewed Common `project-contracts` `datapass.materialization-detach/1` wire shape
-// (DETSPI1 @79741eb: `schema` key, GitObjectId revision, semantic-core digest objects, actor `{kind, id}`, no clock time in
-// the stamp, `recordedAt` outside it). Replace with the package import once the vendored project-contracts carries it.
+// --- DETSPI1 contract (vendored Common project-contracts `datapass.materialization-detach/1`) -------
+// The wire shape, the stamp digest, the validator and the drift state come from the vendored package. This file keeps
+// only thin adapters with the call shapes DBTMAT1 / DETACH1 already use (a digest, a `{ ok, record | reason }` result).
 
-export const MATERIALIZATION_DETACH_SCHEMA_ID = "datapass.materialization-detach/1" as const;
-export type MaterializationAuthority = "dbt" | "notebook";
-export type DetachOrigin = "declared" | "ai-proposed" | "ai-confirmed";
-/** project-contracts `gitObjectIdSchema`. */
-export type GitObjectId = { readonly algorithm: "git-sha1"; readonly oid: string } | { readonly algorithm: "git-sha256"; readonly oid: string };
-/** EVACTOR1 `actorSchema`. */
-export interface DetachActor { kind: "human" | "ai" | "tool"; id: string }
+export {
+  DETACH_DRIFT_STATES,
+  detachDriftState,
+  type DetachDriftState,
+  type DetachStamp,
+  type MaterializationAuthority,
+  type MaterializationDetach
+} from "@juliandatapass-group/project-contracts";
+export { MATERIALIZATION_DETACH_SCHEMA_ID };
+export type { GitObjectId };
+/** Origins DETACH1 writes (a person declares; AI only proposes or confirms through the exchange). */
+export type DetachOrigin = Extract<DetachStamp["origin"], "declared" | "ai-proposed" | "ai-confirmed">;
+export type DetachActor = DetachStamp["actor"];
 
-export interface DetachStamp {
-  modelId: string;
-  /** Git object id of the dbt project revision. */
-  dbtRevision: GitObjectId;
-  /** Repository-relative POSIX path of the notebook source file. */
-  notebookPath: string;
-  /** semantic-core `notebook-source-v1` digest (see `notebookSourceHash`). */
-  notebookHash: Digest<"notebook-source-v1">;
-  actor: DetachActor;
-  origin: DetachOrigin;
-}
-
-export interface MaterializationDetach {
-  schema: typeof MATERIALIZATION_DETACH_SCHEMA_ID;
-  authority: MaterializationAuthority;
-  stamp: DetachStamp;
-  /** jcs-json digest of `stamp`. */
-  stampDigest: Digest<"jcs-json">;
-  /** When the record was written (ISO instant, UTC). Outside the stamp, so a re-run does not change the digest. */
-  recordedAt: string;
-  drift: null | { state: string; dbtRevision: GitObjectId | null; notebookHash: Digest<"notebook-source-v1"> | null; checkedAt: string };
-  reattach: null | { proposalId: string; actor: DetachActor; at: string };
-}
-
+/** jcs-json digest of a stamp (project-contracts `detachStampDigest`; throws on a stamp that is not valid). */
 export function detachStampDigest(stamp: DetachStamp): Digest<"jcs-json"> {
-  return unwrap(digestJson(stamp)) as Digest<"jcs-json">;
+  return unwrap(contractStampDigest(stamp));
 }
 
 /** A 40- or 64-hex Git SHA as a GitObjectId (undefined for anything else). */
@@ -74,81 +63,15 @@ export function gitObjectId(sha: string): GitObjectId | undefined {
 
 export const sameGitObject = (a: GitObjectId, b: GitObjectId): boolean => a.algorithm === b.algorithm && a.oid === b.oid;
 
-export const DETACH_DRIFT_STATES = ["in-sync", "dbt-changed", "notebook-edited", "both-changed", "unknown"] as const;
-export type DetachDriftState = (typeof DETACH_DRIFT_STATES)[number];
-
-/** Drift of a detached model against the stamp; a missing current value is `unknown` (DETSPI1 `detachDriftState`). */
-export function detachDriftState(
-  stamp: Pick<DetachStamp, "dbtRevision" | "notebookHash">,
-  current: { readonly dbtRevision: GitObjectId | null; readonly notebookHash: Digest<"notebook-source-v1"> | null }
-): DetachDriftState {
-  if (current.dbtRevision === null || current.notebookHash === null) return "unknown";
-  const dbt = !sameGitObject(current.dbtRevision, stamp.dbtRevision), notebook = !digestsEqual(current.notebookHash, stamp.notebookHash);
-  return dbt && notebook ? "both-changed" : dbt ? "dbt-changed" : notebook ? "notebook-edited" : "in-sync";
-}
-
-const SHA256 = /^[0-9a-f]{64}$/;
-const REPO_PATH = /^(?!\/)(?!(?:.*\/)?\.\.(?:\/|$))[^\\]+$/;
-const INSTANT = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,9})?Z$/;
-const LABEL = /^\S(?:.*\S)?$/;
-const WIRE_ID = /^\S{1,128}$/;
-const ACTOR_KINDS: readonly unknown[] = ["human", "ai", "tool"];
-
-/** project-contracts `gitObjectIdSchema` (untrusted JSON in). */
-export function readGitObjectId(v: unknown): GitObjectId | undefined {
-  const o = obj(v);
-  if (Object.keys(o).length !== 2 || typeof o.oid !== "string") return undefined;
-  return o.algorithm === "git-sha1" && /^[0-9a-f]{40}$/.test(o.oid) ? { algorithm: "git-sha1", oid: o.oid }
-    : o.algorithm === "git-sha256" && SHA256.test(o.oid) ? { algorithm: "git-sha256", oid: o.oid } : undefined;
-}
-
-function readDigest<M extends "notebook-source-v1" | "jcs-json">(v: unknown, mode: M): Digest<M> | undefined {
-  const o = obj(v);
-  return Object.keys(o).length === 3 && o.algorithm === "sha256" && o.mode === mode && typeof o.value === "string" && SHA256.test(o.value)
-    ? ({ algorithm: "sha256", mode, value: o.value } as Digest<M>) : undefined;
-}
-
-function readActor(v: unknown): DetachActor | undefined {
-  const o = obj(v);
-  return Object.keys(o).length === 2 && ACTOR_KINDS.includes(o.kind) && typeof o.id === "string" && LABEL.test(o.id) && o.id.length <= 256
-    ? { kind: o.kind as DetachActor["kind"], id: o.id } : undefined;
-}
-
 /**
- * DETSPI1 `validateMaterializationDetach` on the reviewed wire shape (the fields DETACH1 relies on), and the stamp digest is
- * checked so a hand-edited stamp is rejected. Untrusted JSON in; a reason string out on failure.
+ * project-contracts `validateMaterializationDetach` (stamp digest checked, so a hand-edited stamp is rejected). Untrusted JSON
+ * in; the record, or a reason built from the contract's issues.
  */
 export function validateMaterializationDetach(value: unknown): { ok: true; record: MaterializationDetach } | { ok: false; reason: string } {
-  const r = obj(value), s = obj(r.stamp);
-  const bad = (reason: string) => ({ ok: false as const, reason });
-  if (r.schema !== MATERIALIZATION_DETACH_SCHEMA_ID) return bad("schema is not datapass.materialization-detach/1");
-  if (r.authority !== "dbt" && r.authority !== "notebook") return bad("authority must be dbt or notebook");
-  if (typeof s.modelId !== "string" || !/^\S+$/.test(s.modelId)) return bad("stamp.modelId");
-  const dbtRevision = readGitObjectId(s.dbtRevision);
-  if (!dbtRevision) return bad("stamp.dbtRevision");
-  if (typeof s.notebookPath !== "string" || !REPO_PATH.test(s.notebookPath)) return bad("stamp.notebookPath");
-  const notebookHash = readDigest(s.notebookHash, "notebook-source-v1");
-  if (!notebookHash) return bad("stamp.notebookHash");
-  const actor = readActor(s.actor);
-  if (!actor) return bad("stamp.actor");
-  if (s.origin !== "declared" && s.origin !== "ai-proposed" && s.origin !== "ai-confirmed") return bad("stamp.origin");
-  const stamp: DetachStamp = { modelId: s.modelId, dbtRevision, notebookPath: s.notebookPath, notebookHash, actor, origin: s.origin };
-  const stampDigest = readDigest(r.stampDigest, "jcs-json");
-  if (!stampDigest || !digestsEqual(detachStampDigest(stamp), stampDigest)) return bad("stampDigest does not match the stamp (hand-edited?)");
-  if (typeof r.recordedAt !== "string" || !INSTANT.test(r.recordedAt)) return bad("recordedAt");
-  const d = r.drift === null || r.drift === undefined ? null : obj(r.drift);
-  if (d && (!(DETACH_DRIFT_STATES as readonly unknown[]).includes(d.state) || typeof d.checkedAt !== "string" || !INSTANT.test(d.checkedAt))) return bad("drift");
-  const re = r.reattach === null || r.reattach === undefined ? null : obj(r.reattach);
-  const reActor = re ? readActor(re.actor) : undefined;
-  if (re && (typeof re.proposalId !== "string" || !WIRE_ID.test(re.proposalId) || !reActor || typeof re.at !== "string" || !INSTANT.test(re.at))) return bad("reattach");
-  return {
-    ok: true,
-    record: {
-      schema: MATERIALIZATION_DETACH_SCHEMA_ID, authority: r.authority, stamp, stampDigest, recordedAt: r.recordedAt,
-      drift: d ? { state: d.state as string, dbtRevision: readGitObjectId(d.dbtRevision) ?? null, notebookHash: readDigest(d.notebookHash, "notebook-source-v1") ?? null, checkedAt: d.checkedAt as string } : null,
-      reattach: re ? { proposalId: re.proposalId as string, actor: reActor!, at: re.at as string } : null
-    }
-  };
+  const r = contractValidateDetach(value);
+  // Plain objects out (the contract decoder builds null-prototype records); the record is pure JSON.
+  if (r.ok) return { ok: true, record: JSON.parse(JSON.stringify(r.value)) as MaterializationDetach };
+  return { ok: false, reason: r.issues.map(i => `${i.code}${i.pointer ? ` at ${i.pointer}` : ""}`).join("; ") || "not a datapass.materialization-detach/1 record" };
 }
 
 // --- dbt artefacts --------------------------------------------------------------------------------

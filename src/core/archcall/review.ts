@@ -5,38 +5,39 @@
  *     ─► request document in the AI exchange (the person pastes it into their own AI)
  *     ─► answer pasted back ─► checked against the request ─► Context "Why & alternatives" as ai-proposed
  *
- * The wire shapes mirror Common `exchange-protocol` `architect-review/1` (feature SHA, frozen by V5FREEZE2).
- * They stay structural here until REPIN5 vendors that exchange-protocol version (TL-13): the request id uses
- * the vendored semantic-core `digestJson` with the same stable inputs, so both sides agree on it.
+ * The wire shapes, the request id and the answer check come from the vendored Common `exchange-protocol`
+ * `architect-review/1` (frozen by V5FREEZE2). This file adds readable reasons in front of the contract checks.
  * No hidden AI call: nothing here sends anything. Titles and question texts come from settings.
  */
-import { digestJson, unwrap } from "@juliandatapass-group/semantic-core";
-import type { NavLocation } from "../navigation/navTypes";
+import {
+  ARCHITECT_REVIEW_ANSWER_SCHEMA_ID,
+  ARCHITECT_REVIEW_PROTOCOL,
+  ARCHITECT_REVIEW_REQUEST_SCHEMA_ID,
+  ARCHITECT_REVIEW_TRIGGERS,
+  buildArchitectReviewRequest,
+  checkArchitectReviewAnswer,
+  createArchitectReviewRequestId,
+  type ArchitectReviewAnswer,
+  type ArchitectReviewEvidenceRef,
+  type ArchitectReviewLocation,
+  type ArchitectReviewRequest,
+  type ArchitectReviewTrigger,
+  type ArchitectReviewTriggerDetail
+} from "@juliandatapass-group/exchange-protocol";
+import type { ValidationIssue } from "@juliandatapass-group/semantic-core";
 import type { RationaleInput } from "../navigation/context/why";
 
-export const ARCHITECT_REVIEW_PROTOCOL = "architect-review/1";
-export const REQUEST_SCHEMA = "datapass.architect-review-request/1";
-export const ANSWER_SCHEMA = "datapass.architect-review-answer/1";
-export const TRIGGERS = ["large-change", "repeated-failure", "before-done"] as const;
-export type TriggerKind = (typeof TRIGGERS)[number];
-export type EvidenceKind = "mr-diff" | "check-run" | "readiness-milestone" | "file-span" | "fact" | "evidence" | "decision";
+export { ARCHITECT_REVIEW_PROTOCOL, type ArchitectReviewAnswer, type ArchitectReviewRequest };
+export const REQUEST_SCHEMA = ARCHITECT_REVIEW_REQUEST_SCHEMA_ID;
+export const ANSWER_SCHEMA = ARCHITECT_REVIEW_ANSWER_SCHEMA_ID;
+export const TRIGGERS = ARCHITECT_REVIEW_TRIGGERS;
+export type TriggerKind = ArchitectReviewTrigger;
+export type EvidenceKind = ArchitectReviewEvidenceRef["kind"];
+export type TriggerDetail = ArchitectReviewTriggerDetail;
+export type EvidenceRef = ArchitectReviewEvidenceRef;
+export type RequestLocation = ArchitectReviewLocation;
 
-export type TriggerDetail =
-  | { kind: "large-change"; changeRef: string; baseSha: string; headSha: string; componentCount: number; threshold: number }
-  | { kind: "repeated-failure"; checkId: string; consecutiveFailures: number; threshold: number }
-  | { kind: "before-done"; milestoneId: string };
-export interface EvidenceRef { refId: string; kind: EvidenceKind; ref: string; digest: string | null }
-export interface RequestLocation { level: NavLocation["level"]; nodeId: string; artifactKind: string }
-export interface ArchitectReviewRequest {
-  schema: typeof REQUEST_SCHEMA; protocol: typeof ARCHITECT_REVIEW_PROTOCOL; requestId: string;
-  trigger: TriggerDetail; subjects: RequestLocation[]; evidence: EvidenceRef[]; question: string;
-}
-export interface ArchitectReviewAnswer {
-  schema: typeof ANSWER_SCHEMA; protocol: typeof ARCHITECT_REVIEW_PROTOCOL; requestId: string; origin: "ai-proposed";
-  findings: { severity: "info" | "warning" | "risk"; subjectNodeIds: string[]; summary: string; detail: string; evidenceRefIds: string[] }[];
-  recommendation: { summary: string; alternatives: { title: string; tradeoff: string }[] };
-  model: string; responder: string;
-}
+const issuesText = (issues: readonly ValidationIssue[]): string => issues.map(i => `${i.code}${i.pointer ? ` at ${i.pointer}` : ""}`).join("; ");
 
 /** Settings `datapass.architectReview.*` (thresholds, toggle, labels). Defaults below; labels are data. */
 export interface ArchitectReviewSettings {
@@ -154,9 +155,9 @@ export function checklistComponent(key: string): string | undefined {
 
 // ------------------------------------------------------------------ the request
 
+/** Common `createArchitectReviewRequestId`: same trigger, subjects, evidence and question = same id. */
 export function requestId(r: Pick<ArchitectReviewRequest, "trigger" | "subjects" | "evidence" | "question">): string {
-  const stableInputs = { trigger: r.trigger, subjects: r.subjects, evidence: r.evidence, question: r.question };
-  return `datapass:architect-review:${unwrap(digestJson({ namespace: "datapass", kind: "architect-review", producerId: "exchange-protocol/architect-review-1", stableInputs })).value}`;
+  return createArchitectReviewRequestId({ trigger: r.trigger, subjects: r.subjects, evidence: r.evidence, question: r.question });
 }
 
 export function questionFor(trigger: TriggerDetail, subjects: readonly RequestLocation[], labels: ArchitectReviewLabels = DEFAULT_LABELS, nameOf: (nodeId: string) => string = n => n): string {
@@ -168,7 +169,7 @@ export function questionFor(trigger: TriggerDetail, subjects: readonly RequestLo
   return fill(labels.questions[trigger.kind], values);
 }
 
-/** Same rules as Common `validateArchitectReviewRequest`; throws a readable reason. */
+/** Readable reasons first, then Common `buildArchitectReviewRequest` (the contract has the last word). */
 export function buildRequest(s: Pick<Suggestion, "trigger" | "subjects" | "evidence">, question: string): ArchitectReviewRequest {
   const t = s.trigger;
   if (!s.subjects.length) throw new Error("an architect review needs at least one subject");
@@ -180,7 +181,9 @@ export function buildRequest(s: Pick<Suggestion, "trigger" | "subjects" | "evide
   if (!s.evidence.some(e => e.kind === needed)) throw new Error(`the ${t.kind} trigger needs a ${needed} evidence ref`);
   if (!question.trim()) throw new Error("empty question");
   const body = { trigger: t, subjects: s.subjects.map(x => ({ level: x.level, nodeId: x.nodeId, artifactKind: x.artifactKind })), evidence: s.evidence.map(e => ({ ...e })), question };
-  return { schema: REQUEST_SCHEMA, protocol: ARCHITECT_REVIEW_PROTOCOL, requestId: requestId(body), ...body };
+  const built = buildArchitectReviewRequest(body);
+  if (!built.ok) throw new Error(`invalid architect review request: ${issuesText(built.issues)}`);
+  return built.value;
 }
 
 /** The text the person pastes into their own AI. */
@@ -203,7 +206,7 @@ export function extractJson(raw: string): unknown {
 const str = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= max;
 const strArr = (v: unknown, max: number): v is string[] => Array.isArray(v) && v.length <= 200 && v.every(x => str(x, max));
 
-/** Same checks as Common `checkArchitectReviewAnswer`. Throws a readable reason; the result is ai-proposed only. */
+/** Readable reasons first, then Common `checkArchitectReviewAnswer`. Throws; the result is ai-proposed only. */
 export function checkAnswer(request: ArchitectReviewRequest, input: unknown): ArchitectReviewAnswer {
   const a = input as Partial<ArchitectReviewAnswer> | null;
   if (!a || typeof a !== "object" || Array.isArray(a)) throw new Error("the answer is not a JSON object");
@@ -223,10 +226,12 @@ export function checkAnswer(request: ArchitectReviewRequest, input: unknown): Ar
   for (const f of a.findings) {
     if (!f || !["info", "warning", "risk"].includes(f.severity) || !str(f.summary, 1024) || !f.summary.trim() || !str(f.detail, 16384)
       || !strArr(f.subjectNodeIds, 1024) || !strArr(f.evidenceRefIds, 64)) throw new Error("invalid finding");
-    if (f.subjectNodeIds.some(n => !subjects.has(n))) throw new Error("a finding names a subject that was not sent");
-    if (f.evidenceRefIds.some(e => !evidence.has(e))) throw new Error("a finding cites evidence that was not sent");
+    if (f.subjectNodeIds.some((n: string) => !subjects.has(n))) throw new Error("a finding names a subject that was not sent");
+    if (f.evidenceRefIds.some((e: string) => !evidence.has(e))) throw new Error("a finding cites evidence that was not sent");
   }
-  return a as ArchitectReviewAnswer;
+  const accepted = checkArchitectReviewAnswer(request, a);
+  if (!accepted.ok) throw new Error(`invalid architect review answer: ${issuesText(accepted.issues)}`);
+  return accepted.value.answer;
 }
 
 /** Files an answer cites that were not found in the project, per finding index (-1 = the recommendation). */

@@ -7,7 +7,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import test from "node:test";
 import { type DbtFile, type DbtMaterializeInput, detachStampDigest, materializeDbtModels, notebookSourceHash, previewDbtDiff, validateMaterializationDetach } from "../src/core/materialize/dbtNotebook";
-import { detachSectionHead, DBT_SOURCE_FOLDERS, DETACH_COMMAND, DETACH_MESSAGES, REATTACH_COMMAND, dbtEditedSince, isDbtSourcePath, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
+import { detachSectionHead, DBT_SOURCE_FOLDERS, DETACH_COMMAND, DETACH_MESSAGES, REATTACH_COMMAND, dbtEditedSince, isDbtSourcePath, detachBadge, detachMessage, detachContextSection, detachModel, detachView, readDetachRecord, reattachProposal, reattachProposalId, reattachWireId, serializeDetachRecord } from "../src/core/materialize/dbtDetach";
 import { PALETTE_TIERS } from "../src/core/experience/palette";
 
 const ROOT = join(__dirname, "fixtures", "dbtmat");
@@ -120,9 +120,15 @@ test("MAT1 keeps a detached notebook; re-attach is a new proposal for that model
   assert.ok(r.diff.every(e => r.files.some(f => f.path === e.path)), "only this model's files");
   assert.ok(!r.files.some(f => f.path.includes("stg_orders")));
   const newRecord = readDetachRecord(r.files.find(f => f.path === rec.path)!.content);
-  assert.ok(newRecord.ok);
+  assert.ok(newRecord.ok, newRecord.ok ? "" : newRecord.reason);
   assert.equal(newRecord.record.authority, "dbt");
-  assert.deepEqual(newRecord.record.reattach, { proposalId, actor: ANA, at: AT });
+  assert.deepEqual(newRecord.record.reattach, { proposalId: reattachWireId(proposalId), actor: ANA, at: AT });
+  assert.match(newRecord.record.reattach!.proposalId, /^datapass:reattach-proposal:[0-9a-f]{64}$/);
+  // A v1.2.0-rc.1 record with the readable slug still reads (upgraded to the wire id).
+  const legacy = JSON.parse(r.files.find(f => f.path === rec.path)!.content) as { reattach: { proposalId: string } };
+  legacy.reattach.proposalId = proposalId;
+  const legacyRead = readDetachRecord(JSON.stringify(legacy));
+  assert.ok(legacyRead.ok && legacyRead.record.reattach!.proposalId === reattachWireId(proposalId));
   // Not detached → nothing to re-attach.
   const none = reattachProposal(mat, new Map([[rec.path, serializeDetachRecord(rec.record)]]), { modelId: rec.modelId, proposalId, actor: ANA, at: AT });
   assert.ok(!none.ok);
