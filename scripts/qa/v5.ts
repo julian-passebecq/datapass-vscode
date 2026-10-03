@@ -155,6 +155,24 @@ async function answerNextOpenDialog(app: ElectronApplication | undefined, file: 
   }, file);
 }
 
+/**
+ * The next native save dialog (Electron's, in VS Code's main process) is accepted as offered, once: the person
+ * presses Save on the default location. No default offered = the person has nowhere to press Save: cancelled.
+ */
+async function acceptNextSaveDialog(app: ElectronApplication | undefined): Promise<void> {
+  if (!app) throw new Error("no VS Code window to answer a save dialog in");
+  await app.evaluate(({ dialog }) => {
+    const d = dialog as unknown as { showSaveDialog: (...a: unknown[]) => Promise<unknown> };
+    const original = d.showSaveDialog;
+    d.showSaveDialog = async (...a: unknown[]) => {
+      d.showSaveDialog = original;
+      const opts = a.find(x => !!x && typeof x === "object" && "defaultPath" in (x as object)) as { defaultPath?: unknown } | undefined;
+      const file = typeof opts?.defaultPath === "string" && opts.defaultPath ? opts.defaultPath : undefined;
+      return file ? { canceled: false, filePath: file } : { canceled: true, filePath: "" };
+    };
+  });
+}
+
 /** Chromium with the network off: offline, and every request that is not file:/data:/blob: aborted and recorded. */
 async function openOffline(file: string, net: BoundaryEvent[]): Promise<{ browser: Browser; page: Page }> {
   const browser = await chromium.launch({ headless: true });
@@ -187,6 +205,9 @@ async function runV5Step(ctx: Ctx, step: V5Step): Promise<StepOutcome> {
       await answerNextOpenDialog(ctx.app, file);
       return { status: "PASS" };
     }
+    case "chooseSave":
+      await acceptNextSaveDialog(ctx.app);
+      return { status: "PASS" };
     case "chooseCassette": {
       const file = path.join(V5_FIXTURE_DIR, "exchange", step.name);
       if (!fs.existsSync(file)) return { status: "FAIL", detail: `no cassette tests/fixtures/v5/exchange/${step.name}` };
@@ -296,6 +317,18 @@ async function runV5Step(ctx: Ctx, step: V5Step): Promise<StepOutcome> {
       }
       const sctx: StepContext = { app: ctx.app as ElectronApplication, page: ctx.page, journeyId: ctx.journeyId, outDir: ctx.outDir, folder: ctx.fixtureRoot };
       const r = await runStep(sctx, step);
+      if (r.status === "FAIL" && step.role) {
+        // A list row (a Steps view step is `role=option`) is named by its whole content, and a labelled part of it
+        // (the tables chips) gives its label, not its text: click the row of that role that shows the text, as a person would.
+        const page = await ctx.page();
+        for (const frame of page.frames() as Frame[]) {
+          const loc = frame.getByRole(step.role).filter({ hasText: step.text }).filter({ visible: true }).first();
+          if (await loc.isVisible().catch(() => false)) {
+            try { await loc.click({ timeout: 10_000 }); } catch { await loc.click({ force: true, timeout: 5_000 }); }
+            return { status: "PASS", detail: `the ${step.role} showing "${step.text}"` };
+          }
+        }
+      }
       return { status: r.status, ...(r.detail ? { detail: r.detail } : {}) };
     }
     case "closeChromium":

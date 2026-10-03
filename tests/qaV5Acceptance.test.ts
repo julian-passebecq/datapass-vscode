@@ -63,6 +63,9 @@ test("a hole journey must assert the hole and the absence of a placeholder; an u
   assert.equal(parseV5Step({ expectNoOverlap: "" }).kind, "invalid");
   assert.equal(parseV5Step({ acceptWrites: "(" }).kind, "invalid");
   assert.deepEqual(parseV5Step({ closeChromium: true }), { kind: "closeChromium" });
+  // QAFIX1: a save dialog is accepted at the default it offers, nothing else.
+  assert.deepEqual(parseV5Step({ chooseSave: "default" }), { kind: "chooseSave", answer: "default" });
+  assert.equal(parseV5Step({ chooseSave: "C:/elsewhere.html" }).kind, "invalid");
   // A Chromium journey never drives VS Code, and only a Studio fixture runs in Chromium.
   const chromium = JSON.parse(ACCEPTANCE) as { rows: Array<{ id: string; journeys: Array<{ id: string; host?: string; steps: unknown[] }> }> };
   chromium.rows.find(r => r.id === "14")!.journeys[0]!.steps.unshift({ run: "DataPass: Show Context" });
