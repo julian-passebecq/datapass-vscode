@@ -18,13 +18,17 @@ import type { GitObserver } from "../work/gitObserver";
 import { ago, ciMark, countsText, repoLine, type GitRepoReport, type NeedsYou, type WorktreeReport } from "../core/git/gitReport";
 import type { PullRequest } from "../core/git/hostPrs";
 import { repositoryWebLinks } from "../core/project/gitHosts";
+import { historyTreeRows, repoHistoryLabels, REPO_HISTORY_LABELS_SETTING, type HistoryTreeRow } from "../core/gitmr/repoHistory";
+
+const historyLabels = () => repoHistoryLabels(vscode.workspace.getConfiguration("datapass").get(REPO_HISTORY_LABELS_SETTING));
 
 export type GitNode =
   | { t: "message"; id: string; label: string; description?: string; icon: [string, string?]; tooltip?: string; command?: vscode.Command }
   | { t: "needs"; id: string; items: NeedsYou[] }
   | { t: "need"; id: string; n: NeedsYou }
   | { t: "repo"; id: string; r: GitRepoReport }
-  | { t: "group"; id: string; r: GitRepoReport; kind: "worktrees" | "prs" | "merges" }
+  | { t: "group"; id: string; r: GitRepoReport; kind: "worktrees" | "prs" | "merges" | "history" }
+  | { t: "commit"; id: string; r: GitRepoReport; row: HistoryTreeRow }
   | { t: "changes"; id: string; r: GitRepoReport }
   | { t: "worktree"; id: string; r: GitRepoReport; w: WorktreeReport }
   | { t: "pr"; id: string; r: GitRepoReport; pr: PullRequest }
@@ -90,6 +94,10 @@ export class GitTreeProvider implements vscode.TreeDataProvider<GitNode>, vscode
         const r = node.r;
         if (node.kind === "worktrees") return r.worktrees.map(w => ({ t: "worktree" as const, id: `${node.id}/${w.path}`, r, w }));
         if (node.kind === "prs") return (r.prs ?? []).map(pr => ({ t: "pr" as const, id: `${node.id}/${pr.number}`, r, pr }));
+        if (node.kind === "history") {
+          const h = historyTreeRows(await this.observer.history(r.key), historyLabels());
+          return h.message ? [{ t: "message", id: `${node.id}/message`, label: h.message, icon: ["info", MUTED] }] : h.rows.map(row => ({ t: "commit" as const, id: `${node.id}/${row.id}`, r, row }));
+        }
         return r.merges.map((_, i) => ({ t: "merge" as const, id: `${node.id}/${i}`, r, i }));
       }
       case "others": {
@@ -132,6 +140,8 @@ export class GitTreeProvider implements vscode.TreeDataProvider<GitNode>, vscode
     if (r.prs) out.push({ t: "group", id: `repo:${r.key}/prs`, r, kind: "prs" });
     else if (r.host) out.push(...this.linkRows(r));
     if (r.merges.length) out.push({ t: "group", id: `repo:${r.key}/merges`, r, kind: "merges" });
+    // V5HOLE8: the repository's history, reachable with no DataPass project (V5 acceptance row 03).
+    out.push({ t: "group", id: `repo:${r.key}/history`, r, kind: "history" });
     return out;
   }
 
@@ -197,6 +207,12 @@ export class GitTreeProvider implements vscode.TreeDataProvider<GitNode>, vscode
       }
       case "group": {
         const r = n.r;
+        if (n.kind === "history") {
+          const item = new vscode.TreeItem(historyLabels().treeHistory, vscode.TreeItemCollapsibleState.Expanded);
+          item.id = n.id; item.iconPath = icon(["history"]); item.description = r.branch;
+          item.tooltip = "Recent commits of this repository (git log, read only; nothing is fetched).";
+          return item;
+        }
         const count = n.kind === "worktrees" ? r.worktrees.length : n.kind === "prs" ? r.prs?.length ?? 0 : r.merges.length;
         const label = n.kind === "worktrees" ? `Worktrees (${count})` : n.kind === "prs" ? `Pull requests (${count})` : "Recent merges";
         const item = new vscode.TreeItem(label, count ? vscode.TreeItemCollapsibleState.Collapsed : None);
@@ -236,6 +252,11 @@ export class GitTreeProvider implements vscode.TreeDataProvider<GitNode>, vscode
         item.tooltip = `#${pr.number} ${pr.title}\n${pr.head}${pr.ci.total ? `\nChecks: ${pr.ci.passed} passed, ${pr.ci.running} running, ${pr.ci.failed.length} failed${pr.ci.failed.length ? ` (${pr.ci.failed.map(f => f.name).join(", ")})` : ""}` : pr.ci.state === "unknown" ? "\nCI: not reported by this CLI (open the pipelines page)" : "\nNo checks"}\n${pr.url}`;
         item.command = { command: "datapass.git.openPullRequest", title: "Open the pull request", arguments: [n.r.key, pr.number] };
         item.contextValue = `gitPr${pr.ci.state === "failing" ? ".failing" : ""}`;
+        return item;
+      }
+      case "commit": {
+        const item = new vscode.TreeItem(n.row.label, None);
+        item.id = n.id; item.description = n.row.description; item.tooltip = n.row.tooltip; item.iconPath = icon(["git-commit"]);
         return item;
       }
       case "merge": {

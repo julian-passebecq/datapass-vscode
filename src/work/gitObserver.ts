@@ -28,12 +28,14 @@ import { interpretOrigin } from "../core/project/observation";
 import { isBranchName, isSha, oldestDate, parseDefaultBranch, parseMergeLog, parseRefList, parseWorktrees, statusCounts, type StatusCounts } from "../core/git/porcelain";
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, parseGhOpen, parseGlabMrs, recentMerged, type HostPrs } from "../core/git/hostPrs";
-import { gitSummary, hasRemoteFor, needsYou, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
+import { gitSummary, hasRemoteFor, needsYou, statusFailureReport, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
 import { cmdLine, Limiter, retryOnTimeout } from "../core/git/run";
 import type { WorkSession } from "./session";
 import { cloneParents, gitRunner } from "./session";
 import { discoverRepoSet } from "../core/gitmr/repoSet";
 import { repoSetLensTargets } from "../core/gitmr/lensTargets";
+import { gitReadOnly } from "../core/gitmr/readOnly";
+import { parseRepoLog, repoLogArgs, REPO_TREE_HISTORY_LIMIT, type RepoLog } from "../core/gitmr/repoHistory";
 
 export const COMMAND_TIMEOUT_MS = 5000;
 export const MAX_PARALLEL = 4;
@@ -167,6 +169,19 @@ export class GitObserver implements vscode.Disposable {
 
   /** Absolute folder of a repository or worktree the view shows (extension host only). */
   folderOf(key: string): string | undefined { return this.folders.get(key); }
+
+  /**
+   * V5HOLE8: a repository's recent commits for the Git view (read-only `git log`, through the spawn allow-list and the
+   * GITMR read-only allow-list; cached like every other Git answer). Works with no DataPass project: any observed repo.
+   */
+  async history(key: string, limit = REPO_TREE_HISTORY_LIMIT): Promise<RepoLog> {
+    const folder = this.folders.get(key);
+    if (!folder) return { repo: key, commits: [], error: "not cloned here" };
+    if (!vscode.workspace.isTrusted) return { repo: key, commits: [], error: "not inspected in Restricted Mode" };
+    const res = await this.git(gitReadOnly(repoLogArgs(limit)), folder);
+    return res.ok ? { repo: key, commits: parseRepoLog(res.stdout, limit) }
+      : { repo: key, commits: [], error: res.timedOut ? "Git took too long" : (res.stderr ?? "").trim().split(/\r?\n/)[0] || "git log failed" };
+  }
 
   report(key: string): GitRepoReport | undefined {
     return this.project.find(r => r.key === key) ?? this.others?.find(r => r.key === key);
@@ -314,7 +329,10 @@ export class GitObserver implements vscode.Disposable {
     if (fresh?.counts) st = fresh;
     else {
       const status = await this.git(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], folder);
-      if (!status.ok) return { ...base, state: status.timedOut ? "not-checked" : "not-a-repo", detail: status.timedOut ? "not checked (Git took more than 5 s)" : status.missing ? "git was not found on PATH" : "not a Git repository" };
+      if (!status.ok) {
+        const exists = status.timedOut || status.missing ? true : await fs.promises.stat(folder).then(st => st.isDirectory(), () => false);
+        return { ...base, ...statusFailureReport(status, exists) };
+      }
       const origin = await this.git(["config", "--get", "remote.origin.url"], folder);
       // Exit 1 is also "no such key": `git remote` tells the two apart (never cached: it is asked only then).
       const remotes = origin.ok ? undefined : await this.git(["remote"], folder, 0);
