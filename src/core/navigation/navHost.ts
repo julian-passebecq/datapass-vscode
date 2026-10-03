@@ -55,8 +55,8 @@ export class NavHost implements vscode.Disposable {
   private readonly subs: vscode.Disposable[] = [];
   private readonly heads: FileHeads;
   private ladder: ProjectLadder;
-  /** V5HOLE1: Hop state per file key (null: loading or none), cleared when the session changes. */
-  private readonly hops = new Map<string, HopState | null>();
+  /** V5HOLE1: Hop state per file key ("loading", or null: none), cleared when the session changes. */
+  private readonly hops = new Map<string, HopState | "loading" | null>();
   private readonly hopLoaded = new vscode.EventEmitter<void>();
   /** A Hop explanation finished loading: views bound to `hop-steps` redraw. */
   readonly onDidLoadHop = this.hopLoaded.event;
@@ -127,21 +127,27 @@ export class NavHost implements vscode.Disposable {
     return at ? this.ladder.locate(at.repositoryKey, at.nativePath) : undefined;
   }
 
-  /** V5HOLE1: the Hop state of the file at a place, synchronously from the cache; a miss loads it and fires `onDidLoadHop`. */
-  hop(l: NavLocation): HopState | undefined {
+  /**
+   * V5HOLE1: the Hop state of the file at a place, synchronously from the cache; a miss starts the read and
+   * returns "loading". V5HOLE15: every read that ends (explained, none or failed) fires `onDidLoadHop`, so a
+   * view drawn while loading always redraws with the steps or the hole.
+   */
+  hop(l: NavLocation): HopState | "loading" | undefined {
     const file = this.ladder.entry(l)?.file;
     const load = this.session.understandingByPath?.bind(this.session);
     if (!file || !load) return undefined;
     const k = `${file.repoKey}:${file.repoPath}`;
     if (this.hops.has(k)) return this.hops.get(k) ?? undefined;
-    this.hops.set(k, null);
-    void load(file.repoKey, file.repoPath).then((entry) => {
-      if (!entry || this.hops.get(k) !== null) return;
-      this.hops.set(k, hopState({ fileName: file.repoPath.split("/").pop() ?? file.repoPath, located: { repositoryKey: file.repoKey, nativePath: file.repoPath },
-        entry, hasProject: true, workOrdersEnabled: false, canGoBack: false }));
+    this.hops.set(k, "loading");
+    const settle = (state: HopState | null) => {
+      if (this.hops.get(k) !== "loading") return; // the session changed meanwhile: a newer read owns the key
+      this.hops.set(k, state);
       this.hopLoaded.fire();
-    }, () => undefined);
-    return undefined;
+    };
+    void load(file.repoKey, file.repoPath).then((entry) => settle(entry ? hopState({ fileName: file.repoPath.split("/").pop() ?? file.repoPath,
+      located: { repositoryKey: file.repoKey, nativePath: file.repoPath }, entry, hasProject: true, workOrdersEnabled: false, canGoBack: false }) : null),
+    () => settle(null));
+    return "loading";
   }
 
   label(l: NavLocation): string { return this.ladder.entry(l)?.label ?? locationLabel(this.session.projectMap(), l); }

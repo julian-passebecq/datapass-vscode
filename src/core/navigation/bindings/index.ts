@@ -40,8 +40,11 @@ export interface BindingContext {
   readonly params?: Readonly<Record<string, unknown>>;
   /** The current project map, when a project is open. */
   readonly projectMap?: ProjectMap;
-  /** V5HOLE1: the Hop state of the file at a place, when the host has it loaded (undefined: none / not a file). */
-  readonly hop?: (location: NavLocation) => HopState | undefined;
+  /**
+   * V5HOLE1: the Hop state of the file at a place, when the host has it loaded (undefined: none / not a file).
+   * V5HOLE15: "loading" while the host is still reading it (it redraws when the read ends).
+   */
+  readonly hop?: (location: NavLocation) => HopState | "loading" | undefined;
 }
 
 export interface BindingProvider { readonly source: string; provide(ctx: BindingContext): BindingResult }
