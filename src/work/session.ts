@@ -8,6 +8,7 @@ import { environmentOf, variantStamp, type PackStamp } from "../core/exchange/st
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
+import { SPAWN_GRACE_MS } from "../core/git/run";
 import { checkSpawn, refusal } from "../core/spawnAllowList";
 import { promises as fsp } from "node:fs";
 import { executablePath } from "../core/exec";
@@ -115,14 +116,20 @@ export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
     if (!allowed.allowed) { resolve({ ok: false, stdout: "", stderr: refusal(allowed) }); return; }
     const git = executablePath("git");
     if (!git) { resolve({ ok: false, stdout: "", stderr: "git was not found on PATH" }); return; }
-    execFile(git, ["-c", "core.fsmonitor=false", ...args], {
+    // V5HOLE14: settle even when execFile never calls back (a grandchild holding stdout open after the timeout killed git).
+    let settled = false;
+    const finish = (r: { ok: boolean; stdout: string; stderr: string; timedOut?: boolean }) => { if (!settled) { settled = true; clearTimeout(hard); resolve(r); } };
+    let child: ReturnType<typeof execFile> | undefined;
+    const hard = timeoutMs > 0 ? setTimeout(() => { try { child?.kill(); } catch { /* already gone */ } finish({ ok: false, stdout: "", stderr: "timed out", timedOut: true }); }, timeoutMs + SPAWN_GRACE_MS) : undefined;
+    try { child = execFile(git, ["-c", "core.fsmonitor=false", ...args], {
       cwd: cwd || undefined,
       timeout: timeoutMs,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
       // Never block on a credential prompt; a failed probe is reported as unreachable.
       env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", SSH_ASKPASS: "", GCM_INTERACTIVE: "never" }
-    }, (error, stdout, stderr) => resolve({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean((error as { killed?: boolean } | null)?.killed) }));
+    }, (error, stdout, stderr) => finish({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean((error as { killed?: boolean } | null)?.killed) })); }
+    catch (e) { finish({ ok: false, stdout: "", stderr: String((e as Error)?.message ?? e) }); }
   });
 
 export class WorkSession implements vscode.Disposable {

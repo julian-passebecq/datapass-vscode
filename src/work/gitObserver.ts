@@ -29,7 +29,7 @@ import { isBranchName, isSha, oldestDate, parseDefaultBranch, parseMergeLog, par
 import { parseStatusV2 } from "../core/inventory/inventory";
 import { azPrListArgs, ghPrListArgs, glabMrListArgs, parseAzPrs, parseGhClosed, parseGhOpen, parseGlabMrs, recentMerged, type HostPrs } from "../core/git/hostPrs";
 import { gitSummary, hasRemoteFor, needsYou, statusFailureReport, type GitRepoReport, type GitSummary, type HostData, type NeedsYou, type RepoRole, type Unpushed, type WorktreeReport } from "../core/git/gitReport";
-import { cmdLine, Limiter, retryOnTimeout } from "../core/git/run";
+import { cmdLine, Limiter, retryOnTimeout, RETRY_TIMEOUT_MS, settleWithin, SPAWN_GRACE_MS } from "../core/git/run";
 import type { WorkSession } from "./session";
 import { cloneParents, gitRunner } from "./session";
 import { discoverRepoSet } from "../core/gitmr/repoSet";
@@ -39,6 +39,11 @@ import { parseRepoLog, repoLogArgs, REPO_TREE_HISTORY_LIMIT, type RepoLog } from
 
 export const COMMAND_TIMEOUT_MS = 5000;
 export const MAX_PARALLEL = 4;
+/**
+ * V5HOLE14: one repository's whole check (status, origin, worktrees, PRs, merges) settles within this, else it is
+ * "not checked" and the others are shown; the next refresh asks again. Discovery of the repo set is bounded the same way.
+ */
+export const REPO_CHECK_DEADLINE_MS = 3 * (COMMAND_TIMEOUT_MS + RETRY_TIMEOUT_MS);
 export const MAX_OTHER_REPOSITORIES = 60;
 const GIT_TTL_MS = 60_000;
 const HOST_TTL_MS = 120_000;
@@ -100,10 +105,17 @@ function spawnTool(cmd: ToolCommand, args: string[], cwd: string, timeoutMs: num
       file = comspec; argv = ["/d", "/s", "/c", line];
       opts.windowsVerbatimArguments = true;
     }
-    execFile(file, argv, opts, (error, stdout, stderr) => {
-      const e = error as (NodeJS.ErrnoException & { killed?: boolean; code?: number | string }) | null;
-      resolve({ ok: !e, code: typeof e?.code === "number" ? e.code : e ? undefined : 0, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean(e?.killed) });
-    });
+    let settled = false;
+    const finish = (r: RunResult) => { if (!settled) { settled = true; clearTimeout(hard); resolve(r); } };
+    let child: ReturnType<typeof execFile> | undefined;
+    // V5HOLE14: execFile reports only once stdout/stderr close; a grandchild holding them would keep this pending forever.
+    const hard = timeoutMs > 0 ? setTimeout(() => { try { child?.kill(); } catch { /* already gone */ } finish({ ok: false, stdout: "", stderr: "timed out", timedOut: true }); }, timeoutMs + SPAWN_GRACE_MS) : undefined;
+    try {
+      child = execFile(file, argv, opts, (error, stdout, stderr) => {
+        const e = error as (NodeJS.ErrnoException & { killed?: boolean; code?: number | string }) | null;
+        finish({ ok: !e, code: typeof e?.code === "number" ? e.code : e ? undefined : 0, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean(e?.killed) });
+      });
+    } catch (e) { finish({ ok: false, stdout: "", stderr: String((e as Error)?.message ?? e), timedOut: false }); }
   });
 }
 
@@ -252,7 +264,7 @@ export class GitObserver implements vscode.Disposable {
     this.othersRunning = (async () => {
       try {
         const targets = await this.otherTargets();
-        this.others = await Promise.all(targets.map(t => this.observe(t)));
+        this.others = await Promise.all(targets.map(t => this.observeBounded(t)));
       } finally { this.othersRunning = undefined; this.emitter.fire(); }
     })();
     this.emitter.fire();
@@ -290,8 +302,9 @@ export class GitObserver implements vscode.Disposable {
 
   private async observeProject(): Promise<GitRepoReport[]> {
     const targets = this.projectTargets();
-    targets.push(...await this.repoSetTargets(targets));
-    return Promise.all(targets.map(t => this.observe(t)));
+    // V5HOLE14: discovery and every repository settle in bounded time; one stuck check never holds the others.
+    targets.push(...await settleWithin(this.repoSetTargets(targets), this.repoDeadlineMs, () => []));
+    return Promise.all(targets.map(t => this.observeBounded(t)));
   }
 
   /** GITMR2: the workspace's repo set (folders, submodules, .datapass/repos.json) beyond the project map's repositories. */
@@ -304,6 +317,16 @@ export class GitObserver implements vscode.Disposable {
       const shown = project.map(t => t.folder).filter((f): f is string => !!f);
       return repoSetLensTargets(set, folders[0]!, shown).map(t => ({ ...t, section: "project" as const, role: "project" as const }));
     } catch { return []; }
+  }
+
+  /** Test seam: the per-repository deadline (REPO_CHECK_DEADLINE_MS). */
+  repoDeadlineMs = REPO_CHECK_DEADLINE_MS;
+
+  private observeBounded(t: Target): Promise<GitRepoReport> {
+    return settleWithin(this.observe(t), this.repoDeadlineMs, () => ({
+      key: t.key, label: t.label, section: t.section, role: t.role, state: "not-checked" as const, detail: "not checked (Git did not answer in time)",
+      worktrees: [], merges: [], hostData: { kind: "no-host" as const }
+    }));
   }
 
   /** One repository: status, default branch, worktrees, host PRs, merges and the derived facts. */
@@ -321,6 +344,8 @@ export class GitObserver implements vscode.Disposable {
     const folder = t.folder;
     if (!folder) return { ...base, state: "not-cloned", detail: "not cloned here" };
     this.folders.set(t.key, folder);
+    // V5HOLE14: a deleted clone is a missing clone at once, with no Git spawn in a folder that does not exist.
+    if (!await fs.promises.stat(folder).then(s => s.isDirectory(), () => false)) return { ...base, ...statusFailureReport({}, false) };
 
     // Status: the project observation's, when it is recent (the Project tree shows the same), else our own.
     const obs = t.section === "project" ? this.session.projectObservation() : undefined;
