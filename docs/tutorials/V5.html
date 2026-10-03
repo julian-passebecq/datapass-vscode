@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DataPass V5 tour</title>
+<style>
+:root { --bg:#ffffff; --fg:#1f2328; --muted:#59636e; --line:#d1d9e0; --code:#f6f8fa; --accent:#0969da; }
+@media (prefers-color-scheme: dark) { :root { --bg:#0d1117; --fg:#e6edf3; --muted:#9198a1; --line:#3d444d; --code:#161b22; --accent:#4493f8; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+header.meta { color:var(--muted); font-size:14px; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:8px; }
+h1 { font-size: 2em; margin: .6em 0 .4em; } h2 { border-bottom:1px solid var(--line); padding-bottom:.3em; margin-top:2em; }
+a { color:var(--accent); }
+code { background:var(--code); padding:.1em .35em; border-radius:4px; font-size:.9em; }
+table { border-collapse:collapse; display:block; overflow-x:auto; margin:1em 0; }
+th, td { border:1px solid var(--line); padding:6px 10px; text-align:left; vertical-align:top; }
+th { background:var(--code); }
+figure { margin: 1em 0; }
+figure img { max-width:100%; height:auto; border:1px solid var(--line); border-radius:6px; display:block; }
+figcaption { color:var(--muted); font-size:13px; margin-top:4px; }
+</style>
+</head>
+<body>
+<main>
+<header class="meta">Build: datapass-vscode main 7b50df1a (V5 final, all V5 fixes), 2026-10-03<br>Fixtures: tests/fixtures/v5/shop, tests/fixtures/v5/shop-bare, the v5/repo-set built by `npm run qa:v5` (synthetic only, no client data)<br>Generated from <code>docs/tutorials/V5.md</code>; screenshots are the files under <code>qa/v5/shots/</code> (relative links: keep this page in the repository tree).</header>
+<h1 id="datapass-v5-a-guided-tour">DataPass V5, a guided tour</h1>
+<p>This page walks through everything new in V5, in the order you would try it, and lists every keyboard shortcut. Each part says where to click, what you should see, and what DataPass will never do on your behalf.</p>
+<p>Everything below is on <code>main</code> (V5 final).</p>
+<p>DataPass never runs your client's code, never deploys, and never calls an AI behind your back. AI help always goes through a request file you hand to your own AI, and whatever comes back is marked <strong>AI-proposed</strong>.</p>
+<h2 id="contents">Contents</h2>
+<ol>
+<li><a href="#1-where-things-are">Where things are</a></li>
+<li><a href="#2-every-shortcut">Every shortcut</a></li>
+<li><a href="#3-detach-a-dbt-model">Detach a dbt model</a></li>
+<li><a href="#4-the-authority-section">The Authority section</a></li>
+<li><a href="#5-multi-repo-view">Multi-repo view</a></li>
+<li><a href="#6-power-query-data-sample">Power Query data sample</a></li>
+<li><a href="#7-dag-options">DAG options</a></li>
+<li><a href="#8-guided-tours-learning-and-interview">Guided tours: Learning and Interview</a></li>
+<li><a href="#9-concept-decision-and-query-cards">Concept, decision and query cards</a></li>
+<li><a href="#10-a-tour-prepared-by-your-ai">A tour prepared by your AI</a></li>
+<li><a href="#11-explainer-export">Explainer export</a></li>
+<li><a href="#12-architect-review">Architect review</a></li>
+<li><a href="#13-studio-demo">Studio demo</a></li>
+<li><a href="#14-turning-v5-features-off">Turning V5 features off</a></li>
+</ol>
+<h2 id="before-you-start">Before you start</h2>
+<ol>
+<li>Build and install the extension (<code>npm run build</code>, then install the VSIX), reload VS Code.</li>
+<li>Open the folder <code>tests/fixtures/v5/shop</code>: a made-up lakehouse with a PySpark ingestion notebook, bronze/silver/gold layers, dbt models <code>stg_orders</code> and <code>fct_orders</code>, a semantic model and a <code>.datapass/</code> manifest.</li>
+<li>To see how DataPass behaves when facts are missing, open <code>tests/fixtures/v5/shop-bare</code> (same code, no manifest, decisions, volumetry or samples). Wherever a fact is missing, you should see a <strong>hole</strong> (what is missing, why, how to fill it), never a made-up value.</li>
+</ol>
+<h2 id="1-where-things-are">1. Where things are</h2>
+<table>
+<thead>
+<tr>
+<th>Place</th>
+<th>What lives there</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Activity bar, <strong>DataPass</strong> icon</td>
+<td>the <strong>Project</strong>, <strong>Git</strong>, <strong>Work</strong> and <strong>Galaxy</strong> views</td>
+</tr>
+<tr>
+<td>Activity bar, <strong>DataPass Navigator</strong> icon</td>
+<td>the Navigator (the location you are at, its views, the Tours section)</td>
+</tr>
+<tr>
+<td>Bottom panel, <strong>DataPass Context</strong></td>
+<td>the <strong>Context</strong> view: facts about the current location, the <strong>Authority</strong> section, tour explanations</td>
+</tr>
+<tr>
+<td>Bottom panel, <strong>DataPass Architecture</strong></td>
+<td>the Architecture view</td>
+</tr>
+<tr>
+<td>Secondary side bar, <strong>DataPass</strong></td>
+<td><strong>Navigator</strong>, <strong>Rail</strong>, <strong>AI</strong> (the AI exchange), <strong>Claude &amp; Codex</strong>, <strong>Details</strong>, <strong>Airflow DAG</strong></td>
+</tr>
+<tr>
+<td>Command Palette (<code>Ctrl+Shift+P</code>), type <code>DataPass:</code></td>
+<td>every command named in this page</td>
+</tr>
+</tbody>
+</table>
+<p>Which commands show in the palette depends on your DataPass mode: <strong>DataPass: Switch Mode…</strong> changes it, <strong>DataPass: Customize DataPass Mode…</strong> shows or hides single commands.</p>
+<h2 id="2-every-shortcut">2. Every shortcut</h2>
+<p>These are all the keyboard shortcuts DataPass declares (<code>package.json</code>, <code>main</code>). Nothing else is bound.</p>
+<table>
+<thead>
+<tr>
+<th>Keys</th>
+<th>Command</th>
+<th>When it works</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Alt+=</code></td>
+<td>DataPass: Larger Code Text (A+)</td>
+<td>everywhere</td>
+</tr>
+<tr>
+<td><code>Alt+-</code></td>
+<td>DataPass: Smaller Code Text (A−)</td>
+<td>everywhere</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Up</code></td>
+<td>DataPass: Navigate Up (coarser level)</td>
+<td>a DataPass navigation view is open (see below)</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Down</code></td>
+<td>DataPass: Navigate Down (finer level)</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Left</code></td>
+<td>DataPass: Previous View Here</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Right</code></td>
+<td>DataPass: Next View Here</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Home</code></td>
+<td>DataPass: Navigate to Project Root</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Backspace</code></td>
+<td>DataPass: Navigate Back</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>Shift+Backspace</code></td>
+<td>DataPass: Navigate Forward</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>Shift+Alt+P</code>, then <code>V</code></td>
+<td>DataPass: Pick a View Here…</td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>The <code>Shift+Alt+P</code> chords work only while a DataPass navigation view is open, and never while you type in the editor, the terminal, a list or an input box. The setting <code>datapass.nav.globalKeys</code> (on by default) turns them all off.</li>
+<li><strong>DataPass: Reset the Code Text Size</strong> has no key: run it from the palette.</li>
+<li>Inside the DataPass navigation view itself (not VS Code shortcuts, they only work while that view has focus): plain <code>Up</code> / <code>Down</code> go to a coarser / finer level, <code>Left</code> / <code>Right</code> to the previous / next view, <code>Home</code> to the project root, <code>Backspace</code> back. They are ignored while you type in a field or hold <code>Ctrl</code> or <code>Shift</code>. <code>Alt+Left</code> / <code>Alt+Right</code> are left to VS Code (back / forward).</li>
+<li>Inside the Navigator, when a guided tour is running, the number keys jump to a step and the mouse wheel moves through steps (see part 8).</li>
+</ul>
+<h2 id="3-detach-a-dbt-model">3. Detach a dbt model</h2>
+<p>A dbt model can be <strong>materialized</strong> as a Fabric notebook (DataPass proposes the notebook; you review it). Later you may want the notebook, not dbt, to be the authority: that is <strong>detaching</strong>. DataPass records the decision, then tells you when the two drift apart. It never re-syncs on its own.</p>
+<ol>
+<li>
+<p>Materialize first, if the model is not yet: <strong>DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)</strong>. You see a preview; nothing is written before you confirm.</p>
+</li>
+<li>
+<p>In the <strong>Project</strong> view, right-click the dbt model <code>fct_orders</code> and choose <strong>DataPass: Detach dbt Model (the notebook becomes the authority)</strong>. (From the palette, the same command asks you to pick the model.)</p>
+</li>
+<li>
+<p>Read the confirmation and confirm. DataPass writes one file: the detach record under <code>.datapass/materialization/</code>, with the hashes of both sides.</p>
+<p><figure><img src="../../qa/v5/shots/v5-01-detach-confirm.png" alt="Detach confirmation" loading="lazy" width="1440" height="900"><figcaption>Detach confirmation</figcaption></figure></p>
+</li>
+<li>
+<p>The model now carries a <strong>detached</strong> badge in the Project view, and the Context view shows the authority line.</p>
+<p><figure><img src="../../qa/v5/shots/v5-02-detached-badge.png" alt="Detached badge" loading="lazy" width="1440" height="900"><figcaption>Detached badge</figcaption></figure></p>
+</li>
+<li>
+<p>Edit the notebook: the drift says <strong>notebook edited</strong>. Edit the dbt model too and commit: it says <strong>both changed</strong>. Other states are <strong>in sync since detach</strong>, <strong>dbt changed</strong> and <strong>unknown</strong> (DataPass could not read the dbt revision: a hole, never a guess). You can rename these words with <code>datapass.dbt.driftLabels</code>.</p>
+<p><figure><img src="../../qa/v5/shots/v5-03-drift-both.png" alt="Drift: both changed" loading="lazy" width="1440" height="900"><figcaption>Drift: both changed</figcaption></figure></p>
+</li>
+<li>
+<p>To re-attach, materialize the model again: you get a new proposal to review, never an automatic change.</p>
+</li>
+</ol>
+<p><strong>Spark job definition target.</strong> The materialize command also offers a <code>spark-job-definition</code> target: a wheel skeleton and an entry script, proposed only, with a Git plan you run yourself. The wheel is not built and nothing is deployed. The default target stays the Fabric notebook.</p>
+<p><figure><img src="../../qa/v5/shots/v5-04-sjd-target.png" alt="Spark job target" loading="lazy" width="1440" height="900"><figcaption>Spark job target</figcaption></figure>
+<figure><img src="../../qa/v5/shots/v5-05-sjd-plan.png" alt="Spark job plan" loading="lazy" width="1440" height="900"><figcaption>Spark job plan</figcaption></figure></p>
+<p>What DataPass never does here: run dbt, run the notebook, deploy, or write to Git.</p>
+<h2 id="4-the-authority-section">4. The Authority section</h2>
+<p>Open the <strong>Context</strong> view (bottom panel) and its <strong>Authority</strong> section. For the current location it lists who may do what:</p>
+<ul>
+<li><strong>granted</strong>: a local approval made by a DataPass action, for an exact file state, audience and scope;</li>
+<li><strong>claimed</strong>: a label that only says &quot;approved&quot; or &quot;reviewed&quot; (from a file or an AI answer). A claim never counts as an approval, even when it names a reviewer.</li>
+</ul>
+<p>The detached <code>fct_orders</code> shows its stamp, actor and date. When nothing was approved you read &quot;no approval recorded&quot;, never &quot;approved&quot;. The section is read-only: there is no approval button.</p>
+<p><figure><img src="../../qa/v5/shots/v5-14-authority-panel.png" alt="Authority section" loading="lazy" width="1440" height="900"><figcaption>Authority section</figcaption></figure></p>
+<h2 id="5-multi-repo-view">5. Multi-repo view</h2>
+<p>For a project spread over several repositories (the acceptance run builds <code>ingest</code>, <code>transform</code> and <code>bi</code>), DataPass reads the repository set once and adds two views to the Navigator. Go to a location in the Navigator and move between its views with <code>Shift+Alt+P</code> then <code>Left</code> / <code>Right</code>, or <code>Shift+Alt+P</code> then <code>V</code>:</p>
+<ol>
+<li>
+<p><strong>Repo lanes</strong>: one lane of commits per repository (the last 100). A repository that is listed but not cloned shows as a hole, not as an empty lane.</p>
+<p><figure><img src="../../qa/v5/shots/v5-06-repo-lanes.png" alt="Repository lanes" loading="lazy" width="1440" height="900"><figcaption>Repository lanes</figcaption></figure></p>
+</li>
+<li>
+<p><strong>Repo components</strong>: a flow from each repository to the components its commits touched; the wider the link, the more commits. Titles and words are a setting (<code>datapass.repoHistory.labels</code>).</p>
+<p><figure><img src="../../qa/v5/shots/v5-07-repo-history.png" alt="History across repositories" loading="lazy" width="1440" height="900"><figcaption>History across repositories</figcaption></figure></p>
+</li>
+<li>
+<p>Pin drift (is the vendored Common copy behind the Common repository?) is checked by a non-blocking job in the merge-request pipeline, not in the editor. Without a Common clone it says &quot;unknown&quot;, never &quot;up to date&quot;.</p>
+</li>
+</ol>
+<p>DataPass only runs read-only Git commands here: no fetch, pull, checkout or push.</p>
+<h2 id="6-power-query-data-sample">6. Power Query data sample</h2>
+<p>In the code-steps view of a Power Query or notebook file, each step has a slot for a small data sample:</p>
+<ol>
+<li>Select a step, then run <strong>DataPass: Data Sample for a Code Step</strong>.</li>
+<li>Choose where the sample comes from:
+<ul>
+<li>a local data file you pick, read by the <strong>Data X-Ray</strong> extension (only if it is installed), or</li>
+<li>a sample request you copy for your own AI; paste its answer back and the rows are marked <strong>AI-proposed</strong>.</li>
+</ul>
+</li>
+<li>The rows appear under the step. Select another step: its own sample shows.</li>
+</ol>
+<p><figure><img src="../../qa/v5/shots/v5-13-pq-sample.png" alt="Power Query sample" loading="lazy" width="1440" height="900"><figcaption>Power Query sample</figcaption></figure></p>
+<p>On <code>shop-bare</code> the slot shows a &quot;no sample&quot; hole, never generated rows. DataPass does not run the step's query.</p>
+<h2 id="7-dag-options">7. DAG options</h2>
+<p>The <strong>Airflow DAG</strong> view (secondary side bar) has two buttons in its title bar:</p>
+<ul>
+<li><strong>DataPass: Switch the Airflow DAG Layout (Top-Down / Left-Right)</strong> (setting <code>datapass.airflow.dagLayout</code>, default top-down);</li>
+<li><strong>DataPass: Choose Where the Airflow DAG View Opens</strong>: the side bar, the bottom panel or an editor tab (setting <code>datapass.airflow.dagPlacement</code>, default side bar).</li>
+</ul>
+<p>Shapes follow the operator family (sensor, transfer, SQL, Python…); you can change them with <code>datapass.airflow.dagFamilies</code>. An operator DataPass cannot classify gets a plain shape labelled &quot;unclassified&quot;. Your choices are kept after a reload.</p>
+<p><figure><img src="../../qa/v5/shots/v5-15-dag-default.png" alt="DAG default" loading="lazy" width="1440" height="900"><figcaption>DAG default</figcaption></figure>
+<figure><img src="../../qa/v5/shots/v5-16-dag-options.png" alt="DAG options" loading="lazy" width="1440" height="900"><figcaption>DAG options</figcaption></figure></p>
+<h2 id="8-guided-tours-learning-and-interview">8. Guided tours: Learning and Interview</h2>
+<p>On <code>main</code> today: the Navigator's <strong>Tours</strong> section lists tours generated from the project (lineage and execution journeys) and your own tours from <code>.datapass/tours.json</code>. Use <strong>DataPass: Pick a Tour…</strong>, then <strong>DataPass: Next Tour Step</strong> and <strong>DataPass: Previous Tour Step</strong>.</p>
+<p>Guided mode:</p>
+<ol>
+<li>
+<p>Run <strong>DataPass: Guided Mode (Learning / Interview)…</strong> (or use the mode switch in the Navigator).</p>
+</li>
+<li>
+<p><strong>Learning</strong> → the built-in tour <strong>The whole picture</strong> has five steps: arrive, live, change, run, trust. Move with the Next / Previous buttons, the number keys or the mouse wheel. The current step is highlighted on the mini-map and its explanation shows in a box (Navigator and Context view).</p>
+<p><figure><img src="../../qa/v5/shots/v5-18-tour-learning.png" alt="Learning tour" loading="lazy" width="1440" height="900"><figcaption>Learning tour</figcaption></figure>
+<figure><img src="../../qa/v5/shots/v5-19-tour-step-box.png" alt="Step explanation box" loading="lazy" width="1440" height="900"><figcaption>Step explanation box</figcaption></figure></p>
+</li>
+<li>
+<p><strong>Interview</strong> → step 0 &quot;Explain the project&quot; (objectives, volumetry, platforms), then the whole picture, then the queries worth showing; each step has two or three questions to ask yourself. <strong>DataPass: Interview Prep for This Project</strong> will rank the notions the project really uses.</p>
+<p><figure><img src="../../qa/v5/shots/v5-20-tour-interview-step0.png" alt="Interview step 0" loading="lazy" width="1440" height="900"><figcaption>Interview step 0</figcaption></figure></p>
+</li>
+<li>
+<p>Walk through some views, then <strong>DataPass: Save Current Path as Tour…</strong>: the path is saved in <code>.datapass/tours.json</code>. <strong>DataPass: Add This Screen to a Tour…</strong> adds the current screen to a tour. <strong>DataPass: Present Tour (Read-Only)</strong> plays it with no edit controls.</p>
+<p><figure><img src="../../qa/v5/shots/v5-21-tour-save.png" alt="Save current path" loading="lazy" width="1440" height="900"><figcaption>Save current path</figcaption></figure></p>
+</li>
+</ol>
+<p>The built-in tours are built by <strong>DataPass: Interview Prep for This Project</strong> (its last entry shows them as <code>datapass.tour/1</code>). In Guided mode, picking <strong>Learning</strong> starts its built-in tour directly in the Navigator; picking <strong>Interview</strong> always starts the built-in tour at step 0 &quot;Explain the project&quot;, even on a project with no <code>.datapass</code> folder (objectives and volumetry then show as holes). If you also saved your own tours for that mode, you pick which one to play. On <code>shop-bare</code>, objectives and volumetry are holes, and a step with nowhere to go (no orchestration) is shown as a hole step, not skipped.</p>
+<h2 id="9-concept-decision-and-query-cards">9. Concept, decision and query cards</h2>
+<ul>
+<li>
+<p><strong>DataPass: Queries Worth Showing</strong> (on <code>main</code>): the project's notable queries as cards, ranked by how well they show your skills in an interview (<code>datapass.pedagogy.queryShowcase.topN</code>, default 10).</p>
+<p><figure><img src="../../qa/v5/shots/v5-24-query-showcase.png" alt="Queries worth showing" loading="lazy" width="1440" height="900"><figcaption>Queries worth showing</figcaption></figure></p>
+</li>
+<li>
+<p><strong>DataPass: Pattern Cards for This File</strong>:</p>
+<ul>
+<li>a <strong>concept card</strong> explains a pattern with an excerpt of your own code; click the excerpt to jump to it;</li>
+<li>a <strong>decision card</strong> shows which option the project took and where. When no fact says it, the card asks the owner a question instead of guessing.</li>
+</ul>
+<p><figure><img src="../../qa/v5/shots/v5-22-concept-card.png" alt="Concept card" loading="lazy" width="1440" height="900"><figcaption>Concept card</figcaption></figure>
+<figure><img src="../../qa/v5/shots/v5-23-decision-card.png" alt="Decision card" loading="lazy" width="1440" height="900"><figcaption>Decision card</figcaption></figure></p>
+</li>
+<li>
+<p><strong>DataPass: Ask Your AI for Model Interview Answers</strong> prepares a request for your own AI; the answers come back marked AI-proposed.</p>
+</li>
+</ul>
+<h2 id="10-a-tour-prepared-by-your-ai">10. A tour prepared by your AI</h2>
+<ol>
+<li>
+<p>Run <strong>DataPass: Ask the AI for a Guided Tour…</strong> and pick a topic (for example &quot;BI and reporting&quot;; topics are in <code>datapass.guided.ai.topics</code>).</p>
+</li>
+<li>
+<p>DataPass writes a request with the project's real locations and views. Give it to your AI; there is no network call.</p>
+<p><figure><img src="../../qa/v5/shots/v5-25-tourai-request.png" alt="Tour request" loading="lazy" width="1440" height="900"><figcaption>Tour request</figcaption></figure></p>
+</li>
+<li>
+<p>Import the answer through the AI exchange. The tour appears marked <strong>AI-proposed</strong>. A step that points to a place that does not exist becomes a hole step, never an invented screen.</p>
+<p><figure><img src="../../qa/v5/shots/v5-26-tourai-imported.png" alt="Imported AI tour" loading="lazy" width="1440" height="900"><figcaption>Imported AI tour</figcaption></figure></p>
+</li>
+</ol>
+<h2 id="11-explainer-export">11. Explainer export</h2>
+<p>A single HTML page you can send to a client: architecture map, flows, lineage, readiness, next steps and recorded decisions.</p>
+<ol>
+<li>Run <strong>DataPass: Export Explainer Page (HTML)…</strong>.</li>
+<li>Choose the audience: <strong>internal</strong> (confidential items left out) or <strong>public</strong> (only items marked public).</li>
+<li>The page is saved as <code>.datapass/explain/export-&lt;date&gt;.html</code>. Click <strong>Open in Browser</strong> or <strong>Reveal File</strong>. DataPass uploads nothing: you share the file yourself.</li>
+</ol>
+<p><figure><img src="../../qa/v5/shots/v5-27-explainer-page.png" alt="Explainer page" loading="lazy" width="1440" height="900"><figcaption>Explainer page</figcaption></figure></p>
+<p>The page works offline (no web link inside). Its header shows the project, the Git commit, the date and the legend of where each fact comes from. Sections and their order are a setting (<code>datapass.explain.sections</code>), words too (<code>datapass.explain.labels</code>). On <code>shop-bare</code>, readiness and decisions show holes, never an empty chart dressed up as data.</p>
+<p><strong>DataPass: Export Explainer Page with a Tour (HTML)…</strong> adds a tour player to the page, so the reader can step through a tour without VS Code. The plain export asks too, with <strong>No tour</strong> as the default.</p>
+<h2 id="12-architect-review">12. Architect review</h2>
+<p>DataPass offers an architect review (never runs one by itself) when:</p>
+<ul>
+<li>a change touches many components (more than <code>datapass.architectReview.largeChangeComponents</code>, default 5);</li>
+<li>the same check fails twice in a row (<code>datapass.architectReview.repeatedFailures</code>);</li>
+<li>you mark a readiness milestone done.</li>
+</ul>
+<ol>
+<li>Accept the offer, or run <strong>DataPass: Ask an Architect Review (AI exchange)…</strong>: a request is prepared for your AI.</li>
+<li>Run <strong>DataPass: Import the Architect Review Answer…</strong>: the answer shows in the Context view, marked AI-proposed. A citation of a file that is not in the project is flagged &quot;unverified&quot;. The milestone stays reversible.</li>
+</ol>
+<p><figure><img src="../../qa/v5/shots/v5-28-architect-review.png" alt="Architect review" loading="lazy" width="1440" height="900"><figcaption>Architect review</figcaption></figure></p>
+<p>Turn the offers off with <code>datapass.architectReview.suggestions</code>.</p>
+<p><strong>Next steps.</strong> Every Navigator level has a <strong>Next steps</strong> table: what is still to do there, gathered only from facts DataPass already holds. Two new kinds of rows: gaps your AI reported through the exchange, and <strong>stale evidence</strong> (a verdict made on a file that has changed since). Each row jumps to where the work is.</p>
+<h2 id="13-studio-demo">13. Studio demo</h2>
+<p>Studio is a separate web app (repository <code>datapass-studio</code>) that opens a DataPass workspace export in the browser, with a DuckDB engine running in the page.</p>
+<ol>
+<li>In <code>datapass-studio</code>: <code>npm run build:shell</code>, then serve the repository root on your machine only (for example <code>python -m http.server -b 127.0.0.1 8000</code>).</li>
+<li>Open <code>/apps/studio-shell/dist/?workspace=examples/studio2/datapass-project.workspace.json</code>.</li>
+<li>The <strong>catalog</strong> shows the shared DataPass views; open a SQL sheet and run a query on the sample table (queries never run on open).</li>
+</ol>
+<p><figure><img src="../../qa/v5/shots/v5-29-studio-catalog.png" alt="Studio catalog" loading="lazy" width="1440" height="900"><figcaption>Studio catalog</figcaption></figure>
+<figure><img src="../../qa/v5/shots/v5-30-studio-query.png" alt="Studio query" loading="lazy" width="1440" height="900"><figcaption>Studio query</figcaption></figure></p>
+<h2 id="14-turning-v5-features-off">14. Turning V5 features off</h2>
+<p>Each V5 feature has its own switch; off means no UI and nothing computed.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Turns off</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>datapass.guided.enabled</code></td>
+<td>every guided tour, the Tours section and tour commands</td>
+</tr>
+<tr>
+<td><code>datapass.guided.generatedJourneys.enabled</code></td>
+<td>the tours generated from the project</td>
+</tr>
+<tr>
+<td><code>datapass.pedagogy.queryShowcase.enabled</code></td>
+<td>Queries Worth Showing</td>
+</tr>
+<tr>
+<td><code>datapass.guided.modes.learning.enabled</code>, <code>datapass.guided.modes.interview.enabled</code></td>
+<td>the Learning / Interview tours</td>
+</tr>
+<tr>
+<td><code>datapass.pedagogy.enabled</code></td>
+<td>all pedagogy cards and commands</td>
+</tr>
+<tr>
+<td><code>datapass.guided.ai.enabled</code></td>
+<td>Ask the AI for a Guided Tour</td>
+</tr>
+<tr>
+<td><code>datapass.architectReview.suggestions</code></td>
+<td>the architect review offers</td>
+</tr>
+</tbody>
+</table>
+<h2 id="not-in-v5">Not in V5</h2>
+<p>Moved to V5.1: the FastAPI endpoint view, layouts per Navigator step, and the cross-repository impact view.</p>
+</main>
+</body>
+</html>
