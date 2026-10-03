@@ -2,7 +2,7 @@
   "name": "datapass-vscode",
   "displayName": "DataPass Control Plane",
   "description": "VS Code workbench for AI-prepared cloud projects: see the architecture, the files each step needs in which repository, what is missing, and open the right file or official tool (Fabric, Databricks, Azure Data Factory, Functions, Cosmos DB, MongoDB, PostgreSQL, Power BI, Grafana, IaC).",
-  "version": "1.1.0-rc.1",
+  "version": "1.2.0-rc.1",
   "publisher": "julian-passebecq",
   "license": "UNLICENSED",
   "engines": {
@@ -4657,7 +4657,7 @@
     "@juliandatapass-group/analyzers-airflow": "file:vendor/common/juliandatapass-group-analyzers-airflow-0.1.0-alpha.6.tgz",
     "@juliandatapass-group/analyzers-api": "file:vendor/common/juliandatapass-group-analyzers-api-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/analyzers-dbt": "file:vendor/common/juliandatapass-group-analyzers-dbt-0.1.0-alpha.4.tgz",
-    "@juliandatapass-group/analyzers-orchestration": "file:vendor/common/juliandatapass-group-analyzers-orchestration-0.1.0-alpha.6.tgz",
+    "@juliandatapass-group/analyzers-orchestration": "file:vendor/common/juliandatapass-group-analyzers-orchestration-0.1.0-alpha.9.tgz",
     "@juliandatapass-group/arch-catalog": "file:vendor/common/juliandatapass-group-arch-catalog-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/arch-decisions": "file:vendor/common/juliandatapass-group-arch-decisions-0.1.0-alpha.4.tgz",
     "@juliandatapass-group/capability-router": "file:vendor/common/juliandatapass-group-capability-router-0.1.0-alpha.2.tgz",

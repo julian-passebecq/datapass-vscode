@@ -13,7 +13,8 @@ async function main(): Promise<void> {
   writeFileSync(join(profile, 'User/settings.json'), JSON.stringify({ 'update.mode': 'none', 'extensions.autoUpdate': false, 'extensions.autoCheckUpdates': false, 'workbench.startupEditor': 'none', 'datapass.experience.preset': 'advanced' }));
   cli(code, ['--user-data-dir', profile, '--extensions-dir', extensions, '--install-extension', vsix, '--force']);
   const installed = cli(code, ['--user-data-dir', profile, '--extensions-dir', extensions, '--list-extensions', '--show-versions']);
-  if (!installed.includes('julian-passebecq.datapass-vscode@1.1.0-rc.1')) throw new Error('Candidate is not installed in isolated profile');
+  const version = (JSON.parse(readFileSync(resolve(__dirname, '..', 'package.json'), 'utf8')) as { version: string }).version;
+  if (!installed.includes(`julian-passebecq.datapass-vscode@${version}`)) throw new Error('Candidate is not installed in isolated profile');
   const env = { ...process.env }; delete env.ELECTRON_RUN_AS_NODE;
   const app = await _electron.launch({ executablePath: code, args: ['--user-data-dir', profile, '--extensions-dir', extensions, '--disable-workspace-trust', '--skip-welcome', '--skip-release-notes', '--disable-telemetry', '--new-window', fixtureRoot, join(fixtureRoot, 'join-filter.sql')], env, timeout: 120000 });
   let passed = false;

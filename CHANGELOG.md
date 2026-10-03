@@ -5,6 +5,55 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+## 1.2.0-rc.1 — V5 release candidate 1: guided tours, dbt authority, multi-repo history, an explainer you can send (2026-10-03)
+
+Plan: [handoff/V5-PLAN.md](handoff/V5-PLAN.md); walkthrough with screenshots: [docs/tutorials/V5.md](docs/tutorials/V5.md).
+Every V5 feature has its own setting and is off-able (tutorial § 14). DataPass still never runs your client's code,
+never deploys and never calls an AI behind your back: AI help goes through a request file, and answers come back
+marked **AI-proposed**. Where a fact is missing you see a hole (what, why, how to fill it), never a made-up value.
+Rollback: the v1.1.0-rc.1 VSIX.
+
+### dbt and notebooks — who is the authority
+- **Detach a dbt model**: after materializing a dbt model as a Fabric notebook (preview first, nothing written before
+  you confirm), *DataPass: Detach dbt Model* makes the notebook the authority. One record is written; the model gets a
+  **detached** badge and DataPass tells you when the two sides drift (notebook edited, dbt changed, both changed).
+- Materialize also offers a **Spark job definition** target: a wheel skeleton and an entry script, proposed only.
+- The Context view's **Authority** section lists what was really **granted** and what is only **claimed**; a label
+  saying "approved" never counts as an approval.
+
+### Several repositories, one picture
+- Two new Navigator views for multi-repo projects: **Repo lanes** (the last 100 commits per repository) and **Repo
+  components** (which components each repository's commits touched). Read-only Git only: no fetch, pull or push.
+
+### Views
+- **Data sample for a code step** (Power Query, notebooks): a few rows from a local file read by Data X-Ray, or from
+  your own AI (marked AI-proposed). DataPass never runs the step's query.
+- **Airflow DAG**: switch top-down / left-right, choose where the view opens (side bar, panel or editor tab), and
+  shapes by operator family (`datapass.airflow.dagFamilies`).
+
+### Learn and present your project
+- **Guided mode, Learning or Interview**: the built-in tour *The whole picture* (arrive, live, change, run, trust),
+  with step boxes, a mini-map, number keys and the mouse wheel. Interview adds "Explain the project" and questions
+  to ask yourself. Save your own path as a tour, add a screen to a tour, present a tour read-only.
+- **Cards**: *Queries Worth Showing*, concept cards built on your own code, and decision cards that ask the owner
+  when no fact says which option was taken.
+- **Ask the AI for a Guided Tour**: a request with your project's real places; an imported step pointing nowhere
+  becomes a hole step.
+
+### Share and review
+- **Explainer page (HTML)**: one offline page for a client (architecture, flows, lineage, readiness, next steps,
+  decisions), internal or public audience, optionally with a tour player. Nothing is uploaded.
+- **Architect review**: offered (never run by itself) on a large change, a check failing twice or a milestone; the
+  answer is AI-proposed and unknown citations are flagged "unverified".
+- **Next steps** tables now also list gaps your AI reported and **stale evidence**.
+
+### Under the hood
+- Vendored Common re-pinned to Common main (all packages, version + digest), with the V5 analyzer coverage
+  (Snowflake stages and Snowpark, Terraform for Snowflake, Databricks and Scala Spark, orchestration).
+- Studio (separate web app, `datapass-studio`) opens a DataPass workspace export in the browser with DuckDB.
+
+### Also since 1.1.0-rc.1
+
 - Git-first materialization core (V4 MAT1, brief § 27): `src/core/materialize/` turns an architecture candidate into candidate Fabric files in the Fabric Git folder format (Notebook, Spark Job Definition with its main file, Data Pipeline stub referencing them by logicalId), deterministically; every file carries a provenance stamp (source logical id and revision, generator and version, target platform, native kind, environment, content hash, evidence origin "generated"), inline for Python and as a sidecar under `.datapass/provenance/` for JSON. Validation (names, references, cycles, paths, stamps), a diff preview that never overwrites a hand-edited ("detached", § 28) or foreign file silently, a branch → commit → push → MR plan built only for an explicit user action, and a deploy hand-off that names the native tool chosen by the Common capability router. DataPass never deploys: no provider call, apply or publish. Core only; the command and UI come later.
 - Julian's rc.1 check, remaining remarks (V1.1.x-POLISH-4): a **Home** button (status bar, and the title bars of the DataPass tree and the rail) restores the Home page, the tree and the rail, with the saved layout named "Home" (Home page → *Save as my Home layout*), else the workspace's startup one, else the last applied; **A− / A+ / reset** for the code text (VS Code's `editor.fontSize`) in the status bar, on the Home page and on Alt+- / Alt+=; **DataPass: Appearance…** gathers the colour theme, the overlay on/off and its colours, the tree icon colours, the diagram style and the code size; **DataPass: Show DataPass in the Activity Bar** brings the DataPass side bar back and says how to keep its icon, now a bolder, simpler shape.
 - Julian's rc.1 check (V1.1.x-POLISH-3): the tree's lens is named in a first row "Showing: <lens> ▾" and in a status-bar item "DataPass tree: <lens>" (both switch it, from any view), with a one-time hint when a project opens while the Explorer shows; the separate Git view hides while the Git lens shows; the right rail is a native tree that folds down to VS Code's minimum width (170 px) and each of its buttons unfolds its own view alone; the DAG button finds the project's Airflow DAG files (read, never run) when the file in the editor is not one.
