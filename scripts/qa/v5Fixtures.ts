@@ -7,7 +7,13 @@
  *                         commits, `.datapass/repos.json` (roles, edges, one vendored Common pin) and a
  *                         local fake Common clone one commit ahead of the pin;
  *  - `repo-set-no-bi`     the same without the `bi` clone (hole: "missing clone");
- *  - `repo-set-no-common` the same without the Common clone (hole: drift "unknown").
+ *  - `repo-set-no-common` the same without the Common clone (hole: drift "unknown");
+ *  - `shop-macro`         `shop` whose compiled fct_orders still holds a macro call (row 02 hole);
+ *  - `shop-milestone`     `shop` with a readiness milestone (checklist item `gold-ready`) on fct_orders (row 13);
+ *  - `dag`                two synthetic Airflow DAGs, one with an operator of an unknown kind (row 07);
+ *  - `fastapi-orders`     four FastAPI endpoints plus the OTLP replay cassettes (row 04, cut to V5.1);
+ *  - `studio-demo` / `studio-hole`: not folders here, see `buildStudioOverlay` (row 14, Chromium).
+ * Canned AI answers (tests/fixtures/v5/exchange) are given to file dialogs by the `chooseCassette` step.
  * Commits use a fixed author and date, so SHAs are the same on every run.
  */
 import * as fs from "node:fs";
@@ -139,12 +145,85 @@ export function buildFixture(kind: V5Fixture, dest: string): string {
       git(dest, ["init", "-q"]);
       commit(dest, `${kind}: synthetic lakehouse`);
       return dest;
+    case "shop-macro": case "shop-milestone":
+      day = 0;
+      copyTree(path.join(V5_FIXTURE_DIR, "shop"), dest);
+      if (kind === "shop-macro") {
+        // dbt compile left a macro call it could not expand: the plan must show a typed hole, never guessed code.
+        write(dest, "dbt/target/compiled/shop/models/marts/fct_orders.sql", `
+select customer_id, order_date, count(*) as orders, {{ cents_to_currency('sum(amount)') }} as revenue
+from shop_lakehouse.silver.stg_orders
+group by customer_id, order_date
+`);
+      } else {
+        // A readiness milestone on the gold model (a component checklist item), not done yet.
+        const file = path.join(dest, ".datapass", "graph.json");
+        const graph = JSON.parse(fs.readFileSync(file, "utf8")) as { items: Array<Record<string, unknown>> };
+        const gold = graph.items.find(i => i.id === "fct-orders")!;
+        gold.checklist = [{ id: "gold-ready", label: "Gold ready for the sales report" }];
+        fs.writeFileSync(file, JSON.stringify(graph, null, 2) + "\n");
+      }
+      git(dest, ["init", "-q"]);
+      commit(dest, `${kind}: synthetic lakehouse`);
+      return dest;
     case "repo-set": buildRepoSet(dest); return path.join(dest, "repo-set.code-workspace");
     case "repo-set-no-bi": buildRepoSet(dest, { withoutBi: true }); return path.join(dest, "repo-set.code-workspace");
     case "repo-set-no-common": buildRepoSet(dest, { withoutCommon: true }); return path.join(dest, "repo-set.code-workspace");
-    case "fastapi-orders": case "qa-client":
-      throw new Error(`fixture ${kind} belongs to V5E2E1b (rows 04 and 07)`);
+    case "fastapi-orders": case "dag":
+      day = 0;
+      copyTree(path.join(V5_FIXTURE_DIR, kind), dest);
+      git(dest, ["init", "-q"]);
+      commit(dest, `${kind}: synthetic`);
+      return dest;
+    case "studio-demo": case "studio-hole":
+      throw new Error(`fixture ${kind} is served to Chromium (buildStudioOverlay), not opened in VS Code`);
   }
+}
+
+// ------------------------------------------------------------------ Studio (row 14, Chromium)
+
+/** The built SQLRooms shell inside a datapass-studio checkout. */
+export const STUDIO_SHELL = "apps/studio-shell/dist";
+/** The synthetic DataPass export Studio ships (examples/studio2), opened by the demo journey. */
+export const STUDIO_DEMO_WORKSPACE = "examples/studio2/datapass-project.workspace.json";
+
+/** `explicit`, else the nearest `datapass-studio` folder beside this checkout or one of its parents. */
+export function findStudio(repo: string, explicit?: string): string | undefined {
+  if (explicit) return path.resolve(explicit);
+  for (let d = repo; ; d = path.dirname(d)) {
+    const c = path.join(d, "datapass-studio");
+    if (fs.existsSync(path.join(c, "apps", "studio-shell"))) return c;
+    if (path.dirname(d) === d) return undefined;
+  }
+}
+
+/**
+ * Files served before the Studio checkout's own (the journey's synthetic workspace); returns the workspace path the
+ * shell opens. `studio-demo` opens the shipped demo as is; `studio-hole` is the same demo whose catalog exports no
+ * data for the project's "health" view (a view with no data: a hole panel, never sample rows).
+ */
+export function buildStudioOverlay(kind: V5Fixture, studio: string, overlay: string): string {
+  fs.rmSync(overlay, { recursive: true, force: true });
+  fs.mkdirSync(overlay, { recursive: true });
+  if (kind === "studio-demo") return STUDIO_DEMO_WORKSPACE;
+  if (kind !== "studio-hole") throw new Error(`${kind} is not a Studio fixture`);
+  const dir = path.posix.dirname(STUDIO_DEMO_WORKSPACE);
+  const ws = JSON.parse(fs.readFileSync(path.join(studio, ...STUDIO_DEMO_WORKSPACE.split("/")), "utf8")) as { id: string; title: string; datapassInputs: Array<{ id: string; schema: string; location: string }> };
+  const input = ws.datapassInputs.find(i => i.schema === "datapass.view-catalog/1");
+  if (!input) throw new Error("the Studio demo workspace has no view catalog input");
+  const catalogRel = path.posix.join(dir, input.location);
+  const catalog = JSON.parse(fs.readFileSync(path.join(studio, ...catalogRel.split("/")), "utf8")) as { locations: Array<{ location: { level: string }; data?: Record<string, unknown> }> };
+  const project = catalog.locations.find(l => l.location.level === "project");
+  if (!project?.data?.health) throw new Error("the Studio demo catalog has no project health data to remove");
+  delete project.data.health;
+  const holeCatalog = input.location.replace(/catalog\.json$/, "v5-hole-catalog.json");
+  input.location = holeCatalog;
+  ws.id = `${ws.id}-v5-hole`;
+  ws.title = `${ws.title} (no health data)`;
+  write(overlay, path.posix.join(dir, holeCatalog), JSON.stringify(catalog, null, 2) + "\n");
+  const wsRel = path.posix.join(dir, "v5-hole.workspace.json");
+  write(overlay, wsRel, JSON.stringify(ws, null, 2) + "\n");
+  return wsRel;
 }
 
 /** Every file under `root` (posix, relative) with its size and mtime, `.git/` excluded. */

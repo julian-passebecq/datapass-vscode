@@ -1,0 +1,20 @@
+{
+  "schema": "datapass.tour/1",
+  "tours": [
+    {
+      "id": "ai.bi",
+      "titleRef": "text:title",
+      "mode": "learning",
+      "generation": { "exclude": ["query-showcase"] },
+      "steps": [
+        { "id": "step-1", "location": { "level": "project", "nodeId": "shop-lakehouse", "artifactKind": "project" }, "viewId": "architecture", "explanationRef": "text:step-1", "section": "explain-project", "origin": "ai-proposed" },
+        { "id": "step-2", "location": { "level": "artifact", "nodeId": "finance-cube", "artifactKind": "other" }, "viewId": "lineage", "explanationRef": "text:step-2", "section": "business-context", "origin": "ai-proposed" }
+      ]
+    }
+  ],
+  "texts": {
+    "title": "Understand the BI part",
+    "step-1": "Start from the whole project.",
+    "step-2": "The finance cube is where BI starts (this artifact does not exist in the project)."
+  }
+}

@@ -1,7 +1,21 @@
 {
   "format": "datapass.v5-acceptance",
   "version": 1,
-  "part": "a",
+  "part": "all",
+  "spawnTriggers": {
+    "$comment": "V5E2E1b: which steps may start a lazy-probe or user-command spawn of src/core/spawnAllowList.ts (read-only ones need none). view:<name> = openView, command:<id> = run by label or by id (a trailing * matches a family), click:<text> = a click or quick-pick row.",
+    "probe.*": ["view:Galaxy", "command:datapass.refresh", "command:datapass.showPreflight", "command:datapass.recordQualification", "command:datapass.exportQualificationReport", "command:datapass.showOperation", "command:datapass.recordComponentResult", "click:Tools"],
+    "git.fetch": ["command:datapass.git.fetchAll", "command:datapass.git.fetchRepository", "command:datapass.getUpdates", "command:datapass.checkForUpdates", "command:datapass.workOrders.*", "click:Fetch all"],
+    "git.merge": ["command:datapass.getUpdates"],
+    "git.clone": ["command:datapass.openClientProject", "command:datapass.cloneRepository"],
+    "git.ls-remote": ["command:datapass.workOrders.*", "command:datapass.createCandidate"],
+    "az.account-show": ["command:datapass.checkConnections"],
+    "databricks.auth-profiles": ["command:datapass.checkConnections"],
+    "fab.auth-status": ["command:datapass.checkConnections"],
+    "fab.get": ["view:Galaxy", "command:datapass.refresh"],
+    "fab.ls": ["view:Galaxy", "command:datapass.refresh"],
+    "app.launch": ["command:datapass.openPowerOps", "command:datapass.workOrders.openApp", "command:datapass.openNativeTool"]
+  },
   "rows": [
     {
       "id": "01",
@@ -20,6 +34,7 @@
             {"quickPick": "fct_orders"},
             {"quickPick": "fabric-notebook"},
             {"click": "Write", "role": "button"},
+            {"acceptWrites": "^fabric/"},
             {"expectFile": "^\\.datapass/materialization/.*fct_orders.*\\.json$"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
             {"quickPick": "fct_orders"},
@@ -51,10 +66,11 @@
             {"quickPick": "fct_orders"},
             {"quickPick": "fabric-notebook"},
             {"click": "Write", "role": "button"},
+            {"acceptWrites": "^fabric/"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
             {"quickPick": "fct_orders"},
             {"click": "Detach", "role": "button"},
-            {"deleteFile": "fabric/fct_orders.Notebook/notebook-content.py"},
+            {"deleteFile": "fabric/dbt_fct_orders.Notebook/notebook-content.py"},
             {"openView": "DataPass"},
             {"expect": "target missing", "timeoutMs": 20000},
             {"expectAbsent": "in sync"}
@@ -67,10 +83,50 @@
       "title": "Spark-job target",
       "packages": ["SJDMAT1"],
       "part": "b",
-      "requires": {"commands": ["datapass.dbt.materialize"], "sources": ["src/core/materialize/sjdWheel.ts"]},
-      "providers": {"datapass.dbt.materialize": "DBTMAT1 !218", "src/core/materialize/sjdWheel.ts": "SJDMAT1 !222"},
+      "requires": {"commands": ["datapass.dbt.materialize"], "sources": ["src/core/materialize/dbtSparkJob.ts", "src/core/materialize/targetCard.ts"]},
+      "providers": {"datapass.dbt.materialize": "DBTMAT1 (merged)", "src/core/materialize/dbtSparkJob.ts": "SJDMAT1 !222", "src/core/materialize/targetCard.ts": "SJDMAT1 !222"},
       "shots": ["v5-04-sjd-target", "v5-05-sjd-plan"],
-      "journeys": []
+      "journeys": [
+        {
+          "id": "V5-02", "kind": "main", "title": "Materialize fct_orders as a Spark job: wheel skeleton and entry proposed, Git plan as arguments, nothing built or deployed", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
+            {"quickPick": "fct_orders"},
+            {"expect": "default: one notebook per model"},
+            {"expect": "one Spark job + Python wheel project"},
+            {"shot": "v5-04-sjd-target"},
+            {"quickPick": "spark-job-definition"},
+            {"expect": "dbt materialization proposal", "timeoutMs": 20000},
+            {"expect": "Nothing is run or deployed"},
+            {"click": "Write", "role": "button"},
+            {"acceptWrites": "^(fabric|jobs)/"},
+            {"expectFile": "^jobs/dbt_shop_jobs/pyproject\\.toml$"},
+            {"expectFile": "^jobs/dbt_shop_jobs/src/dbt_shop_jobs/models/fct_orders\\.py$"},
+            {"expectFile": "\\.SparkJobDefinition/"},
+            {"expectNoFile": "\\.whl$"},
+            {"expectNoFile": "^jobs/dbt_shop_jobs/(dist|build)/"},
+            {"expect": "Git steps (run them yourself, after review)", "timeoutMs": 20000},
+            {"expect": "DataPass never builds it"},
+            {"shot": "v5-05-sjd-plan"},
+            {"expectNoFile": "^\\.git/refs/heads/datapass"},
+            {"expect": "Materialize these dbt models as notebooks or as a Spark job?"}
+          ]
+        },
+        {
+          "id": "V5-02-HOLE", "kind": "hole", "title": "An unresolvable macro in the compiled SQL: a typed hole in the plan, no guessed code", "fixture": "shop-macro",
+          "steps": [
+            {"run": "DataPass: Materialize dbt Models as Fabric Notebooks (preview, then write)"},
+            {"quickPick": "fct_orders"},
+            {"quickPick": "spark-job-definition"},
+            {"expect": "dbt.compiled-sql-jinja", "timeoutMs": 20000},
+            {"expectAbsent": "models/fct_orders.py"},
+            {"press": "Escape"},
+            {"expectNoFile": "models/fct_orders\\.py$"}
+          ]
+        }
+      ],
+      "pendingMerge": "SJDMAT1 !222",
+      "notes": ["Coded against origin/v5/sjdmat1 3c762d2. The dbt artefacts are synthetic (tests/fixtures/v5/shop/dbt/target, as dbt compile leaves them); the environment comes from .datapass/dbt-materialize.json.", "Step 3 (the EXEC1c card) is asserted by its question text: on the branch targetCard.ts is pure and no surface shows it yet, so this step fails until it is shown (hole, not weakened)."]
     },
     {
       "id": "03",
@@ -195,11 +251,12 @@
             {"quickPick": "fct_orders"},
             {"quickPick": "fabric-notebook"},
             {"click": "Write", "role": "button"},
+            {"acceptWrites": "^fabric/"},
             {"run": "DataPass: Detach dbt Model (the notebook becomes the authority)"},
             {"quickPick": "fct_orders"},
             {"click": "Detach", "role": "button"},
             {"openFile": "dbt/models/marts/fct_orders.sql"},
-            {"run": "DataPass: Show Context"},
+            {"command": "datapass.context.show"},
             {"click": "Authority", "role": "tab"},
             {"expect": "detached"},
             {"expect": "dbt"},
@@ -211,9 +268,9 @@
           "id": "V5-06-HOLE", "kind": "hole", "title": "No approval record: no approval recorded, never approved", "fixture": "shop",
           "steps": [
             {"openFile": "dbt/models/marts/fct_orders.sql"},
-            {"run": "DataPass: Show Context"},
+            {"command": "datapass.context.show"},
             {"click": "Authority", "role": "tab"},
-            {"expect": "no approval recorded"},
+            {"expect": "No approval is recorded"},
             {"expectAbsent": "Approved"}
           ]
         }
@@ -224,10 +281,52 @@
       "title": "DAG UX",
       "packages": ["DAGUX1"],
       "part": "b",
-      "requires": {"commands": ["datapass.airflow.toggleLayout", "datapass.airflow.choosePlacement"], "settings": ["datapass.airflow.dagLayout", "datapass.airflow.dagPlacement"]},
-      "providers": {"datapass.airflow.toggleLayout": "DAGUX1 !240", "datapass.airflow.choosePlacement": "DAGUX1 !240", "datapass.airflow.dagLayout": "DAGUX1 !240", "datapass.airflow.dagPlacement": "DAGUX1 !240"},
+      "requires": {"commands": ["datapass.showAirflowDag", "datapass.airflow.toggleLayout", "datapass.airflow.choosePlacement"], "settings": ["datapass.airflow.dagLayout", "datapass.airflow.dagPlacement", "datapass.airflow.dagFamilies"]},
+      "providers": {"datapass.airflow.toggleLayout": "DAGUX1 !240", "datapass.airflow.choosePlacement": "DAGUX1 !240", "datapass.airflow.dagLayout": "DAGUX1 !240", "datapass.airflow.dagPlacement": "DAGUX1 !240", "datapass.showAirflowDag": "Airflow DAG view (merged)", "datapass.airflow.dagFamilies": "DAGUX1 !240"},
       "shots": ["v5-15-dag-default", "v5-16-dag-options"],
-      "journeys": []
+      "journeys": [
+        {
+          "id": "V5-07", "kind": "main", "title": "Open the DAG, switch layout and placement, reload: options persist; no node overlap", "fixture": "dag", "settings": {"datapass.airflow.dagFamilies": {"sql": {"shape": "hexagon"}}},
+          "steps": [
+            {"openFile": "dags/orders_daily.py"},
+            {"run": "DataPass: Show Airflow DAG"},
+            {"expect": "build_gold", "timeoutMs": 20000},
+            {"expect": "Top to bottom"},
+            {"expectNoOverlap": "g.task"},
+            {"expectElement": "g.task[data-id=\"build_gold\"] [data-shape=\"hexagon\"]"},
+            {"expect": "Navigator"},
+            {"shot": "v5-15-dag-default"},
+            {"click": "Top to bottom", "role": "button"},
+            {"expect": "Left to right"},
+            {"command": "datapass.airflow.choosePlacement"},
+            {"quickPick": "Bottom panel"},
+            {"run": "DataPass: Show Airflow DAG"},
+            {"expect": "build_gold", "timeoutMs": 20000},
+            {"expect": "Left to right"},
+            {"expectNoOverlap": "g.task"},
+            {"shot": "v5-16-dag-options"},
+            {"run": "Developer: Reload Window"},
+            {"wait": 10000},
+            {"openFile": "dags/orders_daily.py"},
+            {"run": "DataPass: Show Airflow DAG"},
+            {"expect": "Left to right", "timeoutMs": 30000},
+            {"expectElement": "g.task[data-id=\"build_gold\"] [data-shape=\"hexagon\"]"}
+          ]
+        },
+        {
+          "id": "V5-07-HOLE", "kind": "hole", "title": "An unknown operator kind: generic shape labelled unclassified, never a guessed kind", "fixture": "dag",
+          "steps": [
+            {"openFile": "dags/odd_operators.py"},
+            {"run": "DataPass: Show Airflow DAG"},
+            {"expect": "zorb_step", "timeoutMs": 20000},
+            {"expectElement": "g.task[data-id=\"zorb_step\"] [data-shape=\"rect\"]"},
+            {"expect": "unclassified"},
+            {"expectAbsent": "Other operator"}
+          ]
+        }
+      ],
+      "pendingMerge": "DAGUX1 !240",
+      "notes": ["Coded against origin/v5/dagux1 6cddc7f. Runs on tests/fixtures/v5/dag (synthetic Airflow DAGs): qa/client is a configuration of remote repositories, not a local fixture (same as row 05 with qa/hop-client).", "Shapes come from settings: the journey sets datapass.airflow.dagFamilies sql -> hexagon and checks the SQL tasks are drawn as hexagons.", "Hole: the branch labels an unknown operator 'Other operator'; the spec wants 'unclassified', so the hole journey fails until the label follows the spec (not weakened)."]
     },
     {
       "id": "08",
@@ -355,10 +454,66 @@
       "title": "AI-prepared tour",
       "packages": ["TOURAI1"],
       "part": "b",
-      "requires": {"commands": ["datapass.nav.tour.pick"], "sources": ["src/core/navigation/tours/tourAi.ts"]},
-      "providers": {"src/core/navigation/tours/tourAi.ts": "TOURAI1 !243"},
+      "requires": {"commands": ["datapass.nav.tour.askAi", "datapass.nav.tour.pick", "datapass.showAiExchange"], "settings": ["datapass.guided.ai.topics", "datapass.guided.ai.enabled"], "sources": ["src/core/guided-ai/tourExchange.ts"]},
+      "providers": {"datapass.nav.tour.askAi": "TOURAI1 !243", "datapass.guided.ai.topics": "TOURAI1 !243", "datapass.guided.ai.enabled": "TOURAI1 !243", "src/core/guided-ai/tourExchange.ts": "TOURAI1 !243"},
       "shots": ["v5-25-tourai-request", "v5-26-tourai-imported"],
-      "journeys": []
+      "journeys": [
+        {
+          "id": "V5-11", "kind": "main", "title": "Prepare a tour with AI for the BI part, queries excluded: the request is a file, no network", "fixture": "shop", "settings": {"datapass.guided.ai.topics": [{"id": "bi", "label": "Understand the BI part", "ask": "understand the BI part", "exclude": ["query-showcase"]}]},
+          "steps": [
+            {"run": "DataPass: Ask the AI for a Guided Tour…"},
+            {"quickPick": "Understand the BI part"},
+            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"expectClipboard": "Prepare a guided tour of my project on this topic: understand the BI part"},
+            {"expectClipboard": "{\"exclude\":[\"query-showcase\"]}"},
+            {"shot": "v5-25-tourai-request"},
+            {"expectFile": "^\\.datapass/.*tour.*request"}
+          ]
+        },
+        {
+          "id": "V5-11-IMPORT", "kind": "main", "title": "Import the cassette: the tour is ai-proposed, checked against real Locations, the excluded section empty", "fixture": "shop", "settings": {"datapass.guided.ai.topics": [{"id": "bi", "label": "Understand the BI part", "ask": "understand the BI part", "exclude": ["query-showcase"]}]},
+          "steps": [
+            {"run": "DataPass: Ask the AI for a Guided Tour…"},
+            {"quickPick": "Understand the BI part"},
+            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"chooseCassette": "tour-bi.json"},
+            {"run": "DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)"},
+            {"click": "From a file…"},
+            {"wait": 1500},
+            {"click": "Show the diff and write…", "role": "button"},
+            {"expect": "guided tours (tours.json)", "timeoutMs": 20000},
+            {"click": "Create the file", "role": "button"},
+            {"expectFile": "^\\.datapass/tours\\.json$"},
+            {"expectFileText": "^\\.datapass/tours\\.json$", "text": "\"ai.bi\""},
+            {"expectFileText": "^\\.datapass/tours\\.json$", "text": "\"origin\": \"ai-proposed\""},
+            {"expectFileLacks": "^\\.datapass/tours\\.json$", "text": "\"section\": \"query-showcase\""},
+            {"expectFileLacks": "^\\.datapass/tours\\.json$", "text": "\"origin\": \"user\""},
+            {"run": "DataPass: Pick a Tour…"},
+            {"quickPick": "Understand the BI part"},
+            {"expect": "ai-proposed", "timeoutMs": 20000},
+            {"shot": "v5-26-tourai-imported"}
+          ]
+        },
+        {
+          "id": "V5-11-HOLE", "kind": "hole", "title": "A cassette step on an unknown Location: a typed hole, never an invented screen", "fixture": "shop", "settings": {"datapass.guided.ai.topics": [{"id": "bi", "label": "Understand the BI part", "ask": "understand the BI part", "exclude": ["query-showcase"]}]},
+          "steps": [
+            {"run": "DataPass: Ask the AI for a Guided Tour…"},
+            {"quickPick": "Understand the BI part"},
+            {"expect": "Copied a guided-tour request", "timeoutMs": 20000},
+            {"chooseCassette": "tour-bi-unknown.json"},
+            {"run": "DataPass: Show the AI Exchange (Copy a File, Paste the AI's Answer)"},
+            {"click": "From a file…"},
+            {"wait": 1500},
+            {"click": "Show the diff and write…", "role": "button"},
+            {"expect": "does not exist in this project", "timeoutMs": 20000},
+            {"click": "Create the file", "role": "button"},
+            {"expectFile": "^\\.datapass/tours\\.json$"},
+            {"expectFileLacks": "^\\.datapass/tours\\.json$", "text": "finance-cube"}
+          ]
+        }
+      ],
+      "pendingMerge": "TOURAI1 !243",
+      "notes": ["Coded against origin/v5/tourai1 1402dbe. Cassettes: tests/fixtures/v5/exchange/tour-bi.json (and tour-bi-unknown.json for the hole); no model is called.", "generation.exclude=[queries] is the tour/1 section query-showcase (TOUR_SECTION_IDS has no 'queries').", "Spec step 1 wants a request file: on the branch the request goes to the clipboard only, so V5-11 fails at expectFile until a file is written (hole, not weakened)."]
     },
     {
       "id": "12",
@@ -368,24 +523,47 @@
       "requires": {"commands": ["datapass.explain.export"], "settings": ["datapass.explain.sections"]},
       "providers": {"datapass.explain.export": "EXPLAIN1 !233", "datapass.explain.sections": "EXPLAIN1 !233"},
       "shots": ["v5-27-explainer-page"],
-      "notes": ["Stepping through the exported page in Chromium with the network off is V5E2E1b; here the file is asserted self-contained (no http:// or https://)."],
+      "notes": ["V5-12-OFFLINE (V5E2E1b) opens the exported page in Playwright Chromium with the network off (offline context, every non-file request aborted and reported) and steps through its contents; the screenshot is that page. Section names follow origin/v5/explain1."],
       "journeys": [
         {
           "id": "V5-12", "kind": "main", "title": "Export one self-contained HTML page with header, origins legend and the confidential mark", "fixture": "shop",
           "steps": [
             {"run": "DataPass: Export Explainer Page (HTML)…"},
+            {"quickPick": "internal"},
             {"expectFile": "^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$"},
             {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "Shop lakehouse"},
             {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "confidential"},
             {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "http://"},
-            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"},
-            {"shot": "v5-27-explainer-page"}
+            {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"}
+          ]
+        },
+        {
+          "id": "V5-12-OFFLINE", "kind": "main", "title": "Open the exported page in Chromium with the network off and step through it", "fixture": "shop",
+          "steps": [
+            {"run": "DataPass: Export Explainer Page (HTML)…"},
+            {"quickPick": "internal"},
+            {"expectFile": "^\\.datapass/explain/export-\\d{4}-\\d{2}-\\d{2}\\.html$"},
+            {"openInChromium": "^\\.datapass/explain/export-.*\\.html$"},
+            {"expect": "Shop lakehouse"},
+            {"expect": "Where each value comes from"},
+            {"click": "Architecture map", "role": "link"},
+            {"expectElement": "#xp-architecture"},
+            {"click": "Data and control flows", "role": "link"},
+            {"expectElement": "#xp-flows"},
+            {"click": "Readiness", "role": "link"},
+            {"expectElement": "#xp-readiness"},
+            {"click": "Recorded decisions", "role": "link"},
+            {"expectElement": "#xp-decisions"},
+            {"expect": "confidential"},
+            {"shot": "v5-27-explainer-page"},
+            {"closeChromium": true}
           ]
         },
         {
           "id": "V5-12-HOLE", "kind": "hole", "title": "shop-bare: readiness and decisions are holes, never an empty chart as data", "fixture": "shop-bare",
           "steps": [
             {"run": "DataPass: Export Explainer Page (HTML)…"},
+            {"quickPick": "internal"},
             {"expectFile": "^\\.datapass/explain/export-.*\\.html$"},
             {"expectFileText": "^\\.datapass/explain/export-.*\\.html$", "text": "hole"},
             {"expectFileLacks": "^\\.datapass/explain/export-.*\\.html$", "text": "https://"},
@@ -399,10 +577,70 @@
       "title": "Architect review",
       "packages": ["ARCHCALL1"],
       "part": "b",
-      "requires": {"commands": ["datapass.ai.architectReview", "datapass.ai.importArchitectReview"]},
-      "providers": {"datapass.ai.architectReview": "ARCHCALL1 !235", "datapass.ai.importArchitectReview": "ARCHCALL1 !235"},
+      "requires": {"commands": ["datapass.ai.architectReview", "datapass.ai.importArchitectReview"], "sources": ["src/core/archcall/review.ts"]},
+      "providers": {"datapass.ai.architectReview": "ARCHCALL1 !235", "datapass.ai.importArchitectReview": "ARCHCALL1 !235", "src/core/archcall/review.ts": "ARCHCALL1 !235"},
       "shots": ["v5-28-architect-review"],
-      "journeys": []
+      "journeys": [
+        {
+          "id": "V5-13", "kind": "main", "title": "Marking a readiness milestone done offers an architect-review/1 request; the milestone stays reversible", "fixture": "shop-milestone",
+          "steps": [
+            {"command": "datapass.setProjectChecklist", "args": ["component:fct-orders/gold-ready"]},
+            {"quickPick": "Done"},
+            {"expect": "ask an architect review through the AI exchange?", "timeoutMs": 20000},
+            {"click": "Not now", "role": "button"},
+            {"command": "datapass.setProjectChecklist", "args": ["component:fct-orders/gold-ready"]},
+            {"quickPick": "To do"},
+            {"expectAbsent": "Architect review request copied"}
+          ]
+        },
+        {
+          "id": "V5-13-REVIEW", "kind": "main", "title": "Request for the milestone, import the cassette: the answer shows in Context as ai-proposed", "fixture": "shop-milestone",
+          "steps": [
+            {"run": "DataPass: Ask an Architect Review (AI exchange)…"},
+            {"quickPick": "Before marking done"},
+            {"type": "gold-ready"},
+            {"press": "Enter"},
+            {"wait": 800},
+            {"press": "Enter"},
+            {"expect": "Architect review request copied", "timeoutMs": 20000},
+            {"expectClipboard": "architect-review/1"},
+            {"expectClipboard": "datapass:architect-review:19abba7b3ab96c97181285774e85588fdea314237d720107d5ad9ce1cc0c8c93"},
+            {"expectFileText": "^\\.datapass/local/architect-reviews\\.json$", "text": "\"milestoneId\": \"gold-ready\""},
+            {"run": "DataPass: Import the Architect Review Answer…"},
+            {"chooseCassette": "architect-review.json"},
+            {"quickPick": "From a file…"},
+            {"expect": "Keep this architect review?", "timeoutMs": 20000},
+            {"click": "Keep it", "role": "button"},
+            {"expectFileText": "^\\.datapass/local/architect-reviews\\.json$", "text": "\"origin\": \"ai-proposed\""},
+            {"command": "datapass.context.show"},
+            {"expect": "Add a dbt source freshness check", "timeoutMs": 20000},
+            {"expect": "ai-proposed"},
+            {"shot": "v5-28-architect-review"}
+          ]
+        },
+        {
+          "id": "V5-13-HOLE", "kind": "hole", "title": "An answer citing a file that is not in the project is kept and flagged unverified", "fixture": "shop-milestone",
+          "steps": [
+            {"run": "DataPass: Ask an Architect Review (AI exchange)…"},
+            {"quickPick": "Before marking done"},
+            {"type": "gold-ready"},
+            {"press": "Enter"},
+            {"wait": 800},
+            {"press": "Enter"},
+            {"expect": "Architect review request copied", "timeoutMs": 20000},
+            {"run": "DataPass: Import the Architect Review Answer…"},
+            {"chooseCassette": "architect-review-unverified.json"},
+            {"quickPick": "From a file…"},
+            {"expectAbsent": "Not imported"},
+            {"click": "Keep it", "role": "button"},
+            {"command": "datapass.context.show"},
+            {"expect": "Remove the second refund pass", "timeoutMs": 20000},
+            {"expect": "unverified"}
+          ]
+        }
+      ],
+      "pendingMerge": "ARCHCALL1 !235",
+      "notes": ["Coded against origin/v5/archcall1 c3a2aa9. Cassettes tests/fixtures/v5/exchange/architect-review*.json answer the request the palette path prepares for milestone gold-ready on the project (requestId is a digest of trigger, subjects, evidence and question, so it is stable).", "The 3-trigger unit test is ARCHCALL1's own (tests/archcall.test.ts).", "V5-13 (marking the readiness milestone done offers the request) fails on the branch: offer() has no caller yet, the suggestion is reachable only from the palette (hole, not weakened). V5-13-REVIEW covers the request/import path.", "Hole: a finding citing a file that is not in the project must be flagged unverified; the branch keeps it unflagged, so V5-13-HOLE fails until it does."]
     },
     {
       "id": "14",
@@ -410,9 +648,36 @@
       "packages": ["STUDIO2", "STUDIO3", "STUDIO4"],
       "part": "b",
       "requires": {},
-      "notes": ["Runs in datapass-studio (Chromium), not in this extension; STUDIO4 is cut to V5.1."],
+      "notes": ["Runs in Playwright Chromium against a loopback static preview of a datapass-studio checkout with the shell built (npm run build:shell there): --studio <folder>, DATAPASS_STUDIO_DIR, or the nearest datapass-studio folder beside this checkout. STUDIO2 and STUDIO3 are merged in datapass-studio main (59640ea); STUDIO4 is cut to V5.1.", "The demo workspace is Studio's own synthetic export (examples/studio2/datapass-project.workspace.json); the hole case serves the same demo with no data for the project health view.", "Boundaries: every request leaving loopback is a finding; the shell's sources and build must not name datapass-vscode-cloud."],
       "shots": ["v5-29-studio-catalog", "v5-30-studio-query"],
-      "journeys": []
+      "journeys": [
+        {
+          "id": "V5-14", "kind": "main", "title": "Load the demo workspace, render the vendored catalog views, run a DuckDB-WASM query", "fixture": "studio-demo", "host": "chromium",
+          "steps": [
+            {"expect": "Medallion Demo (DataPass export)", "timeoutMs": 60000},
+            {"expectElement": "[data-table=\"silver_orders\"][data-status=\"loaded\"]", "timeoutMs": 60000},
+            {"click": "Shared view catalog", "role": "tab"},
+            {"expectElement": "[data-testid=\"catalog-sheet\"] .dp-catalog-location"},
+            {"expectElement": ".dp-catalog-view[data-kind=\"metrics\"] .wb-kpi"},
+            {"shot": "v5-29-studio-catalog"},
+            {"click": "Orders by status", "role": "tab"},
+            {"click": "Run SQL", "role": "button"},
+            {"expectElement": ".dp-result[data-rows]", "timeoutMs": 60000},
+            {"expect": "shipped"},
+            {"shot": "v5-30-studio-query"}
+          ]
+        },
+        {
+          "id": "V5-14-HOLE", "kind": "hole", "title": "A view with no data shows a hole panel, never sample rows", "fixture": "studio-hole", "host": "chromium",
+          "steps": [
+            {"expect": "(no health data)", "timeoutMs": 60000},
+            {"click": "Shared view catalog", "role": "tab"},
+            {"expectElement": ".dp-catalog-holes"},
+            {"expect": "No data was exported for this view."},
+            {"expectAbsent": "SQL scripts read"}
+          ]
+        }
+      ]
     }
   ]
 }

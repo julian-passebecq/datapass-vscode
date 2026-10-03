@@ -1,0 +1,24 @@
+{
+  "schema": "datapass.tour/1",
+  "tours": [
+    {
+      "id": "ai.bi",
+      "titleRef": "text:title",
+      "mode": "learning",
+      "generation": { "exclude": ["query-showcase"] },
+      "steps": [
+        { "id": "step-1", "location": { "level": "project", "nodeId": "shop-lakehouse", "artifactKind": "project" }, "viewId": "architecture", "explanationRef": "text:step-1", "section": "explain-project", "origin": "ai-proposed" },
+        { "id": "step-2", "location": { "level": "artifact", "nodeId": "fct-orders", "artifactKind": "other" }, "viewId": "lineage", "explanationRef": "text:step-2", "section": "business-context", "origin": "ai-proposed" },
+        { "id": "step-3", "location": { "level": "artifact", "nodeId": "sales-model", "artifactKind": "other" }, "viewId": "detail", "explanationRef": "text:step-3", "section": "business-context", "origin": "ai-proposed" },
+        { "id": "step-4", "location": { "level": "artifact", "nodeId": "fct-orders", "artifactKind": "other" }, "viewId": "data-flow", "explanationRef": "text:step-4", "section": "query-showcase", "origin": "ai-proposed" }
+      ]
+    }
+  ],
+  "texts": {
+    "title": "Understand the BI part",
+    "step-1": "Start from the whole project: orders land in bronze, are cleaned in silver and published as one gold fact table.",
+    "step-2": "The BI part reads gold fct_orders: follow its lineage back to the cleaned orders.",
+    "step-3": "The Sales semantic model is the only thing report users see; it is marked confidential.",
+    "step-4": "A query worth showing on fct_orders (this step belongs to an excluded section and must not be imported)."
+  }
+}

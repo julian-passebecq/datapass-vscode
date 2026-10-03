@@ -1,0 +1,10 @@
+{
+  "environments": {
+    "dev": {
+      "lakehouse": "shop_lakehouse",
+      "tables": { "stg_orders": "silver_stg_orders", "fct_orders": "gold_fct_orders" },
+      "sources": { "bronze.orders_raw": "bronze_orders_raw" }
+    }
+  },
+  "rootDirectory": "fabric"
+}

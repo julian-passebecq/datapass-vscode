@@ -1,0 +1,638 @@
+{
+ "resourceSpans": [
+  {
+   "resource": {
+    "attributes": [
+     {
+      "key": "service.name",
+      "value": {
+       "stringValue": "orders"
+      }
+     }
+    ]
+   },
+   "scopeSpans": [
+    {
+     "scope": {
+      "name": "synthetic.v5-acceptance"
+     },
+     "spans": [
+      {
+       "traceId": "00000000000000000000000000000001",
+       "spanId": "0000000000000001",
+       "name": "GET /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030801000000000",
+       "endTimeUnixNano": "1789030801012000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000001",
+       "spanId": "00000000000003e9",
+       "parentSpanId": "0000000000000001",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030801001000000",
+       "endTimeUnixNano": "1789030801007000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000002",
+       "spanId": "0000000000000002",
+       "name": "GET /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030802000000000",
+       "endTimeUnixNano": "1789030802015000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000002",
+       "spanId": "00000000000003ea",
+       "parentSpanId": "0000000000000002",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030802001000000",
+       "endTimeUnixNano": "1789030802008000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000003",
+       "spanId": "0000000000000003",
+       "name": "GET /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030803000000000",
+       "endTimeUnixNano": "1789030803011000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000003",
+       "spanId": "00000000000003eb",
+       "parentSpanId": "0000000000000003",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030803001000000",
+       "endTimeUnixNano": "1789030803006000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000004",
+       "spanId": "0000000000000004",
+       "name": "GET /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030804000000000",
+       "endTimeUnixNano": "1789030804240000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000004",
+       "spanId": "00000000000003ec",
+       "parentSpanId": "0000000000000004",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030804001000000",
+       "endTimeUnixNano": "1789030804121000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000005",
+       "spanId": "0000000000000005",
+       "name": "GET /orders/{order_id}",
+       "kind": 2,
+       "startTimeUnixNano": "1789030805000000000",
+       "endTimeUnixNano": "1789030805008000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders/{order_id}"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000005",
+       "spanId": "00000000000003ed",
+       "parentSpanId": "0000000000000005",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030805001000000",
+       "endTimeUnixNano": "1789030805005000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000006",
+       "spanId": "0000000000000006",
+       "name": "GET /orders/{order_id}",
+       "kind": 2,
+       "startTimeUnixNano": "1789030806000000000",
+       "endTimeUnixNano": "1789030806009000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders/{order_id}"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "404"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000006",
+       "spanId": "00000000000003ee",
+       "parentSpanId": "0000000000000006",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030806001000000",
+       "endTimeUnixNano": "1789030806005000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000007",
+       "spanId": "0000000000000007",
+       "name": "GET /orders/{order_id}",
+       "kind": 2,
+       "startTimeUnixNano": "1789030807000000000",
+       "endTimeUnixNano": "1789030807007000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders/{order_id}"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000007",
+       "spanId": "00000000000003ef",
+       "parentSpanId": "0000000000000007",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030807001000000",
+       "endTimeUnixNano": "1789030807004000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000008",
+       "spanId": "0000000000000008",
+       "name": "POST /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030808000000000",
+       "endTimeUnixNano": "1789030808035000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "POST"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "201"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000008",
+       "spanId": "00000000000003f0",
+       "parentSpanId": "0000000000000008",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030808001000000",
+       "endTimeUnixNano": "1789030808018000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000009",
+       "spanId": "0000000000000009",
+       "name": "POST /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030809000000000",
+       "endTimeUnixNano": "1789030809041000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "POST"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "201"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "00000000000000000000000000000009",
+       "spanId": "00000000000003f1",
+       "parentSpanId": "0000000000000009",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030809001000000",
+       "endTimeUnixNano": "1789030809021000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000a",
+       "spanId": "000000000000000a",
+       "name": "POST /orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030810000000000",
+       "endTimeUnixNano": "1789030810520000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "POST"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "500"
+         }
+        }
+       ],
+       "status": {
+        "code": 2,
+        "message": "internal error"
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000a",
+       "spanId": "00000000000003f2",
+       "parentSpanId": "000000000000000a",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030810001000000",
+       "endTimeUnixNano": "1789030810261000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000b",
+       "spanId": "000000000000000b",
+       "name": "GET /customers/{customer_id}/orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030811000000000",
+       "endTimeUnixNano": "1789030811022000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/customers/{customer_id}/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000b",
+       "spanId": "00000000000003f3",
+       "parentSpanId": "000000000000000b",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030811001000000",
+       "endTimeUnixNano": "1789030811012000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000c",
+       "spanId": "000000000000000c",
+       "name": "GET /customers/{customer_id}/orders",
+       "kind": 2,
+       "startTimeUnixNano": "1789030812000000000",
+       "endTimeUnixNano": "1789030812025000000",
+       "attributes": [
+        {
+         "key": "http.request.method",
+         "value": {
+          "stringValue": "GET"
+         }
+        },
+        {
+         "key": "http.route",
+         "value": {
+          "stringValue": "/customers/{customer_id}/orders"
+         }
+        },
+        {
+         "key": "http.response.status_code",
+         "value": {
+          "intValue": "200"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      },
+      {
+       "traceId": "0000000000000000000000000000000c",
+       "spanId": "00000000000003f4",
+       "parentSpanId": "000000000000000c",
+       "name": "SELECT orders",
+       "kind": 3,
+       "startTimeUnixNano": "1789030812001000000",
+       "endTimeUnixNano": "1789030812013000000",
+       "attributes": [
+        {
+         "key": "db.system",
+         "value": {
+          "stringValue": "sqlite"
+         }
+        }
+       ],
+       "status": {
+        "code": 0
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

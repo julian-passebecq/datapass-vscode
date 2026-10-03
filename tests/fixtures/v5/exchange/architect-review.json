@@ -1,0 +1,23 @@
+{
+  "schema": "datapass.architect-review-answer/1",
+  "protocol": "architect-review/1",
+  "requestId": "datapass:architect-review:19abba7b3ab96c97181285774e85588fdea314237d720107d5ad9ce1cc0c8c93",
+  "origin": "ai-proposed",
+  "findings": [
+    {
+      "severity": "warning",
+      "subjectNodeIds": ["shop-lakehouse"],
+      "summary": "Gold depends on a single silver view with no freshness check",
+      "detail": "fct_orders reads stg_orders directly; a late bronze load gives a silently short gold day. Add a freshness test before marking gold ready.",
+      "evidenceRefIds": ["milestone"]
+    }
+  ],
+  "recommendation": {
+    "summary": "Add a dbt source freshness check on bronze.orders_raw before gold-ready",
+    "alternatives": [
+      { "title": "Pipeline-level row-count gate", "tradeoff": "Catches empty loads but not partial ones." }
+    ]
+  },
+  "model": "cassette (no model called)",
+  "responder": "V5 acceptance cassette"
+}

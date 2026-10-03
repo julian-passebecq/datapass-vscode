@@ -1,0 +1,26 @@
+{
+  "metadata": { "dbt_version": "1.8.0", "project_name": "shop", "generated_at": "2026-09-10T09:00:00Z" },
+  "nodes": {
+    "model.shop.stg_orders": {
+      "resource_type": "model", "name": "stg_orders", "package_name": "shop", "alias": "stg_orders",
+      "original_file_path": "models/staging/stg_orders.sql",
+      "config": { "materialized": "view", "schema": "silver" },
+      "relation_name": "shop_lakehouse.silver.stg_orders",
+      "depends_on": { "nodes": ["source.shop.bronze.orders_raw"] }
+    },
+    "model.shop.fct_orders": {
+      "resource_type": "model", "name": "fct_orders", "package_name": "shop", "alias": "fct_orders",
+      "original_file_path": "models/marts/fct_orders.sql",
+      "config": { "materialized": "table", "schema": "gold" },
+      "relation_name": "shop_lakehouse.gold.fct_orders",
+      "depends_on": { "nodes": ["model.shop.stg_orders"] }
+    },
+    "test.shop.not_null_fct_orders_customer_id": { "resource_type": "test", "name": "not_null_fct_orders_customer_id", "package_name": "shop" }
+  },
+  "sources": {
+    "source.shop.bronze.orders_raw": {
+      "resource_type": "source", "source_name": "bronze", "name": "orders_raw", "identifier": "orders_raw",
+      "relation_name": "shop_lakehouse.bronze.orders_raw"
+    }
+  }
+}
