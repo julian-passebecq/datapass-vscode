@@ -17,7 +17,7 @@ export interface NavChange { readonly state: NavState; readonly previous: NavSta
 
 export class NavigationService {
   private current: NavState;
-  private overrides: ViewOverrides | null = null;
+  private overridesImpl: ViewOverrides | null = null;
   private readonly listeners = new Set<Listener<NavChange>>();
 
   constructor(private ladderImpl: NavLadder, private catalogImpl: ViewCatalog = DEFAULT_VIEW_CATALOG) {
@@ -32,10 +32,12 @@ export class NavigationService {
   get state(): NavState { return this.current; }
   get catalog(): ViewCatalog { return this.catalogImpl; }
   get ladder(): NavLadder { return this.ladderImpl; }
+  /** The user view overrides in force (read-only; written only through `setCatalog`). */
+  get overrides(): Readonly<ViewOverrides> | null { return this.overridesImpl; }
 
   /** The views the current location offers, in display order. */
   views(): readonly ViewDef[] { return this.viewsAt(this.current.location); }
-  viewsAt(l: NavLocation): readonly ViewDef[] { return resolveViews(this.catalogImpl, this.overrides, l.artifactKind, l.level); }
+  viewsAt(l: NavLocation): readonly ViewDef[] { return resolveViews(this.catalogImpl, this.overridesImpl,l.artifactKind, l.level); }
 
   canUp(): boolean { return this.ladderImpl.parent(this.current.location) !== null; }
   canDown(): boolean { return this.ladderImpl.children(this.current.location).length > 0; }
@@ -54,9 +56,9 @@ export class NavigationService {
   }
 
   /** A new catalog or user overrides: the view id is kept when still offered, else the first view. */
-  setCatalog(catalog: ViewCatalog, overrides: ViewOverrides | null = this.overrides): void {
+  setCatalog(catalog: ViewCatalog, overrides: ViewOverrides | null = this.overridesImpl): void {
     this.catalogImpl = catalog;
-    this.overrides = overrides;
+    this.overridesImpl = overrides;
     this.revalidate();
   }
 

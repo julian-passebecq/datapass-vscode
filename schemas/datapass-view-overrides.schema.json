@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datapass.local/schemas/datapass-view-overrides.schema.json",
+  "title": "DataPass view overrides (1)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "schema": {
+      "const": "datapass.view-overrides/1"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifactKind": {
+            "type": "string",
+            "pattern": "^(\\*|[a-z][a-z0-9_.-]{0,79})$"
+          },
+          "level": {
+            "enum": [
+              "project",
+              "subproject",
+              "artifact",
+              "step",
+              "operation"
+            ]
+          },
+          "order": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            "maxItems": 60,
+            "minItems": 0
+          },
+          "hidden": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            "maxItems": 60,
+            "minItems": 0
+          },
+          "add": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                },
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                },
+                "layout": {
+                  "enum": [
+                    "graph",
+                    "table",
+                    "detail-card",
+                    "metrics",
+                    "diff-history",
+                    "code-steps",
+                    "context-text",
+                    "surface",
+                    "erd"
+                  ]
+                },
+                "bindings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "source": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]{0,79}$"
+                      },
+                      "params": {
+                        "type": "object",
+                        "maxProperties": 30
+                      }
+                    },
+                    "required": [
+                      "source"
+                    ]
+                  },
+                  "maxItems": 20,
+                  "minItems": 0
+                },
+                "metrics": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                  },
+                  "maxItems": 40,
+                  "minItems": 0
+                },
+                "preset": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+                },
+                "surface": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "description": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "layout",
+                "bindings"
+              ]
+            },
+            "maxItems": 60,
+            "minItems": 0
+          },
+          "titles": {
+            "type": "object",
+            "maxProperties": 60,
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]{0,79}$"
+            },
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            }
+          }
+        },
+        "required": [
+          "artifactKind",
+          "level"
+        ]
+      },
+      "maxItems": 200,
+      "minItems": 0
+    }
+  },
+  "required": [
+    "schema",
+    "entries"
+  ]
+}
