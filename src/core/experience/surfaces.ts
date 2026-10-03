@@ -83,7 +83,9 @@ export const SURFACES: readonly Surface[] = [
   // V5 PEDA2: interview prep (ranked notions, questions, where and why; model answers through the manual exchange).
   { id: "v5.peda2", kind: "palette", label: "Interview prep", detail: "The notions this project really uses, ranked, with interview questions, where they are and why (or a hole); model answers through your own AI (ai-proposed)" },
   // TOURAI1: guided tours prepared by your AI through the manual exchange.
-  { id: "v5.tourai1", kind: "aiTab", label: "AI guided tours", detail: "Ask your AI for a guided tour on a topic (BI, ingestion…); its answer is checked against the project and shown as a diff" }
+  { id: "v5.tourai1", kind: "aiTab", label: "AI guided tours", detail: "Ask your AI for a guided tour on a topic (BI, ingestion…); its answer is checked against the project and shown as a diff" },
+  // V5 STEPBAR1: the Steps view (the guided path as normal navigation; the checks moved out of the Project tree).
+  { id: "view.steps", kind: "view", viewId: "datapass.steps", label: "Steps", detail: "The steps of the project's journey, each with its small checks (pass, fail, not checked, hole); checks with no step under Project checks" }
 ];
 
 export const SURFACE_IDS: readonly string[] = SURFACES.map(s => s.id);

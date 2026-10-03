@@ -15,7 +15,8 @@
   ],
   "expected": [
     "The tour has three numbered steps and each step moves the Navigator to its box with its view.",
-    "Present hides the edit controls (save path, add screen) and the jump field."
+    "Present hides the edit controls (save path, add screen) and the jump field.",
+    "STEPBAR1: the Steps view lists the journey's steps with their small checks, and Project checks at the end; the Project tree shows no readiness section."
   ],
   "features": [
     "architecture",
@@ -74,6 +75,22 @@
     },
     {
       "screenshot": "presenting"
+    },
+    {
+      "run": "DataPass: Present Tour (Read-Only)"
+    },
+    {
+      "run": "Focus on Steps View"
+    },
+    {
+      "wait": 1500
+    },
+    {
+      "expect": "Project checks",
+      "timeoutMs": 10000
+    },
+    {
+      "screenshot": "steps-bar"
     }
   ]
 }

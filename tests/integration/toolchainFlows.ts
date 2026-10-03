@@ -31,11 +31,19 @@ export function registerToolchainFlows(getApi: () => DataPassTestApi): void {
   const api = () => getApi();
   type Row = Awaited<ReturnType<DataPassTestApi["renderProjectTree"]>>[number];
   const row = (rows: Row[], id: string) => rows.find(r => r.id === id);
+  // V5 STEPBAR1 (CEO ARCHI REVIEW B1): the Project lens is git-pure; Tools & versions and Connections
+  // live in the Readiness lens (and the Steps view). Render that lens, then restore the chosen one.
+  const readinessRows = async (): Promise<Row[]> => {
+    const before = api().shell.chosenLens();
+    await api().shell.chooseLens("readiness");
+    try { return await api().renderProjectTree(); } finally { await api().shell.chooseLens(before); }
+  };
 
   test("toolchain: the Project tree shows Tools & versions and Connections, states from this machine's probes, no value", async () => {
     await run("datapass.refreshProject");
-    const rows = await api().renderProjectTree();
-    noLeak("Project tree", JSON.stringify(rows));
+    noLeak("Project tree", JSON.stringify(await api().renderProjectTree()));
+    const rows = await readinessRows();
+    noLeak("Readiness lens", JSON.stringify(rows));
     assert.equal(row(rows, "tools")?.label, "Tools & versions");
     assert.equal(row(rows, "connections")?.label, "Connections");
     const r = api().readiness();
@@ -80,10 +88,11 @@ export function registerToolchainFlows(getApi: () => DataPassTestApi): void {
       assert.match(ui.notices.join(" "), /1\/2 sign-in\(s\) ok/);
       const r = api().readiness();
       assert.deepEqual(r.connections.map(c => `${c.id}:${c.state}`), ["azure-dev:ok", "fabric:mismatch", "sales-git:declared", "sales-sql:declared"]);
-      const rows = await api().renderProjectTree();
+      const rows = await readinessRows();
       assert.equal(row(rows, "connection:fabric")?.command, "datapass.connections.copySignIn");
       assert.match(row(rows, "connection:azure-dev")?.description ?? "", /tenant "Entra tenant" ✓ · subscription "Data subscription" ✓/);
-      noLeak("Project tree after the check", JSON.stringify(rows));
+      noLeak("Readiness lens after the check", JSON.stringify(rows));
+      noLeak("Project tree after the check", JSON.stringify(await api().renderProjectTree()));
       // The sign-in command is built at click time; the tenant id is the declared, non-secret one.
       const copy = await withUi([], () => run("datapass.connections.copySignIn", "fabric"));
       assert.equal(copy.clipboard, `fab auth login --tenant ${SALES_IDS.tenant}`);

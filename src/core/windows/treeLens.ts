@@ -14,7 +14,7 @@ export const LENS_STATE_KEY = "datapass.tree.lens";
 export const LENS_CONTEXT_KEY = "datapass.tree.lens";
 
 export const LENS_INFO: Readonly<Record<TreeLens, { label: string; icon: string; detail: string }>> = {
-  project: { label: "Project", icon: "home", detail: "Everything: next step, sub-projects, repositories, readiness" },
+  project: { label: "Project", icon: "home", detail: "Next step, sub-projects, files as Git sees them, repositories (checks: the Steps view)" },
   architecture: { label: "Architecture", icon: "type-hierarchy", detail: "Sub-projects → components → files, options and repositories" },
   git: { label: "Git", icon: "git-merge", detail: "Needs you, repositories, worktrees, pull requests with CI" },
   ai: { label: "AI / Work orders", icon: "sparkle", detail: "Work orders for Claude or Codex, copy for AI, import an answer" },

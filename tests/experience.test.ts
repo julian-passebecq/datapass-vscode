@@ -57,7 +57,7 @@ test("experience: presets grow from Vanilla to Advanced, as the plan's table say
     for (const s of lighter) assert.ok(heavier.has(s), `${PRESET_IDS[i]} keeps ${s} from ${PRESET_IDS[i - 1]}`);
   }
   // Vanilla: Git view and the AI view with the guided tab only.
-  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git", "view.navigator", "view.rail"]);
+  assert.deepEqual([...shown("vanilla")].filter(s => s.startsWith("view.")).sort(), ["view.aiExchange", "view.git", "view.navigator", "view.rail", "view.steps"]);
   assert.ok(!shown("vanilla").has("ai.agent") && !shown("vanilla").has("ai.manual"));
   // Standard adds the architecture and Details, lands on the architecture and marks alternatives instead of the Options section.
   for (const s of ["view.architecture", "view.details", "landing.architecture", "badge.alternatives"]) assert.ok(shown("standard").has(s), s);
