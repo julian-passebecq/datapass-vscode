@@ -122,3 +122,43 @@ test("facts: a Hop bridge explanation + the code text → an ai-proposed fact ta
   assert.deepEqual(factsFromUnderstanding("repo", doc)!.fact.techniques, [], "no code on this machine: no tags, never guessed");
   assert.equal(factsFromUnderstanding("repo", { ...doc, target: { ...doc.target, language: "bicep" } }), undefined);
 });
+
+test("V5HOLE13: the project's declared sample reaches the matching query card", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { readDeclaredSample, matchSamples, sampleKey } = await import("../src/core/peda-showcase/samples");
+  assert.equal(sampleKey("orders_sample.csv"), "orders");
+  assert.equal(sampleKey("notes.txt"), undefined);
+  const csv = readFileSync("tests/fixtures/v5/shop/samples/orders_sample.csv", "utf8");
+  const declared = readDeclaredSample("orders_sample.csv", csv)!;
+  assert.deepEqual(declared.sample.columns, ["order_id", "customer_id", "order_date", "amount", "status"]);
+  assert.equal(declared.sample.rowCount, csv.trim().split(/\r?\n/).length - 1);
+  const facts = [q("stg_orders", ["cte"], ["bronze.orders_raw"], ["silver.stg_orders"]), q("int_order_payments", ["cte"], ["stg.payments"], ["int.order_payments"])];
+  const samples = matchSamples(facts, [declared]);
+  assert.equal(samples.size, 1);
+  const b = showcaseBinding({ facts, samples }, 5);
+  const card = b.cards!.find(c => c.nodeId === "stg_orders")!;
+  assert.deepEqual(card.fields.find(f => f.label === "showcase.sample")!.value,
+    { value: `samples/orders_sample.csv: order_id, customer_id, order_date, amount, status (${declared.sample.rowCount} rows)`, origin: "xray-sample" });
+  // A query with no matching sample keeps the declared hole, never a guessed sample.
+  const other = b.cards!.find(c => c.nodeId === "int_order_payments")!;
+  assert.deepEqual(other.fields.find(f => f.label === "showcase.sample")!.value, { value: null, origin: "hole" });
+  assert.ok(b.holes.some(h => h.kind === "missing-sample" && h.reason.startsWith("int_order_payments: no sample: add one under samples/")));
+  // Bounded read: a cut file drops its partial last line and marks the count as a lower bound.
+  const cut = readDeclaredSample("orders_sample.csv", "a,b\n1,2\n3,", false)!;
+  assert.equal(cut.sample.rowCount, 1);
+  assert.equal(cut.sample.partial, true);
+});
+
+test("V5HOLE13: no sample in the project → every query card shows the declared sample hole", () => {
+  const b = showcaseBinding({ facts: FIXTURE, samples: new Map() }, 5);
+  for (const c of b.cards!) assert.deepEqual(c.fields.find(f => f.label === "showcase.sample")!.value, { value: null, origin: "hole" });
+  assert.equal(b.holes.filter(h => h.kind === "missing-sample").length, 5);
+});
+
+test("V5HOLE13: bare project (no facts, no samples) → guidance cards still show the sample line as the declared hole", () => {
+  const b = showcaseBinding({ facts: [] }, 3);
+  for (const c of b.cards!) assert.deepEqual(c.fields.find(f => f.label === "showcase.sample")!.value, { value: null, origin: "hole" });
+  const hole = b.holes.find(h => h.kind === "missing-sample")!;
+  assert.equal(hole.reason, "no sample: add one under samples/");
+  assert.equal(hole.field, "showcase.sample");
+});
