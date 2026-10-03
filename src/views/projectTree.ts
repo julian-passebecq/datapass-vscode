@@ -32,7 +32,7 @@ import { PLAIN_STATE_ICONS, readTreeLook, stateIcon, treeIconColor, type TreeLoo
 import { LENS_CONTEXT_KEY, LENS_INFO, LENSES_WITH_ARCHITECTURE, lensForScreen, lensRow, type LensStore, type TreeLens } from "../core/windows/treeLens";
 import type { GitNode, GitTreeProvider } from "./gitTree";
 import type { LoadedOrder } from "../work/workOrders";
-import { detachBadge, type DetachView } from "../core/materialize/dbtDetach";
+import { detachBadge, detachSectionHead, type DetachView } from "../core/materialize/dbtDetach";
 import { gitRunner } from "../work/session";
 import { groupByTracking, parseTreeOrder, TrackingCache, type TreeOrder } from "./projectTreeGitOrder";
 
@@ -784,7 +784,7 @@ function esc(s: string): string {
 function detachSection(views: readonly DetachView[], root: vscode.Uri): Node {
   const detached = views.filter(v => v.detached);
   return {
-    t: "section", id: "dbtDetach", label: "dbt materializations", icon: "git-merge", collapsed: !detached.some(v => v.drift?.state !== "in-sync"),
+    t: "section", ...detachSectionHead(views), label: "dbt materializations", icon: "git-merge",
     description: `${views.length} model(s)${detached.length ? ` · ${detached.length} detached` : ""}`,
     tooltip: "dbt models materialized as notebooks (MAT1). A detached notebook is the authority: drift is shown as a fact, never re-synced; re-attach is a new proposal.",
     kids: () => views.map(v => ({
