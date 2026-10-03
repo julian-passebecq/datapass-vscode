@@ -58,6 +58,8 @@ export const DEFAULT_EXPLAIN_LABELS: Readonly<Record<string, string>> = {
   "value.empty": "—",
   "hole.no-provider": "missing view",
   "hole.no-options": "no options file",
+  "export.bareNote": "No DataPass project in this folder: project sections are shown as holes.",
+  "hole.no-project": "needs a DataPass project: this folder has no .datapass yet",
   "hole.layout-unregistered": "missing layout",
   "origin.title": "Origin of this value",
   "origin.static": "static",

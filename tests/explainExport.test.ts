@@ -10,7 +10,8 @@ import { buildProjectMap, type ProjectMap } from "../src/core/project/projectMap
 import type { OptionsFile } from "../src/core/project/options";
 import { buildExplainHtml, pickLayout, type ExplainInput } from "../src/core/explain/document";
 import { DEFAULT_EXPLAIN_LABELS, DEFAULT_EXPLAIN_SECTIONS, sectionsFromSetting } from "../src/core/explain/presets";
-import { filterFacts, registerExplainSource, visibleTo } from "../src/core/explain/sources";
+import { bareFacts, filterFacts, registerExplainSource, visibleTo } from "../src/core/explain/sources";
+import { explainTarget } from "../src/core/explain/target";
 import { toHtml } from "../src/webview/views/headless";
 import { inputA } from "./fixtures/v3/research";
 
@@ -121,4 +122,37 @@ test("explain: a preferred layout with nothing to draw falls back to the next li
     [{ source: "s", origin: "static", holes: [], metrics: [{ id: "m", label: "M", value: 1, origin: "static" }] }]), "metrics");
   assert.equal(pickLayout(["graph", "table"], new Set(["table"]), []), "table");
   assert.equal(pickLayout(["metrics"], reg, []), "metrics");
+});
+
+// V5HOLE6: the export works on any opened folder.
+test("explain: a bare folder (no .datapass) exports every project section as a declared no-project hole", () => {
+  const bare = buildProjectMap({ coordinationKey: ".", repoObservations: new Map(), fileObservations: new Map(), tools: new Map(),
+    facts: new Map(), reviewsConfirmed: new Set(), checklist: {}, qualification: [] });
+  const facts = bareFacts("internal", bare);
+  assert.equal(facts.prepared, false);
+  const { html, included, skipped } = buildExplainHtml(input({ facts, projectTitle: "shop-bare", git: undefined }));
+  assert.ok(included.length >= 5, "every project section is still drawn (as a hole)");
+  assert.equal(included.length + skipped.length, DEFAULT_EXPLAIN_SECTIONS.length);
+  for (const id of included) {
+    const section = html.match(new RegExp(`<section class="xp-section" id="xp-${id}">[\\s\\S]*?</section>`))?.[0] ?? "";
+    assert.match(section, /needs a DataPass project: this folder has no \.datapass yet/, `section ${id} shows the no-project hole`);
+  }
+  assert.match(html, /<h1>shop-bare<\/h1>/);
+  assert.match(html, /nv-origin-declared/);
+  assert.doesNotMatch(html, /https?:|<script/i);
+  const relabelled = buildExplainHtml(input({ facts, labels: { ...DEFAULT_EXPLAIN_LABELS, "hole.no-project": "projet requis" } })).html;
+  assert.match(relabelled, /projet requis/, "the hole text is a label, not hard-coded");
+});
+
+test("explain: a prepared project still draws its providers (no no-project hole)", () => {
+  const { html } = buildExplainHtml(input());
+  assert.doesNotMatch(html, /needs a DataPass project/);
+  assert.equal(filterFacts("internal", buildProjectMap(inputA())).prepared, undefined);
+});
+
+test("explain: output target — prepared project under .datapass/explain, bare folder asked with a workspace default", () => {
+  assert.deepEqual(explainTarget(true, true, "2026-10-03"), { base: "project", segments: [".datapass", "explain", "export-2026-10-03.html"], ask: false });
+  assert.deepEqual(explainTarget(false, true, "2026-10-03"), { base: "workspace", segments: ["datapass-explain-2026-10-03.html"], ask: true });
+  assert.deepEqual(explainTarget(false, false, "2026-10-03"), { base: "none", segments: ["datapass-explain-2026-10-03.html"], ask: true });
+  assert.ok(!explainTarget(false, true, "2026-10-03").segments.includes(".datapass"), "a bare folder never gets a .datapass folder");
 });
