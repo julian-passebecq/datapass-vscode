@@ -1044,6 +1044,10 @@
         "title": "DataPass: Show or Hide the Architecture in the Bottom Panel"
       },
       {
+        "command": "datapass.gitmr.pinDrift",
+        "title": "DataPass: Check Common Pin Drift"
+      },
+      {
         "command": "datapass.rail.collapse",
         "title": "DataPass: Collapse to the Rail",
         "icon": "$(chevron-right)"
@@ -2845,6 +2849,10 @@
           "when": "!datapass.hidden.palette.full"
         },
         {
+          "command": "datapass.gitmr.pinDrift",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
           "command": "datapass.understanding.analyzeSelection",
           "when": "!datapass.hidden.palette.full"
         },
@@ -3056,6 +3064,11 @@
     "configuration": {
       "title": "DataPass Control Plane",
       "properties": {
+        "datapass.crossRepoImpact.labels": {
+          "type": "object",
+          "default": {},
+          "markdownDescription": "Override the titles and texts of the cross-repository impact and Common pin drift views (keys: impactTitle, pinDriftTitle, repoGroup, vendoredCopy, unexplainedEdge, noLineage, unplacedNode, noChange; strings ≤ 200 characters)."
+        },
         "datapass.nav.codeLink.enabled": {
           "type": "boolean",
           "default": true,
