@@ -4641,9 +4641,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/julian-passebecq/datapass-vscode.git"
+    "url": "https://gitlab.com/juliandatapass-group/datapass-vscode.git"
   },
-  "homepage": "https://github.com/julian-passebecq/datapass-vscode",
+  "homepage": "https://gitlab.com/juliandatapass-group/datapass-vscode",
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": "limited",

@@ -1,4 +1,13 @@
-# Implementation Status — 1.1.0-rc.1: V3 release candidate 1
+# Implementation Status — 1.2.0-rc.1: V5 / V5.1 release candidate
+
+Current implementation baseline: GitLab `juliandatapass-group/datapass-vscode`,
+`d7863a2f2d1ad653991f9fbb4c6bbded9200c3b6`. The package version remains `1.2.0-rc.1`;
+identify a qualified build by its source SHA and VSIX SHA-256, not the version alone.
+
+The V5 features are documented in [CHANGELOG.md](CHANGELOG.md) and [docs/tutorials/V5.md](docs/tutorials/V5.md).
+This implementation statement is not release approval. The sections below retain earlier release history.
+
+## 1.1.0-rc.1: V3 release candidate 1
 
 Date: 2026-09-28. Version `1.1.0-rc.1` (prerelease; 1.0.0 is the current release) — the V3 wave merged since 1.0.0:
 V3-SHELL (#154), V3-HOME (#153), V3-HOP1 (#151), V3-HOP2 (#159), V3-THEME (#152), V3-AIRFLOW (#158), V3-GITDIAG (#157),

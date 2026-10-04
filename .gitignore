@@ -5,3 +5,7 @@ dist/
 out/
 .vscode-test/
 __pycache__/
+.cache/
+.ci-tools/
+.ci-venv/
+*.vsix.sha256

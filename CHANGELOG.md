@@ -5,6 +5,12 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- Git observation leaves the index unchanged, avoiding an unnecessary index lock during an explicit
+  fast-forward update. A desktop regression checks unchanged file content with changed timestamps.
+- Release qualification exercises the installed VSIX in the desktop suite and runs both preparation
+  tests after packaging, alongside the existing UI smoke journeys.
+- Package repository links now point to the authoritative GitLab project.
+
 ## 1.2.0-rc.1 — V5 release candidate 1: guided tours, dbt authority, multi-repo history, an explainer you can send (2026-10-03)
 
 Plan: [handoff/V5-PLAN.md](handoff/V5-PLAN.md); walkthrough with screenshots: [docs/tutorials/V5.md](docs/tutorials/V5.md).

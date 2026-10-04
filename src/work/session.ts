@@ -129,8 +129,9 @@ export const gitRunner: GitRunner = (args, cwd, timeoutMs) =>
       timeout: timeoutMs,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
-      // Never block on a credential prompt; a failed probe is reported as unreachable.
-      env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", SSH_ASKPASS: "", GCM_INTERACTIVE: "never" }
+      // Even status can refresh the index. Observation must not take an optional index lock
+      // while an explicit fast-forward needs it; write commands retain their normal locking.
+      env: { ...process.env, ...(allowed.trigger === "read-only" ? { GIT_OPTIONAL_LOCKS: "0" } : {}), GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", SSH_ASKPASS: "", GCM_INTERACTIVE: "never" }
     }, (error, stdout, stderr) => finish({ ok: !error, stdout: String(stdout ?? ""), stderr: String(stderr ?? ""), timedOut: Boolean((error as { killed?: boolean } | null)?.killed) })); }
     catch (e) { finish({ ok: false, stdout: "", stderr: String((e as Error)?.message ?? e) }); }
   });

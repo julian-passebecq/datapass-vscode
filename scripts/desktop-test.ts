@@ -3,6 +3,7 @@
  * once per fixture workspace, and writes an evidence report.
  *
  *   npm run test:desktop                     isolated profile, no other extensions
+ *   npm run test:desktop -- --vsix=<file>    exercise the installed package, not the source build
  *   npm run test:desktop -- --real-extensions   also load the user's installed extensions
  *                                               (read-only use of ~/.vscode/extensions) to
  *                                               record what DataPass detects on this machine
@@ -17,9 +18,11 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { pathToFileURL } from "node:url";
 import { fixtureTempEnv } from "./desktop/tempEnv";
+import { cli, EXTENSION_ID } from "./qa/prepare";
 import { foilProjectManifest, genericProjectManifest, migrateManifestToLatest, migrateManifestToV2, type DataPassProjectManifest } from "../src/core/projectManifestModel";
 import { graphAJson, manifestA } from "../tests/fixtures/v3/research";
 import { optionsAJson, sheetAJson } from "../tests/fixtures/v3/researchOptions";
@@ -32,6 +35,7 @@ import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
+const vsixArg = process.argv.find(a => a.startsWith("--vsix="))?.slice("--vsix=".length);
 /** `--fixture=v3-research,v17-company` runs only those fixtures (one report each). */
 const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length).split(",").map(s => s.trim()).filter(Boolean);
 
@@ -668,7 +672,8 @@ function shardFromEnv(): { index: number; total: number } | undefined {
 }
 
 async function main(): Promise<void> {
-  if (!fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
+  if (!vsixArg && !fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
+  if (vsixArg && realExtensions) throw new Error("Packaged qualification requires isolated extensions.");
   const out = path.join(repo, "out", "integration");
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
@@ -680,6 +685,21 @@ async function main(): Promise<void> {
 
   const executable = await vscodeExecutable();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-desktop-"));
+  let extensionRoot = repo;
+  let packaged: { vsix: string; sha256: string; version: string } | undefined;
+  if (vsixArg) {
+    const vsix = path.resolve(vsixArg);
+    const extensions = path.join(scratch, "extensions");
+    cli(executable, ["--user-data-dir", path.join(scratch, "install-profile"), "--extensions-dir", extensions, "--install-extension", vsix, "--force"]);
+    const installed = fs.readdirSync(extensions).filter(name => name.toLowerCase().startsWith(`${EXTENSION_ID}-`));
+    if (installed.length !== 1) throw new Error(`Expected one installed ${EXTENSION_ID}, found ${installed.length}`);
+    extensionRoot = path.join(extensions, installed[0]!);
+    const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, "package.json"), "utf8"));
+    const source = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8"));
+    if (`${manifest.publisher}.${manifest.name}` !== EXTENSION_ID || manifest.version !== source.version) throw new Error("Installed VSIX identity differs from qualification source.");
+    packaged = { vsix, sha256: createHash("sha256").update(fs.readFileSync(vsix)).digest("hex"), version: manifest.version };
+    console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
+  }
   const reports: unknown[] = [];
   let failed = 0;
   let hostErrorCount = 0;
@@ -731,7 +751,7 @@ async function main(): Promise<void> {
     try {
       await runTests({
         vscodeExecutablePath: executable,
-        extensionDevelopmentPath: repo,
+        extensionDevelopmentPath: extensionRoot,
         extensionTestsPath: path.join(out, "suite.js"),
         launchArgs,
         extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile, ...fixtureTempEnv(tempDir), ...env }
@@ -755,6 +775,7 @@ async function main(): Promise<void> {
     executable,
     requestedVSCodeVersion: process.env.DATAPASS_TEST_VSCODE_VERSION ?? null,
     realExtensions,
+    packaged: packaged ?? null,
     shard: shard ? { ...shard, fixtures: selected } : null,
     host: { platform: process.platform, release: os.release(), arch: process.arch },
     reports
