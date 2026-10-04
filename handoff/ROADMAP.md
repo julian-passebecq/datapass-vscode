@@ -170,6 +170,17 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-04 02:40 (mini harnais pour AIDER le PM, pas pour le contrôler ; V6)
+
+- Julian veut réfléchir à un petit harnais qui aide l'agent (contexte continu, skills, sous-agents, workflows) et à découper le projet en petits morceaux. Cible : V6, à confronter à l'audit GPT 6 Pro.
+- Pistes retenues par le PM (opinion, non mesurées) :
+  - un fichier d'état unique `state.json` généré par script (MR ouvertes, pipelines, file, agents en cours, dernier merge, alerte d'arrêt) ;
+  - des fiches de paquet : but, fichiers possédés, dépendances, commande de recette dans l'appli à passer, taille ≤ 1 MR ;
+  - un paquet de contexte généré par script par fiche (fichiers, tests, extraits d'ADR, 5 dernières MR liées) ;
+  - des skills ou scripts pour les gestes répétés : lancer une ligne de recette, ouvrir une MR par l'API, envelopper une commande lourde avec build_slot ;
+  - un hook qui injecte la vraie date et l'heure et les premières lignes de brief.md à chaque tour ;
+  - une boîte de remarques de Julian rangées automatiquement dans ce fichier, avec l'heure.
+
 ## Idées de Julian — 2026-10-03 22:40 (V5.1 cette nuit, à comparer par l'audit externe ; décidé par PM 32)
 
 - Julian propose de faire cette nuit les améliorations V5.1 que le PM juge sûres, pour que les audits externes (Codex, GPT 6 Pro) puissent comparer V4/V5 (tag `v1.2.0-rc.1`) avec ce que le PM a fait ensuite.
