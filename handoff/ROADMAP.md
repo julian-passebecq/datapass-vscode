@@ -170,6 +170,15 @@ Recorded by the PM so they live in the repository, not only in session memory. M
 | The commit diff view is hard to discover: make it visible | M6 global UI pass |
 | Airflow DAG in the right panel, static — V3-AIRFLOW: opening a DAG file draws its tasks and dependencies in the secondary side bar, read from the text (never run), click ↔ code both ways | V3 wave 1 (V3-AIRFLOW) |
 
+## Idées de Julian — 2026-10-04 03:05 (connaissance produit et graphe de code pour aider le PM ; décidé par PM 32)
+
+- Julian demande si une base de connaissance du produit (specs, aujourd'hui dans Mongo) et un graphe des liens entre code et fonctions existantes aideraient l'agent, et si c'est trop d'ingénierie (article « agent memory via knowledge graphs »).
+- Décision (opinion, à mesurer) : pas de pipeline mémoire par graphe de connaissances (extraction par LLM, résolution, embeddings, déduplication). Il serait trop lourd. On garde trois choses légères, toutes dérivées par script :
+  1. un graphe de code déterministe (imports, tests couvrant un fichier), dans un `index.sqlite` régénéré à chaque commit, avec requêtes récursives ;
+  2. une recherche en texte intégral (FTS5) sur les specs et les handoffs, avec les specs Mongo exportées à sens unique ;
+  3. une journalisation simple de « ce qui a été essayé et le résultat » (le journal PM et `handoff/MEMORY.md` le font déjà).
+- Mesure avant adoption : A/B sur 5 paquets passés (nombre de fichiers lus, de recherches, de reprises avec et sans l'index). Prototype : `D:\PROJ\datapass\go\harness-spike\`.
+
 ## Idées de Julian — 2026-10-04 02:40 (mini harnais pour AIDER le PM, pas pour le contrôler ; V6)
 
 - Julian veut réfléchir à un petit harnais qui aide l'agent (contexte continu, skills, sous-agents, workflows) et à découper le projet en petits morceaux. Cible : V6, à confronter à l'audit GPT 6 Pro.
