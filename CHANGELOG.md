@@ -10,6 +10,8 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 - Release qualification exercises the installed VSIX in the desktop suite and runs both preparation
   tests after packaging, alongside the existing UI smoke journeys.
 - Package repository links now point to the authoritative GitLab project.
+- Project-tree selection drops cached nodes when the tree refreshes, so a removed subproject is not
+  handed back to VS Code for reveal.
 
 ## 1.2.0-rc.1 — V5 release candidate 1: guided tours, dbt authority, multi-repo history, an explainer you can send (2026-10-03)
 

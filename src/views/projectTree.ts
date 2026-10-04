@@ -106,9 +106,9 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private look: TreeLook = this.readLook();
 
   constructor(private readonly session: WorkSession) {
-    this.subs.push(session.onDidChange(() => { this.tracking.reset(); this.emitter.fire(undefined); }), session.onDidChangeSelection(() => void this.revealSelection()),
+    this.subs.push(session.onDidChange(() => { this.tracking.reset(); this.refresh(); }), session.onDidChangeSelection(() => void this.revealSelection()),
       vscode.workspace.onDidChangeConfiguration(e => {
-        if (e.affectsConfiguration("datapass.tree") || e.affectsConfiguration("datapass.overlay")) { this.look = this.readLook(); this.emitter.fire(undefined); }
+        if (e.affectsConfiguration("datapass.tree") || e.affectsConfiguration("datapass.overlay")) { this.look = this.readLook(); this.refresh(); }
       }));
   }
 
@@ -122,16 +122,23 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   dispose(): void { for (const s of this.subs) s.dispose(); this.emitter.dispose(); }
 
+  private refresh(): void {
+    // A refresh can remove a subproject or switch lenses. Only nodes fetched for
+    // the new tree may be revealed; VS Code logs an error for a stale cached node.
+    this.byId.clear();
+    this.emitter.fire(undefined);
+  }
+
   /** 0.22 modes: gate the root sections by surface; blockers show in every mode. */
   setSurfaces(shows: (surface: string) => boolean, changed: vscode.Event<unknown>): void {
     this.shows = shows;
-    this.subs.push(changed(() => this.emitter.fire(undefined)));
+    this.subs.push(changed(() => this.refresh()));
   }
 
   /** 0.23: list every option's components and files, or only the selected architecture. */
   setAllVariants(on: boolean): void {
     this.allVariants = on;
-    this.emitter.fire(undefined);
+    this.refresh();
   }
 
   /** V3-SHELL: the lens the tree shows now. */
@@ -148,26 +155,26 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     void vscode.commands.executeCommand("setContext", LENS_CONTEXT_KEY, this.lens());
     this.updateTitle();
     if (this.lens() === "git" && this.view?.visible) this.gitRefresh?.();
-    this.emitter.fire(undefined);
+    this.refresh();
   }
 
   /** V3-SHELL: the Git lens lists the Git view's nodes (same provider, same routes). */
   attachGit(tree: GitTreeProvider, refresh: () => void): void {
     this.gitTree = tree;
     this.gitRefresh = refresh;
-    this.subs.push(tree.onDidChangeTreeData(() => { if (this.lens() === "git") this.emitter.fire(undefined); }));
+    this.subs.push(tree.onDidChangeTreeData(() => { if (this.lens() === "git") this.refresh(); }));
   }
 
   /** V3-SHELL: the AI lens lists this project's work orders. */
   attachWorkOrders(list: () => readonly LoadedOrder[], changed: vscode.Event<void>): void {
     this.orders = list;
-    this.subs.push(changed(() => { if (this.lens() === "ai") this.emitter.fire(undefined); }));
+    this.subs.push(changed(() => { if (this.lens() === "ai") this.refresh(); }));
   }
 
   /** DETACH1: the materialized dbt models (badge "detached" + drift), shown when the project has any. */
   attachDetached(list: () => readonly DetachView[], changed: vscode.Event<void>): void {
     this.detached = list;
-    this.subs.push(changed(() => this.emitter.fire(undefined)));
+    this.subs.push(changed(() => this.refresh()));
   }
 
   private updateTitle(): void {
@@ -572,7 +579,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     const nodes: Node[] = [];
     for (const [key, rows] of byRepo) {
       const folder = this.session.repoFolder(key);
-      if (folder && vscode.workspace.isTrusted && !this.tracking.has(key)) void this.tracking.load(key, folder.fsPath, rows.map(r => r.repoPath)).then(() => this.emitter.fire(undefined));
+      if (folder && vscode.workspace.isTrusted && !this.tracking.has(key)) void this.tracking.load(key, folder.fsPath, rows.map(r => r.repoPath)).then(() => this.refresh());
       const g = groupByTracking(rows, r => this.tracking.get(key, r.repoPath));
       const file = (r: Row): Node => ({ t: "file", id: `git-order:${key}:${r.repoPath}`, c: r.c, f: { ...r.f, path: r.repoPath }, parent: `git-order:${key}` });
       const group = (id: string, label: string, list: Row[], collapsed = false): Node[] => list.length
