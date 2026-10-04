@@ -17,12 +17,15 @@ import * as os from "node:os";
 import * as path from "node:path";
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { runTests, downloadAndUnzipVSCode } from "@vscode/test-electron";
 import { PERF_REPOS, perfFiles } from "../tests/fixtures/perf/foilSized";
+import { cli, EXTENSION_ID } from "./qa/prepare";
 
 const repo = path.resolve(__dirname, "..");
 const ci = process.argv.includes("--ci");
+const vsixArg = process.argv.find(a => a.startsWith("--vsix="))?.slice("--vsix=".length);
 const runs = Math.max(1, Number(process.argv.find(a => a.startsWith("--runs="))?.slice("--runs=".length) ?? 3));
 
 /**
@@ -84,6 +87,11 @@ function advanceRemotes(seeds: string[], n: number): void {
 async function vscodeExecutable(): Promise<string> {
   const fromEnv = process.env.VSCODE_EXECUTABLE;
   if (fromEnv) return fromEnv;
+  const pinned = process.env.DATAPASS_TEST_VSCODE_VERSION;
+  if (pinned) {
+    if (!/^\d+\.\d+\.\d+$/.test(pinned)) throw new Error("DATAPASS_TEST_VSCODE_VERSION must be an exact release.");
+    return downloadAndUnzipVSCode(pinned);
+  }
   if (process.platform === "win32" && process.env.LOCALAPPDATA) {
     const installed = path.join(process.env.LOCALAPPDATA, "Programs", "Microsoft VS Code", "Code.exe");
     if (fs.existsSync(installed)) return installed;
@@ -103,7 +111,8 @@ const median = (xs: number[]) => { const s = [...xs].sort((a, b) => a - b); retu
 const ms = (x: number) => `${Math.round(x)} ms`;
 
 async function main(): Promise<void> {
-  if (!fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
+  if (!vsixArg && !fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
+  if (!Number.isInteger(runs) || (ci && runs < 3)) throw new Error("The performance gate requires at least three valid runs.");
   const out = path.join(repo, "out", "perf");
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
@@ -114,6 +123,26 @@ async function main(): Promise<void> {
   });
   const executable = await vscodeExecutable();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-perf-"));
+  let extensionRoot = repo;
+  let extensionTestsPath = path.join(out, "suite.js");
+  let packaged: { sha256: string; version: string } | undefined;
+  if (vsixArg) {
+    const vsix = path.resolve(vsixArg);
+    const extensions = path.join(scratch, "extensions");
+    cli(executable, ["--user-data-dir", path.join(scratch, "install-profile"), "--extensions-dir", extensions, "--install-extension", vsix, "--force"]);
+    const installed = fs.readdirSync(extensions).filter(name => name.toLowerCase().startsWith(`${EXTENSION_ID}-`));
+    if (installed.length !== 1) throw new Error("Expected one isolated installed DataPass extension.");
+    extensionRoot = path.join(extensions, installed[0]!);
+    const manifest = JSON.parse(fs.readFileSync(path.join(extensionRoot, "package.json"), "utf8"));
+    const source = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8"));
+    if (`${manifest.publisher}.${manifest.name}` !== EXTENSION_ID || manifest.version !== source.version) throw new Error("Installed VSIX identity differs from qualification source.");
+    packaged = { sha256: createHash("sha256").update(fs.readFileSync(vsix)).digest("hex"), version: manifest.version };
+    const testDir = path.join(extensionRoot, ".qualification");
+    fs.mkdirSync(testDir);
+    extensionTestsPath = path.join(testDir, "perf.js");
+    fs.copyFileSync(path.join(out, "suite.js"), extensionTestsPath);
+    console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
+  }
   const fixture = setup(path.join(scratch, "ws"));
   const reports: Report[] = [];
   try {
@@ -124,14 +153,15 @@ async function main(): Promise<void> {
       writeTree(path.join(profile, "User"), { "settings.json": JSON.stringify({ "datapass.experience.preset": "advanced", "datapass.experience.overrides": { "landing.architecture": false } }) });
       await runTests({
         vscodeExecutablePath: executable,
-        extensionDevelopmentPath: repo,
-        extensionTestsPath: path.join(out, "suite.js"),
+        extensionDevelopmentPath: extensionRoot,
+        extensionTestsPath,
         launchArgs: [fixture.workspaceFile, "--user-data-dir", profile, "--disable-extensions", "--extensions-dir", path.join(scratch, "extensions"),
           "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes", "--disable-telemetry", "--disable-updates", "--new-window"],
         extensionTestsEnv: { DATAPASS_PERF_REPORT: reportFile, DATAPASS_PERF: JSON.stringify({ clones: fixture.clones }) }
       });
       const r = JSON.parse(fs.readFileSync(reportFile, "utf8")) as Report;
       if (!r.ok) throw new Error(`run ${i} failed in the extension host:\n${r.error}`);
+      if (r.components !== 60 || r.repositories !== 8) throw new Error(`run ${i} did not load the complete pinned fixture.`);
       reports.push(r);
       console.log(`run ${i}: activation ${ms(r.loadMs + r.activateMs)} (load ${ms(r.loadMs)} + activate ${ms(r.activateMs)}), first paint ${ms(r.firstRefreshMs)}, full refresh ${ms(r.fullRefreshMs)} (session ${ms(r.sessionFirstPaintMs)} / ${ms(r.sessionSettledMs)}), warm refresh ${ms(r.warmRefreshMs)}, ` +
         `${r.components} components / ${r.repositories} repositories [${Object.entries(r.sessionSteps ?? {}).map(([k, v]) => `${k} ${v}`).join(", ")}]; git fetch ×${r.fetch.repositories} → ${r.fetch.sessionRefreshes} refresh(es), ${r.fetch.gitChanges} Git view update(s)`);
@@ -146,7 +176,17 @@ async function main(): Promise<void> {
     fullRefreshMs: median(reports.map(r => r.fullRefreshMs)),
     fetchRefreshes: median(reports.map(r => r.fetch.sessionRefreshes))
   };
-  fs.writeFileSync(path.join(out, "perf-report.json"), JSON.stringify({ generatedAt: new Date().toISOString(), host: { platform: process.platform, cpus: os.cpus().length }, budget: BUDGET, median: result, runs: reports }, null, 2));
+  const digest = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
+  fs.writeFileSync(path.join(out, "perf-report.json"), JSON.stringify({
+    generatedAt: new Date().toISOString(),
+    sourceSha: execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo, encoding: "utf8" }).trim(),
+    sourceDirty: Boolean(execFileSync("git", ["status", "--porcelain"], { cwd: repo, encoding: "utf8" }).trim()),
+    packaged,
+    fixtureSha256: digest(JSON.stringify(perfFiles())),
+    vscode: { executable, sha256: digest(fs.readFileSync(executable)) },
+    host: { platform: process.platform, release: os.release(), cpus: os.cpus().length, node: process.version },
+    budget: BUDGET, gate: Object.fromEntries(GATED.map(k => [k, BUDGET[k] * (ci ? 2 : 1)])), median: result, runs: reports
+  }, null, 2));
   console.log(`\nmedian of ${runs}: activation ${ms(result.activationMs)} (budget ${BUDGET.activationMs}), first paint ${ms(result.firstRefreshMs)} (budget ${BUDGET.firstRefreshMs}), full refresh ${ms(result.fullRefreshMs)} (budget ${BUDGET.fullRefreshMs}), refreshes after git fetch ${result.fetchRefreshes} (budget ${BUDGET.fetchRefreshes})`);
   const over = GATED.filter(k => result[k] > BUDGET[k] * (ci ? 2 : 1));
   if (over.length) {

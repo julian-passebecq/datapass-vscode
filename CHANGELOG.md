@@ -5,6 +5,12 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- Multi-root refresh reads repository fingerprints and origin identities in bounded parallel
+  batches, and checks file tracking alongside disk/hash observations. Local project-file reads
+  keep their size/error checks without a window filesystem round trip. Missing MCP registration
+  files avoid an empty workspace-wide search; existing files retain search exclusions.
+- Release CI measures three launches of the installed VSIX on the pinned performance fixture,
+  after desktop qualification finishes, and enforces the existing activation/paint/refresh budgets.
 - Git observation leaves the index unchanged, avoiding an unnecessary index lock during an explicit
   fast-forward update. A desktop regression checks unchanged file content with changed timestamps.
 - Release qualification exercises the installed VSIX in the desktop suite and runs both preparation

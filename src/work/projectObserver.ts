@@ -125,29 +125,34 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
   plan.splice(MAX_PLANNED_ENTRIES);
   const budget = new ByteBudget(HASH_BYTE_BUDGET);
   const tracked = new Map<string, string[]>();
-  await runBounded(plan, OBSERVE_CONCURRENCY, async entry => {
+  // Tracking depends on the declared paths and resolved folders, not on their disk/hash reads.
+  // Ask it alongside those reads; a missing file can still be tracked (deleted), so all paths
+  // retain the same check and a failed answer still stays unknown.
+  for (const entry of plan) {
+    if (entry.tracked && o.trusted && folders.has(entry.repoKey)) (tracked.get(entry.repoKey) ?? tracked.set(entry.repoKey, []).get(entry.repoKey)!).push(entry.repoPath);
+  }
+  const disk = runBounded(plan, OBSERVE_CONCURRENCY, async entry => {
     const base = folders.get(entry.repoKey);
     if (!base) return;
     const k = obsKey(entry.repoKey, entry.repoPath);
     files.set(k, await observeEntry(base, entry.repoPath, entry.kind, entry.hash, budget));
-    if (entry.tracked && o.trusted) (tracked.get(entry.repoKey) ?? tracked.set(entry.repoKey, []).get(entry.repoKey)!).push(entry.repoPath);
-  });
-  o.mark?.("files");
+  }).then(() => { o.mark?.("files"); });
   // Files that must never be committed: ask Git whether they are tracked, in one call per clone
   // (V1-REF), the answers kept while the clone's fingerprint is unchanged. A failed or cut-short
   // answer leaves them "unknown", never "untracked" (F03), and is not kept.
-  await runBounded([...tracked], GIT_CONCURRENCY, async ([key, paths]) => {
+  const tracking = runBounded([...tracked], GIT_CONCURRENCY, async ([key, paths]) => {
     const folder = folders.get(key)!.fsPath;
     const { entry } = await cacheEntry(folder);
     const ask = paths.filter(p => !entry.tracking.has(p));
     const answers = ask.length ? interpretLsFiles(ask, await o.git(lsFilesArgs(ask), folder, 10000)) : new Map<string, TrackingObservation>();
     for (const [p, t] of answers) if (t.state !== "unknown") entry.tracking.set(p, t);
-    for (const p of paths) {
-      const k = obsKey(key, p);
-      files.set(k, { ...(files.get(k) ?? { state: "missing" }), tracking: answers.get(p) ?? entry.tracking.get(p)! });
-    }
-  });
-  o.mark?.("tracking");
+    return { key, observations: paths.map(p => [p, answers.get(p) ?? entry.tracking.get(p)!] as const) };
+  }).then(observations => { o.mark?.("tracking"); return observations; });
+  const [, observations] = await Promise.all([disk, tracking]);
+  for (const { key, observations: paths } of observations) for (const [p, observation] of paths) {
+    const k = obsKey(key, p);
+    files.set(k, { ...(files.get(k) ?? { state: "missing" }), tracking: observation });
+  }
   const incomplete = incompleteness({ planned: plannedCount, max: MAX_PLANNED_ENTRIES, statOnly: budget.denied });
   return { coordinationKey, repos, files, folders, observedAt: new Date().toISOString(), incomplete };
 }
@@ -174,12 +179,26 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
     }));
     return originCache.get(id)!;
   };
-  const exists = async (fsPath: string) => (await statKind(vscode.Uri.file(fsPath))) === "dir";
+  const existence = new Map<string, Promise<boolean>>();
+  const exists = (fsPath: string): Promise<boolean> => {
+    const id = path.resolve(fsPath);
+    if (!existence.has(id)) existence.set(id, statKind(vscode.Uri.file(fsPath)).then(k => k === "dir"));
+    return existence.get(id)!;
+  };
 
   const declared: Array<[string, { path?: string; remote?: { url: string }; planned?: true }]> = Object.entries(o.manifest?.repositories ?? {});
   if (coordinationKey === COORDINATION_KEY) declared.unshift([COORDINATION_KEY, { path: "." }]);
   const workspaceFolders = (vscode.workspace.workspaceFolders ?? []).map(f => f.uri.fsPath).filter(f => path.resolve(f) !== path.resolve(o.root.fsPath));
   const parents = [...new Set([path.dirname(o.root.fsPath), ...o.cloneParents])];
+
+  // Remote-only declarations consider the same open folders. Read their independent origins
+  // together, once per folder, instead of each declaration waiting through the same serial
+  // candidate chain. Matching below still keeps workspace order and verifies Git identity.
+  if (o.trusted && declared.some(([key, repo]) => key !== coordinationKey && !repo.planned && !repo.path && !o.localBindings[key] && repo.remote?.url)) {
+    await runBounded(workspaceFolders, GIT_CONCURRENCY, async folder => {
+      if (await exists(folder)) await originOf(folder);
+    });
+  }
 
   // V1-REF: repositories are looked at side by side, a few Git processes at a time; the maps keep the declared order.
   const found = await runBounded(declared.slice(0, 60), GIT_CONCURRENCY, async ([key, repo]): Promise<{ repo: RepoObservation; folder?: vscode.Uri } | undefined> => {

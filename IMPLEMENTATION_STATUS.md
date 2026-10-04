@@ -7,6 +7,14 @@ identify a qualified build by its source SHA and VSIX SHA-256, not the version a
 The V5 features are documented in [CHANGELOG.md](CHANGELOG.md) and [docs/tutorials/V5.md](docs/tutorials/V5.md).
 This implementation statement is not release approval. The sections below retain earlier release history.
 
+V5.1 performance qualification uses the existing synthetic 8-repository, 5,000-file,
+60-component fixture and pinned VS Code 1.139.1. Three valid installed-package runs are
+required: median activation <= 1,000 ms, first paint <= 6,000 ms and full refresh <= 12,000 ms.
+The `performance_budget` CI job runs after functional desktop/UI qualification to avoid
+competing process launches on the shared Windows host. MR !288 records the exact source,
+VSIX digest, performance results and pipeline; a passing implementation statement alone
+does not authorize merging.
+
 ## 1.1.0-rc.1: V3 release candidate 1
 
 Date: 2026-09-28. Version `1.1.0-rc.1` (prerelease; 1.0.0 is the current release) — the V3 wave merged since 1.0.0:

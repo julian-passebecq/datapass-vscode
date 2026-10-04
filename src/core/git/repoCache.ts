@@ -100,18 +100,21 @@ export async function repoFingerprint(folder: string): Promise<{ gitDir: string;
     const s = await fsp.lstat(dotGit);
     const gitDir = s.isDirectory() ? dotGit : s.isFile() ? gitDirFromFile(await fsp.readFile(dotGit, "utf8"), folder) : undefined;
     if (!gitDir) return undefined;
-    let common = gitDir;
-    try { common = path.resolve(gitDir, (await fsp.readFile(path.join(gitDir, "commondir"), "utf8")).trim()); } catch { /* not a linked worktree */ }
-    const head = await fsp.readFile(path.join(gitDir, "HEAD"), "utf8");
+    // These reads are independent. Serializing them adds several filesystem round trips per
+    // clone, particularly while Windows and VS Code are opening a multi-root workspace.
+    const [commonFile, head, index] = await Promise.all([
+      fsp.readFile(path.join(gitDir, "commondir"), "utf8").catch(() => undefined),
+      fsp.readFile(path.join(gitDir, "HEAD"), "utf8"),
+      fsp.stat(path.join(gitDir, "index")).catch(() => undefined)
+    ]);
+    const common = commonFile === undefined ? gitDir : path.resolve(gitDir, commonFile.trim());
     const refName = headRef(head);
-    let ref: string | undefined;
-    if (refName) {
-      try { ref = await fsp.readFile(path.join(common, ...refName.split("/")), "utf8"); }
-      catch { ref = `packed:${(await fsp.stat(path.join(common, "packed-refs")).catch(() => undefined))?.mtimeMs ?? "none"}`; }
-    }
-    const index = await fsp.stat(path.join(gitDir, "index")).catch(() => undefined);
     const configs = [...new Set([path.join(common, "config"), path.join(gitDir, "config.worktree")])];
-    const configMtimeMs = await Promise.all(configs.map(c => fsp.stat(c).then(x => x.mtimeMs, () => 0)));
+    const [ref, configMtimeMs] = await Promise.all([
+      refName ? fsp.readFile(path.join(common, ...refName.split("/")), "utf8")
+        .catch(async () => `packed:${(await fsp.stat(path.join(common, "packed-refs")).catch(() => undefined))?.mtimeMs ?? "none"}`) : undefined,
+      Promise.all(configs.map(c => fsp.stat(c).then(x => x.mtimeMs, () => 0)))
+    ]);
     return { gitDir, key: fingerprintKey({ head, ref, index: index ? { mtimeMs: index.mtimeMs, size: index.size } : undefined, configMtimeMs }) };
   } catch { return undefined; }
 }
