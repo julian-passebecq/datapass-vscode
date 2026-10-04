@@ -674,7 +674,8 @@ function shardFromEnv(): { index: number; total: number } | undefined {
 async function main(): Promise<void> {
   if (!vsixArg && !fs.existsSync(path.join(repo, "dist", "extension.js"))) throw new Error("Run `npm run build` first.");
   if (vsixArg && realExtensions) throw new Error("Packaged qualification requires isolated extensions.");
-  const out = path.join(repo, "out", "integration");
+  const shard = shardFromEnv();
+  const out = path.join(repo, "out", "integration", ...(shard ? [`shard-${shard.index}`] : []));
   fs.rmSync(out, { recursive: true, force: true });
   fs.mkdirSync(out, { recursive: true });
   await esbuild.build({
@@ -703,7 +704,6 @@ async function main(): Promise<void> {
   const reports: unknown[] = [];
   let failed = 0;
   let hostErrorCount = 0;
-  const shard = shardFromEnv();
   const allFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
   const selected = shard ? shardFixtures(allFixtures, shard.index, shard.total) : allFixtures;
   if (shard) {
