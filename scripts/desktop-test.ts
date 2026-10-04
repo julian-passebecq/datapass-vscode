@@ -687,6 +687,7 @@ async function main(): Promise<void> {
   const executable = await vscodeExecutable();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "datapass-desktop-"));
   let extensionRoot = repo;
+  let extensionTestsPath = path.join(out, "suite.js");
   let packaged: { vsix: string; sha256: string; version: string } | undefined;
   if (vsixArg) {
     const vsix = path.resolve(vsixArg);
@@ -699,6 +700,13 @@ async function main(): Promise<void> {
     const source = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8"));
     if (`${manifest.publisher}.${manifest.name}` !== EXTENSION_ID || manifest.version !== source.version) throw new Error("Installed VSIX identity differs from qualification source.");
     packaged = { vsix, sha256: createHash("sha256").update(fs.readFileSync(vsix)).digest("hex"), version: manifest.version };
+    // VS Code resolves require("vscode") by the caller's extension directory.
+    // Keep the test bundle beside the installed runtime so scripted UI patches
+    // reach that extension's API object, rather than the source checkout's API.
+    const testDir = path.join(extensionRoot, ".qualification");
+    fs.mkdirSync(testDir);
+    extensionTestsPath = path.join(testDir, "suite.js");
+    fs.copyFileSync(path.join(out, "suite.js"), extensionTestsPath);
     console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
   }
   const reports: unknown[] = [];
@@ -752,7 +760,7 @@ async function main(): Promise<void> {
       await runTests({
         vscodeExecutablePath: executable,
         extensionDevelopmentPath: extensionRoot,
-        extensionTestsPath: path.join(out, "suite.js"),
+        extensionTestsPath,
         launchArgs,
         extensionTestsEnv: { DATAPASS_IT_FIXTURE: name, DATAPASS_IT_REPORT: reportFile, ...fixtureTempEnv(tempDir), ...env }
       });
