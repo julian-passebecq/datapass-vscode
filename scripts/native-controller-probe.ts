@@ -26,6 +26,13 @@ export function controllerFailureCodes(stderr: string): string[] {
   for (const line of stderr.split(/\r?\n/)) {
     const exceptionKind = /^(ImportError|ModuleNotFoundError|AttributeError|PermissionError|FileNotFoundError|BrokenPipeError|MemoryError|SystemError|TypeError|KeyError|AssertionError):/.exec(line);
     if (exceptionKind) codes.add(`python-${exceptionKind[1]!.toLowerCase()}`);
+    const dllImport = /^ImportError: DLL load failed while importing (_socket|_ctypes|_ssl|select|_hashlib|_winapi):/.exec(line);
+    if (dllImport) {
+      codes.add(`python-dll-import-${dllImport[1]}`);
+      if (/Access is denied\./.test(line)) codes.add('python-dll-access-denied');
+      if (/The specified module could not be found\./.test(line)) codes.add('python-dll-dependency-missing');
+      if (/A dynamic link library \(DLL\) initialization routine failed\./.test(line)) codes.add('python-dll-initialization-failed');
+    }
     const workerPhase = /datapass_analyzer\.py", line \d+, in (warm_up|main|preflight|read_frame|scrub_environment)\s*$/.exec(line);
     if (workerPhase) codes.add(`worker-phase-${workerPhase[1]}`);
     for (const [call, phase] of [['ok(assign_job(job,pi.process))', 'assign-job'], ['ok(create_process(', 'create-worker'],
