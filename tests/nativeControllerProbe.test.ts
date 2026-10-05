@@ -7,4 +7,6 @@ test('controller qualification retains Windows/fixed refusal codes and discards 
   assert.deepEqual(controllerFailureCodes(stderr), ['win32-5', 'worker-not-ready']);
   assert.deepEqual(controllerFailureCodes('OSError: appcontainer-profile-failed\n'), ['appcontainer-profile-failed']);
   assert.deepEqual(controllerFailureCodes('    ok(assign_job(job,pi.process))\nOSError: [WinError 5] Access denied'), ['phase-assign-job', 'win32-5']);
+  assert.deepEqual(controllerFailureCodes('  File "C:\\private\\datapass_analyzer.py", line 1, in warm_up\nModuleNotFoundError: secret-module-name\n'), ['worker-phase-warm_up', 'python-modulenotfounderror']);
+  assert.deepEqual(controllerFailureCodes('datapass-worker-exit:3221225794\ndatapass-worker-exit:source-value\n'), ['worker-exit-3221225794']);
 });
