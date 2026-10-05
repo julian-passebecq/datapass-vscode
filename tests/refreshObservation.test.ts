@@ -14,10 +14,19 @@ const folders: Array<{ uri: ReturnType<typeof uri> }> = [];
 let searches = 0;
 let results: ReturnType<typeof uri>[] = [];
 const stub = {
+  EventEmitter: class<T> {
+    private listeners = new Set<(value: T) => void>();
+    event = (listener: (value: T) => void) => { this.listeners.add(listener); return { dispose: () => this.listeners.delete(listener) }; };
+    fire(value: T) { for (const listener of this.listeners) listener(value); }
+    dispose() { this.listeners.clear(); }
+  },
+  RelativePattern: class { constructor(readonly base: unknown, readonly pattern: string) {} },
   Uri: { file: uri, joinPath: (b: ReturnType<typeof uri>, ...p: string[]) => uri(path.join(b.fsPath, ...p), b.scheme) },
   FileType: { File: 1, Directory: 2, SymbolicLink: 64 },
   extensions: { getExtension: () => undefined },
   workspace: {
+    isTrusted: true,
+    getConfiguration: () => ({ get: (_key: string, fallback?: unknown) => fallback }),
     workspaceFolders: folders,
     findFiles: async () => { searches++; return results; },
     fs: {
@@ -77,6 +86,52 @@ test("independent origin reads overlap, bind by identity, and retain the first m
     assert.equal(calls, 0);
     assert.equal(restricted.repos.get("a")?.restricted, true);
   } finally { await f.cleanup(); }
+});
+
+test("real session paints pending only on startup/project switch and keeps checked clones during same-project refresh", async () => {
+  const { WorkSession } = require("../src/work/session") as typeof import("../src/work/session");
+  const f = await fixture();
+  const originalStat = stub.workspace.fs.stat;
+  const originalRead = stub.workspace.fs.readFile;
+  const oldTrusted = stub.workspace.isTrusted;
+  const state = new Map<string, unknown>();
+  const memento = { get: (key: string) => state.get(key), update: async (key: string, value: unknown) => { state.set(key, value); } };
+  const session = new WorkSession({ extensionUri: f.hub, workspaceState: memento, globalState: memento } as never);
+  try {
+    stub.workspace.isTrusted = false; results = [];
+    Object.assign(stub.workspace.fs, {
+      stat: async (u: ReturnType<typeof uri>) => { const s = await fs.stat(u.fsPath); return { type: s.isDirectory() ? 2 : 1, size: s.size, mtime: s.mtimeMs }; },
+      readFile: async (u: ReturnType<typeof uri>) => fs.readFile(u.fsPath)
+    });
+    const create = async (root: ReturnType<typeof uri>) => {
+      await fs.mkdir(path.join(root.fsPath, ".datapass"));
+      await fs.writeFile(path.join(root.fsPath, ".datapass", "project.json"), JSON.stringify({ schemaVersion: 3, project: { id: path.basename(root.fsPath), title: "Fixture" } }));
+    };
+    await create(f.hub);
+    const paints: Array<{ step: string; source?: string; exists?: boolean }> = [];
+    session.onDidPaint(step => { const obs = session.projectObservation()?.repos.get("."); paints.push({ step, source: obs?.source, exists: obs?.exists }); });
+    await session.refresh();
+    assert.equal(session.refreshStatus().phase, "settled");
+    assert.deepEqual(paints.slice(0, 2), [
+      { step: "first-paint", source: "none", exists: false }, { step: "settled", source: "coordination", exists: true }
+    ]);
+    await session.refresh();
+    assert.equal(session.refreshStatus().phase, "settled");
+    assert.deepEqual(paints.slice(2, 4), [
+      { step: "first-paint", source: "coordination", exists: true }, { step: "settled", source: "coordination", exists: true }
+    ], "a settings/background refresh cannot replace a checked clone with pending declarations");
+    const next = uri(path.join(f.root, "two")); await create(next);
+    folders.splice(0, folders.length, { uri: next });
+    await session.refresh();
+    assert.equal(session.root?.fsPath, next.fsPath);
+    assert.deepEqual(paints.slice(4, 6), [
+      { step: "first-paint", source: "none", exists: false }, { step: "settled", source: "coordination", exists: true }
+    ], "a different project must not inherit another clone's verified identity");
+  } finally {
+    session.dispose(); stub.workspace.isTrusted = oldTrusted;
+    stub.workspace.fs.stat = originalStat; stub.workspace.fs.readFile = originalRead;
+    setProjectRoot(undefined); await f.cleanup();
+  }
 });
 
 test("MCP absence avoids empty searches; existing/excluded files and uncertain reads retain search semantics", async () => {

@@ -15,8 +15,9 @@ competing process launches on the shared Windows host. MR !288 records the exact
 VSIX digest, performance results and pipeline; a passing implementation statement alone
 does not authorize merging.
 
-First paint is the existing state-delivery milestone: the parsed project tree with pending
-local observations. Repository identity, file fingerprints and Git tracking complete before
+First paint is the existing state-delivery milestone: on startup/project switch, the parsed
+tree with pending local observations. Same-project refreshes retain the checked clone state
+until fresh checks finish. Repository identity, file fingerprints and Git tracking complete before
 the full-refresh promise resolves. It does not measure physical webview pixels.
 
 ## 1.1.0-rc.1: V3 release candidate 1

@@ -257,10 +257,26 @@ export class WorkSession implements vscode.Disposable {
     ]);
     if (superseded()) return this.latest;
     const rootChanged = this.ctx.root?.toString() !== ctx.root?.toString();
+    const observe = () => ctx.root ? this.localBindings(ctx.root).then(localBindings => observeProject({
+      root: ctx.root!, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
+      localBindings, cloneParents: cloneParents(), mark,
+      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
+      extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
+        .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
+        .filter((f): f is { repoKey: string; repoPath: string } => !!f)
+    })) : Promise.resolve(undefined);
+    // Only a new project needs a declaration-only first frame. A background refresh of the
+    // same project keeps its verified state until fresh checks finish, as before; otherwise
+    // a settings change would briefly make existing clone operations unusable.
+    const initialPaint = rootChanged || !this.projectObs;
+    let project = initialPaint ? undefined : observe();
+    const initialObservation = initialPaint && ctx.root
+      ? pendingProjectObservation(ctx.root, ctx.manifest, vscode.workspace.isTrusted) : await project;
+    if (superseded()) return this.latest;
     this.ctx = ctx;
     this.toolkitFiles = toolkitFiles;
     this.factObs = factObs;
-    this.projectObs = ctx.root ? pendingProjectObservation(ctx.root, ctx.manifest, vscode.workspace.isTrusted) : undefined;
+    this.projectObs = initialObservation;
     if (rootChanged) {
       // Another project: what was observed for the previous one no longer applies (V1-FRESH: nor
       // its connection checks — a target authorization never carries over to another project).
@@ -277,14 +293,7 @@ export class WorkSession implements vscode.Disposable {
     // Let state delivery complete before starting processes/searches. Pending repositories
     // are unverified and their files unknown, so no ready/identity-dependent action is enabled.
     await Promise.resolve();
-    const project = ctx.root ? this.localBindings(ctx.root).then(localBindings => observeProject({
-      root: ctx.root!, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
-      localBindings, cloneParents: cloneParents(), mark,
-      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
-      extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
-        .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
-        .filter((f): f is { repoKey: string; repoPath: string } => !!f)
-    })) : Promise.resolve(undefined);
+    project ??= observe();
     const inventoryDue = forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString();
     // All local correctness checks remain part of this refresh's completion promise. Independent
     // inventory/search and provider work can run while Git/file observations complete.
