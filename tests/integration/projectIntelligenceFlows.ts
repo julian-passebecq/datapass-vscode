@@ -3,6 +3,8 @@ import * as vscode from 'vscode';
 import type { DataPassTestApi } from '../../src/extension';
 import { test, record, waitFor } from './harness';
 import { withUi } from './ui';
+import { join } from 'node:path';
+import { probeInstalledController } from '../../scripts/native-controller-probe';
 
 export function registerProjectIntelligenceFlows(getApi: () => DataPassTestApi): void {
   test('V6: installed Home selects arbitrary environments and companion commands are optional', async () => {
@@ -38,6 +40,8 @@ export function registerProjectIntelligenceFlows(getApi: () => DataPassTestApi):
 
   test('V6: local analysis populates one shared graph, Navigator projections, guided paths and Sankey', async () => {
     const api = getApi();
+    const extension = vscode.extensions.getExtension('julian-passebecq.datapass-vscode')!;
+    await probeInstalledController(join(extension.extensionPath, 'dist', 'runtime'), true);
     await vscode.commands.executeCommand('datapass.understanding.analyzeProject');
     const report = api.intelligence.report();
     assert.ok(report, 'the installed parser and SPI must produce an accepted project report');
