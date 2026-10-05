@@ -712,8 +712,9 @@ async function main(): Promise<void> {
     extensionTestsPath = path.join(testDir, "suite.js");
     fs.copyFileSync(path.join(out, "suite.js"), extensionTestsPath);
     console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
-    if (process.argv.includes('--probe-native-controller')) try {
-      await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'));
+      if (process.argv.includes('--probe-native-controller')) try {
+        await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'));
+        await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'), true);
     } catch (error) {
       if (!path.resolve(scratch).startsWith(path.join(path.resolve(os.tmpdir()), 'datapass-desktop-'))) throw new Error('qualification-cleanup-root-mismatch');
       fs.rmSync(scratch, { recursive: true, force: true });
