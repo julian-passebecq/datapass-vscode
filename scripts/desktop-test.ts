@@ -39,6 +39,7 @@ const realExtensions = process.argv.includes("--real-extensions");
 const vsixArg = process.argv.find(a => a.startsWith("--vsix="))?.slice("--vsix=".length);
 /** `--fixture=v3-research,v17-company` runs only those fixtures (one report each). */
 const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length).split(",").map(s => s.trim()).filter(Boolean);
+const excluded = process.argv.find(a => a.startsWith("--exclude-fixture="))?.slice("--exclude-fixture=".length).split(",").map(s => s.trim()).filter(Boolean) ?? [];
 
 function v4Cloudflare(): DataPassProjectManifest {
   return {
@@ -714,7 +715,9 @@ async function main(): Promise<void> {
   const reports: unknown[] = [];
   let failed = 0;
   let hostErrorCount = 0;
-  const allFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
+  const knownFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
+  if (excluded.some(name => !knownFixtures.includes(name))) throw new Error('Unknown excluded fixture.');
+  const allFixtures = knownFixtures.filter(name => !excluded.includes(name));
   const selected = shard ? shardFixtures(allFixtures, shard.index, shard.total) : allFixtures;
   if (shard) {
     // Never weaken the check: the shards together must run every fixture exactly once.

@@ -41,8 +41,9 @@ export function registerProjectIntelligenceFlows(getApi: () => DataPassTestApi):
     await vscode.commands.executeCommand('datapass.understanding.analyzeProject');
     const report = api.intelligence.report();
     assert.ok(report, 'the installed parser and SPI must produce an accepted project report');
+    record('v6ParserQualification', { hostNode: process.versions.node, files: report.files, limits: report.limits });
     assert.equal(report.files.find(f => f.path === '.env')?.status, 'IGNORED');
-    assert.ok(report.files.find(f => f.path === 'src/query.sql')?.status === 'UNDERSTOOD', JSON.stringify(report.files));
+    assert.ok(report.files.find(f => f.path === 'src/query.sql')?.status === 'UNDERSTOOD', JSON.stringify({ files: report.files, limits: report.limits }));
     for (const file of ['src/spark.py', 'src/example.ipynb']) assert.equal(report.files.find(f => f.path === file)?.status, 'UNDERSTOOD', JSON.stringify(report.files));
     const sessionSource = report.files.find(f => f.path === 'src/spark_session.py');
     assert.equal(sessionSource?.status, 'PARTIAL', 'dynamic session construction stays an explicit parser gap');

@@ -9,9 +9,11 @@ import { selectedCapture, selectedRequest, sessionIdentity, editorOffsets, type 
 import { collectDbtWorkspace, dbtSections, extractDbt } from './dbt';
 import { collectOrchestrationWorkspace, extractOrchestration, orchestrationSections, type PythonFactsHost } from './orchestration';
 import { assembleProjectIntelligence, collectProjectSources, extractProjectSources, isProjectAnalysisChange, PROJECT_ANALYSIS_LIMITS } from './project';
+import { parserIssueCode } from './parserIssue';
 
 /** Installed trusted host only; never obtain a module or executable from workspace settings. */
 export interface NativeAnalysisBackend {
+  issues?(): readonly string[];
   readonly plugin: AnalyzerPlugin;
   readonly ruleCatalogDigest: AnalysisRequest['header']['ruleCatalogDigest'];
   acquire(root: string, relativePath: string, signal: AbortSignal): Promise<Uint8Array>;
@@ -196,8 +198,14 @@ export class NativeAnalysisHost implements vscode.Disposable {
             progress.report({ message: repo.label });
             const sources = await collectProjectSources(folder.fsPath, repo.key, abort.signal, remaining);
             remaining -= sources.files.length + sources.skipped.length;
-            const backend = this.backendFactory ? await this.backendFactory(folder.fsPath).catch(() => undefined) : undefined;
-            try { parts.push(await extractProjectSources(sources, repo.key, map.project?.id ?? 'workspace', backend, abort.signal)); }
+            const backend = this.backendFactory ? await this.backendFactory(folder.fsPath).catch(error => {
+              sources.limits.push(`${repo.key}: native parser ${parserIssueCode(error)}.`); return undefined;
+            }) : undefined;
+            try {
+              const part = await extractProjectSources(sources, repo.key, map.project?.id ?? 'workspace', backend, abort.signal);
+              part.limits.push(...(backend?.issues?.() ?? []).map(code => `${repo.key}: native parser ${code}.`));
+              parts.push(part);
+            }
             finally { await backend?.dispose(); }
           }
         } finally { cancellation.dispose(); }
