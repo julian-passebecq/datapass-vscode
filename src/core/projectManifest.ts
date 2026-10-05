@@ -4,6 +4,7 @@ import { parseStrictJson } from "./model/strictJson";
 import { projectRoot } from "./workspace/root";
 import { readProjectFile } from "./workspace/readFile";
 import { PROJECT_FILE_MAX_BYTES } from "./model/boundedRead";
+import { vetRelativePath } from './exchange/pathSafety';
 
 export * from "./projectManifestModel";
 
@@ -17,15 +18,16 @@ export interface ManifestReadResult {
 }
 
 /** The manifest of this window's project, or of the project in `folder` (another project, 0.17). */
-export async function readProjectManifest(folder?: vscode.Uri): Promise<ManifestReadResult> {
+export async function readProjectManifest(folder?: vscode.Uri, manifestPath = '.datapass/project.json'): Promise<ManifestReadResult> {
   const root = folder ?? projectRoot();
   if (!root) return { exists: false, errors: [] };
-  const uri = vscode.Uri.joinPath(root, ".datapass", "project.json");
+  if (!vetRelativePath(manifestPath).ok) return { exists: false, errors: ['Invalid relative manifest path'] };
+  const uri = vscode.Uri.joinPath(root, ...manifestPath.replace(/\\/g, '/').split('/'));
 
   // Typed, bounded read: absent is "no manifest"; unreadable, too large or not a file is an error, never "absent".
   const read = await readProjectFile(uri, PROJECT_FILE_MAX_BYTES);
   if (read.kind === "absent") return { exists: false, uri, errors: [] };
-  if (read.kind === "error") return { exists: true, uri, errors: [`Cannot read .datapass/project.json: ${read.message}`] };
+  if (read.kind === "error") return { exists: true, uri, errors: [`Cannot read ${manifestPath}: ${read.message}`] };
 
   const bytes = read.bytes;
   try {

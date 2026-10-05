@@ -8,7 +8,7 @@ $arguments = @((Join-Path $projectRoot 'node_modules\tsx\dist\cli.mjs'))
 if ($Mode -eq 'native') {
     $arguments += @('scripts/desktop-test.ts', "--vsix=$($vsix.FullName)", '--fixture=v6-intelligence', '--probe-native-controller')
 } else {
-    $arguments += @('--test', '--test-concurrency=1', 'tests/qaPrepare.test.ts', 'tests/qaAuto.test.ts', 'tests/qa-ui.smoke.test.ts', 'tests/qa-v6.smoke.test.ts')
+    $arguments += @('--test', '--test-concurrency=1', 'tests/qaPrepare.test.ts', 'tests/qaAuto.test.ts', 'tests/qa-ui.smoke.test.ts', 'tests/qa-v6.smoke.test.ts', 'tests/qa-hub.smoke.test.ts')
 }
 if (-not [Security.Principal.WindowsIdentity]::GetCurrent().IsSystem) {
     $env:DATAPASS_QA_VSIX = $vsix.FullName

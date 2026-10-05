@@ -87,8 +87,8 @@ export class AiExchangeView implements vscode.WebviewViewProvider, vscode.Dispos
   /** Open the Agent tab with a prefilled draft (entry points of §8.9). */
   async prefill(p: AgentPrefill): Promise<void> {
     const token = Math.random().toString(36).slice(2, 12);
-    const { extra, baseBranches, followsUp, revises, ...visible } = p.draft;
-    this.hidden = { token, draft: { extra, baseBranches, followsUp, revises } };
+    const { extra, baseBranches, followsUp, revises, dag, ...visible } = p.draft;
+    this.hidden = { token, draft: { extra, baseBranches, followsUp, revises, dag } };
     this.lastVisible = visible;
     const message = { type: "prefill", draft: visible, note: p.note, token };
     this.pendingPrefill = message;

@@ -29,7 +29,7 @@ export const SURFACES: readonly Surface[] = [
   { id: "view.architecture", kind: "view", viewId: "datapass.architecture", label: "Architecture panel", detail: "The project diagram (bottom panel)" },
   { id: "view.context", kind: "view", viewId: "datapass.context", label: "Context panel", detail: "Details of where you are: summary, process step, why, patterns, Fabric, authority, evidence (bottom panel)" },
   { id: "view.aiExchange", kind: "view", viewId: "datapass.aiExchange", label: "AI view", detail: "Copy a DataPass file for your AI, paste its answer (secondary side bar)" },
-  { id: "view.details", kind: "view", viewId: "datapass.details", label: "Details", detail: "The selected component or sub-project (secondary side bar)" },
+  { id: "view.details", kind: "view", viewId: "datapass.details", altViewIds: ["datapass.hubInspector"], label: "Details", detail: "The selected component or sub-project (secondary side bar)" },
   { id: "ai.agent", kind: "aiTab", label: "AI view: Agent tab", detail: "Work orders for Claude Code or Codex (still opt-in per machine and project type)" },
   { id: "ai.manual", kind: "aiTab", label: "AI view: Manual tab", detail: "Where things stand and the route to each official tool" },
   { id: "project.subprojects", kind: "projectSection", label: "Project tree: sub-projects and components", detail: "The architecture as a tree" },

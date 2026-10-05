@@ -27,7 +27,7 @@ export function environmentContext(map: ProjectMap, manifest?: DataPassProjectMa
   return map.environments.map(env => {
     const operations = map.components.flatMap(c => c.operations).filter(op => !op.environmentId || op.environmentId === env.id);
     return {
-      ...env, selected: selected === env.id,
+      ...env, title: env.title ?? env.label, selected: selected === env.id, enabled: env.enabled !== false,
       identifiers: (manifest?.identifiers ?? []).flatMap(id => {
         const value = id.values ? id.values[env.id] : id.value;
         return value ? [{ id: id.id, label: id.label, provider: id.provider, value }] : [];

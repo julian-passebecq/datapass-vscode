@@ -29,7 +29,7 @@ import { buildCardPack, type CardQuestion } from "../core/project/boardPack";
 import { optionsMarkdown } from "../core/project/optionsReport";
 import { remoteIdentity, gitHostOf } from "../core/project/gitHosts";
 import {
-  AGENT_TOOLS, DATAPASS_FILE_KINDS, EFFORTS, MERGE_POLICIES, ORDER_ID_RE, ORDER_KINDS, localIso, markerLine, shortId,
+  AGENT_TOOLS, DATAPASS_FILE_KINDS, EFFORTS, MERGE_POLICIES, ORDER_ID_RE, ORDER_KINDS, localIso, markerLine, shortId, parseOrderDag,
   type DataPassFileKind, type Effort, type MergePolicy, type OrderKind, type WorkOrder
 } from "../core/workOrders/format";
 import {
@@ -65,6 +65,7 @@ import { gitNodeArg } from "../views/gitTree";
 
 export type RepoAccess = "change" | "read" | "skip";
 export interface Draft {
+  dag?: import('../core/workOrders/dag').OrderDag;
   kind: OrderKind;
   title?: string;
   goal: string;
@@ -119,6 +120,7 @@ export function sanitizeDraft(raw: unknown): Draft {
     return card && to ? { card, to } : undefined;
   }).filter((x): x is { card: string; to: string } => !!x).slice(0, 20) : undefined;
   return {
+    dag: d.dag !== undefined ? parseOrderDag(d.dag) : undefined,
     kind,
     title: str(d.title, 400),
     goal: typeof d.goal === "string" ? d.goal.slice(0, 20_000) : "",
@@ -382,6 +384,7 @@ export class WorkOrderFlows {
         checks: (draft.checks ?? []).map(text => ({ text })),
         doneWhen: draft.doneWhen ?? []
       },
+      dag: draft.dag,
       merge: draft.merge ?? defaultMergePolicy(type),
       agent: { tool: agent.tool, surface: agent.surface, model: draft.model ?? settings.model, effort: draft.effort ?? settings.effort, permissions: pilot ? "ask" : draft.permissions ?? "usual" },
       ...(pilot ? { pilot: { environment: "dev", clis: [...PILOT_CLIS] } } : {}),
@@ -999,7 +1002,7 @@ export function draftOf(order: WorkOrder, session: WorkSession): Draft {
     kind: order.kind, title: order.title, goal: order.goal,
     subproject: order.scope.subproject, components: order.scope.components, boardCard: order.scope.boardCard, decision: order.scope.decision,
     repos, baseBranches, datapassFiles: order.context.datapassFiles, expectedFiles: order.expected.datapassFiles, boardMoves: order.expected.boardMoves,
-    doneWhen: order.expected.doneWhen, checks: order.expected.checks.map(c => c.text),
+    dag: order.dag, doneWhen: order.expected.doneWhen, checks: order.expected.checks.map(c => c.text),
     choice: choiceOf(order.agent.tool, order.agent.surface), effort: order.agent.effort, model: order.agent.model, permissions: order.agent.permissions, merge: order.policy.merge,
     attachExport: order.context.attachments.some(a => a.startsWith("attachments/export-"))
   };
@@ -1166,4 +1169,3 @@ async function pickOrder(service: WorkOrderService, title: string, filter: (o: L
   const pick = await vscode.window.showQuickPick(list.map(o => ({ label: `${shortId(o.id)} ${o.order!.title}`, description: o.summary ? `${o.summary.status} · ${o.summary.agent}` : o.error, id: o.id })), { title });
   return pick?.id;
 }
-

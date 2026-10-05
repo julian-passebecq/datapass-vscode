@@ -33,6 +33,7 @@ import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
 import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
 import { intelligenceFiles } from '../tests/fixtures/v6/projectIntelligence';
+import { setupHubFixture } from '../tests/fixtures/v6/setupHub';
 import { probeInstalledController } from './native-controller-probe';
 
 const repo = path.resolve(__dirname, "..");
@@ -581,7 +582,9 @@ function setupV3Hop(base: string): { workspace: string; env: Record<string, stri
   return { workspace: path.join(base, "bridge"), env: {} };
 }
 
+function setupEnterpriseHub(base:string){return setupHubFixture(path.join(base,'hub'),base);}
 const SETUPS: Record<string, (base: string) => { workspace: string; env: Record<string, string> }> = {
+  'v6-enterprise-hub':setupEnterpriseHub,
   "v3-hop": setupV3Hop,
   "v3-research": setupV3Research,
   "v3-monorepo": setupV3Monorepo,

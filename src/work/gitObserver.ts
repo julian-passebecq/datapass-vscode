@@ -122,6 +122,7 @@ function spawnTool(cmd: ToolCommand, args: string[], cwd: string, timeoutMs: num
 }
 
 interface Target {
+  localOnly?: boolean;
   key: string;
   label: string;
   section: "project" | "other";
@@ -161,6 +162,12 @@ export interface GitObservation {
 }
 
 export class GitObserver implements vscode.Disposable {
+  /** Hub reuses this observer/limiter/runner; reading another declared project never launches an SCM write. */
+  async hubReport(target: { key: string; label: string; folder?: string; remoteUrl?: string }, online = false): Promise<GitRepoReport> {
+    if (target.folder) this.folders.set(target.key, target.folder);
+    return this.observeBounded({ ...target, role: 'project', section: 'project', localOnly: !online });
+  }
+  hubRead(tool: Tool, args: string[], cwd: string, fresh = false): Promise<RunResult> { return this.run(tool, args, cwd, fresh ? 0 : 15_000); }
   private readonly emitter = new vscode.EventEmitter<void>();
   readonly onDidChange = this.emitter.event;
   private readonly limiter = new Limiter(MAX_PARALLEL);
@@ -419,7 +426,7 @@ export class GitObserver implements vscode.Disposable {
     const def = await this.git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], folder);
     r.defaultBranch = (def.ok ? parseDefaultBranch(def.stdout) : undefined) ?? (t.defaultHint && isBranchName(t.defaultHint) ? t.defaultHint : "main");
 
-    const [worktrees, hostPrs] = await Promise.all([this.worktrees(folder, hasRemote), host ? this.hostPrs(host, folder) : Promise.resolve(undefined)]);
+    const [worktrees, hostPrs] = await Promise.all([this.worktrees(folder, hasRemote), host && !t.localOnly ? this.hostPrs(host, folder) : Promise.resolve(undefined)]);
     r.worktrees = worktrees;
     if (hostPrs) { r.hostData = hostPrs.data; r.prs = hostPrs.prs?.open; r.closed = hostPrs.prs?.closed; }
 

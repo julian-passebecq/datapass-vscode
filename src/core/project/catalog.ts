@@ -23,7 +23,7 @@ export const CATALOG_SCHEMA: Schema = obj({
   title: SHORT,
   description: TEXT,
   projects: arr(obj({
-    id: ID, title: SHORT, organization: SHORT, description: TEXT,
+    id: ID, title: SHORT, organization: SHORT, program: SHORT, localPath: SHORT, description: TEXT,
     repository: obj({ url: { type: "string", maxLength: 500 }, branch: { type: "string", pattern: "^[A-Za-z0-9._/-]{1,200}$" } }, ["url"]),
     manifest: REL_PATH,
     tags: arr(ID, 20)
@@ -31,6 +31,9 @@ export const CATALOG_SCHEMA: Schema = obj({
 }, ["format", "version", "projects"]);
 
 export interface CatalogProject {
+  program?: string;
+  /** Explicit local entry point; the project manifest remains authoritative. Never cloned implicitly. */
+  localPath?: string;
   id: string;
   title: string;
   organization?: string;
@@ -77,7 +80,7 @@ export function mergeCatalogs(catalogs: ReadonlyArray<{ source: string; catalog:
       if (seen.has(p.id)) continue;
       seen.add(p.id);
       const remote = normalizeRemote(p.repository.url);
-      out.push({ ...p, source, remote, localFolder: remote ? byRemote.get(remote) : undefined });
+      out.push({ ...p, source, remote, localFolder: p.localPath ?? (remote ? byRemote.get(remote) : undefined) });
     }
   }
   return out;

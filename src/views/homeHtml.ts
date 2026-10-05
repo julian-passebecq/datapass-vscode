@@ -4,13 +4,14 @@
  * messages ({ type: "action", id } / { type: "layout", id } / { type: "link", group, index }).
  */
 import type { HomeAction, HomeLinks, HomeState, HomeTile } from "./homeState";
+import { hubHtml, HUB_STYLE, HUB_SCRIPT } from './hubHtml';
 
-export type HomePage = "home" | "links";
+export type HomePage = "home" | "links" | "portfolio";
 
 const ESC: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
 export const esc = (s: unknown): string => String(s ?? "").replace(/[&<>"']/g, c => ESC[c]!);
 
-const STYLE = `
+export const STYLE = `
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
   body { margin: 0; padding: 20px 24px 32px; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); font-size: 13px; overflow-wrap: anywhere; }
@@ -121,7 +122,7 @@ function intelligenceBody(s: HomeState): string {
   const list = (entries: readonly string[], empty: string) => entries.length ? `<ul>${entries.map(e => `<li>${e}</li>`).join('')}</ul>` : `<p class="muted">${esc(empty)}</p>`;
   const repos = list(i.repositories.map(r => `<strong>${esc(r.label)}</strong> · ${esc(r.state)} · ${esc(r.branch ?? 'branch unknown')} · ${esc(r.head?.slice(0, 12) ?? 'revision unknown')} · ${r.changes === undefined ? 'working tree unknown' : r.changes ? `${r.changes} changed entries` : 'clean'}`), 'No repository declared.');
   const env = i.environments.find(e => e.selected);
-  const environments = i.environments.map(e => `<button type="button" data-environment="${esc(e.id)}" aria-pressed="${e.selected}"${e.selected ? ' class="primary"' : ''}>${esc(e.title ?? e.id)}${e.production ? ' · production' : ''}</button>`).join(' ');
+  const environments = i.environments.map(e => `<button type="button" data-environment="${esc(e.id)}" aria-pressed="${e.selected}"${e.selected ? ' class="primary"' : ''}${e.enabled === false ? ' disabled' : ''}>${esc(e.title ?? e.id)}${e.production ? ' · production' : ''}${e.enabled === false ? ' · disabled' : ''}</button>`).join(' ');
   const envDetails = env ? `<h3>${esc(env.title ?? env.id)} <span class="env">DECLARED</span></h3><p>${esc(env.description)} ${env.ready}/${env.total} operations locally ready. This does not attest deployment.</p>
     ${list(env.identifiers.map(id => `${esc(id.label)}${id.provider ? ` · ${esc(id.provider)}` : ''}: <code>${esc(id.value)}</code>`), 'No non-secret target IDs declared for this environment.')}
     ${list(env.operations.map(op => `${esc(op.component)} → ${esc(op.label)} · ${esc(op.readiness)}${op.target ? ` · ${esc(JSON.stringify(op.target))}` : ''}<br>${esc(op.nextStep)}<br>Participating local files: ${op.files.map(f => esc(f)).join(', ') || 'none declared'}${op.prerequisites.length ? `<br>Missing/review: ${op.prerequisites.map(p => esc(p)).join('; ')}` : ''}`), 'No applicable operation declared.')}
@@ -160,7 +161,8 @@ function homeBody(s: HomeState): string {
 </div>`;
   const noProject = s.project ? "" : `<div class="actions" style="margin-top:10px">${actionButton({ id: "project.open", label: "Open a client project…" }, true)}${actionButton({ id: "project.guide", label: "How to prepare a project" }, false)}</div>`;
   return `<div class="top"><div><h1>${esc(title)}</h1><p class="sub">${esc(s.project?.description ?? "Pick a module: each one opens on its own.")}</p></div>${homeTools(s)}</div>${noProject}
-${intelligenceBody(s)}
+${s.hub ? hubHtml(s.hub) : ''}
+${(!s.hub || !s.hub.scope.tab || s.hub.scope.tab === 'overview') && (!s.hub?.scope.project || s.hub.scope.project === s.project?.id) ? intelligenceBody(s) : ''}
 ${s.areas.map(a => `<h2>${esc(a.title)}</h2><div class="tiles" data-area="${esc(a.id)}">${a.tiles.map(tileHtml).join("")}</div>`).join("\n")}
 ${preview}
 ${layouts}`;
@@ -181,11 +183,11 @@ export function homeHtml(state: HomeState, page: HomePage, cspSource: string, no
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}';" />
 <title>${page === "links" ? "Project links" : "DataPass Home"}</title>
-<style>${STYLE}</style>
+<style>${STYLE}${HUB_STYLE}</style>
 </head>
 <body data-page="${page}">
-${page === "links" ? linksPage(state) : homeBody(state)}
-<script nonce="${nonce}">${SCRIPT}</script>
+${page === "links" ? linksPage(state) : page === 'portfolio' && state.hub ? hubHtml(state.hub, true) : homeBody(state)}
+<script nonce="${nonce}">${SCRIPT}${HUB_SCRIPT}</script>
 </body>
 </html>`;
 }

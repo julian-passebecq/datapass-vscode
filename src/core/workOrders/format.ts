@@ -17,6 +17,7 @@ import { gitHostOf } from "../project/gitHosts";
 import { sensitiveFindings } from "../project/aiExchange";
 import type { PackStamp } from "../exchange/stamp";
 import { RECEIPT_CHECK_FIELDS, type ReceiptCheck } from "../evidence/receipts";
+import type { OrderDag, DagQualification } from './dag';
 
 export const ORDER_FORMAT = "datapass.work-order";
 export const STATE_FORMAT = "datapass.work-order-state";
@@ -106,6 +107,12 @@ const STAMP: Schema = obj({
   bridge: COMMIT
 }, ["variant"]);
 
+export const WORK_ORDER_DAG_SCHEMA = obj({ requires: arr(ORDER_ID, 100), produces: arr(REF, 100), unblocks: arr(ORDER_ID, 100), related: arr(ORDER_ID, 100), supersedes: arr(ORDER_ID, 100), acceptance: arr(S(500), 50), evidence: arr(S(500), 50), priority: { type: 'integer', minimum: 0, maximum: 100 }, draft: { type: 'boolean' } }, []);
+export function parseOrderDag(raw: unknown): OrderDag {
+  const issues = validateSchema(WORK_ORDER_DAG_SCHEMA, raw);
+  if (issues.length) throw new Error(`Invalid WorkOrder DAG: ${issues.map(i => `${i.path}: ${i.message}`).join('; ')}`);
+  return structuredClone(raw) as OrderDag;
+}
 export const WORK_ORDER_SCHEMA: Schema = obj({
   format: constOf(ORDER_FORMAT), version: constOf(FORMAT_VERSION),
   id: ORDER_ID, receipt: RECEIPT, title: S(80), createdAt: TIME, createdBy: S(60),
@@ -131,7 +138,8 @@ export const WORK_ORDER_SCHEMA: Schema = obj({
   agent: obj({ tool: enumOf(...AGENT_TOOLS), surface: enumOf(...SURFACES), model: MODEL, effort: enumOf(...EFFORTS), sessionId: UUID, permissions: enumOf("usual", "ask") }, ["tool", "surface", "effort", "permissions"]),
   result: obj({ path: ABS_PATH }),
   links: obj({ revises: NULLABLE_ORDER, followsUp: NULLABLE_ORDER }),
-  stamp: STAMP
+  stamp: STAMP,
+  dag: WORK_ORDER_DAG_SCHEMA
 }, ["format", "version", "id", "receipt", "title", "createdAt", "createdBy", "kind", "project", "scope", "goal", "repositories", "context", "expected", "policy", "agent", "result", "links"]);
 
 const SEEN_PR: Schema = obj({
@@ -140,6 +148,7 @@ const SEEN_PR: Schema = obj({
 }, ["repoRef", "url", "number", "state", "headBranch", "checkedAt"]);
 
 export const WORK_ORDER_STATE_SCHEMA: Schema = obj({
+  qualification: obj({ at: TIME, digest: S(71, 71, '^sha256:[0-9a-f]{64}$'), acceptance: arr(S(500), 50, 1), evidence: arr(S(500), 50, 1), by: constOf('person') }),
   format: constOf(STATE_FORMAT), version: constOf(FORMAT_VERSION),
   orderId: ORDER_ID, digest: S(71, 71, "^sha256:[0-9a-f]{64}$"), status: enumOf(...ORDER_STATUSES),
   launches: arr(obj({
@@ -209,6 +218,7 @@ export interface WorkOrder {
   links: { revises: string | null; followsUp: string | null };
   /** 0.27 (P1, D-23): the selected variant, environment and bridge revision the order was built for; absent on older orders. */
   stamp?: PackStamp;
+  dag?: OrderDag;
 }
 
 export interface QaRunSection {
@@ -227,6 +237,7 @@ export interface QaRunSection {
 export interface SeenPr { repoRef: string; url: string; number: number; state: "open" | "merged" | "closed"; ci?: "passing" | "failing" | "running" | "none" | "unknown"; headBranch: string; checkedAt: string }
 export interface OrderLaunch { at: string; tool: AgentTool; surface: Surface; sessionId?: string; cwd?: string; how: "launched" | "copied" }
 export interface OrderState {
+  qualification?: DagQualification;
   format: typeof STATE_FORMAT;
   version: typeof FORMAT_VERSION;
   orderId: string;

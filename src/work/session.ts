@@ -181,10 +181,12 @@ export class WorkSession implements vscode.Disposable {
   }
   selectedEnvironment(): string | undefined {
     const id = this.state<string>(`environment:${this.root?.toString()}`);
-    return this.projectMap().environments.some(e => e.id === id) ? id : undefined;
+    return this.projectMap().environments.some(e => e.id === id && e.enabled !== false) ? id : undefined;
   }
   async selectEnvironment(id: string): Promise<void> {
-    if (!this.projectMap().environments.some(e => e.id === id)) throw new Error('Unknown declared environment.');
+    const declared = this.projectMap().environments.find(e => e.id === id);
+    if (!declared) throw new Error('Unknown declared environment.');
+    if (declared.enabled === false) throw new Error('This declared environment is disabled.');
     await this.context.workspaceState.update(`environment:${this.root?.toString()}`, id);
     this.changed();
   }

@@ -9,6 +9,8 @@ import type { ToolchainDecl } from "./toolchain/toolchain";
 import type { ConnectionDecl } from "./toolchain/connections";
 import { AZURE_HTTPS_WITH_ORG, AZURE_LEGACY_SSH } from "./project/gitHosts";
 import manifestSchema from "../../schemas/datapass-project.schema.json";
+import { environmentProblems, hubDeclarationProblems, type HubDeclaration } from './hub/model';
+import { validateSchema } from './contracts/schemaDsl';
 
 export const DATAPASS_MANIFEST_PATH = ".datapass/project.json";
 /** The newest manifest version this DataPass writes and reads. */
@@ -40,7 +42,15 @@ export interface DocRef {
 export interface EnvironmentDecl {
   id: string;
   title?: string;
+  label?: string;
+  enabled?: boolean;
   production?: boolean;
+  ephemeral?: boolean;
+  classification?: string;
+  predecessors?: string[];
+  promotesTo?: string[];
+  owner?: string;
+  regionPolicy?: string;
   description?: string;
 }
 
@@ -137,6 +147,7 @@ export interface DataPassProjectManifest {
   modules?: ModuleSwitches;
   /** v3: deployment environments named by component operations. */
   environments?: EnvironmentDecl[];
+  hub?: HubDeclaration;
   /** v3: project documentation. */
   docs?: DocRef[];
   /** v4: local env files and the variable NAMES the project needs (values are never declared or read). */
@@ -381,6 +392,14 @@ function validateDocs(value: unknown, where: string, repoKeys: ReadonlySet<strin
 
 function validateV3Sections(doc: Record<string, unknown>): string[] {
   const issues: string[] = [];
+  const shape = validateSchema(manifestSchema.properties.environments as any, doc.environments ?? []);
+  issues.push(...shape.map(i => `environments${i.path}: ${i.message}`));
+  if (!shape.length) issues.push(...environmentProblems((doc.environments ?? []) as EnvironmentDecl[]));
+  if (doc.hub !== undefined) {
+    const hubShape = validateSchema(manifestSchema.properties.hub as any, doc.hub);
+    issues.push(...hubShape.map(i => `hub${i.path}: ${i.message}`));
+    if (!hubShape.length && !shape.length) issues.push(...hubDeclarationProblems(doc as unknown as DataPassProjectManifest));
+  }
   const repoKeys = new Set(Object.keys((doc.repositories as Record<string, unknown> | undefined) ?? {}));
   if (doc.environments !== undefined) {
     if (!Array.isArray(doc.environments) || doc.environments.length > 20) issues.push("environments must be an array of at most 20.");

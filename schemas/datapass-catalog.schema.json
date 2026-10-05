@@ -45,6 +45,16 @@
             "minLength": 1,
             "maxLength": 200
           },
+          "program": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "localPath": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
           "description": {
             "type": "string",
             "minLength": 1,

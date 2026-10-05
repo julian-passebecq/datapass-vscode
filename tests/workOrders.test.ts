@@ -53,6 +53,13 @@ function input(over: Partial<OrderInput> = {}): OrderInput {
   };
 }
 
+test('WorkOrder builder keeps explicit DAG revisions in JSON and person-qualification instructions in Markdown',()=>{
+  const dag={requires:['wo-20261005-1200-aaaa'],produces:['reviewed-sql'],acceptance:['tests pass'],evidence:['docs/report.md'],priority:40};
+  const order=buildOrder(input({dag}));
+  assert.deepEqual(parseWorkOrder(JSON.stringify(order)).dag,dag);
+  assert.match(renderOrderMd(order,{components:[],packs:[],conventions:[],handoffs:[],datapassFiles:[]},ORDERS),/Dependencies unlock only after person qualification/);
+});
+
 // ------------------------------------------------------------------ ids, builder, order.md
 
 test("ids, receipts and the marker line follow the contract", () => {

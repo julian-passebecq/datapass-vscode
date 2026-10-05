@@ -30,7 +30,8 @@
     "onLanguage:dockerfile",
     "onLanguage:dockercompose",
     "onView:datapass.navigator",
-    "onView:datapass.navigatorLeft"
+    "onView:datapass.navigatorLeft",
+    "onView:datapass.hubInspector"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -1265,6 +1266,38 @@
         "command": "datapass.explain.exportWithTour",
         "title": "DataPass: Export Explainer Page with a Tour (HTML)…",
         "icon": "$(export)"
+      },
+      {
+        "command": "datapass.openPortfolio",
+        "title": "DataPass: Open Portfolio"
+      },
+      {
+        "command": "datapass.hub.refresh",
+        "title": "DataPass: Refresh Hub Local Git"
+      },
+      {
+        "command": "datapass.hub.refreshCI",
+        "title": "DataPass: Refresh Hub Git and Exact-HEAD CI"
+      },
+      {
+        "command": "datapass.hub.nextReady",
+        "title": "DataPass: Next READY WorkOrder"
+      },
+      {
+        "command": "datapass.hub.showInspector",
+        "title": "DataPass: Show Context Inspector"
+      },
+      {
+        "command": "datapass.hub.hideInspector",
+        "title": "DataPass: Hide Context Inspector"
+      },
+      {
+        "command": "datapass.hub.qualify",
+        "title": "DataPass: Qualify Selected WorkOrder"
+      },
+      {
+        "command": "datapass.hub.editDag",
+        "title": "DataPass: Edit Selected WorkOrder DAG"
       }
     ],
     "viewsContainers": {
@@ -1400,6 +1433,12 @@
           "visibility": "collapsed",
           "initialSize": 2,
           "when": "!datapass.rail && config.datapass.airflow.dagPlacement != panel && config.datapass.airflow.dagPlacement != editor && !datapass.hidden.view.airflowDag && !datapass.rail.hide.airflowDag"
+        },
+        {
+          "id": "datapass.hubInspector",
+          "name": "Context Inspector",
+          "type": "webview",
+          "when": "!datapass.hidden.view.details && !datapass.hub.inspectorHidden"
         }
       ],
       "datapass-airflow": [
@@ -3135,6 +3174,38 @@
         {
           "command": "datapass.explain.exportWithTour",
           "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.openPortfolio",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.refresh",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.refreshCI",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.nextReady",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.showInspector",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.hideInspector",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.qualify",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.hub.editDag",
+          "when": "!datapass.hidden.palette.full"
         }
       ],
       "explorer/context": [
@@ -3378,9 +3449,7 @@
         },
         "datapass.catalogs": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "default": [],
           "scope": "application",
           "description": "Absolute paths of DataPass project catalogs (datapass.catalog JSON, e.g. <hub clone>/.datapass/catalog.json) listed by \"Switch Project\". A catalog lists projects and their coordination repositories; no credentials."
@@ -4011,7 +4080,9 @@
         },
         "datapass.architectReview.citedFileExtensions": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": ["sql", "py", "ipynb", "scala", "r", "java", "kt", "ts", "js", "json", "yml", "yaml", "toml", "cfg", "ini", "xml", "md", "txt", "csv", "sh", "ps1", "tmdl", "bim", "pbip", "pbir", "dax", "m", "pq", "dbt"],
           "description": "Architect review: file extensions recognised in an imported answer. A cited file that is not found in the project flags the review \"unverified\"."
         },
@@ -4053,9 +4124,7 @@
           "additionalProperties": {
             "type": "object",
             "properties": {
-              "label": {
-                "type": "string"
-              },
+              "label": { "type": "string" },
               "shape": {
                 "type": "string",
                 "enum": [
@@ -4199,9 +4268,7 @@
         "datapass.explain.labels": {
           "type": "object",
           "default": {},
-          "additionalProperties": {
-            "type": "string"
-          },
+          "additionalProperties": { "type": "string" },
           "markdownDescription": "Label overrides for the explainer page (keys such as `marking.internal`, `header.git`, `legend.declared`)."
         },
         "datapass.navView.labels": {
@@ -4229,7 +4296,9 @@
             "view.noCards": "Nothing to show here.",
             "value.empty": "—"
           },
-          "additionalProperties": { "type": "string" },
+          "additionalProperties": {
+            "type": "string"
+          },
           "description": "Labels of the DataPass view (left of the code): level, origin, hole and message keys → text. Keys not listed show as themselves."
         },
         "datapass.navigator.location": {
@@ -4412,7 +4481,9 @@
             "required": ["id", "label"],
             "properties": {
               "id": { "type": "string", "pattern": "^[a-z0-9](?:[a-z0-9.-]{0,126}[a-z0-9])?$" },
-              "label": { "type": "string" },
+              "label": {
+                "type": "string"
+              },
               "ask": { "type": "string" },
               "mode": { "enum": ["learning", "interview", "general"] },
               "include": { "type": "array", "items": { "type": "string" }, "description": "Step sections the AI may fill (explain-project, objectives, volumetry, platforms, whole-picture, concept-cards, decision-cards, query-showcase…); steps without one of them are dropped on import." },
@@ -4425,6 +4496,24 @@
           "type": "string",
           "default": ".datapass/local/ai-exchange",
           "markdownDescription": "Exchange folder where **DataPass: Ask the AI for a Guided Tour…** writes its request file (`tour-request.<tour id>.md`, also copied to the clipboard). Repository-relative and inside `.datapass/`; any other value falls back to the default (machine-local, git-ignored)."
+        },
+        "datapass.hub.minimap": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Show the bounded Git minimap in Context Inspector. View actions persist a local override for this project."
+        },
+        "datapass.hub.inspector": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Show Context Inspector in the secondary sidebar. View actions persist a local override for this project."
+        },
+        "datapass.hub.minimapExpanded": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Expand the bounded Git minimap. View actions persist a local override for this project."
         }
       }
     },
@@ -4637,7 +4726,7 @@
     "check": "tsc --noEmit",
     "pretest": "node scripts/gen-registry.mjs",
     "sync:common": "tsx scripts/sync-common.ts",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=2 tests/*.test.ts",
     "verify": "npm run check && npm test && npm run build",
     "package": "npm run verify && vsce package",
     "schemas": "tsx scripts/emit-schemas.ts",

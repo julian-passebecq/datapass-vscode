@@ -293,10 +293,11 @@ export class WorkOrderService implements vscode.Disposable {
     }
     const open = state.status !== "done" && state.status !== "abandoned";
     let digestNow: string | undefined;
-    if (open && state.launches.length) {
+    if ((open && state.launches.length) || state.qualification) {
       const sig = await orderSignature(folder);
       const hit = this.digests.get(id);
-      digestNow = hit?.sig === sig ? hit.digest : await orderDigest(folder);
+      // Qualification attests bytes, including closed/unlaunched orders; do not trust only mtimes.
+      digestNow = !state.qualification && hit?.sig === sig ? hit.digest : await orderDigest(folder);
       this.digests.set(id, { sig, digest: digestNow });
     }
     let proposed: string[] = [];
@@ -491,7 +492,7 @@ export class WorkOrderService implements vscode.Disposable {
    * Read state.json as it is on disk now, apply `fn`, write it back — one order at a time, so a
    * change made meanwhile (a launch, a close, an import) is never overwritten by an older copy.
    */
-  private mutateState(o: LoadedOrder, fn: (s: OrderState, order: WorkOrder) => OrderState): Promise<OrderState> {
+  private mutateState(o: LoadedOrder, fn: (s: OrderState, order: WorkOrder) => OrderState | Promise<OrderState>): Promise<OrderState> {
     return this.lock(async () => {
       const order = o.order!;
       let current: OrderState;
@@ -503,14 +504,14 @@ export class WorkOrderService implements vscode.Disposable {
         // A missing or broken state.json is rebuilt from the order as it is now.
         current = initialState(order, await orderDigest(o.folder));
       }
-      const next = fn(current, order);
+      const next = await fn(current, order);
       if (JSON.stringify(next) !== JSON.stringify(current)) await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(o.folder, "state.json"), jsonBytes(next));
       return next;
     });
   }
 
   /** Change an order's state (launch, close, import, publish) and re-read (unless `reload` is false). */
-  async updateState(id: string, fn: (s: OrderState, order: WorkOrder) => OrderState, reload = true): Promise<OrderState> {
+  async updateState(id: string, fn: (s: OrderState, order: WorkOrder) => OrderState | Promise<OrderState>, reload = true): Promise<OrderState> {
     const o = this.get(id);
     if (!o?.order) throw new Error(`Work order ${id} cannot be read${o?.error ? `: ${o.error}` : ""}.`);
     const next = await this.mutateState(o, fn);

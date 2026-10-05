@@ -64,6 +64,7 @@ export const GIT_READ_ONLY: readonly GitVerb[] = [
   { verb: "show", args: "<rev>:<path> | <rev>", ok: anyArgs },
   { verb: "diff", args: "any read flags", ok: anyArgs },
   { verb: "ls-files", args: "any", ok: anyArgs },
+  { verb: "ls-tree", args: "read-only tree listing", ok: anyArgs },
   { verb: "cat-file", args: "-e | -t | -p | -s <object>", ok: anyArgs },
   { verb: "check-ignore", args: "-q -- <path>", ok: rest => !rest.some(a => a === "--stdin") },
   { verb: "for-each-ref", args: "--format … refs/…", ok: anyArgs },
@@ -118,6 +119,9 @@ interface FixedRead { id: string; command: string; prefix: readonly string[]; ar
 
 /** Read-only host commands of the Git view (refreshed while it is visible) and work orders. */
 export const HOST_READS: readonly FixedRead[] = [
+  { id: 'gh.head-ci', command: 'gh', prefix: ['run', 'list', '--repo'], args: 'run list --repo … --commit <sha> --json …' },
+  { id: 'glab.head-ci', command: 'glab', prefix: ['api', '--method', 'GET', '--hostname', 'gitlab.com'], args: 'api --method GET --hostname gitlab.com projects/<project>/pipelines?sha=<sha>' },
+  { id: 'az.head-ci', command: 'az', prefix: ['pipelines', 'build', 'list'], args: 'pipelines build list --organization … --project … --output json' },
   { id: "gh.auth-status", command: "gh", prefix: ["auth", "status", "--hostname", "github.com"], args: "auth status --hostname github.com" },
   { id: "gh.pr-list", command: "gh", prefix: ["pr", "list"], args: "pr list --repo … --json …" },
   { id: "gh.repo-view", command: "gh", prefix: ["repo", "view"], args: "repo view <owner/name> --json visibility" },
@@ -193,6 +197,9 @@ export function checkSpawn(command: string, args: readonly string[], opts: { lau
   if (probe) return { allowed: true, id: `probe.${probe.id}`, trigger: "lazy-probe" };
   if (name === "git") return checkGit(args);
   for (const r of [...HOST_READS, ...CONNECTION_CHECKS, ...FABRIC_READS]) {
+    if (r.id === 'glab.head-ci' && (args.length !== 6 || !/^projects\/[A-Za-z0-9%_.-]+\/pipelines\?sha=[0-9a-f]{40,64}&per_page=20$/.test(args[5] ?? ''))) continue;
+    if (r.id === 'gh.head-ci' && (args.length !== 10 || args[4] !== '--commit' || !/^[0-9a-f]{40,64}$/.test(args[5] ?? '') || args[6] !== '--limit' || args[7] !== '20' || args[8] !== '--json' || args[9] !== 'databaseId,headSha,status,conclusion,name,workflowName')) continue;
+    if (r.id === 'az.head-ci' && (args.length !== 11 || args[3] !== '--organization' || !/^https:\/\/dev\.azure\.com\/[A-Za-z0-9_.-]+$/.test(args[4] ?? '') || args[5] !== '--project' || args[7] !== '--top' || args[8] !== '20' || args[9] !== '--output' || args[10] !== 'json')) continue;
     if (r.command === name && startsWith(args, r.prefix)) return { allowed: true, id: r.id, trigger: HOST_READS.includes(r) ? "read-only" : "user-command" };
   }
   return { allowed: false, reason: `${name} ${args.join(" ")} is not on the DataPass spawn allow-list` };

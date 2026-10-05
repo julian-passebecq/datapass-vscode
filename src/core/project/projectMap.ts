@@ -274,7 +274,7 @@ export function buildProjectMap(input: ProjectMapInput): ProjectMap {
         if (item.status === "planned") requirements.push({ kind: "target", id: "status", label: "Component planned", state: "missing", detail: `${item.label} is planned: its adapter is not implemented yet (declared status "planned" in graph.json), so there is nothing to ${cap.phase}.` });
         if (!want.environment) requirements.push({ kind: "target", id: "environment", label: "Environment", state: "missing", detail: `Say which environment this ${cap.phase} targets: give the operation an "environment" (for example dev) in graph.json, declared in project.json environments.` });
         else if (!env) requirements.push({ kind: "target", id: "environment", label: `Environment ${want.environment}`, state: "missing", detail: `Declare environment "${want.environment}" in project.json environments.` });
-        else requirements.push({ kind: "target", id: "environment", label: `Environment ${env.title ?? env.id}${env.production ? " (production)" : ""}`, state: "ok", detail: env.production ? "Production: mistakes affect real users or data." : "Declared environment." });
+        else requirements.push({ kind: "target", id: "environment", label: `Environment ${env.title ?? env.label ?? env.id}${env.production ? " (production)" : ""}`, state: env.enabled === false ? "missing" : "ok", detail: env.enabled === false ? 'This environment is disabled.' : env.production ? "Production: mistakes affect real users or data." : "Declared environment." });
       }
       // Facts that a component answers itself (its own bundle folder, its declared target names).
       const facts = new Map(input.facts);

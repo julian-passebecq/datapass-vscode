@@ -87,6 +87,7 @@ export interface HomeLayout { id: string; name: string; detail: string; project?
 export interface HomePreview { lanes: Array<{ title: string; components: string[]; more: number }>; components: number; relations: number }
 
 export interface HomeState {
+  hub?: import('../core/hub/projection').HubState;
   companions?: readonly ProjectCompanionAction[];
   intelligence?: {
     repositories: Array<{ key: string; label: string; state: string; head?: string; branch?: string; changes?: number; usedBy: string[] }>;
@@ -98,7 +99,7 @@ export interface HomeState {
     sourceExplanations: ReturnType<typeof projectSourceExplanations>;
     readiness: ProjectMap['summary'];
   };
-  project?: { title: string; description?: string };
+  project?: { id?: string; title: string; description?: string };
   areas: HomeArea[];
   preview?: HomePreview;
   layouts: HomeLayout[];
@@ -251,7 +252,7 @@ export function homeState(input: HomeInput): HomeState {
       coverage: coverageSummary(input.intelligence), themes: projectThemes(map, input.intelligence), sankey: projectSankey(map), sourceExplanations: projectSourceExplanations(map), readiness: map.summary
     },
     companions: input.companions,
-    project: map.project ? { title: map.project.title, description: map.project.description } : undefined,
+    project: map.project ? { id: map.project.id, title: map.project.title, description: map.project.description } : undefined,
     areas,
     preview: homePreview(map),
     layouts: input.layouts,

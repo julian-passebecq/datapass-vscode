@@ -626,18 +626,18 @@ async function selectProjectFolder(session: WorkSession): Promise<void> {
  * `datapass.catalogs` setting's) with their local clone found by Git origin, and recently opened
  * projects. Used by Switch Project and by the company workspace file (0.17).
  */
-export async function knownProjects(session: WorkSession): Promise<{ entries: ReturnType<typeof mergeCatalogs>; recent: ReturnType<WorkSession["recentProjects"]>; errors: string[] }> {
+export async function knownProjects(session: WorkSession, observeOrigins = true): Promise<{ entries: ReturnType<typeof mergeCatalogs>; recent: ReturnType<WorkSession["recentProjects"]>; errors: string[] }> {
   const catalogs: Array<{ source: string; catalog: Catalog }> = [];
   const errors: string[] = [];
   const read = async (uri: vscode.Uri, source: string) => {
-    try { const c = parseCatalog(await vscode.workspace.fs.readFile(uri)); catalogs.push({ source: c.title ?? source, catalog: c }); }
+    try { const c = parseCatalog(await vscode.workspace.fs.readFile(uri)); for (const p of c.projects) if (p.localPath) p.localPath = path.resolve(path.dirname(uri.fsPath), p.localPath); catalogs.push({ source: c.title ?? source, catalog: c }); }
     catch (e) { if (!(e instanceof vscode.FileSystemError)) errors.push(`${source}: ${e instanceof Error ? e.message : String(e)}`); }
   };
   if (session.root) await read(vscode.Uri.joinPath(session.root, ...CATALOG_PATH.split("/")), "this project's catalog");
   for (const p of (vscode.workspace.getConfiguration("datapass").get<string[]>("catalogs") ?? []).filter(x => typeof x === "string" && path.isAbsolute(x)).slice(0, 10)) await read(vscode.Uri.file(p), path.basename(p));
   const recent = session.recentProjects();
   const clones: Array<{ folder: string; originUrl?: string }> = [];
-  if (vscode.workspace.isTrusted) {
+  if (vscode.workspace.isTrusted && observeOrigins) {
     for (const r of recent.slice(0, 30)) {
       const o = await gitRunner(["config", "--get", "remote.origin.url"], r.folder, 5000);
       clones.push({ folder: r.folder, originUrl: o.ok ? o.stdout.trim() : undefined });
@@ -666,4 +666,3 @@ async function switchProject(session: WorkSession): Promise<void> {
   if (pick.folder) { await openFolderWindow(vscode.Uri.file(pick.folder)); return; }
   if (pick.url && (await confirmModal(`${pick.label} is not cloned here.`, `Clone ${pick.url} with VS Code's Git clone? You choose the folder.`, "Clone"))) await vscode.commands.executeCommand("git.clone", pick.url);
 }
-

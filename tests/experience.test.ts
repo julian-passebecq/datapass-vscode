@@ -130,7 +130,7 @@ test("experience: every contributed view has a surface id and is gated by its wh
       // V4-NAV NAVBAR1: the Navigator's placement setting picks one of its two view ids.
       "datapass.navigator": "config.datapass.navigator.location != left && ", "datapass.navigatorLeft": "config.datapass.navigator.location == left && " };
     // V1.1.x-POLISH-3: a layout key may also come last (the Git view hides while the Git lens repeats it; a rail button unfolds its own view alone).
-    const after: Record<string, string> = { "datapass.git": " && datapass.tree.lens != git", ...Object.fromEntries(RAIL_PANEL_VIEWS.map(x => [`datapass.${x}`, soloWhenSuffix(x)])) };
+    const after: Record<string, string> = { "datapass.git": " && datapass.tree.lens != git", 'datapass.hubInspector': ' && !datapass.hub.inspectorHidden', ...Object.fromEntries(RAIL_PANEL_VIEWS.map(x => [`datapass.${x}`, soloWhenSuffix(x)])) };
     assert.equal(v.when, `${layout[v.id] ?? ""}!${hiddenKey(s.id)}${after[v.id] ?? ""}`, `${v.id} is shown unless its mode (or the layout) hides it`);
   }
   assert.equal(new Set(SURFACE_IDS).size, SURFACE_IDS.length, "surface ids are unique");

@@ -20,6 +20,7 @@ import { linkHost, linkUrlProblem, LINKS_PATH } from "../core/project/links";
 import { HOME_ACTIONS, homeState, type HomeLayout, type HomeState } from "./homeState";
 import { homeHtml, type HomePage } from "./homeHtml";
 import { availableProjectCompanions, projectCompanionPayload, PROJECT_COMPANION_COMMANDS, type ProjectCompanionAction } from '../core/companions/projectInterop';
+import type { EnterpriseHub } from '../work/enterpriseHub';
 
 export const HOME_VIEW_TYPE = "datapass.home";
 export const LINKS_VIEW_TYPE = "datapass.projectLinks";
@@ -34,6 +35,8 @@ export class HomeHost implements vscode.Disposable {
   private lastHtml = new Map<HomePage, string>();
   /** Last message handled (tests). */
   lastAction?: { type: string; id?: string; command?: string; error?: string };
+  private hub?: EnterpriseHub;
+  attachHub(hub: EnterpriseHub): void { this.hub = hub; this.subs.push(hub.onDidChange(() => this.schedule())); }
 
   constructor(private readonly context: vscode.ExtensionContext, private readonly session: WorkSession, private readonly views: WorkViews, private readonly shows: (surface: string) => boolean) {
     this.subs.push(session.onDidChange(() => this.schedule()), views.onDidChange(() => this.schedule()),
@@ -65,7 +68,7 @@ export class HomeHost implements vscode.Disposable {
     const startup = vscode.workspace.workspaceFile?.scheme === "file" ? vscode.workspace.getConfiguration("datapass").inspect<string>("startupView")?.workspaceValue : undefined;
     const applied = this.views.lastApplied();
     const pick = mine ? projectLayout({ views: mine.file.views, startup: typeof startup === "string" ? startup : undefined, lastApplied: applied && applied.root === current ? applied.id : undefined }) : undefined;
-    return homeState({
+    const state = homeState({
       companions: availableProjectCompanions(typeof vscode.commands.getCommands === 'function' ? await vscode.commands.getCommands(true) : []),
       manifest: ctx.manifest, selectedEnvironment: this.session.selectedEnvironment(),
       selectedVariant: this.session.selectionStamp().variant.key, intelligence: this.session.projectIntelligence(),
@@ -80,13 +83,15 @@ export class HomeHost implements vscode.Disposable {
       layouts, layoutsError: errors[0],
       shows: this.shows
     });
+    if (this.hub) state.hub = await this.hub.state();
+    return state;
   }
 
   /** Open (or reveal) a page in the active editor group, or in `column`. */
   async open(page: HomePage = "home", column?: vscode.ViewColumn, preserveFocus = false): Promise<vscode.WebviewPanel> {
     const existing = this.panels.get(page);
     if (existing) { existing.reveal(column ?? existing.viewColumn, preserveFocus); await this.render(page); return existing; }
-    const panel = vscode.window.createWebviewPanel(page === "links" ? LINKS_VIEW_TYPE : HOME_VIEW_TYPE, page === "links" ? "Project Links" : "DataPass Home",
+    const panel = vscode.window.createWebviewPanel(page === "links" ? LINKS_VIEW_TYPE : page === 'portfolio' ? 'datapass.portfolio' : HOME_VIEW_TYPE, page === "links" ? "Project Links" : page === 'portfolio' ? 'DataPass Portfolio' : "DataPass Home",
       { viewColumn: column ?? vscode.ViewColumn.Active, preserveFocus }, { enableScripts: true, localResourceRoots: [] });
     panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, "resources", "datapass.svg");
     this.panels.set(page, panel);
@@ -121,7 +126,11 @@ export class HomeHost implements vscode.Disposable {
   async receive(message: unknown): Promise<void> {
     const m = message && typeof message === "object" ? message as Record<string, unknown> : {};
     try {
-      if (m.type === 'companion' && typeof m.id === 'string') {
+      if (m.type === 'hub') {
+        if (!this.hub) throw new UserFacingError('Hub is unavailable.');
+        await this.hub.handle(m);
+        this.lastAction = { type: 'hub', id: typeof m.action === 'string' ? m.action : undefined };
+      } else if (m.type === 'companion' && typeof m.id === 'string') {
         if (!Object.prototype.hasOwnProperty.call(PROJECT_COMPANION_COMMANDS, m.id)) throw new UserFacingError('Unknown companion action.');
         const key = m.id as ProjectCompanionAction;
         if (!availableProjectCompanions(await vscode.commands.getCommands(true)).includes(key)) throw new UserFacingError('This optional companion command is not installed.');

@@ -219,6 +219,7 @@ ui_smoke:
     expire_in: 14 days
     paths:
       - out/qa-v6/
+      - out/qa-hub/
       - out/qa-ui/
       - out/qa-ui-hop/
 

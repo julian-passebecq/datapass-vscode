@@ -38,6 +38,9 @@ import type { ExchangeKind } from "./core/project/aiExchange";
 import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
+import { EnterpriseHub } from './work/enterpriseHub';
+import { guarded } from './work/io';
+import { HubInspector } from './views/hubInspector';
 import { registerNavigation } from "./core/navigation/register";
 import { navTours } from './views/navTours';
 import { readDecisionRecords, setProjectCardsSource } from "./views/peda-cards/cards.surface";
@@ -447,6 +450,13 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   context.subscriptions.push(views);
   // V3-HOME: the module dashboard and the project links page; work views save and restore the Home tab.
   const home = new HomeHost(context, session, views, experience.shows);
+  const enterpriseHub = new EnterpriseHub(context,session,git,workOrders);
+  const hubInspector = new HubInspector(enterpriseHub);
+  home.attachHub(enterpriseHub);
+  context.subscriptions.push(enterpriseHub,hubInspector,vscode.window.registerWebviewViewProvider(HubInspector.viewType,hubInspector,{webviewOptions:{retainContextWhenHidden:true}}));
+  void vscode.commands.executeCommand('setContext','datapass.hub.inspectorHidden',!enterpriseHub.setting('inspector'));
+  for (const [command,action] of Object.entries({ 'datapass.hub.refresh':'refresh','datapass.hub.refreshCI':'refreshCI','datapass.hub.nextReady':'nextReady','datapass.hub.showInspector':'showInspector','datapass.hub.hideInspector':'hideInspector','datapass.hub.qualify':'qualify','datapass.hub.editDag':'editDag' })) context.subscriptions.push(vscode.commands.registerCommand(command,guarded(() => enterpriseHub.handle({action}))));
+  context.subscriptions.push(vscode.commands.registerCommand('datapass.openPortfolio',guarded(async () => { await home.open('portfolio'); })));
   context.subscriptions.push(home);
   registerHomeCommands(context, session, home);
   views.attachHome({ isHomeTab, open: column => home.open("home", column, true), panel: () => home.panel("home") });

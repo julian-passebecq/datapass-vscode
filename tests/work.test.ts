@@ -240,7 +240,7 @@ test("package.json contributes every registered command and every datapass.* cap
   assert.deepEqual(pkg.contributes.viewsContainers.secondarySidebar.map((v: { id: string }) => v.id), ["datapass-details"]);
   assert.deepEqual(pkg.contributes.views["datapass-architecture"].map((v: { id: string }) => v.id), ["datapass.architecture"]);
   // 0.24: the Claude & Codex panel between the AI view and Details.
-  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.navigator", "datapass.steps", "datapass.rail", "datapass.aiExchange", "datapass.agentPanel", "datapass.details", "datapass.airflowDag"]);
+  assert.deepEqual(pkg.contributes.views["datapass-details"].map((v: { id: string }) => v.id), ["datapass.navigator", "datapass.steps", "datapass.rail", "datapass.aiExchange", "datapass.agentPanel", "datapass.details", "datapass.airflowDag", "datapass.hubInspector"]);
   // V3-SHELL: the bottom-panel Architecture view is off until the person switches it on.
   assert.equal(pkg.contributes.configuration.properties["datapass.layout.architectureInPanel"].default, false);
   assert.match(pkg.contributes.views["datapass-architecture"][0].when, /^datapass\.layout\.architectureInPanel && /);

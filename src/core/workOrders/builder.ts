@@ -16,6 +16,7 @@ import {
 } from "./format";
 import { stampLine, type PackStamp } from "../exchange/stamp";
 import { RESULT_FIELDS } from "../evidence/receipts";
+import type { OrderDag } from './dag';
 
 export const GUIDE_URL = "https://github.com/julian-passebecq/datapass-vscode/blob/main/docs/PREPARING_A_PROJECT.md";
 export const DEFAULT_BRANCH_PREFIX = "dp/";
@@ -79,6 +80,7 @@ export interface OrderRepositoryInput {
 export interface KnownIds { subprojects: readonly string[]; components: readonly string[]; cards: readonly string[]; decisions: readonly string[]; columns: readonly string[] }
 
 export interface OrderInput {
+  dag?: OrderDag;
   now: Date;
   /** At least 12 random bytes (4 for the id, 8 for the receipt). */
   random: Uint8Array;
@@ -202,7 +204,8 @@ export function buildOrder(i: OrderInput): WorkOrder {
     },
     result: { path: i.pathJoin(folder, "result.json") },
     links: { revises: i.links?.revises ?? null, followsUp: i.links?.followsUp ?? null },
-    ...(i.stamp ? { stamp: cleanStamp(i.stamp) } : {})
+    ...(i.stamp ? { stamp: cleanStamp(i.stamp) } : {}),
+    ...(i.dag ? { dag: { ...i.dag, acceptance:i.dag.acceptance?.map(t=>oneLine(scrubSecrets(t),500)),evidence:i.dag.evidence?.map(t=>oneLine(scrubSecrets(t),500)) } } : {})
   };
   const issues = validateSchema(WORK_ORDER_SCHEMA, order);
   if (issues.length) throw new WorkOrderFormatError("The order would be invalid", issues);
@@ -291,6 +294,7 @@ export function renderOrderMd(o: WorkOrder, info: OrderMdInfo, orderFolder: stri
   for (const d of o.expected.doneWhen) exp.push(`- Done when: ${d}`);
   for (const c of o.expected.checks) exp.push(`- Check to run yourself: ${c.text}${c.repoRef ? ` (${c.repoRef})` : ""}`);
   L.push("## Expected", ...exp, "");
+  if (o.dag) L.push('## Explicit dependency DAG', JSON.stringify(o.dag,null,2), 'Dependencies unlock only after person qualification of current order bytes and evidence. Agent reports alone never qualify work.', '');
 
   if (o.kind === "pilot-read" && o.pilot) {
     L.push("## Pilot (stage 1, read-only)", ...pilotLines(o, orderFolder), "");
