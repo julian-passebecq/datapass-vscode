@@ -45,6 +45,9 @@ export class NativeAnalysisHost implements vscode.Disposable {
   private projectAnalysisActive = false;
   private projectEpoch?: number;
   private projectWatchers: vscode.FileSystemWatcher[] = [];
+  private lastMessage?: string;
+  /** Trusted host status only; used by installed qualification without exporting source. */
+  status() { return { message: this.lastMessage, generation: this.generation, active: this.projectAnalysisActive, epoch: this.projectEpoch, currentEpoch: this.session.projectIntelligenceEpoch() }; }
   constructor(private readonly session: WorkSession, private readonly backendFactory?: (root: string) => Promise<NativeAnalysisBackend>) {
     this.identityKey = this.projectKey();
     this.subscriptions.push(
@@ -280,6 +283,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
     }
   }
   private show(message: string, result?: AnalysisResult, sections = ''): void {
+    this.lastMessage = message;
     if (!this.panel) {
       const panel = this.panel = vscode.window.createWebviewPanel('datapass.nativeUnderstanding', 'DataPass: Native understanding', { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true }, { enableScripts: true, localResourceRoots: [] });
       panel.onDidDispose(() => { if (this.panel === panel) { this.panel = undefined; this.invalidate(); } });

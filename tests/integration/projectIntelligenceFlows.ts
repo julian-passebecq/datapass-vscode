@@ -44,7 +44,9 @@ export function registerProjectIntelligenceFlows(getApi: () => DataPassTestApi):
     await probeInstalledController(join(extension.extensionPath, 'dist', 'runtime'), true);
     await vscode.commands.executeCommand('datapass.understanding.analyzeProject');
     const report = api.intelligence.report();
-    assert.ok(report, 'the installed parser and SPI must produce an accepted project report');
+    const outcome = { status: api.intelligence.analysisStatus(), files: report?.files, limits: report?.limits };
+    record('v6AnalysisOutcome', outcome);
+    assert.ok(report, 'the installed parser and SPI must produce an accepted project report: ' + JSON.stringify(outcome));
     record('v6ParserQualification', { hostNode: process.versions.node, files: report.files, limits: report.limits });
     assert.equal(report.files.find(f => f.path === '.env')?.status, 'IGNORED');
     assert.ok(report.files.find(f => f.path === 'src/query.sql')?.status === 'UNDERSTOOD', JSON.stringify({ files: report.files, limits: report.limits }));

@@ -52,18 +52,14 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
     const page = await app.firstWindow({ timeout: 120_000 });
     await page.locator('.monaco-workbench').waitFor({ timeout: 120_000 });
     const step = async (s: UiStep) => { const result = await runStep({ app: app!, page: async () => page, journeyId: 'V6UI', outDir: keep, folder: project }, s); results.push({ step: s, ...result }); assert.equal(result.status, 'PASS', JSON.stringify({ step: s, result })); };
+    const shown = async (frame:Frame):Promise<boolean> => {
+      try { for(let f=frame;f.parentFrame();f=f.parentFrame()!) if(!await (await f.frameElement()).isVisible())return false;return true; }
+      catch {return false;}
+    };
     const home = async (selector = '[data-enterprise-hub]'): Promise<Frame> => {
       const end = Date.now() + 30_000;
-      do { for (const f of page.frames()) if (await f.locator(selector).isVisible().catch(() => false)) return f; await page.waitForTimeout(200); } while (Date.now() < end);
+      do { for (const f of page.frames()) if (await f.locator(selector).isVisible().catch(() => false) && await shown(f)) return f; await page.waitForTimeout(200); } while (Date.now() < end);
       throw new Error('Project Home frame did not appear');
-    };
-    const graph = async (title: string): Promise<Frame> => {
-      const end = Date.now() + 30_000;
-      do { for (const f of page.frames()) {
-        const ready = await f.locator('.nv-graph-node').first().isVisible().catch(() => false);
-        if (ready && (await f.locator('body').innerText().catch(() => '')).includes(title)) return f;
-      } await page.waitForTimeout(200); } while (Date.now() < end);
-      throw new Error(`Graph nodes did not paint for ${title}`);
     };
     await step({kind:'run',label:'DataPass: Open Portfolio'});
     let frame=await home('[data-hub-action="project"][data-id="enterprise-hub"]');
@@ -92,25 +88,30 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
     assert.ok(await inspector.locator('[data-hub-action="revision"]').count()>=3);
     await step({kind:'screenshot',name:'inspector-dark'});
     await inspector.locator('[data-hub-action="setting"][data-id="minimapExpanded"]').click();
-    inspector=await home('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
     await step({kind:'run',label:'DataPass: Hide Context Inspector'});
+    const hideEnd=Date.now()+15000;let hidden=false;
+    while(Date.now()<hideEnd){const views=await Promise.all(page.frames().map(async f=>await f.locator('[data-hub-inspector]').isVisible().catch(()=>false) && await shown(f)));if(!views.some(Boolean)){hidden=true;break;}await page.waitForTimeout(200);}
+    assert.ok(hidden,'Context Inspector disappears when hidden');
     await step({kind:'run',label:'DataPass: Show Context Inspector'});
-    inspector=await home('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
     await step({kind:'run',label:'Preferences: Color Theme'});await step({kind:'quickPick',text:'Light Modern'});
     await step({kind:'screenshot',name:'hub-light'});
     await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0]!.setSize(800,800);});
     frame=await home('[data-hub-tab="git"]');
+    // VS Code virtualizes views below the fold; focus the Inspector before measuring its content.
+    await step({kind:'run',label:'DataPass: Show Context Inspector'});
     for(const f of [frame,await home('[data-hub-inspector]')]){const w=await f.evaluate(()=>({content:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));assert.ok(w.content<=w.viewport+1,JSON.stringify(w));}
     await step({kind:'screenshot',name:'hub-narrow'});
     await step({kind:'run',label:'Developer: Reload Window'});await page.locator('.monaco-workbench').waitFor({timeout:60000});
     await step({kind:'run',label:'DataPass: Open Home'});
     frame=await home('[data-hub-tab="git"]');assert.equal(await frame.locator('[data-hub-action="project"][data-id="enterprise-hub"][aria-pressed="true"]').count(),1);
     await step({kind:'run',label:'DataPass: Show Context Inspector'});
-    inspector=await home('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
     await inspector.locator('[data-hub-action="setting"][data-id="minimapExpanded"]').focus();await page.keyboard.press('Enter');
-    inspector=await home('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="false"]');
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimapExpanded"][data-value="false"]');
     await inspector.locator('[data-hub-action="setting"][data-id="minimap"][data-value="false"]').click();
-    inspector=await home('[data-hub-action="setting"][data-id="minimap"][data-value="true"]');
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimap"][data-value="true"]');
     await inspector.locator('[data-hub-action="setting"][data-id="minimap"][data-value="true"]').click();
     await step({kind:'screenshot',name:'hub-reloaded'});
     const events = fs.readFileSync(spyLog, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l));

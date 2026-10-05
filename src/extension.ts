@@ -90,6 +90,7 @@ import { AUTO_OPEN } from "./core/experience/landing";
  */
 export interface DataPassTestApi {
   intelligence: {
+    analysisStatus(): ReturnType<NativeAnalysisHost['status']>;
     report(): ReturnType<WorkSession['projectIntelligence']>;
     navigation(): { state: import('./core/navigation/navTypes').NavState; views: readonly import('./core/navigation/navTypes').ViewDef[] };
     navigate(command: import('./core/navigation/navTypes').NavCommand): void;
@@ -646,7 +647,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     qualification: () => session.qualification(),
     repositories: () => session.repositories(),
     projectMap: () => session.projectMap(),
-    intelligence: { report: () => session.projectIntelligence(), navigation: () => ({ state: navigationHost.nav.state, views: navigationHost.nav.views() }),
+    intelligence: { analysisStatus: () => nativeUnderstanding.status(), report: () => session.projectIntelligence(), navigation: () => ({ state: navigationHost.nav.state, views: navigationHost.nav.views() }),
       navigate: command => { navigationHost.nav.dispatch(command); }, paths: () => navTours()?.tours() ?? [], startPath: id => { const tours = navTours(); const path = tours?.tours().find(t => t.id === id); if (path) tours!.start(path); } },
     workbenchState: () => host.state(),
     selection: () => session.selection(),
