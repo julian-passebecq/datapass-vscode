@@ -69,8 +69,10 @@ export function registerEnterpriseHubFlows(api:()=>DataPassTestApi):void {
   await api().workOrders.reload();
   assert.equal((await api().home.state()).hub!.projects.find(p=>p.id==='enterprise-hub')!.orders.find(o=>o.id===id)!.qualified,true);
   const nextOrder=api().workOrders.list().find(o=>o.id===next)!;const md=vscode.Uri.joinPath(nextOrder.folder,'order.md').fsPath;const stat=fs.statSync(md);
-  fs.writeFileSync(md,fs.readFileSync(md,'utf8').replace('order','other'));fs.utimesSync(md,stat.atime,stat.mtime);
+  const before=fs.readFileSync(md,'utf8'),after=before.replace('order','other');assert.notEqual(after,before);assert.equal(Buffer.byteLength(after),stat.size);
+  fs.writeFileSync(md,after);fs.utimesSync(md,stat.atime,stat.mtime);
   await api().workOrders.reload();
+  record('hubQualificationDrift',{recorded:api().workOrders.list().find(o=>o.id===next)!.state?.qualification?.digest,current:api().workOrders.list().find(o=>o.id===next)!.digestNow});
   assert.equal((await api().home.state()).hub!.projects.find(p=>p.id==='enterprise-hub')!.orders.find(o=>o.id===next)!.qualified,false,'same-size/time changed bytes invalidate qualification');
  },fixtures);
 }

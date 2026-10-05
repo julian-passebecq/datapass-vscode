@@ -397,7 +397,8 @@ export class WorkOrderService implements vscode.Disposable {
     for (const o of this.orders) if (o.resultKey) this.announced.add(o.resultKey);
     this.schedulePoll();
     // Views repaint only when what they show changed (a poll or a session change that changes nothing repaints nothing).
-    const signature = JSON.stringify([this.selectedId, this.orders.map(o => [o.id, o.error, o.stateProblem, o.proposed, o.summary, o.state?.published, o.state?.imported])]);
+    // DAG views also depend on current input bytes and person qualification, including unlaunched orders.
+    const signature = JSON.stringify([this.selectedId, this.orders.map(o => [o.id, o.error, o.stateProblem, o.proposed, o.summary, o.digestNow, o.order?.dag, o.state?.qualification, o.state?.published, o.state?.imported])]);
     if (signature !== this.lastSignature) { this.lastSignature = signature; this.emitter.fire(); }
     const needs = JSON.stringify(this.needsYou());
     if (needs !== this.lastNeeds) { this.lastNeeds = needs; this.git.notifyChanged(); }
