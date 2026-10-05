@@ -8,7 +8,7 @@ import { headCiArgs, exactHeadCi } from '../src/core/hub/ci';
 import { checkSpawn } from '../src/core/spawnAllowList';
 import { workOrderDag, nextReadyWork, type DagInput } from '../src/core/workOrders/dag';
 import { initialState, parseWorkOrder, type WorkOrder } from '../src/core/workOrders/format';
-import { hubSummary, scopeProjects, minimapRows, projectBom, type HubProject, type HubState } from '../src/core/hub/projection';
+import { hubSummary, scopeProjects, minimapRows, projectBom, hubRepositoryKey, type HubProject, type HubState } from '../src/core/hub/projection';
 import { safeCompanionChoices, hubHandoff } from '../src/core/hub/routing';
 import { classifyPath } from '../src/core/hub/classify';
 import { fileSemanticDiff } from '../src/core/hub/semanticDiff';
@@ -91,8 +91,15 @@ test('BOM live revision and typed routing preserve unknowns, disabled bindings a
   const state={projects:[p],scope:{project:p.id},selectedComponent:'spark'} as HubState;
   assert.deepEqual(hubHandoff(state).providerTargets,[]);
   assert.throws(()=>hubHandoff(state,undefined,'d'.repeat(40)),/observed context/);
+  p.repositories[0]!.topology=[{branch:'main',head:'e'.repeat(40),relation:'default'}];
+  assert.equal(hubHandoff(state,undefined,'e'.repeat(40)).revision,'e'.repeat(40));
   assert.deepEqual(safeCompanionChoices([]),{});
   assert.equal(safeCompanionChoices(['tern.revealRevision']).lens,'tern.revealRevision');
+});
+test('named coordination roots and reserved order refs map to observed repositories without conflating a client repo',()=>{
+  const m={...hubManifest,repositories:{root:{path:'.'},coordination:{path:'repos/coordination'}}};
+  assert.equal(hubRepositoryKey(m,'root'),'.');assert.equal(hubRepositoryKey(m,'coordination-repo'),'.');
+  assert.equal(hubRepositoryKey(m,'coordination'),'coordination');
 });
 test('semantic diff uses Common SQL/IaC primitives without execution',()=>{
   assert.equal(classifyPath('models/orders.sql'),'sql');

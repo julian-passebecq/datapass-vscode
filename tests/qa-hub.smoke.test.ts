@@ -66,7 +66,7 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
       throw new Error(`Graph nodes did not paint for ${title}`);
     };
     await step({kind:'run',label:'DataPass: Open Portfolio'});
-    let frame=await home();
+    let frame=await home('[data-hub-action="project"][data-id="enterprise-hub"]');
     assert.equal(await frame.locator('[data-hub-action="project"]').count(),2);
     await step({kind:'screenshot',name:'portfolio'});
     await frame.locator('[data-hub-action="project"][data-id="enterprise-hub"]').click();

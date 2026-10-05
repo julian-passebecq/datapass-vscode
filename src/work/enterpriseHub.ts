@@ -13,7 +13,7 @@ import { resolveProjectType, workOrdersVerdict } from '../core/workOrders/projec
 import { workOrderDag, nextReadyWork, type DagInput } from '../core/workOrders/dag';
 import { parseWorkOrder, parseOrderState, parseOrderDag, WORK_ORDERS_DIR, ORDER_ID_RE } from '../core/workOrders/format';
 import { draftOf } from './workOrderCommands';
-import { hubSummary, hubAttention, scopeProjects, type HubState, type HubProject, type HubScope, type HubRepository } from '../core/hub/projection';
+import { hubSummary, hubAttention, scopeProjects, hubRepositoryKey, type HubState, type HubProject, type HubScope, type HubRepository } from '../core/hub/projection';
 import { coverageSummary } from '../core/project/intelligence';
 import { gitHostOf } from '../core/project/gitHosts';
 import { headCiArgs, exactHeadCi, unknownHeadCi } from '../core/hub/ci';
@@ -74,7 +74,12 @@ export class EnterpriseHub implements vscode.Disposable {
     if (name === 'inspector') await vscode.commands.executeCommand('setContext', 'datapass.hub.inspectorHidden', !value);
     this.emitter.fire();
   }
-  private load(): Promise<void> { return this.definitions ??= this.loadDefinitions().catch(e => { this.gaps = [`Hub declarations unavailable: ${e instanceof Error ? e.message : 'read failed'}`]; }); }
+  private async load(): Promise<void> {
+    const generation = this.generation;
+    await (this.definitions ??= this.loadDefinitions().catch(e => { this.gaps = [`Hub declarations unavailable: ${e instanceof Error ? e.message : 'read failed'}`]; }));
+    // Opening Home can overlap initial project loading or a project switch.
+    if (generation !== this.generation) await this.load();
+  }
   private async loadDefinitions(): Promise<void> {
     const generation = this.generation;
     const root = this.session.root; const known = await knownProjects(this.session, false); const gaps = [...known.errors];
@@ -132,11 +137,14 @@ export class EnterpriseHub implements vscode.Disposable {
     await this.load(); const inputs = await (this.inputs ??= Promise.all(this.projects.map(p => this.orderInputs(p))).then(x => x.flat())); const rows = workOrderDag(inputs);
     for (const p of this.projects) {
       p.orders = rows.filter(r => r.project === p.id);
-      p.agents = inputs.filter(i => i.order.project.id === p.id && i.state?.launches.length).flatMap(i => i.order.repositories.map(r => ({ provider: i.order.agent.tool, order: i.order.id, repo: r.ref === 'coordination' ? '.' : r.ref, branch: r.branch,
-        status: i.resultStatus ?? (i.state?.status === 'launched' ? 'running' : i.state?.status ?? 'unknown'), origin: 'AGENT-REPORTED' as const,
-        worktree: p.repositories.find(repo => repo.key === (r.ref === 'coordination' ? '.' : r.ref))?.git?.worktrees.find(w => w.branch === r.branch)?.name,
-        mr: p.root && this.session.root && sameFolder(p.root, this.session.root.fsPath) ? this.orders.get(i.order.id)?.outputs.find(o => o.ref === r.ref)?.pr?.number : undefined,
-        ci: p.repositories.find(repo => repo.key === (r.ref === 'coordination' ? '.' : r.ref))?.git?.branch === r.branch ? p.repositories.find(repo => repo.key === (r.ref === 'coordination' ? '.' : r.ref))?.ci?.status : 'UNKNOWN', evidence: i.order.dag?.evidence ?? [] })));
+      p.agents = inputs.filter(i => i.order.project.id === p.id && i.state?.launches.length).flatMap(i => i.order.repositories.map(r => {
+        const key = hubRepositoryKey(p.manifest,r.ref); const repo = p.repositories.find(repo => repo.key === key);
+        return { provider:i.order.agent.tool,order:i.order.id,repo:key,branch:r.branch,
+          status:i.resultStatus ?? (i.state?.status === 'launched' ? 'running' : i.state?.status ?? 'unknown'),origin:'AGENT-REPORTED' as const,
+          worktree:repo?.git?.worktrees.find(w => w.branch === r.branch)?.name,
+          mr:p.root && this.session.root && sameFolder(p.root,this.session.root.fsPath) ? this.orders.get(i.order.id)?.outputs.find(o => o.ref === r.ref)?.pr?.number : undefined,
+          ci:repo?.git?.branch === r.branch ? repo?.ci?.status : 'UNKNOWN',evidence:i.order.dag?.evidence ?? [] };
+      }));
       p.qualification = p.orders.length && p.orders.every(o => o.qualified && ['QUALIFIED', 'DONE'].includes(o.status)) ? 'WorkOrders qualified (not deployment)' : 'UNKNOWN / open work';
       if (p.root && this.session.root && sameFolder(p.root, this.session.root.fsPath)) { p.selectedEnvironment = this.session.selectedEnvironment(); const coverage = coverageSummary(this.session.projectIntelligence()); p.coverage = coverage.analyzed ? coverage.counts : undefined; p.readiness = `${this.session.projectMap().summary.opsReady}/${this.session.projectMap().summary.opsTotal} operations locally ready`; }
     }
@@ -154,7 +162,7 @@ export class EnterpriseHub implements vscode.Disposable {
     await this.load(); if (!vscode.workspace.isTrusted) throw new Error('Trust this workspace before Git/CI observation');
     const limiter = new Limiter(4); const root = this.session.root?.toString(); const generation = this.generation;
     await Promise.all(scopeProjects(this.projects, this.scope()).flatMap(p => p.repositories.map(r => limiter.run(async () => {
-      const folder = this.folder(p, r); const remote = p.manifest?.repositories?.[r.key]?.remote?.url;
+      const folder = this.folder(p, r); const remote = Object.entries(p.manifest?.repositories ?? {}).find(([key]) => hubRepositoryKey(p.manifest,key) === r.key)?.[1].remote?.url;
       const git = await this.git.hubReport({ key: `hub:${p.id}:${r.key}`, label: r.label, folder, remoteUrl: remote }, online);
       if (root !== this.session.root?.toString() || generation !== this.generation) return; r.git = git; r.gaps = []; r.changedFiles = []; r.semantic = []; r.topology = [];
       r.ci = unknownHeadCi(git.head ?? '', online ? 'No supported host/login or HEAD' : 'CI not requested (offline local observation)');
@@ -164,7 +172,7 @@ export class EnterpriseHub implements vscode.Disposable {
       else r.gaps.push('Changed file list unavailable');
       if (r.changedFiles.length > 500) r.gaps.push('Changed file summary bounded to 500 entries'); r.changedFiles = r.changedFiles.slice(0, 500);
       const map = p.root && this.session.root && sameFolder(p.root, this.session.root.fsPath) ? this.session.projectMap() : undefined;
-      r.components = map?.components.filter(c => c.repoKey === r.key && r.changedFiles.some(f => c.artifacts?.files.some(a => a.repoPath === f))).map(c => c.id) ?? [];
+      r.components = map?.components.filter(c => c.repoKey !== undefined && hubRepositoryKey(p.manifest,c.repoKey) === r.key && r.changedFiles.some(f => c.artifacts?.files.some(a => a.repoPath === f))).map(c => c.id) ?? [];
       for (const f of r.changedFiles.slice(0, 8)) {
         if (/^\.?env|credentials|secrets|profiles\.ya?ml|local\.settings|\.npmrc/i.test(path.basename(f))) { r.gaps.push(`${f}: credential/config contents excluded`); continue; }
         const before = await this.git.hubRead('git', ['show', `${git.head}:${f}`], folder);

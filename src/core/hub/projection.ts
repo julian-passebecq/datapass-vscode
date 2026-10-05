@@ -5,6 +5,7 @@ import type { FileSemanticDiff } from './semanticDiff';
 import type { DagRow } from '../workOrders/dag';
 import { effectiveBindings } from './model';
 import { classifyPath } from './classify';
+import { keyOfRef } from '../workOrders/builder';
 export interface HubRepository { key: string; label: string; git?: GitRepoReport; ci?: HeadCi; changedFiles: string[]; semantic: { path: string; diff: FileSemanticDiff }[]; gaps: string[]; components: string[]; recent?: string[]; topology?: { branch: string; head?: string; base?: string; relation: 'default' | 'same' | 'ahead' | 'behind' | 'diverged' | 'unknown' }[] }
 export interface HubProject { id: string; title: string; company: string; program: string; root?: string; manifest?: DataPassProjectManifest; repositories: HubRepository[]; orders: DagRow[]; agents: { provider: string; order: string; repo: string; branch?: string; worktree?: string; status: string; origin: 'AGENT-REPORTED'; mr?: number; ci?: string; evidence: string[] }[]; gaps: string[]; coverage?: { UNDERSTOOD: number; PARTIAL: number; UNKNOWN: number; IGNORED: number }; readiness?: string; qualification: string; selectedEnvironment?: string }
 export interface HubScope { company?: string; program?: string; project?: string; tab?: string; repository?: string }
@@ -30,10 +31,15 @@ export function hubAttention(projects: readonly HubProject[]): HubState['attenti
     ...p.gaps.map(message => ({ project: p.id, message, origin: 'UNKNOWN' }))]);
 }
 export function repositoryFamilies(r: HubRepository) { const out: Record<string, number> = {}; for (const f of new Set(r.changedFiles)) { const kind = classifyPath(f); out[kind] = (out[kind] ?? 0) + 1; } return out; }
-export function projectTargets(p: HubProject) { return p.manifest ? effectiveBindings(p.manifest, p.selectedEnvironment) : []; }
+/** Preserve the existing reserved WorkOrder ref convention, including a repository literally named coordination. */
+export function hubRepositoryKey(manifest: DataPassProjectManifest | undefined, ref: string): string {
+  const key = keyOfRef(ref, Object.keys(manifest?.repositories ?? {}));
+  return manifest?.repositories?.[key]?.path === '.' ? '.' : key;
+}
+export function projectTargets(p: HubProject) { return p.manifest ? effectiveBindings(p.manifest, p.selectedEnvironment).map(b => ({...b,declaredRepoRef:b.repoRef,repoRef:hubRepositoryKey(p.manifest,b.repoRef)})) : []; }
 export function projectBom(p: HubProject) {
   return (p.manifest?.hub?.bom ?? []).map(b => {
-    const repo = p.repositories.find(r => r.key === (b.repoRef ?? '.'));
+    const repo = p.repositories.find(r => r.key === hubRepositoryKey(p.manifest,b.repoRef ?? '.'));
     const match = !!b.sha && repo?.git?.head === b.sha;
     return { ...b, declaredState: b.state, observedSha: repo?.git?.head,
       observation: !repo?.git?.head || !b.sha ? 'UNKNOWN' : !match ? 'stale' : b.state === 'incompatible' ? 'incompatible' : b.state === 'qualified' ? 'current / qualification declared' : 'current',

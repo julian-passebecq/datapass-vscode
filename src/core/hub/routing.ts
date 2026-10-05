@@ -8,7 +8,7 @@ export function hubHandoff(state: HubState, repository?: string, revision?: stri
   const p = scopeProjects(state.projects, state.scope)[0];
   const r = p?.repositories.find(r => r.key === (repository ?? state.scope.repository)) ?? p?.repositories[0];
   // Revision must be an observed current/worktree HEAD. The caller revalidates the selection on every click.
-  const heads = [r?.git?.head, ...r?.git?.worktrees.map(w => w.head) ?? []].filter(Boolean);
+  const heads = [r?.git?.head, ...r?.git?.worktrees.map(w => w.head) ?? [], ...r?.topology?.map(t => t.head) ?? []].filter(Boolean);
   if (revision && !heads.includes(revision)) throw new Error('Revision is not in current observed context');
   return { schema: 'datapass.hub-context/1', mode: 'inspect-or-plan', company: p?.manifest?.hub?.company?.id ?? p?.company, program: p?.manifest?.hub?.program?.id ?? p?.program, project: p?.id,
     repository: r?.key, repositoryUri: r?.git?.host?.web, revision: revision ?? r?.git?.head, worktree: r?.git?.worktrees.find(w => w.head === revision)?.name,

@@ -33,6 +33,7 @@ export class HomeHost implements vscode.Disposable {
   private readonly subs: vscode.Disposable[] = [];
   private timer: ReturnType<typeof setTimeout> | undefined;
   private lastHtml = new Map<HomePage, string>();
+  private renderRevision = new Map<HomePage, number>();
   /** Last message handled (tests). */
   lastAction?: { type: string; id?: string; command?: string; error?: string };
   private hub?: EnterpriseHub;
@@ -95,7 +96,7 @@ export class HomeHost implements vscode.Disposable {
       { viewColumn: column ?? vscode.ViewColumn.Active, preserveFocus }, { enableScripts: true, localResourceRoots: [] });
     panel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, "resources", "datapass.svg");
     this.panels.set(page, panel);
-    panel.onDidDispose(() => { this.panels.delete(page); this.lastHtml.delete(page); });
+    panel.onDidDispose(() => { this.panels.delete(page); this.lastHtml.delete(page); this.renderRevision.delete(page); });
     panel.webview.onDidReceiveMessage(m => void this.receive(m));
     panel.onDidChangeViewState(e => { if (e.webviewPanel.visible) void this.render(page); });
     await this.render(page, true);
@@ -111,9 +112,11 @@ export class HomeHost implements vscode.Disposable {
   private async render(page: HomePage, force = false): Promise<void> {
     const panel = this.panels.get(page);
     if (!panel || (!force && !panel.visible)) return;
+    const revision = (this.renderRevision.get(page) ?? 0) + 1;
+    this.renderRevision.set(page, revision);
     const state = await this.state();
     // Reading layouts/commands is asynchronous; the user may close or replace the tab meanwhile.
-    if (this.panels.get(page) !== panel) return;
+    if (this.panels.get(page) !== panel || this.renderRevision.get(page) !== revision) return;
     const nonce = makeNonce();
     // Compare without the nonce, so an unchanged state does not reset the page (and its scroll).
     const body = homeHtml(state, page, panel.webview.cspSource, "NONCE");
