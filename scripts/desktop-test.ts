@@ -33,6 +33,7 @@ import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
 import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
 import { intelligenceFiles } from '../tests/fixtures/v6/projectIntelligence';
+import { probeInstalledController } from './native-controller-probe';
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
@@ -711,6 +712,13 @@ async function main(): Promise<void> {
     extensionTestsPath = path.join(testDir, "suite.js");
     fs.copyFileSync(path.join(out, "suite.js"), extensionTestsPath);
     console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
+    if (process.argv.includes('--probe-native-controller')) try {
+      await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'));
+    } catch (error) {
+      if (!path.resolve(scratch).startsWith(path.join(path.resolve(os.tmpdir()), 'datapass-desktop-'))) throw new Error('qualification-cleanup-root-mismatch');
+      fs.rmSync(scratch, { recursive: true, force: true });
+      throw error;
+    }
   }
   const reports: unknown[] = [];
   let failed = 0;

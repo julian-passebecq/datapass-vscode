@@ -125,7 +125,7 @@ native_parser_qualification:
     - |
       $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
       if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
-      Invoke-CiNative npx.cmd tsx scripts/desktop-test.ts "--vsix=$($vsix.FullName)" --fixture=v6-intelligence
+      Invoke-CiNative npx.cmd tsx scripts/desktop-test.ts "--vsix=$($vsix.FullName)" --fixture=v6-intelligence --probe-native-controller
   artifacts:
     name: "datapass-native-$CI_COMMIT_SHORT_SHA"
     when: always
