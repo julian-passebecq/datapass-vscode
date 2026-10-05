@@ -125,6 +125,7 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
     await inspector.locator('[data-hub-action="setting"][data-id="minimap"][data-value="false"]').click();
     inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimap"][data-value="true"]');
     await inspector.locator('[data-hub-action="setting"][data-id="minimap"][data-value="true"]').click();
+    inspector=await home('[data-hub-inspector] [data-hub-minimap]');
     await step({kind:'screenshot',name:'hub-reloaded'});
     const events = fs.readFileSync(spyLog, 'utf8').trim().split('\n').filter(Boolean).map(l => JSON.parse(l));
     assert.ok(events.some(e => e.kind === 'harness'), 'network spy must be active');
