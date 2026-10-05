@@ -20,6 +20,8 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
   let app: ElectronApplication | undefined;
   const results: unknown[] = [];
   let hostErrors: string[] = [];
+  let reloadStarted = 0;
+  const expectedReloadCancellations: string[] = [];
   try {
     const project = path.join(root, 'doc-pipeline');
     const hubSetup=setupHubFixture(project,path.join(base,'hub-tools')); 
@@ -99,10 +101,20 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
     await step({kind:'screenshot',name:'hub-light'});
     await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0]!.setSize(800,800);});
     frame=await home('[data-hub-tab="git"]');
+    // Give the bottom Inspector room in a short window, through ordinary native view controls.
+    for(const title of ['Navigator','Steps','AI','Details']) {
+      const header=page.locator('.pane-header[aria-expanded="true"]').filter({has:page.locator('.title').filter({hasText:new RegExp(`^${title}$`)})});
+      if(await header.count())await header.click();
+    }
     // VS Code virtualizes views below the fold; focus the Inspector before measuring its content.
     await step({kind:'run',label:'DataPass: Show Context Inspector'});
     for(const f of [frame,await home('[data-hub-inspector]')]){const w=await f.evaluate(()=>({content:document.documentElement.scrollWidth,viewport:document.documentElement.clientWidth}));assert.ok(w.content<=w.viewport+1,JSON.stringify(w));}
     await step({kind:'screenshot',name:'hub-narrow'});
+    inspector=await home('[data-hub-inspector]');
+    if(await inspector.locator('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="false"]').count())
+      await inspector.locator('[data-hub-action="setting"][data-id="minimapExpanded"][data-value="false"]').click();
+    inspector=await home('[data-hub-inspector] [data-hub-action="setting"][data-id="minimapExpanded"][data-value="true"]');
+    reloadStarted=Date.now();
     await step({kind:'run',label:'Developer: Reload Window'});await page.locator('.monaco-workbench').waitFor({timeout:60000});
     await step({kind:'run',label:'DataPass: Open Home'});
     frame=await home('[data-hub-tab="git"]');assert.equal(await frame.locator('[data-hub-action="project"][data-id="enterprise-hub"][aria-pressed="true"]').count(),1);
@@ -137,14 +149,21 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
       if (entry.isDirectory()) inspect(file);
       else if (/exthost|renderer/i.test(entry.name) && entry.name.endsWith('.log')) {
         const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
-        hostErrors.push(...lines.filter((line, i) => /\[error\]/.test(line) && /datapass/i.test(line)
-          || /rejected promise not handled/i.test(line) && lines.slice(i, i + 12).some(part => /datapass/i.test(part))));
+        for(const [i,line] of lines.entries()) {
+          if(!(/\[error\]/.test(line) && /datapass/i.test(line)
+            || /rejected promise not handled/i.test(line) && lines.slice(i,i+12).some(part=>/datapass/i.test(part))))continue;
+          const at=Date.parse(line.slice(0,23));
+          // VS Code's renderer cancels outstanding tree requests while the host reloads.
+          if(/^.{23} \[error\] Unable to refresh tree view datapass\.git: Canceled$/.test(line)
+            && reloadStarted && at>=reloadStarted && at<=reloadStarted+30000)expectedReloadCancellations.push(line);
+          else hostErrors.push(line);
+        }
       }
     } };
     if (fs.existsSync(logs)) inspect(logs);
-    fs.writeFileSync(path.join(keep, 'report.json'), JSON.stringify({ vsix, vsixSha256, results, hostErrors }, null, 2));
+    fs.writeFileSync(path.join(keep, 'report.json'), JSON.stringify({ vsix, vsixSha256, results, hostErrors, expectedReloadCancellations }, null, 2));
     assert.ok(path.resolve(base).startsWith(path.resolve(path.dirname(base)) + path.sep + 'datapass-qa-'));
     cleanup(base);
-    assert.deepEqual(hostErrors, [], 'installed V6 must have zero attributed extension-host errors');
   }
+  assert.deepEqual(hostErrors, [], 'installed V6 must have zero unexpected attributed extension-host errors');
 });

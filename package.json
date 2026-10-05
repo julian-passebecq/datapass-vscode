@@ -1438,6 +1438,7 @@
           "id": "datapass.hubInspector",
           "name": "Context Inspector",
           "type": "webview",
+          "initialSize": 2,
           "when": "!datapass.hidden.view.details && !datapass.hub.inspectorHidden"
         }
       ],
