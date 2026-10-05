@@ -204,6 +204,10 @@ ui_smoke:
       artifacts: true
     - job: native_parser_qualification
       artifacts: false
+    # Browser assertions need stable observations; concurrent desktop shards on this
+    # Windows host can exhaust Git deadlines and leave the fixture partially observed.
+    - job: desktop_acceptance
+      artifacts: false
   before_script:
     - . ./scripts/ci-windows.ps1 -Node
     - Invoke-CiNative npm.cmd ci --prefer-offline
