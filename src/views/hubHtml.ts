@@ -63,6 +63,7 @@ export function hubHtml(s: HubState, portfolio = false): string {
   const p = projects.find(p => p.id === s.scope.project) ?? projects[0];
   const select = (field: 'company'|'program', entries: string[]) => `<label>${field}<select data-hub-scope="${field}"><option value="">All ${field === 'company' ? 'companies' : 'programs'}</option>${entries.map(id => `<option value="${esc(id)}"${s.scope[field] === id ? ' selected' : ''}>${esc(id)}</option>`).join('')}</select></label>`;
   const stats = hubSummary(projects);
+  const statLabels:Record<string,string> = {projects:'Projects',active:'Active projects',repositories:'Repositories',workOrders:'WorkOrders',ready:'READY work',agents:'Active agents',prs:'PR / MR',failedCi:'Failed CI',blockedCi:'Blocked CI',unknownCi:'Unknown CI',targets:'Cloud targets'};
   const tab = s.scope.tab ?? 'overview';
   let body = '';
   if (p) {
@@ -76,7 +77,7 @@ export function hubHtml(s: HubState, portfolio = false): string {
     <h3>Releases</h3>${list((p.manifest?.hub?.releases ?? []).map(r => `${esc(r.label)} · ${esc(r.version ?? 'version unspecified')} · ${esc(r.sha?.slice(0,12) ?? 'SHA unspecified')} <span class="hub-origin">DECLARED</span>`), 'No release declared.')}${companionButtons(s)}`;
   }
   return `<section class="hub" data-enterprise-hub><h2>${portfolio ? 'Enterprise / Portfolio' : 'Project Hub'}</h2><div class="hub-controls">${select('company',s.companies)}${select('program',s.programs)}${button('portfolio','Portfolio')}${button('refresh','Refresh local Git')}${button('refreshCI','Refresh Git + CI')}${button('showInspector','Show Context Inspector')}${button('nextReady','Next READY WorkOrder')}</div>
-    <div class="hub-stats">${Object.entries(stats).map(([label,n]) => `<div><strong>${n}</strong>${esc(label)}</div>`).join('')}</div>
+    <div class="hub-stats">${Object.entries(stats).map(([label,n]) => `<div><strong>${n}</strong>${esc(statLabels[label] ?? label)}</div>`).join('')}</div>
     <h3>Projects</h3><div class="actions">${projects.map(p => button('project',`${p.title} · ${p.orders.some(o => o.status === 'RUNNING') ? 'ACTIVE' : p.orders.some(o => o.status === 'READY') ? 'READY' : 'UNKNOWN'}`,`data-id="${esc(p.id)}" aria-pressed="${s.scope.project === p.id}"`)).join('')}</div>
     ${p ? `<nav class="hub-tabs" aria-label="Project Hub">${['overview','architecture','lineage','work','git','cloud','evidence','decisions'].map(t => button('tab',t[0]!.toUpperCase()+t.slice(1),`data-id="${t}" aria-pressed="${tab === t}"`)).join('')}</nav><div data-hub-tab="${esc(tab)}">${body}</div>` : '<p>No project in this scope.</p>'}
     <h3>Next attention</h3>${list(s.attention.slice(0,30).map(a => `${esc(a.project)}${a.repo ? '/'+esc(a.repo) : ''}: ${esc(a.message)} <span class="hub-origin">${esc(a.origin)}</span>`), 'No observed attention item. Unobserved Git/CI remains UNKNOWN.')}${list(s.gaps.map(esc),'')}<p class="hub-origin">Observation ${esc(s.observedAt ?? 'not requested')} · projection of existing catalog / manifests / WorkOrders</p></section>`;

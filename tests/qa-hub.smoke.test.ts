@@ -75,10 +75,16 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
     frame=await home('[data-hub-tab="git"]');
     await frame.locator('[data-hub-action="refreshCI"]').click();
     await step({kind:'expect',text:'Exact-HEAD CI',timeoutMs:60000});
-    const end=Date.now()+180000;while(Date.now()<end){frame=await home('[data-hub-tab="git"]');const text=await frame.locator('[data-hub-repository="app"]').innerText();if(text.includes('FAIL'))break;await page.waitForTimeout(300);}
-    assert.match(await frame.locator('[data-hub-repository="app"]').innerText(),/FAIL/);
-    assert.match(await frame.locator('[data-hub-repository="api"]').innerText(),/BLOCKED/);
-    assert.match(await frame.locator('[data-hub-repository="dbt"]').innerText(),/detached HEAD/);
+    const end=Date.now()+180000;let texts:string[]=[];
+    while(Date.now()<end){
+      try {
+        frame=await home('[data-hub-tab="git"]');
+        texts=await Promise.all(['app','api','dbt'].map(id=>frame.locator(`[data-hub-repository="${id}"]`).innerText()));
+        if(texts[0]!.includes('FAIL') && texts[1]!.includes('BLOCKED') && texts[2]!.includes('detached HEAD'))break;
+      } catch(error) { if(!/detached/.test(String(error)))throw error; }
+      await page.waitForTimeout(300);
+    }
+    assert.match(texts[0] ?? '',/FAIL/);assert.match(texts[1] ?? '',/BLOCKED/);assert.match(texts[2] ?? '',/detached HEAD/);
     await step({kind:'screenshot',name:'project-git'});
     await step({kind:'run',label:'DataPass: Show Context Inspector'});
     let inspector=await home('[data-hub-inspector]');

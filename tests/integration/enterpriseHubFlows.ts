@@ -61,5 +61,16 @@ export function registerEnterpriseHubFlows(api:()=>DataPassTestApi):void {
   await vscode.commands.executeCommand('datapass.hub.nextReady');assert.equal(api().workOrders.selected(),next);
   assert.equal(api().workOrders.list().find(o=>o.id===next)!.state!.launches.length,0);
   record('hubDagQualified',p.orders);
+  // Qualification also works without an agent launch, and survives ordinary order closure.
+  await withUi([{pick:['tests pass']},{input:'fixture://reviewed-next-report'}],()=>vscode.commands.executeCommand('datapass.hub.qualify'));
+  assert.equal((await api().home.state()).hub!.projects.find(p=>p.id==='enterprise-hub')!.orders.find(o=>o.id===next)!.status,'QUALIFIED');
+  const closed=api().workOrders.list().find(o=>o.id===id)!;
+  await vscode.workspace.fs.writeFile(vscode.Uri.joinPath(closed.folder,'state.json'),Buffer.from(JSON.stringify({...closed.state,status:'done'})));
+  await api().workOrders.reload();
+  assert.equal((await api().home.state()).hub!.projects.find(p=>p.id==='enterprise-hub')!.orders.find(o=>o.id===id)!.qualified,true);
+  const nextOrder=api().workOrders.list().find(o=>o.id===next)!;const md=vscode.Uri.joinPath(nextOrder.folder,'order.md').fsPath;const stat=fs.statSync(md);
+  fs.writeFileSync(md,fs.readFileSync(md,'utf8').replace('order','other'));fs.utimesSync(md,stat.atime,stat.mtime);
+  await api().workOrders.reload();
+  assert.equal((await api().home.state()).hub!.projects.find(p=>p.id==='enterprise-hub')!.orders.find(o=>o.id===next)!.qualified,false,'same-size/time changed bytes invalidate qualification');
  },fixtures);
 }
