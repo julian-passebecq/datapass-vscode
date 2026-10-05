@@ -8,7 +8,7 @@ import type { WorkSession } from '../work/session';
 import { selectedCapture, selectedRequest, sessionIdentity, editorOffsets, type SelectedCapture } from './capture';
 import { collectDbtWorkspace, dbtSections, extractDbt } from './dbt';
 import { collectOrchestrationWorkspace, extractOrchestration, orchestrationSections, type PythonFactsHost } from './orchestration';
-import { assembleProjectIntelligence, collectProjectSources, extractProjectSources, PROJECT_ANALYSIS_LIMITS } from './project';
+import { assembleProjectIntelligence, collectProjectSources, extractProjectSources, isProjectAnalysisChange, PROJECT_ANALYSIS_LIMITS } from './project';
 
 /** Installed trusted host only; never obtain a module or executable from workspace settings. */
 export interface NativeAnalysisBackend {
@@ -49,12 +49,22 @@ export class NativeAnalysisHost implements vscode.Disposable {
       session.onDidChange(() => { const key = this.projectKey(); if (key !== this.identityKey || (this.projectEpoch !== undefined && session.projectIntelligenceEpoch?.() !== this.projectEpoch)) { this.identityKey = key; this.projectEpoch = undefined; this.invalidate('Project changed. Analyze the source again.'); this.dispatcher?.clearCache(); } }),
       vscode.workspace.onDidChangeTextDocument(e => {
         if (e.document.uri.toString() === this.selectedUri) this.invalidate('Source changed. Analyze the selected file again.');
-        if (this.projectAnalysisActive || this.session.projectIntelligence?.()) { this.invalidate(); this.session.setProjectIntelligence(undefined); }
+        if ((this.projectAnalysisActive || this.session.projectIntelligence?.()) && this.isProjectSource(e.document.uri)) { this.invalidate(); this.session.setProjectIntelligence(undefined); }
       }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => { this.invalidate('Workspace changed. Analyze the selected file again.'); this.dispatcher?.clearCache(); })
     );
   }
   private projectKey(): string { return `${this.session.root?.toString() ?? ''}:${this.session.project.manifest?.project.id ?? ''}`; }
+  private isProjectSource(uri: vscode.Uri): boolean {
+    if (uri.scheme !== 'file') return false;
+    return this.session.projectMap().repositories.some(repo => {
+      const folder = this.session.repoFolder(repo.key);
+      if (!folder || folder.scheme !== 'file') return false;
+      const relative = path.relative(folder.fsPath, uri.fsPath);
+      return !path.isAbsolute(relative) && relative !== '..' && !relative.startsWith('..' + path.sep)
+        && (relative.startsWith('.datapass' + path.sep) || isProjectAnalysisChange(relative));
+    });
+  }
   private invalidate(message?: string): void {
     this.projectAnalysisActive = false;
     this.generation++; this.abort?.abort(); this.abort = undefined;
@@ -163,7 +173,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
     }))) return this.show('Save project source and configuration before analyzing saved files. No analysis was performed.');
     for (const watcher of this.projectWatchers) watcher.dispose();
     this.projectWatchers = [];
-    const sourceChanged = () => { if (this.projectAnalysisActive || this.session.projectIntelligence()) { this.invalidate(); this.session.setProjectIntelligence(undefined); } };
+    const sourceChanged = (uri: vscode.Uri) => { if ((this.projectAnalysisActive || this.session.projectIntelligence()) && this.isProjectSource(uri)) { this.invalidate(); this.session.setProjectIntelligence(undefined); } };
     for (const repo of map.repositories) {
       const folder = this.session.repoFolder(repo.key);
       if (!folder || folder.scheme !== 'file') continue;

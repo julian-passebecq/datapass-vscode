@@ -13,9 +13,9 @@ Coverage reports UNDERSTOOD, PARTIAL, UNKNOWN and IGNORED. Generated/dependency/
 | Family | Current local wiring | Remaining gaps |
 | --- | --- | --- |
 | SQL | Published SQL extractor through the qualified installed parser | Dynamic SQL and unresolved schemas follow the extractor's gaps |
-| Python / PySpark | Published Python/PySpark extractor through CPython AST facts | Unsupported/dynamic bindings are not executed or guessed |
+| Python / PySpark | Published Python/PySpark extractor through CPython AST facts | Unsupported/dynamic bindings are not executed or guessed; generic Python without a supported family remains UNKNOWN |
 | Notebooks | Published notebook extractor, Python/SQL source cells | Other cell languages, dynamic source and runtime outputs are gaps |
-| dbt | Published dbt extractor and non-secret profiles target context; artifacts under `target/` are eligible | Dynamic templating/unresolved warehouse bindings retain gaps |
+| dbt | Published dbt extractor, installed SQL extractor for column lineage, and non-secret profiles target context; artifacts under `target/` are eligible | Dynamic templating/unresolved warehouse bindings retain gaps |
 | Fabric, Databricks, ADF and orchestrators | Published orchestration and Airflow extractors; Python AST host when qualified | Unsupported definitions/operators and provider state remain gaps |
 | APIs | Published OpenAPI/AsyncAPI/GraphQL/Python API extractor | Dynamic routes, unresolved handlers and warehouse context retain gaps |
 | Power BI | Existing PBIP reader projected into the SPI: semantic model → report by local PBIR reference | Explicitly PARTIAL: TMDL/DAX expressions, columns, measures and visual lineage are not yet extracted |

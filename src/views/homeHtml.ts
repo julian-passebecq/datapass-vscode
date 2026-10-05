@@ -13,14 +13,14 @@ export const esc = (s: unknown): string => String(s ?? "").replace(/[&<>"']/g, c
 const STYLE = `
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
-  body { margin: 0; padding: 20px 24px 32px; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); font-size: 13px; }
+  body { margin: 0; padding: 20px 24px 32px; color: var(--vscode-foreground); background: var(--vscode-editor-background); font-family: var(--vscode-font-family); font-size: 13px; overflow-wrap: anywhere; }
   h1 { font-size: 20px; margin: 0; font-weight: 600; }
   h2 { font-size: 11px; margin: 22px 0 8px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--vscode-descriptionForeground); }
   h3 { font-size: 14px; margin: 0 0 4px; font-weight: 600; }
   p { margin: 0; }
   .sub { color: var(--vscode-descriptionForeground); margin-top: 4px; line-height: 1.4; }
   .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 10px; }
   .tile { border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border)); border-radius: 8px; padding: 12px; background: var(--vscode-sideBar-background); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .tile.coming { opacity: .75; border-style: dashed; }
   .tile.attention { border-color: var(--vscode-editorWarning-foreground); }
@@ -33,7 +33,7 @@ const STYLE = `
   button:disabled { cursor: default; opacity: .5; }
   button:focus-visible { outline: 1px solid var(--vscode-focusBorder); outline-offset: 1px; }
   .badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 999px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); margin-left: 6px; vertical-align: middle; }
-  .preview { border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border)); border-radius: 8px; padding: 12px; display: grid; gap: 8px; }
+  .preview { border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border)); border-radius: 8px; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 8px; }
   .lane { display: grid; grid-template-columns: minmax(90px, 160px) 1fr; gap: 8px; align-items: start; }
   .lane-title { font-weight: 600; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px; }

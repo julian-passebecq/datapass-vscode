@@ -20,9 +20,9 @@ export async function createNativeBackend(extensionPath: string, selectedRoot: s
   const host = new StaticSyntaxHost({ selectedRoot, securityPolicy: 'local-static-parser-v1', systemRoot,
     runtimeDirectory: join(extensionPath, 'dist/runtime'), manifestBytes, expectedManifestSha256: runtimePin.manifestSha256,
     cachePolicy: { cacheRoot: join(extensionPath, 'dist'), nativePathInspector: inspector } });
-  const plugin = createSqlAnalyzerPlugin({ parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.2', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'sqlglot', parserVersion: '30.19.0' })), provider: { start: (request, captures) => host.start(request, captures) } });
+  const plugin = createSqlAnalyzerPlugin({ parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.7', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'sqlglot', parserVersion: '30.19.0' })), provider: { start: (request, captures) => host.start(request, captures) } });
   const python: NativeAnalysisBackend['python'] = { provider: { start: (request, captures) => host.start(request, captures) },
-    parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.2', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'cpython-ast', parserVersion: '3.13.15' })) };
+    parserLockDigest: unwrap(digestJson({ hostVersion: '0.1.0-alpha.7', runtimeManifestSha256: runtimePin.manifestSha256, parser: 'cpython-ast', parserVersion: '3.13.15' })) };
   const capturedProvider = { start: (request: Parameters<typeof host.startCaptured>[0], captures: Parameters<typeof host.startCaptured>[1]) => host.startCaptured(request, captures) };
   return {
     plugin, ruleCatalogDigest: SQL_NO_RULE_EVALUATION_DIGEST, python,

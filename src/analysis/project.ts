@@ -22,6 +22,8 @@ export const PROJECT_ANALYSIS_LIMITS = { files: 5000, depth: 12, fileBytes: 2 * 
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.datapass', '.venv', 'venv', '__pycache__', 'dist', 'out', 'dbt_packages', '.vscode-test']);
 const RELEVANT = /\.(sql|py|ipynb|json|ya?ml|tf|tofu|tfvars|bicep|tmdl|pbip|pbir|bim|m|pq|dax|graphql|gql|xml|csv|scala|r|java|kt|ts|js|toml|cfg|ini|sh|ps1|dockerfile)$/i;
 const SECRET = /^(?:\.env(?:\..*)?|local\.settings\.json|credentials(?:\..*)?|secrets(?:\..*)?)$/i;
+/** Metadata/dependency churn is outside the captured source set. Directory events still invalidate it. */
+export const isProjectAnalysisChange = (relativePath: string): boolean => !relativePath.split(/[\\/]/).some(segment => SKIP_DIRS.has(segment.toLowerCase()));
 export interface ProjectSources { files: SpiFile[]; skipped: CoverageFile[]; limits: string[] }
 const analysisNamespace = (project: string, repo?: string) => `p-${unwrap(digestJson({ project, repo: repo ?? null })).value.slice(0, 40)}`;
 
@@ -46,7 +48,7 @@ export async function collectProjectSources(root: string, repo: string, signal?:
       if (discovered >= maxFiles) { limit(`${repo}: discovery file limit; remaining paths not enumerated.`); return; }
       const path = rel ? posix.join(rel, entry.name) : entry.name;
       if (entry.isSymbolicLink()) { limit(`${repo}/${path}: link or junction ignored; target not enumerated.`); continue; }
-      if (entry.isDirectory()) { if (!SKIP_DIRS.has(entry.name)) await walk(path, depth + 1); else limit(`${repo}/${path}: generated, dependency or local metadata directory excluded.`); continue; }
+      if (entry.isDirectory()) { if (!SKIP_DIRS.has(entry.name.toLowerCase())) await walk(path, depth + 1); else limit(`${repo}/${path}: generated, dependency or local metadata directory excluded.`); continue; }
       if (!entry.isFile() || (!RELEVANT.test(path) && !/^(Dockerfile|Containerfile)$/i.test(entry.name) && !SECRET.test(entry.name))) continue;
       discovered++;
       const skip = (status: CoverageFile['status'], reason: string) => result.skipped.push({ repo, path, family: 'unclassified', status, reasons: [reason] });
@@ -102,11 +104,12 @@ export async function extractProjectSources(sources: ProjectSources, repo: strin
   // The pinned extractor's line-anchored sniff misses compact JSON. Its actual reader supports it.
   const apiJsonAware = { ...api, families: api.families.map(f => f.familyId === 'api.openapi'
     ? { ...f, sniff: { pattern: '(?:^\\s*"?(?:openapi|swagger)"?\\s*:|[,{]\\s*"(?:openapi|swagger)"\\s*:)', maxChars: 1024 } } : f) };
+  const sql = createSqlExtractor({ dispatcher: wire, parserLockDigest: lock });
   const registry = createExtractorRegistry([
-    createSqlExtractor({ dispatcher: wire, parserLockDigest: lock }),
+    sql,
     createPySparkExtractor({ dispatcher: wire, parserLockDigest: pythonLock, sqlParserLockDigest: backend ? lock : undefined }),
     createNotebookExtractor({ dispatcher: wire, pythonParserLockDigest: pythonLock, sqlParserLockDigest: backend ? lock : null }),
-    createDbtExtractor({ targets: dbtTargets(sources.files) }),
+    createDbtExtractor({ targets: dbtTargets(sources.files), sql: backend ? sql : undefined }),
     createAirflowExtractor(python), createOrchestrationExtractor(python), apiJsonAware, createProjectPowerbiExtractor()
   ]);
   try {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildProjectMap } from '../src/core/project/projectMap';
 import { coverageSummary, environmentContext, projectThemes } from '../src/core/project/intelligence';
-import { collectProjectSources, extractProjectSources, assembleProjectIntelligence } from '../src/analysis/project';
+import { collectProjectSources, extractProjectSources, assembleProjectIntelligence, isProjectAnalysisChange } from '../src/analysis/project';
 import { inputA } from './fixtures/v3/research';
 import { homeState } from '../src/views/homeState';
 import { homeHtml } from '../src/views/homeHtml';
@@ -81,6 +81,11 @@ test('cancelling project analysis stops an in-flight parser without waiting for 
     acquire: async () => { throw new Error('SPI uses acquired snapshots'); }, dispose: async () => undefined
   }, abort.signal), /cancelled/);
   assert.ok(cancelled > 0, 'owned parser cleanup must happen on user cancellation');
+});
+
+test('Git and generated-directory events cannot invalidate source analysis, while source-directory deletion can', () => {
+  for (const path of ['.git/index.lock', '.git/HEAD', 'src/node_modules/module.py', 'out/graph.json']) assert.equal(isProjectAnalysisChange(path), false);
+  for (const path of ['src', 'src/query.sql', 'dbt/target/manifest.json']) assert.equal(isProjectAnalysisChange(path), true);
 });
 
 test('bounded discovery records unreadable/oversized/credential gaps and never reads excluded source trees', async () => {

@@ -48,11 +48,25 @@ export function registerProjectIntelligenceFlows(getApi: () => DataPassTestApi):
     assert.equal(sessionSource?.status, 'PARTIAL', 'dynamic session construction stays an explicit parser gap');
     assert.ok(sessionSource?.reasons.some(r => r.includes('python.assignment-unresolved')));
     assert.ok(report.graph.edges.some(e => e.kind === 'writes' && e.evidence.some(ev => ev.locator?.path.endsWith('/src/spark.py'))), 'known Spark flow must produce source-bound writes');
+    for (const path of ['dbt/models/source_orders.sql', 'dbt/models/clean_orders.sql']) {
+      const file = report.files.find(f => f.path === path);
+      assert.ok(file && file.status !== 'UNKNOWN', JSON.stringify(file));
+      assert.ok(!file.reasons.some(r => /tool-unavailable|extractor-failed/.test(r)), 'dbt column extraction must receive the installed SQL extractor');
+    }
+    assert.ok(report.graph.edges.some(e => e.kind === 'derives' && e.evidence.some(ev => ev.locator?.path.includes('/dbt/'))), 'dbt must project SQL column lineage');
     assert.ok(report.graph.nodes.some(n => n.kind === 'api-endpoint'));
     assert.ok(report.graph.edges.some(e => e.kind === 'exposes'), 'PBIP model/report pointer reaches the shared graph');
     assert.ok(report.graph.edges.some(e => e.kind === 'reads' || e.kind === 'writes'), 'installed SQL/Python extraction');
     assert.ok(report.graph.edges.every(e => e.evidence.length && e.evidence.every(ev => ev.origin !== 'runtime')));
     assert.equal(JSON.stringify(report).includes('never-read-or-export'), false);
+    const scratch = await vscode.workspace.openTextDocument({ content: 'unrelated virtual document' });
+    const edit = new vscode.WorkspaceEdit();
+    edit.insert(scratch.uri, new vscode.Position(0, 0), 'changed ');
+    await vscode.workspace.applyEdit(edit);
+    const metadata = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0]!.uri, '.git', 'datapass-qualification-sentinel');
+    await vscode.workspace.fs.writeFile(metadata, Buffer.from('owned fixture metadata, outside source analysis\n'));
+    await new Promise(resolve => setTimeout(resolve, 500));
+    assert.equal(api.intelligence.report(), report, 'virtual documents and Git metadata cannot retire valid source evidence');
     const node = report.graph.nodes[0]!;
     await vscode.commands.executeCommand('datapass.intelligence.lineage');
     api.intelligence.navigate({ type: 'go', location: { level: 'artifact', artifactKind: 'other', nodeId: node.id } });
