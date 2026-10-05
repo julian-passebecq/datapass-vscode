@@ -24,7 +24,7 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
   const expectedReloadCancellations: string[] = [];
   try {
     const project = path.join(root, 'doc-pipeline');
-    const hubSetup=setupHubFixture(project,path.join(base,'hub-tools')); 
+    const hubSetup=setupHubFixture(project,path.join(base,'hub-tools'));
     const configFile = path.join(auto, 'datapass-codex-tests.json');
     const config = JSON.parse(fs.readFileSync(configFile, 'utf8'));
     config.workspace.repositories = [];
@@ -63,15 +63,25 @@ test('Hub installed UI: portfolio/project/Git/inspector, dark/light/narrow, hide
       do { for (const f of page.frames()) if (await f.locator(selector).isVisible().catch(() => false) && await shown(f)) return f; await page.waitForTimeout(200); } while (Date.now() < end);
       throw new Error('Project Home frame did not appear');
     };
+    const clickHub = async (selector:string) => {
+      const until=Date.now()+30000;
+      do {
+        const current=await home();
+        try { await current.locator(selector).click({timeout:5000});return; }
+        catch(error) { if(!/frame.*detached/i.test(String(error)))throw error; }
+      } while(Date.now()<until);
+      throw new Error(`Hub kept replacing its frame during ${selector}`);
+    };
     await step({kind:'run',label:'DataPass: Open Portfolio'});
     let frame=await home('[data-hub-action="project"][data-id="enterprise-hub"]');
     assert.equal(await frame.locator('[data-hub-action="project"]').count(),2);
     await step({kind:'screenshot',name:'portfolio'});
-    await frame.locator('[data-hub-action="project"][data-id="enterprise-hub"]').click();
+    // The capture can overlap the initial refresh; acquire the current frame for idempotent actions.
+    await clickHub('[data-hub-action="project"][data-id="enterprise-hub"]');
     frame=await home('[data-hub-action="project"][data-id="enterprise-hub"][aria-pressed="true"]');
-    await frame.locator('[data-hub-action="tab"][data-id="git"]').click();
+    await clickHub('[data-hub-action="tab"][data-id="git"]');
     frame=await home('[data-hub-tab="git"]');
-    await frame.locator('[data-hub-action="refreshCI"]').click();
+    await clickHub('[data-hub-action="refreshCI"]');
     await step({kind:'expect',text:'Exact-HEAD CI',timeoutMs:60000});
     const end=Date.now()+180000;let texts:string[]=[];
     while(Date.now()<end){
