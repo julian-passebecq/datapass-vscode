@@ -14,6 +14,8 @@ Discovery acquires at most four independent files concurrently. Simultaneous nat
 
 Native parser failures retain bounded host codes in the report's gaps, without paths, source, stderr or arbitrary exception messages. CI qualifies the native V6 fixture first, then runs all twenty existing desktop fixtures in shards and the UI checks. This isolates parser qualification from competing launches while keeping every fixture mandatory.
 
+On this Windows runner, LPAC worker `_ctypes` DLL initialization fails under the LocalSystem service account, both outside and inside VS Code; the same installed runtime passes in the desktop user session. Native and UI CI qualification therefore use the existing logged-on interactive user, through a temporary least-privilege scheduled task removed after the job. No service account or parser containment policy is changed, and CI credentials are not transferred. No logged-on user means qualification fails explicitly. All installed parser, graph and UI assertions remain mandatory.
+
 | Family | Current local wiring | Remaining gaps |
 | --- | --- | --- |
 | SQL | Published SQL extractor through the qualified installed parser | Dynamic SQL and unresolved schemas follow the extractor's gaps |
