@@ -17,6 +17,7 @@ import { digestJson, digestExactBytes, unwrap } from '@juliandatapass-group/sema
 import { dbtTargets } from './dbt';
 import type { NativeAnalysisBackend } from './native';
 import type { CoverageFile, ProjectIntelligence } from '../core/project/intelligence';
+import { coalescePathInspection } from './pathInspection';
 
 export const PROJECT_ANALYSIS_LIMITS = { files: 5000, depth: 12, fileBytes: 2 * 1024 * 1024, totalBytes: 64 * 1024 * 1024 } as const;
 const SKIP_DIRS = new Set(['.git', 'node_modules', '.datapass', '.venv', 'venv', '__pycache__', 'dist', 'out', 'dbt_packages', '.vscode-test']);
@@ -31,7 +32,27 @@ const analysisNamespace = (project: string, repo?: string) => `p-${unwrap(digest
 export async function collectProjectSources(root: string, repo: string, signal?: AbortSignal, maxFiles: number = PROJECT_ANALYSIS_LIMITS.files): Promise<ProjectSources> {
   const result: ProjectSources = { files: [], skipped: [], limits: [] };
   let total = 0, discovered = 0, directories = 0;
-  const nativePathInspector = process.platform === 'win32' ? createWindowsPathInspector(process.env.SystemRoot ?? '') : undefined;
+  const nativePathInspector = process.platform === 'win32' ? coalescePathInspection(createWindowsPathInspector(process.env.SystemRoot ?? '')) : undefined;
+  let pendingBytes = 0;
+  let pending: { path: string; bytes: number }[] = [];
+  const flush = async () => {
+    const batch = pending; pending = []; pendingBytes = 0;
+    const captures = await Promise.all(batch.map(async ({ path, bytes: expected }) => {
+      try {
+        const [capture] = await acquireSnapshots({ root, nativePathInspector, maxFileBytes: PROJECT_ANALYSIS_LIMITS.fileBytes }, [path], signal);
+        const bytes = capture!.bytes;
+        if (bytes.length !== expected) throw new Error('source changed during discovery');
+        return { path, bytes: bytes.length, text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes) };
+      } catch {
+        return { path, bytes: 0, text: undefined };
+      }
+    }));
+    if (signal?.aborted) throw new Error('cancelled');
+    for (const capture of captures) {
+      if (capture.text === undefined) result.skipped.push({ repo, path: capture.path, family: 'unclassified', status: 'UNKNOWN', reasons: ['source unreadable or acquisition checks failed'] });
+      else { total += capture.bytes; result.files.push({ path: capture.path, text: capture.text }); }
+    }
+  };
   await acquireSnapshots({ root, nativePathInspector }, [], signal);
   const rootStat = await lstat(root);
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink()) throw new Error('Analysis root must be a local directory, not a link.');
@@ -56,15 +77,16 @@ export async function collectProjectSources(root: string, repo: string, signal?:
       try {
         const stat = await lstat(join(root, path));
         if (!stat.isFile() || stat.isSymbolicLink()) { skip('IGNORED', 'link or non-file'); continue; }
-        if (stat.size > PROJECT_ANALYSIS_LIMITS.fileBytes || total + stat.size > PROJECT_ANALYSIS_LIMITS.totalBytes) { skip('UNKNOWN', 'analysis byte limit'); continue; }
-        const [capture] = await acquireSnapshots({ root, nativePathInspector, maxFileBytes: PROJECT_ANALYSIS_LIMITS.fileBytes }, [path], signal);
-        const bytes = capture!.bytes;
-        total += bytes.length;
-        result.files.push({ path, text: new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes) });
+        if (stat.size > PROJECT_ANALYSIS_LIMITS.fileBytes || total + pendingBytes + stat.size > PROJECT_ANALYSIS_LIMITS.totalBytes) { skip('UNKNOWN', 'analysis byte limit'); continue; }
+        pending.push({ path, bytes: stat.size }); pendingBytes += stat.size;
+        // Four independent acquisitions share fresh before/after native path inspections.
+        // Source identities, hashes, race checks and byte bounds remain in the published host.
+        if (pending.length === 4) await flush();
       } catch { if (signal?.aborted) throw new Error('cancelled'); skip('UNKNOWN', 'source unreadable or acquisition checks failed'); }
     }
   };
   await walk('', 0);
+  await flush();
   return result;
 }
 

@@ -10,6 +10,8 @@ The published analyzer SPI and lineage-core canonical identities feed one LG0 gr
 
 Coverage reports UNDERSTOOD, PARTIAL, UNKNOWN and IGNORED. Generated/dependency/local metadata directories, links, acquisition failures, limits and unavailable repositories are explicitly reported. Default bounds are 5,000 relevant files, 5,000 directories, 12 directory levels, 2 MiB per file and 64 MiB per repository. Credential files are classified without reading their values. Bounded coverage is not a completeness guarantee.
 
+Discovery acquires at most four independent files concurrently. Simultaneous native path inspections share a system-helper call, while before/after phases recheck paths without caching results. Published acquisition identity, byte, hash and mutation checks remain enforced. A native refusal fails every acquisition in that inspection group; such files remain UNKNOWN.
+
 Native parser failures retain bounded host codes in the report's gaps, without paths, source, stderr or arbitrary exception messages. CI qualifies the native V6 fixture first, then runs all twenty existing desktop fixtures in shards and the UI checks. This isolates parser qualification from competing launches while keeping every fixture mandatory.
 
 | Family | Current local wiring | Remaining gaps |

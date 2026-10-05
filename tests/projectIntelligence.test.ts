@@ -96,8 +96,11 @@ test('bounded discovery records unreadable/oversized/credential gaps and never r
     await writeFile(join(root, '.env'), 'PASSWORD=do-not-export');
     await writeFile(join(root, 'a.sql'), 'SELECT 1;');
     await writeFile(join(root, 'b.json'), '{}');
+    await writeFile(join(root, 'c.sql'), 'SELECT 2;');
+    await writeFile(join(root, 'd.json'), Buffer.from([0xff, 0xfe, 0xff]));
     const all = await collectProjectSources(root, 'app');
-    assert.deepEqual(all.files.map(f => f.path), ['a.sql', 'b.json']);
+    assert.deepEqual(all.files.map(f => f.path), ['a.sql', 'b.json', 'c.sql']);
+    assert.equal(all.skipped.find(f => f.path === 'd.json')?.status, 'UNKNOWN', 'invalid UTF-8 cannot poison independent valid acquisitions');
     assert.equal(all.skipped.find(f => f.path === '.env')?.status, 'IGNORED');
     assert.equal(JSON.stringify(all).includes('do-not-export'), false);
     const bounded = await collectProjectSources(root, 'app', undefined, 1);
