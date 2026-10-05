@@ -63,8 +63,15 @@ try {
     foreach ($property in $inputData.environment.PSObject.Properties) { [Environment]::SetEnvironmentVariable($property.Name, [string]$property.Value, 'Process') }
     Set-Location -LiteralPath $inputData.root
     $arguments = @($inputData.arguments)
+    # Windows PowerShell 5.1 turns redirected native stderr (including ordinary progress)
+    # into ErrorRecords. Gate on the native exit code, not the presence of stderr.
+    $global:LASTEXITCODE = $null
+    $ErrorActionPreference = 'Continue'
     & $inputData.node @arguments *> $inputData.log
-    $code = $LASTEXITCODE
+    $nativeCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($null -eq $nativeCode) { throw 'Native qualification did not report an exit code' }
+    $code = [int]$nativeCode
 } catch { $_ | Out-String | Add-Content -LiteralPath $inputData.log }
 finally {
     @{ exitCode=$code; source=$inputData.source; vsixSha256=$inputData.vsixSha256;
