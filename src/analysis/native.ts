@@ -8,6 +8,7 @@ import type { WorkSession } from '../work/session';
 import { selectedCapture, selectedRequest, sessionIdentity, editorOffsets, type SelectedCapture } from './capture';
 import { collectDbtWorkspace, dbtSections, extractDbt } from './dbt';
 import { collectOrchestrationWorkspace, extractOrchestration, orchestrationSections, type PythonFactsHost } from './orchestration';
+import { assembleProjectIntelligence, collectProjectSources, extractProjectSources, PROJECT_ANALYSIS_LIMITS } from './project';
 
 /** Installed trusted host only; never obtain a module or executable from workspace settings. */
 export interface NativeAnalysisBackend {
@@ -16,6 +17,8 @@ export interface NativeAnalysisBackend {
   acquire(root: string, relativePath: string, signal: AbortSignal): Promise<Uint8Array>;
   /** STDA1a: the same installed host as CPython-AST facts provider (Airflow, Dagster, Prefect); never a workspace interpreter. */
   readonly python?: PythonFactsHost;
+  /** Exact bounded saved snapshots, including notebooks; containment remains enforced by the installed host. */
+  readonly captured?: { readonly plugin: AnalyzerPlugin; readonly python: PythonFactsHost };
   dispose(): Promise<void>;
 }
 const escape = (s: string): string => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
@@ -37,16 +40,23 @@ export class NativeAnalysisHost implements vscode.Disposable {
   private cleanupFailed = false;
   private disposed = false;
   private retirement: Promise<void> = Promise.resolve();
+  private projectAnalysisActive = false;
+  private projectEpoch?: number;
+  private projectWatchers: vscode.FileSystemWatcher[] = [];
   constructor(private readonly session: WorkSession, private readonly backendFactory?: (root: string) => Promise<NativeAnalysisBackend>) {
     this.identityKey = this.projectKey();
     this.subscriptions.push(
-      session.onDidChange(() => { const key = this.projectKey(); if (key !== this.identityKey) { this.identityKey = key; this.invalidate('Project changed. Analyze the selected file again.'); this.dispatcher?.clearCache(); } }),
-      vscode.workspace.onDidChangeTextDocument(e => { if (e.document.uri.toString() === this.selectedUri) this.invalidate('Source changed. Analyze the selected file again.'); }),
+      session.onDidChange(() => { const key = this.projectKey(); if (key !== this.identityKey || (this.projectEpoch !== undefined && session.projectIntelligenceEpoch?.() !== this.projectEpoch)) { this.identityKey = key; this.projectEpoch = undefined; this.invalidate('Project changed. Analyze the source again.'); this.dispatcher?.clearCache(); } }),
+      vscode.workspace.onDidChangeTextDocument(e => {
+        if (e.document.uri.toString() === this.selectedUri) this.invalidate('Source changed. Analyze the selected file again.');
+        if (this.projectAnalysisActive || this.session.projectIntelligence?.()) { this.invalidate(); this.session.setProjectIntelligence(undefined); }
+      }),
       vscode.workspace.onDidChangeWorkspaceFolders(() => { this.invalidate('Workspace changed. Analyze the selected file again.'); this.dispatcher?.clearCache(); })
     );
   }
   private projectKey(): string { return `${this.session.root?.toString() ?? ''}:${this.session.project.manifest?.project.id ?? ''}`; }
   private invalidate(message?: string): void {
+    this.projectAnalysisActive = false;
     this.generation++; this.abort?.abort(); this.abort = undefined;
     void this.handle?.cancel(); this.handle = undefined; this.current = undefined; this.diagnostics.clear();
     if (message && this.panel) this.show(message);
@@ -67,6 +77,7 @@ export class NativeAnalysisHost implements vscode.Disposable {
   }
   dispose(): void {
     this.disposed = true; this.invalidate();
+    for (const watcher of this.projectWatchers) watcher.dispose();
     // retireBackend records the trusted diagnostic and closes future use before rejection.
     void this.retireBackend().catch(() => undefined);
     this.panel?.dispose(); this.diagnostics.dispose(); for (const s of this.subscriptions) s.dispose();
@@ -134,6 +145,61 @@ export class NativeAnalysisHost implements vscode.Disposable {
   private range(anchor: SourceAnchor, capture: SelectedCapture, doc: vscode.TextDocument): vscode.Range {
     const offsets = editorOffsets(anchor, capture, doc.getText());
     return new vscode.Range(doc.positionAt(offsets.start), doc.positionAt(offsets.end));
+  }
+  /** One explicit local analysis across the browsable project repositories; never activation work. */
+  async analyzeProject(): Promise<void> {
+    if (this.disposed) return;
+    this.invalidate();
+    this.session.setProjectIntelligence(undefined);
+    const generation = this.generation, projectKey = this.projectKey(), epoch = this.session.projectIntelligenceEpoch();
+    this.projectEpoch = epoch;
+    if (!vscode.workspace.isTrusted || vscode.env.remoteName || this.session.root?.scheme !== 'file') return this.show('Project analysis requires a trusted local project. Nothing was analyzed.');
+    const abort = this.abort = new AbortController();
+    const map = this.session.projectMap();
+    if (vscode.workspace.textDocuments.some(doc => doc.isDirty && map.repositories.some(repo => {
+      const folder = this.session.repoFolder(repo.key);
+      const relative = folder && doc.uri.scheme === 'file' ? path.relative(folder.fsPath, doc.uri.fsPath) : undefined;
+      return relative !== undefined && relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
+    }))) return this.show('Save project source and configuration before analyzing saved files. No analysis was performed.');
+    for (const watcher of this.projectWatchers) watcher.dispose();
+    this.projectWatchers = [];
+    const sourceChanged = () => { if (this.projectAnalysisActive || this.session.projectIntelligence()) { this.invalidate(); this.session.setProjectIntelligence(undefined); } };
+    for (const repo of map.repositories) {
+      const folder = this.session.repoFolder(repo.key);
+      if (!folder || folder.scheme !== 'file') continue;
+      const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(folder, '**/*'));
+      watcher.onDidChange(sourceChanged); watcher.onDidCreate(sourceChanged); watcher.onDidDelete(sourceChanged);
+      this.projectWatchers.push(watcher);
+    }
+    this.projectAnalysisActive = true;
+    const parts: Awaited<ReturnType<typeof extractProjectSources>>[] = [];
+    let remaining: number = PROJECT_ANALYSIS_LIMITS.files;
+    this.show('Reading project source locally… Nothing is executed or sent to a provider.');
+    try {
+      await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'DataPass: Analyze project locally', cancellable: true }, async (progress, token) => {
+        const cancellation = token.onCancellationRequested(() => abort.abort());
+        try {
+          for (const repo of map.repositories) {
+            const folder = this.session.repoFolder(repo.key);
+            if (!folder || folder.scheme !== 'file' || !['local', 'unverified', 'not-a-repo'].includes(repo.state)) continue;
+            if (abort.signal.aborted || generation !== this.generation) throw new Error('cancelled');
+            progress.report({ message: repo.label });
+            const sources = await collectProjectSources(folder.fsPath, repo.key, abort.signal, remaining);
+            remaining -= sources.files.length + sources.skipped.length;
+            const backend = this.backendFactory ? await this.backendFactory(folder.fsPath).catch(() => undefined) : undefined;
+            try { parts.push(await extractProjectSources(sources, repo.key, map.project?.id ?? 'workspace', backend, abort.signal)); }
+            finally { await backend?.dispose(); }
+          }
+        } finally { cancellation.dispose(); }
+      });
+      if (abort.signal.aborted || generation !== this.generation || epoch !== this.session.projectIntelligenceEpoch() || projectKey !== this.projectKey() || this.disposed) return;
+      const report = assembleProjectIntelligence(map.project?.id ?? 'workspace', parts);
+      report.limits = [...report.limits, ...map.repositories.filter(repo => !this.session.repoFolder(repo.key) || !['local', 'unverified', 'not-a-repo'].includes(repo.state)).map(repo => `${repo.key}: repository ${repo.state}; files not discovered.`)];
+      this.session.setProjectIntelligence(report);
+      this.show(`${report.files.length} files classified, ${report.graph.nodes.length} nodes, ${report.graph.edges.length} evidenced edges. Project Home and Navigator now share this graph. Static analysis only.`);
+    } catch {
+      if (generation === this.generation && !this.disposed) this.show(abort.signal.aborted ? 'Project analysis cancelled. No partial graph was accepted.' : 'Project analysis failed its source or graph checks. No partial graph was accepted.');
+    } finally { if (generation === this.generation || this.abort === abort) this.projectAnalysisActive = false; }
   }
   private renderResult(doc: vscode.TextDocument): void {
     const current = this.current; if (!current) return;

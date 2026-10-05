@@ -39,6 +39,7 @@ import { WorkViews } from "./work/workViews";
 import { registerWindowCommands, setExportFileForTests } from "./work/windowCommands";
 import { HomeHost, isHomeTab, registerHomeCommands } from "./views/home";
 import { registerNavigation } from "./core/navigation/register";
+import { navTours } from './views/navTours';
 import { readDecisionRecords, setProjectCardsSource } from "./views/peda-cards/cards.surface";
 import { setQueryShowcaseSource } from "./views/peda-showcase/showcase.surface";
 import { setInterviewSource } from "./views/peda-interview/interview.surface";
@@ -85,6 +86,13 @@ import { AUTO_OPEN } from "./core/experience/landing";
  * VS Code runs the extension in Test mode, so installed users never get an API surface.
  */
 export interface DataPassTestApi {
+  intelligence: {
+    report(): ReturnType<WorkSession['projectIntelligence']>;
+    navigation(): { state: import('./core/navigation/navTypes').NavState; views: readonly import('./core/navigation/navTypes').ViewDef[] };
+    navigate(command: import('./core/navigation/navTypes').NavCommand): void;
+    paths(): readonly import('./core/navigation/tours/tourTypes').Tour[];
+    startPath(id: string): void;
+  };
   refresh(): Promise<GalaxyState>;
   /** V3-GITDIAG: re-read the change sets drawn on the diagram, and those placed on one block. */
   gitDiagram: { refresh(): Promise<void>; setsOf(componentId: string): ReturnType<GitDiagram["setsOf"]> };
@@ -306,7 +314,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerFileContextCommands(context, session);
   setReadinessSource(() => session.project.manifest ? session.readiness() : undefined);
   // V4-NAV: the one NavigationService; surfaces plug in through src/core/navigation/register.ts.
-  registerNavigation(context, session);
+  const navigationHost = registerNavigation(context, session);
   setProjectCardsSource({ locate: uri => session.understandingLocate(uri), load: uri => session.understandingFor(uri), rationales: () => readDecisionRecords(session.project.root) });
   setQueryShowcaseSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
   setInterviewSource({ index: () => session.understandingIndex(), load: (key, p) => session.understandingByPath(key, p) });
@@ -351,6 +359,7 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
   registerHopCommands(context, session, hop);
   const nativeUnderstanding = new NativeAnalysisHost(session, root => createNativeBackend(context.extensionPath, root));
   context.subscriptions.push(nativeUnderstanding, vscode.commands.registerCommand("datapass.understanding.analyzeSelection", selectedAnalysisCommand(nativeUnderstanding, () => startup)),
+    vscode.commands.registerCommand("datapass.understanding.analyzeProject", async () => { await startup; await nativeUnderstanding.analyzeProject(); }),
     vscode.commands.registerCommand("datapass.understanding.analyzeDbtProjects", async () => { await startup; await nativeUnderstanding.analyzeDbtProjects(); }),
     vscode.commands.registerCommand("datapass.understanding.analyzeOrchestration", async () => { await startup; await nativeUnderstanding.analyzeOrchestration(); }));
   registerWorkbenchCommands(context, session, host, uri => hop.openIfExplained(uri));
@@ -627,6 +636,8 @@ export function activate(context: vscode.ExtensionContext): DataPassTestApi | un
     qualification: () => session.qualification(),
     repositories: () => session.repositories(),
     projectMap: () => session.projectMap(),
+    intelligence: { report: () => session.projectIntelligence(), navigation: () => ({ state: navigationHost.nav.state, views: navigationHost.nav.views() }),
+      navigate: command => { navigationHost.nav.dispatch(command); }, paths: () => navTours()?.tours() ?? [], startPath: id => { const tours = navTours(); const path = tours?.tours().find(t => t.id === id); if (path) tours!.start(path); } },
     workbenchState: () => host.state(),
     selection: () => session.selection(),
     select: sel => session.select(sel),

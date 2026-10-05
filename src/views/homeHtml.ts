@@ -65,7 +65,9 @@ const SCRIPT = `
   document.addEventListener("click", e => {
     const b = e.target instanceof Element ? e.target.closest("button") : null;
     if (!b || b.disabled) return;
-    if (b.dataset.action) vscode.postMessage({ type: "action", id: b.dataset.action });
+    if (b.dataset.companion) vscode.postMessage({ type: 'companion', id: b.dataset.companion });
+    else if (b.dataset.environment !== undefined) vscode.postMessage({ type: "environment", id: b.dataset.environment });
+    else if (b.dataset.action) vscode.postMessage({ type: "action", id: b.dataset.action });
     else if (b.dataset.hop !== undefined) vscode.postMessage({ type: "hop", index: Number(b.dataset.hop) });
     else if (b.dataset.layout) vscode.postMessage({ type: "layout", id: b.dataset.layout });
     else if (b.dataset.group !== undefined) vscode.postMessage({ type: "link", group: Number(b.dataset.group), index: Number(b.dataset.index) });
@@ -113,6 +115,34 @@ export function homeTools(s: HomeState): string {
 </div>`;
 }
 
+function intelligenceBody(s: HomeState): string {
+  const i = s.intelligence;
+  if (!s.project || !i) return '';
+  const list = (entries: readonly string[], empty: string) => entries.length ? `<ul>${entries.map(e => `<li>${e}</li>`).join('')}</ul>` : `<p class="muted">${esc(empty)}</p>`;
+  const repos = list(i.repositories.map(r => `<strong>${esc(r.label)}</strong> · ${esc(r.state)} · ${esc(r.branch ?? 'branch unknown')} · ${esc(r.head?.slice(0, 12) ?? 'revision unknown')} · ${r.changes === undefined ? 'working tree unknown' : r.changes ? `${r.changes} changed entries` : 'clean'}`), 'No repository declared.');
+  const env = i.environments.find(e => e.selected);
+  const environments = i.environments.map(e => `<button type="button" data-environment="${esc(e.id)}" aria-pressed="${e.selected}"${e.selected ? ' class="primary"' : ''}>${esc(e.title ?? e.id)}${e.production ? ' · production' : ''}</button>`).join(' ');
+  const envDetails = env ? `<h3>${esc(env.title ?? env.id)} <span class="env">DECLARED</span></h3><p>${esc(env.description)} ${env.ready}/${env.total} operations locally ready. This does not attest deployment.</p>
+    ${list(env.identifiers.map(id => `${esc(id.label)}${id.provider ? ` · ${esc(id.provider)}` : ''}: <code>${esc(id.value)}</code>`), 'No non-secret target IDs declared for this environment.')}
+    ${list(env.operations.map(op => `${esc(op.component)} → ${esc(op.label)} · ${esc(op.readiness)}${op.target ? ` · ${esc(JSON.stringify(op.target))}` : ''}<br>${esc(op.nextStep)}<br>Participating local files: ${op.files.map(f => esc(f)).join(', ') || 'none declared'}${op.prerequisites.length ? `<br>Missing/review: ${op.prerequisites.map(p => esc(p)).join('; ')}` : ''}`), 'No applicable operation declared.')}
+    ${list(env.bindings.map(b => `${esc(b.id)} → ${esc(b.resource)}${b.folder ? ` · declared folder ${esc(b.folder)}` : ''}`), 'No resource/folder binding declared.')}
+    ${list(env.branches.map(b => `${esc(b.repo)}: declared branch ${esc(b.branch)} (project-wide declaration)`), 'No branch binding declared.')}
+    <div class="actions">${env.links.map(l => `<button type="button" data-group="${l.group}" data-index="${l.index}">${esc(l.label)}</button>`).join('')}</div>` : '<p class="muted">Select a declared environment. Selection changes context only.</p>';
+  const c = i.coverage;
+  const coverage = c.analyzed ? `<p>${Object.entries(c.counts).map(([state, count]) => `<strong>${count}</strong> ${esc(state)}`).join(' · ')}</p><p>Edge evidence: ${Object.entries(c.origins).map(([origin, count]) => `${count} ${esc(origin)}`).join(' · ') || 'no edges'}</p>
+    ${list(c.gaps.map(g => `<code>${esc(g.repo)}/${esc(g.path)}</code> · ${esc(g.status)} · ${esc(g.reasons.join(', '))}`), 'No reported gaps in the analyzed files. This is not a completeness guarantee.')}
+    ${list(c.limits.map(l => esc(l)), 'No discovery limit reached.')}` : '<p class="muted">Not analyzed. No file is claimed understood before analysis.</p>';
+  const themes = list(i.themes.map(t => `<strong>${esc(t.title)}</strong> · declared project scope · ${esc(t.objective)}<br>${t.components.map(c => esc(c.label)).join(', ')} · ${t.files.length} declared files · ${t.lineageEdges} related edges · ${t.verification.length} recorded verification results. Feature/branch association is not declared.`), 'No project scope declared. Branch names do not establish features or shipping status.');
+  const sankey = list(i.sankey.map(flow => `<strong>${esc(flow.label)}</strong> → ${flow.components.map(c => esc(c.label)).join(', ') || 'no declared component'} <span class="env">${flow.components.length} components</span>`), 'No repository/component relationship declared.');
+  return `<section data-project-intelligence><nav aria-label="Project navigation"><span>Home / ${esc(s.project.title)}</span><div class="actions">${actionButton({ id: 'navigation.back', label: 'Back' }, false)}${actionButton({ id: 'navigation.forward', label: 'Forward' }, false)}${actionButton({ id: 'navigation.up', label: 'Up' }, false)}${actionButton({ id: 'navigation.down', label: 'Down' }, false)}${actionButton({ id: 'navigation.inspector', label: 'Inspector' }, false)}</div></nav><h2>Project</h2><div class="preview"><p>Variant/scenario: ${esc(i.selectedVariant ?? 'current')} · ${i.readiness.opsReady}/${i.readiness.opsTotal} operations locally ready · ${i.readiness.filesFound}/${i.readiness.filesExpected} expected files found</p>${repos}</div>
+    <h2>Environments</h2><div class="preview" data-environments><div class="actions">${environments || '<span>No logical environment declared.</span>'}</div>${envDetails}</div>
+    <h2>Lineage coverage</h2><div class="preview" data-lineage-coverage>${coverage}<div class="actions">${actionButton({ id: 'intelligence.analyze', label: 'Analyze project locally' }, true)}${actionButton({ id: 'intelligence.lineage', label: 'Open project lineage' }, false)}${actionButton({ id: 'intelligence.tours', label: 'Guided paths…' }, false)}</div></div>
+    <h2>Features / themes</h2><div class="preview">${themes}</div>
+    ${i.sourceExplanations.length ? `<h2>Notebook / Spark source context</h2><div class="preview">${list(i.sourceExplanations.map(e => `<strong>${esc(e.label)}</strong> <span class="env">DECLARED / CONCEPTUAL</span><p>${esc(e.explanation)}</p><p>Local source: ${e.files.map(f => esc(f)).join(', ') || 'not declared'} · Available local routes: ${e.operations.map(op => esc(op)).join(', ') || 'none declared'}</p>`), '')}</div>` : ''}
+    <h2>Project evolution / light Git</h2><div class="preview">${repos}<h3>Repository → component Sankey</h3><p class="muted">Weight unit: declared components. Counts do not measure effort or productivity.</p>${sankey}${actionButton({ id: 'intelligence.sankey', label: 'Open the Sankey' }, false)}</div>
+    ${(s.companions?.length ?? 0) > 0 ? `<h2>Open in companion</h2><div class="actions">${s.companions!.map(key => `<button type="button" data-companion="${esc(key)}">${esc({ deployment: 'Open deployment plan in Cloud Studio', resource: 'Open resource in Cloud Studio', uri: 'Inspect source in X-Ray', evidence: 'Inspect evidence in X-Ray', revision: 'Open revision in Tern' }[key])}</button>`).join('')}</div>` : ''}</section>`;
+}
+
 function homeBody(s: HomeState): string {
   const title = s.project ? s.project.title : "DataPass";
   const preview = s.preview ? `<h2>Architecture at a glance</h2>
@@ -130,6 +160,7 @@ function homeBody(s: HomeState): string {
 </div>`;
   const noProject = s.project ? "" : `<div class="actions" style="margin-top:10px">${actionButton({ id: "project.open", label: "Open a client project…" }, true)}${actionButton({ id: "project.guide", label: "How to prepare a project" }, false)}</div>`;
   return `<div class="top"><div><h1>${esc(title)}</h1><p class="sub">${esc(s.project?.description ?? "Pick a module: each one opens on its own.")}</p></div>${homeTools(s)}</div>${noProject}
+${intelligenceBody(s)}
 ${s.areas.map(a => `<h2>${esc(a.title)}</h2><div class="tiles" data-area="${esc(a.id)}">${a.tiles.map(tileHtml).join("")}</div>`).join("\n")}
 ${preview}
 ${layouts}`;

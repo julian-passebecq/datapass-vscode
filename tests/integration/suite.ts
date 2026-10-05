@@ -40,6 +40,7 @@ import { registerHonestFlows } from "./honestFlows";
 import { registerJourneyGapFlows } from "./journeyGapFlows";
 import { registerAirflowFlows } from "./airflowFlows";
 import { registerPolish4Flows } from "./polish4Flows";
+import { registerProjectIntelligenceFlows } from './projectIntelligenceFlows';
 
 const EXTENSION_ID = "julian-passebecq.datapass-vscode";
 let api: DataPassTestApi;
@@ -297,6 +298,7 @@ registerFileContextFlows(() => api);
 registerCheckFlows(() => api);
 registerJourneyGapFlows(() => api);
 registerAirflowFlows(() => api);
+registerProjectIntelligenceFlows(() => api);
 
 export function run(): Promise<void> {
   console.log(`DataPass desktop suite — fixture ${fixture()}`);

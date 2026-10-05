@@ -12,6 +12,7 @@ import type { HopState } from "../../../views/hopState";
 import type { RepoSet } from "../../gitmr/repoSetContract";
 import type { RepoHistoryLabels, RepoLog } from "../../gitmr/repoHistory";
 import { BINDINGS } from "../../../../out/gen/bindings";
+import type { LineageGraphLike } from './lineage';
 
 /** § 34 origins (open vocabulary: Common may add more). */
 export type BindingOrigin = "static" | "theoretical" | "ai-proposed" | "observed" | "datapass-guidance" | (string & {});
@@ -38,6 +39,8 @@ export interface BindingResult {
 }
 
 export interface BindingContext {
+  readonly selectedEnvironment?: string;
+  readonly lineageGraph?: LineageGraphLike | null;
   readonly location: NavLocation;
   readonly params?: Readonly<Record<string, unknown>>;
   /** The current project map, when a project is open. */

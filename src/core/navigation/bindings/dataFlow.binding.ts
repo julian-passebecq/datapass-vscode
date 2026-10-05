@@ -5,13 +5,13 @@
 import { declaredRelations } from "./declaredRelations";
 import { collectDataFlow, DATA_FLOW_SOURCE } from "./dataFlow";
 import type { BindingGraph, BindingProvider, BindingResult, BindingRow } from "./index";
-import { defaultLineageLocator, NO_LINEAGE_GRAPH, type LineageBindingContext } from "./lineage.binding";
+import { lineageLocatorFor, NO_LINEAGE_GRAPH, type LineageBindingContext } from "./lineage.binding";
 
 export const dataFlowProvider: BindingProvider = {
   source: DATA_FLOW_SOURCE,
   provide(ctx: LineageBindingContext): BindingResult {
     if (!ctx.lineageGraph) return declaredRelations("data-flow", ctx, NO_LINEAGE_GRAPH);
-    const r = collectDataFlow(ctx.lineageGraph, ctx.location, defaultLineageLocator);
+    const r = collectDataFlow(ctx.lineageGraph, ctx.location, lineageLocatorFor(ctx.projectMap));
     const rows: BindingRow[] = r.rows.map(x => ({ ...x, id: `${x.datasetId}:${x.access}:${x.byId}`, label: x.dataset, origin: x.origin }));
     // NAVFIX1 (review M2): the catalog's `data-flow` view is a graph, so the same flows also come as one (step → dataset written, dataset → step reading).
     const nodes = new Map<string, BindingGraph["nodes"][number]>();

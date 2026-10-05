@@ -13,11 +13,23 @@
  */
 import type { ProjectMap } from "../core/project/projectMap";
 import type { BoardView } from "../core/project/board";
+import type { DataPassProjectManifest } from "../core/projectManifestModel";
+import { coverageSummary, environmentContext, projectThemes, projectSankey, projectSourceExplanations, type ProjectIntelligence } from "../core/project/intelligence";
+import type { ProjectCompanionAction } from '../core/companions/projectInterop';
 import { explainedFiles } from "./hopState";
 import { KIND_LABELS, linkHost, linksProblems, LINKS_PATH, type LinkKind, type LinksFile } from "../core/project/links";
 
 /** Home action id → the existing command it runs (and its fixed arguments). */
 export const HOME_ACTIONS: Readonly<Record<string, { command: string; args?: readonly unknown[]; surface?: string }>> = {
+  "intelligence.analyze": { command: "datapass.understanding.analyzeProject" },
+  "intelligence.lineage": { command: "datapass.intelligence.lineage" },
+  "intelligence.tours": { command: "datapass.nav.tour.pick" },
+  "intelligence.sankey": { command: "datapass.intelligence.sankey" },
+  "navigation.back": { command: 'datapass.nav.back' },
+  "navigation.forward": { command: 'datapass.nav.forward' },
+  "navigation.up": { command: 'datapass.nav.up' },
+  "navigation.down": { command: 'datapass.nav.down' },
+  "navigation.inspector": { command: 'datapass.details.focus' },
   "architecture.workbench": { command: "datapass.openWorkbench" },
   "architecture.panel": { command: "datapass.architecture.focus", surface: "view.architecture" },
   "architecture.options": { command: "datapass.openOptions", surface: "workbench.options" },
@@ -75,6 +87,17 @@ export interface HomeLayout { id: string; name: string; detail: string; project?
 export interface HomePreview { lanes: Array<{ title: string; components: string[]; more: number }>; components: number; relations: number }
 
 export interface HomeState {
+  companions?: readonly ProjectCompanionAction[];
+  intelligence?: {
+    repositories: Array<{ key: string; label: string; state: string; head?: string; branch?: string; changes?: number; usedBy: string[] }>;
+    selectedVariant?: string;
+    environments: ReturnType<typeof environmentContext>;
+    coverage: ReturnType<typeof coverageSummary>;
+    themes: ReturnType<typeof projectThemes>;
+    sankey: ReturnType<typeof projectSankey>;
+    sourceExplanations: ReturnType<typeof projectSourceExplanations>;
+    readiness: ProjectMap['summary'];
+  };
   project?: { title: string; description?: string };
   areas: HomeArea[];
   preview?: HomePreview;
@@ -90,6 +113,11 @@ export interface HomeState {
 }
 
 export interface HomeInput {
+  companions?: readonly ProjectCompanionAction[];
+  manifest?: DataPassProjectManifest;
+  selectedEnvironment?: string;
+  selectedVariant?: string;
+  intelligence?: ProjectIntelligence;
   hasProject: boolean;
   map: ProjectMap;
   board?: BoardView;
@@ -216,6 +244,13 @@ export function homeState(input: HomeInput): HomeState {
     }
   ];
   return {
+    intelligence: {
+      repositories: map.repositories.map(r => ({ key: r.key, label: r.label, state: r.state, head: r.git?.head, branch: r.git?.branch, changes: r.git?.changes, usedBy: r.usedBy })),
+      selectedVariant: input.selectedVariant,
+      environments: environmentContext(map, input.manifest, input.links, input.selectedEnvironment),
+      coverage: coverageSummary(input.intelligence), themes: projectThemes(map, input.intelligence), sankey: projectSankey(map), sourceExplanations: projectSourceExplanations(map), readiness: map.summary
+    },
+    companions: input.companions,
     project: map.project ? { title: map.project.title, description: map.project.description } : undefined,
     areas,
     preview: homePreview(map),

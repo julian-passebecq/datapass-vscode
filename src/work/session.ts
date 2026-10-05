@@ -5,6 +5,7 @@
  */
 import { linksProblems } from "../core/project/links";
 import { environmentOf, variantStamp, type PackStamp } from "../core/exchange/stamp";
+import type { ProjectIntelligence } from "../core/project/intelligence";
 import * as vscode from "vscode";
 import * as path from "node:path";
 import { execFile } from "node:child_process";
@@ -168,6 +169,25 @@ export class WorkSession implements vscode.Disposable {
   /** V3: repositories and component files as observed on this machine. */
   private projectObs?: ProjectObservation;
   private mapCache?: ProjectMap;
+  private intelligenceReport?: { root: string; value: ProjectIntelligence };
+  private intelligenceEpoch = 0;
+  projectIntelligenceEpoch(): number { return this.intelligenceEpoch; }
+  projectIntelligence(): ProjectIntelligence | undefined {
+    return this.intelligenceReport?.root === this.root?.toString() ? this.intelligenceReport?.value : undefined;
+  }
+  setProjectIntelligence(value: ProjectIntelligence | undefined): void {
+    this.intelligenceReport = value && this.root ? { root: this.root.toString(), value } : undefined;
+    this.changed();
+  }
+  selectedEnvironment(): string | undefined {
+    const id = this.state<string>(`environment:${this.root?.toString()}`);
+    return this.projectMap().environments.some(e => e.id === id) ? id : undefined;
+  }
+  async selectEnvironment(id: string): Promise<void> {
+    if (!this.projectMap().environments.some(e => e.id === id)) throw new Error('Unknown declared environment.');
+    await this.context.workspaceState.update(`environment:${this.root?.toString()}`, id);
+    this.changed();
+  }
   /** Env files as observed (names' presence only, never values). */
   private envObs: Map<string, EnvFileObservation> = new Map();
   /** v5: .vscode/extensions.json and git-binding folders as observed. */
@@ -219,6 +239,8 @@ export class WorkSession implements vscode.Disposable {
    * showing the previous success unlabelled. Mandatory repository/file checks always finish.
    */
   async refresh(forceProbe = false): Promise<void> {
+    this.intelligenceEpoch++;
+    this.intelligenceReport = undefined;
     const token = this.tracker.begin();
     const run = this.runRefresh(token, forceProbe).catch(e => {
       if (this.tracker.fail(token, e)) this.changed();
@@ -622,7 +644,7 @@ export class WorkSession implements vscode.Disposable {
 
   /** 0.27 (P1, D-23): the selected variant and environment, and the bridge revision (HEAD of the coordination repository) when Git knows it. */
   selectionStamp(): PackStamp {
-    const environment = environmentOf(this.projectMap().environments);
+    const environment = this.selectedEnvironment() ?? environmentOf(this.projectMap().environments);
     const observedAt = this.tracker.status().settledAt ?? this.tracker.status().firstPaintAt;
     return { variant: variantStamp(this.ctx.options, this.preview()), ...(environment ? { environment } : {}), ...(observedAt ? { observedAt } : {}) };
   }

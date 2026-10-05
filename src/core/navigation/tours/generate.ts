@@ -12,7 +12,7 @@
  */
 import type { ProjectMap, RelationView } from "../../project/projectMap";
 import type { NavLocation } from "../navTypes";
-import { componentLocation } from "../projectLadder";
+import { componentLocation, projectLocation } from "../projectLadder";
 import { TOUR_LIMITS, type Tour, type TourStep } from "./tourTypes";
 
 export const GENERATED_JOURNEYS = ["lineage", "execution"] as const;
@@ -35,6 +35,31 @@ export function generateTours(map: ProjectMap, ctx: GenerateContext): Tour[] {
   const data = relations.filter((r) => r.flow === "data" && known(r));
   const control = relations.filter((r) => r.flow === "control" && known(r));
   return [...journeyTours("lineage", data, [], ctx), ...journeyTours("execution", control, data, ctx)];
+}
+
+/** Project paths are generated from known components and use the existing NavTours player. */
+export function generateProjectPaths(map: ProjectMap, ctx: GenerateContext): Tour[] {
+  if (!map.project || !map.components?.length) return [];
+  const components = map.components;
+  const has = (c: typeof components[number], pattern: RegExp) => pattern.test([c.kind, c.providerId, c.artifacts?.profile?.id, c.artifacts?.entry?.repoPath].filter(Boolean).join(' '));
+  const specs = [
+    { id: 'overview', components },
+    { id: 'engineering', components: components.filter(c => has(c, /sql|dbt|warehouse|lake|spark|pipeline|airflow/i)) },
+    { id: 'spark', components: components.filter(c => has(c, /spark|notebook|databricks/i)) },
+    { id: 'bi', components: components.filter(c => has(c, /powerbi|pbip|tmdl|report|semantic/i)) },
+    { id: 'deployment', components: components.filter(c => has(c, /infra|terraform|bicep|bundle/i) || c.operations?.some(op => op.phase === 'deploy')) },
+    { id: 'review', components: components.filter(c => c.repoKey && map.repositories?.some(r => r.key === c.repoKey && !!r.git?.changes)) },
+    { id: 'interview', components }
+  ];
+  return specs.flatMap(spec => {
+    if (!spec.components.length) return [];
+    const locations = [projectLocation(map), ...spec.components.slice(0, TOUR_LIMITS.steps - 1).map(c => (ctx.locate ?? componentLocation)(c.id))];
+    const steps: TourStep[] = locations.flatMap(location => {
+      const viewId = ctx.viewsAt(location)[0]?.id;
+      return viewId ? [{ id: String(locations.indexOf(location) + 1), location, viewId, explanationRef: `guide:project.path.${spec.id}.step`, origin: 'datapass-guidance' as const }] : [];
+    });
+    return steps.length >= 2 ? [{ id: `datapass.project.${spec.id}`, titleRef: `guide:project.path.${spec.id}`, mode: 'general' as const, steps }] : [];
+  });
 }
 
 /** One tour per root of `edges`; `tail` edges extend from the reached units (execution → produced tables). */

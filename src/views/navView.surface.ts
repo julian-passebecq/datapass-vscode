@@ -4,5 +4,6 @@ import { registerNavView } from "./navView";
 
 export default ((context, host) => {
   registerNavView(context, host.nav, { projectMap: () => host.projectMap(), labelOf: (l) => host.label(l), hop: (l) => host.hop(l), onDidLoadHop: host.onDidLoadHop,
-    repoHistory: () => host.repoHistory(), onDidLoadRepoHistory: host.onDidLoadRepoHistory });
+    repoHistory: () => host.repoHistory(), onDidLoadRepoHistory: host.onDidLoadRepoHistory,
+    lineageGraph: () => host.session.projectIntelligence?.()?.graph, selectedEnvironment: () => host.session.selectedEnvironment?.() });
 }) satisfies NavSurface;

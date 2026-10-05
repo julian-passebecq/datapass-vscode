@@ -32,6 +32,7 @@ import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from ".
 import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
 import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
+import { intelligenceFiles } from '../tests/fixtures/v6/projectIntelligence';
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
@@ -102,6 +103,7 @@ function fixtureDir(rel: string): Record<string, string> {
 }
 
 const FIXTURES: Record<string, Record<string, string>> = {
+  'v6-intelligence': intelligenceFiles,
   "empty": { "README.md": "# empty workspace\n" },
   // 0.22 package D: a native repository (no .datapass) with a broken databricks.yml, Dockerfile, compose file and JSON.
   "v22-checks": fixtureDir("checks/bad"),

@@ -36,6 +36,18 @@
   "contributes": {
     "commands": [
       {
+        "command": "datapass.understanding.analyzeProject",
+        "title": "DataPass: Analyze Project Locally"
+      },
+      {
+        "command": "datapass.intelligence.lineage",
+        "title": "DataPass: Open Project Lineage"
+      },
+      {
+        "command": "datapass.intelligence.sankey",
+        "title": "DataPass: Open Project Sankey"
+      },
+      {
         "command": "datapass.context.show",
         "title": "DataPass: Show Context",
         "icon": "$(info)"
@@ -2196,6 +2208,18 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "datapass.understanding.analyzeProject",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.intelligence.lineage",
+          "when": "!datapass.hidden.palette.full"
+        },
+        {
+          "command": "datapass.intelligence.sankey",
+          "when": "!datapass.hidden.palette.full"
+        },
         {
           "command": "datapass.nav.explain.ask",
           "when": "false"

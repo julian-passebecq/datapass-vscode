@@ -19,6 +19,7 @@ import { projectLayout } from "../core/experience/ergonomics";
 import { linkHost, linkUrlProblem, LINKS_PATH } from "../core/project/links";
 import { HOME_ACTIONS, homeState, type HomeLayout, type HomeState } from "./homeState";
 import { homeHtml, type HomePage } from "./homeHtml";
+import { availableProjectCompanions, projectCompanionPayload, PROJECT_COMPANION_COMMANDS, type ProjectCompanionAction } from '../core/companions/projectInterop';
 
 export const HOME_VIEW_TYPE = "datapass.home";
 export const LINKS_VIEW_TYPE = "datapass.projectLinks";
@@ -65,6 +66,9 @@ export class HomeHost implements vscode.Disposable {
     const applied = this.views.lastApplied();
     const pick = mine ? projectLayout({ views: mine.file.views, startup: typeof startup === "string" ? startup : undefined, lastApplied: applied && applied.root === current ? applied.id : undefined }) : undefined;
     return homeState({
+      companions: availableProjectCompanions(typeof vscode.commands.getCommands === 'function' ? await vscode.commands.getCommands(true) : []),
+      manifest: ctx.manifest, selectedEnvironment: this.session.selectedEnvironment(),
+      selectedVariant: this.session.selectionStamp().variant.key, intelligence: this.session.projectIntelligence(),
       codeFontSize: vscode.workspace.getConfiguration("editor").get<number>("fontSize"),
       homeLayout: pick && mine ? findView(mine.file, pick.id)?.name : undefined,
       hasProject: Boolean(ctx.manifestExists && ctx.manifest), map,
@@ -103,6 +107,8 @@ export class HomeHost implements vscode.Disposable {
     const panel = this.panels.get(page);
     if (!panel || (!force && !panel.visible)) return;
     const state = await this.state();
+    // Reading layouts/commands is asynchronous; the user may close or replace the tab meanwhile.
+    if (this.panels.get(page) !== panel) return;
     const nonce = makeNonce();
     // Compare without the nonce, so an unchanged state does not reset the page (and its scroll).
     const body = homeHtml(state, page, panel.webview.cspSource, "NONCE");
@@ -115,7 +121,17 @@ export class HomeHost implements vscode.Disposable {
   async receive(message: unknown): Promise<void> {
     const m = message && typeof message === "object" ? message as Record<string, unknown> : {};
     try {
-      if (m.type === "action" && typeof m.id === "string") {
+      if (m.type === 'companion' && typeof m.id === 'string') {
+        if (!Object.prototype.hasOwnProperty.call(PROJECT_COMPANION_COMMANDS, m.id)) throw new UserFacingError('Unknown companion action.');
+        const key = m.id as ProjectCompanionAction;
+        if (!availableProjectCompanions(await vscode.commands.getCommands(true)).includes(key)) throw new UserFacingError('This optional companion command is not installed.');
+        const command = PROJECT_COMPANION_COMMANDS[key];
+        this.lastAction = { type: 'companion', id: key, command };
+        await vscode.commands.executeCommand(command, projectCompanionPayload(this.session.projectMap(), this.session.projectIntelligence(), this.session.selectedEnvironment()));
+      } else if (m.type === "environment" && typeof m.id === "string") {
+        await this.session.selectEnvironment(m.id);
+        this.lastAction = { type: 'environment', id: m.id };
+      } else if (m.type === "action" && typeof m.id === "string") {
         const entry = Object.prototype.hasOwnProperty.call(HOME_ACTIONS, m.id) ? HOME_ACTIONS[m.id] : undefined;
         if (!entry) throw new UserFacingError("Unknown Home action.");
         this.lastAction = { type: "action", id: m.id, command: entry.command };
