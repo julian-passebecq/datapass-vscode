@@ -28,9 +28,10 @@ import type { LocalApproval } from "../core/publication/brief";
 import { parseStrictJson } from "../core/model/strictJson";
 import { upsertQualification, type QualificationRecord } from "../core/qualification/qualification";
 import { classifyAsset, HEAD_BYTES, INVENTORY_EXCLUDE, parseStatusV2, type Asset, type RepoStatus } from "../core/inventory/inventory";
+import { searchInventory, searchMarkers } from "../core/workspace/inventorySearch";
 import { detectProjectRoot, setProjectRoot } from "../core/workspace/root";
 import { RefreshTracker, settleWithin, type ContextIdentityInput, type IncompleteStep, type RefreshStatus } from "../core/refresh/tracker";
-import { coordinationKeyOf, observeProject, type ProjectObservation } from "./projectObserver";
+import { coordinationKeyOf, observeProject, pendingProjectObservation, type ProjectObservation } from "./projectObserver";
 import { buildProjectMap, type ProjectMap, type ProjectMapInput } from "../core/project/projectMap";
 import { incompleteText } from "../core/project/observation";
 import { deriveVariants, type VariantsAnalysis } from "../core/project/variants";
@@ -207,15 +208,15 @@ export class WorkSession implements vscode.Disposable {
 
   /**
    * V1-REF: a refresh paints in two steps. First the project, its architecture and the tree (the
-   * manifest, the repositories and the component files), then — while the views already show that —
-   * the tool probes, readiness (env files, extensions.json, binding folders) and the inventory. Each
+   * manifest and graph, with local checks explicitly pending), then — while the tree is shown —
+   * repository/file observation, tool probes, readiness and inventory. Each
    * step fires onDidChange; the promise resolves when both are done. A newer refresh supersedes an
    * older one: the older one stops writing and resolves with the newer one.
    *
-   * V1-FRESH (A03): each step of the second phase is bounded (REFRESH_STEP_TIMEOUT_MS); one that fails
+   * V1-FRESH (A03): enrichment steps are bounded (REFRESH_STEP_TIMEOUT_MS); one that fails
    * or times out keeps its previous value and is listed as incomplete. A refresh that rejects leaves
    * the "failed" state (refreshStatus) and resolves: the views say so and offer a retry instead of
-   * showing the previous success unlabelled.
+   * showing the previous success unlabelled. Mandatory repository/file checks always finish.
    */
   async refresh(forceProbe = false): Promise<void> {
     const token = this.tracker.begin();
@@ -250,25 +251,16 @@ export class WorkSession implements vscode.Disposable {
     this.rootCandidates = candidates;
     const ctx = await step("context", loadProjectContext(this.context.extensionUri));
     const coordination = ctx.root ? coordinationKeyOf(ctx.manifest, ctx.root) : ".";
-    const [toolkitFiles, factObs, projectObs] = await Promise.all([
+    const [toolkitFiles, factObs] = await Promise.all([
       step("toolkit", loadToolkitFiles(ctx.root, this.version)),
-      step("facts", observeFileFacts(ctx.root, ctx.manifest)),
-      ctx.root ? this.localBindings(ctx.root).then(localBindings => observeProject({
-        root: ctx.root!, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
-        localBindings, cloneParents: cloneParents(), mark,
-        extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
-        // The files the board's cards name, so a card says whether each one is here.
-        extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
-          .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
-          .filter((f): f is { repoKey: string; repoPath: string } => !!f)
-      })) : Promise.resolve(undefined)
+      step("facts", observeFileFacts(ctx.root, ctx.manifest))
     ]);
     if (superseded()) return this.latest;
     const rootChanged = this.ctx.root?.toString() !== ctx.root?.toString();
     this.ctx = ctx;
     this.toolkitFiles = toolkitFiles;
     this.factObs = factObs;
-    this.projectObs = projectObs;
+    this.projectObs = ctx.root ? pendingProjectObservation(ctx.root, ctx.manifest, vscode.workspace.isTrusted) : undefined;
     if (rootChanged) {
       // Another project: what was observed for the previous one no longer applies (V1-FRESH: nor
       // its connection checks — a target authorization never carries over to another project).
@@ -282,23 +274,33 @@ export class WorkSession implements vscode.Disposable {
     this.changed();
     this.paintEmitter.fire("first-paint");
 
-    const folders = projectObs?.folders ?? new Map<string, vscode.Uri>();
-    const coordinationKey = projectObs?.coordinationKey ?? ".";
+    // Let state delivery complete before starting processes/searches. Pending repositories
+    // are unverified and their files unknown, so no ready/identity-dependent action is enabled.
+    await Promise.resolve();
+    const project = ctx.root ? this.localBindings(ctx.root).then(localBindings => observeProject({
+      root: ctx.root!, manifest: ctx.manifest, graph: ctx.graph, trusted: vscode.workspace.isTrusted, git: gitRunner,
+      localBindings, cloneParents: cloneParents(), mark,
+      extraItems: optionComponentRepositories(ctx.options, ctx.manifest, coordination),
+      extraFiles: (ctx.board?.items ?? []).flatMap(it => it.files ?? []).slice(0, 400)
+        .map(f => { const l = cardFileLocation(f, coordination); return l.repoPath ? { repoKey: l.repoKey, repoPath: l.repoPath + (f.path.endsWith("/") ? "/" : "") } : undefined; })
+        .filter((f): f is { repoKey: string; repoPath: string } => !!f)
+    })) : Promise.resolve(undefined);
     const inventoryDue = forceProbe || !this.inv || Date.now() - this.inv.at > INVENTORY_TTL_MS || this.inv.root !== ctx.root?.toString();
-    // The probes start only now: on Windows each process start holds the extension host's thread,
-    // which would slow the first paint's own Git reads.
+    // All local correctness checks remain part of this refresh's completion promise. Independent
+    // inventory/search and provider work can run while Git/file observations complete.
     const incomplete: IncompleteStep[] = [];
     const bounded = <T>(name: string, p: Promise<T>, fallback: T) => settleWithin(name, p, REFRESH_STEP_TIMEOUT_MS, fallback, incomplete);
     // V3-HOP2: the "recent projects" step sits between the inventory and the understanding index (its result is unused).
-    const [tools, envObs, extensionsObs, bindingObs, inv, , understandingIndex] = await Promise.all([
+    const [tools, envObs, extensionsObs, bindingObs, inv, , understandingIndex, projectObs] = await Promise.all([
       bounded("tool probes", step("probes", probeTools(forceProbe, this.wantedTools)), this.tools),
-      bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders, trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs),
+      project.then(obs => bounded("env files", ctx.root ? observeLocalEnv({ root: ctx.root, manifest: ctx.manifest, coordinationKey: obs?.coordinationKey ?? ".", folders: obs?.folders ?? new Map(), trusted: vscode.workspace.isTrusted, git: gitRunner }) : Promise.resolve(new Map<string, EnvFileObservation>()), this.envObs)),
       bounded("extensions.json", ctx.root && ctx.manifest?.toolchain ? observeExtensionsJson(ctx.root) : Promise.resolve(undefined), this.extensionsObs),
-      bounded("binding folders", ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey, folders }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()), this.bindingObs),
-      bounded("inventory", step("inventory", inventoryDue ? this.scanInventory(ctx) : Promise.resolve(this.inv)), this.inv?.root === ctx.root?.toString() ? this.inv : undefined),
+      project.then(obs => bounded("binding folders", ctx.root ? observeBindingFolders({ root: ctx.root, manifest: ctx.manifest, coordinationKey: obs?.coordinationKey ?? ".", folders: obs?.folders ?? new Map() }) : Promise.resolve(new Map<string, "found" | "missing" | "not-cloned">()), this.bindingObs)),
+      bounded("inventory", step("inventory", inventoryDue ? this.scanInventory(ctx, project) : Promise.resolve(this.inv)), this.inv?.root === ctx.root?.toString() ? this.inv : undefined),
       bounded("recent projects", this.rememberProject(), undefined),
       // V3-HOP1: names only (bounded walk); a file is read when its native file is shown.
-      bounded("understanding index", ctx.root?.scheme === "file" ? step("understanding", indexUnderstanding(ctx.root.fsPath)) : Promise.resolve(undefined), this.understandingCatalog?.index.bridgeRoot === ctx.root?.fsPath ? this.understandingCatalog?.index : undefined)
+      bounded("understanding index", ctx.root?.scheme === "file" ? step("understanding", indexUnderstanding(ctx.root.fsPath)) : Promise.resolve(undefined), this.understandingCatalog?.index.bridgeRoot === ctx.root?.fsPath ? this.understandingCatalog?.index : undefined),
+      project // Mandatory: never time out/drop repository, fingerprint or tracking checks as enrichment.
     ]);
     if (superseded()) return this.latest;
     // V5HOLE3: a tool asked for while this refresh ran keeps its observation.
@@ -308,7 +310,8 @@ export class WorkSession implements vscode.Disposable {
     this.extensionsObs = extensionsObs;
     this.bindingObs = bindingObs;
     this.inv = inv;
-    this.understandingCatalog = understandingIndex && ctx.root ? this.buildUnderstanding(understandingIndex, ctx, coordinationKey, folders) : undefined;
+    this.projectObs = projectObs;
+    this.understandingCatalog = understandingIndex && ctx.root ? this.buildUnderstanding(understandingIndex, ctx, projectObs?.coordinationKey ?? ".", projectObs?.folders ?? new Map()) : undefined;
     this.lastRefreshTimings.settledMs = performance.now() - started;
     this.tracker.publish(token, "settled", { project: ctx.root?.toString(), incomplete });
     this.changed();
@@ -389,21 +392,17 @@ export class WorkSession implements vscode.Disposable {
   /** Local Git state of the workspace and declared repositories; remote ones are never contacted. */
   repositories(): RepoStatus[] { return this.inv?.repos ?? []; }
 
-  private async scanInventory(ctx: ProjectContext): Promise<Inventory> {
+  private async scanInventory(ctx: ProjectContext, project: Promise<ProjectObservation | undefined>): Promise<Inventory> {
     const root = ctx.root;
     if (!root) return { at: Date.now(), assets: [], truncated: false, repos: [] };
-    const repos = this.readRepositories(ctx);
+    const repos = project.then(obs => this.readRepositories(ctx, obs));
     const markers = this.scanMarkers(root);
     // V5HOLE17: searched under the project root only (results outside it were dropped anyway). A workspace-wide search
     // starts one ripgrep per workspace folder, and on Windows each start blocks the extension host (row 03: a four-folder
     // repo set froze it for 9-13 s, so the Git view could not show its lanes in time).
     const under = (glob: string) => new vscode.RelativePattern(root, glob);
-    const [named, py, platform, pipelines] = await Promise.all([
-      vscode.workspace.findFiles(under("**/{*.ipynb,*.pbip,databricks.yml,databricks.yaml,bundle.yml,bundle.yaml,host.json,main.tf,*.bicep}"), INVENTORY_EXCLUDE, 2000),
-      vscode.workspace.findFiles(under("**/*.py"), INVENTORY_EXCLUDE, MAX_PY_FILES),
-      vscode.workspace.findFiles(under("**/.platform"), INVENTORY_EXCLUDE, 1000),
-      vscode.workspace.findFiles(under("**/pipeline/*.json"), INVENTORY_EXCLUDE, 500)
-    ]);
+    const [named = [], py = [], platform = [], pipelines = []] = await searchInventory(
+      async (glob, cap) => await vscode.workspace.findFiles(under(glob), INVENTORY_EXCLUDE, cap), u => u.path);
     // Windows drive letters can differ in case between the workspace URI and search results.
     const norm = (p: string) => process.platform === "win32" ? p.replace(/^\/([A-Za-z]):/, (_m, d: string) => `/${d.toLowerCase()}:`) : p;
     const rootPath = norm(root.path).replace(/\/+$/, "");
@@ -434,13 +433,12 @@ export class WorkSession implements vscode.Disposable {
   private async scanMarkers(root: vscode.Uri): Promise<InventoryMarkers> {
     // V5HOLE17: the root and the workspace folders outside it (a folder nested in the root is searched once, with it).
     const bases = [root, ...(vscode.workspace.workspaceFolders ?? []).map(f => f.uri).filter(u => !isUnder(u, root))];
-    const anyFile = async (glob: string) => (await Promise.all(bases.map(b => vscode.workspace.findFiles(new vscode.RelativePattern(b, glob), INVENTORY_EXCLUDE, 1)))).flat();
-    const [dbt, parameter, git] = await Promise.all([
-      anyFile("**/dbt_project.{yml,yaml}"),
-      anyFile("**/parameter.{yml,yaml}"),
+    const [markers, git] = await Promise.all([
+      Promise.all(bases.map(b => searchMarkers(
+        async (glob, cap) => await vscode.workspace.findFiles(new vscode.RelativePattern(b, glob), INVENTORY_EXCLUDE, cap), u => u.path))),
       Promise.resolve(vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".git"))).then(() => true, () => false)
     ]);
-    return { dbtProject: dbt.length > 0, fabricCicdParameterFile: parameter.length > 0, gitRepository: git };
+    return { dbtProject: markers.some(m => m.dbt), fabricCicdParameterFile: markers.some(m => m.parameter), gitRepository: git };
   }
 
   /** FABINT1 facts about the official Fabric extension, when a bridge is supplied (extension.ts). */
@@ -460,7 +458,7 @@ export class WorkSession implements vscode.Disposable {
     });
   }
 
-  private async readRepositories(ctx: ProjectContext): Promise<RepoStatus[]> {
+  private async readRepositories(ctx: ProjectContext, observed?: ProjectObservation): Promise<RepoStatus[]> {
     const root = ctx.root!;
     const m = ctx.manifest;
     const targets: Array<{ key: string; label: string; fsPath?: string; remote?: string }> = [{ key: "workspace", label: "This folder", fsPath: root.fsPath }];
@@ -476,6 +474,13 @@ export class WorkSession implements vscode.Disposable {
       try { await vscode.workspace.fs.stat(vscode.Uri.file(t.fsPath)); } catch { return { key: t.key, label: t.label, state: "missing", remote: t.remote }; }
       // Restricted Mode: Git can run repository-configured programs (fsmonitor, hooks), so it is not run at all.
       if (!vscode.workspace.isTrusted) return { key: t.key, label: t.label, state: "restricted", remote: t.remote };
+      const prior = [...(observed?.repos.values() ?? [])].find(r => r.folder && path.resolve(r.folder) === path.resolve(t.fsPath!));
+      if (prior) {
+        const g = prior.git;
+        return g ? { key: t.key, label: t.label, state: "ok", remote: t.remote,
+          branch: g.branch, head: g.head, upstream: g.upstream, ahead: g.ahead, behind: g.behind, changes: g.changes, trackedChanges: g.trackedChanges }
+          : { key: t.key, label: t.label, state: "not-a-repo", remote: t.remote };
+      }
       const r = await gitRunner(["status", "--porcelain=v2", "--branch", "--untracked-files=normal"], t.fsPath, 10000);
       return r.ok ? { key: t.key, label: t.label, state: "ok", remote: t.remote, ...parseStatusV2(r.stdout) } : { key: t.key, label: t.label, state: "not-a-repo", remote: t.remote };
     }));

@@ -77,6 +77,8 @@ export interface RepoObservation {
   source: "coordination" | "declared-path" | "local-binding" | "workspace-folder" | "sibling-folder" | "none";
   exists: boolean;
   isGitRepo?: boolean;
+  /** This refresh has loaded the project but has not completed its local observations yet. */
+  pending?: boolean;
   /** Not inspected: Restricted Mode (untrusted workspace) never runs Git. */
   restricted?: boolean;
   git?: RepoGitState;
@@ -150,6 +152,11 @@ export function resolveRepositories(manifest: DataPassProjectManifest | undefine
     const base = { key, label: repo.label ?? (coordination ? "Coordination repository" : key), description: repo.description, coordination, remote, remoteUrl: repo.remote?.url, branch: repo.remote?.branch, usedBy: usage.get(key) ?? [] };
     if (repo.planned) {
       views.push({ ...base, state: "planned", detail: "planned: this repository does not exist yet", nextStep: remote ? `Create ${remote} (empty), then clone it here.` : "Create this repository, then declare its remote URL." });
+      continue;
+    }
+    if (obs?.pending) {
+      views.push({ ...base, state: "unverified", source: obs.source, folderName: folderName(obs.folder),
+        detail: "local repository and file checks are in progress", nextStep: "Wait for this refresh to finish." });
       continue;
     }
     if (obs?.restricted) { views.push({ ...base, state: "restricted", source: obs.source, folderName: folderName(obs.folder), detail: "not inspected in Restricted Mode", nextStep: "Trust this workspace to let DataPass read Git state." }); continue; }

@@ -74,6 +74,15 @@ export interface ObserveOptions {
   mark?: (step: string) => void;
 }
 
+/** Initial project tree: absence has not been proved and no repository identity is approved. */
+export function pendingProjectObservation(root: vscode.Uri, manifest: DataPassProjectManifest | undefined, trusted: boolean): ProjectObservation {
+  const coordinationKey = coordinationKeyOf(manifest, root);
+  const keys = new Set([coordinationKey, ...Object.keys(manifest?.repositories ?? {}).slice(0, 60)]);
+  const repos = new Map<string, RepoObservation>();
+  for (const key of keys) repos.set(key, { key, source: "none", exists: false, pending: trusted || undefined, restricted: !trusted || undefined });
+  return { coordinationKey, repos, folders: new Map(), files: new Map(), observedAt: new Date().toISOString() };
+}
+
 
 /** The declared repository whose path is the project folder itself, else the synthetic coordination key. */
 export function coordinationKeyOf(manifest: DataPassProjectManifest | undefined, root: vscode.Uri): string {
@@ -124,6 +133,14 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
   const plannedCount = plan.length;
   plan.splice(MAX_PLANNED_ENTRIES);
   const budget = new ByteBudget(HASH_BYTE_BUDGET);
+  // Component roots and their glob/file groups often list the same directories. Keep one
+  // read per directory for this refresh, with the existing bound on concurrent listings.
+  const listings = new Map<string, Promise<[string, vscode.FileType][]>>();
+  const directory = (uri: vscode.Uri): Promise<[string, vscode.FileType][]> => {
+    const key = uri.toString();
+    if (!listings.has(key)) listings.set(key, readDirectory(uri));
+    return listings.get(key)!;
+  };
   const tracked = new Map<string, string[]>();
   // Tracking depends on the declared paths and resolved folders, not on their disk/hash reads.
   // Ask it alongside those reads; a missing file can still be tracked (deleted), so all paths
@@ -135,7 +152,7 @@ export async function observeProject(o: ObserveOptions): Promise<ProjectObservat
     const base = folders.get(entry.repoKey);
     if (!base) return;
     const k = obsKey(entry.repoKey, entry.repoPath);
-    files.set(k, await observeEntry(base, entry.repoPath, entry.kind, entry.hash, budget));
+    files.set(k, await observeEntry(base, entry.repoPath, entry.kind, entry.hash, budget, directory));
   }).then(() => { o.mark?.("files"); });
   // Files that must never be committed: ask Git whether they are tracked, in one call per clone
   // (V1-REF), the answers kept while the clone's fingerprint is unchanged. A failed or cut-short
@@ -238,14 +255,14 @@ export async function locateRepositories(o: LocateOptions): Promise<Pick<Project
   return { coordinationKey, repos, folders };
 }
 
-async function observeEntry(base: vscode.Uri, repoPath: string, kind: "file" | "dir" | "glob", hash: boolean, budget: ByteBudget): Promise<FileObservation> {
+async function observeEntry(base: vscode.Uri, repoPath: string, kind: "file" | "dir" | "glob", hash: boolean, budget: ByteBudget, directory: typeof readDirectory): Promise<FileObservation> {
   const segs = repoPath.split("/").filter(Boolean);
   if (kind === "glob") {
     const pattern = segs.pop() ?? "*";
     const dir = segs.length ? vscode.Uri.joinPath(base, ...segs) : base;
     try {
       const re = globMatcher(pattern);
-      const count = (await readDirectory(dir)).filter(([n, t]) => t & vscode.FileType.File && re.test(n)).length;
+      const count = (await directory(dir)).filter(([n, t]) => t & vscode.FileType.File && re.test(n)).length;
       return count ? { state: "found", count } : { state: "missing" };
     } catch (e) {
       return e instanceof vscode.FileSystemError && e.code === "FileNotFound" ? { state: "missing" } : { state: "unknown", detail: "folder could not be listed" };
@@ -258,7 +275,7 @@ async function observeEntry(base: vscode.Uri, repoPath: string, kind: "file" | "
   if (k === "symlink") return { state: "unknown", detail: "symbolic link (not followed)" };
   if (kind === "dir") {
     if (k !== "dir") return { state: "missing", detail: "a file, not a folder" };
-    const n = await filesBelow(uri, 5, 400);
+    const n = await filesBelow(uri, 5, 400, directory);
     return n > 0 ? { state: "found", kind: "dir", count: n } : { state: "missing", detail: "the folder is empty" };
   }
   if (k !== "file") return { state: "missing", detail: "a folder, not a file" };
@@ -286,13 +303,13 @@ function streamSha256(fsPath: string): Promise<string> {
 }
 
 /** Number of files below a folder (stops early; symlinks are not followed). */
-async function filesBelow(dir: vscode.Uri, depth: number, budget: number): Promise<number> {
+async function filesBelow(dir: vscode.Uri, depth: number, budget: number, directory: typeof readDirectory): Promise<number> {
   let count = 0;
   const queue: Array<[vscode.Uri, number]> = [[dir, 0]];
   while (queue.length && budget > 0) {
     const [u, d] = queue.shift()!;
     let entries: [string, vscode.FileType][];
-    try { entries = await readDirectory(u); } catch { continue; }
+    try { entries = await directory(u); } catch { continue; }
     for (const [name, type] of entries) {
       if (--budget <= 0) break;
       if (type & vscode.FileType.SymbolicLink) continue;

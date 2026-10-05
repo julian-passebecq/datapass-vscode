@@ -52,12 +52,22 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   const read = await readProjectManifest();
   const ctx: ProjectContext = { root, manifest: read.manifest, manifestBytes: read.bytes, manifestExists: read.exists, manifestErrors: read.errors, packs: [], packErrors: [] };
   if (!root) return ctx;
-  try { ctx.diagramCloudSidecar = (await vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".datapass", "diagramcloud.json"))).type === vscode.FileType.File; } catch { ctx.diagramCloudSidecar = false; }
-
   const graphRel = read.manifest?.graph ?? ".datapass/graph.json";
   const graphVet = vetRelativePath(graphRel);
+  // The companion files are independent once the manifest chooses the graph path. Read
+  // together, retaining each file's bound and its own parse/error handling below.
+  const [diagramCloudSidecar, graphRead, options, sheet, board, links] = await Promise.all([
+    Promise.resolve().then(() => vscode.workspace.fs.stat(vscode.Uri.joinPath(root, ".datapass", "diagramcloud.json")))
+      .then(s => s.type === vscode.FileType.File, () => false),
+    graphVet.ok ? readProjectFile(vscode.Uri.joinPath(root, graphVet.relative), PROJECT_FILE_MAX_BYTES) : undefined,
+    readProjectFile(vscode.Uri.joinPath(root, ...OPTIONS_PATH.split("/")), PROJECT_FILE_MAX_BYTES),
+    readProjectFile(vscode.Uri.joinPath(root, ...SHEET_PATH.split("/")), PROJECT_FILE_MAX_BYTES),
+    readProjectFile(vscode.Uri.joinPath(root, ...BOARD_PATH.split("/")), PROJECT_FILE_MAX_BYTES),
+    readProjectFile(vscode.Uri.joinPath(root, ...LINKS_PATH.split("/")), PROJECT_FILE_MAX_BYTES)
+  ]);
+  ctx.diagramCloudSidecar = diagramCloudSidecar;
   if (graphVet.ok) {
-    const got = await readProjectFile(vscode.Uri.joinPath(root, graphVet.relative), PROJECT_FILE_MAX_BYTES);
+    const got = graphRead!;
     if (got.kind === "error") ctx.graphError = `cannot read ${graphVet.relative}: ${got.message}`;
     else if (got.kind === "ok") {
       try { ctx.graph = parseGraph(got.bytes); } catch (error) { ctx.graphError = message(error); }
@@ -67,25 +77,21 @@ export async function loadProjectContext(extensionUri: vscode.Uri): Promise<Proj
   }
 
   // Optional files: absent is normal; present but unreadable or invalid is reported, never replaced by a default.
-  const options = await readProjectFile(vscode.Uri.joinPath(root, ...OPTIONS_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
   if (options.kind === "error") ctx.optionsError = `cannot read ${OPTIONS_PATH}: ${options.message}`;
   else if (options.kind === "ok") {
     ctx.optionsBytes = options.bytes;
     try { ctx.options = parseOptions(options.bytes); } catch (error) { ctx.optionsError = message(error); }
   }
-  const sheet = await readProjectFile(vscode.Uri.joinPath(root, ...SHEET_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
   if (sheet.kind === "error") ctx.sheetError = `cannot read ${SHEET_PATH}: ${sheet.message}`;
   else if (sheet.kind === "ok") {
     ctx.sheetBytes = sheet.bytes;
     try { ctx.sheet = parseSheet(sheet.bytes); } catch (error) { ctx.sheetError = message(error); }
   }
-  const board = await readProjectFile(vscode.Uri.joinPath(root, ...BOARD_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
   if (board.kind === "error") ctx.boardError = `cannot read ${BOARD_PATH}: ${board.message}`;
   else if (board.kind === "ok") {
     ctx.boardBytes = board.bytes;
     try { ctx.board = parseBoard(board.bytes); } catch (error) { ctx.boardError = message(error); }
   }
-  const links = await readProjectFile(vscode.Uri.joinPath(root, ...LINKS_PATH.split("/")), PROJECT_FILE_MAX_BYTES);
   if (links.kind === "error") ctx.linksError = `cannot read ${LINKS_PATH}: ${links.message}`;
   else if (links.kind === "ok") {
     try { ctx.links = parseLinks(links.bytes); } catch (error) { ctx.linksError = message(error); }

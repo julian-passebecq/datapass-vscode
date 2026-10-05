@@ -15,6 +15,10 @@ competing process launches on the shared Windows host. MR !288 records the exact
 VSIX digest, performance results and pipeline; a passing implementation statement alone
 does not authorize merging.
 
+First paint is the existing state-delivery milestone: the parsed project tree with pending
+local observations. Repository identity, file fingerprints and Git tracking complete before
+the full-refresh promise resolves. It does not measure physical webview pixels.
+
 ## 1.1.0-rc.1: V3 release candidate 1
 
 Date: 2026-09-28. Version `1.1.0-rc.1` (prerelease; 1.0.0 is the current release) — the V3 wave merged since 1.0.0:

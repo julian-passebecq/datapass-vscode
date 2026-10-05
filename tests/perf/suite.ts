@@ -5,6 +5,7 @@
  * budgets are checked by scripts/perf.ts).
  */
 import * as fs from "node:fs";
+import assert from "node:assert/strict";
 import * as vscode from "vscode";
 import { execFileSync } from "node:child_process";
 import type { DataPassTestApi } from "../../src/extension";
@@ -25,9 +26,15 @@ export async function run(): Promise<void> {
     await api.startup();
     const start = api.perf();
     const map = api.projectMap();
+    // Early state delivery must never turn completion into a declaration-only measurement.
+    assert.equal(map?.components.length, 60);
+    assert.equal(map?.repositories.length, 8);
+    assert.ok(map.repositories.every(r => r.state === "local"), "startup must await every repository identity check");
+    assert.ok(map.components.every(c => c.artifacts?.files.every(f => f.state !== "unknown")), "startup must await file observations");
     const t = performance.now();
     await api.refresh();
     const warmRefreshMs = performance.now() - t;
+    assert.ok(api.projectMap()?.repositories.every(r => r.state === "local"), "explicit refresh must await repository checks too");
     // Let the startup's own follow-ups (views resolving, Git view) settle before counting.
     await wait(SETTLE_MS);
     const before = api.perf();

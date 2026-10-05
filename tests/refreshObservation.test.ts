@@ -7,6 +7,7 @@ import * as os from "node:os";
 import { promises as fs } from "node:fs";
 import type { GitRunner } from "../src/core/workspace/gitBase";
 import type { DataPassProjectManifest } from "../src/core/projectManifestModel";
+import { perfManifest, perfGraphJson } from "./fixtures/perf/foilSized";
 
 const uri = (p: string, scheme = "file") => ({ scheme, fsPath: p, path: p, toString: () => `${scheme}:${p}` });
 const folders: Array<{ uri: ReturnType<typeof uri> }> = [];
@@ -29,9 +30,13 @@ const mod = Module as unknown as { _resolveFilename: (r: string, ...a: unknown[]
 const resolve = mod._resolveFilename;
 mod._resolveFilename = (r, ...a) => r === "vscode" ? "vscode" : resolve.call(Module, r, ...a);
 mod._cache.vscode = { id: "vscode", filename: "vscode", loaded: true, exports: stub };
-const { locateRepositories, observeProject, repoCache } = require("../src/work/projectObserver") as typeof import("../src/work/projectObserver");
+const { locateRepositories, observeProject, pendingProjectObservation, repoCache } = require("../src/work/projectObserver") as typeof import("../src/work/projectObserver");
+const { buildProjectMap } = require("../src/core/project/projectMap") as typeof import("../src/core/project/projectMap");
+const { parseGraph } = require("../src/core/workspace/graph") as typeof import("../src/core/workspace/graph");
 const { probeTools } = require("../src/core/capabilities/probe") as typeof import("../src/core/capabilities/probe");
 const { readProjectFile } = require("../src/core/workspace/readFile") as typeof import("../src/core/workspace/readFile");
+const { loadProjectContext } = require("../src/core/workspace/loader") as typeof import("../src/core/workspace/loader");
+const { setProjectRoot } = require("../src/core/workspace/root") as typeof import("../src/core/workspace/root");
 
 async function fixture() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "datapass-observation-test-"));
@@ -132,4 +137,69 @@ test("parallel disk/tracking observations retain deleted tracked secrets and fai
     assert.equal(failed?.state, "missing");
     assert.equal(failed?.tracking?.state, "unknown");
   } finally { await f.cleanup(); }
+});
+
+test("directory observations preserve counts, exclude links, reuse overlapping listings and refresh after edits", async () => {
+  const f = await fixture();
+  const port = fs as unknown as { readdir: (...args: unknown[]) => Promise<unknown> };
+  const original = port.readdir;
+  let reads = 0;
+  try {
+    const component = path.join(f.root, "one", "components", "f");
+    const nested = path.join(component, "nested");
+    await fs.mkdir(nested, { recursive: true });
+    for (let i = 0; i < 25; i++) await fs.writeFile(path.join(nested, `${i}.py`), "pass\n");
+    const outside = path.join(f.root, "external");
+    await fs.mkdir(outside); await fs.writeFile(path.join(outside, "excluded.py"), "pass\n");
+    await fs.symlink(outside, path.join(component, "link"), process.platform === "win32" ? "junction" : "dir");
+    port.readdir = async (...args) => { if (String(args[0]) === nested) reads++; return original.apply(fs, args); };
+    const manifest: DataPassProjectManifest = { schemaVersion: 3, project: { id: "test", title: "Test" }, repositories: { a: { path: "../one" } } };
+    const graph = { items: [{ id: "f", kind: "function", provider: "azure-functions", artifacts: { repoRef: "a", profile: "azure-functions.python", root: "components/f", files: ["nested/*.py"] } }], relations: [] };
+    const run = () => observeProject({ root: f.hub as never, manifest, graph: graph as never, trusted: false, localBindings: {}, cloneParents: [], git: async () => { throw new Error("no Git"); } });
+    assert.equal((await run()).files.get("a\0components/f")?.count, 25);
+    assert.equal(reads, 1, "component walk and nested glob share this refresh's listing");
+    await fs.writeFile(path.join(nested, "new.py"), "pass\n");
+    assert.equal((await run()).files.get("a\0components/f")?.count, 26);
+    assert.equal(reads, 2, "another refresh must read the edited directory again");
+  } finally { port.readdir = original; await f.cleanup(); }
+});
+
+test("first tree presents pending checks honestly, without missing files or ready identity-dependent operations", () => {
+  const manifest = perfManifest();
+  const graph = parseGraph(JSON.stringify(perfGraphJson()));
+  const pending = pendingProjectObservation(uri("/project") as never, manifest, true);
+  const map = buildProjectMap({ manifest, graph, coordinationKey: pending.coordinationKey,
+    repoObservations: pending.repos, fileObservations: pending.files, tools: new Map(), toolsPending: true,
+    facts: new Map(), reviewsConfirmed: new Set(), checklist: {}, qualification: [] });
+  assert.equal(map.components.length, 60);
+  assert.equal(map.repositories.length, 8);
+  assert.ok(map.repositories.every(r => r.state === "unverified" && /in progress/.test(r.detail)));
+  assert.ok(map.components.every(c => c.artifacts?.files.every(f => f.state === "unknown")));
+  assert.ok(map.components.flatMap(c => c.operations).filter(op => op.capability.localFiles !== false)
+    .every(op => op.result.status !== "ready"), "operations needing a local clone remain blocked");
+  assert.equal(pending.folders.size, 0, "pending state cannot authorize actions on a clone");
+  const restricted = pendingProjectObservation(uri("/project") as never, manifest, false);
+  assert.ok([...restricted.repos.values()].every(r => r.restricted && !r.pending));
+});
+
+test("parallel companion reads retain strict errors and reject unsafe graph paths", async () => {
+  const f = await fixture();
+  try {
+    setProjectRoot(f.hub as never);
+    const dir = path.join(f.hub.fsPath, ".datapass");
+    await fs.mkdir(dir);
+    await fs.writeFile(path.join(dir, "project.json"), JSON.stringify(perfManifest()));
+    await fs.writeFile(path.join(dir, "graph.json"), JSON.stringify(perfGraphJson()));
+    await fs.writeFile(path.join(dir, "options.json"), '{"duplicate":1,"duplicate":2}');
+    const ctx = await loadProjectContext(f.hub as never);
+    assert.equal(ctx.graph?.items.length, 60);
+    assert.ok(ctx.optionsError);
+    assert.equal(ctx.options, undefined);
+    await fs.writeFile(path.join(dir, "project.json"), JSON.stringify({ ...perfManifest(), graph: "../outside.json" }));
+    const bad = await loadProjectContext(f.hub as never);
+    assert.equal(bad.manifest, undefined);
+    assert.ok(bad.manifestErrors.length);
+    assert.match(bad.manifestErrors.join(" "), /graph|relative|\.\./);
+    assert.equal(bad.graph?.items.length, 60, "invalid manifest retains the existing safe default graph read");
+  } finally { setProjectRoot(undefined); await f.cleanup(); }
 });
