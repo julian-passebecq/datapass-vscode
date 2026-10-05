@@ -14,8 +14,19 @@ import { collectLineage, LINEAGE_SOURCE, nodesByEvidencePath, type LineageGraphL
 export type LineageBindingContext = BindingContext & { readonly lineageGraph?: LineageGraphLike | null };
 
 export const defaultLineageLocator: LineageLocator = {
-  nodesAt: (l, g) => (l.level === "project" ? g.nodes.map(n => n.id) : nodesByEvidencePath(g, l.nodeId))
+  nodesAt: (l, g) => l.level === "project" ? g.nodes.map(n => n.id) : g.nodes.some(n => n.id === l.nodeId) ? [l.nodeId] : nodesByEvidencePath(g, l.nodeId.replace(/^([^:]+):/, '$1/'))
 };
+
+/** Component/scope locations use their declared files, never labels or guessed dataset names. */
+export function lineageLocatorFor(map: BindingContext['projectMap']): LineageLocator {
+  return { nodesAt(location, graph) {
+    const direct = defaultLineageLocator.nodesAt(location, graph);
+    if (direct.length || !map) return direct;
+    const components = map.components.filter(c => c.id === location.nodeId || map.subprojects.find(s => s.id === location.nodeId)?.componentIds.includes(c.id));
+    const paths = components.flatMap(c => c.artifacts?.files.map(f => `${c.artifacts!.repoKey}/${f.repoPath}`) ?? []);
+    return [...new Set(paths.flatMap(path => nodesByEvidencePath(graph, path)))];
+  } };
+}
 
 /** NAVFIX1 (review H1): project the neighbourhood into a view-spi graph view, the shape the `graph` layout draws. */
 export const LINEAGE_PROJECTION = { project: projectGraph, projection: HOP_PROJECTION, preset: DEFAULT_STYLE_PRESET } as unknown as LineageProjection;
@@ -26,7 +37,7 @@ export const lineageProvider: BindingProvider = {
   source: LINEAGE_SOURCE,
   provide(ctx: LineageBindingContext): BindingResult {
     if (!ctx.lineageGraph) return declaredRelations("lineage", ctx, NO_LINEAGE_GRAPH);
-    const r = collectLineage(ctx.lineageGraph, ctx.location, defaultLineageLocator, (ctx.params ?? {}) as LineageParams, { projection: LINEAGE_PROJECTION });
+    const r = collectLineage(ctx.lineageGraph, ctx.location, lineageLocatorFor(ctx.projectMap), (ctx.params ?? {}) as LineageParams, { projection: LINEAGE_PROJECTION });
     if (!r.graph) return { holes: r.holes, origin: r.origin };
     return {
       // The projected view when view-spi accepted it; else the raw neighbourhood (the host converts it, graphView.ts).

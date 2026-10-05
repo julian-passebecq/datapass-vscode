@@ -15,16 +15,22 @@ test("processTree returns the root and every descendant, not siblings", () => {
 });
 
 test("the real listing finds a spawned grandchild under its parent", { timeout: 60_000 }, async () => {
-  const parent = spawn(process.execPath, ["-e", "require('child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], { stdio: 'inherit' }); setTimeout(() => {}, 30000)"], { stdio: "ignore" });
+  const parent = spawn(process.execPath, ["-e", "const child=require('child_process').spawn(process.execPath, ['-e', 'setTimeout(() => {}, 30000)'], { stdio: 'ignore', windowsHide: true }); console.log(child.pid); setTimeout(() => {}, 30000)"], { stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true });
+  let tree: number[] = [];
+  let grandchild: number | undefined;
   try {
-    let tree: number[] = [];
-    for (let i = 0; i < 50 && tree.length < 2; i++) { await new Promise(r => setTimeout(r, 100)); tree = processTree(parent.pid!, listProcesses()); }
-    assert.equal(tree.length, 2, "parent and grandchild");
+    grandchild = await new Promise<number>((resolve, reject) => { parent.stdout!.once('data', bytes => resolve(Number(bytes.toString().trim()))); parent.once('error', reject); });
+    assert.ok(Number.isInteger(grandchild) && grandchild! > 0, 'owned child PID reported by its parent');
+    for (let i = 0; i < 50 && !tree.includes(grandchild!); i++) { await new Promise(r => setTimeout(r, 100)); tree = processTree(parent.pid!, listProcesses()); }
+    assert.ok(tree.includes(grandchild!), 'the actual spawned grandchild is present, regardless of Windows console helpers');
     assert.equal(tree[0], parent.pid);
     const killed = await waitForExit(tree, { timeoutMs: 200 });
-    assert.equal(killed.length, 2);
+    assert.ok(killed.includes(parent.pid!) && killed.includes(grandchild!), 'both owned Node processes are terminated');
     assert.ok(tree.every(p => !isAlive(p)));
-  } finally { parent.kill("SIGKILL"); }
+  } finally {
+    parent.kill("SIGKILL");
+    if (grandchild && isAlive(grandchild)) process.kill(grandchild, 'SIGKILL');
+  }
 });
 
 test("waitForExit waits for a process that exits on its own and kills nothing", async () => {

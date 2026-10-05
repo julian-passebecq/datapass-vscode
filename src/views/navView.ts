@@ -25,6 +25,7 @@ import { isCodeStepsInput } from "../webview/views/layouts/codeSteps.layout";
 import type { CodeStepsInput } from "../webview/views/layouts/codeSteps";
 import { bindCodeStepsSamples } from "./pqSampleHost";
 import type { HopState } from "./hopState";
+import type { LineageGraphLike } from '../core/navigation/bindings/lineage';
 import { viewHtml } from "./viewHtml";
 import { navViewLabels, navViewMessages } from "./navViewData";
 import { fallbackRender, navViewHtml, navViewTitle, parseNavViewMessage, surfaceCommand, type NavRenderer, type NavViewMessage } from "./navViewHtml";
@@ -33,6 +34,8 @@ export const NAV_VIEW_TYPE = "datapass.navView";
 const DEFAULT_TITLE_FORMAT = "{location} · {view} {n}/{N}";
 
 export interface NavViewDeps {
+  selectedEnvironment?(): string | undefined;
+  lineageGraph?(): LineageGraphLike | undefined;
   /** The current project map, when a project is open. */
   projectMap(): ProjectMap | undefined;
   /** Display label of a Location (NAVLOC1); defaults to the project map's labels. */
@@ -171,7 +174,7 @@ export class NavViewHost implements vscode.Disposable {
   private bindingContext(location: NavLocation): Omit<BindingContext, "params"> {
     const hop = this.deps.hop?.bind(this.deps);
     const repoHistory = this.deps.repoHistory?.bind(this.deps);
-    return { location, projectMap: this.deps.projectMap(), ...(hop ? { hop } : {}), ...(repoHistory ? { repoHistory } : {}) };
+    return { location, projectMap: this.deps.projectMap(), lineageGraph: this.deps.lineageGraph?.(), selectedEnvironment: this.deps.selectedEnvironment?.(), ...(hop ? { hop } : {}), ...(repoHistory ? { repoHistory } : {}) };
   }
 
   private withSamples(bound: BoundData[]): BoundData[] {
@@ -199,6 +202,11 @@ export class NavViewHost implements vscode.Disposable {
         this.render();
       }
       this.selectEmitter.fire(m.nodeId);
+      if (this.deps.lineageGraph?.()?.nodes.some(n => n.id === m.nodeId)) {
+        const viewId = this.nav.state.viewId;
+        this.nav.dispatch({ type: 'go', location: { level: 'artifact', nodeId: m.nodeId, artifactKind: 'other' } });
+        if (viewId && this.nav.views().some(v => v.id === viewId)) this.nav.dispatch({ type: 'view', viewId });
+      }
     }
     else if (m.type === "open-surface") {
       // Only the current place's own surface view, through the same setting map as the automatic open.

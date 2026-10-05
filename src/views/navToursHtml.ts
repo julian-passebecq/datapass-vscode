@@ -76,7 +76,7 @@ export function toursHtml(m: ToursModel): string {
   const steps = m.steps.length
     ? `<ol class="tour-steps">${m.steps.map((s) => {
       const hole = s.status === "ok" ? "" : badge(L(s.status === "unknown-location" ? "unknownLocation" : "unknownView"));
-      const box = s.current && m.explanationBox !== false ? `<div class="tour-text">${m.explanation === null ? `<span class="tour-hole">${esc(L("noExplanation"))}</span>` : esc(m.explanation)}</div>` : "";
+      const box = s.current && m.explanationBox !== false ? `<div class="tour-text">${m.explanation === null ? `<span class="tour-hole">${esc(L("noExplanation"))}</span>` : esc(m.explanation)}<p class="tour-hole">Source: ${esc(s.preview)}. Visiting a step does not verify it.</p></div>` : "";
       return `<li class="tour-step depth-${Math.min(s.depth, 4)}${s.current ? " current" : ""}${s.status === "ok" ? "" : " stale"}"><button data-tour-step="${s.index}" title="${esc(s.preview)}"${s.status === "unknown-location" ? " disabled" : ""}${s.current ? " aria-current=\"step\"" : ""}><span class="tour-n">${esc(s.number)}</span> ${esc(s.label)}${hole}</button>${box}</li>`;
     }).join("")}</ol>
       <div class="tour-nav"><button data-tour-action="prev"${m.canPrev ? "" : " disabled"}>${esc(L("previous"))}</button><button data-tour-action="next"${m.canNext ? "" : " disabled"}>${esc(L("next"))}</button></div>`

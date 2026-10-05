@@ -13,7 +13,7 @@
 import * as vscode from "vscode";
 import type { NavHost } from "../core/navigation/navHost";
 import type { NavLocation } from "../core/navigation/navTypes";
-import { generateTours } from "../core/navigation/tours/generate";
+import { generateTours, generateProjectPaths } from "../core/navigation/tours/generate";
 import { jumpSearch, type JumpEntry } from "../core/navigation/tours/jump";
 import {
   clampPreview, flattenSteps, journeys, ladderLocations, loadTourFile, locationKey, mergeTours, nextStep, prevStep,
@@ -110,7 +110,8 @@ export class NavTours implements vscode.Disposable {
   /** Built-in (facts) + file tours, file tours reusing a built-in id dropped as holes. */
   loaded(): LoadedTours {
     const builtin = config().get<boolean>("generatedJourneys.enabled", true)
-      ? generateTours(this.host.session.projectMap(), { locate: this.locate, viewsAt: (l) => this.host.nav.viewsAt(l) }) : [];
+      ? [...generateTours(this.host.session.projectMap(), { locate: this.locate, viewsAt: (l) => this.host.nav.viewsAt(l) }),
+        ...generateProjectPaths(this.host.session.projectMap(), { locate: this.locate, viewsAt: (l) => this.host.nav.viewsAt(l) })] : [];
     return mergeTours([...builtin, ...this.extensions.flatMap((e) => e.tours?.() ?? [])], this.file);
   }
   tours(): readonly Tour[] { return this.loaded().document.tours; }

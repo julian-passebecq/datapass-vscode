@@ -9,7 +9,7 @@
  */
 import { layoutGraph, type LayoutEdgeInput } from "../../../core/project/layout";
 import { navColor, NAV_HERE_DEFAULT } from "./graphPalette";
-import { cssToken, holesNode, label, type Hole, type Labels, type LayoutModel, type VNode } from "../model";
+import { cellValue, cssToken, holesNode, label, type Hole, type Labels, type LayoutModel, type VNode } from "../model";
 
 /** The `datapass.graph-view/1` fields this layout reads (view-spi `GraphView`, structural until vendored). */
 export interface GraphViewLike {
@@ -44,14 +44,23 @@ export function isGraphView(x: unknown): x is GraphViewLike {
 export const graphModel: LayoutModel = ({ view, data, labels, location }) => {
   const holes: Hole[] = [];
   const blocks: VNode[] = [];
+  const evidence: VNode[] = [];
   for (const d of data) {
     if (d.graph === undefined) continue;
     if (!isGraphView(d.graph)) { holes.push({ kind: "graph-invalid", reason: label(labels, "graph.invalid"), field: d.source }); continue; }
     blocks.push(graphBlock(d.graph, view.title, labels, location.nodeId));
+    const rows = (d.rows ?? []).map(r => ({ label: cellValue(r.cells.label ?? null).value, origins: cellValue(r.cells.evidenceOrigins ?? null).value, sources: cellValue(r.cells.sources ?? null).value })).filter(r => typeof r.origins === 'string');
+    if (rows.length) evidence.push({ tag: 'details', cls: 'nv-evidence', children: [
+      { tag: 'summary', text: `Edge evidence (${rows.length}; showing at most 50)` },
+      { tag: 'ul', children: rows.slice(0, 50).map(r => ({ tag: 'li', children: [
+        { tag: 'strong', text: String(r.label) }, { tag: 'span', attrs: { 'data-evidence-origins': String(r.origins) }, text: ` · ${r.origins}` },
+        { tag: 'code', text: ` · ${r.sources || 'external evidence reference; not collected by DataPass'}` }
+      ] })) }
+    ] });
   }
   const all = holesNode([...data, { source: "graph", origin: "static", holes }], labels);
   const body: VNode = blocks.length ? { tag: "div", cls: "nv-graphs", children: blocks } : { tag: "p", cls: "nv-empty", text: label(labels, "view.noGraph") };
-  return { tag: "div", cls: "nv-layout nv-layout-graph", children: all ? [body, all] : [body] };
+  return { tag: "div", cls: "nv-layout nv-layout-graph", children: all ? [body, ...evidence, all] : [body, ...evidence] };
 };
 
 function graphBlock(g: GraphViewLike, title: string, labels: Labels, here: string): VNode {

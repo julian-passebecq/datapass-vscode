@@ -1,5 +1,6 @@
 stages:
   - verify
+  - native
   - qualify
   - performance
 
@@ -84,36 +85,18 @@ demo_fixture_tests:
   variables:
     PYTHONDONTWRITEBYTECODE: "1"
 
-desktop_acceptance:
-  stage: qualify
-  variables:
-    # Exact release exercised by the passing Windows desktop baseline (Q1).
-    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
-  # Q1: all 20 fixtures passed on runner 56844575; failures now block acceptance.
+# Qualify the newly aligned contained parser without competing desktop launches.
+# This fixture runs here exactly once; legacy desktop shards exclude it below.
+native_parser_qualification:
+  stage: native
+  timeout: 20m
   allow_failure: false
-  # DESKSHARD1: fixtures split over 4 jobs balanced by measured time (scripts/desktop-test.ts,
-  # FIXTURE_SECONDS); together they run every fixture once, and every shard gates.
-  parallel: 4
-  timeout: 45m
-  # DESKHARD1: one retry for a shard that fails under runner load (unresponsive extension host);
-  # a real regression fails twice and still blocks.
-  retry:
-    max: 1
-    when: [runner_system_failure, script_failure]
-  cache:
-    - key:
-        files:
-          - package-lock.json
-        prefix: datapass-vscode
-      paths:
-        - .cache/npm/
-        - .cache/pip/
-      policy: pull
-  rules:
+  variables:
+    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
+  rules: &desktop_rules
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
-        # CIDIET1: an MR runs the desktop jobs only when it touches what they build or exercise; docs/,
-        # handoff/ and root *.md MRs skip them. main and web pipelines always run them (rules below).
+        # Product inputs only; documentation-only MRs keep the existing lighter gates.
         paths: &desktop_inputs
           - src/**/*
           - vendor/**/*
@@ -142,7 +125,48 @@ desktop_acceptance:
     - |
       $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
       if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
-      Invoke-CiNative npx.cmd tsx scripts/desktop-test.ts "--vsix=$($vsix.FullName)"
+      & ./scripts/ci-desktop-user.ps1 -Mode native
+  artifacts:
+    name: "datapass-native-$CI_COMMIT_SHORT_SHA"
+    when: always
+    expire_in: 14 days
+    paths:
+      - out/integration/
+
+desktop_acceptance:
+  stage: qualify
+  variables:
+    # Exact release exercised by the passing Windows desktop baseline (Q1).
+    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
+  # Q1: all 20 fixtures passed on runner 56844575; failures now block acceptance.
+  allow_failure: false
+  # DESKSHARD1: fixtures split over 4 jobs balanced by measured time (scripts/desktop-test.ts,
+  # FIXTURE_SECONDS); together they run every fixture once, and every shard gates.
+  parallel: 4
+  timeout: 45m
+  # DESKHARD1: one retry for a shard that fails under runner load (unresponsive extension host);
+  # a real regression fails twice and still blocks.
+  retry:
+    max: 1
+    when: [runner_system_failure, script_failure]
+  cache:
+    - key:
+        files:
+          - package-lock.json
+        prefix: datapass-vscode
+      paths:
+        - .cache/npm/
+        - .cache/pip/
+      policy: pull
+  rules: *desktop_rules
+  before_script:
+    - . ./scripts/ci-windows.ps1 -Node
+    - Invoke-CiNative npm.cmd ci --prefer-offline
+  script:
+    - |
+      $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
+      if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
+      Invoke-CiNative npx.cmd tsx scripts/desktop-test.ts "--vsix=$($vsix.FullName)" --exclude-fixture=v6-intelligence
   artifacts:
     name: "datapass-desktop-$CI_COMMIT_SHORT_SHA-$CI_NODE_INDEX"
     when: always
@@ -178,6 +202,8 @@ ui_smoke:
   needs:
     - job: verify_and_package
       artifacts: true
+    - job: native_parser_qualification
+      artifacts: false
   before_script:
     - . ./scripts/ci-windows.ps1 -Node
     - Invoke-CiNative npm.cmd ci --prefer-offline
@@ -186,12 +212,13 @@ ui_smoke:
       $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
       if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
       $env:DATAPASS_QA_VSIX = $vsix.FullName
-      Invoke-CiNative npx.cmd tsx --test --test-concurrency=1 tests/qaPrepare.test.ts tests/qaAuto.test.ts tests/qa-ui.smoke.test.ts
+      & ./scripts/ci-desktop-user.ps1 -Mode ui
   artifacts:
     name: "datapass-ui-smoke-$CI_COMMIT_SHORT_SHA"
     when: always
     expire_in: 14 days
     paths:
+      - out/qa-v6/
       - out/qa-ui/
       - out/qa-ui-hop/
 

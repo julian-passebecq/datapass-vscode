@@ -32,12 +32,15 @@ import { DEVOPS_FILES, DEVOPS_REMOTES, graphDevopsJson, manifestDevops } from ".
 import { filesB } from "../tests/fixtures/v3/monorepo";
 import { filesSales } from "../tests/fixtures/v3/salesBi";
 import { hubToolkitFiles } from "../tests/fixtures/v3/toolkit";
+import { intelligenceFiles } from '../tests/fixtures/v6/projectIntelligence';
+import { probeInstalledController } from './native-controller-probe';
 
 const repo = path.resolve(__dirname, "..");
 const realExtensions = process.argv.includes("--real-extensions");
 const vsixArg = process.argv.find(a => a.startsWith("--vsix="))?.slice("--vsix=".length);
 /** `--fixture=v3-research,v17-company` runs only those fixtures (one report each). */
 const only = process.argv.find(a => a.startsWith("--fixture="))?.slice("--fixture=".length).split(",").map(s => s.trim()).filter(Boolean);
+const excluded = process.argv.find(a => a.startsWith("--exclude-fixture="))?.slice("--exclude-fixture=".length).split(",").map(s => s.trim()).filter(Boolean) ?? [];
 
 function v4Cloudflare(): DataPassProjectManifest {
   return {
@@ -102,6 +105,7 @@ function fixtureDir(rel: string): Record<string, string> {
 }
 
 const FIXTURES: Record<string, Record<string, string>> = {
+  'v6-intelligence': intelligenceFiles,
   "empty": { "README.md": "# empty workspace\n" },
   // 0.22 package D: a native repository (no .datapass) with a broken databricks.yml, Dockerfile, compose file and JSON.
   "v22-checks": fixtureDir("checks/bad"),
@@ -708,11 +712,21 @@ async function main(): Promise<void> {
     extensionTestsPath = path.join(testDir, "suite.js");
     fs.copyFileSync(path.join(out, "suite.js"), extensionTestsPath);
     console.log(`Installed package ${packaged.version}; sha256=${packaged.sha256}`);
+      if (process.argv.includes('--probe-native-controller')) try {
+        await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'));
+        await probeInstalledController(path.join(extensionRoot, 'dist', 'runtime'), true);
+    } catch (error) {
+      if (!path.resolve(scratch).startsWith(path.join(path.resolve(os.tmpdir()), 'datapass-desktop-'))) throw new Error('qualification-cleanup-root-mismatch');
+      fs.rmSync(scratch, { recursive: true, force: true });
+      throw error;
+    }
   }
   const reports: unknown[] = [];
   let failed = 0;
   let hostErrorCount = 0;
-  const allFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
+  const knownFixtures = [...Object.keys(FIXTURES), ...Object.keys(SETUPS)];
+  if (excluded.some(name => !knownFixtures.includes(name))) throw new Error('Unknown excluded fixture.');
+  const allFixtures = knownFixtures.filter(name => !excluded.includes(name));
   const selected = shard ? shardFixtures(allFixtures, shard.index, shard.total) : allFixtures;
   if (shard) {
     // Never weaken the check: the shards together must run every fixture exactly once.

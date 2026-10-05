@@ -18,9 +18,13 @@ import { locationLabel, locationOf, locationPath } from "./projectLadder";
 import type { UnderstandingEntry } from "../understanding/load";
 import { hopState, type HopState } from "../../views/hopState";
 import type { RepoHistoryInput } from "./bindings";
+import type { ProjectIntelligence } from '../project/intelligence';
+import { withLineageLadder } from './lineageLadder';
 
 /** The part of the session the host needs (kept small for tests). */
 export interface NavSession {
+  selectedEnvironment?(): string | undefined;
+  projectIntelligence?(): ProjectIntelligence | undefined;
   projectMap(): ProjectMap;
   selection(): { subproject?: string; component?: string };
   select(sel: { subproject?: string; component?: string }): Promise<void>;
@@ -97,7 +101,7 @@ export class NavHost implements vscode.Disposable {
 
   /** NAVLOC1 ladder over the session map; kinds from path + cached file heads (a10). */
   private buildLadder(): ProjectLadder {
-    return buildLadder({ map: this.projectMap(), head: (k, p) => this.heads.get(k, p) });
+    return withLineageLadder(buildLadder({ map: this.projectMap(), head: (k, p) => this.heads.get(k, p) }), this.session.projectIntelligence?.()?.graph);
   }
 
   private rebuild(): void {
@@ -115,12 +119,20 @@ export class NavHost implements vscode.Disposable {
   /** Commands and their palette-free behaviour; `pickView` offers the location's views. */
   registerCommands(): vscode.Disposable[] {
     const simple = (type: Exclude<NavCommandId, "pickView">): NavCommand => ({ type } as NavCommand);
-    return NAV_COMMANDS.map((id) => vscode.commands.registerCommand(`datapass.nav.${id}`, async (arg?: unknown) => {
+    return [vscode.commands.registerCommand('datapass.intelligence.lineage', async () => {
+      this.nav.dispatch({ type: 'home' });
+      this.nav.dispatch({ type: 'view', viewId: 'project-data' });
+      await vscode.commands.executeCommand('datapass.navView.open');
+    }), vscode.commands.registerCommand('datapass.intelligence.sankey', async () => {
+      this.nav.dispatch({ type: 'home' });
+      this.nav.dispatch({ type: 'view', viewId: 'project-sankey' });
+      await vscode.commands.executeCommand('datapass.navView.open');
+    }), ...NAV_COMMANDS.map((id) => vscode.commands.registerCommand(`datapass.nav.${id}`, async (arg?: unknown) => {
       if (id === "pickView") return this.pickView();
       // `down` from a webview or keybinding may name the child (the current selection).
       if (id === "down" && typeof arg === "string") return void this.nav.dispatch({ type: "down", childId: arg });
       this.nav.dispatch(simple(id));
-    }));
+    }))];
   }
 
   /**
