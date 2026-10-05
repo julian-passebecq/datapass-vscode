@@ -784,8 +784,8 @@ async function main(): Promise<void> {
     } catch {
       failed++;
     }
-    // V1-STAB: errors the extension host logged (unhandled rejections included) fail nothing on their
-    // own, so they are collected here, before the profile is deleted, and listed in the report.
+    // Unexpected renderer/extension-host errors gate qualification even when assertions passed.
+    // Preserve the lines before deleting the isolated profile.
     const hostErrors = extensionHostErrors(path.join(scratch, "profile", name, "logs"));
     if (hostErrors.length) {
       hostErrorCount += hostErrors.length;
@@ -810,8 +810,8 @@ async function main(): Promise<void> {
   fs.rmSync(scratch, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
   console.log(`\nEvidence report: ${path.relative(repo, summaryFile)}`);
   console.log(hostErrorCount ? `${hostErrorCount} extension host error line(s) mention DataPass (listed above and in the report).` : "No extension host error line mentions DataPass.");
-  if (failed) {
-    console.error(`${failed} fixture run(s) failed.`);
+  if (failed || hostErrorCount) {
+    console.error(`${failed} fixture run(s) failed; ${hostErrorCount} unexpected host error(s).`);
     process.exit(1);
   }
 }

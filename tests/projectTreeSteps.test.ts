@@ -89,6 +89,50 @@ test("selection reveal never uses a subproject cached before a project refresh",
   } finally { tree.dispose(); changed.dispose(); selected.dispose(); }
 });
 
+test("mode changes reject children of removed sections and coalesce root updates", async t => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const changed = new EventEmitter<void>();
+  let showBoard = true;
+  const tree = new ProjectTreeProvider({ ...session, boardView: () => ({
+    sprints: [], columns: [], cards: [], summary: { open: 0, bugs: 0, overdue: 0 }
+  }) } as never);
+  tree.setSurfaces(surface => surface !== "project.board" || showBoard, changed.event);
+  let notifications = 0;
+  tree.onDidChangeTreeData(() => notifications++);
+  try {
+    const board = (await tree.getChildren()).find(n => n.id === "board")!;
+    assert.ok((await tree.getChildren(board)).some(n => n.id === "board:open"));
+    showBoard = false;
+    changed.fire(); changed.fire(); changed.fire();
+    assert.deepEqual(await tree.getChildren(board), [], "an outstanding old section cannot republish removed children");
+    assert.equal(tree.getParent({ id: "board:open" } as never), undefined);
+    t.mock.timers.tick(250);
+    assert.equal(notifications, 1);
+    assert.ok(!(await tree.getChildren()).some(n => n.id === "board"));
+    changed.fire(); tree.dispose(); t.mock.timers.tick(250);
+    assert.equal(notifications, 1, "disposed trees must not publish pending updates");
+  } finally { tree.dispose(); changed.dispose(); }
+});
+
+test("an asynchronous Git root cannot republish nodes after the lens changes", async () => {
+  const changed = new EventEmitter<void>();
+  const tree = new ProjectTreeProvider({ ...session, onDidChange: changed.event } as never);
+  let complete!: (nodes: { id: string }[]) => void;
+  tree.attachGit({ onDidChangeTreeData: () => ({ dispose() {} }),
+    getChildren: () => new Promise(resolve => { complete = resolve; }) } as never, () => undefined);
+  const store = { current: "git" };
+  tree.setLenses(store as never);
+  try {
+    const pending = tree.getChildren();
+    store.current = "project"; changed.fire();
+    complete([{ id: "old-repository" }]);
+    assert.deepEqual(await pending, [], "a result from the previous generation cannot enter the current tree");
+    const roots = await tree.getChildren();
+    assert.ok(roots.some(n => n.id === "sp:main"));
+    assert.ok(!roots.some(n => n.id === "git/old-repository"));
+  } finally { tree.dispose(); changed.dispose(); }
+});
+
 test("Project lens: no check nodes (readiness, tools, sign-ins); the Readiness lens keeps them", async () => {
   const tree = new ProjectTreeProvider(session as never);
   const roots = await tree.getChildren() as { id: string }[];

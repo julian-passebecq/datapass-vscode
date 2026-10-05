@@ -87,6 +87,8 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   private readonly subs: vscode.Disposable[] = [];
   private readonly parents = new Map<string, Node | undefined>();
   private readonly byId = new Map<string, Node>();
+  private refreshTimer?: ReturnType<typeof setTimeout>;
+  private generation = 0;
   private view?: vscode.TreeView<Node>;
   /** 0.22 modes: which sections the current mode shows (every section until a mode is attached). */
   private shows: (surface: string) => boolean = () => true;
@@ -120,13 +122,18 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
   /** A tree icon with the colour policy applied (neutral unless it needs attention, or coloured icons are on). */
   private icon([id, color]: [string, string?]): vscode.ThemeIcon { return rawIcon([id, treeIconColor(color, this.look)]); }
 
-  dispose(): void { for (const s of this.subs) s.dispose(); this.emitter.dispose(); }
+  dispose(): void { if (this.refreshTimer) clearTimeout(this.refreshTimer); for (const s of this.subs) s.dispose(); this.emitter.dispose(); }
 
   private refresh(): void {
     // A refresh can remove a subproject or switch lenses. Only nodes fetched for
     // the new tree may be revealed; VS Code logs an error for a stale cached node.
+    this.generation++;
     this.byId.clear();
-    this.emitter.fire(undefined);
+    this.parents.clear();
+    // Mode and session updates can remove an expanded section while its children
+    // are being delivered. Coalesce the burst; keep reads fresh and reject old nodes.
+    if (this.refreshTimer) return;
+    this.refreshTimer = setTimeout(() => { this.refreshTimer = undefined; this.emitter.fire(undefined); }, 250);
   }
 
   /** 0.22 modes: gate the root sections by surface; blockers show in every mode. */
@@ -285,6 +292,9 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   getChildren(node?: Node): Node[] | Promise<Node[]> {
     if (!node) return this.lensRoots();
+    const current = this.byId.get(node.id);
+    if (!current) return [];
+    node = current;
     switch (node.t) {
       case "git": return this.gitChildren(node.g, node);
       case "subproject": return this.remember(node.sp.componentIds.map(id => this.archMap().components.find(c => c.id === id)).filter((c): c is ComponentView => !!c && !(c.parent && node.sp.componentIds.includes(c.parent))).map(c => ({ t: "component" as const, id: `${node.id}/c:${c.id}`, c, parent: node.id })), node);
@@ -384,6 +394,7 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
 
   /** V3-SHELL: the root nodes of the lens shown now. */
   private async lensRoots(): Promise<Node[]> {
+    const generation = this.generation;
     const lens = this.lens();
     const ctx = this.session.project;
     // Without a readable project, every lens but Git shows the same way in (open, initialize, fix the manifest).
@@ -395,13 +406,14 @@ export class ProjectTreeProvider implements vscode.TreeDataProvider<Node>, vscod
     const row: Node = { t: "info", id: r.id, label: r.label, description: r.description, icon: [r.icon], tooltip: r.tooltip, command: { command: r.command, title: "Switch" }, contextValue: "lens" };
     const rest = lens === "project" ? this.roots() : lens === "git" ? await this.gitChildren(undefined, undefined)
       : lens === "architecture" ? this.architectureRoots() : lens === "ai" ? this.aiRoots() : this.readinessRoots();
-    return this.remember([row, ...rest], undefined);
+    return generation === this.generation ? this.remember([row, ...rest], undefined) : [];
   }
 
   private async gitChildren(g: GitNode | undefined, parent: Node | undefined): Promise<Node[]> {
     if (!this.gitTree) return this.remember([{ t: "info", id: "git:none", label: "Git is not ready yet.", icon: ["git-merge"] }], parent);
+    const generation = this.generation;
     const kids = await this.gitTree.getChildren(g);
-    return this.remember(kids.map(k => ({ t: "git" as const, id: `git/${k.id}`, g: k })), parent);
+    return generation === this.generation ? this.remember(kids.map(k => ({ t: "git" as const, id: `git/${k.id}`, g: k })), parent) : [];
   }
 
   /** Architecture lens: the selected architecture, sub-projects → components → files, variants, options, repositories. */
