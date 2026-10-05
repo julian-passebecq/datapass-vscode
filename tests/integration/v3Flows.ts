@@ -8,7 +8,8 @@ import * as vscode from "vscode";
 import * as os from "node:os";
 import * as path from "node:path";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, statSync, utimesSync, writeFileSync } from "node:fs";
+import { gitRunner } from "../../src/work/session";
 import type { DataPassTestApi } from "../../src/extension";
 import { record, sleep, test, waitFor } from "./harness";
 import { withUi } from "./ui";
@@ -21,6 +22,36 @@ export function registerV3Flows(getApi: () => DataPassTestApi): void {
   const api = () => getApi();
   const extract = () => api().projectMap().components.find(c => c.id === "extract")!;
   const fileState = (p: string) => extract().artifacts!.files.find(f => f.path === p)?.state;
+
+  test("Git observation does not refresh the index while an update may need its lock", async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "datapass-git-read-"));
+    try {
+      const file = path.join(root, "tracked.txt");
+      writeFileSync(file, "unchanged content\n");
+      git(root, "init", "-q", "-b", "main");
+      git(root, "add", "tracked.txt");
+      git(root, "commit", "-q", "-m", "fixture");
+      const index = path.join(root, ".git", "index");
+      const stamp = statSync(file);
+      const original = readFileSync(index);
+      utimesSync(file, stamp.atime, new Date(stamp.mtimeMs - 10_000));
+      // Positive control: ordinary status refreshes cached file stats even without content changes.
+      execFileSync("git", ["-c", "core.fsmonitor=false", "status", "--porcelain=v1"], {
+        cwd: root, env: { ...process.env, GIT_OPTIONAL_LOCKS: "1" }
+      });
+      const refreshed = readFileSync(index);
+      assert.notDeepEqual(refreshed, original, "fixture must make ordinary status rewrite its index");
+      utimesSync(file, stamp.atime, new Date(stamp.mtimeMs - 20_000));
+      const answer = await gitRunner(["status", "--porcelain=v1"], root, 10_000);
+      assert.ok(answer.ok, answer.stderr);
+      assert.equal(answer.stdout.trim(), "", "content is still clean");
+      assert.deepEqual(readFileSync(index), refreshed, "read-only observation must not rewrite the index");
+      record("gitReadIndex", { positiveControlRewroteIndex: true, observationKeptIndex: true });
+    } finally {
+      assert.ok(path.basename(root).startsWith("datapass-git-read-"));
+      // The desktop runner owns this fixture's temp root and removes it after the host exits.
+    }
+  }, ["empty"]);
 
   // ------------------------------------------------------------ v3-research
 

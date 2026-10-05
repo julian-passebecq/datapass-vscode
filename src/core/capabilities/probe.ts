@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { promises as fsp } from "node:fs";
 import { defaultProbeRunner, type ProbeRunner } from "../detection";
 import { TOOLS, type ToolDefinition, type ToolObservation } from "./tools";
 import { cliVersion } from "../toolchain/versions";
@@ -61,6 +62,21 @@ function probeCli(tool: ToolDefinition, force: boolean, runner: ProbeRunner): Pr
 }
 
 async function probeWorkspaceFile(toolId: string, now: string): Promise<ToolObservation> {
+  // The literal pattern names one file per workspace folder. Prove the common absence case
+  // without launching a workspace-wide search (one search process per root on Windows).
+  // Existing files and uncertain reads still use findFiles, preserving its exclusions/selection.
+  const absent = await Promise.all((vscode.workspace.workspaceFolders ?? []).map(async folder => {
+    const uri = vscode.Uri.joinPath(folder.uri, ".vscode", "mcp.json");
+    try {
+      if (uri.scheme === "file") await fsp.stat(uri.fsPath);
+      else await vscode.workspace.fs.stat(uri);
+      return false;
+    } catch (error) {
+      const code = (error as { code?: string }).code;
+      return code === "ENOENT" || code === "ENOTDIR" || code === "FileNotFound";
+    }
+  }));
+  if (absent.every(Boolean)) return { toolId, state: "absent", observedAt: now };
   const found = await vscode.workspace.findFiles(".vscode/mcp.json", undefined, 1);
   if (!found.length) return { toolId, state: "absent", observedAt: now };
   // D-22: the server names only, for the evidence chain's "registered" link.

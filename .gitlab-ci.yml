@@ -1,6 +1,7 @@
 stages:
   - verify
   - qualify
+  - performance
 
 workflow:
   rules:
@@ -138,7 +139,10 @@ desktop_acceptance:
     - . ./scripts/ci-windows.ps1 -Node
     - Invoke-CiNative npm.cmd ci --prefer-offline
   script:
-    - Invoke-CiNative npm.cmd run test:desktop
+    - |
+      $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
+      if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
+      Invoke-CiNative npx.cmd tsx scripts/desktop-test.ts "--vsix=$($vsix.FullName)"
   artifacts:
     name: "datapass-desktop-$CI_COMMIT_SHORT_SHA-$CI_NODE_INDEX"
     when: always
@@ -182,7 +186,7 @@ ui_smoke:
       $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
       if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
       $env:DATAPASS_QA_VSIX = $vsix.FullName
-      Invoke-CiNative npx.cmd tsx --test tests/qa-ui.smoke.test.ts
+      Invoke-CiNative npx.cmd tsx --test --test-concurrency=1 tests/qaPrepare.test.ts tests/qaAuto.test.ts tests/qa-ui.smoke.test.ts
   artifacts:
     name: "datapass-ui-smoke-$CI_COMMIT_SHORT_SHA"
     when: always
@@ -190,6 +194,37 @@ ui_smoke:
     paths:
       - out/qa-ui/
       - out/qa-ui-hop/
+
+# Run after the desktop shards/UI have finished: they share this Windows host and their
+# process launches otherwise distort the extension-host performance measurements.
+performance_budget:
+  stage: performance
+  variables:
+    DATAPASS_TEST_VSCODE_VERSION: "1.139.1"
+  timeout: 20m
+  allow_failure: false
+  dependencies: [verify_and_package]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        paths: *desktop_inputs
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+  before_script:
+    - . ./scripts/ci-windows.ps1 -Node
+    - Invoke-CiNative npm.cmd ci --prefer-offline
+  script:
+    - |
+      $vsix = Get-ChildItem -LiteralPath . -Filter *.vsix -File | Select-Object -First 1
+      if (-not $vsix) { throw 'Packaged VSIX artifact missing' }
+      Invoke-CiNative npx.cmd tsx scripts/perf.ts --ci --runs=3 "--vsix=$($vsix.FullName)"
+  artifacts:
+    name: "datapass-performance-$CI_COMMIT_SHORT_SHA"
+    when: always
+    expire_in: 14 days
+    paths:
+      - out/perf/
 
 
 # PINDRIFT1: report drift between vendor/common/manifest.json (version + digest pins) and Common main, with

@@ -64,6 +64,31 @@ const session = {
 const ids = (nodes: readonly { id: string }[]) => nodes.map((n) => n.id);
 const CHECK_SECTIONS = ["env", "tools", "connections", "readiness"];
 
+test("selection reveal never uses a subproject cached before a project refresh", async () => {
+  const changed = new EventEmitter<void>();
+  const selected = new EventEmitter<void>();
+  let currentMap = MAP;
+  const tree = new ProjectTreeProvider({ ...session, projectMap: () => currentMap,
+    selection: () => ({ subproject: "main" }), onDidChange: changed.event,
+    onDidChangeSelection: selected.event } as never);
+  const revealed: string[] = [];
+  tree.attach({ visible: true, selection: [],
+    onDidChangeVisibility: () => ({ dispose() {} }), onDidChangeSelection: () => ({ dispose() {} }),
+    reveal: async (node: { id: string }) => { revealed.push(node.id); } } as never);
+  try {
+    await tree.getChildren();
+    selected.fire();
+    assert.deepEqual(revealed, ["sp:main"], "a current rendered subproject still follows selection");
+    revealed.length = 0;
+    currentMap = { ...MAP, subprojects: [] };
+    changed.fire();
+    selected.fire();
+    await tree.getChildren();
+    selected.fire();
+    assert.deepEqual(revealed, [], "a removed subproject must not be handed to VS Code reveal during or after refresh");
+  } finally { tree.dispose(); changed.dispose(); selected.dispose(); }
+});
+
 test("Project lens: no check nodes (readiness, tools, sign-ins); the Readiness lens keeps them", async () => {
   const tree = new ProjectTreeProvider(session as never);
   const roots = await tree.getChildren() as { id: string }[];

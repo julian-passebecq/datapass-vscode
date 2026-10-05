@@ -1,4 +1,26 @@
-# Implementation Status — 1.1.0-rc.1: V3 release candidate 1
+# Implementation Status — 1.2.0-rc.1: V5 / V5.1 release candidate
+
+Current implementation baseline: GitLab `juliandatapass-group/datapass-vscode`,
+`d7863a2f2d1ad653991f9fbb4c6bbded9200c3b6`. The package version remains `1.2.0-rc.1`;
+identify a qualified build by its source SHA and VSIX SHA-256, not the version alone.
+
+The V5 features are documented in [CHANGELOG.md](CHANGELOG.md) and [docs/tutorials/V5.md](docs/tutorials/V5.md).
+This implementation statement is not release approval. The sections below retain earlier release history.
+
+V5.1 performance qualification uses the existing synthetic 8-repository, 5,000-file,
+60-component fixture and pinned VS Code 1.139.1. Three valid installed-package runs are
+required: median activation <= 1,000 ms, first paint <= 6,000 ms and full refresh <= 12,000 ms.
+The `performance_budget` CI job runs after functional desktop/UI qualification to avoid
+competing process launches on the shared Windows host. MR !288 records the exact source,
+VSIX digest, performance results and pipeline; a passing implementation statement alone
+does not authorize merging.
+
+First paint is the existing state-delivery milestone: on startup/project switch, the parsed
+tree with pending local observations. Same-project refreshes retain the checked clone state
+until fresh checks finish. Repository identity, file fingerprints and Git tracking complete before
+the full-refresh promise resolves. It does not measure physical webview pixels.
+
+## 1.1.0-rc.1: V3 release candidate 1
 
 Date: 2026-09-28. Version `1.1.0-rc.1` (prerelease; 1.0.0 is the current release) — the V3 wave merged since 1.0.0:
 V3-SHELL (#154), V3-HOME (#153), V3-HOP1 (#151), V3-HOP2 (#159), V3-THEME (#152), V3-AIRFLOW (#158), V3-GITDIAG (#157),

@@ -5,6 +5,24 @@ status and next steps: [handoff/V3_HANDOFF.md](handoff/V3_HANDOFF.md).
 
 ## Unreleased
 
+- Multi-root refresh reads repository fingerprints and origin identities in bounded parallel
+  batches, and checks file tracking alongside disk/hash observations. Local project-file reads
+  keep their size/error checks without a window filesystem round trip. Missing MCP registration
+  files avoid an empty workspace-wide search; existing files retain search exclusions.
+- On startup or a project switch, the tree appears once its declarations are parsed, with
+  unfinished local checks visibly pending. Same-project refreshes retain the checked clone
+  state until fresh checks finish. Refresh still awaits identity, fingerprints and Git tracking.
+  Inventory searches share a process, with the original queries retained if results are truncated.
+- Release CI measures three launches of the installed VSIX on the pinned performance fixture,
+  after desktop qualification finishes, and enforces the existing activation/paint/refresh budgets.
+- Git observation leaves the index unchanged, avoiding an unnecessary index lock during an explicit
+  fast-forward update. A desktop regression checks unchanged file content with changed timestamps.
+- Release qualification exercises the installed VSIX in the desktop suite and runs both preparation
+  tests after packaging, alongside the existing UI smoke journeys.
+- Package repository links now point to the authoritative GitLab project.
+- Project-tree selection drops cached nodes when the tree refreshes, so a removed subproject is not
+  handed back to VS Code for reveal.
+
 ## 1.2.0-rc.1 — V5 release candidate 1: guided tours, dbt authority, multi-repo history, an explainer you can send (2026-10-03)
 
 Plan: [handoff/V5-PLAN.md](handoff/V5-PLAN.md); walkthrough with screenshots: [docs/tutorials/V5.md](docs/tutorials/V5.md).

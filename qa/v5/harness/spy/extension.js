@@ -21,7 +21,9 @@ function log(event) {
 function fromDataPass() {
   if (!ROOT) return false;
   const stack = (new Error().stack || "").replace(/\\/g, "/").toLowerCase();
-  return stack.split("\n").some(l => l.includes(ROOT) && !l.includes("/qa/v5/harness/"));
+  // The downloaded VS Code and its built-in extensions can live under ROOT too.
+  // Attribute only shipped DataPass bundles, not every caller inside the checkout.
+  return stack.split("\n").some(l => l.includes(`${ROOT}/dist/`));
 }
 function wrap(mod, name, describe) {
   const original = mod[name];
