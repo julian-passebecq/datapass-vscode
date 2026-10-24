@@ -1,0 +1,141 @@
+✖ experience: presets.json validates against its schema, and the committed schema is current (76.6731ms)
+✔ experience: unknown surface or preset ids, a missing preset and duplicates are rejected with a message (26.6392ms)
+✔ experience: presets grow from Vanilla to Advanced, as the plan's table says (1.1467ms)
+✔ experience: resolution order preset → overrides, with each surface's origin (1.6409ms)
+✔ experience: an unknown mode or surface in the settings is ignored with a message (1.0164ms)
+✔ experience: customizing keeps only the differences from the preset (0.671ms)
+✔ experience: every contributed view has a surface id and is gated by its when clause (0.49ms)
+✖ experience: settings follow the surface and preset lists; menus of hidden surfaces are hidden too (0.6231ms)
+✔ experience: components an options.json decision can change are marked as having alternatives (0.558ms)
+✔ palette: every listable command is classified, and package.json carries exactly the table's when clauses (3.2593ms)
+✔ palette: lighter modes stay short, grow towards Advanced, and Advanced lists every command (39.2193ms)
+✔ palette: no client-named command or setting on the default surface (7.5601ms)
+✔ palette: the list per mode matches the committed snapshot (12.3481ms)
+✔ score: factors are pure, bounded and documented (1.9971ms)
+✔ score: lineage centrality counts other queries upstream and downstream (table names case-insensitive) (1.123ms)
+✔ fixture project: top 5 is deterministic and ranked by interview value (0.6523ms)
+✔ card: cites the project and shows typed holes, never invented context or samples (0.9213ms)
+✔ binding: no facts → general cards marked datapass-guidance with a missing-facts hole (0.5839ms)
+✔ techniques: detected from SQLGlot node types and flags only (0.8326ms)
+✔ facts: a Hop bridge explanation becomes an ai-proposed fact with its summary as context (0.4721ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 18
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11752.1937
+
+✖ failing tests:
+
+test at tests\experience.test.ts:23:1
+✖ experience: presets.json validates against its schema, and the committed schema is current (76.6731ms)
+  AssertionError [ERR_ASSERTION]: committed schema is up to date (npm run schemas)
+  + actual - expected
+  ... Skipped lines
+  
+    {
+      '$id': 'https://datapass.local/schemas/datapass-experience.schema.json',
+      '$schema': 'https://json-schema.org/draft/2020-12/schema',
+      additionalProperties: false,
+      properties: {
+  ...
+                    'view.rail',
+  -                 'v5.peda3'
+                  ]
+                },
+  +             maxItems: 36,
+  -             maxItems: 37,
+                minItems: 0,
+                type: 'array'
+              }
+            },
+            required: [
+  
+      at TestContext.<anonymous> (D:\PROJ\datapass-vscode\.worktrees\peda3\tests\experience.test.ts:29:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { '$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'https://datapass.local/schemas/datapass-experience.schema.json', title: 'DataPass experience presets (1)', type: 'object', additionalProperties: false, properties: { '$schema': [Object], format: [Object], version: [Object], default: [Object], presets: [Object] }, required: [ 'format', 'version', 'default', 'presets' ] },
+    expected: { '$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'https://datapass.local/schemas/datapass-experience.schema.json', title: 'DataPass experience presets (1)', type: 'object', additionalProperties: false, properties: { '$schema': [Object], format: [Object], version: [Object], default: [Object], presets: [Object] }, required: [ 'format', 'version', 'default', 'presets' ] },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at tests\experience.test.ts:135:1
+✖ experience: settings follow the surface and preset lists; menus of hidden surfaces are hidden too (0.6231ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+  
+    [
+      'ai.agent',
+      'ai.codexTests',
+      'ai.manual',
+      'ai.pilot',
+  ...
+      'status.selectedVariant',
+  -   'v5.peda3',
+      'view.agentPanel',
+      'view.aiExchange',
+      'view.airflowDag',
+      'view.architecture',
+      'view.details',
+  
+      at TestContext.<anonymous> (D:\PROJ\datapass-vscode\.worktrees\peda3\tests\experience.test.ts:140:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [
+      'ai.agent',               'ai.codexTests',
+      'ai.manual',              'ai.pilot',
+      'badge.alternatives',     'badge.codingState',
+      'badge.hubChanged',       'landing.architecture',
+      'palette.full',           'project.board',
+      'project.options',        'project.problems',
+      'project.readiness',      'project.repositories',
+      'project.sheet',          'project.subprojects',
+      'project.toolkit',        'project.variantFilter',
+      'status.health',          'status.mode',
+      'status.selectedVariant', 'view.agentPanel',
+      'view.aiExchange',        'view.airflowDag',
+      'view.architecture',      'view.details',
+      'view.galaxy',            'view.git',
+      'view.project',           'view.rail',
+      'view.work',              'workbench.board',
+      'workbench.options',      'workbench.sheet',
+      'workbench.toolkit',      'workbench.workOrders'
+    ],
+    expected: [
+      'ai.agent',               'ai.codexTests',
+      'ai.manual',              'ai.pilot',
+      'badge.alternatives',     'badge.codingState',
+      'badge.hubChanged',       'landing.architecture',
+      'palette.full',           'project.board',
+      'project.options',        'project.problems',
+      'project.readiness',      'project.repositories',
+      'project.sheet',          'project.subprojects',
+      'project.toolkit',        'project.variantFilter',
+      'status.health',          'status.mode',
+      'status.selectedVariant', 'v5.peda3',
+      'view.agentPanel',        'view.aiExchange',
+      'view.airflowDag',        'view.architecture',
+      'view.details',           'view.galaxy',
+      'view.git',               'view.project',
+      'view.rail',              'view.work',
+      'workbench.board',        'workbench.options',
+      'workbench.sheet',        'workbench.toolkit',
+      'workbench.workOrders'
+    ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
