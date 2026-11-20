@@ -302,6 +302,14 @@ A module set to `false` disappears from Galaxy, the Work view and Links; unliste
 and a manifest without `modules` shows everything as before. Fabric, Databricks, Infrastructure,
 Airflow, Power BI and Grafana are the cloud core; DiagramCloud is an optional add-on.
 
+**Project types.** Run **DataPass: Choose Project Type (dev, work, personal)…** to start from a preset
+of these toggles and add modules on top. A type is only a starting list: DataPass writes `project.type`
+(`dev`, `work` or `perso`, the same field work orders read) and the ordinary `modules` block, so nothing
+else changes. Dev: Azure data services, databases, infrastructure, Airflow, Grafana. Work: every cloud-core
+module. Personal: databases and infrastructure. Add-ons (DiagramCloud) are off in every preset and ticked
+on top in the second step.
+Picking the type the file already has starts from the file's own toggles, so running it again never resets an add-on. `project.type` also sets the work-order defaults (work orders on and the agent merges when CI is green for dev and personal; off and you merge for work), and the confirm text says so. The work preset is "every cloud-core module", so a core module added later joins it by design; dev and personal are fixed lists.
+
 ## Assets and repositories (v0.11)
 
 The Work view lists what the project folder contains, without running anything: **Assets**

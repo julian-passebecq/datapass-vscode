@@ -40,6 +40,7 @@ import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { clipboard } from "../core/clipboard";
 import { AI_SWITCH_IDS, MODULES, moduleEnabled, modulesBlock, type ModuleId } from "../core/modules";
+import { PROJECT_TYPES, PROJECT_TYPE_PRESETS, buildModulesManifest, diffFromPreset, diffModules, enabledModules, keepsCurrentModules, startingModules, typeEffect, type ProjectType } from "../core/projectTypes";
 
 const now = () => new Date().toISOString();
 
@@ -64,6 +65,7 @@ export function registerWorkCommands(context: vscode.ExtensionContext, session: 
   reg("datapass.copyAiContext", async () => copyAiContext(session));
   reg("datapass.migrateManifestToV2", async () => migrateManifest(session));
   reg("datapass.chooseModules", async () => chooseModules(session));
+  reg("datapass.chooseProjectType", async () => chooseProjectType(session));
   reg("datapass.initGraph", async () => initGraph(session));
   reg("datapass.validateContract", async (uri?: vscode.Uri) => validateContract(session, uri));
   reg("datapass.openExchange", async (file: string) => openLocal(requireRoot(session.root), file));
@@ -590,38 +592,65 @@ export function workspaceJournalFs(root: vscode.Uri): JournalFs {
  * `project`), through the journal, refusing the write if the file changed since it was read.
  */
 async function chooseModules(session: WorkSession): Promise<void> {
+  const ctx = session.project;
+  if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
+  const picks = await pickModules(m => moduleEnabled(ctx.manifest, m.id), "Tick the modules this project uses. Unticked modules disappear from Galaxy, Work and Links.");
+  if (!picks) return;
+  await saveModules(session, new Set(picks.map(p => p.id)));
+}
+
+/**
+ * R852: pick a project type (dev, work, personal), then the modules on top of its preset. The preset
+ * is only the starting ticks of the same module list: the saved result is `project.type` plus the
+ * ordinary `modules` block.
+ */
+async function chooseProjectType(session: WorkSession): Promise<void> {
+  const ctx = session.project;
+  if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
+  const current = ctx.manifest.project.type;
+  const typePick = await vscode.window.showQuickPick(
+    PROJECT_TYPES.map(t => ({ label: PROJECT_TYPE_PRESETS[t].label, description: t === current ? `${t} (current)` : t, detail: PROJECT_TYPE_PRESETS[t].explain, type: t })),
+    { title: "Project type", placeHolder: "A type is a preset of modules. You can add modules on top in the next step.", ignoreFocusOut: true }
+  );
+  if (!typePick) return;
+  const start = new Set<ModuleId>(startingModules(ctx.manifest, typePick.type));
+  const same = keepsCurrentModules(ctx.manifest, typePick.type);
+  const picks = await pickModules(m => start.has(m.id), same ? `Ticked: this project's current modules (type ${typePick.label} is unchanged). Tick add-ons, untick what it does not use.` : `Ticked: the ${typePick.label} preset. Tick add-ons on top, untick what this project does not use.`);
+  if (!picks) return;
+  await saveModules(session, new Set(picks.map(p => p.id)), typePick.type);
+}
+
+function pickModules(picked: (m: (typeof MODULES)[number]) => boolean, placeHolder: string) {
+  return vscode.window.showQuickPick(
+    MODULES.map(m => ({ label: m.label, description: m.group === "core" ? "cloud core" : "optional add-on", detail: m.note, picked: picked(m), id: m.id as ModuleId })),
+    { title: "Modules for this project", placeHolder, canPickMany: true, ignoreFocusOut: true }
+  );
+}
+
+/** Writes the `modules` block (and `project.type` when a type was picked) through the journal. */
+async function saveModules(session: WorkSession, enabled: ReadonlySet<ModuleId>, type?: ProjectType): Promise<void> {
   const root = requireRoot(session.root);
   const ctx = session.project;
   if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
   const base = ctx.manifestBytes;
-  const picks = await vscode.window.showQuickPick(
-    MODULES.map(m => ({ label: m.label, description: m.group === "core" ? "cloud core" : "optional add-on", detail: m.note, picked: moduleEnabled(ctx.manifest, m.id), id: m.id as ModuleId })),
-    { title: "Modules for this project", placeHolder: "Tick the modules this project uses. Unticked modules disappear from Galaxy, Work and Links.", canPickMany: true, ignoreFocusOut: true }
-  );
-  if (!picks) return;
-  const enabled = new Set(picks.map(p => p.id));
-  const raw = parseStrictJson(base) as Record<string, unknown>;
-  // workOrders / pilot are not cloud modules: kept exactly as the file has them.
-  const oldModules = (raw.modules && typeof raw.modules === "object" ? raw.modules : {}) as Record<string, unknown>;
-  const block = { ...modulesBlock(enabled), ...Object.fromEntries(AI_SWITCH_IDS.filter(k => typeof oldModules[k] === "boolean").map(k => [k, oldModules[k]])) };
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (key === "modules") continue;
-    next[key] = value;
-    if (key === "project") next.modules = block;
-  }
-  next.modules ??= block;
+  const next = buildModulesManifest(parseStrictJson(base) as Record<string, unknown>, enabled, type);
   const errors = validateProjectManifest(next);
   if (errors.length) throw new UserFacingError(`The manifest would become invalid: ${errors.join("; ")}`);
   const on = MODULES.filter(m => enabled.has(m.id)).map(m => m.label);
   const off = MODULES.filter(m => !enabled.has(m.id)).map(m => m.label);
-  if (!(await confirmModal("Save these modules in .datapass/project.json?", `On: ${on.join(", ") || "none"}\nOff: ${off.join(", ") || "none"}\n\nOnly the modules block changes (the file is written as two-space JSON). A backup goes to ${LOCAL_DIR}/journal. Nothing is installed or uninstalled.`, "Save"))) return;
+  const names = (ids: ModuleId[]) => ids.map(x => MODULES.find(m => m.id === x)!.label).join(", ") || "none";
+  const vsFile = diffModules(enabledModules(ctx.manifest), enabled);
+  const vsPreset = type ? diffFromPreset(type, enabled) : undefined;
+  const typeLines = type && vsPreset
+    ? `${typeEffect(type, ctx.manifest.project.type)}\n\nCompared with the file today: switched on: ${names(vsFile.switchedOn)}; switched off: ${names(vsFile.switchedOff)}.\nCompared with the ${type} preset: add-ons on top: ${names(vsPreset.addOns)}; preset modules left off: ${names(vsPreset.removed)}.\n\n`
+    : "";
+  if (!(await confirmModal("Save these modules in .datapass/project.json?", `${typeLines}On: ${on.join(", ") || "none"}\nOff: ${off.join(", ") || "none"}\n\nOnly ${type ? "project.type and " : ""}the modules block ${type ? "change" : "changes"} (the file is written as two-space JSON). A backup goes to ${LOCAL_DIR}/journal. Nothing is installed or uninstalled.`, "Save"))) return;
   const id = newLocalId("modules");
   await applyWithJournal(workspaceJournalFs(root), `${LOCAL_DIR}/journal/${id}.json`, id, now(), [
     { target: DATAPASS_MANIFEST_PATH, bytes: jsonBytes(next), expectedBaseHash: sha256Bytes(base).value }
   ]);
   await vscode.commands.executeCommand("datapass.refresh");
-  void vscode.window.showInformationMessage(`Modules saved. On: ${on.join(", ") || "none"}.`);
+  void vscode.window.showInformationMessage(`Modules saved${type ? ` (type ${type})` : ""}. On: ${on.join(", ") || "none"}.`);
 }
 
 async function migrateManifest(session: WorkSession): Promise<void> {
