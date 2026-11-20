@@ -40,7 +40,7 @@ import { applyWithJournal, type JournalFs } from "../core/exchange/journal";
 import { vetRelativePath } from "../core/exchange/pathSafety";
 import { clipboard } from "../core/clipboard";
 import { AI_SWITCH_IDS, MODULES, moduleEnabled, modulesBlock, type ModuleId } from "../core/modules";
-import { PROJECT_TYPES, PROJECT_TYPE_PRESETS, diffFromPreset, presetModules, type ProjectType } from "../core/projectTypes";
+import { PROJECT_TYPES, PROJECT_TYPE_PRESETS, buildModulesManifest, diffFromPreset, diffModules, enabledModules, keepsCurrentModules, startingModules, typeEffect, type ProjectType } from "../core/projectTypes";
 
 const now = () => new Date().toISOString();
 
@@ -613,8 +613,9 @@ async function chooseProjectType(session: WorkSession): Promise<void> {
     { title: "Project type", placeHolder: "A type is a preset of modules. You can add modules on top in the next step.", ignoreFocusOut: true }
   );
   if (!typePick) return;
-  const preset = new Set<ModuleId>(presetModules(typePick.type));
-  const picks = await pickModules(m => preset.has(m.id), `Ticked: the ${typePick.label} preset. Tick add-ons on top, untick what this project does not use.`);
+  const start = new Set<ModuleId>(startingModules(ctx.manifest, typePick.type));
+  const same = keepsCurrentModules(ctx.manifest, typePick.type);
+  const picks = await pickModules(m => start.has(m.id), same ? `Ticked: this project's current modules (type ${typePick.label} is unchanged). Tick add-ons, untick what it does not use.` : `Ticked: the ${typePick.label} preset. Tick add-ons on top, untick what this project does not use.`);
   if (!picks) return;
   await saveModules(session, new Set(picks.map(p => p.id)), typePick.type);
 }
@@ -632,24 +633,17 @@ async function saveModules(session: WorkSession, enabled: ReadonlySet<ModuleId>,
   const ctx = session.project;
   if (!ctx.manifest || !ctx.manifestBytes) throw new UserFacingError("A valid .datapass/project.json is required: initialize or fix it first.");
   const base = ctx.manifestBytes;
-  const raw = parseStrictJson(base) as Record<string, unknown>;
-  // workOrders / pilot are not cloud modules: kept exactly as the file has them.
-  const oldModules = (raw.modules && typeof raw.modules === "object" ? raw.modules : {}) as Record<string, unknown>;
-  const block = { ...modulesBlock(enabled), ...Object.fromEntries(AI_SWITCH_IDS.filter(k => typeof oldModules[k] === "boolean").map(k => [k, oldModules[k]])) };
-  const next: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (key === "modules") continue;
-    next[key] = key === "project" && type ? { ...(value as Record<string, unknown>), type } : value;
-    if (key === "project") next.modules = block;
-  }
-  next.modules ??= block;
+  const next = buildModulesManifest(parseStrictJson(base) as Record<string, unknown>, enabled, type);
   const errors = validateProjectManifest(next);
   if (errors.length) throw new UserFacingError(`The manifest would become invalid: ${errors.join("; ")}`);
   const on = MODULES.filter(m => enabled.has(m.id)).map(m => m.label);
   const off = MODULES.filter(m => !enabled.has(m.id)).map(m => m.label);
-  const names = (ids: ModuleId[]) => ids.map(id => MODULES.find(m => m.id === id)!.label).join(", ") || "none";
-  const diff = type ? diffFromPreset(type, enabled) : undefined;
-  const typeLines = type && diff ? `Project type: ${type} (project.type; the machine setting datapass.ai.projectTypes still wins for work orders).\nAdd-ons on top of the preset: ${names(diff.addOns)}\nPreset modules switched off: ${names(diff.removed)}\n\n` : "";
+  const names = (ids: ModuleId[]) => ids.map(x => MODULES.find(m => m.id === x)!.label).join(", ") || "none";
+  const vsFile = diffModules(enabledModules(ctx.manifest), enabled);
+  const vsPreset = type ? diffFromPreset(type, enabled) : undefined;
+  const typeLines = type && vsPreset
+    ? `${typeEffect(type, ctx.manifest.project.type)}\n\nCompared with the file today: switched on: ${names(vsFile.switchedOn)}; switched off: ${names(vsFile.switchedOff)}.\nCompared with the ${type} preset: add-ons on top: ${names(vsPreset.addOns)}; preset modules left off: ${names(vsPreset.removed)}.\n\n`
+    : "";
   if (!(await confirmModal("Save these modules in .datapass/project.json?", `${typeLines}On: ${on.join(", ") || "none"}\nOff: ${off.join(", ") || "none"}\n\nOnly ${type ? "project.type and " : ""}the modules block ${type ? "change" : "changes"} (the file is written as two-space JSON). A backup goes to ${LOCAL_DIR}/journal. Nothing is installed or uninstalled.`, "Save"))) return;
   const id = newLocalId("modules");
   await applyWithJournal(workspaceJournalFs(root), `${LOCAL_DIR}/journal/${id}.json`, id, now(), [

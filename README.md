@@ -308,6 +308,7 @@ of these toggles and add modules on top. A type is only a starting list: DataPas
 else changes. Dev: Azure data services, databases, infrastructure, Airflow, Grafana. Work: every cloud-core
 module. Personal: databases and infrastructure. Add-ons (DiagramCloud) are off in every preset and ticked
 on top in the second step.
+Picking the type the file already has starts from the file's own toggles, so running it again never resets an add-on. `project.type` also sets the work-order defaults (work orders on and the agent merges when CI is green for dev and personal; off and you merge for work), and the confirm text says so. The work preset is "every cloud-core module", so a core module added later joins it by design; dev and personal are fixed lists.
 
 ## Assets and repositories (v0.11)
 

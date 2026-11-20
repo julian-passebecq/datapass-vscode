@@ -1205,7 +1205,7 @@
         {
           "command": "datapass.chooseProjectType",
           "when": "view == datapass.project",
-          "group": "3_project@4"
+          "group": "3_project@5"
         },
         {
           "command": "datapass.selectProjectFolder",
