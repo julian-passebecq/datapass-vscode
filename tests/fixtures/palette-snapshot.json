@@ -160,6 +160,7 @@
     "DataPass: Check for Updates (git fetch, nothing merged)",
     "DataPass: Check the DataPass Files of a Work Order's Pull Request…",
     "DataPass: Choose Project Modules…",
+    "DataPass: Choose Project Type (dev, work, personal)…",
     "DataPass: Choose the Codex Test Repository (machine setting)…",
     "DataPass: Choose the Project Folder of this Window…",
     "DataPass: Choose the Work View this Workspace Opens With…",

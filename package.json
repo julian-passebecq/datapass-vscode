@@ -194,6 +194,11 @@
         "icon": "$(extensions)"
       },
       {
+        "command": "datapass.chooseProjectType",
+        "title": "DataPass: Choose Project Type (dev, work, personal)…",
+        "icon": "$(extensions)"
+      },
+      {
         "command": "datapass.openResource",
         "title": "DataPass: Open Resource on its Host (Remote - SSH)…"
       },
@@ -1198,6 +1203,11 @@
           "group": "3_project@4"
         },
         {
+          "command": "datapass.chooseProjectType",
+          "when": "view == datapass.project",
+          "group": "3_project@4"
+        },
+        {
           "command": "datapass.selectProjectFolder",
           "when": "view == datapass.project",
           "group": "4_switch@1"
@@ -2143,6 +2153,10 @@
         {
           "command": "datapass.chooseModules",
           "when": "!datapass.hidden.view.project"
+        },
+        {
+          "command": "datapass.chooseProjectType",
+          "when": "!datapass.hidden.palette.full"
         },
         {
           "command": "datapass.openResource",

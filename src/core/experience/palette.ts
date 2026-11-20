@@ -53,7 +53,7 @@ const GATED: Record<string, readonly string[]> = {
     "createAppRequest", "importAppResult", "observeAppRevision", "createCandidate", "analyzeImpact", "prepareBrief", "approveBrief",
     "importOutputManifest", "importAuthoritySnapshot", "exportDiagramCloud", "inspectPowerBiProject", "copyAiContext",
     "diagramCloud.openArchitecture", "diagramCloud.copyAiContext", "diagramCloud.importAiPlan", "diagramCloud.copySummary",
-    "migrateManifestToV2", "initGraph", "openGraph", "openCompanionLink", "openResource", "copySshCommand",
+    "migrateManifestToV2", "chooseProjectType", "initGraph", "openGraph", "openCompanionLink", "openResource", "copySshCommand",
     "setSelectedVariant", "openAdfStudio", "recordComponentResult",
     "manageWorkViews", "renameWorkView", "deleteWorkView", "setStartupView", "openWorkbenchFloating",
     "createCompanyWorkspace", "exportCompanyWorkspaces",
